@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class SearchPage extends StatefulWidget {
@@ -37,7 +38,10 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(vertical: _isMobile ? 22 : 32),
+              padding: EdgeInsets.only(
+                top: _isMobile ? 0 : 6,
+                bottom: _isMobile ? 22 : 32,
+              ),
               child: Flex(
                 direction: _isMobile ? Axis.vertical : Axis.horizontal,
                 crossAxisAlignment: _isMobile
@@ -49,7 +53,10 @@ class _SearchPageState extends State<SearchPage> {
                     width: _isTablet ? 36 : 44,
                     height: 14,
                   ),
-                  Expanded(child: _searchField()),
+                  if (_isMobile)
+                    _searchField()
+                  else
+                    Expanded(child: _searchField()),
                 ],
               ),
             ),
@@ -73,7 +80,7 @@ class _SearchPageState extends State<SearchPage> {
                     SliverGrid.builder(
                       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent:
-                            _isDesktop ? 280 : _screenSize.width,
+                            _isDesktop ? 360 : _screenSize.width,
                         mainAxisExtent: _isMobile ? 42 : 50,
                         mainAxisSpacing: _isMobile ? 12 : 24,
                         crossAxisSpacing: 70,
@@ -128,82 +135,58 @@ class _SearchPageState extends State<SearchPage> {
         ),
       );
 
-  Widget _artistView() => Row(
-        children: [
-          CircleAvatar(
-            radius: _isMobile ? 21 : 40,
+  Widget _artistView() => SimpleListTile(
+        leading: CircleAvatar(
+          radius: _isMobile ? 21 : 40,
+        ),
+        title: Text(
+          'Rihanna',
+          style: TextStyle(
+            fontSize: _isTablet ? 20 : 16,
+            color: _theme.colorScheme.onPrimary,
+            overflow: TextOverflow.ellipsis,
           ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: _isMobile ? 6 : (_isTablet ? 16 : 20),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Rihanna',
-                    style: TextStyle(
-                      fontSize: _isTablet ? 20 : 16,
-                      color: _theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Artist',
-                    style: TextStyle(
-                      fontSize: _isTablet ? 16 : 12,
-                      color: _theme.colorScheme.onPrimary.withOpacity(0.61),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          maxLines: 1,
+        ),
+        subtitle: Text(
+          'Artist',
+          style: TextStyle(
+            fontSize: _isTablet ? 16 : 12,
+            color: _theme.colorScheme.onPrimary.withOpacity(0.61),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.chevron_right),
-          ),
-        ],
+        ),
+        trailing: IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.chevron_right),
+        ),
+        leadingToTitle: _isMobile ? 6 : (_isTablet ? 16 : 20),
       );
 
-  Widget _songView() => Row(
-        children: [
-          SizedBox.square(
-            dimension: _isMobile ? 42 : 50,
-            child: const ColoredBox(color: Colors.red),
+  Widget _songView() => SimpleListTile(
+        leading: SizedBox.square(
+          dimension: _isMobile ? 42 : 50,
+          child: const ColoredBox(color: Colors.red),
+        ),
+        title: Text(
+          'Song name',
+          style: TextStyle(
+            fontSize: _isTablet ? 20 : 16,
+            color: _theme.colorScheme.onPrimary,
+            overflow: TextOverflow.ellipsis,
           ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: _isMobile ? 6 : 16,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Song name',
-                    style: TextStyle(
-                      fontSize: _isTablet ? 20 : 16,
-                      color: _theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Song',
-                    style: TextStyle(
-                      fontSize: _isTablet ? 16 : 12,
-                      color: _theme.colorScheme.onPrimary.withOpacity(0.61),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          maxLines: 1,
+        ),
+        subtitle: Text(
+          'Song',
+          style: TextStyle(
+            fontSize: _isTablet ? 16 : 12,
+            color: _theme.colorScheme.onPrimary.withOpacity(0.61),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_horiz),
-          ),
-        ],
+        ),
+        trailing: IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.more_horiz),
+        ),
+        leadingToTitle: _isMobile ? 6 : 16,
       );
 }

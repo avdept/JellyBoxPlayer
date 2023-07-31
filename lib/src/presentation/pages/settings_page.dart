@@ -14,25 +14,27 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         minimum: EdgeInsets.all(isMobile ? 16 : 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Settings',
-              style: TextStyle(
-                fontSize: isMobile ? 24 : 36,
-                fontWeight: FontWeight.w600,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: isMobile ? 22 : 26),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Settings',
+                style: TextStyle(
+                  fontSize: isMobile ? 24 : 36,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            SizedBox(height: isMobile ? 6 : 12),
-            Wrap(
-              direction: Axis.vertical,
-              children: [
-                _librariesButton(),
-                if (!isDesktop) _logOutButton(),
-              ],
-            ),
-          ],
+              Wrap(
+                direction: Axis.vertical,
+                children: [
+                  _librariesButton(),
+                  if (!isDesktop) _logOutButton(),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

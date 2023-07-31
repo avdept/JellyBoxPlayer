@@ -46,7 +46,7 @@ class _ListenPageState extends State<ListenPage> {
                   maxCrossAxisExtent: _isTablet ? 360 : 175,
                   mainAxisSpacing: _isMobile ? 15 : 24,
                   crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 206,
+                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
                 ),
                 itemBuilder: (context, index) => _albumView(),
                 itemCount: 10,
@@ -93,7 +93,9 @@ class _ListenPageState extends State<ListenPage> {
             style: TextStyle(
               fontSize: _isTablet ? 24 : 16,
               fontWeight: FontWeight.w500,
+              overflow: TextOverflow.ellipsis,
             ),
+            maxLines: 1,
           ),
         ],
       );
