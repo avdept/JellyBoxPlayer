@@ -19,6 +19,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   late GoRouterState _router;
   late ThemeData _theme;
+  late Size _screenSize;
 
   Set<(IconData, String, String)> get _menuItems => {
         (Icons.play_circle_outline, 'Listen', Routes.listen),
@@ -43,12 +44,13 @@ class _MainPageState extends State<MainPage> {
     super.didChangeDependencies();
     _router = GoRouterState.of(context);
     _theme = Theme.of(context);
+    _screenSize = MediaQuery.sizeOf(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final currentIndex = _getLocationIndex(_router.uri.toString());
-    final deviceType = getDeviceType(MediaQuery.sizeOf(context));
+    final deviceType = getDeviceType(_screenSize);
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
 

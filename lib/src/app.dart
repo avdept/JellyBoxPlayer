@@ -95,7 +95,7 @@ class _AppState extends State<App> {
             if (location.startsWith(Routes.search)) return null;
             if (location.startsWith(Routes.settings)) return null;
             if (location.startsWith(Routes.downloads)) return null;
-            return Routes.listen;
+            return Routes.search;
           } else if (!location.startsWith(Routes.login)) {
             return Routes.login;
           }

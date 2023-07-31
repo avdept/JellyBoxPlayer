@@ -6,7 +6,8 @@ class LibraryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final deviceType = getDeviceType(MediaQuery.sizeOf(context));
+    final screenSize = MediaQuery.sizeOf(context);
+    final deviceType = getDeviceType(screenSize);
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isTablet = deviceType == DeviceScreenType.tablet;
     final isDesktop = deviceType == DeviceScreenType.desktop;
@@ -24,13 +25,7 @@ class LibraryPage extends StatelessWidget {
                     radius: isDesktop ? 22.5 : 13,
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Your library',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  _titleText(),
                   const Spacer(),
                   _searchButton(),
                 ],
@@ -44,21 +39,7 @@ class LibraryPage extends StatelessWidget {
                   crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
                   childAspectRatio: isTablet ? 370 / 255 : 358 / 233,
                 ),
-                itemBuilder: (context, index) => const Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: ColoredBox(color: Colors.red),
-                      ),
-                    ),
-                    Text(
-                      'Library name',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
+                itemBuilder: (context, index) => _libraryView(),
                 itemCount: 10,
               ),
             ),
@@ -68,8 +49,32 @@ class LibraryPage extends StatelessWidget {
     );
   }
 
+  Widget _titleText() => const Text(
+        'Your library',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+
   Widget _searchButton() => IconButton(
         onPressed: () {},
         icon: const Icon(Icons.search),
+      );
+
+  Widget _libraryView() => const Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ColoredBox(color: Colors.red),
+            ),
+          ),
+          Text(
+            'Library name',
+            style: TextStyle(fontSize: 16),
+          ),
+        ],
       );
 }
