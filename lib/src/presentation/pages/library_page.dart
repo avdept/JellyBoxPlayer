@@ -44,14 +44,17 @@ class LibraryPage extends StatelessWidget {
                   crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
                   childAspectRatio: isTablet ? 370 / 255 : 358 / 233,
                 ),
-                itemBuilder: (context, index) => Column(
+                itemBuilder: (context, index) => const Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Container(color: Colors.red),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: ColoredBox(color: Colors.red),
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Some text',
+                    Text(
+                      'Library name',
                       style: TextStyle(fontSize: 16),
                     ),
                   ],

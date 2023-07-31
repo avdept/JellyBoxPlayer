@@ -95,7 +95,7 @@ class _AppState extends State<App> {
             if (location.startsWith(Routes.search)) return null;
             if (location.startsWith(Routes.settings)) return null;
             if (location.startsWith(Routes.downloads)) return null;
-            return Routes.library;
+            return Routes.listen;
           } else if (!location.startsWith(Routes.login)) {
             return Routes.login;
           }
@@ -119,6 +119,15 @@ class _AppState extends State<App> {
         ),
         navigationRailTheme: const NavigationRailThemeData(
           backgroundColor: Color(0xFF471F27),
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: const Color(0xFF362A30),
+          selectedColor: const Color(0xFF0066FF),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          side: BorderSide.none,
+          labelPadding: const EdgeInsets.symmetric(vertical: 3, horizontal: 11),
         ),
       ),
     );
