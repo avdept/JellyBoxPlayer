@@ -31,7 +31,6 @@ class LabeledTextField extends StatelessWidget {
         style: const TextStyle(
           fontFamily: FontFamily.inter,
           fontSize: 12,
-          fontWeight: FontWeight.w400,
         ),
       );
 
