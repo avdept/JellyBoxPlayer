@@ -60,6 +60,7 @@ class _MainPageState extends State<MainPage> {
           Visibility(
             visible: isDesktop,
             child: CustomNavigationRail(
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
               selectedItemColor: _theme.colorScheme.primary,
               unselectedItemColor: _theme.colorScheme.onPrimary,
               selectedFontSize: 16,
@@ -75,13 +76,6 @@ class _MainPageState extends State<MainPage> {
                 onPressed: () {},
                 icon: const Icon(Icons.logout),
                 label: const Text('Log out'),
-                style: TextButton.styleFrom(
-                  foregroundColor: _theme.colorScheme.onPrimary,
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ),
               selectedIndex: currentIndex,
               onDestinationSelected: _navigateToItem,

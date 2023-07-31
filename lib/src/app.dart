@@ -95,7 +95,7 @@ class _AppState extends State<App> {
             if (location.startsWith(Routes.search)) return null;
             if (location.startsWith(Routes.settings)) return null;
             if (location.startsWith(Routes.downloads)) return null;
-            return Routes.search;
+            return Routes.settings;
           } else if (!location.startsWith(Routes.login)) {
             return Routes.login;
           }
@@ -128,6 +128,16 @@ class _AppState extends State<App> {
           ),
           side: BorderSide.none,
           labelPadding: const EdgeInsets.symmetric(vertical: 3, horizontal: 11),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            foregroundColor: Colors.white,
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );

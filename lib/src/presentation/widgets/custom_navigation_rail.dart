@@ -13,6 +13,7 @@ class CustomNavigationRail extends StatelessWidget {
     this.selectedFontSize = 14,
     this.unselectedFontSize = 12,
     this.leadingGap = 36,
+    this.padding = EdgeInsets.zero,
     this.leading,
     this.trailing,
     super.key,
@@ -29,6 +30,7 @@ class CustomNavigationRail extends StatelessWidget {
   final double selectedFontSize;
   final double unselectedFontSize;
   final double leadingGap;
+  final EdgeInsets padding;
   final Widget? leading;
   final Widget? trailing;
 
@@ -44,7 +46,7 @@ class CustomNavigationRail extends StatelessWidget {
         child: SafeArea(
           left: false,
           right: false,
-          minimum: const EdgeInsets.symmetric(horizontal: 20),
+          minimum: padding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
