@@ -5,6 +5,17 @@ import 'package:jplayer/src/presentation/pages/pages.dart';
 class ScreenFactory {
   const ScreenFactory();
 
+  Page<void> albumPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return MaterialPage(
+      key: router.pageKey,
+      name: router.path,
+      child: const AlbumPage(),
+    );
+  }
+
   Page<void> downloadsPage(
     BuildContext context,
     GoRouterState router,

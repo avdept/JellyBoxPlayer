@@ -65,8 +65,8 @@ class DownloadsPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Visibility(
-                          visible: isDesktop,
+                        Offstage(
+                          offstage: !isDesktop,
                           child: AspectRatio(
                             aspectRatio: 1,
                             child: Ink.image(
@@ -75,8 +75,8 @@ class DownloadsPage extends StatelessWidget {
                           ),
                         ),
                         SimpleListTile(
-                          leading: Visibility(
-                            visible: !isDesktop,
+                          leading: Offstage(
+                            offstage: isDesktop,
                             child: Ink.image(
                               image: const AssetImage(Images.albumSample),
                               width: listItemExtent,

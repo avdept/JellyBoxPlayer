@@ -1,3 +1,4 @@
+export 'album_page.dart';
 export 'downloads_page.dart';
 export 'initial_page.dart';
 export 'library_page.dart';

@@ -89,6 +89,13 @@ class _AppState extends State<App> {
               GoRoute(
                 path: Routes.downloads,
                 pageBuilder: widget.screenFactory.downloadsPage,
+                routes: [
+                  GoRoute(
+                    path: Routes.album.name,
+                    pageBuilder: widget.screenFactory.albumPage,
+                    parentNavigatorKey: _rootNavigatorKey,
+                  ),
+                ],
               ),
             ],
           ),

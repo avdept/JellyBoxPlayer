@@ -40,7 +40,7 @@ class _SearchPageState extends State<SearchPage> {
           children: [
             Padding(
               padding: EdgeInsets.only(
-                top: _isMobile ? 0 : 4,
+                top: _isMobile ? 0 : 3.5,
                 bottom: _isMobile ? 22 : 32,
               ),
               child: Flex(
