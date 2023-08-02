@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends StatefulWidget {
@@ -76,27 +77,30 @@ class _ListenPageState extends State<ListenPage> {
         icon: const Icon(Icons.equalizer),
       );
 
-  Widget _albumView() => Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          AspectRatio(
-            aspectRatio: 1,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
+  Widget _albumView() => InkWell(
+        onTap: () {},
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.red,
+                child: Ink.image(
+                  image: const AssetImage(Images.albumSample),
+                ),
               ),
             ),
-          ),
-          Text(
-            'Album name',
-            style: TextStyle(
-              fontSize: _isTablet ? 24 : 16,
-              fontWeight: FontWeight.w500,
-              overflow: TextOverflow.ellipsis,
+            Text(
+              'Album name',
+              style: TextStyle(
+                fontSize: _isTablet ? 24 : 16,
+                fontWeight: FontWeight.w500,
+                overflow: TextOverflow.ellipsis,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-          ),
-        ],
+          ],
+        ),
       );
 }

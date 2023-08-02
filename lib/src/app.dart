@@ -25,11 +25,20 @@ class _AppState extends State<App> {
   final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(true);
 
+  late Size _screenSize;
+  late bool _isDesktop;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _screenSize = MediaQuery.sizeOf(context);
+
+    final deviceType = getDeviceType(_screenSize);
+    _isDesktop = deviceType == DeviceScreenType.desktop;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final deviceType = getDeviceType(MediaQuery.sizeOf(context));
-    final isDesktop = deviceType == DeviceScreenType.desktop;
-
     return MaterialApp.router(
       localizationsDelegates: const [
         DefaultWidgetsLocalizations.delegate,
@@ -51,7 +60,7 @@ class _AppState extends State<App> {
             path: Routes.login,
             pageBuilder: widget.screenFactory.loginPage,
           ),
-          if (!isDesktop)
+          if (!_isDesktop)
             GoRoute(
               path: Routes.library,
               pageBuilder: widget.screenFactory.libraryPage,
@@ -60,7 +69,7 @@ class _AppState extends State<App> {
             navigatorKey: _shellNavigatorKey,
             pageBuilder: widget.screenFactory.mainPage,
             routes: [
-              if (isDesktop)
+              if (_isDesktop)
                 GoRoute(
                   path: Routes.library,
                   pageBuilder: widget.screenFactory.libraryPage,
@@ -95,7 +104,7 @@ class _AppState extends State<App> {
             if (location.startsWith(Routes.search)) return null;
             if (location.startsWith(Routes.settings)) return null;
             if (location.startsWith(Routes.downloads)) return null;
-            return Routes.downloads;
+            return Routes.listen;
           } else if (!location.startsWith(Routes.login)) {
             return Routes.login;
           }

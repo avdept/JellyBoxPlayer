@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class LibraryPage extends StatelessWidget {
@@ -62,23 +63,28 @@ class LibraryPage extends StatelessWidget {
         icon: const Icon(Icons.search),
       );
 
-  Widget _libraryView() => const Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ColoredBox(color: Colors.red),
+  Widget _libraryView() => InkWell(
+        onTap: () {},
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Ink.image(
+                  image: const AssetImage(Images.librarySample),
+                ),
+              ),
             ),
-          ),
-          Text(
-            'Library name',
-            style: TextStyle(
-              fontSize: 16,
-              overflow: TextOverflow.ellipsis,
+            const Text(
+              'Library name',
+              style: TextStyle(
+                fontSize: 16,
+                overflow: TextOverflow.ellipsis,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-          ),
-        ],
+          ],
+        ),
       );
 }

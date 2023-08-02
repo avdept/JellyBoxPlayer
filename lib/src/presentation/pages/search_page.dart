@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -135,58 +136,67 @@ class _SearchPageState extends State<SearchPage> {
         ),
       );
 
-  Widget _artistView() => SimpleListTile(
-        leading: CircleAvatar(
-          radius: _isMobile ? 21 : 40,
-        ),
-        title: Text(
-          'Rihanna',
-          style: TextStyle(
-            fontSize: _isTablet ? 20 : 16,
-            color: _theme.colorScheme.onPrimary,
-            overflow: TextOverflow.ellipsis,
+  Widget _artistView() => InkWell(
+        onTap: () {},
+        child: SimpleListTile(
+          leading: Ink.image(
+            image: const AssetImage(Images.artistSample),
+            width: _isMobile ? 42 : 80,
+            height: _isMobile ? 42 : 80,
           ),
-          maxLines: 1,
-        ),
-        subtitle: Text(
-          'Artist',
-          style: TextStyle(
-            fontSize: _isTablet ? 16 : 12,
-            color: _theme.colorScheme.onPrimary.withOpacity(0.61),
+          title: Text(
+            'Rihanna',
+            style: TextStyle(
+              fontSize: _isTablet ? 20 : 16,
+              color: _theme.colorScheme.onPrimary,
+              overflow: TextOverflow.ellipsis,
+            ),
+            maxLines: 1,
           ),
+          subtitle: Text(
+            'Artist',
+            style: TextStyle(
+              fontSize: _isTablet ? 16 : 12,
+              color: _theme.colorScheme.onPrimary.withOpacity(0.61),
+            ),
+          ),
+          trailing: IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.chevron_right),
+          ),
+          leadingToTitle: _isMobile ? 6 : (_isTablet ? 16 : 20),
         ),
-        trailing: IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.chevron_right),
-        ),
-        leadingToTitle: _isMobile ? 6 : (_isTablet ? 16 : 20),
       );
 
-  Widget _songView() => SimpleListTile(
-        leading: SizedBox.square(
-          dimension: _isMobile ? 42 : 50,
-          child: const ColoredBox(color: Colors.red),
-        ),
-        title: Text(
-          'Song name',
-          style: TextStyle(
-            fontSize: _isTablet ? 20 : 16,
-            color: _theme.colorScheme.onPrimary,
-            overflow: TextOverflow.ellipsis,
+  Widget _songView() => InkWell(
+        onTap: () {},
+        child: SimpleListTile(
+          leading: Ink.image(
+            image: const AssetImage(Images.songSample),
+            width: _isMobile ? 42 : 50,
+            height: _isMobile ? 42 : 50,
           ),
-          maxLines: 1,
-        ),
-        subtitle: Text(
-          'Song',
-          style: TextStyle(
-            fontSize: _isTablet ? 16 : 12,
-            color: _theme.colorScheme.onPrimary.withOpacity(0.61),
+          title: Text(
+            'Song name',
+            style: TextStyle(
+              fontSize: _isTablet ? 20 : 16,
+              color: _theme.colorScheme.onPrimary,
+              overflow: TextOverflow.ellipsis,
+            ),
+            maxLines: 1,
           ),
+          subtitle: Text(
+            'Song',
+            style: TextStyle(
+              fontSize: _isTablet ? 16 : 12,
+              color: _theme.colorScheme.onPrimary.withOpacity(0.61),
+            ),
+          ),
+          trailing: IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.more_horiz),
+          ),
+          leadingToTitle: _isMobile ? 6 : 16,
         ),
-        trailing: IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.more_horiz),
-        ),
-        leadingToTitle: _isMobile ? 6 : 16,
       );
 }
