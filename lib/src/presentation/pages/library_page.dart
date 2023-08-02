@@ -33,15 +33,19 @@ class LibraryPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: isTablet ? 370 : 358,
-                  mainAxisSpacing: isMobile ? 13 : 34,
-                  crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
-                  childAspectRatio: isTablet ? 370 / 255 : 358 / 233,
+              child: Material(
+                type: MaterialType.transparency,
+                clipBehavior: Clip.hardEdge,
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: isTablet ? 370 : 358,
+                    mainAxisSpacing: isMobile ? 13 : 34,
+                    crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
+                    childAspectRatio: isTablet ? 370 / 255 : 358 / 233,
+                  ),
+                  itemBuilder: (context, index) => _libraryView(),
+                  itemCount: 10,
                 ),
-                itemBuilder: (context, index) => _libraryView(),
-                itemCount: 10,
               ),
             ),
           ],

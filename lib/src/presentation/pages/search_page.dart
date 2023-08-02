@@ -62,8 +62,10 @@ class _SearchPageState extends State<SearchPage> {
               ),
             ),
             Expanded(
-              child: DefaultTextStyle(
-                style: const TextStyle(height: 1.2),
+              child: Material(
+                type: MaterialType.transparency,
+                clipBehavior: Clip.hardEdge,
+                textStyle: const TextStyle(height: 1.2),
                 child: CustomScrollView(
                   slivers: [
                     SliverList.separated(

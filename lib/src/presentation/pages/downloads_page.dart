@@ -48,64 +48,68 @@ class DownloadsPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: isDesktop ? 245 : screenSize.width,
-                  mainAxisSpacing: isMobile ? 12 : 24,
-                  crossAxisSpacing: 30,
-                  childAspectRatio: 245 / 298.2,
-                  mainAxisExtent: isDesktop ? null : listItemExtent,
-                ),
-                itemBuilder: (context, index) => InkWell(
-                  onTap: () {},
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Visibility(
-                        visible: isDesktop,
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: Ink.image(
-                            image: const AssetImage(Images.albumSample),
-                          ),
-                        ),
-                      ),
-                      DefaultTextStyle(
-                        style: const TextStyle(height: 1.2),
-                        child: SimpleListTile(
-                          leading: Visibility(
-                            visible: !isDesktop,
+              child: Material(
+                type: MaterialType.transparency,
+                clipBehavior: Clip.hardEdge,
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: isDesktop ? 245 : screenSize.width,
+                    mainAxisSpacing: isMobile ? 12 : 24,
+                    crossAxisSpacing: 30,
+                    childAspectRatio: 245 / 298.2,
+                    mainAxisExtent: isDesktop ? null : listItemExtent,
+                  ),
+                  itemBuilder: (context, index) => InkWell(
+                    onTap: () {},
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Visibility(
+                          visible: isDesktop,
+                          child: AspectRatio(
+                            aspectRatio: 1,
                             child: Ink.image(
                               image: const AssetImage(Images.albumSample),
-                              width: listItemExtent,
-                              height: listItemExtent,
                             ),
                           ),
-                          title: Text(
-                            'Album name',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: theme.colorScheme.onPrimary,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            maxLines: 1,
-                          ),
-                          subtitle: Text(
-                            '124.6 MB',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color:
-                                  theme.colorScheme.onPrimary.withOpacity(0.61),
-                            ),
-                          ),
-                          trailing: _deleteButton(),
-                          leadingToTitle: isDesktop ? 0 : (isMobile ? 6 : 16),
                         ),
-                      ),
-                    ],
+                        DefaultTextStyle(
+                          style: const TextStyle(height: 1.2),
+                          child: SimpleListTile(
+                            leading: Visibility(
+                              visible: !isDesktop,
+                              child: Ink.image(
+                                image: const AssetImage(Images.albumSample),
+                                width: listItemExtent,
+                                height: listItemExtent,
+                              ),
+                            ),
+                            title: Text(
+                              'Album name',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: theme.colorScheme.onPrimary,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              maxLines: 1,
+                            ),
+                            subtitle: Text(
+                              '124.6 MB',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: theme.colorScheme.onPrimary
+                                    .withOpacity(0.61),
+                              ),
+                            ),
+                            trailing: _deleteButton(),
+                            leadingToTitle: isDesktop ? 0 : (isMobile ? 6 : 16),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  itemCount: 10,
                 ),
-                itemCount: 10,
               ),
             ),
           ],

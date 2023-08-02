@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends StatefulWidget {
@@ -10,13 +11,22 @@ class ListenPage extends StatefulWidget {
 }
 
 class _ListenPageState extends State<ListenPage> {
+  final _currentView = ValueNotifier<ListenView>(ListenView.albums);
+
+  late ThemeData _theme;
   late Size _screenSize;
   late bool _isMobile;
   late bool _isTablet;
 
+  Set<(String, VoidCallback)> get _viewToggle => {
+        ('Albums', () => _currentView.value = ListenView.albums),
+        ('Artists', () => _currentView.value = ListenView.artists),
+      };
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _theme = Theme.of(context);
     _screenSize = MediaQuery.sizeOf(context);
 
     final deviceType = getDeviceType(_screenSize);
@@ -42,15 +52,19 @@ class _ListenPageState extends State<ListenPage> {
               ),
             ),
             Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _isTablet ? 360 : 175,
-                  mainAxisSpacing: _isMobile ? 15 : 24,
-                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+              child: Material(
+                type: MaterialType.transparency,
+                clipBehavior: Clip.hardEdge,
+                child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: _isTablet ? 360 : 175,
+                    mainAxisSpacing: _isMobile ? 15 : 24,
+                    crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
+                    childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+                  ),
+                  itemBuilder: (context, index) => _albumView(),
+                  itemCount: 10,
                 ),
-                itemBuilder: (context, index) => _albumView(),
-                itemCount: 10,
               ),
             ),
           ],
@@ -59,16 +73,31 @@ class _ListenPageState extends State<ListenPage> {
     );
   }
 
+  @override
+  void dispose() {
+    _currentView.dispose();
+    super.dispose();
+  }
+
   Widget _pageViewToggle() => ChipTheme(
         data: ChipTheme.of(context).copyWith(
           labelStyle: TextStyle(fontSize: _isMobile ? 14 : 24),
         ),
         child: Wrap(
           spacing: _isMobile ? 12 : 25,
-          children: const [
-            Chip(label: Text('Albums')),
-            Chip(label: Text('Artists')),
-          ],
+          children: List.generate(
+            _viewToggle.length,
+            (index) => ValueListenableBuilder(
+              valueListenable: _currentView,
+              builder: (context, currentView, child) => ActionChip(
+                label: Text(_viewToggle.elementAt(index).$1),
+                backgroundColor: (index == currentView.index)
+                    ? _theme.chipTheme.selectedColor
+                    : _theme.chipTheme.backgroundColor,
+                onPressed: _viewToggle.elementAt(index).$2,
+              ),
+            ),
+          ),
         ),
       );
 
@@ -79,15 +108,18 @@ class _ListenPageState extends State<ListenPage> {
 
   Widget _albumView() => InkWell(
         onTap: () {},
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             AspectRatio(
               aspectRatio: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Ink.image(
-                  image: const AssetImage(Images.albumSample),
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: const DecorationImage(
+                    image: AssetImage(Images.albumSample),
+                  ),
                 ),
               ),
             ),

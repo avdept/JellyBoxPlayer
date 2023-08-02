@@ -130,13 +130,13 @@ class _AppState extends State<App> {
           backgroundColor: Color(0xFF471F27),
         ),
         chipTheme: ChipThemeData(
+          labelPadding: const EdgeInsets.symmetric(horizontal: 11),
           backgroundColor: const Color(0xFF362A30),
           selectedColor: const Color(0xFF0066FF),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           side: BorderSide.none,
-          labelPadding: const EdgeInsets.symmetric(vertical: 3, horizontal: 11),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(

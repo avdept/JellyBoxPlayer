@@ -1,0 +1,4 @@
+enum ListenView {
+  albums,
+  artists,
+}
