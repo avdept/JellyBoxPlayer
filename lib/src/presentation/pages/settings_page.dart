@@ -24,6 +24,7 @@ class SettingsPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isMobile ? 24 : 36,
                   fontWeight: FontWeight.w600,
+                  height: 1.2,
                 ),
               ),
               Wrap(

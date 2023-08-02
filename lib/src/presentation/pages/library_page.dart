@@ -59,6 +59,7 @@ class LibraryPage extends StatelessWidget {
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
+          height: 1.2,
         ),
       );
 
@@ -84,6 +85,7 @@ class LibraryPage extends StatelessWidget {
               'Library name',
               style: TextStyle(
                 fontSize: 16,
+                height: 1.2,
                 overflow: TextOverflow.ellipsis,
               ),
               maxLines: 1,

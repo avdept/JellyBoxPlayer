@@ -12,6 +12,7 @@ class ListenPage extends StatefulWidget {
 
 class _ListenPageState extends State<ListenPage> {
   final _currentView = ValueNotifier<ListenView>(ListenView.albums);
+  final _currentFilter = ValueNotifier<Entities>(Entities.albums);
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -55,15 +56,18 @@ class _ListenPageState extends State<ListenPage> {
               child: Material(
                 type: MaterialType.transparency,
                 clipBehavior: Clip.hardEdge,
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: _isTablet ? 360 : 175,
-                    mainAxisSpacing: _isMobile ? 15 : 24,
-                    crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
-                    childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+                child: ValueListenableBuilder(
+                  valueListenable: _currentView,
+                  builder: (context, currentView, child) => GridView.builder(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: _isTablet ? 360 : 175,
+                      mainAxisSpacing: _isMobile ? 15 : 24,
+                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
+                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+                    ),
+                    itemBuilder: (context, index) => _albumView(),
+                    itemCount: 10,
                   ),
-                  itemBuilder: (context, index) => _albumView(),
-                  itemCount: 10,
                 ),
               ),
             ),
@@ -76,6 +80,7 @@ class _ListenPageState extends State<ListenPage> {
   @override
   void dispose() {
     _currentView.dispose();
+    _currentFilter.dispose();
     super.dispose();
   }
 
@@ -101,9 +106,42 @@ class _ListenPageState extends State<ListenPage> {
         ),
       );
 
-  Widget _settingsButton() => IconButton(
-        onPressed: () {},
-        icon: const Icon(Icons.equalizer),
+  Widget _settingsButton() => DropdownButtonHideUnderline(
+        child: ValueListenableBuilder(
+          valueListenable: _currentFilter,
+          builder: (context, currentFilter, child) => DropdownButton<Entities>(
+            icon: const Icon(Icons.equalizer),
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.2,
+            ),
+            borderRadius: BorderRadius.circular(6),
+            items: const [
+              DropdownMenuItem(
+                value: Entities.albums,
+                child: Text('Albums'),
+              ),
+              DropdownMenuItem(
+                value: Entities.artists,
+                child: Text('Artists'),
+              ),
+              DropdownMenuItem(
+                value: Entities.playlists,
+                child: Text('Playlists'),
+              ),
+              DropdownMenuItem(
+                value: Entities.songs,
+                child: Text('Songs'),
+              ),
+              DropdownMenuItem(
+                value: Entities.genres,
+                child: Text('Genres'),
+              ),
+            ],
+            value: currentFilter,
+            onChanged: (value) => _currentFilter.value = value!,
+          ),
+        ),
       );
 
   Widget _albumView() => InkWell(
@@ -128,6 +166,7 @@ class _ListenPageState extends State<ListenPage> {
               style: TextStyle(
                 fontSize: _isTablet ? 24 : 16,
                 fontWeight: FontWeight.w500,
+                height: 1.2,
                 overflow: TextOverflow.ellipsis,
               ),
               maxLines: 1,

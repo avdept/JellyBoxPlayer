@@ -34,6 +34,7 @@ class DownloadsPage extends StatelessWidget {
                     style: TextStyle(
                       fontSize: isMobile ? 24 : 36,
                       fontWeight: FontWeight.w600,
+                      height: 1.2,
                     ),
                   ),
                   const SizedBox(width: 24),
@@ -73,37 +74,36 @@ class DownloadsPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        DefaultTextStyle(
-                          style: const TextStyle(height: 1.2),
-                          child: SimpleListTile(
-                            leading: Visibility(
-                              visible: !isDesktop,
-                              child: Ink.image(
-                                image: const AssetImage(Images.albumSample),
-                                width: listItemExtent,
-                                height: listItemExtent,
-                              ),
+                        SimpleListTile(
+                          leading: Visibility(
+                            visible: !isDesktop,
+                            child: Ink.image(
+                              image: const AssetImage(Images.albumSample),
+                              width: listItemExtent,
+                              height: listItemExtent,
                             ),
-                            title: Text(
-                              'Album name',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: theme.colorScheme.onPrimary,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              maxLines: 1,
-                            ),
-                            subtitle: Text(
-                              '124.6 MB',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: theme.colorScheme.onPrimary
-                                    .withOpacity(0.61),
-                              ),
-                            ),
-                            trailing: _deleteButton(),
-                            leadingToTitle: isDesktop ? 0 : (isMobile ? 6 : 16),
                           ),
+                          title: Text(
+                            'Album name',
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.2,
+                              color: theme.colorScheme.onPrimary,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            maxLines: 1,
+                          ),
+                          subtitle: Text(
+                            '124.6 MB',
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.2,
+                              color:
+                                  theme.colorScheme.onPrimary.withOpacity(0.61),
+                            ),
+                          ),
+                          trailing: _deleteButton(),
+                          leadingToTitle: isDesktop ? 0 : (isMobile ? 6 : 16),
                         ),
                       ],
                     ),

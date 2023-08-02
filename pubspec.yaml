@@ -14,8 +14,10 @@ dependencies:
   animations: ^2.0.7
   cupertino_icons: ^1.0.5
   flutter_svg: ^2.0.7
+  freezed_annotation: ^2.4.1
   go_router: ^10.0.0
   intl: ^0.18.1
+  json_annotation: ^4.8.1
   palette_generator: ^0.3.3+2
   responsive_builder: ^0.7.0
 
@@ -25,6 +27,8 @@ dev_dependencies:
     sdk: flutter
 
   build_runner: ^2.4.6
+  freezed: ^2.4.1
+  json_serializable: ^6.7.1
   very_good_analysis: ^5.0.0+1
 
 

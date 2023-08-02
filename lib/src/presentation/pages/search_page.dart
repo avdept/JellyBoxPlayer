@@ -40,7 +40,7 @@ class _SearchPageState extends State<SearchPage> {
           children: [
             Padding(
               padding: EdgeInsets.only(
-                top: _isMobile ? 0 : 6,
+                top: _isMobile ? 0 : 4,
                 bottom: _isMobile ? 22 : 32,
               ),
               child: Flex(
@@ -65,7 +65,6 @@ class _SearchPageState extends State<SearchPage> {
               child: Material(
                 type: MaterialType.transparency,
                 clipBehavior: Clip.hardEdge,
-                textStyle: const TextStyle(height: 1.2),
                 child: CustomScrollView(
                   slivers: [
                     SliverList.separated(
@@ -112,6 +111,7 @@ class _SearchPageState extends State<SearchPage> {
         style: TextStyle(
           fontSize: _isMobile ? 24 : 36,
           fontWeight: FontWeight.w600,
+          height: 1.2,
         ),
       );
 
@@ -119,7 +119,10 @@ class _SearchPageState extends State<SearchPage> {
         controller: _searchFieldController,
         keyboardType: TextInputType.text,
         textInputAction: TextInputAction.search,
-        style: const TextStyle(fontSize: 16),
+        style: const TextStyle(
+          fontSize: 16,
+          height: 1.2,
+        ),
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white.withOpacity(0.24),
@@ -150,6 +153,7 @@ class _SearchPageState extends State<SearchPage> {
             'Rihanna',
             style: TextStyle(
               fontSize: _isTablet ? 20 : 16,
+              height: 1.2,
               color: _theme.colorScheme.onPrimary,
               overflow: TextOverflow.ellipsis,
             ),
@@ -159,6 +163,7 @@ class _SearchPageState extends State<SearchPage> {
             'Artist',
             style: TextStyle(
               fontSize: _isTablet ? 16 : 12,
+              height: 1.2,
               color: _theme.colorScheme.onPrimary.withOpacity(0.61),
             ),
           ),
@@ -182,6 +187,7 @@ class _SearchPageState extends State<SearchPage> {
             'Song name',
             style: TextStyle(
               fontSize: _isTablet ? 20 : 16,
+              height: 1.2,
               color: _theme.colorScheme.onPrimary,
               overflow: TextOverflow.ellipsis,
             ),
@@ -191,6 +197,7 @@ class _SearchPageState extends State<SearchPage> {
             'Song',
             style: TextStyle(
               fontSize: _isTablet ? 16 : 12,
+              height: 1.2,
               color: _theme.colorScheme.onPrimary.withOpacity(0.61),
             ),
           ),
