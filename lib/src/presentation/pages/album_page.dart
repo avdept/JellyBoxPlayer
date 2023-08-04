@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/presentation/widgets/bottom_player.dart';
 import 'package:jplayer/src/presentation/widgets/simple_list_tile.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -16,6 +17,7 @@ class AlbumPage extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -59,7 +61,7 @@ class AlbumPage extends StatelessWidget {
                 ),
               ),
             ),
-            _playerPanel(),
+            const BottomPlayer(),
           ],
         ),
       ),
@@ -256,7 +258,7 @@ class AlbumPage extends StatelessWidget {
           final deviceType = getDeviceType(screenSize);
           final isMobile = deviceType == DeviceScreenType.mobile;
 
-          return InkWell(
+          return GestureDetector(
             onTap: () {},
             child: SimpleListTile(
               padding: EdgeInsets.symmetric(
@@ -312,9 +314,5 @@ class AlbumPage extends StatelessWidget {
             ),
           );
         },
-      );
-
-  Widget _playerPanel() => AnimatedContainer(
-        duration: const Duration(seconds: 1),
       );
 }
