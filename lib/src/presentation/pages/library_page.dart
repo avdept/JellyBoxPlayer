@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/app_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -65,10 +66,10 @@ class LibraryPage extends StatelessWidget {
 
   Widget _searchButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.search),
+        icon: const Icon(AppIcons.search),
       );
 
-  Widget _libraryView() => InkWell(
+  Widget _libraryView() => GestureDetector(
         onTap: () {},
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

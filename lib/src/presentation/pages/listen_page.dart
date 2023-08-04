@@ -144,9 +144,8 @@ class _ListenPageState extends State<ListenPage> {
         ),
       );
 
-  Widget _albumView() => InkWell(
+  Widget _albumView() => GestureDetector(
         onTap: () {},
-        borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

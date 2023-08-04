@@ -60,7 +60,7 @@ class DownloadsPage extends StatelessWidget {
                     childAspectRatio: 245 / 298.2,
                     mainAxisExtent: isDesktop ? null : listItemExtent,
                   ),
-                  itemBuilder: (context, index) => InkWell(
+                  itemBuilder: (context, index) => GestureDetector(
                     onTap: () {},
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

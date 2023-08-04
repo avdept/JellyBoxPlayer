@@ -27,7 +27,7 @@ dev_dependencies:
     sdk: flutter
 
   build_runner: ^2.4.6
-  freezed: ^2.4.1
+  freezed: ^2.4.2
   json_serializable: ^6.7.1
   very_good_analysis: ^5.0.0+1
 
@@ -80,6 +80,9 @@ flutter:
           weight: 800
         - asset: assets/fonts/Inter/Inter-Black.ttf
           weight: 900
+    - family: AppIcons
+      fonts:
+        - asset: assets/fonts/AppIcons.ttf
 
 flutter_intl:
   enabled: true

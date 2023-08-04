@@ -80,6 +80,7 @@ class CustomNavigationRail extends StatelessWidget {
         foregroundColor: selected ? selectedItemColor : unselectedItemColor,
         backgroundColor: selected ? destinations[index].indicatorColor : null,
         shape: destinations[index].indicatorShape as OutlinedBorder?,
+        splashFactory: NoSplash.splashFactory,
         padding: destinations[index].padding,
         minimumSize: const Size.fromHeight(40),
         alignment: Alignment.centerLeft,

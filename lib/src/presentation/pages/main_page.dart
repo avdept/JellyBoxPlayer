@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/resources/app_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -22,10 +24,10 @@ class _MainPageState extends State<MainPage> {
   late Size _screenSize;
 
   Set<(IconData, String, String)> get _menuItems => {
-        (Icons.play_circle_outline, 'Listen', Routes.listen),
-        (Icons.search, 'Search', Routes.search),
-        (Icons.settings, 'Settings', Routes.settings),
-        (Icons.download, 'Downloads', Routes.downloads),
+        (AppIcons.playCircleOutlined, 'Listen', Routes.listen),
+        (AppIcons.search, 'Search', Routes.search),
+        (AppIcons.settings, 'Settings', Routes.settings),
+        (AppIcons.download, 'Downloads', Routes.downloads),
       };
 
   void _navigateToItem(int index) => context.go(_menuItems.elementAt(index).$3);
@@ -101,12 +103,11 @@ class _MainPageState extends State<MainPage> {
       ),
       bottomNavigationBar: Visibility(
         visible: !isDesktop,
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: _theme.colorScheme.primary,
-          unselectedItemColor: _theme.colorScheme.onPrimary,
-          selectedFontSize: 12,
+        child: CupertinoTabBar(
+          activeColor: _theme.colorScheme.primary,
+          inactiveColor: _theme.colorScheme.onPrimary,
           iconSize: isMobile ? 28 : 60,
+          height: isMobile ? 56 : 88,
           currentIndex: currentIndex ?? 0,
           onTap: _navigateToItem,
           items: List.generate(
@@ -116,9 +117,6 @@ class _MainPageState extends State<MainPage> {
               label: _menuItems.elementAt(index).$2,
             ),
           ),
-          landscapeLayout: isMobile
-              ? BottomNavigationBarLandscapeLayout.spread
-              : BottomNavigationBarLandscapeLayout.centered,
         ),
       ),
     );

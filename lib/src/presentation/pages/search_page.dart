@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/app_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -132,16 +134,16 @@ class _SearchPageState extends State<SearchPage> {
             borderSide: BorderSide.none,
             borderRadius: BorderRadius.circular(40),
           ),
-          prefixIcon: const Icon(Icons.search),
+          prefixIcon: const Icon(AppIcons.search),
           suffixIcon: IconButton(
             onPressed: _searchFieldController.clear,
             padding: EdgeInsets.zero,
-            icon: const Icon(Icons.clear),
+            icon: const Icon(CupertinoIcons.clear),
           ),
         ),
       );
 
-  Widget _artistView() => InkWell(
+  Widget _artistView() => GestureDetector(
         onTap: () {},
         child: SimpleListTile(
           leading: Ink.image(
@@ -169,13 +171,13 @@ class _SearchPageState extends State<SearchPage> {
           ),
           trailing: IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.chevron_right),
+            icon: const Icon(CupertinoIcons.chevron_right),
           ),
           leadingToTitle: _isMobile ? 6 : (_isTablet ? 16 : 20),
         ),
       );
 
-  Widget _songView() => InkWell(
+  Widget _songView() => GestureDetector(
         onTap: () {},
         child: SimpleListTile(
           leading: Ink.image(
@@ -203,7 +205,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
           trailing: IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.more_horiz),
+            icon: const Icon(CupertinoIcons.ellipsis),
           ),
           leadingToTitle: _isMobile ? 6 : 16,
         ),

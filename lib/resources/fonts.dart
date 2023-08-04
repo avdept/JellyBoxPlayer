@@ -5,4 +5,5 @@ class FontFamily {
 
   static const String gilroy = 'Gilroy';
   static const String inter = 'Inter';
+  static const String appIcons = 'AppIcons';
 }
