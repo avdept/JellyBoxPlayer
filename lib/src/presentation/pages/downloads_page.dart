@@ -17,12 +17,16 @@ class DownloadsPage extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        minimum: EdgeInsets.all(isMobile ? 16 : 30),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.only(bottom: isMobile ? 22 : 32),
+              padding: EdgeInsets.only(
+                left: isMobile ? 16 : 30,
+                top: isMobile ? 16 : 30,
+                right: isMobile ? 16 : 30,
+                bottom: isMobile ? 22 : 32,
+              ),
               child: Flex(
                 direction: isMobile ? Axis.vertical : Axis.horizontal,
                 crossAxisAlignment: isMobile
@@ -53,12 +57,15 @@ class DownloadsPage extends StatelessWidget {
                 type: MaterialType.transparency,
                 clipBehavior: Clip.hardEdge,
                 child: GridView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 30 : 0),
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: isDesktop ? 245 : screenSize.width,
-                    mainAxisSpacing: isMobile ? 12 : 24,
+                    mainAxisSpacing: isDesktop ? 24 : 0,
                     crossAxisSpacing: 30,
                     childAspectRatio: 245 / 298.2,
-                    mainAxisExtent: isDesktop ? null : listItemExtent,
+                    mainAxisExtent: !isDesktop
+                        ? listItemExtent + (isMobile ? 12 : 24)
+                        : null,
                   ),
                   itemBuilder: (context, index) => GestureDetector(
                     onTap: () {},
@@ -75,6 +82,12 @@ class DownloadsPage extends StatelessWidget {
                           ),
                         ),
                         SimpleListTile(
+                          padding: isDesktop
+                              ? EdgeInsets.zero
+                              : EdgeInsets.symmetric(
+                                  vertical: isMobile ? 6 : 12,
+                                  horizontal: isMobile ? 16 : 30,
+                                ),
                           leading: Offstage(
                             offstage: isDesktop,
                             child: Ink.image(

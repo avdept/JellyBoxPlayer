@@ -37,12 +37,13 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        minimum: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
         child: Column(
           children: [
             Padding(
               padding: EdgeInsets.only(
+                left: _isMobile ? 16 : 30,
                 top: _isMobile ? 0 : 3.5,
+                right: _isMobile ? 16 : 30,
                 bottom: _isMobile ? 22 : 32,
               ),
               child: Flex(
@@ -85,8 +86,7 @@ class _SearchPageState extends State<SearchPage> {
                       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent:
                             _isDesktop ? 360 : _screenSize.width,
-                        mainAxisExtent: _isMobile ? 42 : 50,
-                        mainAxisSpacing: _isMobile ? 12 : 24,
+                        mainAxisExtent: _isMobile ? 54 : 74,
                         crossAxisSpacing: 70,
                       ),
                       itemBuilder: (context, index) => _songView(),
@@ -146,6 +146,10 @@ class _SearchPageState extends State<SearchPage> {
   Widget _artistView() => GestureDetector(
         onTap: () {},
         child: SimpleListTile(
+          padding: EdgeInsets.symmetric(
+            // vertical: _isMobile ? 6 : 12,
+            horizontal: _isMobile ? 16 : 30,
+          ),
           leading: Ink.image(
             image: const AssetImage(Images.artistSample),
             width: _isMobile ? 42 : 80,
@@ -180,6 +184,10 @@ class _SearchPageState extends State<SearchPage> {
   Widget _songView() => GestureDetector(
         onTap: () {},
         child: SimpleListTile(
+          padding: EdgeInsets.symmetric(
+            vertical: _isMobile ? 6 : 12,
+            horizontal: _isMobile ? 16 : 30,
+          ),
           leading: Ink.image(
             image: const AssetImage(Images.songSample),
             width: _isMobile ? 42 : 50,
