@@ -13,6 +13,7 @@ class BottomPlayer extends StatefulWidget {
 class _BottomPlayerState extends State<BottomPlayer> {
   final _playProgress = ValueNotifier<double>(0.6);
 
+  late ThemeData _theme;
   late EdgeInsets _viewPadding;
   late Size _screenSize;
   late bool _isMobile;
@@ -128,6 +129,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _theme = Theme.of(context);
     _viewPadding = MediaQuery.viewPaddingOf(context);
     _screenSize = MediaQuery.sizeOf(context);
 
@@ -218,6 +220,8 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
   Widget _playPauseButton() => FloatingActionButton(
         onPressed: () {},
+        foregroundColor: _theme.scaffoldBackgroundColor,
+        backgroundColor: _theme.iconTheme.color,
         elevation: 0,
         shape: const CircleBorder(),
         child: const AnimatedIcon(
