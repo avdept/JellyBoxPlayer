@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class DownloadsPage extends StatelessWidget {
   const DownloadsPage({super.key});
+
+  void _onAlbumTap(BuildContext context) {
+    final location = GoRouterState.of(context).fullPath;
+    context.go('$location${Routes.album}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +75,8 @@ class DownloadsPage extends StatelessWidget {
                         : null,
                   ),
                   itemBuilder: (context, index) => GestureDetector(
-                    onTap: () {},
+                    onTap: () => _onAlbumTap(context),
+                    behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

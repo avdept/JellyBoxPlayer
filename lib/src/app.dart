@@ -77,10 +77,24 @@ class _AppState extends State<App> {
               GoRoute(
                 path: Routes.listen,
                 pageBuilder: widget.screenFactory.listenPage,
+                routes: [
+                  GoRoute(
+                    path: Routes.album.name,
+                    pageBuilder: widget.screenFactory.albumPage,
+                    parentNavigatorKey: _rootNavigatorKey,
+                  ),
+                ],
               ),
               GoRoute(
                 path: Routes.search,
                 pageBuilder: widget.screenFactory.searchPage,
+                routes: [
+                  GoRoute(
+                    path: Routes.album.name,
+                    pageBuilder: widget.screenFactory.albumPage,
+                    parentNavigatorKey: _rootNavigatorKey,
+                  ),
+                ],
               ),
               GoRoute(
                 path: Routes.settings,
@@ -102,17 +116,17 @@ class _AppState extends State<App> {
         ],
         redirect: (context, router) async {
           final authenticated = _authState.value;
-          final location = router.uri.toString();
+          final matchedLocation = router.matchedLocation;
 
           if (authenticated == null) {
             return Routes.root;
           } else if (authenticated) {
-            if (location.startsWith(Routes.listen)) return null;
-            if (location.startsWith(Routes.search)) return null;
-            if (location.startsWith(Routes.settings)) return null;
-            if (location.startsWith(Routes.downloads)) return null;
-            return Routes.album;
-          } else if (!location.startsWith(Routes.login)) {
+            if (matchedLocation.startsWith(Routes.listen)) return null;
+            if (matchedLocation.startsWith(Routes.search)) return null;
+            if (matchedLocation.startsWith(Routes.settings)) return null;
+            if (matchedLocation.startsWith(Routes.downloads)) return null;
+            return Routes.library;
+          } else if (matchedLocation != Routes.login) {
             return Routes.login;
           }
 

@@ -6,7 +6,7 @@ abstract class Routes {
   static const search = '/search';
   static const settings = '/settings';
   static const downloads = '/downloads';
-  static const album = '$downloads/album';
+  static const album = '/album';
 }
 
 extension RouteName on String {

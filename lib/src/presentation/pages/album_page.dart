@@ -260,6 +260,7 @@ class AlbumPage extends StatelessWidget {
 
           return GestureDetector(
             onTap: () {},
+            behavior: HitTestBehavior.opaque,
             child: SimpleListTile(
               padding: EdgeInsets.symmetric(
                 vertical: 12,
