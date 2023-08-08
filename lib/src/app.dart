@@ -5,6 +5,8 @@ import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/screen_factory.dart';
+import 'package:palette_generator/palette_generator.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class App extends StatefulWidget {
@@ -25,8 +27,24 @@ class _AppState extends State<App> {
   final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(true);
 
+  PaletteGenerator? _paletteGenerator;
+  ColorScheme? _colorScheme;
+  late Brightness _brightness;
   late Size _screenSize;
   late bool _isDesktop;
+
+  Future<void> _updateUIColors(ImageProvider imageProvider) async {
+    final darkTheme = _brightness == Brightness.dark;
+    _paletteGenerator = await PaletteGenerator.fromImageProvider(
+      imageProvider,
+    );
+    _colorScheme = await ColorScheme.fromImageProvider(
+      provider: imageProvider,
+      brightness: _brightness,
+      background: darkTheme ? Colors.black : Colors.white,
+      onBackground: darkTheme ? Colors.white : Colors.black,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -35,6 +53,10 @@ class _AppState extends State<App> {
 
     final deviceType = getDeviceType(_screenSize);
     _isDesktop = deviceType == DeviceScreenType.desktop;
+
+    _brightness = context.watch<Brightness>();
+    final imageProvider = context.watch<ImageProvider>();
+    _updateUIColors(imageProvider);
   }
 
   @override
@@ -111,6 +133,10 @@ class _AppState extends State<App> {
                   ),
                 ],
               ),
+              GoRoute(
+                path: Routes.palette,
+                pageBuilder: widget.screenFactory.palettePage,
+              ),
             ],
           ),
         ],
@@ -125,6 +151,7 @@ class _AppState extends State<App> {
             if (matchedLocation.startsWith(Routes.search)) return null;
             if (matchedLocation.startsWith(Routes.settings)) return null;
             if (matchedLocation.startsWith(Routes.downloads)) return null;
+            if (matchedLocation.startsWith(Routes.palette)) return null;
             return Routes.library;
           } else if (matchedLocation != Routes.login) {
             return Routes.login;
@@ -137,40 +164,43 @@ class _AppState extends State<App> {
       theme: ThemeData(
         useMaterial3: true,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        brightness: Brightness.dark,
         fontFamily: FontFamily.gilroy,
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFD2F2F),
-          onPrimary: Colors.white,
+        colorScheme: _colorScheme,
+        cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
+          barBackgroundColor: _paletteGenerator?.darkVibrantColor?.color,
         ),
-        scaffoldBackgroundColor: Colors.black,
-        bottomSheetTheme: const BottomSheetThemeData(
-          backgroundColor: Color(0xFF471F27),
-          shape: RoundedRectangleBorder(
+        bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: _paletteGenerator?.darkVibrantColor?.color,
+          shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
           ),
           showDragHandle: true,
-          dragHandleSize: Size(113, 10),
+          dragHandleSize: const Size(113, 10),
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF471F27),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: _paletteGenerator?.darkVibrantColor?.color,
         ),
-        navigationRailTheme: const NavigationRailThemeData(
-          backgroundColor: Color(0xFF471F27),
+        navigationRailTheme: NavigationRailThemeData(
+          backgroundColor: _paletteGenerator?.darkVibrantColor?.color,
+          // indicatorColor: const Color(0xFF341010),
+          indicatorShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(7),
+          ),
         ),
         chipTheme: ChipThemeData(
           labelPadding: const EdgeInsets.symmetric(horizontal: 11),
-          backgroundColor: const Color(0xFF362A30),
           selectedColor: const Color(0xFF0066FF),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           side: BorderSide.none,
         ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFF0066FF),
+        ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
-            foregroundColor: Colors.white,
             textStyle: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,

@@ -1,4 +1,5 @@
 export 'album_page.dart';
+export 'color_pallete_page.dart';
 export 'downloads_page.dart';
 export 'initial_page.dart';
 export 'library_page.dart';

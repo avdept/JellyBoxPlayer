@@ -19,6 +19,7 @@ dependencies:
   intl: ^0.18.1
   json_annotation: ^4.8.1
   palette_generator: ^0.3.3+2
+  provider: ^6.0.5
   responsive_builder: ^0.7.0
 
 
