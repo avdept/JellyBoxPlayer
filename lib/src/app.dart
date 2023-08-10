@@ -144,6 +144,16 @@ class _AppState extends State<App> {
           onPrimary: Colors.white,
         ),
         scaffoldBackgroundColor: Colors.black,
+        cupertinoOverrideTheme: const NoDefaultCupertinoThemeData(
+          barBackgroundColor: Color(0xFF471F27),
+          scaffoldBackgroundColor: Colors.black,
+        ),
+        sliderTheme: const SliderThemeData(
+          trackHeight: 4,
+          overlayColor: Colors.transparent,
+          thumbColor: Colors.white,
+          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 16),
+        ),
         bottomSheetTheme: const BottomSheetThemeData(
           backgroundColor: Color(0xFF471F27),
           shape: RoundedRectangleBorder(
@@ -166,6 +176,11 @@ class _AppState extends State<App> {
             borderRadius: BorderRadius.circular(20),
           ),
           side: BorderSide.none,
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFF0066FF),
+          elevation: 0,
+          shape: CircleBorder(),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
