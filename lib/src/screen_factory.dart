@@ -83,6 +83,17 @@ class ScreenFactory {
     );
   }
 
+  Page<void> palettePage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return NoTransitionPage(
+      key: router.pageKey,
+      name: router.path,
+      child: const ColorPalettePage(),
+    );
+  }
+
   Page<void> searchPage(
     BuildContext context,
     GoRouterState router,

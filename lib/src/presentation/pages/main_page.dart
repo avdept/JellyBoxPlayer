@@ -28,6 +28,7 @@ class _MainPageState extends State<MainPage> {
         (AppIcons.search, 'Search', Routes.search),
         (AppIcons.settings, 'Settings', Routes.settings),
         (AppIcons.download, 'Downloads', Routes.downloads),
+        (Icons.palette, 'Palette', Routes.palette),
       };
 
   void _navigateToItem(int index) => context.go(_menuItems.elementAt(index).$3);
@@ -86,10 +87,6 @@ class _MainPageState extends State<MainPage> {
                 (index) => NavigationRailDestination(
                   icon: Icon(_menuItems.elementAt(index).$1),
                   label: Text(_menuItems.elementAt(index).$2),
-                  indicatorColor: const Color(0xFF341010),
-                  indicatorShape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(7),
-                  ),
                   padding: const EdgeInsets.symmetric(
                     vertical: 8,
                     horizontal: 10,

@@ -36,13 +36,13 @@ class CustomNavigationRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = NavigationRailTheme.of(context);
 
     return SizedBox(
       width: width,
       child: Material(
-        color: backgroundColor ?? theme.navigationRailTheme.backgroundColor,
-        elevation: elevation ?? theme.navigationRailTheme.elevation ?? 0,
+        color: backgroundColor ?? theme.backgroundColor,
+        elevation: elevation ?? theme.elevation ?? 0,
         child: SafeArea(
           left: false,
           right: false,
