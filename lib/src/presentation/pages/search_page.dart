@@ -1,7 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/app_icons.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -141,11 +140,11 @@ class _SearchPageState extends State<SearchPage> {
             borderSide: BorderSide.none,
             borderRadius: BorderRadius.circular(40),
           ),
-          prefixIcon: const Icon(AppIcons.search),
+          prefixIcon: const Icon(JPlayer.search),
           suffixIcon: IconButton(
             onPressed: _searchFieldController.clear,
             padding: EdgeInsets.zero,
-            icon: const Icon(CupertinoIcons.clear),
+            icon: const Icon(JPlayer.close),
           ),
         ),
       );
@@ -183,7 +182,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
           trailing: IconButton(
             onPressed: () {},
-            icon: const Icon(CupertinoIcons.chevron_right),
+            icon: const Icon(JPlayer.chevron_right),
           ),
           leadingToTitle: _isMobile ? 6 : (_isTablet ? 16 : 20),
         ),
@@ -222,7 +221,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
           trailing: IconButton(
             onPressed: () {},
-            icon: const Icon(CupertinoIcons.ellipsis),
+            icon: const Icon(JPlayer.more_horizontal),
           ),
           leadingToTitle: _isMobile ? 6 : 16,
         ),

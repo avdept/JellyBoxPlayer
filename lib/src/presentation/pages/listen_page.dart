@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -117,7 +118,7 @@ class _ListenPageState extends State<ListenPage> {
         child: ValueListenableBuilder(
           valueListenable: _currentFilter,
           builder: (context, currentFilter, child) => DropdownButton<Entities>(
-            icon: const Icon(Icons.equalizer),
+            icon: const Icon(JPlayer.sliders),
             style: const TextStyle(
               fontSize: 14,
               height: 1.2,

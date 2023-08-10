@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -43,13 +44,13 @@ class SettingsPage extends StatelessWidget {
 
   Widget _librariesButton() => TextButton.icon(
         onPressed: () {},
-        icon: const Icon(Icons.music_note),
+        icon: const Icon(JPlayer.music),
         label: const Text('Music libraries'),
       );
 
   Widget _logOutButton() => TextButton.icon(
         onPressed: () {},
-        icon: const Icon(Icons.logout),
+        icon: const Icon(JPlayer.log_out),
         label: const Text('Log out'),
       );
 }

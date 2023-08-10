@@ -1,4 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/entypo_icons.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -11,7 +14,13 @@ class BottomPlayer extends StatefulWidget {
 }
 
 class _BottomPlayerState extends State<BottomPlayer> {
+  final _imageProvider = ValueNotifier<ImageProvider?>(null);
+  final _dynamicColors = ValueNotifier<ColorScheme?>(null);
   final _playProgress = ValueNotifier<double>(0.6);
+  final _isPlaying = ValueNotifier<bool>(false);
+  final _randomQueue = ValueNotifier<bool>(false);
+  final _repeatTrack = ValueNotifier<bool>(false);
+  final _likeTrack = ValueNotifier<bool>(false);
   final _sliderKey = GlobalKey(debugLabel: 'slider');
 
   late ThemeData _theme;
@@ -20,11 +29,12 @@ class _BottomPlayerState extends State<BottomPlayer> {
   late Size _screenSize;
   late bool _isMobile;
 
-  Future<void> _onExpand() => showModalBottomSheet(
+  Future<void> _onExpand() => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useRootNavigator: true,
         constraints: const BoxConstraints(minWidth: double.infinity),
+        backgroundColor: _dynamicColors.value?.background,
         builder: (context) => SafeArea(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 518),
@@ -35,92 +45,137 @@ class _BottomPlayerState extends State<BottomPlayer> {
                 right: 30,
                 bottom: _isMobile ? 32 : 60,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 444),
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: Image.asset(
-                              Images.songSample,
-                              fit: BoxFit.cover,
+              child: ValueListenableBuilder(
+                valueListenable: _dynamicColors,
+                builder: (context, colorScheme, child) => Theme(
+                  data: Theme.of(context).copyWith(colorScheme: colorScheme),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 444),
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: ValueListenableBuilder(
+                                  valueListenable: _imageProvider,
+                                  builder: (context, image, child) =>
+                                      (image == null)
+                                          ? const SizedBox.shrink()
+                                          : Image(
+                                              image: image,
+                                              fit: BoxFit.cover,
+                                            ),
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(height: _isMobile ? 6 : 18),
+                            IconTheme(
+                              data: _iconTheme.copyWith(
+                                size: _isMobile ? 28 : 24,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _openListButton(),
+                                  _randomQueueButton(),
+                                  _repeatTrackButton(),
+                                  _downloadTrackButton(),
+                                  _likeTrackButton(),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: _isMobile ? 6 : 18),
-                        IconTheme(
-                          data: _iconTheme.copyWith(size: _isMobile ? 28 : 24),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _openListButton(),
-                              _randomQueueButton(),
-                              _repeatTrackButton(),
-                              _downloadTrackButton(),
-                              _likeTrackButton(),
-                            ],
-                          ),
+                      ),
+                      SizedBox(height: _isMobile ? 30 : 26),
+                      Text(
+                        'Song Title',
+                        style: TextStyle(
+                          fontSize: _isMobile ? 30 : 40,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
+                        maxLines: 1,
+                      ),
+                      Text(
+                        'Artist',
+                        style: TextStyle(
+                          fontSize: _isMobile ? 18 : 24,
+                          height: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: _isMobile ? 17 : 0),
+                      Text(
+                        'FLAC 44.1Khz/1080Kbps',
+                        style: TextStyle(
+                          fontSize: _isMobile ? 14 : 18,
+                          color: colorScheme?.onPrimary,
+                          height: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: _isMobile ? 15 : 21),
+                      Container(
+                        width: double.infinity,
+                        height: _isMobile ? 78 : 120,
+                        color: colorScheme?.primary,
+                      ),
+                      SizedBox(height: _isMobile ? 23 : 56),
+                      IconTheme(
+                        data: _iconTheme.copyWith(size: _isMobile ? 37 : 46),
+                        child: Wrap(
+                          spacing: _isMobile ? 40 : 24,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            _prevTrackButton(),
+                            SizedBox.square(
+                              dimension: _isMobile ? 68 : 84,
+                              child: _playPauseButton(),
+                            ),
+                            _nextTrackButton(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: _isMobile ? 30 : 26),
-                  Text(
-                    'Song Title',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 30 : 40,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  ),
-                  Text(
-                    'Artist',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 18 : 24,
-                      height: 1.2,
-                    ),
-                  ),
-                  SizedBox(height: _isMobile ? 17 : 0),
-                  Text(
-                    'FLAC 44.1Khz/1080Kbps',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 14 : 18,
-                      color: const Color(0xFF9FAEC5),
-                      height: 1.2,
-                    ),
-                  ),
-                  SizedBox(height: _isMobile ? 15 : 21),
-                  Container(
-                    width: double.infinity,
-                    height: _isMobile ? 78 : 120,
-                    color: Colors.red,
-                  ),
-                  SizedBox(height: _isMobile ? 23 : 56),
-                  IconTheme(
-                    data: _iconTheme.copyWith(size: _isMobile ? 64 : 86),
-                    child: Wrap(
-                      spacing: _isMobile ? 32 : 16,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _prevTrackButton(),
-                        _playPauseButton(),
-                        _nextTrackButton(),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       );
+
+  Future<void> _onImageProviderChanged() async {
+    final imageProvider = _imageProvider.value;
+
+    if (imageProvider != null) {
+      _dynamicColors.value = await ColorScheme.fromImageProvider(
+        provider: imageProvider,
+        brightness: _theme.brightness,
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _imageProvider.addListener(_onImageProviderChanged);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _imageProvider.value = const AssetImage(Images.songSample),
+    );
+    Future.delayed(
+      const Duration(seconds: 3),
+      () {
+        if (!mounted) return;
+        _imageProvider.value = const AssetImage(Images.coverSample);
+      },
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -174,18 +229,12 @@ class _BottomPlayerState extends State<BottomPlayer> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (!_isMobile) _randomQueueButton(),
-                  IconTheme(
-                    data: _iconTheme.copyWith(size: 45),
-                    child: _prevTrackButton(),
-                  ),
-                  IconTheme(
-                    data: _iconTheme.copyWith(size: 45),
+                  _prevTrackButton(),
+                  SizedBox.square(
+                    dimension: 45,
                     child: _playPauseButton(),
                   ),
-                  IconTheme(
-                    data: _iconTheme.copyWith(size: 45),
-                    child: _nextTrackButton(),
-                  ),
+                  _nextTrackButton(),
                   if (!_isMobile) _repeatTrackButton(),
                 ],
               ),
@@ -225,56 +274,66 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
   @override
   void dispose() {
+    _imageProvider.dispose();
+    _dynamicColors.dispose();
     _playProgress.dispose();
+    _isPlaying.dispose();
+    _randomQueue.dispose();
+    _repeatTrack.dispose();
+    _likeTrack.dispose();
     super.dispose();
   }
 
-  Widget _playPauseButton() => IconButton(
-        onPressed: () {},
-        icon: Stack(
-          children: [
-            const Icon(Icons.circle),
-            AnimatedIcon(
-              icon: AnimatedIcons.play_pause,
-              progress: const AlwaysStoppedAnimation(0),
-              color: _theme.scaffoldBackgroundColor,
-            ),
-          ],
-        ),
-      );
-
-  Widget _openListButton() => IconButton(
-        onPressed: () {},
-        icon: const Icon(Icons.list),
-      );
-
-  Widget _randomQueueButton() => IconButton(
-        onPressed: () {},
-        icon: const Icon(Icons.question_mark),
+  Widget _playPauseButton() => PlayPauseButton(
+        onPressed: () => _isPlaying.value = !_isPlaying.value,
+        stateNotifier: _isPlaying,
       );
 
   Widget _prevTrackButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.skip_previous),
+        icon: const Icon(Entypo.fast_backward),
       );
 
   Widget _nextTrackButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.skip_next),
+        icon: const Icon(Entypo.fast_forward),
       );
 
-  Widget _repeatTrackButton() => IconButton(
+  Widget _openListButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.repeat),
+        icon: const Icon(CupertinoIcons.list_bullet),
+      );
+
+  Widget _randomQueueButton() => ValueListenableBuilder(
+        valueListenable: _randomQueue,
+        builder: (context, isRandom, child) => IconButton(
+          onPressed: () => _randomQueue.value = !isRandom,
+          icon: const Icon(JPlayer.mix),
+          isSelected: isRandom,
+        ),
+      );
+
+  Widget _repeatTrackButton() => ValueListenableBuilder(
+        valueListenable: _repeatTrack,
+        builder: (context, isRepeated, child) => IconButton(
+          onPressed: () => _repeatTrack.value = !isRepeated,
+          icon: const Icon(JPlayer.repeat),
+          isSelected: isRepeated,
+        ),
       );
 
   Widget _downloadTrackButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.download),
+        icon: const Icon(JPlayer.download),
       );
 
-  Widget _likeTrackButton() => IconButton(
-        onPressed: () {},
-        icon: const Icon(Icons.favorite),
+  Widget _likeTrackButton() => ValueListenableBuilder(
+        valueListenable: _likeTrack,
+        builder: (context, isLiked, child) => IconButton(
+          onPressed: () => _likeTrack.value = !isLiked,
+          icon: const Icon(CupertinoIcons.heart),
+          selectedIcon: const Icon(CupertinoIcons.heart_fill),
+          isSelected: isLiked,
+        ),
       );
 }

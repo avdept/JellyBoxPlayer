@@ -80,9 +80,12 @@ flutter:
           weight: 800
         - asset: assets/fonts/Inter/Inter-Black.ttf
           weight: 900
-    - family: AppIcons
+    - family: JPlayer
       fonts:
-        - asset: assets/fonts/AppIcons.ttf
+        - asset: assets/fonts/JPlayer.ttf
+    - family: Entypo
+      fonts:
+        - asset: assets/fonts/Entypo.ttf
 
 flutter_intl:
   enabled: true

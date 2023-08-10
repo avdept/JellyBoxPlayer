@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -142,6 +143,6 @@ class DownloadsPage extends StatelessWidget {
   Widget _deleteButton() => IconButton(
         onPressed: () {},
         padding: EdgeInsets.zero,
-        icon: const Icon(Icons.delete_outline),
+        icon: const Icon(JPlayer.trash_2),
       );
 }

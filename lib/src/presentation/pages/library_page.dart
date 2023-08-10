@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/app_icons.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -70,7 +70,7 @@ class LibraryPage extends StatelessWidget {
 
   Widget _searchButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(AppIcons.search),
+        icon: const Icon(JPlayer.search),
       );
 
   Widget _libraryView() => Builder(

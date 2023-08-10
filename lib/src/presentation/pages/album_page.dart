@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/bottom_player.dart';
 import 'package:jplayer/src/presentation/widgets/simple_list_tile.dart';
@@ -186,19 +187,22 @@ class AlbumPage extends StatelessWidget {
         },
       );
 
-  Widget _playAlbumButton() => FloatingActionButton(
+  Widget _playAlbumButton() => MaterialButton(
         onPressed: () {},
+        color: const Color(0xFF0066FF),
+        shape: const CircleBorder(),
+        padding: const EdgeInsets.all(8),
         child: const Icon(Icons.play_arrow_outlined),
       );
 
   Widget _downloadAlbumButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.download),
+        icon: const Icon(JPlayer.download),
       );
 
   Widget _randomQueueButton() => IconButton(
         onPressed: () {},
-        icon: const Icon(Icons.question_mark),
+        icon: const Icon(JPlayer.mix),
       );
 
   Widget _albumDetails({
@@ -222,7 +226,7 @@ class AlbumPage extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(right: 6),
-            child: Icon(Icons.alarm),
+            child: Icon(JPlayer.clock),
           ),
           Text(
             [
@@ -234,7 +238,7 @@ class AlbumPage extends StatelessWidget {
           divider,
           const Padding(
             padding: EdgeInsets.only(right: 6),
-            child: Icon(Icons.music_note_outlined),
+            child: Icon(JPlayer.music),
           ),
           Text('$soundsCount songs'),
           if (year != null) ...[
@@ -304,7 +308,8 @@ class AlbumPage extends StatelessWidget {
               trailing: SizedBox.square(
                 dimension: 30,
                 child: CircularProgressIndicator(
-                  value: 0.6,
+                  value: 0.8,
+                  color: const Color(0xFF0066FF),
                   backgroundColor: theme.colorScheme.onPrimary,
                   strokeWidth: 2,
                 ),

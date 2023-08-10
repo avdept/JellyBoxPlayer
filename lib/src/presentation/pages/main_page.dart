@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/app_icons.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -24,10 +24,10 @@ class _MainPageState extends State<MainPage> {
   late Size _screenSize;
 
   Set<(IconData, String, String)> get _menuItems => {
-        (AppIcons.playCircleOutlined, 'Listen', Routes.listen),
-        (AppIcons.search, 'Search', Routes.search),
-        (AppIcons.settings, 'Settings', Routes.settings),
-        (AppIcons.download, 'Downloads', Routes.downloads),
+        (JPlayer.play_circle_outlined, 'Listen', Routes.listen),
+        (JPlayer.search, 'Search', Routes.search),
+        (JPlayer.settings, 'Settings', Routes.settings),
+        (JPlayer.download, 'Downloads', Routes.downloads),
       };
 
   void _navigateToItem(int index) => context.go(_menuItems.elementAt(index).$3);
@@ -76,7 +76,7 @@ class _MainPageState extends State<MainPage> {
               ),
               trailing: TextButton.icon(
                 onPressed: () {},
-                icon: const Icon(Icons.logout),
+                icon: const Icon(JPlayer.log_out),
                 label: const Text('Log out'),
               ),
               selectedIndex: currentIndex,

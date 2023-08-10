@@ -177,11 +177,6 @@ class _AppState extends State<App> {
           ),
           side: BorderSide.none,
         ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Color(0xFF0066FF),
-          elevation: 0,
-          shape: CircleBorder(),
-        ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
