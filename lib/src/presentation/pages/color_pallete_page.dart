@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:palette_generator/palette_generator.dart';
-import 'package:provider/provider.dart';
 
 const Color _kBackgroundColor = Color(0xffa0a0a0);
 const Color _kPlaceholderColor = Color(0x80404040);
@@ -19,15 +19,6 @@ class _ColorPalettePageState extends State<ColorPalettePage> {
   ColorScheme? colorScheme;
 
   late ImageProvider imageProvider;
-  late Brightness _brightness;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _brightness = context.watch<Brightness>();
-    imageProvider = context.watch<ImageProvider>();
-    _updatePaletteGenerator();
-  }
 
   Future<void> _updatePaletteGenerator() async {
     paletteGenerator = await PaletteGenerator.fromImageProvider(
@@ -35,9 +26,16 @@ class _ColorPalettePageState extends State<ColorPalettePage> {
     );
     colorScheme = await ColorScheme.fromImageProvider(
       provider: imageProvider,
-      brightness: _brightness,
+      brightness: Brightness.dark,
     );
-    setState(() {});
+    // setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    imageProvider = const AssetImage(Images.coverSample);
+    _updatePaletteGenerator();
   }
 
   @override

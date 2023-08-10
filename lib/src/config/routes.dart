@@ -6,7 +6,6 @@ abstract class Routes {
   static const search = '/search';
   static const settings = '/settings';
   static const downloads = '/downloads';
-  static const palette = '/palette';
   static const album = '/album';
 }
 

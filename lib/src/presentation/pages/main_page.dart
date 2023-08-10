@@ -28,7 +28,6 @@ class _MainPageState extends State<MainPage> {
         (AppIcons.search, 'Search', Routes.search),
         (AppIcons.settings, 'Settings', Routes.settings),
         (AppIcons.download, 'Downloads', Routes.downloads),
-        (Icons.palette, 'Palette', Routes.palette),
       };
 
   void _navigateToItem(int index) => context.go(_menuItems.elementAt(index).$3);

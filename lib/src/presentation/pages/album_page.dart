@@ -188,8 +188,6 @@ class AlbumPage extends StatelessWidget {
 
   Widget _playAlbumButton() => FloatingActionButton(
         onPressed: () {},
-        elevation: 0,
-        shape: const CircleBorder(),
         child: const Icon(Icons.play_arrow_outlined),
       );
 

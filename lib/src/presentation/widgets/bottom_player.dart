@@ -12,6 +12,7 @@ class BottomPlayer extends StatefulWidget {
 
 class _BottomPlayerState extends State<BottomPlayer> {
   final _playProgress = ValueNotifier<double>(0.6);
+  final _sliderKey = GlobalKey(debugLabel: 'slider');
 
   late ThemeData _theme;
   late IconThemeData _iconTheme;
@@ -30,7 +31,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
                 left: 30,
-                top: _isMobile ? 0 : 40,
+                top: _isMobile ? 0 : 20,
                 right: 30,
                 bottom: _isMobile ? 32 : 60,
               ),
@@ -139,8 +140,8 @@ class _BottomPlayerState extends State<BottomPlayer> {
       clipBehavior: Clip.none,
       children: [
         Container(
-          height: _isMobile ? 69 : 92,
-          color: const Color(0xFF341010),
+          height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
+          color: _theme.bottomSheetTheme.backgroundColor,
           padding: EdgeInsets.only(bottom: _viewPadding.bottom),
           child: GestureDetector(
             onTap: _onExpand,
@@ -196,11 +197,25 @@ class _BottomPlayerState extends State<BottomPlayer> {
           left: -25,
           top: -22,
           right: -25,
-          child: ValueListenableBuilder(
-            valueListenable: _playProgress,
-            builder: (context, value, child) => Slider.adaptive(
-              value: value,
-              onChanged: (value) => _playProgress.value = value,
+          child: GestureDetector(
+            onHorizontalDragDown: (details) {
+              final sliderWidth = _sliderKey.currentContext?.size?.width;
+              if (sliderWidth == null) return;
+              _playProgress.value = details.localPosition.dx / sliderWidth;
+            },
+            onHorizontalDragUpdate: (details) {
+              final sliderWidth = _sliderKey.currentContext?.size?.width;
+              if (sliderWidth == null) return;
+              _playProgress.value = details.localPosition.dx / sliderWidth;
+            },
+            behavior: HitTestBehavior.opaque,
+            child: ValueListenableBuilder(
+              valueListenable: _playProgress,
+              builder: (context, value, child) => Slider(
+                key: _sliderKey,
+                value: value,
+                onChanged: (value) => _playProgress.value = value,
+              ),
             ),
           ),
         ),
