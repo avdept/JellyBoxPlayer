@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/routes.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
+  void _onLibrariesPressed(BuildContext context) => context.go(Routes.library);
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +46,12 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _librariesButton() => TextButton.icon(
-        onPressed: () {},
-        icon: const Icon(JPlayer.music),
-        label: const Text('Music libraries'),
+  Widget _librariesButton() => Builder(
+        builder: (context) => TextButton.icon(
+          onPressed: () => _onLibrariesPressed(context),
+          icon: const Icon(JPlayer.music),
+          label: const Text('Music libraries'),
+        ),
       );
 
   Widget _logOutButton() => TextButton.icon(

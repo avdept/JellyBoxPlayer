@@ -159,8 +159,6 @@ class _AppState extends State<App> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
           ),
-          showDragHandle: true,
-          dragHandleSize: Size(113, 10),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: Color(0xFF471F27),

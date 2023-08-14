@@ -4,6 +4,7 @@ import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class BottomPlayer extends StatefulWidget {
@@ -25,128 +26,144 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
   late ThemeData _theme;
   late IconThemeData _iconTheme;
+  late MaterialLocalizations _localizations;
   late EdgeInsets _viewPadding;
   late Size _screenSize;
   late bool _isMobile;
 
-  Future<void> _onExpand() => showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useRootNavigator: true,
-        constraints: const BoxConstraints(minWidth: double.infinity),
-        backgroundColor: _dynamicColors.value?.background,
-        builder: (context) => SafeArea(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 518),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: 30,
-                top: _isMobile ? 0 : 20,
-                right: 30,
-                bottom: _isMobile ? 32 : 60,
-              ),
-              child: ValueListenableBuilder(
-                valueListenable: _dynamicColors,
-                builder: (context, colorScheme, child) => Theme(
-                  data: Theme.of(context).copyWith(colorScheme: colorScheme),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 444),
-                        child: Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: ValueListenableBuilder(
-                                  valueListenable: _imageProvider,
-                                  builder: (context, image, child) =>
-                                      (image == null)
-                                          ? const SizedBox.shrink()
-                                          : Image(
-                                              image: image,
-                                              fit: BoxFit.cover,
-                                            ),
+  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
+        ModalSheetRoute(
+          builder: (context) => SafeArea(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 518),
+              child: SingleChildScrollView(
+                controller: ModalScrollController.of(context),
+                padding: EdgeInsets.only(
+                  left: 30,
+                  top: _isMobile ? 0 : 20,
+                  right: 30,
+                  bottom: _isMobile ? 32 : 60,
+                ),
+                child: ValueListenableBuilder(
+                  valueListenable: _dynamicColors,
+                  builder: (context, colorScheme, child) => Theme(
+                    data: Theme.of(context).copyWith(colorScheme: colorScheme),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 444),
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: ValueListenableBuilder(
+                                    valueListenable: _imageProvider,
+                                    builder: (context, image, child) =>
+                                        (image == null)
+                                            ? const SizedBox.shrink()
+                                            : Image(
+                                                image: image,
+                                                fit: BoxFit.cover,
+                                              ),
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: _isMobile ? 6 : 18),
-                            IconTheme(
-                              data: _iconTheme.copyWith(
-                                size: _isMobile ? 28 : 24,
+                              SizedBox(height: _isMobile ? 6 : 18),
+                              IconTheme(
+                                data: _iconTheme.copyWith(
+                                  size: _isMobile ? 28 : 24,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _openListButton(),
+                                    _randomQueueButton(),
+                                    _repeatTrackButton(),
+                                    _downloadTrackButton(),
+                                    _likeTrackButton(),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  _openListButton(),
-                                  _randomQueueButton(),
-                                  _repeatTrackButton(),
-                                  _downloadTrackButton(),
-                                  _likeTrackButton(),
-                                ],
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: _isMobile ? 30 : 26),
+                        Text(
+                          'Song Title',
+                          style: TextStyle(
+                            fontSize: _isMobile ? 30 : 40,
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Artist',
+                          style: TextStyle(
+                            fontSize: _isMobile ? 18 : 24,
+                            height: 1.2,
+                          ),
+                        ),
+                        SizedBox(height: _isMobile ? 17 : 0),
+                        Text(
+                          'FLAC 44.1Khz/1080Kbps',
+                          style: TextStyle(
+                            fontSize: _isMobile ? 14 : 18,
+                            color: colorScheme?.onPrimary,
+                            height: 1.2,
+                          ),
+                        ),
+                        SizedBox(height: _isMobile ? 15 : 21),
+                        Container(
+                          width: double.infinity,
+                          height: _isMobile ? 78 : 120,
+                          color: colorScheme?.primary,
+                        ),
+                        SizedBox(height: _isMobile ? 23 : 56),
+                        IconTheme(
+                          data: _iconTheme.copyWith(size: _isMobile ? 37 : 46),
+                          child: Wrap(
+                            spacing: _isMobile ? 40 : 24,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _prevTrackButton(),
+                              SizedBox.square(
+                                dimension: _isMobile ? 68 : 84,
+                                child: _playPauseButton(),
                               ),
-                            ),
-                          ],
+                              _nextTrackButton(),
+                            ],
+                          ),
                         ),
-                      ),
-                      SizedBox(height: _isMobile ? 30 : 26),
-                      Text(
-                        'Song Title',
-                        style: TextStyle(
-                          fontSize: _isMobile ? 30 : 40,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        maxLines: 1,
-                      ),
-                      Text(
-                        'Artist',
-                        style: TextStyle(
-                          fontSize: _isMobile ? 18 : 24,
-                          height: 1.2,
-                        ),
-                      ),
-                      SizedBox(height: _isMobile ? 17 : 0),
-                      Text(
-                        'FLAC 44.1Khz/1080Kbps',
-                        style: TextStyle(
-                          fontSize: _isMobile ? 14 : 18,
-                          color: colorScheme?.onPrimary,
-                          height: 1.2,
-                        ),
-                      ),
-                      SizedBox(height: _isMobile ? 15 : 21),
-                      Container(
-                        width: double.infinity,
-                        height: _isMobile ? 78 : 120,
-                        color: colorScheme?.primary,
-                      ),
-                      SizedBox(height: _isMobile ? 23 : 56),
-                      IconTheme(
-                        data: _iconTheme.copyWith(size: _isMobile ? 37 : 46),
-                        child: Wrap(
-                          spacing: _isMobile ? 40 : 24,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            _prevTrackButton(),
-                            SizedBox.square(
-                              dimension: _isMobile ? 68 : 84,
-                              child: _playPauseButton(),
-                            ),
-                            _nextTrackButton(),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+          containerBuilder: (context, animation, child) =>
+              ValueListenableBuilder(
+            valueListenable: _dynamicColors,
+            builder: (context, colorScheme, child) => BottomSheet(
+              onClosing: () {},
+              enableDrag: false,
+              showDragHandle: true,
+              dragHandleSize: const Size(113, 10),
+              backgroundColor: colorScheme?.background,
+              constraints: const BoxConstraints(minWidth: double.infinity),
+              builder: (context) => child!,
+            ),
+            child: child,
+          ),
+          bounce: true,
+          expanded: false,
+          barrierLabel: _localizations.modalBarrierDismissLabel,
         ),
       );
 
@@ -182,6 +199,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
     super.didChangeDependencies();
     _theme = Theme.of(context);
     _iconTheme = IconTheme.of(context);
+    _localizations = MaterialLocalizations.of(context);
     _viewPadding = MediaQuery.viewPaddingOf(context);
     _screenSize = MediaQuery.sizeOf(context);
 
