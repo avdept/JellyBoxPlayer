@@ -12,7 +12,9 @@ dependencies:
     sdk: flutter
 
   animations: ^2.0.7
+  cool_dropdown: ^2.1.0
   cupertino_icons: ^1.0.5
+  dropdown_button2: ^2.3.8
   flutter_svg: ^2.0.7
   freezed_annotation: ^2.4.1
   go_router: ^10.0.0

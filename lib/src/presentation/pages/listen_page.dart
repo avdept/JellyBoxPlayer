@@ -1,9 +1,11 @@
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends StatefulWidget {
@@ -14,22 +16,42 @@ class ListenPage extends StatefulWidget {
 }
 
 class _ListenPageState extends State<ListenPage> {
-  final _currentView = ValueNotifier<ListenView>(ListenView.albums);
-  final _currentFilter = ValueNotifier<Entities>(Entities.albums);
+  late final ValueNotifier<ListenView> _currentView;
+  late final Map<Entities, bool> _availableFilters;
+  late final ValueNotifier<Filter> _appliedFilter;
+  final _filterOpened = ValueNotifier<bool>(false);
 
   late ThemeData _theme;
   late Size _screenSize;
   late bool _isMobile;
   late bool _isTablet;
 
-  Set<(String, VoidCallback)> get _viewToggle => {
-        ('Albums', () => _currentView.value = ListenView.albums),
-        ('Artists', () => _currentView.value = ListenView.artists),
+  Map<ListenView, String> get _viewLabels => {
+        ListenView.albums: 'Albums',
+        ListenView.artists: 'Artists',
+      };
+
+  Map<Entities, String> get _filtersLabels => {
+        Entities.albums: 'Albums',
+        Entities.artists: 'Artists',
+        Entities.playlists: 'Playlists',
+        Entities.songs: 'Songs',
+        Entities.genres: 'Genres',
       };
 
   void _onAlbumTap() {
     final location = GoRouterState.of(context).fullPath;
     context.go('$location${Routes.album}');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _currentView = ValueNotifier(ListenView.values.first);
+    _availableFilters = {
+      for (final value in Entities.values) value: false,
+    };
+    _appliedFilter = ValueNotifier(Filter(orderBy: Entities.values.first));
   }
 
   @override
@@ -56,7 +78,7 @@ class _ListenPageState extends State<ListenPage> {
                 children: [
                   _pageViewToggle(),
                   const Spacer(),
-                  _settingsButton(),
+                  _filterButton(),
                 ],
               ),
             ),
@@ -88,7 +110,8 @@ class _ListenPageState extends State<ListenPage> {
   @override
   void dispose() {
     _currentView.dispose();
-    _currentFilter.dispose();
+    _appliedFilter.dispose();
+    _filterOpened.dispose();
     super.dispose();
   }
 
@@ -98,56 +121,93 @@ class _ListenPageState extends State<ListenPage> {
         ),
         child: Wrap(
           spacing: _isMobile ? 12 : 25,
-          children: List.generate(
-            _viewToggle.length,
-            (index) => ValueListenableBuilder(
-              valueListenable: _currentView,
-              builder: (context, currentView, child) => ActionChip(
-                label: Text(_viewToggle.elementAt(index).$1),
-                backgroundColor: (index == currentView.index)
-                    ? _theme.chipTheme.selectedColor
-                    : _theme.chipTheme.backgroundColor,
-                onPressed: _viewToggle.elementAt(index).$2,
+          children: [
+            for (final value in ListenView.values)
+              ValueListenableBuilder(
+                valueListenable: _currentView,
+                builder: (context, currentView, child) => ActionChip(
+                  label: Text(_viewLabels[value] ?? '???'),
+                  backgroundColor: (value == currentView)
+                      ? _theme.chipTheme.selectedColor
+                      : _theme.chipTheme.backgroundColor,
+                  onPressed: () => _currentView.value = value,
+                ),
               ),
-            ),
-          ),
+          ],
         ),
       );
 
-  Widget _settingsButton() => DropdownButtonHideUnderline(
+  Widget _filterButton() => DropdownButtonHideUnderline(
         child: ValueListenableBuilder(
-          valueListenable: _currentFilter,
-          builder: (context, currentFilter, child) => DropdownButton<Entities>(
-            icon: const Icon(JPlayer.sliders),
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.2,
+          valueListenable: _appliedFilter,
+          builder: (context, filter, child) => DropdownButton2<Entities>(
+            customButton: Padding(
+              padding: const EdgeInsets.all(8),
+              child: ValueListenableBuilder(
+                valueListenable: _filterOpened,
+                builder: (context, isOpened, child) => Icon(
+                  JPlayer.sliders,
+                  color: isOpened
+                      ? _theme.colorScheme.primary
+                      : _theme.iconTheme.color,
+                ),
+              ),
             ),
-            borderRadius: BorderRadius.circular(6),
-            items: const [
-              DropdownMenuItem(
-                value: Entities.albums,
-                child: Text('Albums'),
+            buttonStyleData: const ButtonStyleData(
+              overlayColor: MaterialStatePropertyAll(Colors.transparent),
+            ),
+            dropdownStyleData: DropdownStyleData(
+              width: 150,
+              padding: const EdgeInsets.all(8),
+              offset: const Offset(0, -8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
               ),
-              DropdownMenuItem(
-                value: Entities.artists,
-                child: Text('Artists'),
-              ),
-              DropdownMenuItem(
-                value: Entities.playlists,
-                child: Text('Playlists'),
-              ),
-              DropdownMenuItem(
-                value: Entities.songs,
-                child: Text('Songs'),
-              ),
-              DropdownMenuItem(
-                value: Entities.genres,
-                child: Text('Genres'),
-              ),
+            ),
+            items: [
+              for (final value in Entities.values)
+                DropdownMenuItem(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _filtersLabels[value] ?? '???',
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.2,
+                            color: (filter.orderBy == value)
+                                ? _theme.colorScheme.primary
+                                : _theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        _availableFilters[value]!
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        color: (filter.orderBy == value)
+                            ? _theme.colorScheme.primary
+                            : _theme.colorScheme.onPrimary,
+                      ),
+                    ],
+                  ),
+                ),
             ],
-            value: currentFilter,
-            onChanged: (value) => _currentFilter.value = value!,
+            value: filter.orderBy,
+            onChanged: (value) {
+              if (filter.orderBy == value) {
+                final desc = !filter.desc;
+                _appliedFilter.value = filter.copyWith(desc: desc);
+                _availableFilters[value!] = desc;
+              } else {
+                _appliedFilter.value = Filter(
+                  orderBy: value!,
+                  desc: _availableFilters[value]!,
+                );
+              }
+            },
+            onMenuStateChange: (value) => _filterOpened.value = value,
           ),
         ),
       );

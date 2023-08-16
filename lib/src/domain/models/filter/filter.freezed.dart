@@ -17,7 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$Filter {
   Entities get orderBy => throw _privateConstructorUsedError;
-  Order get order => throw _privateConstructorUsedError;
+  bool get desc => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $FilterCopyWith<Filter> get copyWith => throw _privateConstructorUsedError;
@@ -28,7 +28,7 @@ abstract class $FilterCopyWith<$Res> {
   factory $FilterCopyWith(Filter value, $Res Function(Filter) then) =
       _$FilterCopyWithImpl<$Res, Filter>;
   @useResult
-  $Res call({Entities orderBy, Order order});
+  $Res call({Entities orderBy, bool desc});
 }
 
 /// @nodoc
@@ -45,17 +45,17 @@ class _$FilterCopyWithImpl<$Res, $Val extends Filter>
   @override
   $Res call({
     Object? orderBy = null,
-    Object? order = null,
+    Object? desc = null,
   }) {
     return _then(_value.copyWith(
       orderBy: null == orderBy
           ? _value.orderBy
           : orderBy // ignore: cast_nullable_to_non_nullable
               as Entities,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as Order,
+      desc: null == desc
+          ? _value.desc
+          : desc // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -66,7 +66,7 @@ abstract class _$$_FilterCopyWith<$Res> implements $FilterCopyWith<$Res> {
       __$$_FilterCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({Entities orderBy, Order order});
+  $Res call({Entities orderBy, bool desc});
 }
 
 /// @nodoc
@@ -80,17 +80,17 @@ class __$$_FilterCopyWithImpl<$Res>
   @override
   $Res call({
     Object? orderBy = null,
-    Object? order = null,
+    Object? desc = null,
   }) {
     return _then(_$_Filter(
       orderBy: null == orderBy
           ? _value.orderBy
           : orderBy // ignore: cast_nullable_to_non_nullable
               as Entities,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as Order,
+      desc: null == desc
+          ? _value.desc
+          : desc // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -98,18 +98,17 @@ class __$$_FilterCopyWithImpl<$Res>
 /// @nodoc
 
 class _$_Filter implements _Filter {
-  const _$_Filter({this.orderBy = Entities.albums, this.order = Order.asc});
+  const _$_Filter({required this.orderBy, this.desc = false});
 
   @override
-  @JsonKey()
   final Entities orderBy;
   @override
   @JsonKey()
-  final Order order;
+  final bool desc;
 
   @override
   String toString() {
-    return 'Filter(orderBy: $orderBy, order: $order)';
+    return 'Filter(orderBy: $orderBy, desc: $desc)';
   }
 
   @override
@@ -118,11 +117,11 @@ class _$_Filter implements _Filter {
         (other.runtimeType == runtimeType &&
             other is _$_Filter &&
             (identical(other.orderBy, orderBy) || other.orderBy == orderBy) &&
-            (identical(other.order, order) || other.order == order));
+            (identical(other.desc, desc) || other.desc == desc));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, orderBy, order);
+  int get hashCode => Object.hash(runtimeType, orderBy, desc);
 
   @JsonKey(ignore: true)
   @override
@@ -132,13 +131,13 @@ class _$_Filter implements _Filter {
 }
 
 abstract class _Filter implements Filter {
-  const factory _Filter({final Entities orderBy, final Order order}) =
+  const factory _Filter({required final Entities orderBy, final bool desc}) =
       _$_Filter;
 
   @override
   Entities get orderBy;
   @override
-  Order get order;
+  bool get desc;
   @override
   @JsonKey(ignore: true)
   _$$_FilterCopyWith<_$_Filter> get copyWith =>
