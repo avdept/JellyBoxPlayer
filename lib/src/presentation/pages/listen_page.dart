@@ -6,6 +6,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends StatefulWidget {
@@ -68,40 +69,42 @@ class _ListenPageState extends State<ListenPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        minimum: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: _isMobile ? 16 : 30),
-              child: Row(
-                children: [
-                  _pageViewToggle(),
-                  const Spacer(),
-                  _filterButton(),
-                ],
+      body: GradientBackground(
+        child: SafeArea(
+          minimum: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: _isMobile ? 16 : 30),
+                child: Row(
+                  children: [
+                    _pageViewToggle(),
+                    const Spacer(),
+                    _filterButton(),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: Material(
-                type: MaterialType.transparency,
-                clipBehavior: Clip.hardEdge,
-                child: ValueListenableBuilder(
-                  valueListenable: _currentView,
-                  builder: (context, currentView, child) => GridView.builder(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: _isTablet ? 360 : 175,
-                      mainAxisSpacing: _isMobile ? 15 : 24,
-                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
-                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+              Expanded(
+                child: Material(
+                  type: MaterialType.transparency,
+                  clipBehavior: Clip.hardEdge,
+                  child: ValueListenableBuilder(
+                    valueListenable: _currentView,
+                    builder: (context, currentView, child) => GridView.builder(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: _isTablet ? 360 : 175,
+                        mainAxisSpacing: _isMobile ? 15 : 24,
+                        crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
+                        childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+                      ),
+                      itemBuilder: (context, index) => _albumView(),
+                      itemCount: 10,
                     ),
-                    itemBuilder: (context, index) => _albumView(),
-                    itemCount: 10,
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -17,29 +18,31 @@ class SettingsPage extends StatelessWidget {
     final isDesktop = deviceType == DeviceScreenType.desktop;
 
     return Scaffold(
-      body: SafeArea(
-        minimum: EdgeInsets.all(isMobile ? 16 : 30),
-        child: Padding(
-          padding: EdgeInsets.only(bottom: isMobile ? 22 : 26),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Settings',
-                style: TextStyle(
-                  fontSize: isMobile ? 24 : 36,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
+      body: GradientBackground(
+        child: SafeArea(
+          minimum: EdgeInsets.all(isMobile ? 16 : 30),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isMobile ? 22 : 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Settings',
+                  style: TextStyle(
+                    fontSize: isMobile ? 24 : 36,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-              Wrap(
-                direction: Axis.vertical,
-                children: [
-                  _librariesButton(),
-                  if (!isDesktop) _logOutButton(),
-                ],
-              ),
-            ],
+                Wrap(
+                  direction: Axis.vertical,
+                  children: [
+                    _librariesButton(),
+                    if (!isDesktop) _logOutButton(),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

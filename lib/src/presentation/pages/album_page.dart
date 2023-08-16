@@ -4,6 +4,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/bottom_player.dart';
 import 'package:jplayer/src/presentation/widgets/simple_list_tile.dart';
+import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AlbumPage extends StatelessWidget {
@@ -17,53 +18,55 @@ class AlbumPage extends StatelessWidget {
     final isDesktop = deviceType == DeviceScreenType.desktop;
 
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _backButton(),
-                  SizedBox(height: isDesktop ? 30 : 14),
-                  Flex(
-                    direction: isDesktop ? Axis.horizontal : Axis.vertical,
-                    crossAxisAlignment: isDesktop
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        Images.albumSample,
-                        height: isDesktop ? 254 : (isMobile ? 182 : 299),
-                      ),
-                      SizedBox(
-                        width: 38,
-                        height: isMobile ? 15 : (isDesktop ? 24 : 35),
-                      ),
-                      if (isDesktop)
-                        Expanded(child: _albumPanel())
-                      else
-                        _albumPanel(),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: isDesktop ? 12 : 18),
-            Expanded(
-              child: Material(
-                type: MaterialType.transparency,
-                clipBehavior: Clip.hardEdge,
-                child: ListView.builder(
-                  itemBuilder: (context, index) => _albumView(),
-                  itemCount: 10,
+      body: GradientBackground(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _backButton(),
+                    SizedBox(height: isDesktop ? 30 : 14),
+                    Flex(
+                      direction: isDesktop ? Axis.horizontal : Axis.vertical,
+                      crossAxisAlignment: isDesktop
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          Images.albumSample,
+                          height: isDesktop ? 254 : (isMobile ? 182 : 299),
+                        ),
+                        SizedBox(
+                          width: 38,
+                          height: isMobile ? 15 : (isDesktop ? 24 : 35),
+                        ),
+                        if (isDesktop)
+                          Expanded(child: _albumPanel())
+                        else
+                          _albumPanel(),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const BottomPlayer(),
-          ],
+              SizedBox(height: isDesktop ? 12 : 18),
+              Expanded(
+                child: Material(
+                  type: MaterialType.transparency,
+                  clipBehavior: Clip.hardEdge,
+                  child: ListView.builder(
+                    itemBuilder: (context, index) => _albumView(),
+                    itemCount: 10,
+                  ),
+                ),
+              ),
+              const BottomPlayer(),
+            ],
+          ),
         ),
       ),
     );

@@ -42,67 +42,69 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.only(
-                left: _isMobile ? 16 : 30,
-                top: _isMobile ? 0 : 3.5,
-                right: _isMobile ? 16 : 30,
-                bottom: _isMobile ? 22 : 32,
-              ),
-              child: Flex(
-                direction: _isMobile ? Axis.vertical : Axis.horizontal,
-                crossAxisAlignment: _isMobile
-                    ? CrossAxisAlignment.start
-                    : CrossAxisAlignment.center,
-                children: [
-                  _titleText(),
-                  SizedBox(
-                    width: _isTablet ? 36 : 44,
-                    height: 14,
-                  ),
-                  if (_isMobile)
-                    _searchField()
-                  else
-                    Expanded(child: _searchField()),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Material(
-                type: MaterialType.transparency,
-                clipBehavior: Clip.hardEdge,
-                child: CustomScrollView(
-                  slivers: [
-                    SliverList.separated(
-                      itemBuilder: (context, index) => _artistView(),
-                      separatorBuilder: (context, index) => SizedBox(
-                        height: _isMobile ? 12 : 24,
-                      ),
-                      itemCount: 1,
+      body: GradientBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  left: _isMobile ? 16 : 30,
+                  top: _isMobile ? 0 : 3.5,
+                  right: _isMobile ? 16 : 30,
+                  bottom: _isMobile ? 22 : 32,
+                ),
+                child: Flex(
+                  direction: _isMobile ? Axis.vertical : Axis.horizontal,
+                  crossAxisAlignment: _isMobile
+                      ? CrossAxisAlignment.start
+                      : CrossAxisAlignment.center,
+                  children: [
+                    _titleText(),
+                    SizedBox(
+                      width: _isTablet ? 36 : 44,
+                      height: 14,
                     ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: _isMobile ? 28 : (_isTablet ? 30 : 40),
-                      ),
-                    ),
-                    SliverGrid.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent:
-                            _isDesktop ? 360 : _screenSize.width,
-                        mainAxisExtent: _isMobile ? 54 : 74,
-                        crossAxisSpacing: 70,
-                      ),
-                      itemBuilder: (context, index) => _songView(),
-                      itemCount: 10,
-                    ),
+                    if (_isMobile)
+                      _searchField()
+                    else
+                      Expanded(child: _searchField()),
                   ],
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Material(
+                  type: MaterialType.transparency,
+                  clipBehavior: Clip.hardEdge,
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverList.separated(
+                        itemBuilder: (context, index) => _artistView(),
+                        separatorBuilder: (context, index) => SizedBox(
+                          height: _isMobile ? 12 : 24,
+                        ),
+                        itemCount: 1,
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: _isMobile ? 28 : (_isTablet ? 30 : 40),
+                        ),
+                      ),
+                      SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent:
+                              _isDesktop ? 360 : _screenSize.width,
+                          mainAxisExtent: _isMobile ? 54 : 74,
+                          crossAxisSpacing: 70,
+                        ),
+                        itemBuilder: (context, index) => _songView(),
+                        itemCount: 10,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
