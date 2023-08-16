@@ -14,7 +14,9 @@ class BottomPlayer extends StatefulWidget {
   State<BottomPlayer> createState() => _BottomPlayerState();
 }
 
-class _BottomPlayerState extends State<BottomPlayer> {
+class _BottomPlayerState extends State<BottomPlayer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animationController;
   final _imageProvider = ValueNotifier<ImageProvider?>(null);
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
   final _playProgress = ValueNotifier<double>(0.6);
@@ -151,6 +153,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
               ValueListenableBuilder(
             valueListenable: _dynamicColors,
             builder: (context, colorScheme, child) => BottomSheet(
+              animationController: _animationController,
               onClosing: () {},
               enableDrag: false,
               showDragHandle: true,
@@ -164,6 +167,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
           bounce: true,
           expanded: false,
           barrierLabel: _localizations.modalBarrierDismissLabel,
+          duration: const Duration(milliseconds: 300),
         ),
       );
 
@@ -181,6 +185,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
   @override
   void initState() {
     super.initState();
+    _animationController = BottomSheet.createAnimationController(this);
     _imageProvider.addListener(_onImageProviderChanged);
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _imageProvider.value = const AssetImage(Images.songSample),
@@ -292,6 +297,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
   @override
   void dispose() {
+    _animationController.dispose();
     _imageProvider.dispose();
     _dynamicColors.dispose();
     _playProgress.dispose();
