@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 class PlayPauseButton extends StatefulWidget {
   const PlayPauseButton({
     required this.stateNotifier,
+    this.background,
+    this.foreground,
     this.onPressed,
     super.key,
   });
 
   final ValueNotifier<bool> stateNotifier;
+  final Color? background;
+  final Color? foreground;
   final VoidCallback? onPressed;
 
   @override
@@ -17,8 +21,6 @@ class PlayPauseButton extends StatefulWidget {
 class _PlayPauseButtonState extends State<PlayPauseButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
-
-  late ThemeData _theme;
 
   void _onStateChanged() {
     if (_animationController.isAnimating) _animationController.stop();
@@ -42,12 +44,6 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _theme = Theme.of(context);
-  }
-
-  @override
   void didUpdateWidget(covariant PlayPauseButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.stateNotifier != oldWidget.stateNotifier) {
@@ -60,14 +56,14 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
   Widget build(BuildContext context) {
     return MaterialButton(
       onPressed: widget.onPressed,
-      color: _theme.iconTheme.color,
+      color: widget.background,
       shape: const CircleBorder(),
       padding: const EdgeInsets.all(8),
       minWidth: 0,
       child: AnimatedIcon(
         icon: AnimatedIcons.play_pause,
         progress: _animationController,
-        color: _theme.scaffoldBackgroundColor,
+        color: widget.foreground,
       ),
     );
   }

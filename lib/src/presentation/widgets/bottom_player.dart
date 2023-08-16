@@ -310,21 +310,26 @@ class _BottomPlayerState extends State<BottomPlayer>
 
   Widget _playPauseButton() => PlayPauseButton(
         onPressed: () => _isPlaying.value = !_isPlaying.value,
+        background: _theme.colorScheme.onPrimary,
+        foreground: _theme.scaffoldBackgroundColor,
         stateNotifier: _isPlaying,
       );
 
   Widget _prevTrackButton() => IconButton(
         onPressed: () {},
+        color: _theme.colorScheme.onPrimary,
         icon: const Icon(Entypo.fast_backward),
       );
 
   Widget _nextTrackButton() => IconButton(
         onPressed: () {},
+        color: _theme.colorScheme.onPrimary,
         icon: const Icon(Entypo.fast_forward),
       );
 
   Widget _openListButton() => IconButton(
         onPressed: () {},
+        color: _theme.colorScheme.onPrimary,
         icon: const Icon(CupertinoIcons.list_bullet),
       );
 
@@ -332,7 +337,14 @@ class _BottomPlayerState extends State<BottomPlayer>
         valueListenable: _randomQueue,
         builder: (context, isRandom, child) => IconButton(
           onPressed: () => _randomQueue.value = !isRandom,
-          icon: const Icon(JPlayer.mix),
+          icon: Icon(
+            JPlayer.mix,
+            color: _theme.colorScheme.onPrimary,
+          ),
+          selectedIcon: Icon(
+            JPlayer.mix,
+            color: _theme.colorScheme.primary,
+          ),
           isSelected: isRandom,
         ),
       );
@@ -341,13 +353,21 @@ class _BottomPlayerState extends State<BottomPlayer>
         valueListenable: _repeatTrack,
         builder: (context, isRepeated, child) => IconButton(
           onPressed: () => _repeatTrack.value = !isRepeated,
-          icon: const Icon(JPlayer.repeat),
+          icon: Icon(
+            JPlayer.repeat,
+            color: _theme.colorScheme.onPrimary,
+          ),
+          selectedIcon: Icon(
+            JPlayer.repeat,
+            color: _theme.colorScheme.primary,
+          ),
           isSelected: isRepeated,
         ),
       );
 
   Widget _downloadTrackButton() => IconButton(
         onPressed: () {},
+        color: _theme.colorScheme.onPrimary,
         icon: const Icon(JPlayer.download),
       );
 
@@ -355,8 +375,14 @@ class _BottomPlayerState extends State<BottomPlayer>
         valueListenable: _likeTrack,
         builder: (context, isLiked, child) => IconButton(
           onPressed: () => _likeTrack.value = !isLiked,
-          icon: const Icon(CupertinoIcons.heart),
-          selectedIcon: const Icon(CupertinoIcons.heart_fill),
+          icon: Icon(
+            CupertinoIcons.heart,
+            color: _theme.colorScheme.onPrimary,
+          ),
+          selectedIcon: Icon(
+            CupertinoIcons.heart_fill,
+            color: _theme.colorScheme.primary,
+          ),
           isSelected: isLiked,
         ),
       );
