@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: '>=3.0.6 <4.0.0'
+  sdk: '>=3.1.0 <4.0.0'
 
 
 dependencies:
@@ -12,12 +12,11 @@ dependencies:
     sdk: flutter
 
   animations: ^2.0.7
-  cool_dropdown: ^2.1.0
   cupertino_icons: ^1.0.5
   dropdown_button2: ^2.3.8
   flutter_svg: ^2.0.7
   freezed_annotation: ^2.4.1
-  go_router: ^10.0.0
+  go_router: ^10.1.0
   intl: ^0.18.1
   json_annotation: ^4.8.1
   modal_bottom_sheet: ^3.0.0-pre
