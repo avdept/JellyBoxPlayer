@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/presentation/widgets/bottom_player.dart';
-import 'package:jplayer/src/presentation/widgets/simple_list_tile.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -118,7 +116,7 @@ class AlbumPage extends StatelessWidget {
                             child: Text(
                               'Album name',
                               style: TextStyle(
-                                fontSize: isMobile ? 20 : 46,
+                                fontSize: isMobile ? 18 : 42,
                                 fontWeight: FontWeight.w600,
                                 height: 1.2,
                               ),
@@ -131,7 +129,7 @@ class AlbumPage extends StatelessWidget {
                               child: Text(
                                 '2023',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   height: 1.2,
                                 ),
                               ),
@@ -173,7 +171,7 @@ class AlbumPage extends StatelessWidget {
                   )
                 else
                   Wrap(
-                    spacing: isMobile ? 12 : 32,
+                    spacing: isMobile ? 6 : 32,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _downloadAlbumButton(),
@@ -221,7 +219,7 @@ class AlbumPage extends StatelessWidget {
 
     return DefaultTextStyle(
       style: const TextStyle(
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: FontWeight.w500,
         height: 1.2,
       ),
@@ -295,7 +293,7 @@ class AlbumPage extends StatelessWidget {
               title: const Text(
                 'Chi Shenidi? (feat. Hichkas)',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
@@ -303,7 +301,7 @@ class AlbumPage extends StatelessWidget {
               subtitle: const Text(
                 'Fadaei',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w300,
                   height: 1.2,
                 ),

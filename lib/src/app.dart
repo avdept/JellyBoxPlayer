@@ -81,7 +81,6 @@ class _AppState extends State<App> {
                   GoRoute(
                     path: Routes.album.name,
                     pageBuilder: widget.screenFactory.albumPage,
-                    parentNavigatorKey: _rootNavigatorKey,
                   ),
                 ],
               ),
@@ -92,7 +91,6 @@ class _AppState extends State<App> {
                   GoRoute(
                     path: Routes.album.name,
                     pageBuilder: widget.screenFactory.albumPage,
-                    parentNavigatorKey: _rootNavigatorKey,
                   ),
                 ],
               ),
@@ -107,7 +105,6 @@ class _AppState extends State<App> {
                   GoRoute(
                     path: Routes.album.name,
                     pageBuilder: widget.screenFactory.albumPage,
-                    parentNavigatorKey: _rootNavigatorKey,
                   ),
                 ],
               ),

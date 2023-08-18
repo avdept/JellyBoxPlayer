@@ -75,7 +75,7 @@ class DownloadsPage extends StatelessWidget {
                       crossAxisSpacing: 30,
                       childAspectRatio: 245 / 298.2,
                       mainAxisExtent: !isDesktop
-                          ? listItemExtent + (isMobile ? 12 : 24)
+                          ? listItemExtent + (isMobile ? 18 : 24)
                           : null,
                     ),
                     itemBuilder: (context, index) => GestureDetector(
