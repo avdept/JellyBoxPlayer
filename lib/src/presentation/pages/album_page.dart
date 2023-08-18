@@ -1,65 +1,118 @@
+import 'dart:math';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
-class AlbumPage extends StatelessWidget {
+class AlbumPage extends StatefulWidget {
   const AlbumPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-    final deviceType = getDeviceType(screenSize);
-    final isMobile = deviceType == DeviceScreenType.mobile;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
+  State<AlbumPage> createState() => _AlbumPageState();
+}
 
+class _AlbumPageState extends State<AlbumPage> {
+  final _titleIsVisible = ValueNotifier<bool>(false);
+
+  late ThemeData _theme;
+  late Size _screenSize;
+  late bool _isMobile;
+  late bool _isDesktop;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _theme = Theme.of(context);
+    _screenSize = MediaQuery.sizeOf(context);
+
+    final deviceType = getDeviceType(_screenSize);
+    _isMobile = deviceType == DeviceScreenType.mobile;
+    _isDesktop = deviceType == DeviceScreenType.desktop;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
           bottom: false,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _backButton(),
-                    SizedBox(height: isDesktop ? 30 : 14),
-                    Flex(
-                      direction: isDesktop ? Axis.horizontal : Axis.vertical,
-                      crossAxisAlignment: isDesktop
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          Images.albumSample,
-                          height: isDesktop ? 254 : (isMobile ? 182 : 299),
-                        ),
-                        SizedBox(
-                          width: 38,
-                          height: isMobile ? 15 : (isDesktop ? 24 : 35),
-                        ),
-                        if (isDesktop)
-                          Expanded(child: _albumPanel())
-                        else
-                          _albumPanel(),
-                      ],
+              CupertinoNavigationBar(
+                previousPageTitle: 'Albums',
+                backgroundColor: Colors.transparent,
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: _isMobile ? 16 : 30,
+                ),
+                middle: ValueListenableBuilder(
+                  valueListenable: _titleIsVisible,
+                  builder: (context, visible, child) => AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: visible ? 1 : 0,
+                    child: child,
+                  ),
+                  child: Text(
+                    'Album name',
+                    style: TextStyle(
+                      fontSize: _isMobile ? 14 : 20,
+                      color: _theme.colorScheme.onPrimary,
                     ),
-                  ],
+                  ),
                 ),
               ),
-              SizedBox(height: isDesktop ? 12 : 18),
               Expanded(
-                child: Material(
-                  type: MaterialType.transparency,
-                  clipBehavior: Clip.hardEdge,
-                  child: ListView.builder(
-                    itemBuilder: (context, index) => _albumView(),
-                    itemCount: 10,
-                  ),
+                child: CustomScrollView(
+                  slivers: [
+                    if (_isDesktop)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 30),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Image.asset(Images.albumSample, height: 254),
+                              const SizedBox(width: 38),
+                              Expanded(child: _albumPanel()),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _isMobile ? 16 : 30,
+                        ),
+                        sliver: SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _FadeOutImageDelegate(
+                            image: const AssetImage(Images.albumSample),
+                            isMobile: _isMobile,
+                          ),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: EdgeInsets.only(
+                          left: _isMobile ? 16 : 30,
+                          top: _isMobile ? 15 : 35,
+                          right: _isMobile ? 16 : 30,
+                          bottom: 18,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _albumPanel(),
+                        ),
+                      ),
+                    ],
+                    SliverList.builder(
+                      itemBuilder: (context, index) => _albumView(),
+                      itemCount: 30,
+                    ),
+                  ],
                 ),
               ),
               const BottomPlayer(),
@@ -70,122 +123,103 @@ class AlbumPage extends StatelessWidget {
     );
   }
 
-  Widget _backButton() => Builder(
-        builder: (context) {
-          final screenSize = MediaQuery.sizeOf(context);
-          final deviceType = getDeviceType(screenSize);
-          final isMobile = deviceType == DeviceScreenType.mobile;
+  @override
+  void dispose() {
+    super.dispose();
+    _titleIsVisible.dispose();
+  }
 
-          return TextButton.icon(
-            onPressed: context.pop,
-            icon: const BackButtonIcon(),
-            label: Text(
-              'Albums',
-              style: TextStyle(
-                fontSize: isMobile ? 16 : 24,
-                fontWeight: FontWeight.w600,
-                height: 1.2,
+  Widget _albumPanel() => IconTheme(
+        data: IconTheme.of(context).copyWith(size: _isMobile ? 24 : 28),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IntrinsicWidth(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: VisibilityDetector(
+                          key: const Key('title'),
+                          onVisibilityChanged: (info) {
+                            if (!mounted) return;
+                            _titleIsVisible.value = info.visibleFraction < 0.4;
+                          },
+                          child: Text(
+                            'Album name',
+                            style: TextStyle(
+                              fontSize: _isMobile ? 18 : 42,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Offstage(
+                        offstage: !_isMobile,
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 18),
+                          child: Text(
+                            '2023',
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _albumDetails(
+                    duration: const Duration(
+                      minutes: 42,
+                      seconds: 12,
+                    ),
+                    soundsCount: 13,
+                    year: _isMobile ? null : 2023,
+                    divider: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Offstage(
+                        offstage: _isMobile,
+                        child: const Icon(Icons.circle, size: 4),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        },
-      );
-
-  Widget _albumPanel() => Builder(
-        builder: (context) {
-          final screenSize = MediaQuery.sizeOf(context);
-          final deviceType = getDeviceType(screenSize);
-          final isMobile = deviceType == DeviceScreenType.mobile;
-          final isDesktop = deviceType == DeviceScreenType.desktop;
-
-          return IconTheme(
-            data: IconTheme.of(context).copyWith(
-              size: isMobile ? 24 : 28,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IntrinsicWidth(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Album name',
-                              style: TextStyle(
-                                fontSize: isMobile ? 18 : 42,
-                                fontWeight: FontWeight.w600,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
-                          Offstage(
-                            offstage: !isMobile,
-                            child: const Padding(
-                              padding: EdgeInsets.only(left: 18),
-                              child: Text(
-                                '2023',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      _albumDetails(
-                        duration: const Duration(
-                          minutes: 42,
-                          seconds: 12,
-                        ),
-                        soundsCount: 13,
-                        year: isMobile ? null : 2023,
-                        divider: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Offstage(
-                            offstage: isMobile,
-                            child: const Icon(Icons.circle, size: 4),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: isDesktop ? 35 : 32),
-                if (isDesktop)
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SizedBox.square(
-                          dimension: 65,
-                          child: _playAlbumButton(),
-                        ),
-                        _downloadAlbumButton(),
-                      ],
+            SizedBox(width: _isDesktop ? 35 : 32),
+            if (_isDesktop)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox.square(
+                      dimension: 65,
+                      child: _playAlbumButton(),
                     ),
-                  )
-                else
-                  Wrap(
-                    spacing: isMobile ? 6 : 32,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      _downloadAlbumButton(),
-                      _randomQueueButton(),
-                      SizedBox.square(
-                        dimension: isMobile ? 40 : 48,
-                        child: _playAlbumButton(),
-                      ),
-                    ],
+                    _downloadAlbumButton(),
+                  ],
+                ),
+              )
+            else
+              Wrap(
+                spacing: _isMobile ? 6 : 32,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _downloadAlbumButton(),
+                  _randomQueueButton(),
+                  SizedBox.square(
+                    dimension: _isMobile ? 40 : 48,
+                    child: _playAlbumButton(),
                   ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+          ],
+        ),
       );
 
   Widget _playAlbumButton() => MaterialButton(
@@ -254,70 +288,96 @@ class AlbumPage extends StatelessWidget {
     );
   }
 
-  Widget _albumView() => Builder(
-        builder: (context) {
-          final theme = Theme.of(context);
-          final screenSize = MediaQuery.sizeOf(context);
-          final deviceType = getDeviceType(screenSize);
-          final isMobile = deviceType == DeviceScreenType.mobile;
-
-          return GestureDetector(
-            onTap: () {},
-            behavior: HitTestBehavior.opaque,
-            child: SimpleListTile(
-              padding: EdgeInsets.symmetric(
-                vertical: 12,
-                horizontal: isMobile ? 16 : 30,
-              ),
-              leading: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Ink(
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(Images.songSample),
-                        fit: BoxFit.scaleDown,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    width: 52,
-                    height: 52,
-                    child: const CircularProgressIndicator(value: 0.6),
-                  ),
-                  const AnimatedIcon(
-                    icon: AnimatedIcons.play_pause,
-                    progress: AlwaysStoppedAnimation(1),
-                  ),
-                ],
-              ),
-              title: const Text(
-                'Chi Shenidi? (feat. Hichkas)',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                ),
-              ),
-              subtitle: const Text(
-                'Fadaei',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w300,
-                  height: 1.2,
-                ),
-              ),
-              trailing: SizedBox.square(
-                dimension: 30,
-                child: CircularProgressIndicator(
-                  value: 0.8,
-                  color: const Color(0xFF0066FF),
-                  backgroundColor: theme.colorScheme.onPrimary,
-                  strokeWidth: 2,
-                ),
-              ),
-              leadingToTitle: 22,
+  Widget _albumView() => GestureDetector(
+        onTap: () {},
+        behavior: HitTestBehavior.opaque,
+        child: SimpleListTile(
+          padding: EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: _isMobile ? 16 : 30,
+          ),
+          // leading: Stack(
+          //   alignment: Alignment.center,
+          //   children: [
+          //     Ink(
+          //       decoration: const BoxDecoration(
+          //         image: DecorationImage(
+          //           image: AssetImage(Images.songSample),
+          //           fit: BoxFit.scaleDown,
+          //         ),
+          //         shape: BoxShape.circle,
+          //       ),
+          //       width: 52,
+          //       height: 52,
+          //       child: const CircularProgressIndicator(value: 0.6),
+          //     ),
+          //     const AnimatedIcon(
+          //       icon: AnimatedIcons.play_pause,
+          //       progress: AlwaysStoppedAnimation(1),
+          //     ),
+          //   ],
+          // ),
+          title: const Text(
+            'Chi Shenidi? (feat. Hichkas)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
             ),
-          );
-        },
+          ),
+          subtitle: const Text(
+            'Fadaei',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w300,
+              height: 1.2,
+            ),
+          ),
+          trailing: SizedBox.square(
+            dimension: 30,
+            child: CircularProgressIndicator(
+              value: 0.8,
+              color: const Color(0xFF0066FF),
+              backgroundColor: _theme.colorScheme.onPrimary,
+              strokeWidth: 2,
+            ),
+          ),
+          leadingToTitle: 22,
+        ),
       );
+}
+
+class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
+  const _FadeOutImageDelegate({
+    required this.image,
+    required this.isMobile,
+  });
+
+  final ImageProvider image;
+  final bool isMobile;
+
+  @override
+  double get maxExtent => isMobile ? 182 : 299;
+
+  @override
+  double get minExtent => 0;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Image(
+      image: image,
+      height: max(maxExtent - shrinkOffset, 0),
+      opacity: AlwaysStoppedAnimation(
+        max((maxExtent - shrinkOffset * 2) / maxExtent, 0),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) =>
+      image != oldDelegate.image || isMobile != oldDelegate.isMobile;
 }

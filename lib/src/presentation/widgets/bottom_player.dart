@@ -41,7 +41,7 @@ class _BottomPlayerState extends State<BottomPlayer>
               left: 30,
               top: _isMobile ? 0 : 20,
               right: 30,
-              bottom: _isMobile ? 20 : 40,
+              bottom: _isMobile ? 20 : 60,
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 518),

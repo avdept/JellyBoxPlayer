@@ -142,6 +142,8 @@ class _AppState extends State<App> {
         ),
         scaffoldBackgroundColor: Colors.black,
         cupertinoOverrideTheme: const NoDefaultCupertinoThemeData(
+          primaryColor: Colors.white,
+          primaryContrastingColor: Color(0xFFFD2F2F),
           barBackgroundColor: Color(0xFF471F27),
           scaffoldBackgroundColor: Colors.black,
         ),
