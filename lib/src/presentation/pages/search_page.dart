@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -21,11 +19,6 @@ class _SearchPageState extends State<SearchPage> {
   late bool _isMobile;
   late bool _isTablet;
   late bool _isDesktop;
-
-  void _onArtistTap() {
-    final location = GoRouterState.of(context).fullPath;
-    context.go('$location${Routes.album}');
-  }
 
   @override
   void didChangeDependencies() {
@@ -152,7 +145,7 @@ class _SearchPageState extends State<SearchPage> {
       );
 
   Widget _artistView() => GestureDetector(
-        onTap: _onArtistTap,
+        onTap: () {},
         behavior: HitTestBehavior.opaque,
         child: SimpleListTile(
           padding: EdgeInsets.symmetric(

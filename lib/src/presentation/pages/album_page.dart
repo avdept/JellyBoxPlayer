@@ -97,14 +97,13 @@ class _AlbumPageState extends State<AlbumPage> {
                       if (_isDesktop)
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 30),
+                            padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Image.asset(Images.albumSample, height: 254),
                                 const SizedBox(width: 38),
                                 Expanded(child: _albumPanel()),
-                                const SizedBox(height: 12),
                               ],
                             ),
                           ),

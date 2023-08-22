@@ -5,7 +5,6 @@ import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/screen_factory.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class App extends StatefulWidget {
   const App({
@@ -23,18 +22,6 @@ class _AppState extends State<App> {
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(true);
-
-  late Size _screenSize;
-  late bool _isDesktop;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _screenSize = MediaQuery.sizeOf(context);
-
-    final deviceType = getDeviceType(_screenSize);
-    _isDesktop = deviceType == DeviceScreenType.desktop;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,23 +46,13 @@ class _AppState extends State<App> {
             path: Routes.login,
             pageBuilder: widget.screenFactory.loginPage,
           ),
-          if (!_isDesktop)
-            GoRoute(
-              path: Routes.library,
-              pageBuilder: widget.screenFactory.libraryPage,
-            ),
+          GoRoute(
+            path: Routes.library,
+            pageBuilder: widget.screenFactory.libraryPage,
+          ),
           StatefulShellRoute.indexedStack(
             pageBuilder: widget.screenFactory.mainPage,
             branches: [
-              if (_isDesktop)
-                StatefulShellBranch(
-                  routes: [
-                    GoRoute(
-                      path: Routes.library,
-                      pageBuilder: widget.screenFactory.libraryPage,
-                    ),
-                  ],
-                ),
               StatefulShellBranch(
                 routes: [
                   GoRoute(
@@ -95,12 +72,6 @@ class _AppState extends State<App> {
                   GoRoute(
                     path: Routes.search,
                     pageBuilder: widget.screenFactory.searchPage,
-                    routes: [
-                      GoRoute(
-                        path: Routes.album.name,
-                        pageBuilder: widget.screenFactory.albumPage,
-                      ),
-                    ],
                   ),
                 ],
               ),
