@@ -10,5 +10,5 @@ abstract class Routes {
 }
 
 extension RouteName on String {
-  String get name => split('/').last;
+  String get name => substring(1);
 }

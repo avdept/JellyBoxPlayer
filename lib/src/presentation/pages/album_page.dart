@@ -6,7 +6,6 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 class AlbumPage extends StatefulWidget {
   const AlbumPage({super.key});
@@ -16,7 +15,9 @@ class AlbumPage extends StatefulWidget {
 }
 
 class _AlbumPageState extends State<AlbumPage> {
-  final _titleIsVisible = ValueNotifier<bool>(false);
+  final _scrollController = ScrollController();
+  final _titleOpacity = ValueNotifier<double>(0);
+  final _titleKey = GlobalKey(debugLabel: 'title');
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -50,11 +51,13 @@ class _AlbumPageState extends State<AlbumPage> {
                   horizontal: _isMobile ? 16 : 30,
                 ),
                 middle: ValueListenableBuilder(
-                  valueListenable: _titleIsVisible,
-                  builder: (context, visible, child) => AnimatedOpacity(
-                    duration: const Duration(milliseconds: 100),
-                    opacity: visible ? 1 : 0,
-                    child: child,
+                  valueListenable: _titleOpacity,
+                  builder: (context, opacity, child) => Transform.translate(
+                    offset: Offset(0, 8 - 8 * opacity),
+                    child: Opacity(
+                      opacity: opacity,
+                      child: child,
+                    ),
                   ),
                   child: Text(
                     'Album name',
@@ -66,53 +69,77 @@ class _AlbumPageState extends State<AlbumPage> {
                 ),
               ),
               Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    if (_isDesktop)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 30),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Image.asset(Images.albumSample, height: 254),
-                              const SizedBox(width: 38),
-                              Expanded(child: _albumPanel()),
-                              const SizedBox(height: 12),
-                            ],
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (event) {
+                    final titleContext = _titleKey.currentContext;
+
+                    if (titleContext?.mounted ?? false) {
+                      final scrollableRenderBox =
+                          event.context!.findRenderObject()! as RenderBox;
+                      final titleRenderBox =
+                          titleContext!.findRenderObject()! as RenderBox;
+                      final titlePosition = titleRenderBox.localToGlobal(
+                        Offset.zero,
+                        ancestor: scrollableRenderBox,
+                      );
+                      final titleHeight = titleContext.size!.height;
+                      final visibleFraction =
+                          (titlePosition.dy + titleHeight) / titleHeight;
+
+                      _titleOpacity.value = 1 - min(max(visibleFraction, 0), 1);
+                    }
+
+                    return false;
+                  },
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      if (_isDesktop)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 30),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Image.asset(Images.albumSample, height: 254),
+                                const SizedBox(width: 38),
+                                Expanded(child: _albumPanel()),
+                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        )
+                      else ...[
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _isMobile ? 16 : 30,
+                          ),
+                          sliver: SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _FadeOutImageDelegate(
+                              image: const AssetImage(Images.albumSample),
+                              isMobile: _isMobile,
+                            ),
                           ),
                         ),
-                      )
-                    else ...[
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _isMobile ? 16 : 30,
-                        ),
-                        sliver: SliverPersistentHeader(
-                          pinned: true,
-                          delegate: _FadeOutImageDelegate(
-                            image: const AssetImage(Images.albumSample),
-                            isMobile: _isMobile,
+                        SliverPadding(
+                          padding: EdgeInsets.only(
+                            left: _isMobile ? 16 : 30,
+                            top: _isMobile ? 15 : 35,
+                            right: _isMobile ? 16 : 30,
+                            bottom: 18,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: _albumPanel(),
                           ),
                         ),
-                      ),
-                      SliverPadding(
-                        padding: EdgeInsets.only(
-                          left: _isMobile ? 16 : 30,
-                          top: _isMobile ? 15 : 35,
-                          right: _isMobile ? 16 : 30,
-                          bottom: 18,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: _albumPanel(),
-                        ),
+                      ],
+                      SliverList.builder(
+                        itemBuilder: (context, index) => _albumView(),
+                        itemCount: 30,
                       ),
                     ],
-                    SliverList.builder(
-                      itemBuilder: (context, index) => _albumView(),
-                      itemCount: 30,
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const BottomPlayer(),
@@ -126,7 +153,8 @@ class _AlbumPageState extends State<AlbumPage> {
   @override
   void dispose() {
     super.dispose();
-    _titleIsVisible.dispose();
+    _scrollController.dispose();
+    _titleOpacity.dispose();
   }
 
   Widget _albumPanel() => IconTheme(
@@ -142,19 +170,13 @@ class _AlbumPageState extends State<AlbumPage> {
                   Row(
                     children: [
                       Flexible(
-                        child: VisibilityDetector(
-                          key: const Key('title'),
-                          onVisibilityChanged: (info) {
-                            if (!mounted) return;
-                            _titleIsVisible.value = info.visibleFraction < 0.4;
-                          },
-                          child: Text(
-                            'Album name',
-                            style: TextStyle(
-                              fontSize: _isMobile ? 18 : 42,
-                              fontWeight: FontWeight.w600,
-                              height: 1.2,
-                            ),
+                        child: Text(
+                          'Album name',
+                          key: _titleKey,
+                          style: TextStyle(
+                            fontSize: _isMobile ? 18 : 42,
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
                           ),
                         ),
                       ),
@@ -372,7 +394,7 @@ class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
       image: image,
       height: max(maxExtent - shrinkOffset, 0),
       opacity: AlwaysStoppedAnimation(
-        max((maxExtent - shrinkOffset * 2) / maxExtent, 0),
+        max((maxExtent - shrinkOffset * 1.5) / maxExtent, 0),
       ),
     );
   }

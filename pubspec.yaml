@@ -22,7 +22,6 @@ dependencies:
   modal_bottom_sheet: ^3.0.0-pre
   palette_generator: ^0.3.3+2
   responsive_builder: ^0.7.0
-  visibility_detector: ^0.4.0+2
 
 
 dev_dependencies:
