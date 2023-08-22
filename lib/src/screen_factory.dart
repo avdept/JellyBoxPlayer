@@ -74,12 +74,12 @@ class ScreenFactory {
   Page<void> mainPage(
     BuildContext context,
     GoRouterState router,
-    Widget child,
+    StatefulNavigationShell shell,
   ) {
     return MaterialPage(
       key: router.pageKey,
       name: router.path,
-      child: MainPage(child: child),
+      child: MainPage(shell: shell),
     );
   }
 

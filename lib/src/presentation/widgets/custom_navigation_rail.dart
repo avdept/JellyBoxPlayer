@@ -54,7 +54,10 @@ class CustomNavigationRail extends StatelessWidget {
                 leading!,
                 SizedBox(height: leadingGap),
               ],
-              ...List.generate(destinations.length, _itemView),
+              for (var index = 0; index < destinations.length; index++) ...[
+                if (index > 0) const SizedBox(height: 20),
+                _itemView(index),
+              ],
               const Spacer(),
               if (trailing != null) trailing!,
             ],

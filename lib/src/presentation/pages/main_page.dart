@@ -2,59 +2,53 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({
-    required this.child,
+    required this.shell,
     super.key,
   });
 
-  final Widget child;
+  final StatefulNavigationShell shell;
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
-  late GoRouterState _router;
   late ThemeData _theme;
   late Size _screenSize;
+  late bool _isMobile;
+  late bool _isDesktop;
 
-  Set<(IconData, String, String)> get _menuItems => {
-        (JPlayer.play_circle_outlined, 'Listen', Routes.listen),
-        (JPlayer.search, 'Search', Routes.search),
-        (JPlayer.settings, 'Settings', Routes.settings),
-        (JPlayer.download, 'Downloads', Routes.downloads),
+  Set<(IconData, String)> get _menuItems => {
+        (JPlayer.play_circle_outlined, 'Listen'),
+        (JPlayer.search, 'Search'),
+        (JPlayer.settings, 'Settings'),
+        (JPlayer.download, 'Downloads'),
       };
 
-  void _navigateToItem(int index) => context.go(_menuItems.elementAt(index).$3);
-
-  int? _getLocationIndex(String location) {
-    for (var index = 0; index < _menuItems.length; index++) {
-      final tabRoute = _menuItems.elementAt(index).$3;
-      if (location.startsWith(tabRoute)) return index;
-    }
-
-    return null;
-  }
+  void _navigateToItem(int index) => widget.shell.goBranch(
+        index,
+        initialLocation: index == widget.shell.currentIndex,
+      );
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _router = GoRouterState.of(context);
     _theme = Theme.of(context);
     _screenSize = MediaQuery.sizeOf(context);
+
+    final deviceType = getDeviceType(_screenSize);
+    _isMobile = deviceType == DeviceScreenType.mobile;
+    _isDesktop = deviceType == DeviceScreenType.desktop;
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentIndex = _getLocationIndex(_router.uri.toString());
-    final deviceType = getDeviceType(_screenSize);
-    final isMobile = deviceType == DeviceScreenType.mobile;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
+    final currentIndex = widget.shell.currentIndex;
 
     return Scaffold(
       body: Column(
@@ -63,9 +57,12 @@ class _MainPageState extends State<MainPage> {
             child: Row(
               children: [
                 Visibility(
-                  visible: isDesktop,
+                  visible: _isDesktop,
                   child: CustomNavigationRail(
-                    padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 30,
+                      horizontal: 20,
+                    ),
                     selectedItemColor: _theme.colorScheme.primary,
                     unselectedItemColor: _theme.colorScheme.onPrimary,
                     selectedFontSize: 16,
@@ -97,7 +94,7 @@ class _MainPageState extends State<MainPage> {
                     ),
                   ),
                 ),
-                Expanded(child: widget.child),
+                Expanded(child: widget.shell),
               ],
             ),
           ),
@@ -105,13 +102,13 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       bottomNavigationBar: Visibility(
-        visible: !isDesktop,
+        visible: !_isDesktop,
         child: CupertinoTabBar(
           activeColor: _theme.colorScheme.primary,
           inactiveColor: _theme.colorScheme.onPrimary,
-          iconSize: isMobile ? 28 : 60,
-          height: isMobile ? 56 : 88,
-          currentIndex: currentIndex ?? 0,
+          iconSize: _isMobile ? 28 : 60,
+          height: _isMobile ? 56 : 88,
+          currentIndex: currentIndex,
           onTap: _navigateToItem,
           items: List.generate(
             _menuItems.length,

@@ -21,7 +21,6 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-  final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
   final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(true);
 
@@ -65,46 +64,65 @@ class _AppState extends State<App> {
               path: Routes.library,
               pageBuilder: widget.screenFactory.libraryPage,
             ),
-          ShellRoute(
-            navigatorKey: _shellNavigatorKey,
+          StatefulShellRoute.indexedStack(
             pageBuilder: widget.screenFactory.mainPage,
-            routes: [
+            branches: [
               if (_isDesktop)
-                GoRoute(
-                  path: Routes.library,
-                  pageBuilder: widget.screenFactory.libraryPage,
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: Routes.library,
+                      pageBuilder: widget.screenFactory.libraryPage,
+                    ),
+                  ],
                 ),
-              GoRoute(
-                path: Routes.listen,
-                pageBuilder: widget.screenFactory.listenPage,
+              StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: Routes.album.name,
-                    pageBuilder: widget.screenFactory.albumPage,
+                    path: Routes.listen,
+                    pageBuilder: widget.screenFactory.listenPage,
+                    routes: [
+                      GoRoute(
+                        path: Routes.album.name,
+                        pageBuilder: widget.screenFactory.albumPage,
+                      ),
+                    ],
                   ),
                 ],
               ),
-              GoRoute(
-                path: Routes.search,
-                pageBuilder: widget.screenFactory.searchPage,
+              StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: Routes.album.name,
-                    pageBuilder: widget.screenFactory.albumPage,
+                    path: Routes.search,
+                    pageBuilder: widget.screenFactory.searchPage,
+                    routes: [
+                      GoRoute(
+                        path: Routes.album.name,
+                        pageBuilder: widget.screenFactory.albumPage,
+                      ),
+                    ],
                   ),
                 ],
               ),
-              GoRoute(
-                path: Routes.settings,
-                pageBuilder: widget.screenFactory.settingsPage,
-              ),
-              GoRoute(
-                path: Routes.downloads,
-                pageBuilder: widget.screenFactory.downloadsPage,
+              StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: Routes.album.name,
-                    pageBuilder: widget.screenFactory.albumPage,
+                    path: Routes.settings,
+                    pageBuilder: widget.screenFactory.settingsPage,
+                  ),
+                ],
+              ),
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: Routes.downloads,
+                    pageBuilder: widget.screenFactory.downloadsPage,
+                    routes: [
+                      GoRoute(
+                        path: Routes.album.name,
+                        pageBuilder: widget.screenFactory.albumPage,
+                      ),
+                    ],
                   ),
                 ],
               ),

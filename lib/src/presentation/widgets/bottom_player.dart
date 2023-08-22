@@ -177,7 +177,7 @@ class _BottomPlayerState extends State<BottomPlayer>
   Future<void> _onImageProviderChanged() async {
     final imageProvider = _imageProvider.value;
 
-    if (imageProvider != null) {
+    if (imageProvider != null && mounted) {
       _dynamicColors.value = await ColorScheme.fromImageProvider(
         provider: imageProvider,
         brightness: _theme.brightness,
