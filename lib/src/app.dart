@@ -9,10 +9,12 @@ import 'package:jplayer/src/screen_factory.dart';
 class App extends StatefulWidget {
   const App({
     required this.screenFactory,
+    this.initialRoute,
     super.key,
   });
 
   final ScreenFactory screenFactory;
+  final String? initialRoute;
 
   @override
   State<App> createState() => _AppState();
@@ -103,17 +105,17 @@ class _AppState extends State<App> {
         ],
         redirect: (context, router) async {
           final authenticated = _authState.value;
-          final matchedLocation = router.matchedLocation;
+          final location = router.matchedLocation;
 
           if (authenticated == null) {
             return Routes.root;
           } else if (authenticated) {
-            if (matchedLocation.startsWith(Routes.listen)) return null;
-            if (matchedLocation.startsWith(Routes.search)) return null;
-            if (matchedLocation.startsWith(Routes.settings)) return null;
-            if (matchedLocation.startsWith(Routes.downloads)) return null;
-            return Routes.library;
-          } else if (matchedLocation != Routes.login) {
+            if (location.startsWith(Routes.listen)) return null;
+            if (location.startsWith(Routes.search)) return null;
+            if (location.startsWith(Routes.settings)) return null;
+            if (location.startsWith(Routes.downloads)) return null;
+            return widget.initialRoute ?? Routes.library;
+          } else if (location != Routes.login) {
             return Routes.login;
           }
 
