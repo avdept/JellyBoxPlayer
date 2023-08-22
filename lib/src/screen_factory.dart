@@ -9,10 +9,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return MaterialPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const AlbumPage(),
+    return const MaterialPage(
+      child: AlbumPage(),
     );
   }
 
@@ -20,10 +18,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const DownloadsPage(),
+    return const NoTransitionPage(
+      child: DownloadsPage(),
     );
   }
 
@@ -31,10 +27,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return MaterialPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const InitialPage(),
+    return const MaterialPage(
+      child: InitialPage(),
     );
   }
 
@@ -42,10 +36,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const LibraryPage(),
+    return const NoTransitionPage(
+      child: LibraryPage(),
     );
   }
 
@@ -53,10 +45,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const ListenPage(),
+    return const NoTransitionPage(
+      child: ListenPage(),
     );
   }
 
@@ -64,10 +54,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return MaterialPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const LoginPage(),
+    return const MaterialPage(
+      child: LoginPage(),
     );
   }
 
@@ -77,8 +65,6 @@ class ScreenFactory {
     StatefulNavigationShell shell,
   ) {
     return MaterialPage(
-      key: router.pageKey,
-      name: router.path,
       child: MainPage(shell: shell),
     );
   }
@@ -87,10 +73,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const ColorPalettePage(),
+    return const NoTransitionPage(
+      child: ColorPalettePage(),
     );
   }
 
@@ -98,10 +82,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const SearchPage(),
+    return const NoTransitionPage(
+      child: SearchPage(),
     );
   }
 
@@ -109,10 +91,8 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
-      key: router.pageKey,
-      name: router.path,
-      child: const SettingsPage(),
+    return const NoTransitionPage(
+      child: SettingsPage(),
     );
   }
 }
