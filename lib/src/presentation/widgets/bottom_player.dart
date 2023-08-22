@@ -32,6 +32,7 @@ class _BottomPlayerState extends State<BottomPlayer>
   late EdgeInsets _viewPadding;
   late Size _screenSize;
   late bool _isMobile;
+  late bool _isDesktop;
 
   Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
         ModalSheetRoute(
@@ -205,6 +206,7 @@ class _BottomPlayerState extends State<BottomPlayer>
 
     final deviceType = getDeviceType(_screenSize);
     _isMobile = deviceType == DeviceScreenType.mobile;
+    _isDesktop = deviceType == DeviceScreenType.desktop;
   }
 
   @override
@@ -214,10 +216,11 @@ class _BottomPlayerState extends State<BottomPlayer>
       children: [
         Container(
           height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-          color: _theme.bottomSheetTheme.backgroundColor,
+          color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
           padding: EdgeInsets.only(bottom: _viewPadding.bottom),
           child: GestureDetector(
-            onTap: _onExpand,
+            onTap: !_isDesktop ? _onExpand : null,
+            behavior: HitTestBehavior.opaque,
             child: SimpleListTile(
               padding: const EdgeInsets.only(right: 8),
               leading: AspectRatio(
@@ -246,14 +249,14 @@ class _BottomPlayerState extends State<BottomPlayer>
                 spacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (!_isMobile) _randomQueueButton(),
+                  if (_isDesktop) _randomQueueButton(),
                   _prevTrackButton(),
                   SizedBox.square(
                     dimension: 45,
                     child: _playPauseButton(),
                   ),
                   _nextTrackButton(),
-                  if (!_isMobile) _repeatTrackButton(),
+                  if (_isDesktop) _repeatTrackButton(),
                 ],
               ),
               leadingToTitle: 15,

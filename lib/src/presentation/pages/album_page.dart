@@ -135,14 +135,13 @@ class _AlbumPageState extends State<AlbumPage> {
                         ),
                       ],
                       SliverList.builder(
-                        itemBuilder: (context, index) => _albumView(),
+                        itemBuilder: (context, index) => _songView(),
                         itemCount: 30,
                       ),
                     ],
                   ),
                 ),
               ),
-              const BottomPlayer(),
             ],
           ),
         ),
@@ -310,7 +309,7 @@ class _AlbumPageState extends State<AlbumPage> {
     );
   }
 
-  Widget _albumView() => GestureDetector(
+  Widget _songView() => GestureDetector(
         onTap: () {},
         behavior: HitTestBehavior.opaque,
         child: SimpleListTile(
@@ -355,14 +354,33 @@ class _AlbumPageState extends State<AlbumPage> {
               height: 1.2,
             ),
           ),
-          trailing: SizedBox.square(
-            dimension: 30,
-            child: CircularProgressIndicator(
-              value: 0.8,
-              color: const Color(0xFF0066FF),
-              backgroundColor: _theme.colorScheme.onPrimary,
-              strokeWidth: 2,
-            ),
+          trailing: Wrap(
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (_isDesktop)
+                IconButton(
+                  onPressed: () {},
+                  icon: Icon(
+                    CupertinoIcons.heart,
+                    color: _theme.colorScheme.onPrimary,
+                  ),
+                  selectedIcon: Icon(
+                    CupertinoIcons.heart_fill,
+                    color: _theme.colorScheme.primary,
+                  ),
+                  isSelected: true,
+                ),
+              SizedBox.square(
+                dimension: 30,
+                child: CircularProgressIndicator(
+                  value: 0.8,
+                  color: const Color(0xFF0066FF),
+                  backgroundColor: _theme.colorScheme.onPrimary,
+                  strokeWidth: 2,
+                ),
+              ),
+            ],
           ),
           leadingToTitle: 22,
         ),
