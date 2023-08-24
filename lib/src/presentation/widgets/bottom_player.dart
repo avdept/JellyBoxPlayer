@@ -27,7 +27,6 @@ class _BottomPlayerState extends State<BottomPlayer>
   final _sliderKey = GlobalKey(debugLabel: 'slider');
 
   late ThemeData _theme;
-  late IconThemeData _iconTheme;
   late MaterialLocalizations _localizations;
   late EdgeInsets _viewPadding;
   late Size _screenSize;
@@ -75,7 +74,7 @@ class _BottomPlayerState extends State<BottomPlayer>
                             ),
                             SizedBox(height: _isMobile ? 6 : 18),
                             IconTheme(
-                              data: _iconTheme.copyWith(
+                              data: _theme.iconTheme.copyWith(
                                 size: _isMobile ? 28 : 24,
                               ),
                               child: Row(
@@ -128,7 +127,9 @@ class _BottomPlayerState extends State<BottomPlayer>
                       ),
                       SizedBox(height: _isMobile ? 23 : 56),
                       IconTheme(
-                        data: _iconTheme.copyWith(size: _isMobile ? 37 : 46),
+                        data: _theme.iconTheme.copyWith(
+                          size: _isMobile ? 37 : 46,
+                        ),
                         child: Wrap(
                           spacing: _isMobile ? 40 : 24,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -199,7 +200,6 @@ class _BottomPlayerState extends State<BottomPlayer>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _theme = Theme.of(context);
-    _iconTheme = IconTheme.of(context);
     _localizations = MaterialLocalizations.of(context);
     _viewPadding = MediaQuery.viewPaddingOf(context);
     _screenSize = MediaQuery.sizeOf(context);

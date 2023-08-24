@@ -51,54 +51,54 @@ class _MainPageState extends State<MainPage> {
     final currentIndex = widget.shell.currentIndex;
 
     return Scaffold(
-      body: Column(
+      body: Row(
         children: [
-          Expanded(
-            child: Row(
-              children: [
-                Visibility(
-                  visible: _isDesktop,
-                  child: CustomNavigationRail(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 30,
-                      horizontal: 20,
-                    ),
-                    selectedItemColor: _theme.colorScheme.primary,
-                    unselectedItemColor: _theme.colorScheme.onPrimary,
-                    selectedFontSize: 16,
-                    unselectedFontSize: 16,
-                    leading: const Text(
-                      'Logo',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    trailing: TextButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(JPlayer.log_out),
-                      label: const Text('Log out'),
-                    ),
-                    selectedIndex: currentIndex,
-                    onDestinationSelected: _navigateToItem,
-                    destinations: List.generate(
-                      _menuItems.length,
-                      (index) => NavigationRailDestination(
-                        icon: Icon(_menuItems.elementAt(index).$1),
-                        label: Text(_menuItems.elementAt(index).$2),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 10,
-                        ),
-                      ),
-                    ),
+          Visibility(
+            visible: _isDesktop,
+            child: CustomNavigationRail(
+              padding: const EdgeInsets.symmetric(
+                vertical: 30,
+                horizontal: 20,
+              ),
+              selectedItemColor: _theme.colorScheme.primary,
+              unselectedItemColor: _theme.colorScheme.onPrimary,
+              selectedFontSize: 16,
+              unselectedFontSize: 16,
+              leading: const Text(
+                'Logo',
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(JPlayer.log_out),
+                label: const Text('Log out'),
+              ),
+              selectedIndex: currentIndex,
+              onDestinationSelected: _navigateToItem,
+              destinations: List.generate(
+                _menuItems.length,
+                (index) => NavigationRailDestination(
+                  icon: Icon(_menuItems.elementAt(index).$1),
+                  label: Text(_menuItems.elementAt(index).$2),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
                   ),
                 ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: [
                 Expanded(child: widget.shell),
+                const BottomPlayer(),
               ],
             ),
           ),
-          const BottomPlayer(),
         ],
       ),
       bottomNavigationBar: Visibility(

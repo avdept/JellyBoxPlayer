@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class LibraryPage extends StatelessWidget {
@@ -20,11 +20,13 @@ class LibraryPage extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        minimum: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(vertical: isMobile ? 12 : 30),
+              padding: EdgeInsets.symmetric(
+                vertical: isMobile ? 12 : 30,
+                horizontal: isMobile ? 16 : 30,
+              ),
               child: Row(
                 children: [
                   CircleAvatar(
@@ -40,16 +42,19 @@ class LibraryPage extends StatelessWidget {
             Expanded(
               child: Material(
                 type: MaterialType.transparency,
-                clipBehavior: Clip.hardEdge,
                 child: GridView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
                   gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: isTablet ? 370 : 358,
                     mainAxisSpacing: isMobile ? 13 : 34,
                     crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
                     childAspectRatio: isTablet ? 370 / 255 : 358 / 233,
                   ),
-                  itemBuilder: (context, index) => _libraryView(),
-                  itemCount: 10,
+                  itemBuilder: (context, index) => LibraryView(
+                    name: 'Library name',
+                    onTap: () => _onLibraryTap(context),
+                  ),
+                  itemCount: 20,
                 ),
               ),
             ),
@@ -71,34 +76,5 @@ class LibraryPage extends StatelessWidget {
   Widget _searchButton() => IconButton(
         onPressed: () {},
         icon: const Icon(JPlayer.search),
-      );
-
-  Widget _libraryView() => Builder(
-        builder: (context) => GestureDetector(
-          onTap: () => _onLibraryTap(context),
-          behavior: HitTestBehavior.opaque,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Ink.image(
-                    image: const AssetImage(Images.librarySample),
-                  ),
-                ),
-              ),
-              const Text(
-                'Library name',
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                maxLines: 1,
-              ),
-            ],
-          ),
-        ),
       );
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -14,7 +13,6 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _searchFieldController = TextEditingController();
 
-  late ThemeData _theme;
   late Size _screenSize;
   late bool _isMobile;
   late bool _isTablet;
@@ -23,7 +21,6 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _theme = Theme.of(context);
     _screenSize = MediaQuery.sizeOf(context);
 
     final deviceType = getDeviceType(_screenSize);
@@ -67,11 +64,13 @@ class _SearchPageState extends State<SearchPage> {
               Expanded(
                 child: Material(
                   type: MaterialType.transparency,
-                  clipBehavior: Clip.hardEdge,
                   child: CustomScrollView(
                     slivers: [
                       SliverList.separated(
-                        itemBuilder: (context, index) => _artistView(),
+                        itemBuilder: (context, index) => SingerView(
+                          name: 'Rihanna',
+                          onSelectPressed: () {},
+                        ),
                         separatorBuilder: (context, index) => SizedBox(
                           height: _isMobile ? 12 : 24,
                         ),
@@ -89,8 +88,12 @@ class _SearchPageState extends State<SearchPage> {
                           mainAxisExtent: _isMobile ? 54 : 74,
                           crossAxisSpacing: 70,
                         ),
-                        itemBuilder: (context, index) => _songView(),
-                        itemCount: 10,
+                        itemBuilder: (context, index) => SongView(
+                          name: 'Song name',
+                          onTap: () {},
+                          onOptionsPressed: () {},
+                        ),
+                        itemCount: 30,
                       ),
                     ],
                   ),
@@ -141,84 +144,6 @@ class _SearchPageState extends State<SearchPage> {
             padding: EdgeInsets.zero,
             icon: const Icon(JPlayer.close),
           ),
-        ),
-      );
-
-  Widget _artistView() => GestureDetector(
-        onTap: () {},
-        behavior: HitTestBehavior.opaque,
-        child: SimpleListTile(
-          padding: EdgeInsets.symmetric(
-            // vertical: _isMobile ? 6 : 12,
-            horizontal: _isMobile ? 16 : 30,
-          ),
-          leading: Ink.image(
-            image: const AssetImage(Images.artistSample),
-            width: _isMobile ? 42 : 80,
-            height: _isMobile ? 42 : 80,
-          ),
-          title: Text(
-            'Rihanna',
-            style: TextStyle(
-              fontSize: _isTablet ? 20 : 16,
-              height: 1.2,
-              color: _theme.colorScheme.onPrimary,
-              overflow: TextOverflow.ellipsis,
-            ),
-            maxLines: 1,
-          ),
-          subtitle: Text(
-            'Artist',
-            style: TextStyle(
-              fontSize: _isTablet ? 16 : 12,
-              height: 1.2,
-              color: _theme.colorScheme.onPrimary.withOpacity(0.61),
-            ),
-          ),
-          trailing: IconButton(
-            onPressed: () {},
-            icon: const Icon(JPlayer.chevron_right),
-          ),
-          leadingToTitle: _isMobile ? 6 : (_isTablet ? 16 : 20),
-        ),
-      );
-
-  Widget _songView() => GestureDetector(
-        onTap: () {},
-        behavior: HitTestBehavior.opaque,
-        child: SimpleListTile(
-          padding: EdgeInsets.symmetric(
-            vertical: _isMobile ? 6 : 12,
-            horizontal: _isMobile ? 16 : 30,
-          ),
-          leading: Ink.image(
-            image: const AssetImage(Images.songSample),
-            width: _isMobile ? 42 : 50,
-            height: _isMobile ? 42 : 50,
-          ),
-          title: Text(
-            'Song name',
-            style: TextStyle(
-              fontSize: _isTablet ? 20 : 16,
-              height: 1.2,
-              color: _theme.colorScheme.onPrimary,
-              overflow: TextOverflow.ellipsis,
-            ),
-            maxLines: 1,
-          ),
-          subtitle: Text(
-            'Song',
-            style: TextStyle(
-              fontSize: _isTablet ? 16 : 12,
-              height: 1.2,
-              color: _theme.colorScheme.onPrimary.withOpacity(0.61),
-            ),
-          ),
-          trailing: IconButton(
-            onPressed: () {},
-            icon: const Icon(JPlayer.more_horizontal),
-          ),
-          leadingToTitle: _isMobile ? 6 : 16,
         ),
       );
 }

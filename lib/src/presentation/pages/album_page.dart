@@ -134,7 +134,15 @@ class _AlbumPageState extends State<AlbumPage> {
                         ),
                       ],
                       SliverList.builder(
-                        itemBuilder: (context, index) => _songView(),
+                        itemBuilder: (context, index) => PlayerSongView(
+                          name: 'Chi Shenidi? (feat. Hichkas)',
+                          singer: 'Fadaei',
+                          isPlaying: index == 1,
+                          isFavorite: index == 0,
+                          downloadProgress: index == 2 ? 0.8 : null,
+                          onTap: () {},
+                          onLikePressed: () {},
+                        ),
                         itemCount: 30,
                       ),
                     ],
@@ -156,7 +164,7 @@ class _AlbumPageState extends State<AlbumPage> {
   }
 
   Widget _albumPanel() => IconTheme(
-        data: IconTheme.of(context).copyWith(size: _isMobile ? 24 : 28),
+        data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -307,83 +315,6 @@ class _AlbumPageState extends State<AlbumPage> {
       ),
     );
   }
-
-  Widget _songView() => GestureDetector(
-        onTap: () {},
-        behavior: HitTestBehavior.opaque,
-        child: SimpleListTile(
-          padding: EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: _isMobile ? 16 : 30,
-          ),
-          // leading: Stack(
-          //   alignment: Alignment.center,
-          //   children: [
-          //     Ink(
-          //       decoration: const BoxDecoration(
-          //         image: DecorationImage(
-          //           image: AssetImage(Images.songSample),
-          //           fit: BoxFit.scaleDown,
-          //         ),
-          //         shape: BoxShape.circle,
-          //       ),
-          //       width: 52,
-          //       height: 52,
-          //       child: const CircularProgressIndicator(value: 0.6),
-          //     ),
-          //     const AnimatedIcon(
-          //       icon: AnimatedIcons.play_pause,
-          //       progress: AlwaysStoppedAnimation(1),
-          //     ),
-          //   ],
-          // ),
-          title: const Text(
-            'Chi Shenidi? (feat. Hichkas)',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
-            ),
-          ),
-          subtitle: const Text(
-            'Fadaei',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w300,
-              height: 1.2,
-            ),
-          ),
-          trailing: Wrap(
-            spacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (_isDesktop)
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(
-                    CupertinoIcons.heart,
-                    color: _theme.colorScheme.onPrimary,
-                  ),
-                  selectedIcon: Icon(
-                    CupertinoIcons.heart_fill,
-                    color: _theme.colorScheme.primary,
-                  ),
-                  isSelected: true,
-                ),
-              SizedBox.square(
-                dimension: 30,
-                child: CircularProgressIndicator(
-                  value: 0.8,
-                  color: const Color(0xFF0066FF),
-                  backgroundColor: _theme.colorScheme.onPrimary,
-                  strokeWidth: 2,
-                ),
-              ),
-            ],
-          ),
-          leadingToTitle: 22,
-        ),
-      );
 }
 
 class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {

@@ -34,10 +34,12 @@ class SettingsPage extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
+                const SizedBox(height: 20),
                 Wrap(
                   direction: Axis.vertical,
+                  spacing: 4,
                   children: [
-                    _librariesButton(),
+                    _librariesButton(context),
                     if (!isDesktop) _logOutButton(),
                   ],
                 ),
@@ -49,12 +51,10 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _librariesButton() => Builder(
-        builder: (context) => TextButton.icon(
-          onPressed: () => _onLibrariesPressed(context),
-          icon: const Icon(JPlayer.music),
-          label: const Text('Music libraries'),
-        ),
+  Widget _librariesButton(BuildContext context) => TextButton.icon(
+        onPressed: () => _onLibrariesPressed(context),
+        icon: const Icon(JPlayer.music),
+        label: const Text('Music libraries'),
       );
 
   Widget _logOutButton() => TextButton.icon(

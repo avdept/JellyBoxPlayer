@@ -1,7 +1,13 @@
 export 'adaptive_builder.dart';
+export 'album_view.dart';
 export 'bottom_player.dart';
 export 'custom_navigation_rail.dart';
+export 'downloaded_album_view.dart';
 export 'gradient_background.dart';
 export 'labeled_text_field.dart';
+export 'library_view.dart';
 export 'play_pause_button.dart';
+export 'player_song_view.dart';
 export 'simple_list_tile.dart';
+export 'singer_view.dart';
+export 'song_view.dart';

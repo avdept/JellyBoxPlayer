@@ -2,7 +2,6 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -71,11 +70,10 @@ class _ListenPageState extends State<ListenPage> {
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
-          minimum: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
           child: Column(
             children: [
               Padding(
-                padding: EdgeInsets.symmetric(vertical: _isMobile ? 16 : 30),
+                padding: EdgeInsets.all(_isMobile ? 16 : 30),
                 child: Row(
                   children: [
                     _pageViewToggle(),
@@ -87,18 +85,23 @@ class _ListenPageState extends State<ListenPage> {
               Expanded(
                 child: Material(
                   type: MaterialType.transparency,
-                  clipBehavior: Clip.hardEdge,
                   child: ValueListenableBuilder(
                     valueListenable: _currentView,
                     builder: (context, currentView, child) => GridView.builder(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _isMobile ? 16 : 30,
+                      ),
                       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: _isTablet ? 360 : 175,
                         mainAxisSpacing: _isMobile ? 15 : 24,
                         crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
                         childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
                       ),
-                      itemBuilder: (context, index) => _albumView(),
-                      itemCount: 10,
+                      itemBuilder: (context, index) => AlbumView(
+                        name: 'Album name',
+                        onTap: _onAlbumTap,
+                      ),
+                      itemCount: 20,
                     ),
                   ),
                 ),
@@ -212,37 +215,6 @@ class _ListenPageState extends State<ListenPage> {
             },
             onMenuStateChange: (value) => _filterOpened.value = value,
           ),
-        ),
-      );
-
-  Widget _albumView() => GestureDetector(
-        onTap: _onAlbumTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  image: const DecorationImage(
-                    image: AssetImage(Images.albumSample),
-                  ),
-                ),
-              ),
-            ),
-            Text(
-              'Album name',
-              style: TextStyle(
-                fontSize: _isTablet ? 24 : 16,
-                fontWeight: FontWeight.w500,
-                height: 1.2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              maxLines: 1,
-            ),
-          ],
         ),
       );
 }

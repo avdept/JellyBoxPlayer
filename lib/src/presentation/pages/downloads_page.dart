@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -16,12 +14,10 @@ class DownloadsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final screenSize = MediaQuery.sizeOf(context);
     final deviceType = getDeviceType(screenSize);
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
-    final listItemExtent = isMobile ? 42.0 : 70.0;
 
     return Scaffold(
       body: GradientBackground(
@@ -30,12 +26,7 @@ class DownloadsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.only(
-                  left: isMobile ? 16 : 30,
-                  top: isMobile ? 16 : 30,
-                  right: isMobile ? 16 : 30,
-                  bottom: isMobile ? 22 : 32,
-                ),
+                padding: EdgeInsets.all(isMobile ? 16 : 30),
                 child: Flex(
                   direction: isMobile ? Axis.vertical : Axis.horizontal,
                   crossAxisAlignment: isMobile
@@ -64,74 +55,30 @@ class DownloadsPage extends StatelessWidget {
               Expanded(
                 child: Material(
                   type: MaterialType.transparency,
-                  clipBehavior: Clip.hardEdge,
                   child: GridView.builder(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isDesktop ? 30 : 0,
+                    padding: EdgeInsets.only(
+                      left: isMobile ? 16 : 30,
+                      top: isDesktop ? 0 : 6,
+                      right: isMobile ? 16 : 30,
+                      bottom: isMobile ? 12 : 24,
                     ),
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: isDesktop ? 245 : screenSize.width,
-                      mainAxisSpacing: isDesktop ? 24 : 0,
-                      crossAxisSpacing: 30,
-                      childAspectRatio: 245 / 298.2,
-                      mainAxisExtent: !isDesktop
-                          ? listItemExtent + (isMobile ? 18 : 24)
-                          : null,
-                    ),
-                    itemBuilder: (context, index) => GestureDetector(
+                    gridDelegate: isDesktop
+                        ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 245,
+                            mainAxisSpacing: 24,
+                            crossAxisSpacing: 30,
+                            childAspectRatio: 245 / 293,
+                          )
+                        : SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 1,
+                            mainAxisSpacing: isMobile ? 12 : 24,
+                            mainAxisExtent: isMobile ? 42 : 70,
+                          ),
+                    itemBuilder: (context, index) => DownloadedAlbumView(
+                      name: 'Album name',
+                      size: '124.6 MB',
                       onTap: () => _onAlbumTap(context),
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Offstage(
-                            offstage: !isDesktop,
-                            child: AspectRatio(
-                              aspectRatio: 1,
-                              child: Ink.image(
-                                image: const AssetImage(Images.albumSample),
-                              ),
-                            ),
-                          ),
-                          SimpleListTile(
-                            padding: isDesktop
-                                ? EdgeInsets.zero
-                                : EdgeInsets.symmetric(
-                                    vertical: isMobile ? 6 : 12,
-                                    horizontal: isMobile ? 16 : 30,
-                                  ),
-                            leading: Offstage(
-                              offstage: isDesktop,
-                              child: Ink.image(
-                                image: const AssetImage(Images.albumSample),
-                                width: listItemExtent,
-                                height: listItemExtent,
-                              ),
-                            ),
-                            title: Text(
-                              'Album name',
-                              style: TextStyle(
-                                fontSize: 16,
-                                height: 1.2,
-                                color: theme.colorScheme.onPrimary,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              maxLines: 1,
-                            ),
-                            subtitle: Text(
-                              '124.6 MB',
-                              style: TextStyle(
-                                fontSize: 16,
-                                height: 1.2,
-                                color: theme.colorScheme.onPrimary
-                                    .withOpacity(0.61),
-                              ),
-                            ),
-                            trailing: _deleteButton(),
-                            leadingToTitle: isDesktop ? 0 : (isMobile ? 6 : 16),
-                          ),
-                        ],
-                      ),
+                      onDeletePressed: () {},
                     ),
                     itemCount: 10,
                   ),
@@ -143,10 +90,4 @@ class DownloadsPage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _deleteButton() => IconButton(
-        onPressed: () {},
-        padding: EdgeInsets.zero,
-        icon: const Icon(JPlayer.trash_2),
-      );
 }
