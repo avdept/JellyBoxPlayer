@@ -39,7 +39,7 @@ class _SearchPageState extends State<SearchPage> {
               Padding(
                 padding: EdgeInsets.only(
                   left: _isMobile ? 16 : 30,
-                  top: _isMobile ? 0 : 3.5,
+                  top: _isDesktop ? 30 : (_isMobile ? 0 : 3.5),
                   right: _isMobile ? 16 : 30,
                   bottom: _isMobile ? 22 : 32,
                 ),
@@ -62,41 +62,52 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
               Expanded(
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverList.separated(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _isMobile ? 16 : 30,
+                      ),
+                      sliver: SliverList.separated(
                         itemBuilder: (context, index) => SingerView(
                           name: 'Rihanna',
-                          onSelectPressed: () {},
+                          onTap: () {},
                         ),
                         separatorBuilder: (context, index) => SizedBox(
                           height: _isMobile ? 12 : 24,
                         ),
                         itemCount: 1,
                       ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: _isMobile ? 28 : (_isTablet ? 30 : 40),
-                        ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.only(
+                        left: _isMobile ? 16 : 30,
+                        top: _isDesktop ? 40 : (_isMobile ? 28 : 30),
+                        right: _isMobile ? 16 : 30,
+                        bottom: _isDesktop ? 30 : 16,
                       ),
-                      SliverGrid.builder(
-                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent:
-                              _isDesktop ? 360 : _screenSize.width,
-                          mainAxisExtent: _isMobile ? 54 : 74,
-                          crossAxisSpacing: 70,
-                        ),
+                      sliver: SliverGrid.builder(
+                        gridDelegate: _isDesktop
+                            ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 360,
+                                mainAxisSpacing: 24,
+                                crossAxisSpacing: 70,
+                                mainAxisExtent: 50,
+                              )
+                            : SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 1,
+                                mainAxisSpacing: _isMobile ? 12 : 24,
+                                mainAxisExtent: _isMobile ? 42 : 50,
+                              ),
                         itemBuilder: (context, index) => SongView(
                           name: 'Song name',
                           onTap: () {},
                           onOptionsPressed: () {},
                         ),
-                        itemCount: 30,
+                        itemCount: 50,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],

@@ -34,20 +34,26 @@ class DownloadedAlbumView extends StatelessWidget {
           children: [
             Offstage(
               offstage: !isDesktop,
-              child: AspectRatio(
+              child: const AspectRatio(
                 aspectRatio: 1,
-                child: Ink.image(
-                  image: const AssetImage(Images.albumSample),
+                child: Image(
+                  image: AssetImage(Images.albumSample),
+                  fit: BoxFit.fitWidth,
                 ),
               ),
             ),
             SimpleListTile(
               leading: Offstage(
                 offstage: isDesktop,
-                child: Ink.image(
-                  image: const AssetImage(Images.albumSample),
-                  width: constraints.maxHeight,
-                  height: constraints.maxHeight,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  child: const AspectRatio(
+                    aspectRatio: 1,
+                    child: Image(
+                      image: AssetImage(Images.albumSample),
+                      fit: BoxFit.fitHeight,
+                    ),
+                  ),
                 ),
               ),
               title: Text(

@@ -25,7 +25,7 @@ class AlbumView extends StatelessWidget {
         children: [
           AspectRatio(
             aspectRatio: 1,
-            child: Ink(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 image: const DecorationImage(

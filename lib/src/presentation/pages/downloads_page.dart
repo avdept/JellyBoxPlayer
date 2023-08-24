@@ -53,35 +53,32 @@ class DownloadsPage extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: GridView.builder(
-                    padding: EdgeInsets.only(
-                      left: isMobile ? 16 : 30,
-                      top: isDesktop ? 0 : 6,
-                      right: isMobile ? 16 : 30,
-                      bottom: isMobile ? 12 : 24,
-                    ),
-                    gridDelegate: isDesktop
-                        ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 245,
-                            mainAxisSpacing: 24,
-                            crossAxisSpacing: 30,
-                            childAspectRatio: 245 / 293,
-                          )
-                        : SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 1,
-                            mainAxisSpacing: isMobile ? 12 : 24,
-                            mainAxisExtent: isMobile ? 42 : 70,
-                          ),
-                    itemBuilder: (context, index) => DownloadedAlbumView(
-                      name: 'Album name',
-                      size: '124.6 MB',
-                      onTap: () => _onAlbumTap(context),
-                      onDeletePressed: () {},
-                    ),
-                    itemCount: 10,
+                child: GridView.builder(
+                  padding: EdgeInsets.only(
+                    left: isMobile ? 16 : 30,
+                    top: isDesktop ? 0 : 6,
+                    right: isMobile ? 16 : 30,
+                    bottom: isMobile ? 16 : 24,
                   ),
+                  gridDelegate: isDesktop
+                      ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 245,
+                          mainAxisSpacing: 24,
+                          crossAxisSpacing: 30,
+                          childAspectRatio: 245 / 293,
+                        )
+                      : SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 1,
+                          mainAxisSpacing: isMobile ? 12 : 24,
+                          mainAxisExtent: isMobile ? 48 : 70,
+                        ),
+                  itemBuilder: (context, index) => DownloadedAlbumView(
+                    name: 'Album name',
+                    size: '124.6 MB',
+                    onTap: () => _onAlbumTap(context),
+                    onDeletePressed: () {},
+                  ),
+                  itemCount: 20,
                 ),
               ),
             ],

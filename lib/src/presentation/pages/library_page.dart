@@ -40,22 +40,23 @@ class LibraryPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Material(
-                type: MaterialType.transparency,
-                child: GridView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: isTablet ? 370 : 358,
-                    mainAxisSpacing: isMobile ? 13 : 34,
-                    crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
-                    childAspectRatio: isTablet ? 370 / 255 : 358 / 233,
-                  ),
-                  itemBuilder: (context, index) => LibraryView(
-                    name: 'Library name',
-                    onTap: () => _onLibraryTap(context),
-                  ),
-                  itemCount: 20,
+              child: GridView.builder(
+                padding: EdgeInsets.only(
+                  left: isMobile ? 16 : 30,
+                  right: isMobile ? 16 : 30,
+                  bottom: isMobile ? 8 : 20,
                 ),
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: isTablet ? 370 : 358,
+                  mainAxisSpacing: isMobile ? 13 : 34,
+                  crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
+                  childAspectRatio: 370 / 255,
+                ),
+                itemBuilder: (context, index) => LibraryView(
+                  name: 'Library name',
+                  onTap: () => _onLibraryTap(context),
+                ),
+                itemCount: 20,
               ),
             ),
           ],

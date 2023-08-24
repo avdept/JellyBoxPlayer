@@ -75,34 +75,33 @@ class _ListenPageState extends State<ListenPage> {
               Padding(
                 padding: EdgeInsets.all(_isMobile ? 16 : 30),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _pageViewToggle(),
-                    const Spacer(),
                     _filterButton(),
                   ],
                 ),
               ),
               Expanded(
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: ValueListenableBuilder(
-                    valueListenable: _currentView,
-                    builder: (context, currentView, child) => GridView.builder(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: _isMobile ? 16 : 30,
-                      ),
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: _isTablet ? 360 : 175,
-                        mainAxisSpacing: _isMobile ? 15 : 24,
-                        crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
-                        childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
-                      ),
-                      itemBuilder: (context, index) => AlbumView(
-                        name: 'Album name',
-                        onTap: _onAlbumTap,
-                      ),
-                      itemCount: 20,
+                child: ValueListenableBuilder(
+                  valueListenable: _currentView,
+                  builder: (context, currentView, child) => GridView.builder(
+                    padding: EdgeInsets.only(
+                      left: _isMobile ? 16 : 30,
+                      right: _isMobile ? 16 : 30,
+                      bottom: 20,
                     ),
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: _isTablet ? 360 : 200,
+                      mainAxisSpacing: _isMobile ? 15 : 24,
+                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
+                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+                    ),
+                    itemBuilder: (context, index) => AlbumView(
+                      name: 'Album name',
+                      onTap: _onAlbumTap,
+                    ),
+                    itemCount: 30,
                   ),
                 ),
               ),

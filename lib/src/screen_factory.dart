@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/presentation/pages/pages.dart';
 
@@ -9,7 +9,7 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return const MaterialPage(
+    return const CupertinoPage(
       child: AlbumPage(),
     );
   }
@@ -27,7 +27,7 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return const MaterialPage(
+    return const CupertinoPage(
       child: InitialPage(),
     );
   }
@@ -54,7 +54,7 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return const MaterialPage(
+    return const CupertinoPage(
       child: LoginPage(),
     );
   }
@@ -64,7 +64,7 @@ class ScreenFactory {
     GoRouterState router,
     StatefulNavigationShell shell,
   ) {
-    return MaterialPage(
+    return CupertinoPage(
       child: MainPage(shell: shell),
     );
   }

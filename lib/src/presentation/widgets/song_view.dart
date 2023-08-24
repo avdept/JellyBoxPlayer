@@ -27,11 +27,7 @@ class SongView extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SimpleListTile(
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 6 : 12,
-          horizontal: isMobile ? 16 : 30,
-        ),
-        leading: Ink.image(
+        leading: Image(
           image: const AssetImage(Images.songSample),
           width: isMobile ? 42 : 50,
           height: isMobile ? 42 : 50,

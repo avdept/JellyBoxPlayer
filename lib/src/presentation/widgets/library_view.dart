@@ -19,12 +19,11 @@ class LibraryView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Ink.image(
-                image: const AssetImage(Images.librarySample),
-              ),
+          const AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Image(
+              image: AssetImage(Images.librarySample),
+              fit: BoxFit.fitWidth,
             ),
           ),
           Text(
