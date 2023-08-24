@@ -20,6 +20,7 @@ class _ListenPageState extends State<ListenPage> {
   late final Map<Entities, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
+  final _scrollController = ScrollController();
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -85,23 +86,27 @@ class _ListenPageState extends State<ListenPage> {
               Expanded(
                 child: ValueListenableBuilder(
                   valueListenable: _currentView,
-                  builder: (context, currentView, child) => GridView.builder(
-                    padding: EdgeInsets.only(
-                      left: _isMobile ? 16 : 30,
-                      right: _isMobile ? 16 : 30,
-                      bottom: 20,
+                  builder: (context, currentView, child) => CustomScrollbar(
+                    controller: _scrollController,
+                    child: GridView.builder(
+                      controller: _scrollController,
+                      padding: EdgeInsets.only(
+                        left: _isMobile ? 16 : 30,
+                        right: _isMobile ? 16 : 30,
+                        bottom: 20,
+                      ),
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: _isTablet ? 360 : 200,
+                        mainAxisSpacing: _isMobile ? 15 : 24,
+                        crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
+                        childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
+                      ),
+                      itemBuilder: (context, index) => AlbumView(
+                        name: 'Album name',
+                        onTap: _onAlbumTap,
+                      ),
+                      itemCount: 30,
                     ),
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: _isTablet ? 360 : 200,
-                      mainAxisSpacing: _isMobile ? 15 : 24,
-                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 24),
-                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
-                    ),
-                    itemBuilder: (context, index) => AlbumView(
-                      name: 'Album name',
-                      onTap: _onAlbumTap,
-                    ),
-                    itemCount: 30,
                   ),
                 ),
               ),
@@ -114,6 +119,7 @@ class _ListenPageState extends State<ListenPage> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _currentView.dispose();
     _appliedFilter.dispose();
     _filterOpened.dispose();

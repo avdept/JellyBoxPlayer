@@ -5,32 +5,49 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class LibraryPage extends StatelessWidget {
+class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
 
-  void _onLibraryTap(BuildContext context) => context.go(Routes.listen);
+  @override
+  State<LibraryPage> createState() => _LibraryPageState();
+}
+
+class _LibraryPageState extends State<LibraryPage> {
+  final _scrollController = ScrollController();
+
+  late Size _screenSize;
+  late bool _isMobile;
+  late bool _isTablet;
+  late bool _isDesktop;
+
+  void _onLibraryTap() => context.go(Routes.listen);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _screenSize = MediaQuery.sizeOf(context);
+
+    final deviceType = getDeviceType(_screenSize);
+    _isMobile = deviceType == DeviceScreenType.mobile;
+    _isTablet = deviceType == DeviceScreenType.tablet;
+    _isDesktop = deviceType == DeviceScreenType.desktop;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-    final deviceType = getDeviceType(screenSize);
-    final isMobile = deviceType == DeviceScreenType.mobile;
-    final isTablet = deviceType == DeviceScreenType.tablet;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
-
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             Padding(
               padding: EdgeInsets.symmetric(
-                vertical: isMobile ? 12 : 30,
-                horizontal: isMobile ? 16 : 30,
+                vertical: _isMobile ? 12 : 30,
+                horizontal: _isMobile ? 16 : 30,
               ),
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: isDesktop ? 22.5 : 13,
+                    radius: _isDesktop ? 22.5 : 13,
                   ),
                   const SizedBox(width: 10),
                   _titleText(),
@@ -40,29 +57,39 @@ class LibraryPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: GridView.builder(
-                padding: EdgeInsets.only(
-                  left: isMobile ? 16 : 30,
-                  right: isMobile ? 16 : 30,
-                  bottom: isMobile ? 8 : 20,
+              child: CustomScrollbar(
+                controller: _scrollController,
+                child: GridView.builder(
+                  controller: _scrollController,
+                  padding: EdgeInsets.only(
+                    left: _isMobile ? 16 : 30,
+                    right: _isMobile ? 16 : 30,
+                    bottom: _isMobile ? 8 : 20,
+                  ),
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: _isTablet ? 370 : 358,
+                    mainAxisSpacing: _isMobile ? 13 : 34,
+                    crossAxisSpacing: _isDesktop ? 24 : (_isMobile ? 16 : 34),
+                    childAspectRatio: 370 / 255,
+                  ),
+                  itemBuilder: (context, index) => LibraryView(
+                    name: 'Library name',
+                    onTap: _onLibraryTap,
+                  ),
+                  itemCount: 20,
                 ),
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: isTablet ? 370 : 358,
-                  mainAxisSpacing: isMobile ? 13 : 34,
-                  crossAxisSpacing: isMobile ? 16 : (isTablet ? 34 : 24),
-                  childAspectRatio: 370 / 255,
-                ),
-                itemBuilder: (context, index) => LibraryView(
-                  name: 'Library name',
-                  onTap: () => _onLibraryTap(context),
-                ),
-                itemCount: 20,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Widget _titleText() => const Text(

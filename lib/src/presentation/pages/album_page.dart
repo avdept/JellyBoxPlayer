@@ -91,61 +91,64 @@ class _AlbumPageState extends State<AlbumPage> {
 
                     return false;
                   },
-                  child: CustomScrollView(
+                  child: CustomScrollbar(
                     controller: _scrollController,
-                    slivers: [
-                      if (_isDesktop)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Image.asset(Images.albumSample, height: 254),
-                                const SizedBox(width: 38),
-                                Expanded(child: _albumPanel()),
-                              ],
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      slivers: [
+                        if (_isDesktop)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Image.asset(Images.albumSample, height: 254),
+                                  const SizedBox(width: 38),
+                                  Expanded(child: _albumPanel()),
+                                ],
+                              ),
+                            ),
+                          )
+                        else ...[
+                          SliverPadding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _isMobile ? 16 : 30,
+                            ),
+                            sliver: SliverPersistentHeader(
+                              pinned: true,
+                              delegate: _FadeOutImageDelegate(
+                                image: const AssetImage(Images.albumSample),
+                                isMobile: _isMobile,
+                              ),
                             ),
                           ),
-                        )
-                      else ...[
-                        SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: _isMobile ? 16 : 30,
-                          ),
-                          sliver: SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _FadeOutImageDelegate(
-                              image: const AssetImage(Images.albumSample),
-                              isMobile: _isMobile,
+                          SliverPadding(
+                            padding: EdgeInsets.only(
+                              left: _isMobile ? 16 : 30,
+                              top: _isMobile ? 15 : 35,
+                              right: _isMobile ? 16 : 30,
+                              bottom: 18,
+                            ),
+                            sliver: SliverToBoxAdapter(
+                              child: _albumPanel(),
                             ),
                           ),
-                        ),
-                        SliverPadding(
-                          padding: EdgeInsets.only(
-                            left: _isMobile ? 16 : 30,
-                            top: _isMobile ? 15 : 35,
-                            right: _isMobile ? 16 : 30,
-                            bottom: 18,
+                        ],
+                        SliverList.builder(
+                          itemBuilder: (context, index) => PlayerSongView(
+                            name: 'Chi Shenidi? (feat. Hichkas)',
+                            singer: 'Fadaei',
+                            isPlaying: index == 1,
+                            isFavorite: index == 0,
+                            downloadProgress: index == 2 ? 0.8 : null,
+                            onTap: () {},
+                            onLikePressed: () {},
                           ),
-                          sliver: SliverToBoxAdapter(
-                            child: _albumPanel(),
-                          ),
+                          itemCount: 30,
                         ),
                       ],
-                      SliverList.builder(
-                        itemBuilder: (context, index) => PlayerSongView(
-                          name: 'Chi Shenidi? (feat. Hichkas)',
-                          singer: 'Fadaei',
-                          isPlaying: index == 1,
-                          isFavorite: index == 0,
-                          downloadProgress: index == 2 ? 0.8 : null,
-                          onTap: () {},
-                          onLikePressed: () {},
-                        ),
-                        itemCount: 30,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

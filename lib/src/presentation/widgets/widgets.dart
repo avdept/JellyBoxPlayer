@@ -1,7 +1,9 @@
 export 'adaptive_builder.dart';
 export 'album_view.dart';
+export 'blurred_panel.dart';
 export 'bottom_player.dart';
 export 'custom_navigation_rail.dart';
+export 'custom_scrollbar.dart';
 export 'downloaded_album_view.dart';
 export 'gradient_background.dart';
 export 'labeled_text_field.dart';

@@ -12,6 +12,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final _searchFieldController = TextEditingController();
+  final _scrollController = ScrollController();
 
   late Size _screenSize;
   late bool _isMobile;
@@ -62,52 +63,56 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
               Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: _isMobile ? 16 : 30,
-                      ),
-                      sliver: SliverList.separated(
-                        itemBuilder: (context, index) => SingerView(
-                          name: 'Rihanna',
-                          onTap: () {},
+                child: CustomScrollbar(
+                  controller: _scrollController,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _isMobile ? 16 : 30,
                         ),
-                        separatorBuilder: (context, index) => SizedBox(
-                          height: _isMobile ? 12 : 24,
+                        sliver: SliverList.separated(
+                          itemBuilder: (context, index) => SingerView(
+                            name: 'Rihanna',
+                            onTap: () {},
+                          ),
+                          separatorBuilder: (context, index) => SizedBox(
+                            height: _isMobile ? 12 : 24,
+                          ),
+                          itemCount: 1,
                         ),
-                        itemCount: 1,
                       ),
-                    ),
-                    SliverPadding(
-                      padding: EdgeInsets.only(
-                        left: _isMobile ? 16 : 30,
-                        top: _isDesktop ? 40 : (_isMobile ? 28 : 30),
-                        right: _isMobile ? 16 : 30,
-                        bottom: _isDesktop ? 30 : 16,
-                      ),
-                      sliver: SliverGrid.builder(
-                        gridDelegate: _isDesktop
-                            ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 360,
-                                mainAxisSpacing: 24,
-                                crossAxisSpacing: 70,
-                                mainAxisExtent: 50,
-                              )
-                            : SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 1,
-                                mainAxisSpacing: _isMobile ? 12 : 24,
-                                mainAxisExtent: _isMobile ? 42 : 50,
-                              ),
-                        itemBuilder: (context, index) => SongView(
-                          name: 'Song name',
-                          onTap: () {},
-                          onOptionsPressed: () {},
+                      SliverPadding(
+                        padding: EdgeInsets.only(
+                          left: _isMobile ? 16 : 30,
+                          top: _isDesktop ? 40 : (_isMobile ? 28 : 30),
+                          right: _isMobile ? 16 : 30,
+                          bottom: _isDesktop ? 30 : 16,
                         ),
-                        itemCount: 50,
+                        sliver: SliverGrid.builder(
+                          gridDelegate: _isDesktop
+                              ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 360,
+                                  mainAxisSpacing: 24,
+                                  crossAxisSpacing: 70,
+                                  mainAxisExtent: 50,
+                                )
+                              : SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 1,
+                                  mainAxisSpacing: _isMobile ? 12 : 24,
+                                  mainAxisExtent: _isMobile ? 42 : 50,
+                                ),
+                          itemBuilder: (context, index) => SongView(
+                            name: 'Song name',
+                            onTap: () {},
+                            onOptionsPressed: () {},
+                          ),
+                          itemCount: 50,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -120,6 +125,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void dispose() {
     _searchFieldController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
