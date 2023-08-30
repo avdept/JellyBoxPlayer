@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -123,6 +124,19 @@ class _AppState extends State<App> {
         },
         refreshListenable: _authState,
       ),
+      builder: (context, child) {
+        final theme = Theme.of(context);
+
+        switch (theme.brightness) {
+          case Brightness.dark:
+            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+
+          case Brightness.light:
+            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+        }
+
+        return child!;
+      },
     );
   }
 

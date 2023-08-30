@@ -12,7 +12,6 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final _searchFieldController = TextEditingController();
-  final _scrollController = ScrollController();
 
   late Size _screenSize;
   late bool _isMobile;
@@ -32,100 +31,79 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          child: Column(
+    return ScrollablePageScaffold(
+      useGradientBackground: true,
+      navigationBar: PreferredSize(
+        preferredSize: Size.fromHeight(_isMobile ? 60 : 100),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
+          child: Flex(
+            direction: _isMobile ? Axis.vertical : Axis.horizontal,
+            crossAxisAlignment: _isMobile
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: EdgeInsets.only(
-                  left: _isMobile ? 16 : 30,
-                  top: _isDesktop ? 30 : (_isMobile ? 0 : 3.5),
-                  right: _isMobile ? 16 : 30,
-                  bottom: _isMobile ? 22 : 32,
-                ),
-                child: Flex(
-                  direction: _isMobile ? Axis.vertical : Axis.horizontal,
-                  crossAxisAlignment: _isMobile
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.center,
-                  children: [
-                    _titleText(),
-                    SizedBox(
-                      width: _isTablet ? 36 : 44,
-                      height: 14,
-                    ),
-                    if (_isMobile)
-                      _searchField()
-                    else
-                      Expanded(child: _searchField()),
-                  ],
-                ),
+              Offstage(
+                offstage: _isMobile,
+                child: _titleText(),
               ),
-              Expanded(
-                child: CustomScrollbar(
-                  controller: _scrollController,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _isMobile ? 16 : 30,
-                        ),
-                        sliver: SliverList.separated(
-                          itemBuilder: (context, index) => SingerView(
-                            name: 'Rihanna',
-                            onTap: () {},
-                          ),
-                          separatorBuilder: (context, index) => SizedBox(
-                            height: _isMobile ? 12 : 24,
-                          ),
-                          itemCount: 1,
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: EdgeInsets.only(
-                          left: _isMobile ? 16 : 30,
-                          top: _isDesktop ? 40 : (_isMobile ? 28 : 30),
-                          right: _isMobile ? 16 : 30,
-                          bottom: _isDesktop ? 30 : 16,
-                        ),
-                        sliver: SliverGrid.builder(
-                          gridDelegate: _isDesktop
-                              ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 360,
-                                  mainAxisSpacing: 24,
-                                  crossAxisSpacing: 70,
-                                  mainAxisExtent: 50,
-                                )
-                              : SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 1,
-                                  mainAxisSpacing: _isMobile ? 12 : 24,
-                                  mainAxisExtent: _isMobile ? 42 : 50,
-                                ),
-                          itemBuilder: (context, index) => SongView(
-                            name: 'Song name',
-                            onTap: () {},
-                            onOptionsPressed: () {},
-                          ),
-                          itemCount: 50,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              SizedBox(width: _isTablet ? 36 : 44),
+              if (_isMobile)
+                _searchField()
+              else
+                Expanded(child: _searchField()),
             ],
           ),
         ),
       ),
+      contentPadding: EdgeInsets.only(
+        left: _isMobile ? 16 : 30,
+        right: _isMobile ? 16 : 30,
+        bottom: _isDesktop ? 30 : 16,
+      ),
+      slivers: [
+        SliverList.separated(
+          itemBuilder: (context, index) => SingerView(
+            name: 'Rihanna',
+            onTap: () {},
+          ),
+          separatorBuilder: (context, index) => SizedBox(
+            height: _isMobile ? 12 : 24,
+          ),
+          itemCount: 1,
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: _isDesktop ? 40 : (_isMobile ? 28 : 30),
+          ),
+        ),
+        SliverGrid.builder(
+          gridDelegate: _isDesktop
+              ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 360,
+                  mainAxisSpacing: 24,
+                  crossAxisSpacing: 70,
+                  mainAxisExtent: 50,
+                )
+              : SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,
+                  mainAxisSpacing: _isMobile ? 12 : 24,
+                  mainAxisExtent: _isMobile ? 42 : 50,
+                ),
+          itemBuilder: (context, index) => SongView(
+            name: 'Song name',
+            onTap: () {},
+            onOptionsPressed: () {},
+          ),
+          itemCount: 50,
+        ),
+      ],
     );
   }
 
   @override
   void dispose() {
     _searchFieldController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -161,6 +139,7 @@ class _SearchPageState extends State<SearchPage> {
             padding: EdgeInsets.zero,
             icon: const Icon(JPlayer.close),
           ),
+          hintText: _isMobile ? 'Search' : null,
         ),
       );
 }

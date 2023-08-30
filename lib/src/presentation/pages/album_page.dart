@@ -24,6 +24,32 @@ class _AlbumPageState extends State<AlbumPage> {
   late bool _isMobile;
   late bool _isDesktop;
 
+  void _onScroll() {
+    final titleContext = _titleKey.currentContext;
+
+    if (titleContext?.mounted ?? false) {
+      final scrollPosition = _scrollController.position;
+      final scrollableContext = scrollPosition.context.notificationContext!;
+      final scrollableRenderBox =
+          scrollableContext.findRenderObject()! as RenderBox;
+      final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
+      final titlePosition = titleRenderBox.localToGlobal(
+        Offset.zero,
+        ancestor: scrollableRenderBox,
+      );
+      final titleHeight = titleContext.size!.height;
+      final visibleFraction = (titlePosition.dy + titleHeight) / titleHeight;
+
+      _titleOpacity.value = 1 - min(max(visibleFraction, 0), 1);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -69,86 +95,63 @@ class _AlbumPageState extends State<AlbumPage> {
                 ),
               ),
               Expanded(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (event) {
-                    final titleContext = _titleKey.currentContext;
-
-                    if (titleContext?.mounted ?? false) {
-                      final scrollableRenderBox =
-                          event.context!.findRenderObject()! as RenderBox;
-                      final titleRenderBox =
-                          titleContext!.findRenderObject()! as RenderBox;
-                      final titlePosition = titleRenderBox.localToGlobal(
-                        Offset.zero,
-                        ancestor: scrollableRenderBox,
-                      );
-                      final titleHeight = titleContext.size!.height;
-                      final visibleFraction =
-                          (titlePosition.dy + titleHeight) / titleHeight;
-
-                      _titleOpacity.value = 1 - min(max(visibleFraction, 0), 1);
-                    }
-
-                    return false;
-                  },
-                  child: CustomScrollbar(
+                child: CustomScrollbar(
+                  controller: _scrollController,
+                  child: CustomScrollView(
                     controller: _scrollController,
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        if (_isDesktop)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Image.asset(Images.albumSample, height: 254),
-                                  const SizedBox(width: 38),
-                                  Expanded(child: _albumPanel()),
-                                ],
-                              ),
-                            ),
-                          )
-                        else ...[
-                          SliverPadding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: _isMobile ? 16 : 30,
-                            ),
-                            sliver: SliverPersistentHeader(
-                              pinned: true,
-                              delegate: _FadeOutImageDelegate(
-                                image: const AssetImage(Images.albumSample),
-                                isMobile: _isMobile,
-                              ),
+                    slivers: [
+                      if (_isDesktop)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Image.asset(Images.albumSample, height: 254),
+                                const SizedBox(width: 38),
+                                Expanded(child: _albumPanel()),
+                              ],
                             ),
                           ),
-                          SliverPadding(
-                            padding: EdgeInsets.only(
-                              left: _isMobile ? 16 : 30,
-                              top: _isMobile ? 15 : 35,
-                              right: _isMobile ? 16 : 30,
-                              bottom: 18,
-                            ),
-                            sliver: SliverToBoxAdapter(
-                              child: _albumPanel(),
+                        )
+                      else ...[
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _isMobile ? 16 : 30,
+                          ),
+                          sliver: SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _FadeOutImageDelegate(
+                              image: const AssetImage(Images.albumSample),
+                              isMobile: _isMobile,
                             ),
                           ),
-                        ],
-                        SliverList.builder(
-                          itemBuilder: (context, index) => PlayerSongView(
-                            name: 'Chi Shenidi? (feat. Hichkas)',
-                            singer: 'Fadaei',
-                            isPlaying: index == 1,
-                            isFavorite: index == 0,
-                            downloadProgress: index == 2 ? 0.8 : null,
-                            onTap: () {},
-                            onLikePressed: () {},
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.only(
+                            left: _isMobile ? 16 : 30,
+                            top: _isMobile ? 15 : 35,
+                            right: _isMobile ? 16 : 30,
+                            bottom: 18,
                           ),
-                          itemCount: 30,
+                          sliver: SliverToBoxAdapter(
+                            child: _albumPanel(),
+                          ),
                         ),
                       ],
-                    ),
+                      SliverList.builder(
+                        itemBuilder: (context, index) => PlayerSongView(
+                          name: 'Chi Shenidi? (feat. Hichkas)',
+                          singer: 'Fadaei',
+                          isPlaying: index == 1,
+                          isFavorite: index == 0,
+                          downloadProgress: index == 2 ? 0.8 : null,
+                          onTap: () {},
+                          onLikePressed: () {},
+                        ),
+                        itemCount: 30,
+                      ),
+                    ],
                   ),
                 ),
               ),

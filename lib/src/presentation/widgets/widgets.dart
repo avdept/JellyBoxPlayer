@@ -1,15 +1,16 @@
 export 'adaptive_builder.dart';
 export 'album_view.dart';
-export 'blurred_panel.dart';
 export 'bottom_player.dart';
 export 'custom_navigation_rail.dart';
 export 'custom_scrollbar.dart';
 export 'downloaded_album_view.dart';
 export 'gradient_background.dart';
+export 'gradient_panel_decoration.dart';
 export 'labeled_text_field.dart';
 export 'library_view.dart';
 export 'play_pause_button.dart';
 export 'player_song_view.dart';
+export 'scrollable_page_scaffold.dart';
 export 'simple_list_tile.dart';
 export 'singer_view.dart';
 export 'song_view.dart';

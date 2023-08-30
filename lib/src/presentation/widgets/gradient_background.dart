@@ -12,31 +12,28 @@ class GradientBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ColoredBox(
-      color: theme.scaffoldBackgroundColor,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned(
-            top: -400,
-            right: -450,
-            width: 1000,
-            height: 1000,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.25),
-                    Colors.transparent,
-                  ],
-                ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned(
+          top: -325,
+          right: -450,
+          width: 1000,
+          height: 1000,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  theme.colorScheme.primary.withOpacity(0.25),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
-          child,
-        ],
-      ),
+        ),
+        child,
+      ],
     );
   }
 }

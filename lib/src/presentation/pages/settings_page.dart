@@ -12,21 +12,32 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final padding = MediaQuery.paddingOf(context);
     final screenSize = MediaQuery.sizeOf(context);
     final deviceType = getDeviceType(screenSize);
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
+    final contentPadding = EdgeInsets.only(
+      left: padding.left + (isMobile ? 16 : 30),
+      top: padding.top + (isMobile ? 16 : 30),
+      right: padding.right + (isMobile ? 16 : 30),
+      bottom: isMobile ? 22 : 26,
+    );
 
     return Scaffold(
       body: GradientBackground(
-        child: SafeArea(
-          minimum: EdgeInsets.all(isMobile ? 16 : 30),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isMobile ? 22 : 26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GradientPanelDecoration(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: contentPadding.left,
+                  top: contentPadding.top,
+                  right: contentPadding.right,
+                  bottom: 20,
+                ),
+                child: Text(
                   'Settings',
                   style: TextStyle(
                     fontSize: isMobile ? 24 : 36,
@@ -34,18 +45,24 @@ class SettingsPage extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Wrap(
-                  direction: Axis.vertical,
-                  spacing: 4,
-                  children: [
-                    _librariesButton(context),
-                    if (!isDesktop) _logOutButton(),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: contentPadding.left,
+                right: contentPadding.right,
+              ),
+              child: Wrap(
+                direction: Axis.vertical,
+                spacing: 4,
+                children: [
+                  _librariesButton(context),
+                  if (!isDesktop) _logOutButton(),
+                ],
+              ),
+            ),
+            SizedBox(height: contentPadding.bottom),
+          ],
         ),
       ),
     );

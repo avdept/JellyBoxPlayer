@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class CustomScrollbar extends StatelessWidget {
   const CustomScrollbar({
@@ -15,8 +15,8 @@ class CustomScrollbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
-        ? child // Desktop platforms has a scrollbar by default
-        : CupertinoScrollbar(
+        ? child // Desktop platforms have scrollbars by default
+        : Scrollbar(
             controller: controller,
             child: child,
           );
