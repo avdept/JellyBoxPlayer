@@ -4,16 +4,90 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: '>=3.0.6 <4.0.0'
+  sdk: '>=3.1.0 <4.0.0'
+
 
 dependencies:
   flutter:
     sdk: flutter
 
+  animations: ^2.0.8
+  cupertino_icons: ^1.0.5
+  dropdown_button2: ^2.3.8
+  flutter_svg: ^2.0.7
+  freezed_annotation: ^2.4.1
+  go_router: ^10.1.2
+  intl: ^0.18.1
+  json_annotation: ^4.8.1
+  modal_bottom_sheet: ^3.0.0-pre
+  palette_generator: ^0.3.3+2
+  responsive_builder: ^0.7.0
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+
+  build_runner: ^2.4.6
+  freezed: ^2.4.2
+  json_serializable: ^6.7.1
+  very_good_analysis: ^5.0.0+1
+
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/images/
+
+  fonts:
+    - family: Gilroy
+      fonts:
+        - asset: assets/fonts/Gilroy/Gilroy-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/Gilroy/Gilroy-UltraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Gilroy/Gilroy-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Gilroy/Gilroy-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Gilroy/Gilroy-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Gilroy/Gilroy-Semibold.ttf
+          weight: 600
+        - asset: assets/fonts/Gilroy/Gilroy-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Gilroy/Gilroy-Extrabold.ttf
+          weight: 800
+        - asset: assets/fonts/Gilroy/Gilroy-Black.ttf
+          weight: 900
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/Inter-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/Inter/Inter-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Inter/Inter-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Inter/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter/Inter-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Inter/Inter-Black.ttf
+          weight: 900
+    - family: JPlayer
+      fonts:
+        - asset: assets/fonts/JPlayer.ttf
+    - family: Entypo
+      fonts:
+        - asset: assets/fonts/Entypo.ttf
+
+flutter_intl:
+  enabled: true

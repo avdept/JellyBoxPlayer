@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="22"
+   height="22"
+   viewBox="0 0 22 22"
+   fill="none"
+   version="1.1"
+   id="svg4452"
+   sodipodi:docname="play-circle-outlined.svg"
+   inkscape:version="1.2.2 (b0a84865, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs4456" />
+  <sodipodi:namedview
+     id="namedview4454"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     showgrid="false"
+     inkscape:zoom="9.8333333"
+     inkscape:cx="10.983051"
+     inkscape:cy="10.983051"
+     inkscape:window-width="1309"
+     inkscape:window-height="456"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg4452" />
+  <g
+     id="play-circle"
+     transform="translate(-1,-1)">
+    <path
+       id="Vector (Stroke)"
+       fill-rule="evenodd"
+       clip-rule="evenodd"
+       d="m 12,3 c -4.97056,0 -9,4.02944 -9,9 0,4.9706 4.02944,9 9,9 4.9706,0 9,-4.0294 9,-9 C 21,7.02944 16.9706,3 12,3 Z M 1,12 C 1,5.92487 5.92487,1 12,1 18.0751,1 23,5.92487 23,12 23,18.0751 18.0751,23 12,23 5.92487,23 1,18.0751 1,12 Z"
+       fill="#ffffff" />
+    <path
+       id="Vector (Stroke)_2"
+       fill-rule="evenodd"
+       clip-rule="evenodd"
+       d="M 9.52814,7.11833 C 9.8533,6.94431 10.2478,6.96338 10.5547,7.16795 l 6,4.00005 C 16.8329,11.3534 17,11.6656 17,12 c 0,0.3344 -0.1671,0.6466 -0.4453,0.8321 l -6,4 C 10.2478,17.0366 9.8533,17.0557 9.52814,16.8817 9.20298,16.7077 9,16.3688 9,16 V 8 C 9,7.63121 9.20298,7.29235 9.52814,7.11833 Z M 11,9.86852 V 14.1315 L 14.1972,12 Z"
+       fill="#ffffff" />
+  </g>
+</svg>

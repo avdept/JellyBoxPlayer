@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="20"
+   height="19.999861"
+   viewBox="0 0 20 19.999861"
+   fill="none"
+   version="1.1"
+   id="svg1712"
+   sodipodi:docname="music.svg"
+   inkscape:version="1.2.2 (b0a84865, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1716" />
+  <sodipodi:namedview
+     id="namedview1714"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     showgrid="false"
+     inkscape:zoom="9.8333333"
+     inkscape:cx="10.067797"
+     inkscape:cy="9.9661017"
+     inkscape:window-width="1309"
+     inkscape:window-height="456"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1712" />
+  <g
+     id="music"
+     transform="translate(-2,-2.0001398)">
+    <path
+       style="color:#000000;fill:#ffffff;stroke-linecap:round;stroke-linejoin:round;-inkscape-stroke:none"
+       d="m 20.835937,2.0136719 -11.9999995,2 A 1.0001,1.0001 0 0 0 8,5 v 13 a 1,1 0 0 0 1,1 1,1 0 0 0 1,-1 V 5.8476562 L 20,4.1796875 V 16 a 1,1 0 0 0 1,1 1,1 0 0 0 1,-1 V 3 A 1.0001,1.0001 0 0 0 20.835937,2.0136719 Z"
+       id="Vector" />
+    <path
+       style="color:#000000;fill:#ffffff;stroke-linecap:round;stroke-linejoin:round;-inkscape-stroke:none"
+       d="m 6,14 c -2.1972709,0 -4,1.802675 -4,4 0,2.197325 1.8027291,4 4,4 2.1972709,0 4,-1.802675 4,-4 0,-2.197325 -1.8027291,-4 -4,-4 z m 0,2 c 1.1164258,0 2,0.883528 2,2 0,1.116472 -0.8835742,2 -2,2 -1.1164258,0 -2,-0.883528 -2,-2 0,-1.116472 0.8835742,-2 2,-2 z"
+       id="Vector_2" />
+    <path
+       style="color:#000000;fill:#ffffff;stroke-linecap:round;stroke-linejoin:round;-inkscape-stroke:none"
+       d="m 18,12 c -2.197305,0 -4,1.802695 -4,4 0,2.197305 1.802695,4 4,4 2.197305,0 4,-1.802695 4,-4 0,-2.197305 -1.802695,-4 -4,-4 z m 0,2 c 1.116492,0 2,0.883508 2,2 0,1.116492 -0.883508,2 -2,2 -1.116492,0 -2,-0.883508 -2,-2 0,-1.116492 0.883508,-2 2,-2 z"
+       id="Vector_3" />
+  </g>
+</svg>

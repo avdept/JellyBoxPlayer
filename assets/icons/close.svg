@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="13.999698"
+   height="13.999848"
+   viewBox="0 0 13.999698 13.999848"
+   fill="none"
+   version="1.1"
+   id="svg3812"
+   sodipodi:docname="close.svg"
+   inkscape:version="1.2.2 (b0a84865, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs3816" />
+  <sodipodi:namedview
+     id="namedview3814"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     showgrid="false"
+     inkscape:zoom="9.8333333"
+     inkscape:cx="7.1186441"
+     inkscape:cy="7.0169492"
+     inkscape:window-width="1309"
+     inkscape:window-height="456"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg3812" />
+  <g
+     id="x"
+     transform="translate(-5.000151,-5)">
+    <path
+       style="color:#000000;fill:#ffffff;stroke-linecap:round;stroke-linejoin:round;-inkscape-stroke:none"
+       d="M 17.292969,5.2929687 5.2929687,17.292969 a 1,1 0 0 0 0,1.414062 1,1 0 0 0 1.4140625,0 L 18.707031,6.7070312 a 1,1 0 0 0 0,-1.4140625 1,1 0 0 0 -1.414062,0 z"
+       id="Vector" />
+    <path
+       style="color:#000000;fill:#ffffff;stroke-linecap:round;stroke-linejoin:round;-inkscape-stroke:none"
+       d="m 6,5 a 1,1 0 0 0 -0.7070313,0.2929687 1,1 0 0 0 0,1.4140625 L 17.292969,18.707031 a 1,1 0 0 0 1.414062,0 1,1 0 0 0 0,-1.414062 L 6.7070312,5.2929687 A 1,1 0 0 0 6,5 Z"
+       id="Vector_2" />
+  </g>
+</svg>

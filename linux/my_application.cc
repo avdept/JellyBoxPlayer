@@ -24,7 +24,7 @@ static void my_application_activate(GApplication* application) {
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
   // If running on X and not using GNOME then just use a traditional title bar
-  // in case the window manager does more exotic layout, e.g. tiling.
+  // in case the window manager does more exotic layout.dart, e.g. tiling.
   // If running on Wayland assume the header bar will work (may need changing
   // if future cases occur).
   gboolean use_header_bar = TRUE;
