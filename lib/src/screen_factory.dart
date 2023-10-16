@@ -36,7 +36,7 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return const NoTransitionPage(
+    return NoTransitionPage(
       child: LibraryPage(),
     );
   }

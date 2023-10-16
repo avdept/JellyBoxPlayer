@@ -1,13 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/screen_factory.dart';
 
-class App extends StatefulWidget {
+import 'providers/auth_provider.dart';
+
+class App extends ConsumerStatefulWidget {
   const App({
     required this.screenFactory,
     this.initialRoute,
@@ -18,16 +21,38 @@ class App extends StatefulWidget {
   final String? initialRoute;
 
   @override
-  State<App> createState() => _AppState();
+  ConsumerState<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends ConsumerState<App> {
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(true);
+  bool isLoaded = false;
+
+  ScaffoldMessengerState get _messenger => _messengerKey.currentState!;
+  NavigatorState get _navigator => _rootNavigatorKey.currentState!;
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => ref.read(authProvider.notifier).checkAuthState().then((value) {
+        setState(() {
+          isLoaded = true;
+        });
+      }),
+    );
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!isLoaded) return MaterialApp(home: Container(child: Text('Loading')));
+
+    ref.listen(authProvider, (previous, next) {
+      _authState.value = next.value;
+    });
+
     return MaterialApp.router(
       theme: Themes.red,
       localizationsDelegates: const [
@@ -109,7 +134,7 @@ class _AppState extends State<App> {
           final location = router.matchedLocation;
 
           if (authenticated == null) {
-            return Routes.root;
+            return Routes.login;
           } else if (authenticated) {
             if (location.startsWith(Routes.listen)) return null;
             if (location.startsWith(Routes.search)) return null;

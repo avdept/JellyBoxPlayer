@@ -4,12 +4,14 @@ import 'package:jplayer/resources/resources.dart';
 class LabeledTextField extends StatelessWidget {
   const LabeledTextField({
     required this.label,
-    this.keyboardType,
+    required this.keyboardType,
+    this.controller,
     this.textInputAction,
     super.key,
   });
 
   final String label;
+  final TextEditingController? controller;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
 
@@ -35,6 +37,7 @@ class LabeledTextField extends StatelessWidget {
       );
 
   Widget _textField() => TextField(
+        controller: controller,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         decoration: InputDecoration(

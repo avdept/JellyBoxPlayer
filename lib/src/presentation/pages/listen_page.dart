@@ -1,25 +1,33 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/dto/album/album_dto.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class ListenPage extends StatefulWidget {
+class ListenPage extends ConsumerStatefulWidget {
   const ListenPage({super.key});
 
   @override
-  State<ListenPage> createState() => _ListenPageState();
+  ConsumerState<ListenPage> createState() => _ListenPageState();
 }
 
-class _ListenPageState extends State<ListenPage> {
+class _ListenPageState extends ConsumerState<ListenPage> {
   late final ValueNotifier<ListenView> _currentView;
   late final Map<Entities, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
+
+  AlbumsWrapper albumsWrapper = const AlbumsWrapper(items: []);
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -52,6 +60,14 @@ class _ListenPageState extends State<ListenPage> {
       for (final value in Entities.values) value: false,
     };
     _appliedFilter = ValueNotifier(Filter(orderBy: Entities.values.first));
+    ref
+        .read(jellyfinApiProvider)
+        .getAlbums(userId: ref.read(currentUserProvider.notifier).state!, libraryId: ref.read(currentLibraryProvider)!.id)
+        .then((value) {
+      setState(() {
+        albumsWrapper = value.data;
+      });
+    });
   }
 
   @override
@@ -96,10 +112,10 @@ class _ListenPageState extends State<ListenPage> {
             childAspectRatio: _isTablet ? 360 / 413 : 175 / 206.7,
           ),
           itemBuilder: (context, index) => AlbumView(
-            name: 'Album name',
+            album: albumsWrapper.items[index],
             onTap: _onAlbumTap,
           ),
-          itemCount: 30,
+          itemCount: albumsWrapper.items.length,
         ),
       ],
     );
@@ -125,9 +141,7 @@ class _ListenPageState extends State<ListenPage> {
                 valueListenable: _currentView,
                 builder: (context, currentView, child) => ActionChip(
                   label: Text(_viewLabels[value] ?? '???'),
-                  backgroundColor: (value == currentView)
-                      ? _theme.chipTheme.selectedColor
-                      : _theme.chipTheme.backgroundColor,
+                  backgroundColor: (value == currentView) ? _theme.chipTheme.selectedColor : _theme.chipTheme.backgroundColor,
                   onPressed: () => _currentView.value = value,
                 ),
               ),
@@ -145,9 +159,7 @@ class _ListenPageState extends State<ListenPage> {
                 valueListenable: _filterOpened,
                 builder: (context, isOpened, child) => Icon(
                   JPlayer.sliders,
-                  color: isOpened
-                      ? _theme.colorScheme.primary
-                      : _theme.iconTheme.color,
+                  color: isOpened ? _theme.colorScheme.primary : _theme.iconTheme.color,
                 ),
               ),
             ),
@@ -174,19 +186,13 @@ class _ListenPageState extends State<ListenPage> {
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.2,
-                            color: (filter.orderBy == value)
-                                ? _theme.colorScheme.primary
-                                : _theme.colorScheme.onPrimary,
+                            color: (filter.orderBy == value) ? _theme.colorScheme.primary : _theme.colorScheme.onPrimary,
                           ),
                         ),
                       ),
                       Icon(
-                        _availableFilters[value]!
-                            ? Icons.arrow_upward
-                            : Icons.arrow_downward,
-                        color: (filter.orderBy == value)
-                            ? _theme.colorScheme.primary
-                            : _theme.colorScheme.onPrimary,
+                        _availableFilters[value]! ? Icons.arrow_upward : Icons.arrow_downward,
+                        color: (filter.orderBy == value) ? _theme.colorScheme.primary : _theme.colorScheme.onPrimary,
                       ),
                     ],
                   ),

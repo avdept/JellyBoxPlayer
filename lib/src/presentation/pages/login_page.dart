@@ -1,9 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() => LoginPageState();
+}
+
+class LoginPageState extends ConsumerState<LoginPage> {
+
+  final _serverUrlInputController = TextEditingController();
+  final _emailInputController = TextEditingController();
+  final _passwordInputController = TextEditingController();
+
+  Future<bool> signIn() {
+    final credentials = UserCredentials(
+            username: _emailInputController.text.trim(),
+            pw: _passwordInputController.text.trim(),
+            serverUrl: _serverUrlInputController.text.trim()
+          );
+    return ref.read(authProvider.notifier).login(credentials);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,26 +66,29 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Widget _serverURLField() => const LabeledTextField(
+  Widget _serverURLField() => LabeledTextField(
         label: 'Server URL',
         keyboardType: TextInputType.url,
+        controller: _serverUrlInputController,
         textInputAction: TextInputAction.next,
       );
 
-  Widget _loginField() => const LabeledTextField(
+  Widget _loginField() => LabeledTextField(
         label: 'Login',
         keyboardType: TextInputType.text,
+        controller: _emailInputController,
         textInputAction: TextInputAction.next,
       );
 
-  Widget _passwordField() => const LabeledTextField(
+  Widget _passwordField() => LabeledTextField(
         label: 'Password',
+        controller: _passwordInputController,
         keyboardType: TextInputType.visiblePassword,
         textInputAction: TextInputAction.done,
       );
 
   Widget _signInButton() => InkWell(
-        onTap: () {},
+        onTap: () => signIn(),
         borderRadius: BorderRadius.circular(36),
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 74),

@@ -1,14 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class LibraryPage extends StatelessWidget {
+class LibraryPage extends ConsumerStatefulWidget {
   const LibraryPage({super.key});
 
-  void _onLibraryTap(BuildContext context) => context.go(Routes.listen);
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() => _LibraryPageState();
+}
+
+class _LibraryPageState extends ConsumerState<LibraryPage> {
+  Future<void> _onLibraryTap(LibraryDTO lib) async {
+    await ref.read(currentLibraryProvider.notifier).setSelectLibrary(lib);
+  }
+
+  bool isLoading = true;
+  List<LibraryDTO> libraries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(currentLibraryProvider.notifier).fetchLibraries().then((value) {
+      setState(() {
+        libraries = value;
+        isLoading = false;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +74,10 @@ class LibraryPage extends StatelessWidget {
             childAspectRatio: 370 / 255,
           ),
           itemBuilder: (context, index) => LibraryView(
-            name: 'Library name',
-            onTap: () => _onLibraryTap(context),
+            library: libraries[index],
+            onTap: () => _onLibraryTap(libraries[index]).then((value) => context.go(Routes.listen)),
           ),
-          itemCount: 20,
+          itemCount: libraries.length,
         ),
       ],
     );

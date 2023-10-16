@@ -1,19 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/data/dto/album/album_dto.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class AlbumView extends StatelessWidget {
+class AlbumView extends ConsumerWidget {
   const AlbumView({
-    required this.name,
+    required this.album,
     this.onTap,
     super.key,
   });
 
-  final String name;
+  final AlbumDTO album;
   final VoidCallback? onTap;
 
+  String? imagePath(WidgetRef ref) {
+    if (album.imageTags['Primary'] == null) return null;
+
+    return ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id);
+  }
+
+  ImageProvider libraryImage(WidgetRef ref) {
+    if (imagePath(ref) != null) return NetworkImage(imagePath(ref)!);
+
+    return const AssetImage(Images.librarySample);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isTablet = deviceType == DeviceScreenType.tablet;
 
@@ -28,14 +43,14 @@ class AlbumView extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                image: const DecorationImage(
-                  image: AssetImage(Images.albumSample),
+                image: DecorationImage(
+                  image: libraryImage(ref),
                 ),
               ),
             ),
           ),
           Text(
-            name,
+            album.name,
             style: TextStyle(
               fontSize: isTablet ? 24 : 16,
               fontWeight: FontWeight.w500,

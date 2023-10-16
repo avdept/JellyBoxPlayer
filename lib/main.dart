@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -9,5 +10,5 @@ void main() {
     customRefinedBreakpoints: const RefinedBreakpoints(),
   );
 
-  runApp(const App(screenFactory: ScreenFactory()));
+  runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
 }

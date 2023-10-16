@@ -1,6 +1,8 @@
 include: package:very_good_analysis/analysis_options.yaml
 
 analyzer:
+  errors:
+    invalid_annotation_target: ignore
   exclude:
     - "**.g.dart"
     - "**.mocks.dart"
