@@ -7,6 +7,7 @@ class PlayerSongView extends StatelessWidget {
   const PlayerSongView({
     required this.name,
     required this.singer,
+    required this.position,
     this.isPlaying = false,
     this.isFavorite = false,
     this.downloadProgress,
@@ -22,6 +23,7 @@ class PlayerSongView extends StatelessWidget {
   final double? downloadProgress;
   final VoidCallback? onTap;
   final VoidCallback? onLikePressed;
+  final int position;
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +36,7 @@ class PlayerSongView extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SimpleListTile(
-        backgroundColor: isPlaying
-            ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
-            : Colors.transparent,
+        backgroundColor: isPlaying ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75) : Colors.transparent,
         padding: EdgeInsets.symmetric(
           vertical: 12,
           horizontal: isMobile ? 16 : 30,
@@ -56,6 +56,10 @@ class PlayerSongView extends StatelessWidget {
             fontWeight: FontWeight.w300,
             height: 1.2,
           ),
+        ),
+        leading: Padding(
+          padding: const EdgeInsets.only(right: 10.0),
+          child: Text(position.toString()),
         ),
         trailing: Wrap(
           spacing: 12,

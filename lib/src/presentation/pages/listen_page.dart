@@ -8,10 +8,10 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/album/album_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends ConsumerStatefulWidget {
@@ -47,9 +47,10 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         Entities.genres: 'Genres',
       };
 
-  void _onAlbumTap() {
+  void _onAlbumTap(AlbumDTO album) {
     final location = GoRouterState.of(context).fullPath;
-    context.go('$location${Routes.album}');
+    ref.read(currentAlbumProvider.notifier).setAlbum(album);
+    context.go('$location${Routes.album}', extra: {'albumId': album.id});
   }
 
   @override
@@ -113,7 +114,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
           ),
           itemBuilder: (context, index) => AlbumView(
             album: albumsWrapper.items[index],
-            onTap: _onAlbumTap,
+            onTap: () => _onAlbumTap(albumsWrapper.items[index]),
           ),
           itemCount: albumsWrapper.items.length,
         ),

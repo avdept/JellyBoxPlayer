@@ -1,21 +1,29 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/domain/providers/current_album_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/queue_provider.dart';
+import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class BottomPlayer extends StatefulWidget {
+class BottomPlayer extends ConsumerStatefulWidget {
   const BottomPlayer({super.key});
 
   @override
-  State<BottomPlayer> createState() => _BottomPlayerState();
+  ConsumerState<BottomPlayer> createState() => _BottomPlayerState();
 }
 
-class _BottomPlayerState extends State<BottomPlayer>
-    with SingleTickerProviderStateMixin {
+class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   final _imageProvider = ValueNotifier<ImageProvider?>(null);
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
@@ -24,7 +32,6 @@ class _BottomPlayerState extends State<BottomPlayer>
   final _randomQueue = ValueNotifier<bool>(false);
   final _repeatTrack = ValueNotifier<bool>(false);
   final _likeTrack = ValueNotifier<bool>(false);
-  final _sliderKey = GlobalKey(debugLabel: 'slider');
 
   late ThemeData _theme;
   late MaterialLocalizations _localizations;
@@ -62,13 +69,12 @@ class _BottomPlayerState extends State<BottomPlayer>
                                 aspectRatio: 1,
                                 child: ValueListenableBuilder(
                                   valueListenable: _imageProvider,
-                                  builder: (context, image, child) =>
-                                      (image == null)
-                                          ? const SizedBox.shrink()
-                                          : Image(
-                                              image: image,
-                                              fit: BoxFit.cover,
-                                            ),
+                                  builder: (context, image, child) => (image == null)
+                                      ? const SizedBox.shrink()
+                                      : Image(
+                                          image: image,
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
                               ),
                             ),
@@ -78,8 +84,7 @@ class _BottomPlayerState extends State<BottomPlayer>
                                 size: _isMobile ? 28 : 24,
                               ),
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
                                   _openListButton(),
                                   _randomQueueButton(),
@@ -211,86 +216,77 @@ class _BottomPlayerState extends State<BottomPlayer>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-          color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
-          padding: EdgeInsets.only(bottom: _viewPadding.bottom),
-          child: GestureDetector(
-            onTap: !_isDesktop ? _onExpand : null,
-            behavior: HitTestBehavior.opaque,
-            child: SimpleListTile(
-              padding: const EdgeInsets.only(right: 8),
-              leading: AspectRatio(
-                aspectRatio: 1,
-                child: Image.asset(
-                  Images.songSample,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              title: Text(
-                'Chaff & Dust',
-                style: TextStyle(
-                  fontSize: _isMobile ? 18 : 24,
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
-                ),
-              ),
-              subtitle: Text(
-                'HYONNA',
-                style: TextStyle(
-                  fontSize: _isMobile ? 10 : 18,
-                  height: 1.2,
-                ),
-              ),
-              trailing: Wrap(
-                spacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (_isDesktop) _randomQueueButton(),
-                  _prevTrackButton(),
-                  SizedBox.square(
-                    dimension: 45,
-                    child: _playPauseButton(),
+    SongDTO? song;
+    ref.listen<AudioQueueState>(audioQueueProvider, (prex, next) {
+      song = next.currentSong;
+    });
+    return StreamBuilder<PlayerState>(
+      stream: ref.read(playerProvider).playerStateStream,
+      builder: (context, snapshot) {
+        _isPlaying.value = snapshot.data?.playing ?? false;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
+              color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
+              padding: EdgeInsets.only(bottom: _viewPadding.bottom),
+              child: GestureDetector(
+                onTap: !_isDesktop ? _onExpand : null,
+                behavior: HitTestBehavior.opaque,
+                child: SimpleListTile(
+                  padding: const EdgeInsets.only(right: 8),
+                  leading: AspectRatio(
+                    aspectRatio: 1,
+                    child: Image(
+                      image: ref.read(currentAlbumProvider) != null
+                          ? ref.read(imageProvider).albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
+                          : AssetImage(Images.coverSample),
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  _nextTrackButton(),
-                  if (_isDesktop) _repeatTrackButton(),
-                ],
+                  title: Text(
+                    song?.name ?? '',
+                    style: TextStyle(
+                      fontSize: _isMobile ? 18 : 24,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                  subtitle: Text(
+                    song?.albumArtist ?? '',
+                    style: TextStyle(
+                      fontSize: _isMobile ? 10 : 18,
+                      height: 1.2,
+                    ),
+                  ),
+                  trailing: Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (_isDesktop) _randomQueueButton(),
+                      _prevTrackButton(),
+                      SizedBox.square(
+                        dimension: 45,
+                        child: _playPauseButton(),
+                      ),
+                      _nextTrackButton(),
+                      if (_isDesktop) _repeatTrackButton(),
+                    ],
+                  ),
+                  leadingToTitle: 15,
+                ),
               ),
-              leadingToTitle: 15,
             ),
-          ),
-        ),
-        Positioned(
-          left: -25,
-          top: -22,
-          right: -25,
-          child: GestureDetector(
-            onHorizontalDragDown: (details) {
-              final sliderWidth = _sliderKey.currentContext?.size?.width;
-              if (sliderWidth == null) return;
-              _playProgress.value = details.localPosition.dx / sliderWidth;
-            },
-            onHorizontalDragUpdate: (details) {
-              final sliderWidth = _sliderKey.currentContext?.size?.width;
-              if (sliderWidth == null) return;
-              _playProgress.value = details.localPosition.dx / sliderWidth;
-            },
-            behavior: HitTestBehavior.opaque,
-            child: ValueListenableBuilder(
-              valueListenable: _playProgress,
-              builder: (context, value, child) => Slider(
-                key: _sliderKey,
-                value: value,
-                onChanged: (value) => _playProgress.value = value,
-              ),
-            ),
-          ),
-        ),
-      ],
+            positionSlider
+          ],
+        );
+      },
     );
+  }
+
+  Widget get positionSlider {
+    return PositionSlider();
   }
 
   @override
@@ -307,7 +303,7 @@ class _BottomPlayerState extends State<BottomPlayer>
   }
 
   Widget _playPauseButton() => PlayPauseButton(
-        onPressed: () => _isPlaying.value = !_isPlaying.value,
+        onPressed: () => _isPlaying.value ? ref.read(playbackProvider.notifier).pause() : ref.read(playbackProvider.notifier).resume(),
         background: _theme.colorScheme.onPrimary,
         foreground: _theme.scaffoldBackgroundColor,
         stateNotifier: _isPlaying,

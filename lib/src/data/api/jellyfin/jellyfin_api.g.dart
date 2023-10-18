@@ -48,12 +48,45 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
+  Future<HttpResponse<SongsWrapper>> getSongs({
+    required String userId,
+    required String albumId,
+  }) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'ParentId': albumId};
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<SongsWrapper>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/Users/${userId}/Items',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final value = SongsWrapper.fromJson(_result.data!);
+    final httpResponse = HttpResponse(value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<AlbumsWrapper>> getAlbums({
     required String userId,
     required String libraryId,
     String type = 'MusicAlbum',
     String startIndex = '0',
     String limit = '100',
+    String soryBy = 'DateCreated,SortName',
+    String sortOrder = 'Descending',
     bool recursive = true,
   }) async {
     const _extra = <String, dynamic>{};
@@ -62,6 +95,8 @@ class _JellyfinApi implements JellyfinApi {
       r'IncludeItemTypes': type,
       r'StartIndex': startIndex,
       r'Limit': limit,
+      r'SortBy': soryBy,
+      r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };
     final _headers = <String, dynamic>{};

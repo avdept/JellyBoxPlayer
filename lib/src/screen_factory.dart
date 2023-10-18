@@ -8,9 +8,10 @@ class ScreenFactory {
   Page<void> albumPage(
     BuildContext context,
     GoRouterState router,
+    String albumId,
   ) {
-    return const CupertinoPage(
-      child: AlbumPage(),
+    return CupertinoPage(
+      child: AlbumPage(albumId: albumId),
     );
   }
 

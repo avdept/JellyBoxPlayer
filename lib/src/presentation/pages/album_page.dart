@@ -2,22 +2,37 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/services/image_service.dart';
+import 'package:jplayer/src/domain/providers/current_album_provider.dart';
+import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class AlbumPage extends StatefulWidget {
-  const AlbumPage({super.key});
+class AlbumPage extends ConsumerStatefulWidget {
+  const AlbumPage({required this.albumId, super.key});
+  final String albumId;
 
   @override
-  State<AlbumPage> createState() => _AlbumPageState();
+  ConsumerState<AlbumPage> createState() => _AlbumPageState();
 }
 
-class _AlbumPageState extends State<AlbumPage> {
+class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _scrollController = ScrollController();
   final _titleOpacity = ValueNotifier<double>(0);
+  final _currentSongId = ValueNotifier<SongDTO?>(null);
   final _titleKey = GlobalKey(debugLabel: 'title');
+  SongsWrapper? wrapper;
+
+  late final ImageService _imageService;
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -30,8 +45,7 @@ class _AlbumPageState extends State<AlbumPage> {
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox =
-          scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -47,6 +61,13 @@ class _AlbumPageState extends State<AlbumPage> {
   @override
   void initState() {
     super.initState();
+    _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
+    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!, albumId: widget.albumId).then((value) {
+      setState(() {
+        wrapper = value.data;
+      });
+    });
+    _currentSongId.value = ref.read(audioQueueProvider).currentSong;
     _scrollController.addListener(_onScroll);
   }
 
@@ -63,6 +84,9 @@ class _AlbumPageState extends State<AlbumPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(audioQueueProvider, (previous, next) {
+      _currentSongId.value = next.currentSong;
+    });
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -86,7 +110,7 @@ class _AlbumPageState extends State<AlbumPage> {
                     ),
                   ),
                   child: Text(
-                    'Album name',
+                    ref.read(currentAlbumProvider)!.name,
                     style: TextStyle(
                       fontSize: _isMobile ? 14 : 20,
                       color: _theme.colorScheme.onPrimary,
@@ -107,7 +131,10 @@ class _AlbumPageState extends State<AlbumPage> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Image.asset(Images.albumSample, height: 254),
+                                Image(
+                                    image: _imageService.albumIP(
+                                        id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary']),
+                                    height: 254),
                                 const SizedBox(width: 38),
                                 Expanded(child: _albumPanel()),
                               ],
@@ -122,7 +149,7 @@ class _AlbumPageState extends State<AlbumPage> {
                           sliver: SliverPersistentHeader(
                             pinned: true,
                             delegate: _FadeOutImageDelegate(
-                              image: const AssetImage(Images.albumSample),
+                              image: _imageService.albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary']),
                               isMobile: _isMobile,
                             ),
                           ),
@@ -140,16 +167,22 @@ class _AlbumPageState extends State<AlbumPage> {
                         ),
                       ],
                       SliverList.builder(
-                        itemBuilder: (context, index) => PlayerSongView(
-                          name: 'Chi Shenidi? (feat. Hichkas)',
-                          singer: 'Fadaei',
-                          isPlaying: index == 1,
-                          isFavorite: index == 0,
-                          downloadProgress: index == 2 ? 0.8 : null,
-                          onTap: () {},
-                          onLikePressed: () {},
+                        itemBuilder: (context, index) => ValueListenableBuilder(
+                          valueListenable: _currentSongId,
+                          builder: (context, value, child) => PlayerSongView(
+                            name: wrapper!.items[index].name,
+                            singer: wrapper!.items[index].albumArtist,
+                            isPlaying: wrapper!.items[index] == value,
+                            isFavorite: index == 0,
+                            downloadProgress: null, // index == 2 ? 0.8 : null,
+                            onTap: () {
+                              ref.read(playbackProvider.notifier).play(wrapper!.items[index], wrapper!.items);
+                            },
+                            position: index + 1,
+                            onLikePressed: () {},
+                          ),
                         ),
-                        itemCount: 30,
+                        itemCount: wrapper == null ? 0 : wrapper!.items.length,
                       ),
                     ],
                   ),
@@ -167,7 +200,10 @@ class _AlbumPageState extends State<AlbumPage> {
     super.dispose();
     _scrollController.dispose();
     _titleOpacity.dispose();
+    _currentSongId.dispose();
   }
+
+
 
   Widget _albumPanel() => IconTheme(
         data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),
@@ -183,7 +219,7 @@ class _AlbumPageState extends State<AlbumPage> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Album name',
+                          ref.read(currentAlbumProvider)!.name,
                           key: _titleKey,
                           style: TextStyle(
                             fontSize: _isMobile ? 18 : 42,
@@ -194,11 +230,11 @@ class _AlbumPageState extends State<AlbumPage> {
                       ),
                       Offstage(
                         offstage: !_isMobile,
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 18),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 18),
                           child: Text(
-                            '2023',
-                            style: TextStyle(
+                            ref.read(currentAlbumProvider)!.productionYear.toString(),
+                            style: const TextStyle(
                               fontSize: 14,
                               height: 1.2,
                             ),
@@ -208,12 +244,9 @@ class _AlbumPageState extends State<AlbumPage> {
                     ],
                   ),
                   _albumDetails(
-                    duration: const Duration(
-                      minutes: 42,
-                      seconds: 12,
-                    ),
-                    soundsCount: 13,
-                    year: _isMobile ? null : 2023,
+                    duration: ref.read(currentAlbumProvider)!.duration,
+                    soundsCount: wrapper?.items.length ?? 0,
+                    year: _isMobile ? null : ref.read(currentAlbumProvider)!.productionYear,
                     divider: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Offstage(
@@ -227,17 +260,22 @@ class _AlbumPageState extends State<AlbumPage> {
             ),
             SizedBox(width: _isDesktop ? 35 : 32),
             if (_isDesktop)
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SizedBox.square(
-                      dimension: 65,
-                      child: _playAlbumButton(),
+              StreamBuilder<PlayerState>(
+                stream: ref.read(playerProvider).playerStateStream,
+                builder: (context, snapshot) {
+                  return Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SizedBox.square(
+                          dimension: 65,
+                          child: _playAlbumButton(),
+                        ),
+                        _downloadAlbumButton(),
+                      ],
                     ),
-                    _downloadAlbumButton(),
-                  ],
-                ),
+                  );
+                },
               )
             else
               Wrap(
@@ -354,6 +392,5 @@ class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) =>
-      image != oldDelegate.image || isMobile != oldDelegate.isMobile;
+  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) => image != oldDelegate.image || isMobile != oldDelegate.isMobile;
 }

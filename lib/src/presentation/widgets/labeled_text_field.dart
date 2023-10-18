@@ -6,11 +6,13 @@ class LabeledTextField extends StatelessWidget {
     required this.label,
     required this.keyboardType,
     this.controller,
+    this.obscureText = false,
     this.textInputAction,
     super.key,
   });
 
   final String label;
+  final bool obscureText;
   final TextEditingController? controller;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -40,6 +42,8 @@ class LabeledTextField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
+        obscureText: obscureText,
+        style: const TextStyle(color: Colors.black87),
         decoration: InputDecoration(
           filled: true,
           fillColor: const Color(0xFFEEEEEE),

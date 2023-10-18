@@ -1,11 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class MainPage extends StatefulWidget {
+class MainPage extends ConsumerStatefulWidget {
   const MainPage({
     required this.shell,
     super.key,
@@ -14,10 +16,10 @@ class MainPage extends StatefulWidget {
   final StatefulNavigationShell shell;
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  ConsumerState<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends ConsumerState<MainPage> {
   late ThemeData _theme;
   late Size _screenSize;
   late bool _isMobile;
@@ -72,7 +74,9 @@ class _MainPageState extends State<MainPage> {
                 ),
               ),
               trailing: TextButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  ref.read(authProvider.notifier).logout();
+                },
                 icon: const Icon(JPlayer.log_out),
                 label: const Text('Log out'),
               ),

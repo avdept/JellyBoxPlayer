@@ -24,6 +24,12 @@ mixin _$AlbumDTO {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'Name')
   String get name => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ServerId')
+  String get serverId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ProductionYear')
+  int get productionYear => throw _privateConstructorUsedError;
+  @JsonKey(name: 'RunTimeTicks')
+  int get durationInTicks => throw _privateConstructorUsedError;
   @JsonKey(name: 'AlbumArtist')
   String get albumArtist => throw _privateConstructorUsedError;
   @JsonKey(name: 'ImageTags')
@@ -43,6 +49,9 @@ abstract class $AlbumDTOCopyWith<$Res> {
   $Res call(
       {@JsonKey(name: 'Id') String id,
       @JsonKey(name: 'Name') String name,
+      @JsonKey(name: 'ServerId') String serverId,
+      @JsonKey(name: 'ProductionYear') int productionYear,
+      @JsonKey(name: 'RunTimeTicks') int durationInTicks,
       @JsonKey(name: 'AlbumArtist') String albumArtist,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 }
@@ -62,6 +71,9 @@ class _$AlbumDTOCopyWithImpl<$Res, $Val extends AlbumDTO>
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? serverId = null,
+    Object? productionYear = null,
+    Object? durationInTicks = null,
     Object? albumArtist = null,
     Object? imageTags = null,
   }) {
@@ -74,6 +86,18 @@ class _$AlbumDTOCopyWithImpl<$Res, $Val extends AlbumDTO>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      serverId: null == serverId
+          ? _value.serverId
+          : serverId // ignore: cast_nullable_to_non_nullable
+              as String,
+      productionYear: null == productionYear
+          ? _value.productionYear
+          : productionYear // ignore: cast_nullable_to_non_nullable
+              as int,
+      durationInTicks: null == durationInTicks
+          ? _value.durationInTicks
+          : durationInTicks // ignore: cast_nullable_to_non_nullable
+              as int,
       albumArtist: null == albumArtist
           ? _value.albumArtist
           : albumArtist // ignore: cast_nullable_to_non_nullable
@@ -96,6 +120,9 @@ abstract class _$$_AlbumDTOCopyWith<$Res> implements $AlbumDTOCopyWith<$Res> {
   $Res call(
       {@JsonKey(name: 'Id') String id,
       @JsonKey(name: 'Name') String name,
+      @JsonKey(name: 'ServerId') String serverId,
+      @JsonKey(name: 'ProductionYear') int productionYear,
+      @JsonKey(name: 'RunTimeTicks') int durationInTicks,
       @JsonKey(name: 'AlbumArtist') String albumArtist,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 }
@@ -113,6 +140,9 @@ class __$$_AlbumDTOCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? name = null,
+    Object? serverId = null,
+    Object? productionYear = null,
+    Object? durationInTicks = null,
     Object? albumArtist = null,
     Object? imageTags = null,
   }) {
@@ -125,6 +155,18 @@ class __$$_AlbumDTOCopyWithImpl<$Res>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
+      serverId: null == serverId
+          ? _value.serverId
+          : serverId // ignore: cast_nullable_to_non_nullable
+              as String,
+      productionYear: null == productionYear
+          ? _value.productionYear
+          : productionYear // ignore: cast_nullable_to_non_nullable
+              as int,
+      durationInTicks: null == durationInTicks
+          ? _value.durationInTicks
+          : durationInTicks // ignore: cast_nullable_to_non_nullable
+              as int,
       albumArtist: null == albumArtist
           ? _value.albumArtist
           : albumArtist // ignore: cast_nullable_to_non_nullable
@@ -139,14 +181,18 @@ class __$$_AlbumDTOCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_AlbumDTO implements _AlbumDTO {
+class _$_AlbumDTO extends _AlbumDTO {
   const _$_AlbumDTO(
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'Name') required this.name,
+      @JsonKey(name: 'ServerId') required this.serverId,
+      @JsonKey(name: 'ProductionYear') required this.productionYear,
+      @JsonKey(name: 'RunTimeTicks') required this.durationInTicks,
       @JsonKey(name: 'AlbumArtist') required this.albumArtist,
       @JsonKey(name: 'ImageTags')
       final Map<String, String> imageTags = const {}})
-      : _imageTags = imageTags;
+      : _imageTags = imageTags,
+        super._();
 
   factory _$_AlbumDTO.fromJson(Map<String, dynamic> json) =>
       _$$_AlbumDTOFromJson(json);
@@ -157,6 +203,15 @@ class _$_AlbumDTO implements _AlbumDTO {
   @override
   @JsonKey(name: 'Name')
   final String name;
+  @override
+  @JsonKey(name: 'ServerId')
+  final String serverId;
+  @override
+  @JsonKey(name: 'ProductionYear')
+  final int productionYear;
+  @override
+  @JsonKey(name: 'RunTimeTicks')
+  final int durationInTicks;
   @override
   @JsonKey(name: 'AlbumArtist')
   final String albumArtist;
@@ -171,7 +226,7 @@ class _$_AlbumDTO implements _AlbumDTO {
 
   @override
   String toString() {
-    return 'AlbumDTO(id: $id, name: $name, albumArtist: $albumArtist, imageTags: $imageTags)';
+    return 'AlbumDTO(id: $id, name: $name, serverId: $serverId, productionYear: $productionYear, durationInTicks: $durationInTicks, albumArtist: $albumArtist, imageTags: $imageTags)';
   }
 
   @override
@@ -181,6 +236,12 @@ class _$_AlbumDTO implements _AlbumDTO {
             other is _$_AlbumDTO &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
+            (identical(other.serverId, serverId) ||
+                other.serverId == serverId) &&
+            (identical(other.productionYear, productionYear) ||
+                other.productionYear == productionYear) &&
+            (identical(other.durationInTicks, durationInTicks) ||
+                other.durationInTicks == durationInTicks) &&
             (identical(other.albumArtist, albumArtist) ||
                 other.albumArtist == albumArtist) &&
             const DeepCollectionEquality()
@@ -189,7 +250,14 @@ class _$_AlbumDTO implements _AlbumDTO {
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, albumArtist,
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      serverId,
+      productionYear,
+      durationInTicks,
+      albumArtist,
       const DeepCollectionEquality().hash(_imageTags));
 
   @JsonKey(ignore: true)
@@ -206,13 +274,17 @@ class _$_AlbumDTO implements _AlbumDTO {
   }
 }
 
-abstract class _AlbumDTO implements AlbumDTO {
+abstract class _AlbumDTO extends AlbumDTO {
   const factory _AlbumDTO(
           {@JsonKey(name: 'Id') required final String id,
           @JsonKey(name: 'Name') required final String name,
+          @JsonKey(name: 'ServerId') required final String serverId,
+          @JsonKey(name: 'ProductionYear') required final int productionYear,
+          @JsonKey(name: 'RunTimeTicks') required final int durationInTicks,
           @JsonKey(name: 'AlbumArtist') required final String albumArtist,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
       _$_AlbumDTO;
+  const _AlbumDTO._() : super._();
 
   factory _AlbumDTO.fromJson(Map<String, dynamic> json) = _$_AlbumDTO.fromJson;
 
@@ -222,6 +294,15 @@ abstract class _AlbumDTO implements AlbumDTO {
   @override
   @JsonKey(name: 'Name')
   String get name;
+  @override
+  @JsonKey(name: 'ServerId')
+  String get serverId;
+  @override
+  @JsonKey(name: 'ProductionYear')
+  int get productionYear;
+  @override
+  @JsonKey(name: 'RunTimeTicks')
+  int get durationInTicks;
   @override
   @JsonKey(name: 'AlbumArtist')
   String get albumArtist;

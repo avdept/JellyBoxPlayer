@@ -9,7 +9,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 
 final currentLibraryProvider = StateNotifierProvider.autoDispose<CurrentLibraryNotifier, LibraryDTO?>(
   (ref) {
-    final notifier = CurrentLibraryNotifier(api: ref.watch(jellyfinApiProvider), storage: ref.watch(secureStorageProvider));
+    final notifier = CurrentLibraryNotifier(api: ref.read(jellyfinApiProvider), storage: ref.read(secureStorageProvider));
     final keepAliveLink = ref.keepAlive();
 
     ref.onDispose(keepAliveLink.close);

@@ -16,12 +16,12 @@ final errorHandlerProvider = Provider<Interceptor>(
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
-          final json = error.response?.data as Map<String, dynamic>?;
+          final err = error.response?.data as String?;
           handler.next(
             error.copyWith(
               error: NetworkException.badResponse(
                 statusCode: statusCode,
-                message: json?['error'] as String?,
+                message: err,
               ),
             ),
           );

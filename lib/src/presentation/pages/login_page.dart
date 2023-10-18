@@ -13,18 +13,23 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class LoginPageState extends ConsumerState<LoginPage> {
-
+  String? error;
   final _serverUrlInputController = TextEditingController();
   final _emailInputController = TextEditingController();
   final _passwordInputController = TextEditingController();
 
-  Future<bool> signIn() {
+  Future<void> signIn() async {
     final credentials = UserCredentials(
-            username: _emailInputController.text.trim(),
-            pw: _passwordInputController.text.trim(),
-            serverUrl: _serverUrlInputController.text.trim()
-          );
-    return ref.read(authProvider.notifier).login(credentials);
+      username: _emailInputController.text.trim(),
+      pw: _passwordInputController.text.trim(),
+      serverUrl: _serverUrlInputController.text.trim(),
+    );
+    final resp = await ref.read(authProvider.notifier).login(credentials);
+    if (resp != null) {
+      setState(() {
+        error = resp;
+      });
+    }
   }
 
   @override
@@ -53,6 +58,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       _loginField(),
                       const SizedBox(height: 8),
                       _passwordField(),
+                      if (error != null) const SizedBox(height: 8),
+                      if (error != null) Text(error!),
                       const SizedBox(height: 63),
                       _signInButton(),
                     ],
@@ -83,12 +90,13 @@ class LoginPageState extends ConsumerState<LoginPage> {
   Widget _passwordField() => LabeledTextField(
         label: 'Password',
         controller: _passwordInputController,
+        obscureText: true,
         keyboardType: TextInputType.visiblePassword,
         textInputAction: TextInputAction.done,
       );
 
   Widget _signInButton() => InkWell(
-        onTap: () => signIn(),
+        onTap: signIn,
         borderRadius: BorderRadius.circular(36),
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 74),
