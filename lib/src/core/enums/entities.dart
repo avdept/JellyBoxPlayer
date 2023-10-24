@@ -1,7 +1,5 @@
-enum Entities {
-  albums,
-  artists,
-  playlists,
-  songs,
-  genres,
+enum EntityFilter {
+  sortName,
+  albumArtist,
+  dateCreated,
 }

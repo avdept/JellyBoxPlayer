@@ -241,7 +241,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                     child: Image(
                       image: ref.read(currentAlbumProvider) != null
                           ? ref.read(imageProvider).albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
-                          : AssetImage(Images.coverSample),
+                          : const AssetImage(Images.coverSample),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -278,16 +278,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                 ),
               ),
             ),
-            positionSlider
+            const PositionSlider(),
           ],
         );
       },
     );
   }
 
-  Widget get positionSlider {
-    return PositionSlider();
-  }
 
   @override
   void dispose() {
@@ -310,13 +307,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       );
 
   Widget _prevTrackButton() => IconButton(
-        onPressed: () {},
+        onPressed: () => ref.read(playbackProvider.notifier).prev(),
         color: _theme.colorScheme.onPrimary,
         icon: const Icon(Entypo.fast_backward),
       );
 
   Widget _nextTrackButton() => IconButton(
-        onPressed: () {},
+        onPressed: () => ref.read(playbackProvider.notifier).next(),
         color: _theme.colorScheme.onPrimary,
         icon: const Icon(Entypo.fast_forward),
       );
@@ -327,10 +324,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
         icon: const Icon(CupertinoIcons.list_bullet),
       );
 
-  Widget _randomQueueButton() => ValueListenableBuilder(
-        valueListenable: _randomQueue,
-        builder: (context, isRandom, child) => IconButton(
-          onPressed: () => _randomQueue.value = !isRandom,
+  Widget _randomQueueButton() => Consumer(
+        builder: (context, ref, child) {
+          final queueState = ref.watch(audioQueueProvider);
+          return IconButton(
+            onPressed: () => ref.read(audioQueueProvider.notifier).toggleShuffle(),
           icon: Icon(
             JPlayer.mix,
             color: _theme.colorScheme.onPrimary,
@@ -339,14 +337,16 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
             JPlayer.mix,
             color: _theme.colorScheme.primary,
           ),
-          isSelected: isRandom,
-        ),
+            isSelected: queueState.isShuffled,
+          );
+        },
       );
 
-  Widget _repeatTrackButton() => ValueListenableBuilder(
-        valueListenable: _repeatTrack,
-        builder: (context, isRepeated, child) => IconButton(
-          onPressed: () => _repeatTrack.value = !isRepeated,
+  Widget _repeatTrackButton() => Consumer(
+        builder: (context, ref, widget) {
+          final playBackState = ref.watch(playbackProvider);
+          return IconButton(
+            onPressed: () => ref.read(playbackProvider.notifier).toggleRepeat(),
           icon: Icon(
             JPlayer.repeat,
             color: _theme.colorScheme.onPrimary,
@@ -355,8 +355,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
             JPlayer.repeat,
             color: _theme.colorScheme.primary,
           ),
-          isSelected: isRepeated,
-        ),
+            isSelected: playBackState.repeat,
+          );
+        },
       );
 
   Widget _downloadTrackButton() => IconButton(

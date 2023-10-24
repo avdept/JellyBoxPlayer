@@ -77,8 +77,9 @@ class _AppState extends ConsumerState<App> {
                   routes: [
                     GoRoute(
                       pageBuilder: (context, state) {
-                        final params = state.extra! as Map<String, String>;
-                        final id = params['albumId']!;
+                        final params = state.extra! as Map<String, dynamic>;
+                        print(params);
+                        final id = params['albumId']!.toString();
                         return widget.screenFactory.albumPage(context, state, id);
                       },
                       path: Routes.album.name,

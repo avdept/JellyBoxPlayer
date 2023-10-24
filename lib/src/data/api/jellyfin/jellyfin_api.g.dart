@@ -85,7 +85,7 @@ class _JellyfinApi implements JellyfinApi {
     String type = 'MusicAlbum',
     String startIndex = '0',
     String limit = '100',
-    String soryBy = 'DateCreated,SortName',
+    String sortBy = 'DateCreated,SortName',
     String sortOrder = 'Descending',
     bool recursive = true,
   }) async {
@@ -95,7 +95,7 @@ class _JellyfinApi implements JellyfinApi {
       r'IncludeItemTypes': type,
       r'StartIndex': startIndex,
       r'Limit': limit,
-      r'SortBy': soryBy,
+      r'SortBy': sortBy,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };

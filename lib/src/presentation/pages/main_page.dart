@@ -87,8 +87,9 @@ class _MainPageState extends ConsumerState<MainPage> {
                 (index) => NavigationRailDestination(
                   icon: Icon(_menuItems.elementAt(index).$1),
                   label: Text(_menuItems.elementAt(index).$2),
+                  indicatorColor: const Color(0xFF341010),
                   padding: const EdgeInsets.symmetric(
-                    vertical: 8,
+                    vertical: 20,
                     horizontal: 10,
                   ),
                 ),

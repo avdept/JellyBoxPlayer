@@ -16,7 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$Filter {
-  Entities get orderBy => throw _privateConstructorUsedError;
+  EntityFilter get orderBy => throw _privateConstructorUsedError;
   bool get desc => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -28,7 +28,7 @@ abstract class $FilterCopyWith<$Res> {
   factory $FilterCopyWith(Filter value, $Res Function(Filter) then) =
       _$FilterCopyWithImpl<$Res, Filter>;
   @useResult
-  $Res call({Entities orderBy, bool desc});
+  $Res call({EntityFilter orderBy, bool desc});
 }
 
 /// @nodoc
@@ -51,7 +51,7 @@ class _$FilterCopyWithImpl<$Res, $Val extends Filter>
       orderBy: null == orderBy
           ? _value.orderBy
           : orderBy // ignore: cast_nullable_to_non_nullable
-              as Entities,
+              as EntityFilter,
       desc: null == desc
           ? _value.desc
           : desc // ignore: cast_nullable_to_non_nullable
@@ -66,7 +66,7 @@ abstract class _$$_FilterCopyWith<$Res> implements $FilterCopyWith<$Res> {
       __$$_FilterCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({Entities orderBy, bool desc});
+  $Res call({EntityFilter orderBy, bool desc});
 }
 
 /// @nodoc
@@ -86,7 +86,7 @@ class __$$_FilterCopyWithImpl<$Res>
       orderBy: null == orderBy
           ? _value.orderBy
           : orderBy // ignore: cast_nullable_to_non_nullable
-              as Entities,
+              as EntityFilter,
       desc: null == desc
           ? _value.desc
           : desc // ignore: cast_nullable_to_non_nullable
@@ -101,7 +101,7 @@ class _$_Filter implements _Filter {
   const _$_Filter({required this.orderBy, this.desc = false});
 
   @override
-  final Entities orderBy;
+  final EntityFilter orderBy;
   @override
   @JsonKey()
   final bool desc;
@@ -131,11 +131,11 @@ class _$_Filter implements _Filter {
 }
 
 abstract class _Filter implements Filter {
-  const factory _Filter({required final Entities orderBy, final bool desc}) =
-      _$_Filter;
+  const factory _Filter(
+      {required final EntityFilter orderBy, final bool desc}) = _$_Filter;
 
   @override
-  Entities get orderBy;
+  EntityFilter get orderBy;
   @override
   bool get desc;
   @override

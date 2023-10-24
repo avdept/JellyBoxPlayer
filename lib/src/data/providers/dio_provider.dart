@@ -15,6 +15,6 @@ final dioProvider = Provider<Dio>(
     ),
   )
     ..interceptors.add(ref.watch(errorHandlerProvider))
-    ..interceptors
-        .add(PrettyDioLogger(requestHeader: true, requestBody: true, responseBody: true, responseHeader: false, error: true, compact: true, maxWidth: 90)),
+    // ..interceptors
+    //     .add(PrettyDioLogger(requestHeader: true, requestBody: true, responseBody: true, responseHeader: false, error: true, compact: true, maxWidth: 90)),
 );

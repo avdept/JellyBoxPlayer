@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/dto/album/album_dto.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -12,7 +12,7 @@ class AlbumView extends ConsumerWidget {
     super.key,
   });
 
-  final AlbumDTO album;
+  final ItemDTO album;
   final VoidCallback? onTap;
 
   String? imagePath(WidgetRef ref) {
@@ -24,7 +24,7 @@ class AlbumView extends ConsumerWidget {
   ImageProvider libraryImage(WidgetRef ref) {
     if (imagePath(ref) != null) return NetworkImage(imagePath(ref)!);
 
-    return const AssetImage(Images.librarySample);
+    return const AssetImage(Images.albumSample);
   }
 
   @override
@@ -59,6 +59,16 @@ class AlbumView extends ConsumerWidget {
             ),
             maxLines: 1,
           ),
+          Text(
+            album.albumArtist ?? '',
+            style: TextStyle(
+              fontSize: isTablet ? 22 : 14,
+              fontWeight: FontWeight.w400,
+              height: 1.2,
+              color: const Color.fromARGB(130, 255, 255, 255),
+              overflow: TextOverflow.ellipsis,
+            ),
+          )
         ],
       ),
     );

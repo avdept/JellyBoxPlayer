@@ -10,7 +10,7 @@ class ImageService {
   }
 
   ImageProvider albumIP({required String? tagId, required String id}) {
-    if (tagId == null) return AssetImage(Images.albumSample);
+    if (tagId == null) return const AssetImage(Images.albumSample);
 
     return NetworkImage('$serverUrl/Items/$id/Images/Primary?fillHeight=420&fillWidth=420&quality=96&tag=$tagId');
   }

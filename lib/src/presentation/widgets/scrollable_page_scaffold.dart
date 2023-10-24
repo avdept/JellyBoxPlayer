@@ -8,6 +8,7 @@ class ScrollablePageScaffold extends StatefulWidget {
     this.controller,
     this.useGradientBackground = false,
     this.navigationBar,
+    this.loadMoreData,
     this.contentPadding = EdgeInsets.zero,
     this.slivers = const [],
     super.key,
@@ -15,9 +16,10 @@ class ScrollablePageScaffold extends StatefulWidget {
 
   final ScrollController? controller;
   final bool useGradientBackground;
+  final Future<void> Function()? loadMoreData;
   final PreferredSizeWidget? navigationBar;
   final EdgeInsets contentPadding;
-  final List<Widget> slivers;
+  final List<Widget>? slivers;
 
   @override
   State<ScrollablePageScaffold> createState() => _ScrollablePageScaffoldState();
@@ -27,6 +29,7 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
   late final ScrollController _effectiveScrollController;
   final _blurAppBar = ValueNotifier<bool>(false);
 
+  bool isLoading = false;
   late MediaQueryData _mediaQuery;
   late ThemeData _theme;
 
@@ -34,7 +37,21 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
 
   double get _appBarHeight => widget.navigationBar?.preferredSize.height ?? 0;
 
-  void _onScroll() => _blurAppBar.value = _effectiveScrollController.offset > 0;
+  void _onScroll() {
+    _blurAppBar.value = _effectiveScrollController.offset > 0;
+    if (_effectiveScrollController.position.maxScrollExtent - _effectiveScrollController.position.pixels < 300) {
+      if (widget.loadMoreData != null && !isLoading) {
+        setState(() {
+          isLoading = true;
+        });
+        widget.loadMoreData!().then((value) {
+          setState(() {
+            isLoading = false;
+          });
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -53,9 +70,7 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widget.useGradientBackground
-          ? GradientBackground(child: _body())
-          : _body(),
+      body: widget.useGradientBackground ? GradientBackground(child: _body()) : _body(),
     );
   }
 
@@ -103,7 +118,7 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
                         height: _appBarHeight + widget.contentPadding.top,
                       ),
                     ),
-                    for (final sliver in widget.slivers)
+                    for (final sliver in widget.slivers!)
                       SliverPadding(
                         padding: EdgeInsets.only(
                           left: widget.contentPadding.left,

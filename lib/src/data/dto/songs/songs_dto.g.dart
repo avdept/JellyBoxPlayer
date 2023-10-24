@@ -10,7 +10,11 @@ _$_SongDTO _$$_SongDTOFromJson(Map<String, dynamic> json) => _$_SongDTO(
       id: json['Id'] as String,
       name: json['Name'] as String,
       albumName: json['Album'] as String,
+      runTimeTicks: json['RunTimeTicks'] as int,
+      indexNumber: json['IndexNumber'] as int,
       albumArtist: json['AlbumArtist'] as String,
+      songUserData:
+          SongUserData.fromJson(json['UserData'] as Map<String, dynamic>),
       imageTags: (json['ImageTags'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, e as String),
           ) ??
@@ -22,7 +26,10 @@ Map<String, dynamic> _$$_SongDTOToJson(_$_SongDTO instance) =>
       'Id': instance.id,
       'Name': instance.name,
       'Album': instance.albumName,
+      'RunTimeTicks': instance.runTimeTicks,
+      'IndexNumber': instance.indexNumber,
       'AlbumArtist': instance.albumArtist,
+      'UserData': instance.songUserData,
       'ImageTags': instance.imageTags,
     };
 
@@ -36,4 +43,20 @@ _$_SongsWrapper _$$_SongsWrapperFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$_SongsWrapperToJson(_$_SongsWrapper instance) =>
     <String, dynamic>{
       'Items': instance.items,
+    };
+
+_$_SongUserData _$$_SongUserDataFromJson(Map<String, dynamic> json) =>
+    _$_SongUserData(
+      playbackPositionTicks: json['PlaybackPositionTicks'] as int,
+      playCount: json['PlayCount'] as int,
+      isFavorite: json['IsFavorite'] as bool,
+      played: json['Played'] as bool,
+    );
+
+Map<String, dynamic> _$$_SongUserDataToJson(_$_SongUserData instance) =>
+    <String, dynamic>{
+      'PlaybackPositionTicks': instance.playbackPositionTicks,
+      'PlayCount': instance.playCount,
+      'IsFavorite': instance.isFavorite,
+      'Played': instance.played,
     };

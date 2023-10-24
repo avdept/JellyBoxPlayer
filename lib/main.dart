@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/screen_factory.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -12,6 +13,14 @@ void main() async {
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),
     customRefinedBreakpoints: const RefinedBreakpoints(),
   );
+
+  if (Platform.isAndroid || Platform.isIOS) {
+    await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
+  }
 
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -31,6 +40,8 @@ void main() async {
       await windowManager.focus();
     });
 
+    runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
+  } else {
     runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
   }
 }

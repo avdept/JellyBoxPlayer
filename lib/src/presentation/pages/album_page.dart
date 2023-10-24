@@ -30,7 +30,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _titleOpacity = ValueNotifier<double>(0);
   final _currentSongId = ValueNotifier<SongDTO?>(null);
   final _titleKey = GlobalKey(debugLabel: 'title');
-  SongsWrapper? wrapper;
+  List<SongDTO> songs = [];
 
   late final ImageService _imageService;
 
@@ -64,7 +64,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
     ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!, albumId: widget.albumId).then((value) {
       setState(() {
-        wrapper = value.data;
+        final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+        songs = items;
       });
     });
     _currentSongId.value = ref.read(audioQueueProvider).currentSong;
@@ -111,6 +112,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                   ),
                   child: Text(
                     ref.read(currentAlbumProvider)!.name,
+                    overflow: TextOverflow.clip,
                     style: TextStyle(
                       fontSize: _isMobile ? 14 : 20,
                       color: _theme.colorScheme.onPrimary,
@@ -133,8 +135,11 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               children: [
                                 Image(
                                     image: _imageService.albumIP(
-                                        id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary']),
-                                    height: 254),
+                                    id: ref.read(currentAlbumProvider)!.id,
+                                    tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'],
+                                  ),
+                                  height: 254,
+                                ),
                                 const SizedBox(width: 38),
                                 Expanded(child: _albumPanel()),
                               ],
@@ -166,23 +171,22 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           ),
                         ),
                       ],
+
                       SliverList.builder(
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _currentSongId,
                           builder: (context, value, child) => PlayerSongView(
-                            name: wrapper!.items[index].name,
-                            singer: wrapper!.items[index].albumArtist,
-                            isPlaying: wrapper!.items[index] == value,
-                            isFavorite: index == 0,
+                            song: songs[index],
+                            isPlaying: songs[index] == value,
                             downloadProgress: null, // index == 2 ? 0.8 : null,
                             onTap: () {
-                              ref.read(playbackProvider.notifier).play(wrapper!.items[index], wrapper!.items);
+                              ref.read(playbackProvider.notifier).play(songs[index], songs);
                             },
                             position: index + 1,
                             onLikePressed: () {},
                           ),
                         ),
-                        itemCount: wrapper == null ? 0 : wrapper!.items.length,
+                        itemCount: songs.length,
                       ),
                     ],
                   ),
@@ -210,7 +214,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            IntrinsicWidth(
+            Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +226,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           ref.read(currentAlbumProvider)!.name,
                           key: _titleKey,
                           style: TextStyle(
-                            fontSize: _isMobile ? 18 : 42,
+                            fontSize: _isMobile ? 18 : 32,
                             fontWeight: FontWeight.w600,
                             height: 1.2,
                           ),
@@ -243,9 +247,11 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       ),
                     ],
                   ),
+                  if (songs.isNotEmpty) Text(songs.first.albumArtist),
                   _albumDetails(
                     duration: ref.read(currentAlbumProvider)!.duration,
-                    soundsCount: wrapper?.items.length ?? 0,
+                    soundsCount: songs.length,
+                    albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
                     year: _isMobile ? null : ref.read(currentAlbumProvider)!.productionYear,
                     divider: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -316,6 +322,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     required Duration duration,
     required int soundsCount,
     int? year,
+    String? albumArtist,
     Widget divider = const SizedBox.shrink(),
   }) {
     final durationInSeconds = duration.inSeconds;

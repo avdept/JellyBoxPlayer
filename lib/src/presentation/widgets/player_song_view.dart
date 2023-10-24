@@ -1,29 +1,38 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class PlayerSongView extends StatelessWidget {
   const PlayerSongView({
-    required this.name,
-    required this.singer,
+    required this.song,
     required this.position,
     this.isPlaying = false,
-    this.isFavorite = false,
     this.downloadProgress,
     this.onTap,
     this.onLikePressed,
     super.key,
   });
 
-  final String name;
-  final String singer;
+  final SongDTO song;
   final bool isPlaying;
-  final bool isFavorite;
   final double? downloadProgress;
   final VoidCallback? onTap;
   final VoidCallback? onLikePressed;
   final int position;
+
+  Duration get duration {
+    return Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
+  }
+
+  String get formattedDuration {
+    final negativeSign = duration.isNegative ? '-' : '';
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
+    final twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
+    return '$negativeSign${duration.inHours > 0 ? '${twoDigits(duration.inHours)}:' : ''}$twoDigitMinutes:$twoDigitSeconds';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +51,7 @@ class PlayerSongView extends StatelessWidget {
           horizontal: isMobile ? 16 : 30,
         ),
         title: Text(
-          name,
+          song.name,
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -50,7 +59,7 @@ class PlayerSongView extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          singer,
+          song.albumArtist,
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w300,
@@ -65,6 +74,7 @@ class PlayerSongView extends StatelessWidget {
           spacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            Text(formattedDuration),
             if (downloadProgress != null)
               SizedBox.square(
                 dimension: 30,
@@ -86,7 +96,7 @@ class PlayerSongView extends StatelessWidget {
                   CupertinoIcons.heart_fill,
                   color: theme.colorScheme.primary,
                 ),
-                isSelected: isFavorite,
+                isSelected: song.songUserData.isFavorite,
               ),
           ],
         ),

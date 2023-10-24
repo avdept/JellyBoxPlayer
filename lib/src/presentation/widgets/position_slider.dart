@@ -2,12 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
-class PositionSlider extends ConsumerWidget {
-  final _sliderKey = GlobalKey(debugLabel: 'slider');
+class PositionSlider extends ConsumerStatefulWidget {
+  const PositionSlider({super.key});
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConsumerStatefulWidget> createState() => _PositionSliderState();
+}
+
+class _PositionSliderState extends ConsumerState<PositionSlider> {
+  final _sliderKey = GlobalKey(debugLabel: 'slider');
+  bool isUserInteracting = false;
+  double? temporaryUserPosition;
+
+  @override
+  Widget build(BuildContext context) {
     final playbackState = ref.watch(playbackProvider);
 
+    if (playbackState.status == PlaybackStatus.stopped) return Container();
+    print("Playback status: ${playbackState.status}");
     return Positioned(
       left: -25,
       top: -22,
@@ -16,21 +28,35 @@ class PositionSlider extends ConsumerWidget {
         onHorizontalDragDown: (details) {
           final sliderWidth = _sliderKey.currentContext?.size?.width;
           if (sliderWidth == null) return;
-          // _playProgress.value = details.localPosition.dx / sliderWidth;
         },
         onHorizontalDragUpdate: (details) {
           final sliderWidth = _sliderKey.currentContext?.size?.width;
           if (sliderWidth == null) return;
-          // _playProgress.value = details.localPosition.dx / sliderWidth;
         },
         behavior: HitTestBehavior.opaque,
         child: Slider(
           key: _sliderKey,
-          min: 0,
-          value: playbackState.position.inSeconds.toDouble(),
+          value: isUserInteracting ? temporaryUserPosition! : playbackState.position.inSeconds.toDouble(),
           max: playbackState.totalDuration?.inSeconds.toDouble() ?? 0,
-          onChangeEnd: (value) => ref.read(playbackProvider.notifier).seek(Duration(seconds: value.toInt())),
-          onChanged: (value) => {},
+          onChangeEnd: (value) {
+            setState(() {
+              isUserInteracting = false;
+              temporaryUserPosition = null;
+            });
+            print("Seek to: ${value.toInt()}");
+            ref.read(playbackProvider.notifier).seek(Duration(seconds: value.toInt()));
+          },
+          onChanged: (value) => {
+            setState(() {
+              temporaryUserPosition = value;
+            }),
+          },
+          onChangeStart: (value) => {
+            setState(() {
+              isUserInteracting = true;
+              temporaryUserPosition = value;
+            }),
+          },
         ),
       ),
     );

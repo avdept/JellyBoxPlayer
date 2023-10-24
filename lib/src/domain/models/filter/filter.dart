@@ -6,7 +6,7 @@ part 'filter.freezed.dart';
 @freezed
 class Filter with _$Filter {
   const factory Filter({
-    required Entities orderBy,
+    required EntityFilter orderBy,
     @Default(false) bool desc,
   }) = _Filter;
 }
