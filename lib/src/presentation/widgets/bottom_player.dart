@@ -11,8 +11,6 @@ import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -32,7 +30,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   final _randomQueue = ValueNotifier<bool>(false);
   final _repeatTrack = ValueNotifier<bool>(false);
   final _likeTrack = ValueNotifier<bool>(false);
-
+  SongDTO? currentSong;
   late ThemeData _theme;
   late MaterialLocalizations _localizations;
   late EdgeInsets _viewPadding;
@@ -216,75 +214,73 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    SongDTO? song;
+    final playBackProvider = ref.watch(playbackProvider);
+
+    if (ref.read(audioQueueProvider).songs.isEmpty) return Container();
+
     ref.listen<AudioQueueState>(audioQueueProvider, (prex, next) {
-      song = next.currentSong;
+      currentSong = next.currentSong;
     });
-    return StreamBuilder<PlayerState>(
-      stream: ref.read(playerProvider).playerStateStream,
-      builder: (context, snapshot) {
-        _isPlaying.value = snapshot.data?.playing ?? false;
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-              color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
-              padding: EdgeInsets.only(bottom: _viewPadding.bottom),
-              child: GestureDetector(
-                onTap: !_isDesktop ? _onExpand : null,
-                behavior: HitTestBehavior.opaque,
-                child: SimpleListTile(
-                  padding: const EdgeInsets.only(right: 8),
-                  leading: AspectRatio(
-                    aspectRatio: 1,
-                    child: Image(
-                      image: ref.read(currentAlbumProvider) != null
-                          ? ref.read(imageProvider).albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
-                          : const AssetImage(Images.coverSample),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  title: Text(
-                    song?.name ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 18 : 24,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                    ),
-                  ),
-                  subtitle: Text(
-                    song?.albumArtist ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 10 : 18,
-                      height: 1.2,
-                    ),
-                  ),
-                  trailing: Wrap(
-                    spacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      if (_isDesktop) _randomQueueButton(),
-                      _prevTrackButton(),
-                      SizedBox.square(
-                        dimension: 45,
-                        child: _playPauseButton(),
-                      ),
-                      _nextTrackButton(),
-                      if (_isDesktop) _repeatTrackButton(),
-                    ],
-                  ),
-                  leadingToTitle: 15,
+
+    _isPlaying.value = playBackProvider.status == PlaybackStatus.playing;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
+          color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
+          padding: EdgeInsets.only(bottom: _viewPadding.bottom),
+          child: GestureDetector(
+            onTap: !_isDesktop ? _onExpand : null,
+            behavior: HitTestBehavior.opaque,
+            child: SimpleListTile(
+              padding: const EdgeInsets.only(right: 8),
+              leading: AspectRatio(
+                aspectRatio: 1,
+                child: Image(
+                  image: ref.read(currentAlbumProvider) != null
+                      ? ref.read(imageProvider).albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
+                      : const AssetImage(Images.coverSample),
+                  fit: BoxFit.cover,
                 ),
               ),
+              title: Text(
+                currentSong?.name ?? '',
+                style: TextStyle(
+                  fontSize: _isMobile ? 18 : 24,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+              ),
+              subtitle: Text(
+                currentSong?.albumArtist ?? '',
+                style: TextStyle(
+                  fontSize: _isMobile ? 10 : 18,
+                  height: 1.2,
+                ),
+              ),
+              trailing: Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (_isDesktop) _randomQueueButton(),
+                  _prevTrackButton(),
+                  SizedBox.square(
+                    dimension: 45,
+                    child: _playPauseButton(),
+                  ),
+                  _nextTrackButton(),
+                  if (_isDesktop) _repeatTrackButton(),
+                ],
+              ),
+              leadingToTitle: 15,
             ),
-            const PositionSlider(),
-          ],
-        );
-      },
+          ),
+        ),
+        const PositionSlider(),
+      ],
     );
   }
-
 
   @override
   void dispose() {
@@ -329,14 +325,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           final queueState = ref.watch(audioQueueProvider);
           return IconButton(
             onPressed: () => ref.read(audioQueueProvider.notifier).toggleShuffle(),
-          icon: Icon(
-            JPlayer.mix,
-            color: _theme.colorScheme.onPrimary,
-          ),
-          selectedIcon: Icon(
-            JPlayer.mix,
-            color: _theme.colorScheme.primary,
-          ),
+            icon: Icon(
+              JPlayer.mix,
+              color: _theme.colorScheme.onPrimary,
+            ),
+            selectedIcon: Icon(
+              JPlayer.mix,
+              color: _theme.colorScheme.primary,
+            ),
             isSelected: queueState.isShuffled,
           );
         },
@@ -347,14 +343,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           final playBackState = ref.watch(playbackProvider);
           return IconButton(
             onPressed: () => ref.read(playbackProvider.notifier).toggleRepeat(),
-          icon: Icon(
-            JPlayer.repeat,
-            color: _theme.colorScheme.onPrimary,
-          ),
-          selectedIcon: Icon(
-            JPlayer.repeat,
-            color: _theme.colorScheme.primary,
-          ),
+            icon: Icon(
+              JPlayer.repeat,
+              color: _theme.colorScheme.onPrimary,
+            ),
+            selectedIcon: Icon(
+              JPlayer.repeat,
+              color: _theme.colorScheme.primary,
+            ),
             isSelected: playBackState.repeat,
           );
         },
