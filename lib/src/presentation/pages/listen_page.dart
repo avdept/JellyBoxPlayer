@@ -212,14 +212,8 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                 if (filter.orderBy == value) {
                   final desc = !filter.desc;
                   ref.read(filterProvider.notifier).filter(value!, desc);
-                  // _appliedFilter.value = filter.copyWith(desc: desc);
-                  // _availableFilters[value!] = desc;
                 } else {
                   ref.read(filterProvider.notifier).filter(value!, false);
-                  // _appliedFilter.value = Filter(
-                  //   orderBy: value!,
-                  //   desc: _availableFilters[value]!,
-                  // );
                 }
               },
               onMenuStateChange: (value) => _filterOpened.value = value,

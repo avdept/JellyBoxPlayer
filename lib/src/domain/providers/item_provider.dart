@@ -26,7 +26,7 @@ class AlbumsNotifier extends StateNotifier<AsyncData<AlbumsState>> {
 
   Future<void> loadMore() async {
     final resp = await ref.read(jellyfinApiProvider).getAlbums(
-        userId: ref.read(currentUserProvider.notifier).state!,
+        userId: ref.read(currentUserProvider.notifier).state!.userId,
         libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
         sortOrder: filterState.desc ? 'Descending' : 'Ascending',
         sortBy: filterState.orderBy.name.capitalize(),
@@ -36,7 +36,7 @@ class AlbumsNotifier extends StateNotifier<AsyncData<AlbumsState>> {
 }
 
 //create a global provider as you would normally in riverpod:
-var itemsProvider = StateNotifierProvider<AlbumsNotifier, AsyncData<AlbumsState>>((ref) {
+final itemsProvider = StateNotifierProvider<AlbumsNotifier, AsyncData<AlbumsState>>((ref) {
   final prov = AlbumsNotifier(ref, ref.watch(filterProvider), AsyncData<AlbumsState>(AlbumsState()))..loadMore();
   return prov;
 });

@@ -56,13 +56,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> play(SongDTO playSong, List<SongDTO> songs) async {
     _ref.read(audioQueueProvider.notifier).setNewQueue(songs, playSong);
     try {
+      final domainUri = Uri.parse(_ref.read(baseUrlProvider)!);
+
       final fileUri = Uri(
-        scheme: _ref.read(baseUrlProvider)?.split('://').first,
-        host: _ref.read(baseUrlProvider)?.split('://').last,
+        scheme: domainUri.scheme,
+        host: domainUri.host,
+        port: domainUri.port,
         path: 'Audio/${playSong.id}/universal',
         queryParameters: {
-          'UserId': _ref.read(currentUserProvider),
-          'api_key': '5ba1682563d046b6a865bfa8b11fac0f',
+          'UserId': _ref.read(currentUserProvider)!.userId,
+          'api_key': _ref.read(currentUserProvider)!.token,
           'DeviceId': '12345',
           'TranscodingProtocol': 'http',
           'TranscodingContainer': 'aac',
@@ -134,7 +137,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
 
     // }
-    await _audioPlayer.play();
+    unawaited(_audioPlayer.play());
     state = PlaybackState(
       status: PlaybackStatus.playing,
       position: _audioPlayer.position,

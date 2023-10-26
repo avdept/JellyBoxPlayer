@@ -62,14 +62,18 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   void initState() {
     super.initState();
     _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
-    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!, albumId: widget.albumId).then((value) {
+    _getSongs();
+    _currentSongId.value = ref.read(audioQueueProvider).currentSong;
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _getSongs() {
+    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, albumId: widget.albumId).then((value) {
       setState(() {
         final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
         songs = items;
       });
     });
-    _currentSongId.value = ref.read(audioQueueProvider).currentSong;
-    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -134,7 +138,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Image(
-                                    image: _imageService.albumIP(
+                                  image: _imageService.albumIP(
                                     id: ref.read(currentAlbumProvider)!.id,
                                     tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'],
                                   ),
@@ -171,7 +175,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           ),
                         ),
                       ],
-
                       SliverList.builder(
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _currentSongId,
@@ -183,7 +186,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               ref.read(playbackProvider.notifier).play(songs[index], songs);
                             },
                             position: index + 1,
-                            onLikePressed: () {},
+                            onLikePressed: () async {
+                              final api = ref.read(jellyfinApiProvider);
+                              songs[index].songUserData.isFavorite
+                                  ? await api.removeFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id)
+                                  : await api.saveFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id);
+                              _getSongs();
+                            },
                           ),
                         ),
                         itemCount: songs.length,
@@ -206,8 +215,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _titleOpacity.dispose();
     _currentSongId.dispose();
   }
-
-
 
   Widget _albumPanel() => IconTheme(
         data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),

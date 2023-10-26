@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class PlayerSongView extends StatelessWidget {
+class PlayerSongView extends ConsumerWidget {
   const PlayerSongView({
     required this.song,
     required this.position,
@@ -35,7 +36,7 @@ class PlayerSongView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isMobile = deviceType == DeviceScreenType.mobile;

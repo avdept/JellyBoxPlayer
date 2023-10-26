@@ -40,9 +40,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
     final serverUrl = await _storage.read(key: _serverUrlKey);
     final userId = await _storage.read(key: _userIdKey);
     _ref.read(baseUrlProvider.notifier).state = serverUrl;
-    _ref.read(currentUserProvider.notifier).state = userId;
+
     final tokenValidated = _validateAuthToken(token);
-    if (tokenValidated) _setAuthHeader(token!);
+
+    if (tokenValidated) {
+      _ref.read(currentUserProvider.notifier).state = User(userId: userId!, token: token!);
+      _setAuthHeader(token);
+    }
     if (state.value == tokenValidated) return;
     state = AsyncValue<bool>.data(tokenValidated && (serverUrl?.isNotEmpty ?? false) && (userId?.isNotEmpty ?? false));
   }
@@ -58,9 +62,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
       await _storage.write(key: _serverUrlKey, value: credentials.serverUrl);
 
       _ref.read(baseUrlProvider.notifier).state = credentials.serverUrl;
-      _ref.read(currentUserProvider.notifier).state = response.data.id;
+      _ref.read(currentUserProvider.notifier).state = User(userId: response.data.id, token: token!);
       final tokenValidated = _validateAuthToken(token);
-      if (tokenValidated) _setAuthHeader(token!);
+      if (tokenValidated) _setAuthHeader(token);
       state = AsyncValue<bool>.data(tokenValidated);
     } on DioException catch (e) {
       return e.error?.toString();

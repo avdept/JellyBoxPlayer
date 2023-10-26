@@ -1,3 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final currentUserProvider = StateProvider<String?>((ref) => null);
+class User {
+  User({required this.userId, required this.token});
+  final String userId;
+  final String token;
+}
+
+final currentUserProvider = StateProvider<User?>((ref) => null);

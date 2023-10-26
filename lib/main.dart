@@ -14,7 +14,7 @@ void main() async {
     customRefinedBreakpoints: const RefinedBreakpoints(),
   );
 
-  if (Platform.isAndroid || Platform.isIOS) {
+  if (Platform.isIOS) {
     await JustAudioBackground.init(
     androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
     androidNotificationChannelName: 'Audio playback',

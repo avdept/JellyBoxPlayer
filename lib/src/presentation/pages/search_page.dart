@@ -1,22 +1,35 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends ConsumerState<SearchPage> {
   final _searchFieldController = TextEditingController();
+  Timer? _debounce;
 
   late Size _screenSize;
   late bool _isMobile;
   late bool _isTablet;
   late bool _isDesktop;
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      ref.read(searchProvider.notifier).state = query;
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -39,19 +52,14 @@ class _SearchPageState extends State<SearchPage> {
           padding: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
           child: Flex(
             direction: _isMobile ? Axis.vertical : Axis.horizontal,
-            crossAxisAlignment: _isMobile
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
+            crossAxisAlignment: _isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
             children: [
               Offstage(
                 offstage: _isMobile,
                 child: _titleText(),
               ),
               SizedBox(width: _isTablet ? 36 : 44),
-              if (_isMobile)
-                _searchField()
-              else
-                Expanded(child: _searchField()),
+              if (_isMobile) _searchField() else Expanded(child: _searchField()),
             ],
           ),
         ),
@@ -72,6 +80,25 @@ class _SearchPageState extends State<SearchPage> {
           ),
           itemCount: 1,
         ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: _isDesktop ? 40 : (_isMobile ? 28 : 30),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Consumer(
+            builder: (context, ref, child) {
+              final albums = ref.watch(searchAlbumProvider);
+              return albums.value.items.isNotEmpty
+                  ? const SizedBox(
+                      height: 20,
+                      child: Text("Albums"),
+                    )
+                  : SizedBox.shrink();
+            },
+          ),
+        ),
+        albums,
         SliverToBoxAdapter(
           child: SizedBox(
             height: _isDesktop ? 40 : (_isMobile ? 28 : 30),
@@ -104,6 +131,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void dispose() {
     _searchFieldController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -116,7 +144,65 @@ class _SearchPageState extends State<SearchPage> {
         ),
       );
 
+  Widget get albums => Consumer(
+        builder: (context, ref, child) {
+          final albums = ref.watch(searchAlbumProvider);
+          final itemCount = min(calculateMaxItemsInRow(context, _isTablet ? 360 : 200, _isMobile ? 15 : 24), albums.value.items.length);
+          // return SliverList.separated(
+          //   itemBuilder: (context, index) => AlbumView(
+          //     album: albums.value.items[index],
+          //     onTap: () {},
+          //   ),
+          //   separatorBuilder: (context, index) => SizedBox(
+          //     height: _isMobile ? 12 : 24,
+          //   ),
+          //   itemCount: albums.value.items.length,
+          // );
+          return SliverGrid.builder(
+            gridDelegate: _isDesktop
+                ? SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: _isTablet ? 360 : 200,
+                    mainAxisSpacing: _isMobile ? 15 : 24,
+                    crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+                    childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                  )
+                : SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 1,
+                    mainAxisSpacing: _isMobile ? 12 : 24,
+                    mainAxisExtent: _isMobile ? 42 : 50,
+                  ),
+            itemBuilder: (context, index) {
+              if (index == itemCount - 1) {
+                return IconButton(
+                  icon: const Icon(
+                    JPlayer.chevron_right,
+                    size: 32,
+                  ),
+                  highlightColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  onPressed: () => {},
+                );
+              } else {
+                return AlbumView(
+                  album: albums.value.items[index],
+                  onTap: () {},
+                );
+              }
+              ;
+            },
+            itemCount: itemCount, //albums.value.items.length,
+          );
+        },
+      );
+  int calculateMaxItemsInRow(BuildContext context, double itemWidth, double spacing) {
+    final screenWidth = MediaQuery.of(context).size.width - 240; // 240 is the width of sidebar
+    print((screenWidth / (itemWidth + spacing)).floor());
+    return (screenWidth / (itemWidth + spacing)).floor();
+  }
+
   Widget _searchField() => TextField(
+        onChanged: _onSearchChanged,
         controller: _searchFieldController,
         keyboardType: TextInputType.text,
         textInputAction: TextInputAction.search,

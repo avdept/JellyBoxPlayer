@@ -48,6 +48,60 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
+  Future<void> saveFavorite({
+    required String userId,
+    required String itemId,
+  }) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    await _dio.fetch<void>(_setStreamType<void>(Options(
+      method: 'POST',
+      headers: _headers,
+      extra: _extra,
+    )
+        .compose(
+          _dio.options,
+          '/Users/${userId}/FavoriteItems/${itemId}',
+          queryParameters: queryParameters,
+          data: _data,
+        )
+        .copyWith(
+            baseUrl: _combineBaseUrls(
+          _dio.options.baseUrl,
+          baseUrl,
+        ))));
+  }
+
+  @override
+  Future<void> removeFavorite({
+    required String userId,
+    required String itemId,
+  }) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    await _dio.fetch<void>(_setStreamType<void>(Options(
+      method: 'DELETE',
+      headers: _headers,
+      extra: _extra,
+    )
+        .compose(
+          _dio.options,
+          '/Users/${userId}/FavoriteItems/${itemId}',
+          queryParameters: queryParameters,
+          data: _data,
+        )
+        .copyWith(
+            baseUrl: _combineBaseUrls(
+          _dio.options.baseUrl,
+          baseUrl,
+        ))));
+  }
+
+  @override
   Future<HttpResponse<SongsWrapper>> getSongs({
     required String userId,
     required String albumId,
@@ -96,6 +150,51 @@ class _JellyfinApi implements JellyfinApi {
       r'StartIndex': startIndex,
       r'Limit': limit,
       r'SortBy': sortBy,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+    };
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/Users/${userId}/Items',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final value = AlbumsWrapper.fromJson(_result.data!);
+    final httpResponse = HttpResponse(value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<AlbumsWrapper>> searchAlbums({
+    required String userId,
+    required String libraryId,
+    String type = 'MusicAlbum',
+    required String searchTerm,
+    String startIndex = '0',
+    String limit = '100',
+    String sortOrder = 'Descending',
+    bool recursive = true,
+  }) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'ParentId': libraryId,
+      r'IncludeItemTypes': type,
+      r'searchTerm': searchTerm,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };

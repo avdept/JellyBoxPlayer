@@ -36,7 +36,7 @@ class CurrentAlbumNotifier extends StateNotifier<ItemDTO?> {
 
   Future<SongsWrapper> fetchSongs(String albumId) async {
     try {
-      final songs = await _api.getSongs(userId: _ref.read(currentUserProvider.notifier).state!, albumId: albumId);
+      final songs = await _api.getSongs(userId: _ref.read(currentUserProvider.notifier).state!.userId, albumId: albumId);
       return songs.data;
     } on DioException catch (e) {
       log(e.message ?? "Error while fetching Songs");
