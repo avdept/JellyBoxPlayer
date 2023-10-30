@@ -1,5 +1,7 @@
 import 'dart:io' show Platform;
 
+import 'package:bugsnag_flutter/bugsnag_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/app.dart';
@@ -23,6 +25,7 @@ void main() async {
   }
 
   WidgetsFlutterBinding.ensureInitialized();
+  if (kReleaseMode) await bugsnag.start(apiKey: '7572207d224c7e1f05ee19a07c32e937');
 
   if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
     await windowManager.ensureInitialized();

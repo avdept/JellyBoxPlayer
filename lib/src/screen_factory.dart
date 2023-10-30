@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/presentation/pages/pages.dart';
 
 class ScreenFactory {
@@ -8,10 +9,11 @@ class ScreenFactory {
   Page<void> albumPage(
     BuildContext context,
     GoRouterState router,
-    String albumId,
+    ItemDTO album,
+
   ) {
     return CupertinoPage(
-      child: AlbumPage(albumId: albumId),
+      child: AlbumPage(album: album),
     );
   }
 
@@ -37,7 +39,7 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return NoTransitionPage(
+    return const NoTransitionPage(
       child: LibraryPage(),
     );
   }

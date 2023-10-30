@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -78,9 +79,9 @@ class _AppState extends ConsumerState<App> {
                     GoRoute(
                       pageBuilder: (context, state) {
                         final params = state.extra! as Map<String, dynamic>;
-                        print(params);
-                        final id = params['albumId']!.toString();
-                        return widget.screenFactory.albumPage(context, state, id);
+                        final album = params['album'] is ItemDTO ? params['album'] as ItemDTO : ItemDTO.fromJson(params['album'] as Map<String, dynamic>);
+
+                        return widget.screenFactory.albumPage(context, state, album);
                       },
                       path: Routes.album.name,
                     ),
@@ -90,10 +91,16 @@ class _AppState extends ConsumerState<App> {
             ),
             StatefulShellBranch(
               routes: [
-                GoRoute(
-                  path: Routes.search,
-                  pageBuilder: widget.screenFactory.searchPage,
-                ),
+                GoRoute(path: Routes.search, pageBuilder: widget.screenFactory.searchPage, routes: [
+                  GoRoute(
+                    pageBuilder: (context, state) {
+                      final params = state.extra! as Map<String, dynamic>;
+                      final album = params['album']! as ItemDTO;
+                      return widget.screenFactory.albumPage(context, state, album);
+                    },
+                    path: Routes.album.name,
+                  ),
+                ]),
               ],
             ),
             StatefulShellBranch(
@@ -110,12 +117,12 @@ class _AppState extends ConsumerState<App> {
                   path: Routes.downloads,
                   pageBuilder: widget.screenFactory.downloadsPage,
                   routes: [
-                    GoRoute(
-                      path: Routes.album.name,
-                      pageBuilder: (context, state) {
-                        return widget.screenFactory.albumPage(context, state, "1");
-                      },
-                    ),
+                    // GoRoute(
+                    //   path: Routes.album.name,
+                    //   pageBuilder: (context, state) {
+                    //     return widget.screenFactory.albumPage(context, state, Item);
+                    //   },
+                    // ),
                   ],
                 ),
               ],

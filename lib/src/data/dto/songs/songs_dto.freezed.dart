@@ -22,18 +22,20 @@ SongDTO _$SongDTOFromJson(Map<String, dynamic> json) {
 mixin _$SongDTO {
   @JsonKey(name: 'Id')
   String get id => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Name')
-  String get name => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Album')
-  String get albumName => throw _privateConstructorUsedError;
   @JsonKey(name: 'RunTimeTicks')
   int get runTimeTicks => throw _privateConstructorUsedError;
   @JsonKey(name: 'IndexNumber')
   int get indexNumber => throw _privateConstructorUsedError;
-  @JsonKey(name: 'AlbumArtist')
-  String get albumArtist => throw _privateConstructorUsedError;
   @JsonKey(name: 'UserData')
   SongUserData get songUserData => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Type')
+  String get type => throw _privateConstructorUsedError;
+  @JsonKey(name: 'AlbumArtist')
+  String? get albumArtist => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Album')
+  String? get albumName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Name')
+  String? get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'ImageTags')
   Map<String, String> get imageTags => throw _privateConstructorUsedError;
 
@@ -49,12 +51,13 @@ abstract class $SongDTOCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(name: 'Id') String id,
-      @JsonKey(name: 'Name') String name,
-      @JsonKey(name: 'Album') String albumName,
       @JsonKey(name: 'RunTimeTicks') int runTimeTicks,
       @JsonKey(name: 'IndexNumber') int indexNumber,
-      @JsonKey(name: 'AlbumArtist') String albumArtist,
       @JsonKey(name: 'UserData') SongUserData songUserData,
+      @JsonKey(name: 'Type') String type,
+      @JsonKey(name: 'AlbumArtist') String? albumArtist,
+      @JsonKey(name: 'Album') String? albumName,
+      @JsonKey(name: 'Name') String? name,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 
   $SongUserDataCopyWith<$Res> get songUserData;
@@ -74,26 +77,19 @@ class _$SongDTOCopyWithImpl<$Res, $Val extends SongDTO>
   @override
   $Res call({
     Object? id = null,
-    Object? name = null,
-    Object? albumName = null,
     Object? runTimeTicks = null,
     Object? indexNumber = null,
-    Object? albumArtist = null,
     Object? songUserData = null,
+    Object? type = null,
+    Object? albumArtist = freezed,
+    Object? albumName = freezed,
+    Object? name = freezed,
     Object? imageTags = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      albumName: null == albumName
-          ? _value.albumName
-          : albumName // ignore: cast_nullable_to_non_nullable
               as String,
       runTimeTicks: null == runTimeTicks
           ? _value.runTimeTicks
@@ -103,14 +99,26 @@ class _$SongDTOCopyWithImpl<$Res, $Val extends SongDTO>
           ? _value.indexNumber
           : indexNumber // ignore: cast_nullable_to_non_nullable
               as int,
-      albumArtist: null == albumArtist
-          ? _value.albumArtist
-          : albumArtist // ignore: cast_nullable_to_non_nullable
-              as String,
       songUserData: null == songUserData
           ? _value.songUserData
           : songUserData // ignore: cast_nullable_to_non_nullable
               as SongUserData,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      albumArtist: freezed == albumArtist
+          ? _value.albumArtist
+          : albumArtist // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumName: freezed == albumName
+          ? _value.albumName
+          : albumName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      name: freezed == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String?,
       imageTags: null == imageTags
           ? _value.imageTags
           : imageTags // ignore: cast_nullable_to_non_nullable
@@ -136,12 +144,13 @@ abstract class _$$_SongDTOCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(name: 'Id') String id,
-      @JsonKey(name: 'Name') String name,
-      @JsonKey(name: 'Album') String albumName,
       @JsonKey(name: 'RunTimeTicks') int runTimeTicks,
       @JsonKey(name: 'IndexNumber') int indexNumber,
-      @JsonKey(name: 'AlbumArtist') String albumArtist,
       @JsonKey(name: 'UserData') SongUserData songUserData,
+      @JsonKey(name: 'Type') String type,
+      @JsonKey(name: 'AlbumArtist') String? albumArtist,
+      @JsonKey(name: 'Album') String? albumName,
+      @JsonKey(name: 'Name') String? name,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 
   @override
@@ -159,26 +168,19 @@ class __$$_SongDTOCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? name = null,
-    Object? albumName = null,
     Object? runTimeTicks = null,
     Object? indexNumber = null,
-    Object? albumArtist = null,
     Object? songUserData = null,
+    Object? type = null,
+    Object? albumArtist = freezed,
+    Object? albumName = freezed,
+    Object? name = freezed,
     Object? imageTags = null,
   }) {
     return _then(_$_SongDTO(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      albumName: null == albumName
-          ? _value.albumName
-          : albumName // ignore: cast_nullable_to_non_nullable
               as String,
       runTimeTicks: null == runTimeTicks
           ? _value.runTimeTicks
@@ -188,14 +190,26 @@ class __$$_SongDTOCopyWithImpl<$Res>
           ? _value.indexNumber
           : indexNumber // ignore: cast_nullable_to_non_nullable
               as int,
-      albumArtist: null == albumArtist
-          ? _value.albumArtist
-          : albumArtist // ignore: cast_nullable_to_non_nullable
-              as String,
       songUserData: null == songUserData
           ? _value.songUserData
           : songUserData // ignore: cast_nullable_to_non_nullable
               as SongUserData,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      albumArtist: freezed == albumArtist
+          ? _value.albumArtist
+          : albumArtist // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumName: freezed == albumName
+          ? _value.albumName
+          : albumName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      name: freezed == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String?,
       imageTags: null == imageTags
           ? _value._imageTags
           : imageTags // ignore: cast_nullable_to_non_nullable
@@ -209,12 +223,13 @@ class __$$_SongDTOCopyWithImpl<$Res>
 class _$_SongDTO implements _SongDTO {
   const _$_SongDTO(
       {@JsonKey(name: 'Id') required this.id,
-      @JsonKey(name: 'Name') required this.name,
-      @JsonKey(name: 'Album') required this.albumName,
       @JsonKey(name: 'RunTimeTicks') required this.runTimeTicks,
       @JsonKey(name: 'IndexNumber') required this.indexNumber,
-      @JsonKey(name: 'AlbumArtist') required this.albumArtist,
       @JsonKey(name: 'UserData') required this.songUserData,
+      @JsonKey(name: 'Type') required this.type,
+      @JsonKey(name: 'AlbumArtist') this.albumArtist,
+      @JsonKey(name: 'Album') this.albumName,
+      @JsonKey(name: 'Name') this.name,
       @JsonKey(name: 'ImageTags')
       final Map<String, String> imageTags = const {}})
       : _imageTags = imageTags;
@@ -226,23 +241,26 @@ class _$_SongDTO implements _SongDTO {
   @JsonKey(name: 'Id')
   final String id;
   @override
-  @JsonKey(name: 'Name')
-  final String name;
-  @override
-  @JsonKey(name: 'Album')
-  final String albumName;
-  @override
   @JsonKey(name: 'RunTimeTicks')
   final int runTimeTicks;
   @override
   @JsonKey(name: 'IndexNumber')
   final int indexNumber;
   @override
-  @JsonKey(name: 'AlbumArtist')
-  final String albumArtist;
-  @override
   @JsonKey(name: 'UserData')
   final SongUserData songUserData;
+  @override
+  @JsonKey(name: 'Type')
+  final String type;
+  @override
+  @JsonKey(name: 'AlbumArtist')
+  final String? albumArtist;
+  @override
+  @JsonKey(name: 'Album')
+  final String? albumName;
+  @override
+  @JsonKey(name: 'Name')
+  final String? name;
   final Map<String, String> _imageTags;
   @override
   @JsonKey(name: 'ImageTags')
@@ -254,7 +272,7 @@ class _$_SongDTO implements _SongDTO {
 
   @override
   String toString() {
-    return 'SongDTO(id: $id, name: $name, albumName: $albumName, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, albumArtist: $albumArtist, songUserData: $songUserData, imageTags: $imageTags)';
+    return 'SongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, albumName: $albumName, name: $name, imageTags: $imageTags)';
   }
 
   @override
@@ -263,17 +281,18 @@ class _$_SongDTO implements _SongDTO {
         (other.runtimeType == runtimeType &&
             other is _$_SongDTO &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.name, name) || other.name == name) &&
-            (identical(other.albumName, albumName) ||
-                other.albumName == albumName) &&
             (identical(other.runTimeTicks, runTimeTicks) ||
                 other.runTimeTicks == runTimeTicks) &&
             (identical(other.indexNumber, indexNumber) ||
                 other.indexNumber == indexNumber) &&
-            (identical(other.albumArtist, albumArtist) ||
-                other.albumArtist == albumArtist) &&
             (identical(other.songUserData, songUserData) ||
                 other.songUserData == songUserData) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.albumArtist, albumArtist) ||
+                other.albumArtist == albumArtist) &&
+            (identical(other.albumName, albumName) ||
+                other.albumName == albumName) &&
+            (identical(other.name, name) || other.name == name) &&
             const DeepCollectionEquality()
                 .equals(other._imageTags, _imageTags));
   }
@@ -283,12 +302,13 @@ class _$_SongDTO implements _SongDTO {
   int get hashCode => Object.hash(
       runtimeType,
       id,
-      name,
-      albumName,
       runTimeTicks,
       indexNumber,
-      albumArtist,
       songUserData,
+      type,
+      albumArtist,
+      albumName,
+      name,
       const DeepCollectionEquality().hash(_imageTags));
 
   @JsonKey(ignore: true)
@@ -308,12 +328,13 @@ class _$_SongDTO implements _SongDTO {
 abstract class _SongDTO implements SongDTO {
   const factory _SongDTO(
           {@JsonKey(name: 'Id') required final String id,
-          @JsonKey(name: 'Name') required final String name,
-          @JsonKey(name: 'Album') required final String albumName,
           @JsonKey(name: 'RunTimeTicks') required final int runTimeTicks,
           @JsonKey(name: 'IndexNumber') required final int indexNumber,
-          @JsonKey(name: 'AlbumArtist') required final String albumArtist,
           @JsonKey(name: 'UserData') required final SongUserData songUserData,
+          @JsonKey(name: 'Type') required final String type,
+          @JsonKey(name: 'AlbumArtist') final String? albumArtist,
+          @JsonKey(name: 'Album') final String? albumName,
+          @JsonKey(name: 'Name') final String? name,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
       _$_SongDTO;
 
@@ -323,23 +344,26 @@ abstract class _SongDTO implements SongDTO {
   @JsonKey(name: 'Id')
   String get id;
   @override
-  @JsonKey(name: 'Name')
-  String get name;
-  @override
-  @JsonKey(name: 'Album')
-  String get albumName;
-  @override
   @JsonKey(name: 'RunTimeTicks')
   int get runTimeTicks;
   @override
   @JsonKey(name: 'IndexNumber')
   int get indexNumber;
   @override
-  @JsonKey(name: 'AlbumArtist')
-  String get albumArtist;
-  @override
   @JsonKey(name: 'UserData')
   SongUserData get songUserData;
+  @override
+  @JsonKey(name: 'Type')
+  String get type;
+  @override
+  @JsonKey(name: 'AlbumArtist')
+  String? get albumArtist;
+  @override
+  @JsonKey(name: 'Album')
+  String? get albumName;
+  @override
+  @JsonKey(name: 'Name')
+  String? get name;
   @override
   @JsonKey(name: 'ImageTags')
   Map<String, String> get imageTags;

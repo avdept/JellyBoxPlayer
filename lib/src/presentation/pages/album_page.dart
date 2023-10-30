@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
@@ -11,6 +12,7 @@ import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
+import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
@@ -18,8 +20,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AlbumPage extends ConsumerStatefulWidget {
-  const AlbumPage({required this.albumId, super.key});
-  final String albumId;
+  const AlbumPage({required this.album, super.key});
+  final ItemDTO album;
 
   @override
   ConsumerState<AlbumPage> createState() => _AlbumPageState();
@@ -68,7 +70,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   void _getSongs() {
-    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, albumId: widget.albumId).then((value) {
+    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, albumId: widget.album.id).then((value) {
       setState(() {
         final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
         songs = items;
@@ -183,7 +185,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             isPlaying: songs[index] == value,
                             downloadProgress: null, // index == 2 ? 0.8 : null,
                             onTap: () {
-                              ref.read(playbackProvider.notifier).play(songs[index], songs);
+                              ref.read(playbackProvider.notifier).play(songs[index], songs, widget.album);
                             },
                             position: index + 1,
                             onLikePressed: () async {
@@ -254,7 +256,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       ),
                     ],
                   ),
-                  if (songs.isNotEmpty) Text(songs.first.albumArtist),
+                  if (songs.isNotEmpty) Text(songs.first.albumArtist ?? ''),
                   _albumDetails(
                     duration: ref.read(currentAlbumProvider)!.duration,
                     soundsCount: songs.length,
@@ -273,30 +275,31 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             ),
             SizedBox(width: _isDesktop ? 35 : 32),
             if (_isDesktop)
-              StreamBuilder<PlayerState>(
-                stream: ref.read(playerProvider).playerStateStream,
-                builder: (context, snapshot) {
-                  return Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SizedBox.square(
-                          dimension: 65,
-                          child: _playAlbumButton(),
-                        ),
-                        _downloadAlbumButton(),
-                      ],
-                    ),
-                  );
-                },
-              )
+              Container()
+            // StreamBuilder<PlayerState>(
+            //   stream: ref.read(playerProvider).playerStateStream,
+            //   builder: (context, snapshot) {
+            //     return Expanded(
+            //       child: Row(
+            //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //         children: [
+            //           SizedBox.square(
+            //             dimension: 65,
+            //             child: _playAlbumButton(),
+            //           ),
+            //           _downloadAlbumButton(),
+            //         ],
+            //       ),
+            //     );
+            //   },
+            // )
             else
               Wrap(
                 spacing: _isMobile ? 6 : 32,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _downloadAlbumButton(),
-                  _randomQueueButton(),
+                  const RandomQueueButton(),
                   SizedBox.square(
                     dimension: _isMobile ? 40 : 48,
                     child: _playAlbumButton(),
@@ -320,11 +323,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         icon: const Icon(JPlayer.download),
       );
 
-  Widget _randomQueueButton() => IconButton(
-        onPressed: () {},
-        icon: const Icon(JPlayer.mix),
-      );
-
   Widget _albumDetails({
     required Duration duration,
     required int soundsCount,
@@ -334,7 +332,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }) {
     final durationInSeconds = duration.inSeconds;
     final hours = durationInSeconds ~/ Duration.secondsPerHour;
-    final minutes = durationInSeconds ~/ Duration.secondsPerMinute;
+    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/ Duration.secondsPerMinute;
     final seconds = durationInSeconds % Duration.secondsPerMinute;
 
     return DefaultTextStyle(

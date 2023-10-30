@@ -48,7 +48,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   void _onAlbumTap(ItemDTO album) {
     final location = GoRouterState.of(context).fullPath;
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
-    context.go('$location${Routes.album}', extra: {'albumId': album.id});
+    context.go('$location${Routes.album}', extra: {'album': album});
   }
 
   @override

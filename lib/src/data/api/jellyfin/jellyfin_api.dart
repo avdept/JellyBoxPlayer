@@ -27,7 +27,7 @@ abstract class JellyfinApi {
   Future<void> removeFavorite({@Path('userId') required String userId, @Path('itemId') required String itemId});
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<SongsWrapper>> getSongs({@Path('userId') required String userId, @Query('ParentId') required String albumId});
+  Future<HttpResponse<SongsWrapper>> getSongs({@Path('userId') required String userId, @Query('ParentId') required String albumId, @Query('IncludeItemTypes') String includeType = 'music'});
 
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<AlbumsWrapper>> getAlbums({

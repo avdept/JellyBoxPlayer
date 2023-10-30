@@ -8,12 +8,13 @@ class SongDTO with _$SongDTO {
 
   const factory SongDTO({
     @JsonKey(name: 'Id') required String id,
-    @JsonKey(name: 'Name') required String name,
-    @JsonKey(name: 'Album') required String albumName,
     @JsonKey(name: 'RunTimeTicks') required int runTimeTicks,
     @JsonKey(name: 'IndexNumber') required int indexNumber,
-    @JsonKey(name: 'AlbumArtist') required String albumArtist,
     @JsonKey(name: 'UserData') required SongUserData songUserData,
+    @JsonKey(name: 'Type') required String type,
+    @JsonKey(name: 'AlbumArtist') String? albumArtist,
+    @JsonKey(name: 'Album') String? albumName,
+    @JsonKey(name: 'Name') String? name,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
   }) = _SongDTO;
 

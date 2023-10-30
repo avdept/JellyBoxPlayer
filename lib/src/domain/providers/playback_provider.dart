@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
@@ -18,12 +19,14 @@ class PlaybackState {
     required this.status,
     required this.position,
     required this.repeat,
+    required this.cacheProgress,
     this.totalDuration,
   });
 
   final bool repeat;
   final PlaybackStatus status;
   final Duration position;
+  final Duration cacheProgress;
   final Duration? totalDuration;
 }
 
@@ -31,20 +34,37 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(
     this._ref,
     this._audioPlayer,
-  ) : super(PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, repeat: false)) {
+  ) : super(PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, repeat: false, cacheProgress: Duration.zero)) {
     // Listen for song completion
     _audioPlayer.positionStream.listen((position) {
       state = PlaybackState(
         status: state.status,
         repeat: state.repeat,
         position: position,
+        cacheProgress: state.cacheProgress,
         totalDuration: _audioPlayer.duration,
       );
     });
 
+    // _audioPlayer.bufferedPositionStream.listen((buffering) {
+    //   state = PlaybackState(
+    //     status: state.status,
+    //     repeat: state.repeat,
+    //     position: state.position,
+    //     cacheProgress: buffering,
+    //     totalDuration: _audioPlayer.duration,
+    //   );
+    // });
+
+    _audioPlayer.positionDiscontinuityStream.listen((discontinuity) {
+      if (discontinuity.reason == PositionDiscontinuityReason.autoAdvance) {
+        print(discontinuity.reason);
+      }
+    });
+
     _audioPlayer.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
-        print(playerState.processingState);
+        print('PlayerState: Completed');
         _handleSongCompletion();
       }
       // Handle other player states as needed
@@ -53,8 +73,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final AudioPlayer _audioPlayer;
   final StateNotifierProviderRef<PlaybackNotifier, PlaybackState> _ref;
 
-  Future<void> play(SongDTO playSong, List<SongDTO> songs) async {
-    _ref.read(audioQueueProvider.notifier).setNewQueue(songs, playSong);
+  Future<void> play(SongDTO playSong, List<SongDTO> songs, ItemDTO album) async {
+    _ref.read(audioQueueProvider.notifier).setNewQueue(songs, playSong, album);
     try {
       final domainUri = Uri.parse(_ref.read(baseUrlProvider)!);
 
@@ -68,8 +88,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           'api_key': _ref.read(currentUserProvider)!.token,
           'DeviceId': '12345',
           'TranscodingProtocol': 'http',
-          'TranscodingContainer': 'aac',
-          'AudioCodec': 'aac',
+          'TranscodingContainer': 'm4a',
+          'AudioCodec': 'm4a',
           'Container': 'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
         },
       );
@@ -77,11 +97,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       final uri = AudioSource.uri(
         fileUri,
         tag: MediaItem(
-          // Specify a unique ID for each media item:
           id: playSong.id,
-          // Metadata to display in the notification:
           album: playSong.albumName,
-          title: playSong.name,
+          artist: album.albumArtist,
+          duration: Duration(milliseconds: (playSong.runTimeTicks / 10000).ceil()),
+          title: playSong.name ?? 'Untitled',
           artUri: playSong.imageTags['Primary'] != null
               ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: playSong.imageTags['Primary']!, id: playSong.id))
               : null,
@@ -93,6 +113,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         status: PlaybackStatus.playing,
         position: Duration.zero,
         totalDuration: _audioPlayer.duration,
+        cacheProgress: state.cacheProgress,
         repeat: state.repeat,
       );
     } catch (e) {
@@ -100,7 +121,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         // This is hack to avoid playback state being error on ios. This error always throws
         return;
       }
-      state = PlaybackState(status: PlaybackStatus.error, position: Duration.zero, repeat: state.repeat);
+      state = PlaybackState(
+        status: PlaybackStatus.error,
+        position: Duration.zero,
+        repeat: state.repeat,
+        cacheProgress: state.cacheProgress,
+      );
       // Handle the error as needed
     }
   }
@@ -110,6 +136,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     state = PlaybackState(
       status: state.status,
       position: position,
+      cacheProgress: state.cacheProgress,
       totalDuration: state.totalDuration,
       repeat: state.repeat,
     );
@@ -121,6 +148,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       status: PlaybackStatus.paused,
       position: _audioPlayer.position,
       totalDuration: state.totalDuration,
+      cacheProgress: state.cacheProgress,
       repeat: state.repeat,
     );
   }
@@ -130,7 +158,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       final queue = _ref.read(audioQueueProvider.notifier);
       // Case when song has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
       if (queue.state.songs.isNotEmpty) {
-        await play(queue.state.songs.first, queue.state.songs);
+        await play(queue.state.songs.first, queue.state.songs, queue.state.album!);
       }
 
       return;
@@ -142,16 +170,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       status: PlaybackStatus.playing,
       position: _audioPlayer.position,
       totalDuration: state.totalDuration,
+      cacheProgress: state.cacheProgress,
       repeat: state.repeat,
     );
   }
 
   Future<void> next() async {
-    await play(_ref.read(audioQueueProvider.notifier).nextSong, _ref.read(audioQueueProvider).songs);
+    await play(_ref.read(audioQueueProvider.notifier).nextSong, _ref.read(audioQueueProvider).songs, _ref.read(audioQueueProvider).album!);
   }
 
   Future<void> prev() async {
-    await play(_ref.read(audioQueueProvider.notifier).prevSong, _ref.read(audioQueueProvider).songs);
+    await play(_ref.read(audioQueueProvider.notifier).prevSong, _ref.read(audioQueueProvider).songs, _ref.read(audioQueueProvider).album!);
   }
 
   Future<void> stop() async {
@@ -160,6 +189,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       status: PlaybackStatus.stopped,
       position: Duration.zero,
       totalDuration: Duration.zero,
+      cacheProgress: state.cacheProgress,
       repeat: state.repeat,
     );
   }
@@ -169,6 +199,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       status: state.status,
       position: state.position,
       totalDuration: state.totalDuration,
+      cacheProgress: state.cacheProgress,
       repeat: !state.repeat,
     );
   }
@@ -178,6 +209,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     state = PlaybackState(
       status: PlaybackStatus.paused,
       position: Duration.zero,
+      cacheProgress: state.cacheProgress,
       totalDuration: Duration.zero,
       repeat: state.repeat,
     );
@@ -191,22 +223,23 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       // There's a next song in the queue
       final nextSong = songs[currentIndex + 1];
       _ref.read(audioQueueProvider.notifier).setCurrentSong(nextSong);
-      unawaited(play(
-        nextSong,
-        songs,
-      )); // Start playing the next song
+      unawaited(play(nextSong, songs, queueState.album!)); // Start playing the next song
     } else {
       if (state.repeat) {
         final nextSong = songs.first;
         _ref.read(audioQueueProvider.notifier).setCurrentSong(nextSong);
-        unawaited(play(
-          nextSong,
-          songs,
-        )); // Sta
+        unawaited(
+          play(
+            nextSong,
+            songs,
+            queueState.album!,
+          ),
+        );
       } else {
         await _ref.read(playerProvider).stop();
         state = PlaybackState(
           status: PlaybackStatus.stopped,
+          cacheProgress: state.cacheProgress,
           position: Duration.zero,
           totalDuration: Duration.zero,
           repeat: state.repeat,

@@ -9,6 +9,8 @@ import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
+import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
+import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
@@ -38,7 +40,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
+  Future<void> _onExpand(SongDTO? currentSong) => Navigator.of(context, rootNavigator: true).push(
         ModalSheetRoute(
           builder: (context) => SafeArea(
             top: false,
@@ -70,7 +72,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                   builder: (context, image, child) => (image == null)
                                       ? const SizedBox.shrink()
                                       : Image(
-                                          image: image,
+                                          image: ref.read(currentAlbumProvider) != null
+                                              ? ref
+                                                  .read(imageProvider)
+                                                  .albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
+                                              : const AssetImage(Images.coverSample),
                                           fit: BoxFit.cover,
                                         ),
                                 ),
@@ -84,7 +90,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
-                                  _openListButton(),
+                                  // _openListButton(),
                                   _randomQueueButton(),
                                   _repeatTrackButton(),
                                   _downloadTrackButton(),
@@ -97,7 +103,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                       ),
                       SizedBox(height: _isMobile ? 30 : 26),
                       Text(
-                        'Song Title',
+                        currentSong?.name ?? '',
                         style: TextStyle(
                           fontSize: _isMobile ? 30 : 40,
                           fontWeight: FontWeight.w600,
@@ -107,27 +113,23 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         maxLines: 1,
                       ),
                       Text(
-                        'Artist',
+                        currentSong?.albumArtist ?? '',
                         style: TextStyle(
                           fontSize: _isMobile ? 18 : 24,
                           height: 1.2,
                         ),
                       ),
-                      SizedBox(height: _isMobile ? 17 : 0),
-                      Text(
-                        'FLAC 44.1Khz/1080Kbps',
-                        style: TextStyle(
-                          fontSize: _isMobile ? 14 : 18,
-                          color: colorScheme?.onPrimary,
-                          height: 1.2,
-                        ),
-                      ),
+                      // SizedBox(height: _isMobile ? 17 : 0),
+                      // Text(
+                      //   'FLAC 44.1Khz/1080Kbps',
+                      //   style: TextStyle(
+                      //     fontSize: _isMobile ? 14 : 18,
+                      //     color: colorScheme?.onPrimary,
+                      //     height: 1.2,
+                      //   ),
+                      // ),
                       SizedBox(height: _isMobile ? 15 : 21),
-                      Container(
-                        width: double.infinity,
-                        height: _isMobile ? 78 : 120,
-                        color: colorScheme?.primary,
-                      ),
+                      const PositionSlider(),
                       SizedBox(height: _isMobile ? 23 : 56),
                       IconTheme(
                         data: _theme.iconTheme.copyWith(
@@ -187,6 +189,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
         brightness: _theme.brightness,
       );
     }
+    print(_dynamicColors.value);
   }
 
   @override
@@ -218,10 +221,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
 
     if (ref.read(audioQueueProvider).songs.isEmpty) return Container();
 
-    ref.listen<AudioQueueState>(audioQueueProvider, (prex, next) {
-      currentSong = next.currentSong;
-    });
-
+    final queue = ref.watch(audioQueueProvider);
+    final currentSong = queue.currentSong;
+    final imageTagId = queue.album!.imageTags['Primary'] ?? queue.currentSong?.imageTags['Primary'];
+    _imageProvider.value = ref.read(imageProvider).albumIP(id: queue.album!.id, tagId: imageTagId);
+    // ref.listen<AudioQueueState>(audioQueueProvider, (prex, next) {
+    //   currentSong = next.currentSong;
+    // });
     _isPlaying.value = playBackProvider.status == PlaybackStatus.playing;
     return Stack(
       clipBehavior: Clip.none,
@@ -231,16 +237,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
           padding: EdgeInsets.only(bottom: _viewPadding.bottom),
           child: GestureDetector(
-            onTap: !_isDesktop ? _onExpand : null,
+            onTap: !_isDesktop ? () => _onExpand(currentSong) : null,
             behavior: HitTestBehavior.opaque,
             child: SimpleListTile(
               padding: const EdgeInsets.only(right: 8),
               leading: AspectRatio(
                 aspectRatio: 1,
                 child: Image(
-                  image: ref.read(currentAlbumProvider) != null
-                      ? ref.read(imageProvider).albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
-                      : const AssetImage(Images.coverSample),
+                  image: imageTagId != null ? ref.read(imageProvider).albumIP(id: queue.album!.id, tagId: imageTagId) : const AssetImage(Images.coverSample),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -263,7 +267,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                 spacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (_isDesktop) _randomQueueButton(),
+                  if (_isDesktop) const RemainingDuration(),
+                  if (_isDesktop) const RandomQueueButton(),
                   _prevTrackButton(),
                   SizedBox.square(
                     dimension: 45,
@@ -277,7 +282,15 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
             ),
           ),
         ),
-        const PositionSlider(),
+        ValueListenableBuilder(
+          valueListenable: _dynamicColors,
+          builder: (context, colorScheme, child) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: colorScheme,
+            ),
+            child: const Positioned(left: -25, top: -22, right: -25, child: PositionSlider()),
+          ),
+        ),
       ],
     );
   }

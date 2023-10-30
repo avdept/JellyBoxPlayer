@@ -9,6 +9,8 @@ class LibraryDTO with _$LibraryDTO {
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'Name') String? name,
     @JsonKey(name: 'Path') String? path,
+    @JsonKey(name: 'Type') String? type,
+    @JsonKey(name: 'CollectionType') String? collectionType,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
   }) = _LibraryDTO;
 

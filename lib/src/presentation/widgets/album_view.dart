@@ -36,6 +36,7 @@ class AlbumView extends ConsumerWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Column(
+
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           AspectRatio(
@@ -68,7 +69,7 @@ class AlbumView extends ConsumerWidget {
               color: const Color.fromARGB(130, 255, 255, 255),
               overflow: TextOverflow.ellipsis,
             ),
-          )
+          ),
         ],
       ),
     );

@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 
 class AudioQueueState {
-  AudioQueueState({required this.originalSongs, required this.shuffledSongs, this.currentSong, this.isShuffled = false});
+  AudioQueueState({required this.originalSongs, required this.shuffledSongs, this.album, this.currentSong, this.isShuffled = false});
   final List<SongDTO> originalSongs;
   final SongDTO? currentSong;
+  final ItemDTO? album;
   final List<SongDTO> shuffledSongs;
   final bool isShuffled;
 
@@ -15,20 +17,24 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
   AudioQueueNotifier() : super(AudioQueueState(originalSongs: [], shuffledSongs: []));
 
   // Method to add a song to the queue
-  void setNewQueue(List<SongDTO> songs, SongDTO playNowSong) {
+  void setNewQueue(List<SongDTO> songs, SongDTO playNowSong, ItemDTO album) {
     state = AudioQueueState(
       originalSongs: songs,
       shuffledSongs: state.isShuffled ? (List<SongDTO>.from(songs)..shuffle()) : songs,
       currentSong: playNowSong,
       isShuffled: state.isShuffled,
+      album: album,
     );
   }
 
   void playNextSongInQueue() {
     state = AudioQueueState(
-      originalSongs: state.originalSongs, shuffledSongs: state.shuffledSongs,
+      originalSongs: state.originalSongs,
+      shuffledSongs: state.shuffledSongs,
       currentSong: nextSong,
-      isShuffled: state.isShuffled,);
+      isShuffled: state.isShuffled,
+      album: state.album
+    );
   }
 
   void toggleShuffle() {
@@ -42,6 +48,7 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
       originalSongs: state.originalSongs,
       shuffledSongs: shuffled,
       currentSong: state.currentSong,
+      album: state.album,
       isShuffled: true,
     );
   }
@@ -52,6 +59,7 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
       originalSongs: state.originalSongs,
       shuffledSongs: state.shuffledSongs,
       currentSong: state.currentSong,
+      album: state.album,
     );
   }
 
@@ -79,11 +87,11 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
       originalSongs: state.originalSongs,
       shuffledSongs: state.shuffledSongs,
       currentSong: song,
+      album: state.album,
       isShuffled: state.isShuffled,
     );
   }
 
-  // Other methods like removeSong, nextSong, previousSong, etc.
 }
 
 final audioQueueProvider = StateNotifierProvider<AudioQueueNotifier, AudioQueueState>((ref) => AudioQueueNotifier());

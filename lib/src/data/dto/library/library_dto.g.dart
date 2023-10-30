@@ -11,6 +11,8 @@ _$_LibraryDTO _$$_LibraryDTOFromJson(Map<String, dynamic> json) =>
       id: json['Id'] as String,
       name: json['Name'] as String?,
       path: json['Path'] as String?,
+      type: json['Type'] as String?,
+      collectionType: json['CollectionType'] as String?,
       imageTags: (json['ImageTags'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, e as String),
           ) ??
@@ -22,6 +24,8 @@ Map<String, dynamic> _$$_LibraryDTOToJson(_$_LibraryDTO instance) =>
       'Id': instance.id,
       'Name': instance.name,
       'Path': instance.path,
+      'Type': instance.type,
+      'CollectionType': instance.collectionType,
       'ImageTags': instance.imageTags,
     };
 

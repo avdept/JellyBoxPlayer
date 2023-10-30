@@ -52,7 +52,7 @@ class PlayerSongView extends ConsumerWidget {
           horizontal: isMobile ? 16 : 30,
         ),
         title: Text(
-          song.name,
+          song.name ?? '',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -60,7 +60,7 @@ class PlayerSongView extends ConsumerWidget {
           ),
         ),
         subtitle: Text(
-          song.albumArtist,
+          song.albumArtist ?? '',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w300,

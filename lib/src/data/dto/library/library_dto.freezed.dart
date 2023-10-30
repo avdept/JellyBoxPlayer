@@ -26,6 +26,10 @@ mixin _$LibraryDTO {
   String? get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'Path')
   String? get path => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Type')
+  String? get type => throw _privateConstructorUsedError;
+  @JsonKey(name: 'CollectionType')
+  String? get collectionType => throw _privateConstructorUsedError;
   @JsonKey(name: 'ImageTags')
   Map<String, String> get imageTags => throw _privateConstructorUsedError;
 
@@ -45,6 +49,8 @@ abstract class $LibraryDTOCopyWith<$Res> {
       {@JsonKey(name: 'Id') String id,
       @JsonKey(name: 'Name') String? name,
       @JsonKey(name: 'Path') String? path,
+      @JsonKey(name: 'Type') String? type,
+      @JsonKey(name: 'CollectionType') String? collectionType,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 }
 
@@ -64,6 +70,8 @@ class _$LibraryDTOCopyWithImpl<$Res, $Val extends LibraryDTO>
     Object? id = null,
     Object? name = freezed,
     Object? path = freezed,
+    Object? type = freezed,
+    Object? collectionType = freezed,
     Object? imageTags = null,
   }) {
     return _then(_value.copyWith(
@@ -78,6 +86,14 @@ class _$LibraryDTOCopyWithImpl<$Res, $Val extends LibraryDTO>
       path: freezed == path
           ? _value.path
           : path // ignore: cast_nullable_to_non_nullable
+              as String?,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      collectionType: freezed == collectionType
+          ? _value.collectionType
+          : collectionType // ignore: cast_nullable_to_non_nullable
               as String?,
       imageTags: null == imageTags
           ? _value.imageTags
@@ -99,6 +115,8 @@ abstract class _$$_LibraryDTOCopyWith<$Res>
       {@JsonKey(name: 'Id') String id,
       @JsonKey(name: 'Name') String? name,
       @JsonKey(name: 'Path') String? path,
+      @JsonKey(name: 'Type') String? type,
+      @JsonKey(name: 'CollectionType') String? collectionType,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 }
 
@@ -116,6 +134,8 @@ class __$$_LibraryDTOCopyWithImpl<$Res>
     Object? id = null,
     Object? name = freezed,
     Object? path = freezed,
+    Object? type = freezed,
+    Object? collectionType = freezed,
     Object? imageTags = null,
   }) {
     return _then(_$_LibraryDTO(
@@ -130,6 +150,14 @@ class __$$_LibraryDTOCopyWithImpl<$Res>
       path: freezed == path
           ? _value.path
           : path // ignore: cast_nullable_to_non_nullable
+              as String?,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      collectionType: freezed == collectionType
+          ? _value.collectionType
+          : collectionType // ignore: cast_nullable_to_non_nullable
               as String?,
       imageTags: null == imageTags
           ? _value._imageTags
@@ -146,6 +174,8 @@ class _$_LibraryDTO implements _LibraryDTO {
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'Name') this.name,
       @JsonKey(name: 'Path') this.path,
+      @JsonKey(name: 'Type') this.type,
+      @JsonKey(name: 'CollectionType') this.collectionType,
       @JsonKey(name: 'ImageTags')
       final Map<String, String> imageTags = const {}})
       : _imageTags = imageTags;
@@ -162,6 +192,12 @@ class _$_LibraryDTO implements _LibraryDTO {
   @override
   @JsonKey(name: 'Path')
   final String? path;
+  @override
+  @JsonKey(name: 'Type')
+  final String? type;
+  @override
+  @JsonKey(name: 'CollectionType')
+  final String? collectionType;
   final Map<String, String> _imageTags;
   @override
   @JsonKey(name: 'ImageTags')
@@ -173,7 +209,7 @@ class _$_LibraryDTO implements _LibraryDTO {
 
   @override
   String toString() {
-    return 'LibraryDTO(id: $id, name: $name, path: $path, imageTags: $imageTags)';
+    return 'LibraryDTO(id: $id, name: $name, path: $path, type: $type, collectionType: $collectionType, imageTags: $imageTags)';
   }
 
   @override
@@ -184,14 +220,17 @@ class _$_LibraryDTO implements _LibraryDTO {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.path, path) || other.path == path) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.collectionType, collectionType) ||
+                other.collectionType == collectionType) &&
             const DeepCollectionEquality()
                 .equals(other._imageTags, _imageTags));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, path,
-      const DeepCollectionEquality().hash(_imageTags));
+  int get hashCode => Object.hash(runtimeType, id, name, path, type,
+      collectionType, const DeepCollectionEquality().hash(_imageTags));
 
   @JsonKey(ignore: true)
   @override
@@ -212,6 +251,8 @@ abstract class _LibraryDTO implements LibraryDTO {
           {@JsonKey(name: 'Id') required final String id,
           @JsonKey(name: 'Name') final String? name,
           @JsonKey(name: 'Path') final String? path,
+          @JsonKey(name: 'Type') final String? type,
+          @JsonKey(name: 'CollectionType') final String? collectionType,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
       _$_LibraryDTO;
 
@@ -227,6 +268,12 @@ abstract class _LibraryDTO implements LibraryDTO {
   @override
   @JsonKey(name: 'Path')
   String? get path;
+  @override
+  @JsonKey(name: 'Type')
+  String? get type;
+  @override
+  @JsonKey(name: 'CollectionType')
+  String? get collectionType;
   @override
   @JsonKey(name: 'ImageTags')
   Map<String, String> get imageTags;

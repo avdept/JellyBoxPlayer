@@ -28,7 +28,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     super.initState();
     ref.read(currentLibraryProvider.notifier).fetchLibraries().then((value) {
       setState(() {
-        libraries = value;
+        libraries = value.where((element) => element.type == 'CollectionFolder' && element.collectionType == 'music').toList();
         isLoading = false;
       });
     });
@@ -67,12 +67,14 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       ),
       slivers: [
         SliverGrid.builder(
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          gridDelegate: isDesktop || isTablet
+              ? SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: isTablet ? 370 : 358,
             mainAxisSpacing: isMobile ? 13 : 34,
             crossAxisSpacing: isDesktop ? 24 : (isMobile ? 16 : 34),
             childAspectRatio: 370 / 255,
-          ),
+                )
+              : const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisExtent: 250),
           itemBuilder: (context, index) => LibraryView(
             library: libraries[index],
             onTap: () => _onLibraryTap(libraries[index]).then((value) => context.go(Routes.listen)),
@@ -84,7 +86,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   }
 
   Widget _titleText() => const Text(
-        'Your library',
+        'Select Library',
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,

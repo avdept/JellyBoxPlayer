@@ -8,13 +8,14 @@ part of 'songs_dto.dart';
 
 _$_SongDTO _$$_SongDTOFromJson(Map<String, dynamic> json) => _$_SongDTO(
       id: json['Id'] as String,
-      name: json['Name'] as String,
-      albumName: json['Album'] as String,
       runTimeTicks: json['RunTimeTicks'] as int,
       indexNumber: json['IndexNumber'] as int,
-      albumArtist: json['AlbumArtist'] as String,
       songUserData:
           SongUserData.fromJson(json['UserData'] as Map<String, dynamic>),
+      type: json['Type'] as String,
+      albumArtist: json['AlbumArtist'] as String?,
+      albumName: json['Album'] as String?,
+      name: json['Name'] as String?,
       imageTags: (json['ImageTags'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, e as String),
           ) ??
@@ -24,12 +25,13 @@ _$_SongDTO _$$_SongDTOFromJson(Map<String, dynamic> json) => _$_SongDTO(
 Map<String, dynamic> _$$_SongDTOToJson(_$_SongDTO instance) =>
     <String, dynamic>{
       'Id': instance.id,
-      'Name': instance.name,
-      'Album': instance.albumName,
       'RunTimeTicks': instance.runTimeTicks,
       'IndexNumber': instance.indexNumber,
-      'AlbumArtist': instance.albumArtist,
       'UserData': instance.songUserData,
+      'Type': instance.type,
+      'AlbumArtist': instance.albumArtist,
+      'Album': instance.albumName,
+      'Name': instance.name,
       'ImageTags': instance.imageTags,
     };
 
