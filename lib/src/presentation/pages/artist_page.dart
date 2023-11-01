@@ -100,7 +100,7 @@ class _ArtistPageState extends State<ArtistPage> {
             ),
             Positioned.fill(
               left: _isMobile ? 16 : (_isTablet ? 64 : 480),
-              top: _isMobile ? 406 : (_isTablet ? 486 : 346),
+              top: _isMobile ? 412 : (_isTablet ? 496 : 358),
               child: _albumsList(),
             ),
           ],
@@ -151,7 +151,7 @@ class _ArtistPageState extends State<ArtistPage> {
           slivers: [
             SliverPinnedHeader(
               child: SizedBox.fromSize(
-                size: Size.fromHeight(_isMobile ? 6 : (_isTablet ? 27 : 22)),
+                size: const Size.fromHeight(16),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -166,17 +166,12 @@ class _ArtistPageState extends State<ArtistPage> {
                 ),
               ),
             ),
-            SliverPadding(
-              padding: EdgeInsets.only(
-                top: _isMobile ? 6 : (_isTablet ? 27 : 22),
-              ),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  'Albums',
-                  style: TextStyle(
-                    fontSize: _isMobile ? 20 : 24,
-                    fontWeight: FontWeight.w500,
-                  ),
+            SliverToBoxAdapter(
+              child: Text(
+                'Albums',
+                style: TextStyle(
+                  fontSize: _isMobile ? 20 : 24,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
