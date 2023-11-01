@@ -6,4 +6,5 @@ class FontFamily {
   static const String gilroy = 'Gilroy';
   static const String inter = 'Inter';
   static const String jplayer = 'JPlayer';
+  static const String entypo = 'Entypo';
 }

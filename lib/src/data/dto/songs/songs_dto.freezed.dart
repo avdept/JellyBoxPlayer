@@ -136,10 +136,10 @@ class _$SongDTOCopyWithImpl<$Res, $Val extends SongDTO>
 }
 
 /// @nodoc
-abstract class _$$_SongDTOCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
-  factory _$$_SongDTOCopyWith(
-          _$_SongDTO value, $Res Function(_$_SongDTO) then) =
-      __$$_SongDTOCopyWithImpl<$Res>;
+abstract class _$$SongDTOImplCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
+  factory _$$SongDTOImplCopyWith(
+          _$SongDTOImpl value, $Res Function(_$SongDTOImpl) then) =
+      __$$SongDTOImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -158,10 +158,11 @@ abstract class _$$_SongDTOCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_SongDTOCopyWithImpl<$Res>
-    extends _$SongDTOCopyWithImpl<$Res, _$_SongDTO>
-    implements _$$_SongDTOCopyWith<$Res> {
-  __$$_SongDTOCopyWithImpl(_$_SongDTO _value, $Res Function(_$_SongDTO) _then)
+class __$$SongDTOImplCopyWithImpl<$Res>
+    extends _$SongDTOCopyWithImpl<$Res, _$SongDTOImpl>
+    implements _$$SongDTOImplCopyWith<$Res> {
+  __$$SongDTOImplCopyWithImpl(
+      _$SongDTOImpl _value, $Res Function(_$SongDTOImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -177,7 +178,7 @@ class __$$_SongDTOCopyWithImpl<$Res>
     Object? name = freezed,
     Object? imageTags = null,
   }) {
-    return _then(_$_SongDTO(
+    return _then(_$SongDTOImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -220,8 +221,8 @@ class __$$_SongDTOCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_SongDTO implements _SongDTO {
-  const _$_SongDTO(
+class _$SongDTOImpl implements _SongDTO {
+  const _$SongDTOImpl(
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'RunTimeTicks') required this.runTimeTicks,
       @JsonKey(name: 'IndexNumber') required this.indexNumber,
@@ -234,8 +235,8 @@ class _$_SongDTO implements _SongDTO {
       final Map<String, String> imageTags = const {}})
       : _imageTags = imageTags;
 
-  factory _$_SongDTO.fromJson(Map<String, dynamic> json) =>
-      _$$_SongDTOFromJson(json);
+  factory _$SongDTOImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SongDTOImplFromJson(json);
 
   @override
   @JsonKey(name: 'Id')
@@ -279,7 +280,7 @@ class _$_SongDTO implements _SongDTO {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_SongDTO &&
+            other is _$SongDTOImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.runTimeTicks, runTimeTicks) ||
                 other.runTimeTicks == runTimeTicks) &&
@@ -314,12 +315,12 @@ class _$_SongDTO implements _SongDTO {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_SongDTOCopyWith<_$_SongDTO> get copyWith =>
-      __$$_SongDTOCopyWithImpl<_$_SongDTO>(this, _$identity);
+  _$$SongDTOImplCopyWith<_$SongDTOImpl> get copyWith =>
+      __$$SongDTOImplCopyWithImpl<_$SongDTOImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_SongDTOToJson(
+    return _$$SongDTOImplToJson(
       this,
     );
   }
@@ -336,9 +337,9 @@ abstract class _SongDTO implements SongDTO {
           @JsonKey(name: 'Album') final String? albumName,
           @JsonKey(name: 'Name') final String? name,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
-      _$_SongDTO;
+      _$SongDTOImpl;
 
-  factory _SongDTO.fromJson(Map<String, dynamic> json) = _$_SongDTO.fromJson;
+  factory _SongDTO.fromJson(Map<String, dynamic> json) = _$SongDTOImpl.fromJson;
 
   @override
   @JsonKey(name: 'Id')
@@ -369,7 +370,7 @@ abstract class _SongDTO implements SongDTO {
   Map<String, String> get imageTags;
   @override
   @JsonKey(ignore: true)
-  _$$_SongDTOCopyWith<_$_SongDTO> get copyWith =>
+  _$$SongDTOImplCopyWith<_$SongDTOImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -422,22 +423,22 @@ class _$SongsWrapperCopyWithImpl<$Res, $Val extends SongsWrapper>
 }
 
 /// @nodoc
-abstract class _$$_SongsWrapperCopyWith<$Res>
+abstract class _$$SongsWrapperImplCopyWith<$Res>
     implements $SongsWrapperCopyWith<$Res> {
-  factory _$$_SongsWrapperCopyWith(
-          _$_SongsWrapper value, $Res Function(_$_SongsWrapper) then) =
-      __$$_SongsWrapperCopyWithImpl<$Res>;
+  factory _$$SongsWrapperImplCopyWith(
+          _$SongsWrapperImpl value, $Res Function(_$SongsWrapperImpl) then) =
+      __$$SongsWrapperImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({@JsonKey(name: 'Items') List<SongDTO> items});
 }
 
 /// @nodoc
-class __$$_SongsWrapperCopyWithImpl<$Res>
-    extends _$SongsWrapperCopyWithImpl<$Res, _$_SongsWrapper>
-    implements _$$_SongsWrapperCopyWith<$Res> {
-  __$$_SongsWrapperCopyWithImpl(
-      _$_SongsWrapper _value, $Res Function(_$_SongsWrapper) _then)
+class __$$SongsWrapperImplCopyWithImpl<$Res>
+    extends _$SongsWrapperCopyWithImpl<$Res, _$SongsWrapperImpl>
+    implements _$$SongsWrapperImplCopyWith<$Res> {
+  __$$SongsWrapperImplCopyWithImpl(
+      _$SongsWrapperImpl _value, $Res Function(_$SongsWrapperImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -445,7 +446,7 @@ class __$$_SongsWrapperCopyWithImpl<$Res>
   $Res call({
     Object? items = null,
   }) {
-    return _then(_$_SongsWrapper(
+    return _then(_$SongsWrapperImpl(
       items: null == items
           ? _value._items
           : items // ignore: cast_nullable_to_non_nullable
@@ -456,13 +457,13 @@ class __$$_SongsWrapperCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_SongsWrapper implements _SongsWrapper {
-  const _$_SongsWrapper(
+class _$SongsWrapperImpl implements _SongsWrapper {
+  const _$SongsWrapperImpl(
       {@JsonKey(name: 'Items') required final List<SongDTO> items})
       : _items = items;
 
-  factory _$_SongsWrapper.fromJson(Map<String, dynamic> json) =>
-      _$$_SongsWrapperFromJson(json);
+  factory _$SongsWrapperImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SongsWrapperImplFromJson(json);
 
   final List<SongDTO> _items;
   @override
@@ -482,7 +483,7 @@ class _$_SongsWrapper implements _SongsWrapper {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_SongsWrapper &&
+            other is _$SongsWrapperImpl &&
             const DeepCollectionEquality().equals(other._items, _items));
   }
 
@@ -494,12 +495,12 @@ class _$_SongsWrapper implements _SongsWrapper {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_SongsWrapperCopyWith<_$_SongsWrapper> get copyWith =>
-      __$$_SongsWrapperCopyWithImpl<_$_SongsWrapper>(this, _$identity);
+  _$$SongsWrapperImplCopyWith<_$SongsWrapperImpl> get copyWith =>
+      __$$SongsWrapperImplCopyWithImpl<_$SongsWrapperImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_SongsWrapperToJson(
+    return _$$SongsWrapperImplToJson(
       this,
     );
   }
@@ -508,17 +509,17 @@ class _$_SongsWrapper implements _SongsWrapper {
 abstract class _SongsWrapper implements SongsWrapper {
   const factory _SongsWrapper(
           {@JsonKey(name: 'Items') required final List<SongDTO> items}) =
-      _$_SongsWrapper;
+      _$SongsWrapperImpl;
 
   factory _SongsWrapper.fromJson(Map<String, dynamic> json) =
-      _$_SongsWrapper.fromJson;
+      _$SongsWrapperImpl.fromJson;
 
   @override
   @JsonKey(name: 'Items')
   List<SongDTO> get items;
   @override
   @JsonKey(ignore: true)
-  _$$_SongsWrapperCopyWith<_$_SongsWrapper> get copyWith =>
+  _$$SongsWrapperImplCopyWith<_$SongsWrapperImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -596,11 +597,11 @@ class _$SongUserDataCopyWithImpl<$Res, $Val extends SongUserData>
 }
 
 /// @nodoc
-abstract class _$$_SongUserDataCopyWith<$Res>
+abstract class _$$SongUserDataImplCopyWith<$Res>
     implements $SongUserDataCopyWith<$Res> {
-  factory _$$_SongUserDataCopyWith(
-          _$_SongUserData value, $Res Function(_$_SongUserData) then) =
-      __$$_SongUserDataCopyWithImpl<$Res>;
+  factory _$$SongUserDataImplCopyWith(
+          _$SongUserDataImpl value, $Res Function(_$SongUserDataImpl) then) =
+      __$$SongUserDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -611,11 +612,11 @@ abstract class _$$_SongUserDataCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_SongUserDataCopyWithImpl<$Res>
-    extends _$SongUserDataCopyWithImpl<$Res, _$_SongUserData>
-    implements _$$_SongUserDataCopyWith<$Res> {
-  __$$_SongUserDataCopyWithImpl(
-      _$_SongUserData _value, $Res Function(_$_SongUserData) _then)
+class __$$SongUserDataImplCopyWithImpl<$Res>
+    extends _$SongUserDataCopyWithImpl<$Res, _$SongUserDataImpl>
+    implements _$$SongUserDataImplCopyWith<$Res> {
+  __$$SongUserDataImplCopyWithImpl(
+      _$SongUserDataImpl _value, $Res Function(_$SongUserDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -626,7 +627,7 @@ class __$$_SongUserDataCopyWithImpl<$Res>
     Object? isFavorite = null,
     Object? played = null,
   }) {
-    return _then(_$_SongUserData(
+    return _then(_$SongUserDataImpl(
       playbackPositionTicks: null == playbackPositionTicks
           ? _value.playbackPositionTicks
           : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
@@ -649,16 +650,16 @@ class __$$_SongUserDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_SongUserData implements _SongUserData {
-  const _$_SongUserData(
+class _$SongUserDataImpl implements _SongUserData {
+  const _$SongUserDataImpl(
       {@JsonKey(name: 'PlaybackPositionTicks')
       required this.playbackPositionTicks,
       @JsonKey(name: 'PlayCount') required this.playCount,
       @JsonKey(name: 'IsFavorite') required this.isFavorite,
       @JsonKey(name: 'Played') required this.played});
 
-  factory _$_SongUserData.fromJson(Map<String, dynamic> json) =>
-      _$$_SongUserDataFromJson(json);
+  factory _$SongUserDataImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SongUserDataImplFromJson(json);
 
   @override
   @JsonKey(name: 'PlaybackPositionTicks')
@@ -682,7 +683,7 @@ class _$_SongUserData implements _SongUserData {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_SongUserData &&
+            other is _$SongUserDataImpl &&
             (identical(other.playbackPositionTicks, playbackPositionTicks) ||
                 other.playbackPositionTicks == playbackPositionTicks) &&
             (identical(other.playCount, playCount) ||
@@ -700,12 +701,12 @@ class _$_SongUserData implements _SongUserData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_SongUserDataCopyWith<_$_SongUserData> get copyWith =>
-      __$$_SongUserDataCopyWithImpl<_$_SongUserData>(this, _$identity);
+  _$$SongUserDataImplCopyWith<_$SongUserDataImpl> get copyWith =>
+      __$$SongUserDataImplCopyWithImpl<_$SongUserDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_SongUserDataToJson(
+    return _$$SongUserDataImplToJson(
       this,
     );
   }
@@ -713,14 +714,15 @@ class _$_SongUserData implements _SongUserData {
 
 abstract class _SongUserData implements SongUserData {
   const factory _SongUserData(
-      {@JsonKey(name: 'PlaybackPositionTicks')
-      required final int playbackPositionTicks,
-      @JsonKey(name: 'PlayCount') required final int playCount,
-      @JsonKey(name: 'IsFavorite') required final bool isFavorite,
-      @JsonKey(name: 'Played') required final bool played}) = _$_SongUserData;
+          {@JsonKey(name: 'PlaybackPositionTicks')
+          required final int playbackPositionTicks,
+          @JsonKey(name: 'PlayCount') required final int playCount,
+          @JsonKey(name: 'IsFavorite') required final bool isFavorite,
+          @JsonKey(name: 'Played') required final bool played}) =
+      _$SongUserDataImpl;
 
   factory _SongUserData.fromJson(Map<String, dynamic> json) =
-      _$_SongUserData.fromJson;
+      _$SongUserDataImpl.fromJson;
 
   @override
   @JsonKey(name: 'PlaybackPositionTicks')
@@ -736,6 +738,6 @@ abstract class _SongUserData implements SongUserData {
   bool get played;
   @override
   @JsonKey(ignore: true)
-  _$$_SongUserDataCopyWith<_$_SongUserData> get copyWith =>
+  _$$SongUserDataImplCopyWith<_$SongUserDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

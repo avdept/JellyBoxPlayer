@@ -13,38 +13,39 @@ dependencies:
 
   animations: ^2.0.8
   window_manager: ^0.3.7
-  cupertino_icons: ^1.0.5
-  dropdown_button2: ^2.3.8
-  flutter_svg: ^2.0.7
+  cupertino_icons: ^1.0.6
+  dropdown_button2: ^2.3.9
+  flutter_svg: ^2.0.8
   bugsnag_flutter: ^3.0.0
   freezed_annotation: ^2.4.0
   just_audio: ^0.9.0
   just_audio_background:
-  go_router: ^10.1.2
+  go_router: ^12.0.1
   intl: ^0.18.1
   json_annotation: ^4.8.1
   modal_bottom_sheet: ^3.0.0-pre
-  palette_generator: ^0.3.3+2
+  palette_generator: ^0.3.3+3
   responsive_builder: ^0.7.0
-  riverpod_infinite_scroll:
-  infinite_scroll_pagination:
-  flutter_riverpod: ^2.4.0
+  riverpod_infinite_scroll: ^1.0.9
+  infinite_scroll_pagination: ^3.2.0
+  flutter_riverpod: ^2.4.5
   pretty_dio_logger: ^1.0.0
   flutter_secure_storage: ^9.0.0
   retrofit: ^4.0.0
   dio: ^5.3.0
   string_capitalize: ^0.0.10
+  sliver_tools: ^0.2.12
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  retrofit_generator: '>=7.0.0 <8.0.0'
+  retrofit_generator: ^8.0.3
   build_runner: ^2.4.6
-  riverpod_lint:
-  freezed: ^2.4.2
+  riverpod_lint: ^2.3.3
+  freezed: ^2.4.5
   json_serializable: ^6.7.1
-  very_good_analysis: ^5.0.0+1
+  very_good_analysis: ^5.1.0
 
 
 flutter:

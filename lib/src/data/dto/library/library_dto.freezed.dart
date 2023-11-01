@@ -104,11 +104,11 @@ class _$LibraryDTOCopyWithImpl<$Res, $Val extends LibraryDTO>
 }
 
 /// @nodoc
-abstract class _$$_LibraryDTOCopyWith<$Res>
+abstract class _$$LibraryDTOImplCopyWith<$Res>
     implements $LibraryDTOCopyWith<$Res> {
-  factory _$$_LibraryDTOCopyWith(
-          _$_LibraryDTO value, $Res Function(_$_LibraryDTO) then) =
-      __$$_LibraryDTOCopyWithImpl<$Res>;
+  factory _$$LibraryDTOImplCopyWith(
+          _$LibraryDTOImpl value, $Res Function(_$LibraryDTOImpl) then) =
+      __$$LibraryDTOImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -121,11 +121,11 @@ abstract class _$$_LibraryDTOCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_LibraryDTOCopyWithImpl<$Res>
-    extends _$LibraryDTOCopyWithImpl<$Res, _$_LibraryDTO>
-    implements _$$_LibraryDTOCopyWith<$Res> {
-  __$$_LibraryDTOCopyWithImpl(
-      _$_LibraryDTO _value, $Res Function(_$_LibraryDTO) _then)
+class __$$LibraryDTOImplCopyWithImpl<$Res>
+    extends _$LibraryDTOCopyWithImpl<$Res, _$LibraryDTOImpl>
+    implements _$$LibraryDTOImplCopyWith<$Res> {
+  __$$LibraryDTOImplCopyWithImpl(
+      _$LibraryDTOImpl _value, $Res Function(_$LibraryDTOImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -138,7 +138,7 @@ class __$$_LibraryDTOCopyWithImpl<$Res>
     Object? collectionType = freezed,
     Object? imageTags = null,
   }) {
-    return _then(_$_LibraryDTO(
+    return _then(_$LibraryDTOImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -169,8 +169,8 @@ class __$$_LibraryDTOCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_LibraryDTO implements _LibraryDTO {
-  const _$_LibraryDTO(
+class _$LibraryDTOImpl implements _LibraryDTO {
+  const _$LibraryDTOImpl(
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'Name') this.name,
       @JsonKey(name: 'Path') this.path,
@@ -180,8 +180,8 @@ class _$_LibraryDTO implements _LibraryDTO {
       final Map<String, String> imageTags = const {}})
       : _imageTags = imageTags;
 
-  factory _$_LibraryDTO.fromJson(Map<String, dynamic> json) =>
-      _$$_LibraryDTOFromJson(json);
+  factory _$LibraryDTOImpl.fromJson(Map<String, dynamic> json) =>
+      _$$LibraryDTOImplFromJson(json);
 
   @override
   @JsonKey(name: 'Id')
@@ -216,7 +216,7 @@ class _$_LibraryDTO implements _LibraryDTO {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_LibraryDTO &&
+            other is _$LibraryDTOImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.path, path) || other.path == path) &&
@@ -235,12 +235,12 @@ class _$_LibraryDTO implements _LibraryDTO {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_LibraryDTOCopyWith<_$_LibraryDTO> get copyWith =>
-      __$$_LibraryDTOCopyWithImpl<_$_LibraryDTO>(this, _$identity);
+  _$$LibraryDTOImplCopyWith<_$LibraryDTOImpl> get copyWith =>
+      __$$LibraryDTOImplCopyWithImpl<_$LibraryDTOImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_LibraryDTOToJson(
+    return _$$LibraryDTOImplToJson(
       this,
     );
   }
@@ -254,10 +254,10 @@ abstract class _LibraryDTO implements LibraryDTO {
           @JsonKey(name: 'Type') final String? type,
           @JsonKey(name: 'CollectionType') final String? collectionType,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
-      _$_LibraryDTO;
+      _$LibraryDTOImpl;
 
   factory _LibraryDTO.fromJson(Map<String, dynamic> json) =
-      _$_LibraryDTO.fromJson;
+      _$LibraryDTOImpl.fromJson;
 
   @override
   @JsonKey(name: 'Id')
@@ -279,7 +279,7 @@ abstract class _LibraryDTO implements LibraryDTO {
   Map<String, String> get imageTags;
   @override
   @JsonKey(ignore: true)
-  _$$_LibraryDTOCopyWith<_$_LibraryDTO> get copyWith =>
+  _$$LibraryDTOImplCopyWith<_$LibraryDTOImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -331,21 +331,22 @@ class _$LibrariesCopyWithImpl<$Res, $Val extends Libraries>
 }
 
 /// @nodoc
-abstract class _$$_LibrariesCopyWith<$Res> implements $LibrariesCopyWith<$Res> {
-  factory _$$_LibrariesCopyWith(
-          _$_Libraries value, $Res Function(_$_Libraries) then) =
-      __$$_LibrariesCopyWithImpl<$Res>;
+abstract class _$$LibrariesImplCopyWith<$Res>
+    implements $LibrariesCopyWith<$Res> {
+  factory _$$LibrariesImplCopyWith(
+          _$LibrariesImpl value, $Res Function(_$LibrariesImpl) then) =
+      __$$LibrariesImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({@JsonKey(name: 'Items') List<LibraryDTO> libraries});
 }
 
 /// @nodoc
-class __$$_LibrariesCopyWithImpl<$Res>
-    extends _$LibrariesCopyWithImpl<$Res, _$_Libraries>
-    implements _$$_LibrariesCopyWith<$Res> {
-  __$$_LibrariesCopyWithImpl(
-      _$_Libraries _value, $Res Function(_$_Libraries) _then)
+class __$$LibrariesImplCopyWithImpl<$Res>
+    extends _$LibrariesCopyWithImpl<$Res, _$LibrariesImpl>
+    implements _$$LibrariesImplCopyWith<$Res> {
+  __$$LibrariesImplCopyWithImpl(
+      _$LibrariesImpl _value, $Res Function(_$LibrariesImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -353,7 +354,7 @@ class __$$_LibrariesCopyWithImpl<$Res>
   $Res call({
     Object? libraries = null,
   }) {
-    return _then(_$_Libraries(
+    return _then(_$LibrariesImpl(
       libraries: null == libraries
           ? _value._libraries
           : libraries // ignore: cast_nullable_to_non_nullable
@@ -364,13 +365,13 @@ class __$$_LibrariesCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_Libraries implements _Libraries {
-  const _$_Libraries(
+class _$LibrariesImpl implements _Libraries {
+  const _$LibrariesImpl(
       {@JsonKey(name: 'Items') required final List<LibraryDTO> libraries})
       : _libraries = libraries;
 
-  factory _$_Libraries.fromJson(Map<String, dynamic> json) =>
-      _$$_LibrariesFromJson(json);
+  factory _$LibrariesImpl.fromJson(Map<String, dynamic> json) =>
+      _$$LibrariesImplFromJson(json);
 
   final List<LibraryDTO> _libraries;
   @override
@@ -390,7 +391,7 @@ class _$_Libraries implements _Libraries {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_Libraries &&
+            other is _$LibrariesImpl &&
             const DeepCollectionEquality()
                 .equals(other._libraries, _libraries));
   }
@@ -403,12 +404,12 @@ class _$_Libraries implements _Libraries {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_LibrariesCopyWith<_$_Libraries> get copyWith =>
-      __$$_LibrariesCopyWithImpl<_$_Libraries>(this, _$identity);
+  _$$LibrariesImplCopyWith<_$LibrariesImpl> get copyWith =>
+      __$$LibrariesImplCopyWithImpl<_$LibrariesImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_LibrariesToJson(
+    return _$$LibrariesImplToJson(
       this,
     );
   }
@@ -417,16 +418,16 @@ class _$_Libraries implements _Libraries {
 abstract class _Libraries implements Libraries {
   const factory _Libraries(
           {@JsonKey(name: 'Items') required final List<LibraryDTO> libraries}) =
-      _$_Libraries;
+      _$LibrariesImpl;
 
   factory _Libraries.fromJson(Map<String, dynamic> json) =
-      _$_Libraries.fromJson;
+      _$LibrariesImpl.fromJson;
 
   @override
   @JsonKey(name: 'Items')
   List<LibraryDTO> get libraries;
   @override
   @JsonKey(ignore: true)
-  _$$_LibrariesCopyWith<_$_Libraries> get copyWith =>
+  _$$LibrariesImplCopyWith<_$LibrariesImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

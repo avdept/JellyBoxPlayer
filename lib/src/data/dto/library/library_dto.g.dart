@@ -6,8 +6,8 @@ part of 'library_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_LibraryDTO _$$_LibraryDTOFromJson(Map<String, dynamic> json) =>
-    _$_LibraryDTO(
+_$LibraryDTOImpl _$$LibraryDTOImplFromJson(Map<String, dynamic> json) =>
+    _$LibraryDTOImpl(
       id: json['Id'] as String,
       name: json['Name'] as String?,
       path: json['Path'] as String?,
@@ -19,7 +19,7 @@ _$_LibraryDTO _$$_LibraryDTOFromJson(Map<String, dynamic> json) =>
           const {},
     );
 
-Map<String, dynamic> _$$_LibraryDTOToJson(_$_LibraryDTO instance) =>
+Map<String, dynamic> _$$LibraryDTOImplToJson(_$LibraryDTOImpl instance) =>
     <String, dynamic>{
       'Id': instance.id,
       'Name': instance.name,
@@ -29,13 +29,14 @@ Map<String, dynamic> _$$_LibraryDTOToJson(_$_LibraryDTO instance) =>
       'ImageTags': instance.imageTags,
     };
 
-_$_Libraries _$$_LibrariesFromJson(Map<String, dynamic> json) => _$_Libraries(
+_$LibrariesImpl _$$LibrariesImplFromJson(Map<String, dynamic> json) =>
+    _$LibrariesImpl(
       libraries: (json['Items'] as List<dynamic>)
           .map((e) => LibraryDTO.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 
-Map<String, dynamic> _$$_LibrariesToJson(_$_Libraries instance) =>
+Map<String, dynamic> _$$LibrariesImplToJson(_$LibrariesImpl instance) =>
     <String, dynamic>{
       'Items': instance.libraries,
     };

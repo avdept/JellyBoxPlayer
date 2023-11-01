@@ -6,7 +6,8 @@ part of 'songs_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_SongDTO _$$_SongDTOFromJson(Map<String, dynamic> json) => _$_SongDTO(
+_$SongDTOImpl _$$SongDTOImplFromJson(Map<String, dynamic> json) =>
+    _$SongDTOImpl(
       id: json['Id'] as String,
       runTimeTicks: json['RunTimeTicks'] as int,
       indexNumber: json['IndexNumber'] as int,
@@ -22,7 +23,7 @@ _$_SongDTO _$$_SongDTOFromJson(Map<String, dynamic> json) => _$_SongDTO(
           const {},
     );
 
-Map<String, dynamic> _$$_SongDTOToJson(_$_SongDTO instance) =>
+Map<String, dynamic> _$$SongDTOImplToJson(_$SongDTOImpl instance) =>
     <String, dynamic>{
       'Id': instance.id,
       'RunTimeTicks': instance.runTimeTicks,
@@ -35,27 +36,27 @@ Map<String, dynamic> _$$_SongDTOToJson(_$_SongDTO instance) =>
       'ImageTags': instance.imageTags,
     };
 
-_$_SongsWrapper _$$_SongsWrapperFromJson(Map<String, dynamic> json) =>
-    _$_SongsWrapper(
+_$SongsWrapperImpl _$$SongsWrapperImplFromJson(Map<String, dynamic> json) =>
+    _$SongsWrapperImpl(
       items: (json['Items'] as List<dynamic>)
           .map((e) => SongDTO.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 
-Map<String, dynamic> _$$_SongsWrapperToJson(_$_SongsWrapper instance) =>
+Map<String, dynamic> _$$SongsWrapperImplToJson(_$SongsWrapperImpl instance) =>
     <String, dynamic>{
       'Items': instance.items,
     };
 
-_$_SongUserData _$$_SongUserDataFromJson(Map<String, dynamic> json) =>
-    _$_SongUserData(
+_$SongUserDataImpl _$$SongUserDataImplFromJson(Map<String, dynamic> json) =>
+    _$SongUserDataImpl(
       playbackPositionTicks: json['PlaybackPositionTicks'] as int,
       playCount: json['PlayCount'] as int,
       isFavorite: json['IsFavorite'] as bool,
       played: json['Played'] as bool,
     );
 
-Map<String, dynamic> _$$_SongUserDataToJson(_$_SongUserData instance) =>
+Map<String, dynamic> _$$SongUserDataImplToJson(_$SongUserDataImpl instance) =>
     <String, dynamic>{
       'PlaybackPositionTicks': instance.playbackPositionTicks,
       'PlayCount': instance.playCount,

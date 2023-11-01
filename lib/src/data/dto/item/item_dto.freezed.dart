@@ -110,10 +110,10 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
 }
 
 /// @nodoc
-abstract class _$$_ItemDTOCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
-  factory _$$_ItemDTOCopyWith(
-          _$_ItemDTO value, $Res Function(_$_ItemDTO) then) =
-      __$$_ItemDTOCopyWithImpl<$Res>;
+abstract class _$$ItemDTOImplCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
+  factory _$$ItemDTOImplCopyWith(
+          _$ItemDTOImpl value, $Res Function(_$ItemDTOImpl) then) =
+      __$$ItemDTOImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -127,10 +127,11 @@ abstract class _$$_ItemDTOCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_ItemDTOCopyWithImpl<$Res>
-    extends _$ItemDTOCopyWithImpl<$Res, _$_ItemDTO>
-    implements _$$_ItemDTOCopyWith<$Res> {
-  __$$_ItemDTOCopyWithImpl(_$_ItemDTO _value, $Res Function(_$_ItemDTO) _then)
+class __$$ItemDTOImplCopyWithImpl<$Res>
+    extends _$ItemDTOCopyWithImpl<$Res, _$ItemDTOImpl>
+    implements _$$ItemDTOImplCopyWith<$Res> {
+  __$$ItemDTOImplCopyWithImpl(
+      _$ItemDTOImpl _value, $Res Function(_$ItemDTOImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -144,7 +145,7 @@ class __$$_ItemDTOCopyWithImpl<$Res>
     Object? albumArtist = freezed,
     Object? imageTags = null,
   }) {
-    return _then(_$_ItemDTO(
+    return _then(_$ItemDTOImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -179,8 +180,8 @@ class __$$_ItemDTOCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_ItemDTO extends _ItemDTO {
-  const _$_ItemDTO(
+class _$ItemDTOImpl extends _ItemDTO {
+  const _$ItemDTOImpl(
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'Name') required this.name,
       @JsonKey(name: 'ServerId') required this.serverId,
@@ -192,8 +193,8 @@ class _$_ItemDTO extends _ItemDTO {
       : _imageTags = imageTags,
         super._();
 
-  factory _$_ItemDTO.fromJson(Map<String, dynamic> json) =>
-      _$$_ItemDTOFromJson(json);
+  factory _$ItemDTOImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ItemDTOImplFromJson(json);
 
   @override
   @JsonKey(name: 'Id')
@@ -231,7 +232,7 @@ class _$_ItemDTO extends _ItemDTO {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_ItemDTO &&
+            other is _$ItemDTOImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.serverId, serverId) ||
@@ -261,12 +262,12 @@ class _$_ItemDTO extends _ItemDTO {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_ItemDTOCopyWith<_$_ItemDTO> get copyWith =>
-      __$$_ItemDTOCopyWithImpl<_$_ItemDTO>(this, _$identity);
+  _$$ItemDTOImplCopyWith<_$ItemDTOImpl> get copyWith =>
+      __$$ItemDTOImplCopyWithImpl<_$ItemDTOImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_ItemDTOToJson(
+    return _$$ItemDTOImplToJson(
       this,
     );
   }
@@ -281,10 +282,10 @@ abstract class _ItemDTO extends ItemDTO {
           @JsonKey(name: 'ProductionYear') final int? productionYear,
           @JsonKey(name: 'AlbumArtist') final String? albumArtist,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
-      _$_ItemDTO;
+      _$ItemDTOImpl;
   const _ItemDTO._() : super._();
 
-  factory _ItemDTO.fromJson(Map<String, dynamic> json) = _$_ItemDTO.fromJson;
+  factory _ItemDTO.fromJson(Map<String, dynamic> json) = _$ItemDTOImpl.fromJson;
 
   @override
   @JsonKey(name: 'Id')
@@ -309,6 +310,6 @@ abstract class _ItemDTO extends ItemDTO {
   Map<String, String> get imageTags;
   @override
   @JsonKey(ignore: true)
-  _$$_ItemDTOCopyWith<_$_ItemDTO> get copyWith =>
+  _$$ItemDTOImplCopyWith<_$ItemDTOImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -61,19 +61,21 @@ class _$FilterCopyWithImpl<$Res, $Val extends Filter>
 }
 
 /// @nodoc
-abstract class _$$_FilterCopyWith<$Res> implements $FilterCopyWith<$Res> {
-  factory _$$_FilterCopyWith(_$_Filter value, $Res Function(_$_Filter) then) =
-      __$$_FilterCopyWithImpl<$Res>;
+abstract class _$$FilterImplCopyWith<$Res> implements $FilterCopyWith<$Res> {
+  factory _$$FilterImplCopyWith(
+          _$FilterImpl value, $Res Function(_$FilterImpl) then) =
+      __$$FilterImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({EntityFilter orderBy, bool desc});
 }
 
 /// @nodoc
-class __$$_FilterCopyWithImpl<$Res>
-    extends _$FilterCopyWithImpl<$Res, _$_Filter>
-    implements _$$_FilterCopyWith<$Res> {
-  __$$_FilterCopyWithImpl(_$_Filter _value, $Res Function(_$_Filter) _then)
+class __$$FilterImplCopyWithImpl<$Res>
+    extends _$FilterCopyWithImpl<$Res, _$FilterImpl>
+    implements _$$FilterImplCopyWith<$Res> {
+  __$$FilterImplCopyWithImpl(
+      _$FilterImpl _value, $Res Function(_$FilterImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -82,7 +84,7 @@ class __$$_FilterCopyWithImpl<$Res>
     Object? orderBy = null,
     Object? desc = null,
   }) {
-    return _then(_$_Filter(
+    return _then(_$FilterImpl(
       orderBy: null == orderBy
           ? _value.orderBy
           : orderBy // ignore: cast_nullable_to_non_nullable
@@ -97,8 +99,8 @@ class __$$_FilterCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$_Filter implements _Filter {
-  const _$_Filter({required this.orderBy, this.desc = false});
+class _$FilterImpl implements _Filter {
+  const _$FilterImpl({required this.orderBy, this.desc = false});
 
   @override
   final EntityFilter orderBy;
@@ -115,7 +117,7 @@ class _$_Filter implements _Filter {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_Filter &&
+            other is _$FilterImpl &&
             (identical(other.orderBy, orderBy) || other.orderBy == orderBy) &&
             (identical(other.desc, desc) || other.desc == desc));
   }
@@ -126,13 +128,13 @@ class _$_Filter implements _Filter {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_FilterCopyWith<_$_Filter> get copyWith =>
-      __$$_FilterCopyWithImpl<_$_Filter>(this, _$identity);
+  _$$FilterImplCopyWith<_$FilterImpl> get copyWith =>
+      __$$FilterImplCopyWithImpl<_$FilterImpl>(this, _$identity);
 }
 
 abstract class _Filter implements Filter {
   const factory _Filter(
-      {required final EntityFilter orderBy, final bool desc}) = _$_Filter;
+      {required final EntityFilter orderBy, final bool desc}) = _$FilterImpl;
 
   @override
   EntityFilter get orderBy;
@@ -140,6 +142,6 @@ abstract class _Filter implements Filter {
   bool get desc;
   @override
   @JsonKey(ignore: true)
-  _$$_FilterCopyWith<_$_Filter> get copyWith =>
+  _$$FilterImplCopyWith<_$FilterImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

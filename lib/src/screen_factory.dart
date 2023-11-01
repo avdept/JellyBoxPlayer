@@ -9,11 +9,23 @@ class ScreenFactory {
   Page<void> albumPage(
     BuildContext context,
     GoRouterState router,
-    ItemDTO album,
-
   ) {
+    final params = router.extra! as Map<String, dynamic>;
+    final album = params['album'] is ItemDTO
+        ? params['album'] as ItemDTO
+        : ItemDTO.fromJson(params['album'] as Map<String, dynamic>);
+
     return CupertinoPage(
       child: AlbumPage(album: album),
+    );
+  }
+
+  Page<void> artistPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: ArtistPage(),
     );
   }
 

@@ -10,7 +10,9 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:window_manager/window_manager.dart';
 
-void main() async {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   ResponsiveSizingConfig.instance.setCustomBreakpoints(
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),
     customRefinedBreakpoints: const RefinedBreakpoints(),
@@ -18,14 +20,15 @@ void main() async {
 
   if (Platform.isIOS) {
     await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
-    androidNotificationChannelName: 'Audio playback',
-    androidNotificationOngoing: true,
-  );
+      androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+      androidNotificationChannelName: 'Audio playback',
+      androidNotificationOngoing: true,
+    );
   }
 
-  WidgetsFlutterBinding.ensureInitialized();
-  if (kReleaseMode) await bugsnag.start(apiKey: '7572207d224c7e1f05ee19a07c32e937');
+  if (kReleaseMode) {
+    await bugsnag.start(apiKey: '7572207d224c7e1f05ee19a07c32e937');
+  }
 
   if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
     await windowManager.ensureInitialized();
@@ -38,13 +41,15 @@ void main() async {
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
-    await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
 
-    runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
-  } else {
-    runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
+    await windowManager.waitUntilReadyToShow(
+      windowOptions,
+      () async {
+        await windowManager.show();
+        await windowManager.focus();
+      },
+    );
   }
+
+  runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
 }

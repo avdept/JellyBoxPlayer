@@ -63,21 +63,22 @@ class _$UserDataCopyWithImpl<$Res, $Val extends UserData>
 }
 
 /// @nodoc
-abstract class _$$_UserDataCopyWith<$Res> implements $UserDataCopyWith<$Res> {
-  factory _$$_UserDataCopyWith(
-          _$_UserData value, $Res Function(_$_UserData) then) =
-      __$$_UserDataCopyWithImpl<$Res>;
+abstract class _$$UserDataImplCopyWith<$Res>
+    implements $UserDataCopyWith<$Res> {
+  factory _$$UserDataImplCopyWith(
+          _$UserDataImpl value, $Res Function(_$UserDataImpl) then) =
+      __$$UserDataImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String id, String name});
 }
 
 /// @nodoc
-class __$$_UserDataCopyWithImpl<$Res>
-    extends _$UserDataCopyWithImpl<$Res, _$_UserData>
-    implements _$$_UserDataCopyWith<$Res> {
-  __$$_UserDataCopyWithImpl(
-      _$_UserData _value, $Res Function(_$_UserData) _then)
+class __$$UserDataImplCopyWithImpl<$Res>
+    extends _$UserDataCopyWithImpl<$Res, _$UserDataImpl>
+    implements _$$UserDataImplCopyWith<$Res> {
+  __$$UserDataImplCopyWithImpl(
+      _$UserDataImpl _value, $Res Function(_$UserDataImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -86,7 +87,7 @@ class __$$_UserDataCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
   }) {
-    return _then(_$_UserData(
+    return _then(_$UserDataImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -101,8 +102,8 @@ class __$$_UserDataCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable(createFactory: false)
-class _$_UserData implements _UserData {
-  const _$_UserData({required this.id, required this.name});
+class _$UserDataImpl implements _UserData {
+  const _$UserDataImpl({required this.id, required this.name});
 
   @override
   final String id;
@@ -118,7 +119,7 @@ class _$_UserData implements _UserData {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_UserData &&
+            other is _$UserDataImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name));
   }
@@ -130,12 +131,12 @@ class _$_UserData implements _UserData {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_UserDataCopyWith<_$_UserData> get copyWith =>
-      __$$_UserDataCopyWithImpl<_$_UserData>(this, _$identity);
+  _$$UserDataImplCopyWith<_$UserDataImpl> get copyWith =>
+      __$$UserDataImplCopyWithImpl<_$UserDataImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_UserDataToJson(
+    return _$$UserDataImplToJson(
       this,
     );
   }
@@ -143,7 +144,7 @@ class _$_UserData implements _UserData {
 
 abstract class _UserData implements UserData {
   const factory _UserData(
-      {required final String id, required final String name}) = _$_UserData;
+      {required final String id, required final String name}) = _$UserDataImpl;
 
   @override
   String get id;
@@ -151,7 +152,7 @@ abstract class _UserData implements UserData {
   String get name;
   @override
   @JsonKey(ignore: true)
-  _$$_UserDataCopyWith<_$_UserData> get copyWith =>
+  _$$UserDataImplCopyWith<_$UserDataImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -209,11 +210,11 @@ class _$UserDataWrapperCopyWithImpl<$Res, $Val extends UserDataWrapper>
 }
 
 /// @nodoc
-abstract class _$$_UserDataWrapperCopyWith<$Res>
+abstract class _$$UserDataWrapperImplCopyWith<$Res>
     implements $UserDataWrapperCopyWith<$Res> {
-  factory _$$_UserDataWrapperCopyWith(
-          _$_UserDataWrapper value, $Res Function(_$_UserDataWrapper) then) =
-      __$$_UserDataWrapperCopyWithImpl<$Res>;
+  factory _$$UserDataWrapperImplCopyWith(_$UserDataWrapperImpl value,
+          $Res Function(_$UserDataWrapperImpl) then) =
+      __$$UserDataWrapperImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({UserData user});
@@ -223,11 +224,11 @@ abstract class _$$_UserDataWrapperCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_UserDataWrapperCopyWithImpl<$Res>
-    extends _$UserDataWrapperCopyWithImpl<$Res, _$_UserDataWrapper>
-    implements _$$_UserDataWrapperCopyWith<$Res> {
-  __$$_UserDataWrapperCopyWithImpl(
-      _$_UserDataWrapper _value, $Res Function(_$_UserDataWrapper) _then)
+class __$$UserDataWrapperImplCopyWithImpl<$Res>
+    extends _$UserDataWrapperCopyWithImpl<$Res, _$UserDataWrapperImpl>
+    implements _$$UserDataWrapperImplCopyWith<$Res> {
+  __$$UserDataWrapperImplCopyWithImpl(
+      _$UserDataWrapperImpl _value, $Res Function(_$UserDataWrapperImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -235,7 +236,7 @@ class __$$_UserDataWrapperCopyWithImpl<$Res>
   $Res call({
     Object? user = null,
   }) {
-    return _then(_$_UserDataWrapper(
+    return _then(_$UserDataWrapperImpl(
       null == user
           ? _value.user
           : user // ignore: cast_nullable_to_non_nullable
@@ -246,8 +247,8 @@ class __$$_UserDataWrapperCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable(createFactory: false)
-class _$_UserDataWrapper implements _UserDataWrapper {
-  const _$_UserDataWrapper(this.user);
+class _$UserDataWrapperImpl implements _UserDataWrapper {
+  const _$UserDataWrapperImpl(this.user);
 
   @override
   final UserData user;
@@ -261,7 +262,7 @@ class _$_UserDataWrapper implements _UserDataWrapper {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_UserDataWrapper &&
+            other is _$UserDataWrapperImpl &&
             (identical(other.user, user) || other.user == user));
   }
 
@@ -272,24 +273,25 @@ class _$_UserDataWrapper implements _UserDataWrapper {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_UserDataWrapperCopyWith<_$_UserDataWrapper> get copyWith =>
-      __$$_UserDataWrapperCopyWithImpl<_$_UserDataWrapper>(this, _$identity);
+  _$$UserDataWrapperImplCopyWith<_$UserDataWrapperImpl> get copyWith =>
+      __$$UserDataWrapperImplCopyWithImpl<_$UserDataWrapperImpl>(
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_UserDataWrapperToJson(
+    return _$$UserDataWrapperImplToJson(
       this,
     );
   }
 }
 
 abstract class _UserDataWrapper implements UserDataWrapper {
-  const factory _UserDataWrapper(final UserData user) = _$_UserDataWrapper;
+  const factory _UserDataWrapper(final UserData user) = _$UserDataWrapperImpl;
 
   @override
   UserData get user;
   @override
   @JsonKey(ignore: true)
-  _$$_UserDataWrapperCopyWith<_$_UserDataWrapper> get copyWith =>
+  _$$UserDataWrapperImplCopyWith<_$UserDataWrapperImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

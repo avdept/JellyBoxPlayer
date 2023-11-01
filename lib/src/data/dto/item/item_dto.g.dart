@@ -6,7 +6,8 @@ part of 'item_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$_ItemDTO _$$_ItemDTOFromJson(Map<String, dynamic> json) => _$_ItemDTO(
+_$ItemDTOImpl _$$ItemDTOImplFromJson(Map<String, dynamic> json) =>
+    _$ItemDTOImpl(
       id: json['Id'] as String,
       name: json['Name'] as String,
       serverId: json['ServerId'] as String,
@@ -19,7 +20,7 @@ _$_ItemDTO _$$_ItemDTOFromJson(Map<String, dynamic> json) => _$_ItemDTO(
           const {},
     );
 
-Map<String, dynamic> _$$_ItemDTOToJson(_$_ItemDTO instance) =>
+Map<String, dynamic> _$$ItemDTOImplToJson(_$ItemDTOImpl instance) =>
     <String, dynamic>{
       'Id': instance.id,
       'Name': instance.name,

@@ -8,6 +8,7 @@ export 'gradient_background.dart';
 export 'gradient_panel_decoration.dart';
 export 'labeled_text_field.dart';
 export 'library_view.dart';
+export 'play_button.dart';
 export 'play_pause_button.dart';
 export 'player_song_view.dart';
 export 'scrollable_page_scaffold.dart';

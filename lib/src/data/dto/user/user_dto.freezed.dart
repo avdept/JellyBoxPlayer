@@ -69,10 +69,10 @@ class _$UserDTOCopyWithImpl<$Res, $Val extends UserDTO>
 }
 
 /// @nodoc
-abstract class _$$_UserDTOCopyWith<$Res> implements $UserDTOCopyWith<$Res> {
-  factory _$$_UserDTOCopyWith(
-          _$_UserDTO value, $Res Function(_$_UserDTO) then) =
-      __$$_UserDTOCopyWithImpl<$Res>;
+abstract class _$$UserDTOImplCopyWith<$Res> implements $UserDTOCopyWith<$Res> {
+  factory _$$UserDTOImplCopyWith(
+          _$UserDTOImpl value, $Res Function(_$UserDTOImpl) then) =
+      __$$UserDTOImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -80,10 +80,11 @@ abstract class _$$_UserDTOCopyWith<$Res> implements $UserDTOCopyWith<$Res> {
 }
 
 /// @nodoc
-class __$$_UserDTOCopyWithImpl<$Res>
-    extends _$UserDTOCopyWithImpl<$Res, _$_UserDTO>
-    implements _$$_UserDTOCopyWith<$Res> {
-  __$$_UserDTOCopyWithImpl(_$_UserDTO _value, $Res Function(_$_UserDTO) _then)
+class __$$UserDTOImplCopyWithImpl<$Res>
+    extends _$UserDTOCopyWithImpl<$Res, _$UserDTOImpl>
+    implements _$$UserDTOImplCopyWith<$Res> {
+  __$$UserDTOImplCopyWithImpl(
+      _$UserDTOImpl _value, $Res Function(_$UserDTOImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -92,7 +93,7 @@ class __$$_UserDTOCopyWithImpl<$Res>
     Object? id = null,
     Object? name = freezed,
   }) {
-    return _then(_$_UserDTO(
+    return _then(_$UserDTOImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -107,13 +108,13 @@ class __$$_UserDTOCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_UserDTO implements _UserDTO {
-  const _$_UserDTO(
+class _$UserDTOImpl implements _UserDTO {
+  const _$UserDTOImpl(
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'Name') this.name});
 
-  factory _$_UserDTO.fromJson(Map<String, dynamic> json) =>
-      _$$_UserDTOFromJson(json);
+  factory _$UserDTOImpl.fromJson(Map<String, dynamic> json) =>
+      _$$UserDTOImplFromJson(json);
 
   @override
   @JsonKey(name: 'Id')
@@ -131,7 +132,7 @@ class _$_UserDTO implements _UserDTO {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_UserDTO &&
+            other is _$UserDTOImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name));
   }
@@ -143,12 +144,12 @@ class _$_UserDTO implements _UserDTO {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_UserDTOCopyWith<_$_UserDTO> get copyWith =>
-      __$$_UserDTOCopyWithImpl<_$_UserDTO>(this, _$identity);
+  _$$UserDTOImplCopyWith<_$UserDTOImpl> get copyWith =>
+      __$$UserDTOImplCopyWithImpl<_$UserDTOImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_UserDTOToJson(
+    return _$$UserDTOImplToJson(
       this,
     );
   }
@@ -157,9 +158,9 @@ class _$_UserDTO implements _UserDTO {
 abstract class _UserDTO implements UserDTO {
   const factory _UserDTO(
       {@JsonKey(name: 'Id') required final String id,
-      @JsonKey(name: 'Name') final String? name}) = _$_UserDTO;
+      @JsonKey(name: 'Name') final String? name}) = _$UserDTOImpl;
 
-  factory _UserDTO.fromJson(Map<String, dynamic> json) = _$_UserDTO.fromJson;
+  factory _UserDTO.fromJson(Map<String, dynamic> json) = _$UserDTOImpl.fromJson;
 
   @override
   @JsonKey(name: 'Id')
@@ -169,6 +170,6 @@ abstract class _UserDTO implements UserDTO {
   String? get name;
   @override
   @JsonKey(ignore: true)
-  _$$_UserDTOCopyWith<_$_UserDTO> get copyWith =>
+  _$$UserDTOImplCopyWith<_$UserDTOImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

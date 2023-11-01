@@ -310,12 +310,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         ),
       );
 
-  Widget _playAlbumButton() => MaterialButton(
+  Widget _playAlbumButton() => PlayButton(
         onPressed: () {},
-        color: const Color(0xFF0066FF),
-        shape: const CircleBorder(),
-        padding: const EdgeInsets.all(8),
-        child: const Icon(Icons.play_arrow_outlined),
       );
 
   Widget _downloadAlbumButton() => IconButton(

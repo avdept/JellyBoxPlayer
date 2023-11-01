@@ -9,16 +9,22 @@ class AlbumView extends ConsumerWidget {
   const AlbumView({
     required this.album,
     this.onTap,
+    this.mainTextStyle,
+    this.subTextStyle,
     super.key,
   });
 
   final ItemDTO album;
   final VoidCallback? onTap;
+  final TextStyle? mainTextStyle;
+  final TextStyle? subTextStyle;
 
   String? imagePath(WidgetRef ref) {
     if (album.imageTags['Primary'] == null) return null;
 
-    return ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id);
+    return ref
+        .read(imageProvider)
+        .imagePath(tagId: album.imageTags['Primary']!, id: album.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {
@@ -36,7 +42,6 @@ class AlbumView extends ConsumerWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Column(
-
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           AspectRatio(
@@ -57,7 +62,7 @@ class AlbumView extends ConsumerWidget {
               fontWeight: FontWeight.w500,
               height: 1.2,
               overflow: TextOverflow.ellipsis,
-            ),
+            ).merge(mainTextStyle),
             maxLines: 1,
           ),
           Text(
@@ -68,7 +73,7 @@ class AlbumView extends ConsumerWidget {
               height: 1.2,
               color: const Color.fromARGB(130, 255, 255, 255),
               overflow: TextOverflow.ellipsis,
-            ),
+            ).merge(subTextStyle),
           ),
         ],
       ),

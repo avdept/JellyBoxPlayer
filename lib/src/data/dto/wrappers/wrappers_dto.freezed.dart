@@ -72,11 +72,11 @@ class _$AlbumsWrapperCopyWithImpl<$Res, $Val extends AlbumsWrapper>
 }
 
 /// @nodoc
-abstract class _$$_AlbumsWrapperCopyWith<$Res>
+abstract class _$$AlbumsWrapperImplCopyWith<$Res>
     implements $AlbumsWrapperCopyWith<$Res> {
-  factory _$$_AlbumsWrapperCopyWith(
-          _$_AlbumsWrapper value, $Res Function(_$_AlbumsWrapper) then) =
-      __$$_AlbumsWrapperCopyWithImpl<$Res>;
+  factory _$$AlbumsWrapperImplCopyWith(
+          _$AlbumsWrapperImpl value, $Res Function(_$AlbumsWrapperImpl) then) =
+      __$$AlbumsWrapperImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -85,11 +85,11 @@ abstract class _$$_AlbumsWrapperCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_AlbumsWrapperCopyWithImpl<$Res>
-    extends _$AlbumsWrapperCopyWithImpl<$Res, _$_AlbumsWrapper>
-    implements _$$_AlbumsWrapperCopyWith<$Res> {
-  __$$_AlbumsWrapperCopyWithImpl(
-      _$_AlbumsWrapper _value, $Res Function(_$_AlbumsWrapper) _then)
+class __$$AlbumsWrapperImplCopyWithImpl<$Res>
+    extends _$AlbumsWrapperCopyWithImpl<$Res, _$AlbumsWrapperImpl>
+    implements _$$AlbumsWrapperImplCopyWith<$Res> {
+  __$$AlbumsWrapperImplCopyWithImpl(
+      _$AlbumsWrapperImpl _value, $Res Function(_$AlbumsWrapperImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -98,7 +98,7 @@ class __$$_AlbumsWrapperCopyWithImpl<$Res>
     Object? items = null,
     Object? totalRecordCount = null,
   }) {
-    return _then(_$_AlbumsWrapper(
+    return _then(_$AlbumsWrapperImpl(
       items: null == items
           ? _value._items
           : items // ignore: cast_nullable_to_non_nullable
@@ -113,14 +113,14 @@ class __$$_AlbumsWrapperCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$_AlbumsWrapper implements _AlbumsWrapper {
-  const _$_AlbumsWrapper(
+class _$AlbumsWrapperImpl implements _AlbumsWrapper {
+  const _$AlbumsWrapperImpl(
       {@JsonKey(name: 'Items') required final List<ItemDTO> items,
       @JsonKey(name: 'TotalRecordCount') required this.totalRecordCount})
       : _items = items;
 
-  factory _$_AlbumsWrapper.fromJson(Map<String, dynamic> json) =>
-      _$$_AlbumsWrapperFromJson(json);
+  factory _$AlbumsWrapperImpl.fromJson(Map<String, dynamic> json) =>
+      _$$AlbumsWrapperImplFromJson(json);
 
   final List<ItemDTO> _items;
   @override
@@ -144,7 +144,7 @@ class _$_AlbumsWrapper implements _AlbumsWrapper {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_AlbumsWrapper &&
+            other is _$AlbumsWrapperImpl &&
             const DeepCollectionEquality().equals(other._items, _items) &&
             (identical(other.totalRecordCount, totalRecordCount) ||
                 other.totalRecordCount == totalRecordCount));
@@ -158,12 +158,12 @@ class _$_AlbumsWrapper implements _AlbumsWrapper {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_AlbumsWrapperCopyWith<_$_AlbumsWrapper> get copyWith =>
-      __$$_AlbumsWrapperCopyWithImpl<_$_AlbumsWrapper>(this, _$identity);
+  _$$AlbumsWrapperImplCopyWith<_$AlbumsWrapperImpl> get copyWith =>
+      __$$AlbumsWrapperImplCopyWithImpl<_$AlbumsWrapperImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_AlbumsWrapperToJson(
+    return _$$AlbumsWrapperImplToJson(
       this,
     );
   }
@@ -173,10 +173,10 @@ abstract class _AlbumsWrapper implements AlbumsWrapper {
   const factory _AlbumsWrapper(
       {@JsonKey(name: 'Items') required final List<ItemDTO> items,
       @JsonKey(name: 'TotalRecordCount')
-      required final int totalRecordCount}) = _$_AlbumsWrapper;
+      required final int totalRecordCount}) = _$AlbumsWrapperImpl;
 
   factory _AlbumsWrapper.fromJson(Map<String, dynamic> json) =
-      _$_AlbumsWrapper.fromJson;
+      _$AlbumsWrapperImpl.fromJson;
 
   @override
   @JsonKey(name: 'Items')
@@ -186,6 +186,6 @@ abstract class _AlbumsWrapper implements AlbumsWrapper {
   int get totalRecordCount;
   @override
   @JsonKey(ignore: true)
-  _$$_AlbumsWrapperCopyWith<_$_AlbumsWrapper> get copyWith =>
+  _$$AlbumsWrapperImplCopyWith<_$AlbumsWrapperImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

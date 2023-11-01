@@ -4,6 +4,7 @@ abstract class Routes {
   static const library = '/library';
   static const listen = '/listen';
   static const search = '/search';
+  static const artist = '/artist';
   static const settings = '/settings';
   static const downloads = '/downloads';
   static const album = '/album';

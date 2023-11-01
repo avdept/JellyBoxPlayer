@@ -76,11 +76,11 @@ class _$UserCredentialsCopyWithImpl<$Res, $Val extends UserCredentials>
 }
 
 /// @nodoc
-abstract class _$$_UserCredentialsCopyWith<$Res>
+abstract class _$$UserCredentialsImplCopyWith<$Res>
     implements $UserCredentialsCopyWith<$Res> {
-  factory _$$_UserCredentialsCopyWith(
-          _$_UserCredentials value, $Res Function(_$_UserCredentials) then) =
-      __$$_UserCredentialsCopyWithImpl<$Res>;
+  factory _$$UserCredentialsImplCopyWith(_$UserCredentialsImpl value,
+          $Res Function(_$UserCredentialsImpl) then) =
+      __$$UserCredentialsImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -90,11 +90,11 @@ abstract class _$$_UserCredentialsCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$_UserCredentialsCopyWithImpl<$Res>
-    extends _$UserCredentialsCopyWithImpl<$Res, _$_UserCredentials>
-    implements _$$_UserCredentialsCopyWith<$Res> {
-  __$$_UserCredentialsCopyWithImpl(
-      _$_UserCredentials _value, $Res Function(_$_UserCredentials) _then)
+class __$$UserCredentialsImplCopyWithImpl<$Res>
+    extends _$UserCredentialsCopyWithImpl<$Res, _$UserCredentialsImpl>
+    implements _$$UserCredentialsImplCopyWith<$Res> {
+  __$$UserCredentialsImplCopyWithImpl(
+      _$UserCredentialsImpl _value, $Res Function(_$UserCredentialsImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -104,7 +104,7 @@ class __$$_UserCredentialsCopyWithImpl<$Res>
     Object? pw = null,
     Object? serverUrl = null,
   }) {
-    return _then(_$_UserCredentials(
+    return _then(_$UserCredentialsImpl(
       username: null == username
           ? _value.username
           : username // ignore: cast_nullable_to_non_nullable
@@ -123,8 +123,8 @@ class __$$_UserCredentialsCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable(createFactory: false)
-class _$_UserCredentials implements _UserCredentials {
-  const _$_UserCredentials(
+class _$UserCredentialsImpl implements _UserCredentials {
+  const _$UserCredentialsImpl(
       {@JsonKey(name: 'Username') required this.username,
       @JsonKey(name: 'Pw') required this.pw,
       @JsonKey(includeFromJson: false) required this.serverUrl});
@@ -148,7 +148,7 @@ class _$_UserCredentials implements _UserCredentials {
   bool operator ==(dynamic other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$_UserCredentials &&
+            other is _$UserCredentialsImpl &&
             (identical(other.username, username) ||
                 other.username == username) &&
             (identical(other.pw, pw) || other.pw == pw) &&
@@ -163,12 +163,13 @@ class _$_UserCredentials implements _UserCredentials {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$_UserCredentialsCopyWith<_$_UserCredentials> get copyWith =>
-      __$$_UserCredentialsCopyWithImpl<_$_UserCredentials>(this, _$identity);
+  _$$UserCredentialsImplCopyWith<_$UserCredentialsImpl> get copyWith =>
+      __$$UserCredentialsImplCopyWithImpl<_$UserCredentialsImpl>(
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$_UserCredentialsToJson(
+    return _$$UserCredentialsImplToJson(
       this,
     );
   }
@@ -179,7 +180,7 @@ abstract class _UserCredentials implements UserCredentials {
           {@JsonKey(name: 'Username') required final String username,
           @JsonKey(name: 'Pw') required final String pw,
           @JsonKey(includeFromJson: false) required final String serverUrl}) =
-      _$_UserCredentials;
+      _$UserCredentialsImpl;
 
   @override
   @JsonKey(name: 'Username')
@@ -192,6 +193,6 @@ abstract class _UserCredentials implements UserCredentials {
   String get serverUrl;
   @override
   @JsonKey(ignore: true)
-  _$$_UserCredentialsCopyWith<_$_UserCredentials> get copyWith =>
+  _$$UserCredentialsImplCopyWith<_$UserCredentialsImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
