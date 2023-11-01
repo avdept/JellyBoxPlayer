@@ -15,6 +15,7 @@ class ArtistPage extends StatefulWidget {
 class _ArtistPageState extends State<ArtistPage> {
   final _scrollController = ScrollController();
 
+  late ModalRoute<dynamic>? _parentRoute;
   late ThemeData _theme;
   late Size _screenSize;
   late bool _isMobile;
@@ -34,6 +35,7 @@ class _ArtistPageState extends State<ArtistPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _parentRoute = ModalRoute.of(context);
     _theme = Theme.of(context);
     _screenSize = MediaQuery.sizeOf(context);
 
@@ -93,11 +95,12 @@ class _ArtistPageState extends State<ArtistPage> {
                 ],
               ),
             ),
-            const Positioned(
-              left: 4,
-              top: 2,
-              child: BackButton(),
-            ),
+            if (_parentRoute?.impliesAppBarDismissal ?? false)
+              const Positioned(
+                left: 4,
+                top: 2,
+                child: BackButton(),
+              ),
             Positioned.fill(
               left: _isMobile ? 16 : (_isTablet ? 64 : 480),
               top: _isMobile ? 412 : (_isTablet ? 496 : 358),
