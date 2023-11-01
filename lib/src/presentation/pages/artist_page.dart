@@ -93,6 +93,11 @@ class _ArtistPageState extends State<ArtistPage> {
                 ],
               ),
             ),
+            const Positioned(
+              left: 4,
+              top: 2,
+              child: BackButton(),
+            ),
             Positioned.fill(
               left: _isMobile ? 16 : (_isTablet ? 64 : 480),
               top: _isMobile ? 406 : (_isTablet ? 486 : 346),
