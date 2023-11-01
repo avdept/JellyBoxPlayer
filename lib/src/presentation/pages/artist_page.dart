@@ -179,6 +179,7 @@ class _ArtistPageState extends State<ArtistPage> {
               padding: EdgeInsets.only(
                 top: 16,
                 right: _isMobile ? 16 : (_isTablet ? 64 : 60),
+                bottom: 16,
               ),
               sliver: SliverGrid.builder(
                 gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
