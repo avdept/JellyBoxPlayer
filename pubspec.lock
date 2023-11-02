@@ -539,18 +539,16 @@ packages:
   just_audio:
     dependency: "direct main"
     description:
-      name: just_audio
-      sha256: "5ed0cd723e17dfd8cd4b0253726221e67f6546841ea4553635cf895061fc335b"
-      url: "https://pub.dev"
-    source: hosted
+      path: "just_audio/just_audio"
+      relative: true
+    source: path
     version: "0.9.35"
   just_audio_background:
     dependency: "direct main"
     description:
-      name: just_audio_background
-      sha256: d290c9c450083aee40cc481e2cb4c088dcbca35961598970ea1b6a6f6c68ae13
-      url: "https://pub.dev"
-    source: hosted
+      path: "just_audio/just_audio_background"
+      relative: true
+    source: path
     version: "0.0.1-beta.10"
   just_audio_platform_interface:
     dependency: transitive

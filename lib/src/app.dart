@@ -27,6 +27,7 @@ class _AppState extends ConsumerState<App> {
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(null);
+  late GoRouter _router;
 
   ScaffoldMessengerState get _messenger => _messengerKey.currentState!;
 
@@ -36,32 +37,11 @@ class _AppState extends ConsumerState<App> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => ref.read(authProvider.notifier).checkAuthState(),
     );
+    initRoutes();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(
-      authProvider,
-      (previous, next) {
-        if (next.error != null) {
-          _authState.value = false;
-        } else {
-          _authState.value = next.value;
-        }
-      },
-    );
-
-    return MaterialApp.router(
-      theme: Themes.red,
-      localizationsDelegates: const [
-        DefaultWidgetsLocalizations.delegate,
-        DefaultMaterialLocalizations.delegate,
-        DefaultCupertinoLocalizations.delegate,
-        S.delegate,
-      ],
-      supportedLocales: S.delegate.supportedLocales,
-      scaffoldMessengerKey: _messengerKey,
-      routerConfig: GoRouter(
+  void initRoutes() {
+    _router = GoRouter(
         initialLocation: Routes.root,
         navigatorKey: _rootNavigatorKey,
         routes: [
@@ -154,7 +134,33 @@ class _AppState extends ConsumerState<App> {
           return null;
         },
         refreshListenable: _authState,
-      ),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(
+      authProvider,
+      (previous, next) {
+        if (next.error != null) {
+          _authState.value = false;
+        } else {
+          _authState.value = next.value;
+        }
+      },
+    );
+
+    return MaterialApp.router(
+      theme: Themes.red,
+      localizationsDelegates: const [
+        DefaultWidgetsLocalizations.delegate,
+        DefaultMaterialLocalizations.delegate,
+        DefaultCupertinoLocalizations.delegate,
+        S.delegate,
+      ],
+      supportedLocales: S.delegate.supportedLocales,
+      scaffoldMessengerKey: _messengerKey,
+      routerConfig: _router,
       builder: (context, child) {
         final theme = Theme.of(context);
 
