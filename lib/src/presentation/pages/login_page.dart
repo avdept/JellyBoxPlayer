@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/params/params.dart';
@@ -24,6 +25,12 @@ class LoginPageState extends ConsumerState<LoginPage> {
       pw: _passwordInputController.text.trim(),
       serverUrl: _serverUrlInputController.text.trim(),
     );
+    if (credentials.serverUrl.isEmpty || credentials.username.isEmpty || credentials.pw.isEmpty) {
+      setState(() {
+        error = 'Server URL, login and password are required';
+      });
+      return;
+    }
     final resp = await ref.read(authProvider.notifier).login(credentials);
     if (resp != null) {
       setState(() {
@@ -47,22 +54,30 @@ class LoginPageState extends ConsumerState<LoginPage> {
                   maxWidth: 440,
                 ),
                 child: IntrinsicHeight(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(Images.mainLogo),
-                      const SizedBox(height: 63),
-                      _serverURLField(),
-                      const SizedBox(height: 8),
-                      _loginField(),
-                      const SizedBox(height: 8),
-                      _passwordField(),
-                      if (error != null) const SizedBox(height: 8),
-                      if (error != null) Text(error!),
-                      const SizedBox(height: 63),
-                      _signInButton(),
-                    ],
+                  child: KeyboardListener(
+                    focusNode: FocusNode(),
+                    onKeyEvent: (event) {
+                      if (event.logicalKey == LogicalKeyboardKey.enter) {
+                        signIn();
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(Images.mainLogo),
+                        const SizedBox(height: 63),
+                        _serverURLField(),
+                        const SizedBox(height: 8),
+                        _loginField(),
+                        const SizedBox(height: 8),
+                        _passwordField(),
+                        if (error != null) const SizedBox(height: 8),
+                        if (error != null) Text(error!),
+                        const SizedBox(height: 63),
+                        _signInButton(),
+                      ],
+                    ),
                   ),
                 ),
               ),

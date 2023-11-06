@@ -22,7 +22,6 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
     final playbackState = ref.watch(playbackProvider);
 
     if (playbackState.status == PlaybackStatus.stopped) return Container();
-    print("Playback status: ${playbackState.status}");
     return SeekBar(
       duration: playbackState.totalDuration ?? Duration.zero,
       position: playbackState.position,

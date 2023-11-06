@@ -17,6 +17,7 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AlbumPage extends ConsumerStatefulWidget {
@@ -30,7 +31,7 @@ class AlbumPage extends ConsumerStatefulWidget {
 class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _scrollController = ScrollController();
   final _titleOpacity = ValueNotifier<double>(0);
-  final _currentSongId = ValueNotifier<SongDTO?>(null);
+  late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<SongDTO> songs = [];
 
@@ -63,9 +64,16 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   @override
   void initState() {
     super.initState();
+    _currentSong = ValueNotifier<MediaItem?>(null);
     _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
     _getSongs();
-    _currentSongId.value = ref.read(audioQueueProvider).currentSong;
+    ref.read(playerProvider).sequenceStateStream.listen((event) {
+      if (event != null) {
+        if (mounted) {
+          _currentSong.value = event.sequence[event.currentIndex].tag as MediaItem;
+        }
+      }
+    });
     _scrollController.addListener(_onScroll);
   }
 
@@ -91,9 +99,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(audioQueueProvider, (previous, next) {
-      _currentSongId.value = next.currentSong;
-    });
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -179,23 +184,25 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       ],
                       SliverList.builder(
                         itemBuilder: (context, index) => ValueListenableBuilder(
-                          valueListenable: _currentSongId,
-                          builder: (context, value, child) => PlayerSongView(
-                            song: songs[index],
-                            isPlaying: songs[index] == value,
-                            downloadProgress: null, // index == 2 ? 0.8 : null,
-                            onTap: () {
-                              ref.read(playbackProvider.notifier).play(songs[index], songs, widget.album);
-                            },
-                            position: index + 1,
-                            onLikePressed: () async {
-                              final api = ref.read(jellyfinApiProvider);
-                              songs[index].songUserData.isFavorite
-                                  ? await api.removeFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id)
-                                  : await api.saveFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id);
-                              _getSongs();
-                            },
-                          ),
+                          valueListenable: _currentSong,
+                          builder: (context, item, other) {
+                            return PlayerSongView(
+                              song: songs[index],
+                              isPlaying: item != null && songs[index].id == item.id,
+                              downloadProgress: null, // index == 2 ? 0.8 : null,
+                              onTap: () {
+                                ref.read(playbackProvider.notifier).play(songs[index], songs, widget.album);
+                              },
+                              position: index + 1,
+                              onLikePressed: () async {
+                                final api = ref.read(jellyfinApiProvider);
+                                songs[index].songUserData.isFavorite
+                                    ? await api.removeFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id)
+                                    : await api.saveFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id);
+                                _getSongs();
+                              },
+                            );
+                          },
                         ),
                         itemCount: songs.length,
                       ),
@@ -215,7 +222,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     super.dispose();
     _scrollController.dispose();
     _titleOpacity.dispose();
-    _currentSongId.dispose();
+    _currentSong.dispose();
   }
 
   Widget _albumPanel() => IconTheme(

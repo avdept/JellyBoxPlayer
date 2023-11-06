@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -6,6 +8,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class LibraryPage extends ConsumerStatefulWidget {
@@ -42,46 +45,56 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     final isTablet = deviceType == DeviceScreenType.tablet;
     final isDesktop = deviceType == DeviceScreenType.desktop;
 
-    return ScrollablePageScaffold(
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(isMobile ? 48 : 100),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: isDesktop ? 22.5 : 13,
-              ),
-              const SizedBox(width: 10),
-              _titleText(),
-              const Spacer(),
-              _searchButton(),
-            ],
+    return KeyboardListener(
+      onKeyEvent: (value) {
+        print(value.logicalKey);
+        if (value.logicalKey == LogicalKeyboardKey.enter) {
+          _onLibraryTap(libraries[0]).then((value) => context.go(Routes.listen));
+        }
+      },
+      focusNode: FocusNode(),
+      child: ScrollablePageScaffold(
+        navigationBar: PreferredSize(
+          preferredSize: Size.fromHeight(isMobile ? 48 : 100),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 30),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: isDesktop ? 22.5 : 13,
+                ),
+                const SizedBox(width: 10),
+                _titleText(),
+                const Spacer(),
+                _searchButton(),
+                if (kDebugMode) TextButton(onPressed: () => {ref.read(authProvider.notifier).logout()}, child: const Text('Logout'))
+              ],
+            ),
           ),
         ),
-      ),
-      contentPadding: EdgeInsets.only(
-        left: isMobile ? 16 : 30,
-        right: isMobile ? 16 : 30,
-        bottom: isMobile ? 8 : 20,
-      ),
-      slivers: [
-        SliverGrid.builder(
-          gridDelegate: isDesktop || isTablet
-              ? SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: isTablet ? 370 : 358,
-            mainAxisSpacing: isMobile ? 13 : 34,
-            crossAxisSpacing: isDesktop ? 24 : (isMobile ? 16 : 34),
-            childAspectRatio: 370 / 255,
-                )
-              : const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisExtent: 250),
-          itemBuilder: (context, index) => LibraryView(
-            library: libraries[index],
-            onTap: () => _onLibraryTap(libraries[index]).then((value) => context.go(Routes.listen)),
-          ),
-          itemCount: libraries.length,
+        contentPadding: EdgeInsets.only(
+          left: isMobile ? 16 : 30,
+          right: isMobile ? 16 : 30,
+          bottom: isMobile ? 8 : 20,
         ),
-      ],
+        slivers: [
+          SliverGrid.builder(
+            gridDelegate: isDesktop || isTablet
+                ? SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: isTablet ? 370 : 358,
+                    mainAxisSpacing: isMobile ? 13 : 34,
+                    crossAxisSpacing: isDesktop ? 24 : (isMobile ? 16 : 34),
+                    childAspectRatio: 370 / 255,
+                  )
+                : const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisExtent: 250),
+            itemBuilder: (context, index) => LibraryView(
+              library: libraries[index],
+              onTap: () => _onLibraryTap(libraries[index]).then((value) => context.go(Routes.listen)),
+            ),
+            itemCount: libraries.length,
+          ),
+        ],
+      ),
     );
   }
 

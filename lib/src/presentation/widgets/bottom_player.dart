@@ -13,6 +13,9 @@ import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -40,7 +43,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onExpand(SongDTO? currentSong) => Navigator.of(context, rootNavigator: true).push(
+  Future<void> _onExpand(MediaItem? currentSong) => Navigator.of(context, rootNavigator: true).push(
         ModalSheetRoute(
           builder: (context) => SafeArea(
             top: false,
@@ -103,7 +106,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                       ),
                       SizedBox(height: _isMobile ? 30 : 26),
                       Text(
-                        currentSong?.name ?? '',
+                        currentSong?.title ?? '',
                         style: TextStyle(
                           fontSize: _isMobile ? 30 : 40,
                           fontWeight: FontWeight.w600,
@@ -113,7 +116,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         maxLines: 1,
                       ),
                       Text(
-                        currentSong?.albumArtist ?? '',
+                        currentSong?.artist ?? '',
                         style: TextStyle(
                           fontSize: _isMobile ? 18 : 24,
                           height: 1.2,
@@ -219,68 +222,69 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   Widget build(BuildContext context) {
     final playBackProvider = ref.watch(playbackProvider);
 
-    if (ref.read(audioQueueProvider).songs.isEmpty) return Container();
 
-    final queue = ref.watch(audioQueueProvider);
-    final currentSong = queue.currentSong;
-    final imageTagId = queue.album!.imageTags['Primary'] ?? queue.currentSong?.imageTags['Primary'];
-    _imageProvider.value = ref.read(imageProvider).albumIP(id: queue.album!.id, tagId: imageTagId);
-    // ref.listen<AudioQueueState>(audioQueueProvider, (prex, next) {
-    //   currentSong = next.currentSong;
-    // });
     _isPlaying.value = playBackProvider.status == PlaybackStatus.playing;
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-          color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
-          padding: EdgeInsets.only(bottom: _viewPadding.bottom),
-          child: GestureDetector(
-            onTap: !_isDesktop ? () => _onExpand(currentSong) : null,
-            behavior: HitTestBehavior.opaque,
-            child: SimpleListTile(
-              padding: const EdgeInsets.only(right: 8),
-              leading: AspectRatio(
-                aspectRatio: 1,
-                child: Image(
-                  image: imageTagId != null ? ref.read(imageProvider).albumIP(id: queue.album!.id, tagId: imageTagId) : const AssetImage(Images.coverSample),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              title: Text(
-                currentSong?.name ?? '',
-                style: TextStyle(
-                  fontSize: _isMobile ? 18 : 24,
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
-                ),
-              ),
-              subtitle: Text(
-                currentSong?.albumArtist ?? '',
-                style: TextStyle(
-                  fontSize: _isMobile ? 10 : 18,
-                  height: 1.2,
-                ),
-              ),
-              trailing: Wrap(
-                spacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (_isDesktop) const RemainingDuration(),
-                  if (_isDesktop) const RandomQueueButton(),
-                  _prevTrackButton(),
-                  SizedBox.square(
-                    dimension: 45,
-                    child: _playPauseButton(),
+        StreamBuilder<SequenceState?>(
+          stream: ref.read(playerProvider).sequenceStateStream,
+          builder: (context, snapshot) {
+            if (snapshot.data?.sequence.isEmpty ?? true) return Container();
+            final currentSong = snapshot.data?.sequence[snapshot.data!.currentIndex].tag as MediaItem?;
+            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const AssetImage(Images.coverSample) as ImageProvider;
+            _imageProvider.value = image;
+            return Container(
+              height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
+              color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
+              padding: EdgeInsets.only(bottom: _viewPadding.bottom),
+              child: GestureDetector(
+                onTap: !_isDesktop ? () => _onExpand(currentSong) : null,
+                behavior: HitTestBehavior.opaque,
+                child: SimpleListTile(
+                  padding: const EdgeInsets.only(right: 8),
+                  leading: AspectRatio(
+                    aspectRatio: 1,
+                    child: Image(
+                      image: image,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  _nextTrackButton(),
-                  if (_isDesktop) _repeatTrackButton(),
-                ],
+                  title: Text(
+                    currentSong?.title ?? '',
+                    style: TextStyle(
+                      fontSize: _isMobile ? 18 : 24,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                  subtitle: Text(
+                    currentSong?.artist ?? '',
+                    style: TextStyle(
+                      fontSize: _isMobile ? 10 : 18,
+                      height: 1.2,
+                    ),
+                  ),
+                  trailing: Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (_isDesktop) const RemainingDuration(),
+                      if (_isDesktop) const RandomQueueButton(),
+                      _prevTrackButton(),
+                      SizedBox.square(
+                        dimension: 45,
+                        child: _playPauseButton(),
+                      ),
+                      _nextTrackButton(),
+                      if (_isDesktop) _repeatTrackButton(),
+                    ],
+                  ),
+                  leadingToTitle: 15,
+                ),
               ),
-              leadingToTitle: 15,
-            ),
-          ),
+            );
+          },
         ),
         ValueListenableBuilder(
           valueListenable: _dynamicColors,
@@ -333,11 +337,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
         icon: const Icon(CupertinoIcons.list_bullet),
       );
 
-  Widget _randomQueueButton() => Consumer(
-        builder: (context, ref, child) {
-          final queueState = ref.watch(audioQueueProvider);
+  Widget _randomQueueButton() => StreamBuilder<bool?>(
+        stream: ref.read(playerProvider).shuffleModeEnabledStream,
+        builder: (context, snapshot) {
           return IconButton(
-            onPressed: () => ref.read(audioQueueProvider.notifier).toggleShuffle(),
+            onPressed: () => ref.read(playerProvider).setShuffleModeEnabled(snapshot.data == null ? !snapshot.data! : true),
             icon: Icon(
               JPlayer.mix,
               color: _theme.colorScheme.onPrimary,
@@ -346,16 +350,16 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
               JPlayer.mix,
               color: _theme.colorScheme.primary,
             ),
-            isSelected: queueState.isShuffled,
+            isSelected: snapshot.data ?? false,
           );
         },
       );
 
-  Widget _repeatTrackButton() => Consumer(
-        builder: (context, ref, widget) {
-          final playBackState = ref.watch(playbackProvider);
+  Widget _repeatTrackButton() => StreamBuilder<LoopMode>(
+        stream: ref.read(playerProvider).loopModeStream,
+        builder: (context, snapshot) {
           return IconButton(
-            onPressed: () => ref.read(playbackProvider.notifier).toggleRepeat(),
+            onPressed: () => ref.read(playerProvider).setLoopMode(snapshot.data == LoopMode.all ? LoopMode.off : LoopMode.all),
             icon: Icon(
               JPlayer.repeat,
               color: _theme.colorScheme.onPrimary,
@@ -364,7 +368,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
               JPlayer.repeat,
               color: _theme.colorScheme.primary,
             ),
-            isSelected: playBackState.repeat,
+            isSelected: snapshot.data == LoopMode.all,
           );
         },
       );

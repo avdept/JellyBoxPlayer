@@ -51,17 +51,26 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
     state = AsyncValue<bool>.data(tokenValidated && (serverUrl?.isNotEmpty ?? false) && (userId?.isNotEmpty ?? false));
   }
 
+  String normalizeUrl(String url) {
+    if (!url.startsWith('http')) {
+      return 'http://$url';
+    }
+
+    return url;
+  }
+
   Future<String?> login(UserCredentials credentials) async {
     // state = const AsyncLoading<bool>();
-    _api = JellyfinApi(_client, baseUrl: credentials.serverUrl);
+    final serverUrl = normalizeUrl(credentials.serverUrl);
+    _api = JellyfinApi(_client, baseUrl: serverUrl);
     try {
       final response = await _api.signIn(credentials.toJson());
       final token = _getAuthHeaderFromResponse(response);
       await _storage.write(key: _tokenKey, value: token);
       await _storage.write(key: _userIdKey, value: response.data.id);
-      await _storage.write(key: _serverUrlKey, value: credentials.serverUrl);
+      await _storage.write(key: _serverUrlKey, value: serverUrl);
 
-      _ref.read(baseUrlProvider.notifier).state = credentials.serverUrl;
+      _ref.read(baseUrlProvider.notifier).state = serverUrl;
       _ref.read(currentUserProvider.notifier).state = User(userId: response.data.id, token: token!);
       final tokenValidated = _validateAuthToken(token);
       if (tokenValidated) _setAuthHeader(token);
