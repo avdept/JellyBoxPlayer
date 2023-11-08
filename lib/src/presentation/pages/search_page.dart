@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -20,6 +21,7 @@ class SearchPage extends ConsumerStatefulWidget {
 
 class _SearchPageState extends ConsumerState<SearchPage> {
   final _searchFieldController = TextEditingController();
+  late final ValueNotifier<SearchView> _currentView = ValueNotifier(SearchView.all);
   Timer? _debounce;
 
   late Size _screenSize;
@@ -34,16 +36,48 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     });
   }
 
+  late ThemeData _theme;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _screenSize = MediaQuery.sizeOf(context);
-
+    _theme = Theme.of(context);
     final deviceType = getDeviceType(_screenSize);
     _isMobile = deviceType == DeviceScreenType.mobile;
     _isTablet = deviceType == DeviceScreenType.tablet;
     _isDesktop = deviceType == DeviceScreenType.desktop;
   }
+
+  Map<SearchView, String> get _viewLabels => {
+        SearchView.all: 'All',
+        SearchView.albums: 'Albums',
+        SearchView.artists: 'Artists',
+        SearchView.songs: 'Songs',
+      };
+
+  Widget _pageViewToggle() => ChipTheme(
+        data: ChipTheme.of(context).copyWith(
+          labelStyle: TextStyle(fontSize: _isMobile ? 14 : 16),
+        ),
+        child: Wrap(
+          spacing: 12,
+          children: [
+            for (final value in SearchView.values)
+              ValueListenableBuilder(
+                valueListenable: _currentView,
+                builder: (context, currentView, child) => ActionChip(
+                  label: Text(_viewLabels[value] ?? '???'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: (value == currentView) ? _theme.chipTheme.selectedColor : _theme.chipTheme.backgroundColor,
+                  onPressed: () => _currentView.value = value,
+                ),
+              ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +107,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         bottom: _isDesktop ? 30 : 16,
       ),
       slivers: [
+        SliverToBoxAdapter(
+          child: _pageViewToggle(),
+        ),
         // SliverList.separated(
         //   itemBuilder: (context, index) => SingerView(
         //     name: 'Rihanna',
@@ -93,11 +130,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             builder: (context, ref, child) {
               final albums = ref.watch(searchAlbumProvider);
               return albums.value.items.isNotEmpty
-                  ? const SizedBox(
-                      height: 20,
-                      child: Text('Albums'),
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text('Albums', style: TextStyle(fontSize: 18)),
                     )
-                  : SizedBox.shrink();
+                  : const SizedBox.shrink();
             },
           ),
         ),
@@ -147,12 +184,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         ),
       );
 
+  int get maxItemsInRow {
+    return calculateMaxItemsInRow(_isTablet ? 360 : 200, _isMobile ? 15 : 24);
+  }
+
   Widget get albums => Consumer(
         builder: (context, ref, child) {
           final albums = ref.watch(searchAlbumProvider);
-          final itemCount = min(calculateMaxItemsInRow(context, _isTablet ? 360 : 200, _isMobile ? 15 : 24), albums.value.items.length);
+          final itemCount = min(calculateMaxItemsInRow(_isTablet ? 360 : 200, _isMobile ? 15 : 24), albums.value.items.length);
           print(albums.value.items);
-          print(calculateMaxItemsInRow(context, _isTablet ? 360 : 200, _isMobile ? 15 : 24));
+          print(calculateMaxItemsInRow(_isTablet ? 360 : 200, _isMobile ? 15 : 24));
           print(itemCount);
           // return SliverList.separated(
           //   itemBuilder: (context, index) => AlbumView(
@@ -164,7 +205,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           //   ),
           //   itemCount: albums.value.items.length,
           // );
-
 
           // return Row(
           //   children: albums.value.items
@@ -191,11 +231,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
           return SliverGrid.builder(
             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: _isTablet ? 360 : 200,
-                    mainAxisSpacing: _isMobile ? 15 : 24,
-                    crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+              maxCrossAxisExtent: _isTablet ? 360 : 200,
+              mainAxisSpacing: _isMobile ? 15 : 24,
+              crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
               childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-                  ),
+            ),
             // : SliverGridDelegateWithFixedCrossAxisCount(
             //     crossAxisCount: 2,
             //     mainAxisSpacing: _isMobile ? 12 : 24,
@@ -238,9 +278,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           // );
         },
       );
-  int calculateMaxItemsInRow(BuildContext context, double itemWidth, double spacing) {
+  int calculateMaxItemsInRow(double itemWidth, double spacing) {
     final screenWidth = MediaQuery.of(context).size.width - 240; // 240 is the width of sidebar
-    print((screenWidth / (itemWidth + spacing)).floor());
     return (screenWidth / (itemWidth + spacing)).floor();
   }
 

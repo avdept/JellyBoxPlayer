@@ -11,12 +11,10 @@ import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
-import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
