@@ -8,12 +8,12 @@ import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
-import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -69,6 +69,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       if (event != null) {
         if (mounted) {
           _currentSong.value = event.sequence[event.currentIndex].tag as MediaItem;
+          ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
+            id: widget.album.id,
+            tagId: widget.album.imageTags['Primary'],
+          );
         }
       }
     });
@@ -95,8 +99,11 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _isDesktop = deviceType == DeviceScreenType.desktop;
   }
 
+  ImageProvider get albumCover => _imageService.albumIP(id: widget.album.id, tagId: widget.album.imageTags['Primary']);
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -120,7 +127,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     ),
                   ),
                   child: Text(
-                    ref.read(currentAlbumProvider)!.name,
+                    widget.album.name,
                     overflow: TextOverflow.clip,
                     style: TextStyle(
                       fontSize: _isMobile ? 14 : 20,
@@ -143,10 +150,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Image(
-                                  image: _imageService.albumIP(
-                                    id: ref.read(currentAlbumProvider)!.id,
-                                    tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'],
-                                  ),
+                                  image: albumCover,
                                   height: 254,
                                 ),
                                 const SizedBox(width: 38),
@@ -163,7 +167,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           sliver: SliverPersistentHeader(
                             pinned: true,
                             delegate: _FadeOutImageDelegate(
-                              image: _imageService.albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary']),
+                              image: albumCover,
                               isMobile: _isMobile,
                             ),
                           ),
@@ -173,10 +177,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             left: _isMobile ? 16 : 30,
                             top: _isMobile ? 15 : 35,
                             right: _isMobile ? 16 : 30,
-                            bottom: 18,
+                            bottom: _isMobile ? 0 : 18,
                           ),
                           sliver: SliverToBoxAdapter(
-                            child: _albumPanel(),
+                            child: _albumPanelMobile(),
                           ),
                         ),
                       ],
@@ -223,6 +227,61 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _currentSong.dispose();
   }
 
+  Widget _albumPanelMobile() => IconTheme(
+        data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    widget.album.name,
+                    key: _titleKey,
+                    style: TextStyle(
+                      fontSize: _isMobile ? 18 : 32,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Text(widget.album.albumArtist ?? ''),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _albumDetails(
+                  duration: widget.album.duration,
+                  soundsCount: songs.length,
+                  albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
+                  year: widget.album.productionYear,
+                  divider: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Offstage(
+                      offstage: _isMobile,
+                      child: const Icon(Icons.circle, size: 4),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // _downloadAlbumButton(),
+                    const RandomQueueButton(),
+                    SizedBox.square(
+                      dimension: _isMobile ? 38 : 48,
+                      child: _playAlbumButton(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
   Widget _albumPanel() => IconTheme(
         data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),
         child: Row(
@@ -237,7 +296,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     children: [
                       Flexible(
                         child: Text(
-                          ref.read(currentAlbumProvider)!.name,
+                          widget.album.name,
                           key: _titleKey,
                           style: TextStyle(
                             fontSize: _isMobile ? 18 : 32,
@@ -246,34 +305,25 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           ),
                         ),
                       ),
-                      Offstage(
-                        offstage: !_isMobile,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 18),
-                          child: Text(
-                            ref.read(currentAlbumProvider)!.productionYear.toString(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              height: 1.2,
-                            ),
+                    ],
+                  ),
+                  Text(widget.album.albumArtist ?? ''),
+                  Row(
+                    children: [
+                      _albumDetails(
+                        duration: widget.album.duration,
+                        soundsCount: songs.length,
+                        albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
+                        year: widget.album.productionYear,
+                        divider: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Offstage(
+                            offstage: _isMobile,
+                            child: const Icon(Icons.circle, size: 4),
                           ),
                         ),
                       ),
                     ],
-                  ),
-                  if (songs.isNotEmpty) Text(songs.first.albumArtist ?? ''),
-                  _albumDetails(
-                    duration: ref.read(currentAlbumProvider)!.duration,
-                    soundsCount: songs.length,
-                    albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
-                    year: _isMobile ? null : ref.read(currentAlbumProvider)!.productionYear,
-                    divider: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Offstage(
-                        offstage: _isMobile,
-                        child: const Icon(Icons.circle, size: 4),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -346,19 +396,19 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         children: [
           const Padding(
             padding: EdgeInsets.only(right: 6),
-            child: Icon(JPlayer.clock),
+            child: Icon(JPlayer.clock, size: 14),
           ),
           Text(
             [
-              if (hours > 0) hours,
-              minutes,
+              if (hours > 0) hours.toString().padLeft(2, '0'),
+              minutes.toString().padLeft(2, '0'),
               seconds.toString().padLeft(2, '0'),
             ].join(':'),
           ),
           divider,
           const Padding(
             padding: EdgeInsets.only(right: 6),
-            child: Icon(JPlayer.music),
+            child: Icon(JPlayer.music, size: 14),
           ),
           Text('$soundsCount songs'),
           if (year != null) ...[

@@ -144,7 +144,9 @@ class _JellyfinApi implements JellyfinApi {
     String startIndex = '0',
     String limit = '100',
     String sortBy = 'DateCreated,SortName',
+    String? contributingArtistIds,
     String sortOrder = 'Descending',
+    List<String> artistIds = const [],
     bool recursive = true,
   }) async {
     const _extra = <String, dynamic>{};
@@ -154,9 +156,12 @@ class _JellyfinApi implements JellyfinApi {
       r'StartIndex': startIndex,
       r'Limit': limit,
       r'SortBy': sortBy,
+      r'ContributingArtistIds': contributingArtistIds,
       r'SortOrder': sortOrder,
+      r'AlbumArtistIds': artistIds,
       r'Recursive': recursive,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
@@ -213,6 +218,102 @@ class _JellyfinApi implements JellyfinApi {
             .compose(
               _dio.options,
               '/Users/${userId}/Items',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final value = AlbumsWrapper.fromJson(_result.data!);
+    final httpResponse = HttpResponse(value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<AlbumsWrapper>> getArtists({
+    required String userId,
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    bool includeArtists = true,
+    String type = 'Artist',
+    String startIndex = '0',
+    String limit = '100',
+    String sortBy = 'SortName',
+    String sortOrder = 'Descending',
+    bool recursive = true,
+  }) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'userId': userId,
+      r'Fields': fields,
+      r'IncludeArtists': includeArtists,
+      r'IncludeItemTypes': type,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'SortBy': sortBy,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+    };
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/Artists',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final value = AlbumsWrapper.fromJson(_result.data!);
+    final httpResponse = HttpResponse(value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<AlbumsWrapper>> searchArtists({
+    required String userId,
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    required String searchTerm,
+    bool includeArtists = true,
+    String type = 'Artist',
+    String startIndex = '0',
+    String limit = '100',
+    String sortOrder = 'Descending',
+    bool recursive = true,
+  }) async {
+    const _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'userId': userId,
+      r'Fields': fields,
+      r'searchTerm': searchTerm,
+      r'IncludeArtists': includeArtists,
+      r'IncludeItemTypes': type,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+    };
+    final _headers = <String, dynamic>{};
+    final Map<String, dynamic>? _data = null;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/Artists',
               queryParameters: queryParameters,
               data: _data,
             )

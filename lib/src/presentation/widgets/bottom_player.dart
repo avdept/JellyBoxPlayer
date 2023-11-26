@@ -5,14 +5,11 @@ import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
-import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
-import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -75,11 +72,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                   builder: (context, image, child) => (image == null)
                                       ? const SizedBox.shrink()
                                       : Image(
-                                          image: ref.read(currentAlbumProvider) != null
-                                              ? ref
-                                                  .read(imageProvider)
-                                                  .albumIP(id: ref.read(currentAlbumProvider)!.id, tagId: ref.read(currentAlbumProvider)!.imageTags['Primary'])
-                                              : const AssetImage(Images.coverSample),
+                                          image: currentSong?.artUri != null
+                                              ? NetworkImage(currentSong!.artUri.toString())
+                                              : const AssetImage(Images.album) as ImageProvider,
                                           fit: BoxFit.cover,
                                         ),
                                 ),
@@ -192,7 +187,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
         brightness: _theme.brightness,
       );
     }
-    print(_dynamicColors.value);
   }
 
   @override
@@ -222,7 +216,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   Widget build(BuildContext context) {
     final playBackProvider = ref.watch(playbackProvider);
 
-
     _isPlaying.value = playBackProvider.status == PlaybackStatus.playing;
     return Stack(
       clipBehavior: Clip.none,
@@ -232,7 +225,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           builder: (context, snapshot) {
             if (snapshot.data?.sequence.isEmpty ?? true) return Container();
             final currentSong = snapshot.data?.sequence[snapshot.data!.currentIndex].tag as MediaItem?;
-            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const AssetImage(Images.coverSample) as ImageProvider;
+            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const AssetImage(Images.emptyItem) as ImageProvider;
             _imageProvider.value = image;
             return Container(
               height: (_isMobile ? 69 : 92) + _viewPadding.bottom,

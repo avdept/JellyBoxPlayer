@@ -11,10 +11,12 @@ class AlbumView extends ConsumerWidget {
     this.onTap,
     this.mainTextStyle,
     this.subTextStyle,
+    this.showArtist = true,
     super.key,
   });
 
   final ItemDTO album;
+  final bool showArtist;
   final VoidCallback? onTap;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
@@ -22,15 +24,21 @@ class AlbumView extends ConsumerWidget {
   String? imagePath(WidgetRef ref) {
     if (album.imageTags['Primary'] == null) return null;
 
-    return ref
-        .read(imageProvider)
-        .imagePath(tagId: album.imageTags['Primary']!, id: album.id);
+    return ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {
     if (imagePath(ref) != null) return NetworkImage(imagePath(ref)!);
 
-    return const AssetImage(Images.albumSample);
+    return const AssetImage(Images.album);
+  }
+
+  String get artistName {
+    if (showArtist) {
+      return album.albumArtist ?? '';
+    } else {
+      return '';
+    }
   }
 
   @override
@@ -65,8 +73,9 @@ class AlbumView extends ConsumerWidget {
             ).merge(mainTextStyle),
             maxLines: 1,
           ),
+
           Text(
-            album.albumArtist ?? '',
+            artistName,
             style: TextStyle(
               fontSize: isTablet ? 22 : 14,
               fontWeight: FontWeight.w400,

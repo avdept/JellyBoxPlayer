@@ -3,3 +3,8 @@ enum EntityFilter {
   albumArtist,
   dateCreated,
 }
+
+enum ArtistFilter {
+  sortName,
+  dateCreated,
+}

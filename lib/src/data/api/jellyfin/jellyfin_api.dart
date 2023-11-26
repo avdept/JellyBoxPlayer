@@ -37,7 +37,9 @@ abstract class JellyfinApi {
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'DateCreated,SortName',
+    @Query('ContributingArtistIds') String? contributingArtistIds,
     @Query('SortOrder') String sortOrder = 'Descending',
+    @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('Recursive') bool recursive = true,
   });
 
@@ -47,6 +49,32 @@ abstract class JellyfinApi {
     @Query('ParentId') required String libraryId,
     @Query('searchTerm') required String searchTerm,
     @Query('IncludeItemTypes') String type = 'MusicAlbum',
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '100',
+    @Query('SortOrder') String sortOrder = 'Descending',
+    @Query('Recursive') bool recursive = true,
+  });
+
+  @GET('/Artists')
+  Future<HttpResponse<AlbumsWrapper>> getArtists({
+    @Query('userId') required String userId,
+    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('IncludeArtists') bool includeArtists = true,
+    @Query('IncludeItemTypes') String type = 'Artist',
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '100',
+    @Query('SortBy') String sortBy = 'SortName',
+    @Query('SortOrder') String sortOrder = 'Descending',
+    @Query('Recursive') bool recursive = true,
+  });
+
+  @GET('/Artists')
+  Future<HttpResponse<AlbumsWrapper>> searchArtists({
+    @Query('userId') required String userId,
+    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('searchTerm') required String searchTerm,
+    @Query('IncludeArtists') bool includeArtists = true,
+    @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',

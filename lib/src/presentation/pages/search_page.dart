@@ -110,60 +110,54 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         SliverToBoxAdapter(
           child: _pageViewToggle(),
         ),
-        // SliverList.separated(
-        //   itemBuilder: (context, index) => SingerView(
-        //     name: 'Rihanna',
-        //     onTap: () {},
-        //   ),
-        //   separatorBuilder: (context, index) => SizedBox(
-        //     height: _isMobile ? 12 : 24,
-        //   ),
-        //   itemCount: 1,
-        // ),
-        // SliverToBoxAdapter(
-        //   child: SizedBox(
-        //     height: _isDesktop ? 40 : (_isMobile ? 28 : 30),
-        //   ),
-        // ),
         SliverToBoxAdapter(
-          child: Consumer(
-            builder: (context, ref, child) {
-              final albums = ref.watch(searchAlbumProvider);
-              return albums.value.items.isNotEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text('Albums', style: TextStyle(fontSize: 18)),
-                    )
-                  : const SizedBox.shrink();
+            child: ValueListenableBuilder(
+          valueListenable: _currentView,
+          builder: (context, value, child) {
+            if (value != SearchView.all && value != SearchView.albums) {
+              return const SizedBox.shrink();
+            }
+            return Consumer(
+              builder: (context, ref, child) {
+                final albums = ref.watch(searchAlbumProvider);
+                return albums.value.items.isNotEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text('Albums', style: TextStyle(fontSize: 18)),
+                      )
+                    : const SizedBox.shrink();
+              },
+            );
+          },
+        )),
+        albums,
+        SliverToBoxAdapter(
+          child: ValueListenableBuilder(
+            valueListenable: _currentView,
+            builder: (context, value, child) {
+              if (value != SearchView.all && value != SearchView.artists) {
+                return const SizedBox.shrink();
+              }
+              return Consumer(
+                builder: (context, ref, child) {
+                  final artists = ref.watch(searchArtistsProvider);
+                  return artists.value.items.isNotEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text('Artists', style: TextStyle(fontSize: 18)),
+                        )
+                      : const SizedBox.shrink();
+                },
+              );
             },
           ),
         ),
-        albums,
+        artists,
         SliverToBoxAdapter(
           child: SizedBox(
             height: _isDesktop ? 40 : (_isMobile ? 28 : 30),
           ),
         ),
-        // SliverGrid.builder(
-        //   gridDelegate: _isDesktop
-        //       ? const SliverGridDelegateWithMaxCrossAxisExtent(
-        //           maxCrossAxisExtent: 360,
-        //           mainAxisSpacing: 24,
-        //           crossAxisSpacing: 70,
-        //           mainAxisExtent: 50,
-        //         )
-        //       : SliverGridDelegateWithFixedCrossAxisCount(
-        //           crossAxisCount: 1,
-        //           mainAxisSpacing: _isMobile ? 12 : 24,
-        //           mainAxisExtent: _isMobile ? 42 : 50,
-        //         ),
-        //   itemBuilder: (context, index) => SongView(
-        //     name: 'Song name',
-        //     onTap: () {},
-        //     onOptionsPressed: () {},
-        //   ),
-        //   itemCount: 50,
-        // ),
       ],
     );
   }
@@ -188,94 +182,95 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return calculateMaxItemsInRow(_isTablet ? 360 : 200, _isMobile ? 15 : 24);
   }
 
-  Widget get albums => Consumer(
-        builder: (context, ref, child) {
-          final albums = ref.watch(searchAlbumProvider);
-          final itemCount = min(calculateMaxItemsInRow(_isTablet ? 360 : 200, _isMobile ? 15 : 24), albums.value.items.length);
-          print(albums.value.items);
-          print(calculateMaxItemsInRow(_isTablet ? 360 : 200, _isMobile ? 15 : 24));
-          print(itemCount);
-          // return SliverList.separated(
-          //   itemBuilder: (context, index) => AlbumView(
-          //     album: albums.value.items[index],
-          //     onTap: () {},
-          //   ),
-          //   separatorBuilder: (context, index) => SizedBox(
-          //     height: _isMobile ? 12 : 24,
-          //   ),
-          //   itemCount: albums.value.items.length,
-          // );
-
-          // return Row(
-          //   children: albums.value.items
-          //       .map((e) => SizedBox(
-          //             width: 140,
-          //             height: 140,
-          //             child: AlbumView(
-          //               album: e,
-          //               onTap: () {},
-          //             ),
-          //           ))
-          //       .toList(),
-          // );
-
-          int firstRowCount;
-
-          if (_isDesktop || _isTablet) {
-            final screenWidth = MediaQuery.of(context).size.width - 290;
-            final maxExtent = _isTablet ? 360 : 200;
-            firstRowCount = (screenWidth / maxExtent).floor();
-          } else {
-            firstRowCount = 2; // As per your SliverGridDelegateWithFixedCrossAxisCount
+  Widget get artists => ValueListenableBuilder(
+        valueListenable: _currentView,
+        builder: (context, value, child) {
+          if (value != SearchView.artists && value != SearchView.all) {
+            return const SliverPadding(
+              padding: EdgeInsets.zero,
+            );
           }
 
-          return SliverGrid.builder(
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: _isTablet ? 360 : 200,
-              mainAxisSpacing: _isMobile ? 15 : 24,
-              crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-              childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-            ),
-            // : SliverGridDelegateWithFixedCrossAxisCount(
-            //     crossAxisCount: 2,
-            //     mainAxisSpacing: _isMobile ? 12 : 24,
-            //     crossAxisSpacing: _isMobile ? 12 : 24,
-            //     mainAxisExtent: _isMobile ? 42 : 50,
-            //   ),
-            itemBuilder: (context, index) {
-              return AlbumView(
-                album: albums.value.items[index],
-                onTap: () {
-                  final location = GoRouterState.of(context).fullPath;
-                  ref.read(currentAlbumProvider.notifier).setAlbum(albums.value.items[index]);
-                  context.go('$location${Routes.album}', extra: {'album': albums.value.items[index]});
+          return Consumer(
+            builder: (context, ref, child) {
+              final artists = ref.watch(searchArtistsProvider);
+
+              int firstRowCount;
+
+              if (_isDesktop || _isTablet) {
+                final screenWidth = MediaQuery.of(context).size.width - 290;
+                final maxExtent = _isTablet ? 360 : 200;
+                firstRowCount = (screenWidth / maxExtent).floor();
+              } else {
+                firstRowCount = 2; // As per your SliverGridDelegateWithFixedCrossAxisCount
+              }
+
+              return SliverGrid.builder(
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: _isTablet ? 360 : 200,
+                  mainAxisSpacing: _isMobile ? 15 : 24,
+                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                ),
+                itemBuilder: (context, index) {
+                  return AlbumView(
+                    album: artists.value.items[index],
+                    onTap: () {
+                      final location = GoRouterState.of(context).fullPath;
+                      context.go('$location${Routes.artist}', extra: {'artist': artists.value.items[index]});
+                    },
+                  );
                 },
+                itemCount: value == SearchView.albums ? artists.value.items.length : min(firstRowCount, artists.value.items.length),
               );
             },
-            itemCount: min(firstRowCount, albums.value.items.length),
           );
+        },
+      );
 
-          // return SliverGrid.builder(
-          //   gridDelegate: _isDesktop
-          //       ? SliverGridDelegateWithMaxCrossAxisExtent(
-          //           maxCrossAxisExtent: _isTablet ? 360 : 200,
-          //           mainAxisSpacing: _isMobile ? 15 : 24,
-          //           crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-          //           childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-          //         )
-          //       : SliverGridDelegateWithFixedCrossAxisCount(
-          //           crossAxisCount: 1,
-          //           mainAxisSpacing: _isMobile ? 12 : 24,
-          //           mainAxisExtent: _isMobile ? 42 : 50,
-          //         ),
-          //   itemBuilder: (context, index) {
-          //     return AlbumView(
-          //       album: albums.value.items[index],
-          //       onTap: () {},
-          //     );
-          //   },
-          //   itemCount: albums.value.items.length, //albums.value.items.length,
-          // );
+  Widget get albums => ValueListenableBuilder(
+        valueListenable: _currentView,
+        builder: (context, value, child) {
+          if (value != SearchView.albums && value != SearchView.all) {
+            return const SliverPadding(
+              padding: EdgeInsets.zero,
+            );
+          }
+
+          return Consumer(builder: (context, ref, child) {
+            final albums = ref.watch(searchAlbumProvider);
+
+            int firstRowCount;
+
+            if (_isDesktop || _isTablet) {
+              final screenWidth = MediaQuery.of(context).size.width - 290;
+              final maxExtent = _isTablet ? 360 : 200;
+              firstRowCount = (screenWidth / maxExtent).floor();
+            } else {
+              firstRowCount = 2;
+            }
+
+            return SliverGrid.builder(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: _isTablet ? 360 : 200,
+                mainAxisSpacing: _isMobile ? 15 : 24,
+                crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+                childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+              ),
+              itemBuilder: (context, index) {
+                return AlbumView(
+                  album: albums.value.items[index],
+                  showArtist: false,
+                  onTap: () {
+                    final location = GoRouterState.of(context).fullPath;
+                    ref.read(currentAlbumProvider.notifier).setAlbum(albums.value.items[index]);
+                    context.go('$location${Routes.album}', extra: {'album': albums.value.items[index]});
+                  },
+                );
+              },
+              itemCount: value == SearchView.albums ? albums.value.items.length : min(firstRowCount, albums.value.items.length),
+            );
+          });
         },
       );
   int calculateMaxItemsInRow(double itemWidth, double spacing) {

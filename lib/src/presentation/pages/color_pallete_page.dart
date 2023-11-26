@@ -1,31 +1,33 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 const Color _kBackgroundColor = Color(0xffa0a0a0);
 const Color _kPlaceholderColor = Color(0x80404040);
 
-class ColorPalettePage extends StatefulWidget {
+class ColorPalettePage extends ConsumerStatefulWidget {
   const ColorPalettePage({super.key});
 
   @override
-  State<ColorPalettePage> createState() => _ColorPalettePageState();
+  ConsumerState<ColorPalettePage> createState() => _ColorPalettePageState();
 }
 
-class _ColorPalettePageState extends State<ColorPalettePage> {
+class _ColorPalettePageState extends ConsumerState<ColorPalettePage> {
   PaletteGenerator? paletteGenerator;
   ColorScheme? colorScheme;
 
   late ImageProvider imageProvider;
 
-  Future<void> _updatePaletteGenerator() async {
+  Future<void> _updatePaletteGenerator(ImageProvider provider) async {
     paletteGenerator = await PaletteGenerator.fromImageProvider(
-      imageProvider,
+      provider,
     );
     colorScheme = await ColorScheme.fromImageProvider(
-      provider: imageProvider,
+      provider: provider,
       brightness: Brightness.dark,
     );
     // setState(() {});
@@ -35,16 +37,23 @@ class _ColorPalettePageState extends State<ColorPalettePage> {
   void initState() {
     super.initState();
     imageProvider = const AssetImage(Images.coverSample);
-    _updatePaletteGenerator();
+    _updatePaletteGenerator(imageProvider);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(imageSchemeProvider, (prev, next) {
+      _updatePaletteGenerator(next);
+      setState(() {
+        imageProvider = next;
+      });
+    });
+
     return Scaffold(
       backgroundColor: _kBackgroundColor,
       body: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: ListView(
+          shrinkWrap: true,
           children: [
             Padding(
               padding: const EdgeInsets.all(20),
@@ -54,7 +63,8 @@ class _ColorPalettePageState extends State<ColorPalettePage> {
                 fit: BoxFit.fitHeight,
               ),
             ),
-            Expanded(
+            SizedBox(
+              height: 680,
               child: PaletteSwatches(
                 generator: paletteGenerator,
                 colorScheme: colorScheme,
@@ -137,9 +147,7 @@ class PaletteSwatches extends StatelessWidget {
         const Text('Palette generator:'),
         const SizedBox(height: 6),
         Wrap(
-          children: paletteGen.colors
-              .map((color) => PaletteSwatch(color: color))
-              .toList(growable: false),
+          children: paletteGen.colors.map((color) => PaletteSwatch(color: color)).toList(growable: false),
         ),
         const SizedBox(height: 30),
         Row(
@@ -159,9 +167,7 @@ class PaletteSwatches extends StatelessWidget {
                 colorPaletteColors.length,
                 (index) => PaletteSwatch(
                   label: 'titleText',
-                  color: colorPaletteColors.values
-                      .elementAt(index)
-                      ?.titleTextColor,
+                  color: colorPaletteColors.values.elementAt(index)?.titleTextColor,
                 ),
               ),
             ),
@@ -170,8 +176,7 @@ class PaletteSwatches extends StatelessWidget {
                 colorPaletteColors.length,
                 (index) => PaletteSwatch(
                   label: 'bodyText',
-                  color:
-                      colorPaletteColors.values.elementAt(index)?.bodyTextColor,
+                  color: colorPaletteColors.values.elementAt(index)?.bodyTextColor,
                 ),
               ),
             ),
@@ -195,9 +200,7 @@ class PaletteSwatches extends StatelessWidget {
             children: List.generate(
               (colorSchemeColors.entries.length / columnLength).floor(),
               (i) {
-                final items = colorSchemeColors.entries
-                    .skip(i * columnLength)
-                    .take(columnLength);
+                final items = colorSchemeColors.entries.skip(i * columnLength).take(columnLength);
 
                 return Expanded(
                   child: Column(
@@ -248,8 +251,7 @@ class PaletteSwatch extends StatelessWidget {
     final hslColor = HSLColor.fromColor(color ?? Colors.transparent);
     final backgroundAsHsl = HSLColor.fromColor(_kBackgroundColor);
     final colorDistance = sqrt(
-      pow(hslColor.saturation - backgroundAsHsl.saturation, 2.0) +
-          pow(hslColor.lightness - backgroundAsHsl.lightness, 2.0),
+      pow(hslColor.saturation - backgroundAsHsl.saturation, 2.0) + pow(hslColor.lightness - backgroundAsHsl.lightness, 2.0),
     );
 
     Widget swatch = Padding(
@@ -266,9 +268,7 @@ class PaletteSwatch extends StatelessWidget {
                 color: color,
                 border: Border.all(
                   color: _kPlaceholderColor,
-                  style: colorDistance < 0.2
-                      ? BorderStyle.solid
-                      : BorderStyle.none,
+                  style: colorDistance < 0.2 ? BorderStyle.solid : BorderStyle.none,
                 ),
               ),
               width: 30,

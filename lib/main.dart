@@ -26,7 +26,7 @@ Future<void> main() async {
     );
   }
 
-  if (kReleaseMode) {
+  if (kReleaseMode && (Platform.isAndroid || Platform.isIOS)) {
     await bugsnag.start(apiKey: '7572207d224c7e1f05ee19a07c32e937');
   }
 

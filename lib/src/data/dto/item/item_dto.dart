@@ -10,8 +10,11 @@ class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'Name') required String name,
     @JsonKey(name: 'ServerId') required String serverId,
+    @JsonKey(name: 'Type') required String type,
+    @JsonKey(name: 'Overview') String? overview,
     @JsonKey(name: 'RunTimeTicks') required int durationInTicks, @JsonKey(name: 'ProductionYear') int? productionYear,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
+    @Default([]) @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
   }) = _ItemDTO;
   const ItemDTO._();

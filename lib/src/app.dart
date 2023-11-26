@@ -70,6 +70,16 @@ class _AppState extends ConsumerState<App> {
                       path: Routes.album.name,
                       pageBuilder: widget.screenFactory.albumPage,
                     ),
+                    GoRoute(
+                      path: Routes.artist.name,
+                      pageBuilder: widget.screenFactory.artistPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.album.name,
+                          pageBuilder: widget.screenFactory.albumPage,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -87,6 +97,12 @@ class _AppState extends ConsumerState<App> {
                     GoRoute(
                       path: Routes.artist.name,
                       pageBuilder: widget.screenFactory.artistPage,
+                      routes: [
+                      GoRoute(
+                        path: Routes.album.name,
+                        pageBuilder: widget.screenFactory.albumPage,
+                      ),
+                    ]
                     ),
                   ],
                 ),
@@ -97,6 +113,12 @@ class _AppState extends ConsumerState<App> {
                 GoRoute(
                   path: Routes.settings,
                   pageBuilder: widget.screenFactory.settingsPage,
+                  routes: [
+                    GoRoute(
+                      path: Routes.palette.name,
+                      pageBuilder: widget.screenFactory.palettePage,
+                    ),
+                  ],
                 ),
               ],
             ),

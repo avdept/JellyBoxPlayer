@@ -52,7 +52,12 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           _onLibraryTap(libraries[0]).then((value) => context.go(Routes.listen));
         }
       },
-      focusNode: FocusNode(),
+      focusNode: FocusNode(
+        onKeyEvent: (node, event) {
+          debugPrint('Focus node ${node.debugLabel} got key event: ${event.logicalKey}');
+          return KeyEventResult.handled;
+        },
+      ),
       child: ScrollablePageScaffold(
         navigationBar: PreferredSize(
           preferredSize: Size.fromHeight(isMobile ? 48 : 100),
@@ -78,7 +83,12 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           bottom: isMobile ? 8 : 20,
         ),
         slivers: [
-          SliverGrid.builder(
+          SliverPadding(
+              padding: EdgeInsets.only(
+                left: isMobile ? 16 : 30,
+                right: isMobile ? 16 : 30,
+              ),
+              sliver: SliverGrid.builder(
             gridDelegate: isDesktop || isTablet
                 ? SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: isTablet ? 370 : 358,
@@ -92,7 +102,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
               onTap: () => _onLibraryTap(libraries[index]).then((value) => context.go(Routes.listen)),
             ),
             itemCount: libraries.length,
-          ),
+              )),
         ],
       ),
     );

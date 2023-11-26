@@ -87,7 +87,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                 duration: Duration(milliseconds: (song.runTimeTicks / 10000).ceil()),
                 title: song.name ?? 'Untitled',
                 artUri:
-                    song.imageTags['Primary'] != null ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: song.imageTags['Primary']!, id: song.id)) : null,
+                    song.imageTags['Primary'] != null
+                    ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: song.imageTags['Primary']!, id: song.id))
+                    : album.imageTags['Primary'] != null
+                        ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id))
+                        : null,
               ),
             ),
         ],

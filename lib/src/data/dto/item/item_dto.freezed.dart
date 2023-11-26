@@ -26,12 +26,18 @@ mixin _$ItemDTO {
   String get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'ServerId')
   String get serverId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Type')
+  String get type => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Overview')
+  String? get overview => throw _privateConstructorUsedError;
   @JsonKey(name: 'RunTimeTicks')
   int get durationInTicks => throw _privateConstructorUsedError;
   @JsonKey(name: 'ProductionYear')
   int? get productionYear => throw _privateConstructorUsedError;
   @JsonKey(name: 'AlbumArtist')
   String? get albumArtist => throw _privateConstructorUsedError;
+  @JsonKey(name: 'BackdropImageTags')
+  List<String> get backgropImageTags => throw _privateConstructorUsedError;
   @JsonKey(name: 'ImageTags')
   Map<String, String> get imageTags => throw _privateConstructorUsedError;
 
@@ -49,9 +55,12 @@ abstract class $ItemDTOCopyWith<$Res> {
       {@JsonKey(name: 'Id') String id,
       @JsonKey(name: 'Name') String name,
       @JsonKey(name: 'ServerId') String serverId,
+      @JsonKey(name: 'Type') String type,
+      @JsonKey(name: 'Overview') String? overview,
       @JsonKey(name: 'RunTimeTicks') int durationInTicks,
       @JsonKey(name: 'ProductionYear') int? productionYear,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
+      @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 }
 
@@ -71,9 +80,12 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
     Object? id = null,
     Object? name = null,
     Object? serverId = null,
+    Object? type = null,
+    Object? overview = freezed,
     Object? durationInTicks = null,
     Object? productionYear = freezed,
     Object? albumArtist = freezed,
+    Object? backgropImageTags = null,
     Object? imageTags = null,
   }) {
     return _then(_value.copyWith(
@@ -89,6 +101,14 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
           ? _value.serverId
           : serverId // ignore: cast_nullable_to_non_nullable
               as String,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      overview: freezed == overview
+          ? _value.overview
+          : overview // ignore: cast_nullable_to_non_nullable
+              as String?,
       durationInTicks: null == durationInTicks
           ? _value.durationInTicks
           : durationInTicks // ignore: cast_nullable_to_non_nullable
@@ -101,6 +121,10 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
           ? _value.albumArtist
           : albumArtist // ignore: cast_nullable_to_non_nullable
               as String?,
+      backgropImageTags: null == backgropImageTags
+          ? _value.backgropImageTags
+          : backgropImageTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       imageTags: null == imageTags
           ? _value.imageTags
           : imageTags // ignore: cast_nullable_to_non_nullable
@@ -120,9 +144,12 @@ abstract class _$$ItemDTOImplCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
       {@JsonKey(name: 'Id') String id,
       @JsonKey(name: 'Name') String name,
       @JsonKey(name: 'ServerId') String serverId,
+      @JsonKey(name: 'Type') String type,
+      @JsonKey(name: 'Overview') String? overview,
       @JsonKey(name: 'RunTimeTicks') int durationInTicks,
       @JsonKey(name: 'ProductionYear') int? productionYear,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
+      @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 }
 
@@ -140,9 +167,12 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? serverId = null,
+    Object? type = null,
+    Object? overview = freezed,
     Object? durationInTicks = null,
     Object? productionYear = freezed,
     Object? albumArtist = freezed,
+    Object? backgropImageTags = null,
     Object? imageTags = null,
   }) {
     return _then(_$ItemDTOImpl(
@@ -158,6 +188,14 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
           ? _value.serverId
           : serverId // ignore: cast_nullable_to_non_nullable
               as String,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      overview: freezed == overview
+          ? _value.overview
+          : overview // ignore: cast_nullable_to_non_nullable
+              as String?,
       durationInTicks: null == durationInTicks
           ? _value.durationInTicks
           : durationInTicks // ignore: cast_nullable_to_non_nullable
@@ -170,6 +208,10 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
           ? _value.albumArtist
           : albumArtist // ignore: cast_nullable_to_non_nullable
               as String?,
+      backgropImageTags: null == backgropImageTags
+          ? _value._backgropImageTags
+          : backgropImageTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       imageTags: null == imageTags
           ? _value._imageTags
           : imageTags // ignore: cast_nullable_to_non_nullable
@@ -185,12 +227,17 @@ class _$ItemDTOImpl extends _ItemDTO {
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'Name') required this.name,
       @JsonKey(name: 'ServerId') required this.serverId,
+      @JsonKey(name: 'Type') required this.type,
+      @JsonKey(name: 'Overview') this.overview,
       @JsonKey(name: 'RunTimeTicks') required this.durationInTicks,
       @JsonKey(name: 'ProductionYear') this.productionYear,
       @JsonKey(name: 'AlbumArtist') this.albumArtist,
+      @JsonKey(name: 'BackdropImageTags')
+      final List<String> backgropImageTags = const [],
       @JsonKey(name: 'ImageTags')
       final Map<String, String> imageTags = const {}})
-      : _imageTags = imageTags,
+      : _backgropImageTags = backgropImageTags,
+        _imageTags = imageTags,
         super._();
 
   factory _$ItemDTOImpl.fromJson(Map<String, dynamic> json) =>
@@ -206,6 +253,12 @@ class _$ItemDTOImpl extends _ItemDTO {
   @JsonKey(name: 'ServerId')
   final String serverId;
   @override
+  @JsonKey(name: 'Type')
+  final String type;
+  @override
+  @JsonKey(name: 'Overview')
+  final String? overview;
+  @override
   @JsonKey(name: 'RunTimeTicks')
   final int durationInTicks;
   @override
@@ -214,6 +267,16 @@ class _$ItemDTOImpl extends _ItemDTO {
   @override
   @JsonKey(name: 'AlbumArtist')
   final String? albumArtist;
+  final List<String> _backgropImageTags;
+  @override
+  @JsonKey(name: 'BackdropImageTags')
+  List<String> get backgropImageTags {
+    if (_backgropImageTags is EqualUnmodifiableListView)
+      return _backgropImageTags;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_backgropImageTags);
+  }
+
   final Map<String, String> _imageTags;
   @override
   @JsonKey(name: 'ImageTags')
@@ -225,7 +288,7 @@ class _$ItemDTOImpl extends _ItemDTO {
 
   @override
   String toString() {
-    return 'ItemDTO(id: $id, name: $name, serverId: $serverId, durationInTicks: $durationInTicks, productionYear: $productionYear, albumArtist: $albumArtist, imageTags: $imageTags)';
+    return 'ItemDTO(id: $id, name: $name, serverId: $serverId, type: $type, overview: $overview, durationInTicks: $durationInTicks, productionYear: $productionYear, albumArtist: $albumArtist, backgropImageTags: $backgropImageTags, imageTags: $imageTags)';
   }
 
   @override
@@ -237,12 +300,17 @@ class _$ItemDTOImpl extends _ItemDTO {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.serverId, serverId) ||
                 other.serverId == serverId) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.overview, overview) ||
+                other.overview == overview) &&
             (identical(other.durationInTicks, durationInTicks) ||
                 other.durationInTicks == durationInTicks) &&
             (identical(other.productionYear, productionYear) ||
                 other.productionYear == productionYear) &&
             (identical(other.albumArtist, albumArtist) ||
                 other.albumArtist == albumArtist) &&
+            const DeepCollectionEquality()
+                .equals(other._backgropImageTags, _backgropImageTags) &&
             const DeepCollectionEquality()
                 .equals(other._imageTags, _imageTags));
   }
@@ -254,9 +322,12 @@ class _$ItemDTOImpl extends _ItemDTO {
       id,
       name,
       serverId,
+      type,
+      overview,
       durationInTicks,
       productionYear,
       albumArtist,
+      const DeepCollectionEquality().hash(_backgropImageTags),
       const DeepCollectionEquality().hash(_imageTags));
 
   @JsonKey(ignore: true)
@@ -275,14 +346,17 @@ class _$ItemDTOImpl extends _ItemDTO {
 
 abstract class _ItemDTO extends ItemDTO {
   const factory _ItemDTO(
-          {@JsonKey(name: 'Id') required final String id,
-          @JsonKey(name: 'Name') required final String name,
-          @JsonKey(name: 'ServerId') required final String serverId,
-          @JsonKey(name: 'RunTimeTicks') required final int durationInTicks,
-          @JsonKey(name: 'ProductionYear') final int? productionYear,
-          @JsonKey(name: 'AlbumArtist') final String? albumArtist,
-          @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
-      _$ItemDTOImpl;
+      {@JsonKey(name: 'Id') required final String id,
+      @JsonKey(name: 'Name') required final String name,
+      @JsonKey(name: 'ServerId') required final String serverId,
+      @JsonKey(name: 'Type') required final String type,
+      @JsonKey(name: 'Overview') final String? overview,
+      @JsonKey(name: 'RunTimeTicks') required final int durationInTicks,
+      @JsonKey(name: 'ProductionYear') final int? productionYear,
+      @JsonKey(name: 'AlbumArtist') final String? albumArtist,
+      @JsonKey(name: 'BackdropImageTags') final List<String> backgropImageTags,
+      @JsonKey(name: 'ImageTags')
+      final Map<String, String> imageTags}) = _$ItemDTOImpl;
   const _ItemDTO._() : super._();
 
   factory _ItemDTO.fromJson(Map<String, dynamic> json) = _$ItemDTOImpl.fromJson;
@@ -297,6 +371,12 @@ abstract class _ItemDTO extends ItemDTO {
   @JsonKey(name: 'ServerId')
   String get serverId;
   @override
+  @JsonKey(name: 'Type')
+  String get type;
+  @override
+  @JsonKey(name: 'Overview')
+  String? get overview;
+  @override
   @JsonKey(name: 'RunTimeTicks')
   int get durationInTicks;
   @override
@@ -305,6 +385,9 @@ abstract class _ItemDTO extends ItemDTO {
   @override
   @JsonKey(name: 'AlbumArtist')
   String? get albumArtist;
+  @override
+  @JsonKey(name: 'BackdropImageTags')
+  List<String> get backgropImageTags;
   @override
   @JsonKey(name: 'ImageTags')
   Map<String, String> get imageTags;

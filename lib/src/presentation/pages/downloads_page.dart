@@ -54,7 +54,12 @@ class DownloadsPage extends StatelessWidget {
         bottom: isMobile ? 16 : 24,
       ),
       slivers: [
-        SliverGrid.builder(
+        SliverPadding(
+              padding: EdgeInsets.only(
+                left: isMobile ? 16 : 30,
+                right: isMobile ? 16 : 30,
+              ),
+              sliver: SliverGrid.builder(
           gridDelegate: isDesktop
               ? const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 245,
@@ -74,7 +79,7 @@ class DownloadsPage extends StatelessWidget {
             onDeletePressed: () {},
           ),
           itemCount: 20,
-        ),
+        )),
       ],
     );
   }

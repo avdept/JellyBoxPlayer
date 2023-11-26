@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -9,6 +10,10 @@ class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   void _onLibrariesPressed(BuildContext context) => context.go(Routes.library);
+  void _onPaletteSettingsPressed(BuildContext context) {
+    final location = GoRouterState.of(context).fullPath;
+    context.go('$location${Routes.palette}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +62,10 @@ class SettingsPage extends StatelessWidget {
                 spacing: 4,
                 children: [
                   _librariesButton(context),
+                  if (kDebugMode) _settingsButton(context),
                   if (!isDesktop) _logOutButton(),
+
+
                 ],
               ),
             ),
@@ -67,6 +75,12 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _settingsButton(BuildContext context) => TextButton.icon(
+        onPressed: () => _onPaletteSettingsPressed(context),
+        icon: const Icon(JPlayer.music),
+        label: const Text('Palette settings'),
+      );
 
   Widget _librariesButton(BuildContext context) => TextButton.icon(
         onPressed: () => _onLibrariesPressed(context),

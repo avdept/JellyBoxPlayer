@@ -24,8 +24,10 @@ class ScreenFactory {
     BuildContext context,
     GoRouterState router,
   ) {
-    return const CupertinoPage(
-      child: ArtistPage(),
+    final params = router.extra! as Map<String, dynamic>;
+    final artist = params['artist'] is ItemDTO ? params['artist'] as ItemDTO : ItemDTO.fromJson(params['artist'] as Map<String, dynamic>);
+    return CupertinoPage(
+      child: ArtistPage(artist: artist),
     );
   }
 
