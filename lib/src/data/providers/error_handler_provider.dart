@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 
 final errorHandlerProvider = Provider<Interceptor>(
   (ref) => InterceptorsWrapper(
@@ -16,6 +17,12 @@ final errorHandlerProvider = Provider<Interceptor>(
 
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
+          if (statusCode == 401) {
+            // ref.read(authProvider.notifier).signOut();
+            handler.next(error.copyWith(error: NetworkException.cancel()));
+            return;
+
+          }
           final err = error.response?.data as String?;
           handler.next(
             error.copyWith(

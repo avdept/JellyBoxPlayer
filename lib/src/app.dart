@@ -171,6 +171,7 @@ class _AppState extends ConsumerState<App> {
 
     return MaterialApp.router(
       theme: Themes.red,
+      debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         DefaultWidgetsLocalizations.delegate,
         DefaultMaterialLocalizations.delegate,

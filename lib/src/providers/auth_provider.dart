@@ -41,7 +41,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
     final userId = await _storage.read(key: _userIdKey);
     _ref.read(baseUrlProvider.notifier).state = serverUrl;
 
-    final tokenValidated = _validateAuthToken(token);
+    final tokenValidated = _validateAuthToken(token, userId ?? '');
+    print(token);
 
     if (tokenValidated) {
       _ref.read(currentUserProvider.notifier).state = User(userId: userId!, token: token!);
@@ -72,14 +73,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
 
       _ref.read(baseUrlProvider.notifier).state = serverUrl;
       _ref.read(currentUserProvider.notifier).state = User(userId: response.data.id, token: token!);
-      final tokenValidated = _validateAuthToken(token);
+      final tokenValidated = _validateAuthToken(token, response.data.id);
       if (tokenValidated) _setAuthHeader(token);
       state = AsyncValue<bool>.data(tokenValidated);
     } on DioException catch (e) {
       return e.error?.toString();
       // state = AsyncError<bool>(e.error!, e.stackTrace);
     }
-    return state.error != null ? state.error.toString() : null;
+    return state.error?.toString();
   }
 
   Future<void> logout() async {
@@ -93,19 +94,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
 
   String? _getAuthHeaderFromResponse(HttpResponse<dynamic> response) => response.response.data['AccessToken'] as String;
 
-  bool _validateAuthToken(String? token) {
+  bool _validateAuthToken(String? token, String userId) {
     // if (token == null) return false;
 
     // final tokenPayload = JwtDecoder.decode(token);
     // final exp = tokenPayload['exp'] as int?;
 
     // if (exp == null) return true;
+    var tokenValid = false;
+    try {
+      _setAuthHeader(token!);
+      _api.getArtists(userId: userId);
+      tokenValid = true;
+      _removeAuthHeader();
+    } catch (e) {
+      tokenValid = false;
+    }
 
     // final expirationTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
     // final now = DateTime.now();
 
     // return expirationTime.isAfter(now);
-    return token != null;
+    return token != null && tokenValid;
   }
 
   void _setAuthHeader(String token) {

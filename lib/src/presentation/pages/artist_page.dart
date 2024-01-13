@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,13 +30,34 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   late bool _isMobile;
   late bool _isTablet;
   List<ItemDTO> _albums = [];
+  final _titleOpacity = ValueNotifier<double>(0);
+  final _titleKey = GlobalKey(debugLabel: 'title');
   List<ItemDTO> _appearsOn = [];
+
+  void _onScroll() {
+    final titleContext = _titleKey.currentContext;
+
+    if (titleContext?.mounted ?? false) {
+      final scrollPosition = _scrollController.position;
+      final scrollableContext = scrollPosition.context.notificationContext!;
+      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
+      final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
+      final titlePosition = titleRenderBox.localToGlobal(
+        Offset.zero,
+        ancestor: scrollableRenderBox,
+      );
+      final titleHeight = titleContext.size!.height;
+      final visibleFraction = (titlePosition.dy + titleHeight) / titleHeight;
+      _titleOpacity.value = 1 - min(max(visibleFraction, 0), 1);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _getAlbums();
     _getAppearsOn();
+    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _getAppearsOn() async {
@@ -64,8 +87,102 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     _isTablet = deviceType == DeviceScreenType.tablet;
   }
 
+  Widget get mobileView {
+    return ScrollablePageScaffold(
+      controller: _scrollController,
+      slivers: [
+        SliverAppBar(
+            title: ValueListenableBuilder(
+                valueListenable: _titleOpacity,
+                builder: (context, opacity, child) => Transform.translate(
+                      offset: Offset(0, 8 - 8 * opacity),
+                      child: Opacity(
+                        opacity: opacity,
+                        child: child,
+                      ),
+                    ),
+                child: Text(
+                  widget.artist.name,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                )),
+            floating: true,
+            pinned: true,
+            // snap: true,
+            expandedHeight: 250,
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.pin,
+              background: Stack(
+                alignment: Alignment.topCenter,
+                clipBehavior: Clip.none,
+                children: [
+                  if (widget.artist.backgropImageTags.isNotEmpty)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: -60,
+                      height: 340,
+                      child: _headerImage(),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20, top: 60),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: _mainImage(),
+                              ),
+                            ),
+                            Flexible(
+                              flex: 3,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 16, right: 16),
+                                child: SizedBox(
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              key: _titleKey,
+                                              widget.artist.name,
+                                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                            ),
+                                          ),
+                                          _playButton(),
+                                        ],
+                                      ),
+                                      DefaultTextStyle(
+                                        style: const TextStyle(fontSize: 14),
+                                        child: _infoText(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )),
+        ..._albumsWidgets(),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isMobile) {
+      return mobileView;
+    }
     return Scaffold(
       body: SafeArea(
         left: false,
@@ -120,7 +237,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                                   style: TextStyle(fontSize: _isMobile ? 14 : 16),
                                   child: _infoText(),
                                 ),
-                                if (!_isMobile) SizedBox(height: MediaQuery.of(context).size.height - 400, child: _albumsList())
+                                if (!_isMobile) SizedBox(height: MediaQuery.of(context).size.height - (_isTablet ? 480 : 400), child: _albumsList())
                               ],
                             ),
                           ),
@@ -128,9 +245,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                       )
                     ],
                   ),
-                  if (_isMobile) Expanded(child: _albumsList()),
                 ],
-
               ),
             ),
           ],
@@ -169,13 +284,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _mainImage() => Image(image: ref.read(imageProvider).albumIP(tagId: widget.artist.imageTags["Primary"], id: widget.artist.id), width: 500);
 
   Widget _infoText() => Padding(
-        padding: EdgeInsets.only(top: widget.artist.overview != null && widget.artist.overview!.isNotEmpty ? 20 : 0),
-        child: Text(widget.artist.overview ?? '',
+        padding: const EdgeInsets.only(top: 20),
+        child: Text(widget.artist.overview ?? 'This artist does not have any information.',
             maxLines: 5,
             overflow: TextOverflow.ellipsis,
             softWrap: true,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: _isMobile ? 14 : 14,
+                  fontSize: 14,
                   height: 1.2,
                 )),
       );
@@ -186,6 +301,87 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           onPressed: () {},
         ),
       );
+  List<Widget> _albumsWidgets() {
+    return [
+      if (_albums.isNotEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8, top: 8),
+            child: Text(
+              'Albums',
+              style: TextStyle(
+                fontSize: _isMobile ? 20 : 24,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      if (_albums.isNotEmpty)
+        SliverPadding(
+          padding: EdgeInsets.only(
+            top: 16,
+            right: _isMobile ? 16 : (_isTablet ? 0 : 60),
+            left: _isMobile ? 16 : (_isTablet ? 0 : 60),
+            bottom: 16,
+          ),
+          sliver: SliverGrid.builder(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: _isMobile ? 200 : 160,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: _isMobile ? 8 : 16,
+              childAspectRatio: _isMobile ? 175 / 225 : 120 / 163,
+            ),
+            itemBuilder: (context, index) => AlbumView(
+              showArtist: false,
+              album: _albums[index],
+              onTap: () {
+                final location = GoRouterState.of(context).fullPath;
+                context.go('$location${Routes.album}', extra: {'album': _albums[index], 'artist': widget.artist});
+              },
+              mainTextStyle: TextStyle(fontSize: _isMobile ? 16 : 14),
+              subTextStyle: const TextStyle(fontSize: 14),
+            ),
+            itemCount: _albums.length,
+          ),
+        ),
+      if (_appearsOn.isNotEmpty)
+        SliverToBoxAdapter(
+          child: Text(
+            'Appears On',
+            style: TextStyle(
+              fontSize: _isMobile ? 20 : 24,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      SliverPadding(
+        padding: EdgeInsets.only(
+          top: 16,
+          right: _isMobile ? 16 : (_isTablet ? 64 : 60),
+          bottom: 16,
+        ),
+        sliver: SliverGrid.builder(
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: _isMobile ? 175 : 220,
+            mainAxisSpacing: _isTablet ? 24 : 12,
+            crossAxisSpacing: _isMobile ? 8 : 16,
+            childAspectRatio: _isMobile ? 175 / 225 : 120 / 163,
+          ),
+          itemBuilder: (context, index) => AlbumView(
+            showArtist: false,
+            album: _appearsOn[index],
+            onTap: () {
+              final location = GoRouterState.of(context).fullPath;
+              context.go('$location${Routes.album}', extra: {'album': _appearsOn[index], 'artist': widget.artist});
+            },
+            mainTextStyle: TextStyle(fontSize: _isMobile ? 16 : 14),
+            subTextStyle: const TextStyle(fontSize: 14),
+          ),
+          itemCount: _appearsOn.length,
+        ),
+      ),
+    ];
+  }
 
   Widget _albumsList() => CustomScrollbar(
         controller: _scrollController,
@@ -209,79 +405,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                 ),
               ),
             ),
-            if (_albums.isNotEmpty)
-            SliverToBoxAdapter(
-              child: Text(
-                'Albums',
-                style: TextStyle(
-                  fontSize: _isMobile ? 20 : 24,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            if (_albums.isNotEmpty)
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  top: 16,
-                  right: _isMobile ? 16 : (_isTablet ? 64 : 60),
-                  bottom: 16,
-                ),
-                sliver: SliverGrid.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: _isMobile ? 200 : 220,
-                    mainAxisSpacing: _isTablet ? 24 : 12,
-                    crossAxisSpacing: _isMobile ? 8 : 16,
-                    childAspectRatio: _isMobile ? 175 / 225 : 120 / 163,
-                  ),
-                  itemBuilder: (context, index) => AlbumView(
-                    showArtist: false,
-                    album: _albums[index],
-                    onTap: () {
-                      final location = GoRouterState.of(context).fullPath;
-                      context.go('$location${Routes.album}', extra: {'album': _albums[index], 'artist': widget.artist});
-                    },
-                    mainTextStyle: TextStyle(fontSize: _isMobile ? 16 : 14),
-                    subTextStyle: const TextStyle(fontSize: 14),
-                  ),
-                  itemCount: _albums.length,
-                ),
-              ),
-            if (_appearsOn.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Text(
-                  'Appears On',
-                  style: TextStyle(
-                    fontSize: _isMobile ? 20 : 24,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            SliverPadding(
-              padding: EdgeInsets.only(
-                top: 16,
-                right: _isMobile ? 16 : (_isTablet ? 64 : 60),
-                bottom: 16,
-              ),
-              sliver: SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _isMobile ? 175 : 220,
-                  mainAxisSpacing: _isTablet ? 24 : 12,
-                  crossAxisSpacing: _isMobile ? 8 : 16,
-                  childAspectRatio: _isMobile ? 175 / 225 : 120 / 163,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  showArtist: false,
-                  album: _appearsOn[index],
-                  onTap: () {
-                    final location = GoRouterState.of(context).fullPath;
-                    context.go('$location${Routes.album}', extra: {'album': _appearsOn[index], 'artist': widget.artist});
-                  },
-                  mainTextStyle: TextStyle(fontSize: _isMobile ? 16 : 14),
-                  subTextStyle: const TextStyle(fontSize: 14),
-                ),
-                itemCount: _appearsOn.length,
-              ),
-            ),
+            ..._albumsWidgets()
           ],
         ),
       );

@@ -23,13 +23,14 @@ class _MainPageState extends ConsumerState<MainPage> {
   late ThemeData _theme;
   late Size _screenSize;
   late bool _isMobile;
+  late bool _isTablet;
   late bool _isDesktop;
 
   Set<(IconData, String)> get _menuItems => {
         (JPlayer.play_circle_outlined, 'Listen'),
         (JPlayer.search, 'Search'),
         (JPlayer.settings, 'Settings'),
-        (JPlayer.download, 'Downloads'),
+        // (JPlayer.download, 'Downloads'),
       };
 
   void _navigateToItem(int index) => widget.shell.goBranch(
@@ -45,6 +46,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     final deviceType = getDeviceType(_screenSize);
     _isMobile = deviceType == DeviceScreenType.mobile;
+    _isTablet = deviceType == DeviceScreenType.tablet;
     _isDesktop = deviceType == DeviceScreenType.desktop;
   }
 
@@ -67,7 +69,7 @@ class _MainPageState extends ConsumerState<MainPage> {
               selectedFontSize: 16,
               unselectedFontSize: 16,
               leading: const Text(
-                'Logo',
+                'JellyBox',
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.w500,
@@ -111,8 +113,8 @@ class _MainPageState extends ConsumerState<MainPage> {
         child: CupertinoTabBar(
           activeColor: _theme.colorScheme.primary,
           inactiveColor: _theme.colorScheme.onPrimary,
-          iconSize: _isMobile ? 28 : 60,
-          height: _isMobile ? 56 : 88,
+          iconSize: _isMobile ? 28 : 24,
+          height: _isMobile ? 56 : 50,
           currentIndex: currentIndex,
           onTap: _navigateToItem,
           items: List.generate(

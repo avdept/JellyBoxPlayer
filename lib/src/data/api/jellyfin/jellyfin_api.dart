@@ -13,8 +13,6 @@ abstract class JellyfinApi {
     String baseUrl,
   }) = _JellyfinApi;
 
-
-
   @POST('/Users/AuthenticateByName')
   Future<HttpResponse<UserDTO>> signIn(
     @Body() Map<String, dynamic> credentials,
@@ -27,7 +25,8 @@ abstract class JellyfinApi {
   Future<void> removeFavorite({@Path('userId') required String userId, @Path('itemId') required String itemId});
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<SongsWrapper>> getSongs({@Path('userId') required String userId, @Query('ParentId') required String albumId, @Query('IncludeItemTypes') String includeType = 'music'});
+  Future<HttpResponse<SongsWrapper>> getSongs(
+      {@Path('userId') required String userId, @Query('ParentId') required String albumId, @Query('IncludeItemTypes') String includeType = 'music'});
 
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<AlbumsWrapper>> getAlbums({
@@ -81,6 +80,8 @@ abstract class JellyfinApi {
     @Query('Recursive') bool recursive = true,
   });
 
-  @GET('/Library/MediaFolders')
-  Future<HttpResponse<Libraries>> getLibraries();
+  @GET('/Users/{userId}/Views')
+  Future<HttpResponse<Libraries>> getLibraries({
+    @Path('userId') required String userId,
+  });
 }

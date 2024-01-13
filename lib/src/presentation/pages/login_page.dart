@@ -31,6 +31,13 @@ class LoginPageState extends ConsumerState<LoginPage> {
       });
       return;
     }
+
+    if (!Uri.parse(credentials.serverUrl).isAbsolute) {
+      setState(() {
+        error = 'Server URL is invalid. Should start with http/https and does not contain any path or query parameters';
+      });
+      return;
+    }
     final resp = await ref.read(authProvider.notifier).login(credentials);
     if (resp != null) {
       setState(() {

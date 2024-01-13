@@ -1,6 +1,5 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -9,10 +8,9 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/wrappers/wrappers_dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/album_provider.dart';
 import 'package:jplayer/src/domain/providers/artist_provider.dart';
 import 'package:jplayer/src/domain/providers/current_album_provider.dart';
-import 'package:jplayer/src/domain/providers/album_provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -56,7 +54,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   void _onArtistTap(ItemDTO artist) {
     final location = GoRouterState.of(context).fullPath;
-      context.go('$location${Routes.artist}', extra: {'artist': artist});
+    context.go('$location${Routes.artist}', extra: {'artist': artist});
   }
 
   @override
@@ -96,12 +94,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
           final albumsState = ref.watch(albumsProvider);
           return albumsState.when(
             data: (AlbumsState state) {
-              return SliverPadding(
-                  padding: EdgeInsets.only(
-                    left: _isMobile ? 16 : 30,
-                    right: _isMobile ? 16 : 30,
-                  ),
-                  sliver: SliverGrid.builder(
+              return SliverGrid.builder(
                 gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: _isTablet ? 360 : 200,
                   mainAxisSpacing: _isMobile ? 15 : 24,
@@ -113,7 +106,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                   onTap: () => _onAlbumTap(state.items[index]),
                 ),
                 itemCount: state.items.length,
-              ),);
+              );
             },
             error: (error, stackTrace) => SliverToBoxAdapter(child: Text(error.toString())),
             loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
@@ -121,31 +114,25 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         },
       );
 
-
   Widget get _artistsView => Consumer(
         builder: (context, ref, child) {
           final artistsState = ref.watch(artistsProvider);
 
           return artistsState.when(
             data: (ArtistState state) {
-              return SliverPadding(
-                  padding: EdgeInsets.only(
-                    left: _isMobile ? 16 : 30,
-                    right: _isMobile ? 16 : 30,
-                  ),
-                  sliver: SliverGrid.builder(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: _isTablet ? 360 : 200,
-                      mainAxisSpacing: _isMobile ? 15 : 24,
-                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-                    ),
-                    itemBuilder: (context, index) => AlbumView(
-                      album: state.items[index],
-                      onTap: () => _onArtistTap(state.items[index]),
-                    ),
-                    itemCount: state.items.length,
-                  ),);
+              return SliverGrid.builder(
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: _isTablet ? 360 : 200,
+                  mainAxisSpacing: _isMobile ? 15 : 24,
+                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                ),
+                itemBuilder: (context, index) => AlbumView(
+                  album: state.items[index],
+                  onTap: () => _onArtistTap(state.items[index]),
+                ),
+                itemCount: state.items.length,
+              );
             },
             error: (error, stackTrace) => SliverToBoxAdapter(child: Text(error.toString())),
             loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),

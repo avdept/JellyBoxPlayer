@@ -91,7 +91,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                   // _openListButton(),
                                   _randomQueueButton(),
                                   _repeatTrackButton(),
-                                  _downloadTrackButton(),
+                                  // _downloadTrackButton(),
                                   _likeTrackButton(),
                                 ],
                               ),
@@ -99,7 +99,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                           ],
                         ),
                       ),
-                      SizedBox(height: _isMobile ? 30 : 26),
                       Text(
                         currentSong?.title ?? '',
                         style: TextStyle(
@@ -126,12 +125,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                       //     height: 1.2,
                       //   ),
                       // ),
-                      SizedBox(height: _isMobile ? 15 : 21),
+
                       const PositionSlider(),
                       SizedBox(height: _isMobile ? 23 : 56),
                       IconTheme(
                         data: _theme.iconTheme.copyWith(
-                          size: _isMobile ? 37 : 46,
+                          size: _isMobile ? 37 : 44,
                         ),
                         child: Wrap(
                           spacing: _isMobile ? 40 : 24,
@@ -139,7 +138,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                           children: [
                             _prevTrackButton(),
                             SizedBox.square(
-                              dimension: _isMobile ? 68 : 84,
+                              dimension: _isMobile ? 68 : 72,
                               child: _playPauseButton(),
                             ),
                             _nextTrackButton(),
@@ -249,12 +248,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                       fontSize: _isMobile ? 18 : 24,
                       fontWeight: FontWeight.w500,
                       height: 1.2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    maxLines: 1,
                   ),
                   subtitle: Text(
                     currentSong?.artist ?? '',
                     style: TextStyle(
-                      fontSize: _isMobile ? 10 : 18,
+                      fontSize: _isMobile ? 12 : 18,
                       height: 1.2,
                     ),
                   ),

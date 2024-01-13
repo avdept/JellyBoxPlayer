@@ -210,7 +210,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   maxCrossAxisExtent: _isTablet ? 360 : 200,
                   mainAxisSpacing: _isMobile ? 15 : 24,
                   crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                  childAspectRatio: _isTablet ? 0.8 : 175 / 215.7,
                 ),
                 itemBuilder: (context, index) {
                   return AlbumView(
@@ -255,7 +255,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 maxCrossAxisExtent: _isTablet ? 360 : 200,
                 mainAxisSpacing: _isMobile ? 15 : 24,
                 crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                childAspectRatio: _isTablet ? 0.8 : 175 / 215.7,
               ),
               itemBuilder: (context, index) {
                 return AlbumView(

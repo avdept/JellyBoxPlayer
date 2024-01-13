@@ -97,7 +97,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         ],
       );
 
-      await _audioPlayer.setAudioSource(playlist, initialIndex: songs.indexOf(playSong));
+      await _audioPlayer.setAudioSource(playlist, initialIndex: songs.indexOf(playSong), preload: false);
       unawaited(_audioPlayer.play());
       state = PlaybackState(
         status: PlaybackStatus.playing,

@@ -328,7 +328,7 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
-  Future<HttpResponse<Libraries>> getLibraries() async {
+  Future<HttpResponse<Libraries>> getLibraries({required String userId}) async {
     const _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
@@ -341,7 +341,7 @@ class _JellyfinApi implements JellyfinApi {
     )
             .compose(
               _dio.options,
-              '/Library/MediaFolders',
+              '/Users/${userId}/Views',
               queryParameters: queryParameters,
               data: _data,
             )
