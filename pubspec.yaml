@@ -31,7 +31,7 @@ dependencies:
   responsive_builder: ^0.7.0
   riverpod_infinite_scroll: ^1.0.9
   infinite_scroll_pagination: ^3.2.0
-  flutter_riverpod: ^2.4.5
+  flutter_riverpod: ^2.4.9
   pretty_dio_logger: ^1.0.0
   flutter_secure_storage: ^9.0.0
   retrofit: ^4.0.0
