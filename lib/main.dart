@@ -1,6 +1,5 @@
 import 'dart:io' show Platform;
 
-import 'package:bugsnag_flutter/bugsnag_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +7,7 @@ import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
@@ -24,10 +24,6 @@ Future<void> main() async {
       androidNotificationChannelName: 'Audio playback',
       androidNotificationOngoing: true,
     );
-  }
-
-  if (kReleaseMode && (Platform.isAndroid || Platform.isIOS)) {
-    await bugsnag.start(apiKey: '7572207d224c7e1f05ee19a07c32e937');
   }
 
   if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
@@ -51,5 +47,13 @@ Future<void> main() async {
     );
   }
 
-  runApp(const ProviderScope(child: App(screenFactory: ScreenFactory())));
+  await SentryFlutter.init(
+    (options) {
+      options..dsn = 'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
+      ..tracesSampleRate = 1.0;
+    },
+    appRunner: () => runApp(const ProviderScope(child: App(screenFactory: ScreenFactory()))),
+  );
+
+
 }

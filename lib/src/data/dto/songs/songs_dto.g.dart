@@ -10,7 +10,7 @@ _$SongDTOImpl _$$SongDTOImplFromJson(Map<String, dynamic> json) =>
     _$SongDTOImpl(
       id: json['Id'] as String,
       runTimeTicks: json['RunTimeTicks'] as int,
-      indexNumber: json['IndexNumber'] as int,
+      indexNumber: json['IndexNumber'] as int? ?? 0,
       songUserData:
           SongUserData.fromJson(json['UserData'] as Map<String, dynamic>),
       type: json['Type'] as String,

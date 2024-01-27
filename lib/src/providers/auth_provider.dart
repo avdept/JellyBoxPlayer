@@ -28,6 +28,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
   late JellyfinApi _api;
   final Dio _client;
   final FlutterSecureStorage _storage;
+
   final StateNotifierProviderRef<AuthNotifier, AsyncValue<bool?>> _ref;
 
   static const _serverUrlKey = 'serverUrl';
@@ -41,8 +42,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
     final userId = await _storage.read(key: _userIdKey);
     _ref.read(baseUrlProvider.notifier).state = serverUrl;
 
+    if (serverUrl == null) {
+      state = const AsyncValue<bool?>.data(false);
+      return;
+    }
+    _api = JellyfinApi(_client, baseUrl: serverUrl);
+
     final tokenValidated = _validateAuthToken(token, userId ?? '');
-    print(token);
 
     if (tokenValidated) {
       _ref.read(currentUserProvider.notifier).state = User(userId: userId!, token: token!);

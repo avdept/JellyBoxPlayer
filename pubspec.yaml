@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: 'none'
-version: 0.1.4+11
+version: 0.1.5+12
 
 
 environment:
@@ -17,7 +17,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   dropdown_button2: ^2.3.9
   flutter_svg: ^2.0.8
-  bugsnag_flutter: ^3.0.0
+  sentry_flutter: ^7.15.0
   freezed_annotation: ^2.4.0
   just_audio:
   cached_network_image: ^3.3.0

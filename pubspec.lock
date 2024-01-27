@@ -89,14 +89,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
-  bugsnag_flutter:
-    dependency: "direct main"
-    description:
-      name: bugsnag_flutter
-      sha256: "077fcfc87b128fc78a27f3ac40c6eeb950c32cb68fb78b0f4ac76d135ed116b7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.0"
   build:
     dependency: transitive
     description:
@@ -672,6 +664,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  package_info_plus:
+    dependency: transitive
+    description:
+      name: package_info_plus
+      sha256: "7e76fad405b3e4016cd39d08f455a4eb5199723cf594cd1b8916d47140d93017"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.2.0"
+  package_info_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: package_info_plus_platform_interface
+      sha256: "9bc8ba46813a4cc42c66ab781470711781940780fd8beddd0c3da62506d3a6c6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   palette_generator:
     dependency: "direct main"
     description:
@@ -888,6 +896,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.9"
+  sentry:
+    dependency: transitive
+    description:
+      name: sentry
+      sha256: "5686ed515bb620dc52b4ae99a6586fe720d443591183cf1f620ec5d1f0eec100"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.15.0"
+  sentry_flutter:
+    dependency: "direct main"
+    description:
+      name: sentry_flutter
+      sha256: "505dec3b6810562785d2c34ae871c73ff2cba6cf436c32c188f0464df226ba8f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.15.0"
   shelf:
     dependency: transitive
     description:

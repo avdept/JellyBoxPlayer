@@ -9,7 +9,7 @@ class SongDTO with _$SongDTO {
   const factory SongDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'RunTimeTicks') required int runTimeTicks,
-    @JsonKey(name: 'IndexNumber') required int indexNumber,
+    @JsonKey(name: 'IndexNumber') @Default(0) int indexNumber,
     @JsonKey(name: 'UserData') required SongUserData songUserData,
     @JsonKey(name: 'Type') required String type,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,

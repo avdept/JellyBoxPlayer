@@ -225,7 +225,7 @@ class _$SongDTOImpl implements _SongDTO {
   const _$SongDTOImpl(
       {@JsonKey(name: 'Id') required this.id,
       @JsonKey(name: 'RunTimeTicks') required this.runTimeTicks,
-      @JsonKey(name: 'IndexNumber') required this.indexNumber,
+      @JsonKey(name: 'IndexNumber') this.indexNumber = 0,
       @JsonKey(name: 'UserData') required this.songUserData,
       @JsonKey(name: 'Type') required this.type,
       @JsonKey(name: 'AlbumArtist') this.albumArtist,
@@ -330,7 +330,7 @@ abstract class _SongDTO implements SongDTO {
   const factory _SongDTO(
           {@JsonKey(name: 'Id') required final String id,
           @JsonKey(name: 'RunTimeTicks') required final int runTimeTicks,
-          @JsonKey(name: 'IndexNumber') required final int indexNumber,
+          @JsonKey(name: 'IndexNumber') final int indexNumber,
           @JsonKey(name: 'UserData') required final SongUserData songUserData,
           @JsonKey(name: 'Type') required final String type,
           @JsonKey(name: 'AlbumArtist') final String? albumArtist,

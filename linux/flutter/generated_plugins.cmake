@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_linux
   screen_retriever
+  sentry_flutter
   window_manager
 )
 

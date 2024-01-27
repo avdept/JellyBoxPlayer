@@ -6,6 +6,6 @@ final baseUrlProvider = StateProvider<String?>((ref) {
 });
 
 final imageProvider = Provider<ImageService>((ref) {
-  var url = ref.watch(baseUrlProvider);
+  final url = ref.watch(baseUrlProvider);
   return ImageService(serverUrl: url!);
 });
