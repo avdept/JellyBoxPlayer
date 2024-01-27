@@ -140,6 +140,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     );
   }
 
+  Future<void> playPause() async {
+    if (state.status == PlaybackStatus.playing) {
+      await pause();
+    } else {
+      await resume();
+    }
+  }
+
   Future<void> resume() async {
     if ((state.status == PlaybackStatus.stopped) && state.totalDuration?.inSeconds == 0) {
       final queue = _ref.read(audioQueueProvider.notifier);
