@@ -17,7 +17,7 @@ dependencies:
   cupertino_icons: ^1.0.0
   dropdown_button2: ^2.3.0
   flutter_svg: ^2.0.0
-  sentry_flutter: ^7.15.0
+  sentry_flutter: ^7.17.0
   freezed_annotation: ^2.4.0
   just_audio:
   cached_network_image: ^3.3.0
