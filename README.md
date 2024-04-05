@@ -14,9 +14,10 @@ Current version supports both platforms - iOS and MacOS
 
 
 ### Screenshots
+<img align="right" width="380" src="./docs/4.PNG">
+<img align="left" width="380" src="./docs/5.PNG">
 <img src="./docs/1.png">
 <img src="./docs/2.png">
 <img src="./docs/3.png">
-<img align="right" width="380" src="./docs/4.PNG">
-<img align="left" width="380" src="./docs/5.PNG">
+
 
