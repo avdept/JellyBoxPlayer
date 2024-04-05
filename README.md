@@ -8,14 +8,21 @@
 ### Description
 This is unofficial **audio** client for jellyfin app. For now macos and ios only. Expect any kind of crashes, issues and generally its good if it even runs.
 
+## IOS/Macos
+
 ### Testing
 In order to join test you need to use testflight app(official Apple's way of testing apps). You can join testing here - [Test Flight](https://testflight.apple.com/join/LVj8KwAq)
 Current version supports both platforms - iOS and MacOS
+
+## Android
+
+While it can already be built and launched, I havent uploaded it to google play yet. This is something I plan to do soon.
 
 
 ### Screenshots
 <img align="right" width="380" src="./docs/4.PNG">
 <img align="left" width="380" src="./docs/5.PNG">
+
 <img src="./docs/1.png">
 <img src="./docs/2.png">
 <img src="./docs/3.png">
