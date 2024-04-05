@@ -19,7 +19,7 @@ dependencies:
   flutter_svg: ^2.0.0
   sentry_flutter: ^7.18.0
   freezed_annotation: ^2.4.0
-  just_audio:
+  just_audio: 0.9.37
   cached_network_image: ^3.3.0
   just_audio_background:
   go_router: ^13.2.2
