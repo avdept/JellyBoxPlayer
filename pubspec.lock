@@ -683,10 +683,10 @@ packages:
     dependency: "direct main"
     description:
       name: modal_bottom_sheet
-      sha256: "3bba63c62d35c931bce7f8ae23a47f9a05836d8cb3c11122ada64e0b2f3d718f"
+      sha256: eac66ef8cb0461bf069a38c5eb0fa728cee525a531a8304bd3f7b2185407c67e
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0-pre"
+    version: "3.0.0"
   nested:
     dependency: transitive
     description:

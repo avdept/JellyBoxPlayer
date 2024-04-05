@@ -26,7 +26,7 @@ dependencies:
   intl: ^0.19.0
   json_annotation: ^4.8.0
   flutter_spinkit: ^5.2.0
-  modal_bottom_sheet: ^3.0.0-pre
+  modal_bottom_sheet: ^3.0.0
   palette_generator:
   responsive_builder: ^0.7.0
   riverpod_infinite_scroll: ^1.0.0
