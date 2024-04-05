@@ -17,6 +17,6 @@ Current version supports both platforms - iOS and MacOS
 <img src="./docs/1.png">
 <img src="./docs/2.png">
 <img src="./docs/3.png">
-<img align="right" width="480" src="./docs/4.PNG">
-<img align="left" width="480" src="./docs/5.PNG">
+<img align="right" width="400" src="./docs/4.PNG">
+<img align="left" width="400" src="./docs/5.PNG">
 
