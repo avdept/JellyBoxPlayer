@@ -3,7 +3,7 @@
 <a href="https://github.com/avdept/jplayer/actions"><img src="https://github.com/avdept/jplayer/workflows/jellybox/badge.svg" alt="Build Status"></a>
 
 
-[![Jellybox on the App Store](./docs/img/appstore.svg)](https://apps.apple.com/us/app/jellybox-player/id6469732117)
+[![Jellybox on the App Store](./appstore.svg)](https://apps.apple.com/us/app/jellybox-player/id6469732117)
 
 ### Description
 This is unofficial **audio** client for jellyfin app. For now macos and ios only. Expect any kind of crashes, issues and generally its good if it even runs.
