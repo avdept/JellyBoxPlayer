@@ -14,6 +14,8 @@
 	<string>6.0</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.music</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleName</key>
 	<string>JellyBox</string>
 	<key>CFBundlePackageType</key>

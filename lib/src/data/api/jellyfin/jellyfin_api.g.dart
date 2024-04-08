@@ -20,7 +20,7 @@ class _JellyfinApi implements JellyfinApi {
 
   @override
   Future<HttpResponse<UserDTO>> signIn(Map<String, dynamic> credentials) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
@@ -52,10 +52,10 @@ class _JellyfinApi implements JellyfinApi {
     required String userId,
     required String itemId,
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     await _dio.fetch<void>(_setStreamType<void>(Options(
       method: 'POST',
       headers: _headers,
@@ -79,10 +79,10 @@ class _JellyfinApi implements JellyfinApi {
     required String userId,
     required String itemId,
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     await _dio.fetch<void>(_setStreamType<void>(Options(
       method: 'DELETE',
       headers: _headers,
@@ -107,13 +107,13 @@ class _JellyfinApi implements JellyfinApi {
     required String albumId,
     String includeType = 'music',
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'ParentId': albumId,
       r'IncludeItemTypes': includeType,
     };
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<HttpResponse<SongsWrapper>>(Options(
       method: 'GET',
@@ -149,7 +149,7 @@ class _JellyfinApi implements JellyfinApi {
     List<String> artistIds = const [],
     bool recursive = true,
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'ParentId': libraryId,
       r'IncludeItemTypes': type,
@@ -163,7 +163,7 @@ class _JellyfinApi implements JellyfinApi {
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
       method: 'GET',
@@ -197,7 +197,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     bool recursive = true,
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'ParentId': libraryId,
       r'searchTerm': searchTerm,
@@ -208,7 +208,7 @@ class _JellyfinApi implements JellyfinApi {
       r'Recursive': recursive,
     };
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
       method: 'GET',
@@ -243,7 +243,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     bool recursive = true,
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'Fields': fields,
@@ -256,7 +256,7 @@ class _JellyfinApi implements JellyfinApi {
       r'Recursive': recursive,
     };
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
       method: 'GET',
@@ -291,7 +291,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     bool recursive = true,
   }) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'Fields': fields,
@@ -304,7 +304,7 @@ class _JellyfinApi implements JellyfinApi {
       r'Recursive': recursive,
     };
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<HttpResponse<AlbumsWrapper>>(Options(
       method: 'GET',
@@ -329,10 +329,10 @@ class _JellyfinApi implements JellyfinApi {
 
   @override
   Future<HttpResponse<Libraries>> getLibraries({required String userId}) async {
-    const _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    final Map<String, dynamic>? _data = null;
+    const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
         _setStreamType<HttpResponse<Libraries>>(Options(
       method: 'GET',

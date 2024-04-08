@@ -12,7 +12,8 @@ class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'ServerId') required String serverId,
     @JsonKey(name: 'Type') required String type,
     @JsonKey(name: 'Overview') String? overview,
-    @JsonKey(name: 'RunTimeTicks') required int durationInTicks, @JsonKey(name: 'ProductionYear') int? productionYear,
+    @JsonKey(name: 'RunTimeTicks') required int? durationInTicks,
+    @JsonKey(name: 'ProductionYear') int? productionYear,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
     @Default([]) @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
@@ -21,5 +22,5 @@ class ItemDTO with _$ItemDTO {
 
   factory ItemDTO.fromJson(Map<String, dynamic> json) => _$ItemDTOFromJson(json);
 
-  Duration get duration => Duration(seconds: (durationInTicks / 10000000).ceil());
+  Duration get duration => durationInTicks == null ? Duration.zero : Duration(seconds: (durationInTicks! / 10000000).ceil());
 }

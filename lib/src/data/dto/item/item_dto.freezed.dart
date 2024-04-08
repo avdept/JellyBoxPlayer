@@ -12,7 +12,7 @@ part of 'item_dto.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#custom-getters-and-methods');
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 ItemDTO _$ItemDTOFromJson(Map<String, dynamic> json) {
   return _ItemDTO.fromJson(json);
@@ -31,7 +31,7 @@ mixin _$ItemDTO {
   @JsonKey(name: 'Overview')
   String? get overview => throw _privateConstructorUsedError;
   @JsonKey(name: 'RunTimeTicks')
-  int get durationInTicks => throw _privateConstructorUsedError;
+  int? get durationInTicks => throw _privateConstructorUsedError;
   @JsonKey(name: 'ProductionYear')
   int? get productionYear => throw _privateConstructorUsedError;
   @JsonKey(name: 'AlbumArtist')
@@ -57,7 +57,7 @@ abstract class $ItemDTOCopyWith<$Res> {
       @JsonKey(name: 'ServerId') String serverId,
       @JsonKey(name: 'Type') String type,
       @JsonKey(name: 'Overview') String? overview,
-      @JsonKey(name: 'RunTimeTicks') int durationInTicks,
+      @JsonKey(name: 'RunTimeTicks') int? durationInTicks,
       @JsonKey(name: 'ProductionYear') int? productionYear,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
       @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
@@ -82,7 +82,7 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
     Object? serverId = null,
     Object? type = null,
     Object? overview = freezed,
-    Object? durationInTicks = null,
+    Object? durationInTicks = freezed,
     Object? productionYear = freezed,
     Object? albumArtist = freezed,
     Object? backgropImageTags = null,
@@ -109,10 +109,10 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
           ? _value.overview
           : overview // ignore: cast_nullable_to_non_nullable
               as String?,
-      durationInTicks: null == durationInTicks
+      durationInTicks: freezed == durationInTicks
           ? _value.durationInTicks
           : durationInTicks // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
       productionYear: freezed == productionYear
           ? _value.productionYear
           : productionYear // ignore: cast_nullable_to_non_nullable
@@ -146,7 +146,7 @@ abstract class _$$ItemDTOImplCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
       @JsonKey(name: 'ServerId') String serverId,
       @JsonKey(name: 'Type') String type,
       @JsonKey(name: 'Overview') String? overview,
-      @JsonKey(name: 'RunTimeTicks') int durationInTicks,
+      @JsonKey(name: 'RunTimeTicks') int? durationInTicks,
       @JsonKey(name: 'ProductionYear') int? productionYear,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
       @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
@@ -169,7 +169,7 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
     Object? serverId = null,
     Object? type = null,
     Object? overview = freezed,
-    Object? durationInTicks = null,
+    Object? durationInTicks = freezed,
     Object? productionYear = freezed,
     Object? albumArtist = freezed,
     Object? backgropImageTags = null,
@@ -196,10 +196,10 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
           ? _value.overview
           : overview // ignore: cast_nullable_to_non_nullable
               as String?,
-      durationInTicks: null == durationInTicks
+      durationInTicks: freezed == durationInTicks
           ? _value.durationInTicks
           : durationInTicks // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
       productionYear: freezed == productionYear
           ? _value.productionYear
           : productionYear // ignore: cast_nullable_to_non_nullable
@@ -260,7 +260,7 @@ class _$ItemDTOImpl extends _ItemDTO {
   final String? overview;
   @override
   @JsonKey(name: 'RunTimeTicks')
-  final int durationInTicks;
+  final int? durationInTicks;
   @override
   @JsonKey(name: 'ProductionYear')
   final int? productionYear;
@@ -292,7 +292,7 @@ class _$ItemDTOImpl extends _ItemDTO {
   }
 
   @override
-  bool operator ==(dynamic other) {
+  bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ItemDTOImpl &&
@@ -351,7 +351,7 @@ abstract class _ItemDTO extends ItemDTO {
       @JsonKey(name: 'ServerId') required final String serverId,
       @JsonKey(name: 'Type') required final String type,
       @JsonKey(name: 'Overview') final String? overview,
-      @JsonKey(name: 'RunTimeTicks') required final int durationInTicks,
+      @JsonKey(name: 'RunTimeTicks') required final int? durationInTicks,
       @JsonKey(name: 'ProductionYear') final int? productionYear,
       @JsonKey(name: 'AlbumArtist') final String? albumArtist,
       @JsonKey(name: 'BackdropImageTags') final List<String> backgropImageTags,
@@ -378,7 +378,7 @@ abstract class _ItemDTO extends ItemDTO {
   String? get overview;
   @override
   @JsonKey(name: 'RunTimeTicks')
-  int get durationInTicks;
+  int? get durationInTicks;
   @override
   @JsonKey(name: 'ProductionYear')
   int? get productionYear;
