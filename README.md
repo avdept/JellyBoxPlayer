@@ -19,7 +19,7 @@ Current version supports both platforms - iOS and MacOS
 While it can already be built and launched, I havent uploaded it to google play yet. This is something I plan to do soon.
 
 
-### Screenshots
+## Screenshots
 <img align="right" width="380" src="./docs/4.PNG">
 <img align="left" width="380" src="./docs/5.PNG">
 
