@@ -29,7 +29,7 @@ While it can already be built and launched, I havent uploaded it to google play 
 <img src="./docs/3.png">
 
 
-### Development
+## Development
 
 To run the app you need to have flutter cli installed + simulator(if you intend top run it on mobile).
 
