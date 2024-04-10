@@ -5,6 +5,7 @@
 
 [![Jellybox on the App Store](./appstore.svg)](https://apps.apple.com/us/app/jellybox-player/id6469732117)
 
+<a href="https://www.buymeacoffee.com/avdept" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 ### Description
 This is unofficial **audio** client for jellyfin app. For now macos and ios only. Expect any kind of crashes, issues and generally its good if it even runs.
 
