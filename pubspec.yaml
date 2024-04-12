@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: 'none'
-version: 0.1.7+14
+version: 1.8.0+15
 
 
 environment:
