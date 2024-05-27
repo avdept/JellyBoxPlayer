@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: 'none'
-version: 1.8.0+15
+version: 1.8.0+20
 
 
 environment:
@@ -27,6 +27,7 @@ dependencies:
   json_annotation: ^4.8.0
   flutter_spinkit: ^5.2.0
   modal_bottom_sheet: ^3.0.0-pre
+  shared_preferences: ^2.2.3
   palette_generator:
   responsive_builder: ^0.7.0
   riverpod_infinite_scroll: ^1.0.0

@@ -46,6 +46,11 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         EntityFilter.sortName: 'Name',
       };
 
+  Map<EntityFilter, bool> get _defaultSorting => {
+        EntityFilter.dateCreated: true,
+        EntityFilter.sortName: false,
+      };
+
   void _onAlbumTap(ItemDTO album) {
     final location = GoRouterState.of(context).fullPath;
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
@@ -233,7 +238,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       final desc = !filter.desc;
       ref.read(filterProvider.notifier).filter(value!, desc);
     } else {
-      ref.read(filterProvider.notifier).filter(value!, false);
+      ref.read(filterProvider.notifier).filter(value!, _defaultSorting[value] ?? false);
     }
   }
 

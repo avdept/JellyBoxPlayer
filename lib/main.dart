@@ -8,10 +8,15 @@ import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
+
+late SharedPreferences prefs;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  prefs = await SharedPreferences.getInstance();
 
   ResponsiveSizingConfig.instance.setCustomBreakpoints(
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),
@@ -49,11 +54,10 @@ Future<void> main() async {
 
   await SentryFlutter.init(
     (options) {
-      options..dsn = 'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
-      ..tracesSampleRate = 1.0;
+      options
+        ..dsn = 'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
+        ..tracesSampleRate = 1.0;
     },
     appRunner: () => runApp(const ProviderScope(child: App(screenFactory: ScreenFactory()))),
   );
-
-
 }

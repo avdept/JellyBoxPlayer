@@ -47,7 +47,6 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
     return KeyboardListener(
       onKeyEvent: (value) {
-        print(value.logicalKey);
         if (value.logicalKey == LogicalKeyboardKey.enter) {
           _onLibraryTap(libraries[0]).then((value) => context.go(Routes.listen));
         }
@@ -72,7 +71,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 _titleText(),
                 const Spacer(),
                 _searchButton(),
-                if (kDebugMode) TextButton(onPressed: () => {ref.read(authProvider.notifier).logout()}, child: const Text('Logout'))
+                TextButton(onPressed: () => {ref.read(authProvider.notifier).logout()}, child: const Text('Logout')),
               ],
             ),
           ),

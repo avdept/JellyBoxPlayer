@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -11,9 +13,11 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:retrofit/retrofit.dart';
 
-final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<bool?>>(
-  (ref) => AuthNotifier(dioClient: ref.read(dioProvider), secureStorage: ref.read(secureStorageProvider), ref: ref),
-);
+final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<bool?>>((ref) {
+  var notifier = AuthNotifier(dioClient: ref.read(dioProvider), secureStorage: ref.read(secureStorageProvider), ref: ref);
+  notifier.addNoAuthNetworkInterceptor();
+  return notifier;
+});
 
 class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
   AuthNotifier({
@@ -35,6 +39,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
   static const _userIdKey = 'userId';
   static const _tokenKey = 'x-mediabrowser-token';
 
+  void addNoAuthNetworkInterceptor() {
+    _client.interceptors.add(InterceptorsWrapper(onError: (error, handler) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 401) {
+        logout();
+        return;
+      }
+    }));
+  }
+
   Future<void> checkAuthState() async {
     state = const AsyncLoading();
     final token = await _storage.read(key: _tokenKey);
@@ -55,7 +69,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
       _setAuthHeader(token);
     }
     if (state.value == tokenValidated) return;
-    state = AsyncValue<bool>.data(tokenValidated && (serverUrl?.isNotEmpty ?? false) && (userId?.isNotEmpty ?? false));
+    state = AsyncValue<bool>.data(tokenValidated && (serverUrl.isNotEmpty) && (userId?.isNotEmpty ?? false));
   }
 
   String normalizeUrl(String url) {
@@ -94,6 +108,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _userIdKey);
     await _storage.delete(key: _serverUrlKey);
+    await prefs.clear();
     _removeAuthHeader();
     state = const AsyncValue<bool?>.data(false);
   }
