@@ -2,8 +2,10 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/app.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -47,7 +49,7 @@ Future<void> main() async {
       windowOptions,
       () async {
         await windowManager.show();
-        await windowManager.focus();
+        // await windowManager.focus();
       },
     );
   }

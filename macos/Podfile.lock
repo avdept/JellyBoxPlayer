@@ -8,6 +8,10 @@ PODS:
   - FlutterMacOS (1.0.0)
   - just_audio (0.0.1):
     - FlutterMacOS
+  - mediakeys_proxy (0.0.1):
+    - FlutterMacOS
+    - MediaKeyTap
+  - MediaKeyTap (2.3.0)
   - package_info_plus (0.0.1):
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
@@ -35,6 +39,7 @@ DEPENDENCIES:
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/macos`)
+  - mediakeys_proxy (from `Flutter/ephemeral/.symlinks/plugins/mediakeys_proxy/macos`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
@@ -45,6 +50,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - MediaKeyTap
     - Sentry
 
 EXTERNAL SOURCES:
@@ -58,6 +64,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   just_audio:
     :path: Flutter/ephemeral/.symlinks/plugins/just_audio/macos
+  mediakeys_proxy:
+    :path: Flutter/ephemeral/.symlinks/plugins/mediakeys_proxy/macos
   package_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
   path_provider_foundation:
@@ -79,6 +87,8 @@ SPEC CHECKSUMS:
   flutter_secure_storage_macos: 59459653abe1adb92abbc8ea747d79f8d19866c9
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   just_audio: 9b67ca7b97c61cfc9784ea23cd8cc55eb226d489
+  mediakeys_proxy: ebad274dd18f1ff6ebe290abb0f1b196917d21d9
+  MediaKeyTap: d71493f6ac56a35c06d8aa1087522b05956781f0
   package_info_plus: fa739dd842b393193c5ca93c26798dff6e3d0e0c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
