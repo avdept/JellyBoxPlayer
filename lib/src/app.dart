@@ -6,9 +6,35 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
+
+class MediaKeyHandler {
+  static const MethodChannel _channel = MethodChannel('mediakeys_proxy');
+
+  static void initialize(WidgetRef ref) {
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'mediaKeyPressed') {
+        _handleMediaKey(call.arguments as String, ref);
+      }
+    });
+  }
+
+  static void _handleMediaKey(String event, WidgetRef ref) {
+    switch (event) {
+      case 'playPause':
+        ref.read(playbackProvider.notifier).playPause();
+      case 'next':
+        ref.read(playbackProvider.notifier).next();
+      case 'prev':
+        ref.read(playbackProvider.notifier).prev();
+      default:
+        print('Unknown event: $event');
+    }
+  }
+}
 
 class App extends ConsumerStatefulWidget {
   const App({
@@ -38,6 +64,7 @@ class _AppState extends ConsumerState<App> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => ref.read(authProvider.notifier).checkAuthState(),
     );
+    MediaKeyHandler.initialize(ref);
     initRoutes();
   }
 
