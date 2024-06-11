@@ -11,6 +11,9 @@ This is unofficial **audio** client for jellyfin app. For now macos and ios only
 
 ## IOS/Macos
 
+### Media keys - Play/Pause, Next/Prev
+By default apple restricts app from reading what user presses on keyboard. In order to allow it - Jellybox would prompt you to open Settings -> Privacy -> Accessibility. Make sure you toggle on JellyBox player. If for some reason app isnt there - you can add it using +(plus) button at the bottom of list.
+
 ### Testing
 In order to join test you need to use testflight app(official Apple's way of testing apps). You can join testing here - [Test Flight](https://testflight.apple.com/join/LVj8KwAq)
 Current version supports both platforms - iOS and MacOS
@@ -36,4 +39,3 @@ To run the app you need to have flutter cli installed + simulator(if you intend 
 * Install dependencies `flutter pub get`
 * Run the app `flutter run` and then select target
 * Once you're happy with your code submit a PR
-
