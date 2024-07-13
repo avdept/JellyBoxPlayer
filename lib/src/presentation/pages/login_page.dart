@@ -25,9 +25,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
       pw: _passwordInputController.text.trim(),
       serverUrl: _serverUrlInputController.text.trim(),
     );
-    if (credentials.serverUrl.isEmpty || credentials.username.isEmpty || credentials.pw.isEmpty) {
+    if (credentials.serverUrl.isEmpty || credentials.username.isEmpty) {
       setState(() {
-        error = 'Server URL, login and password are required';
+        error = 'Server URL and login are required';
       });
       return;
     }

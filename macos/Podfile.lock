@@ -5,6 +5,9 @@ PODS:
     - FlutterMacOS
   - flutter_secure_storage_macos (6.1.1):
     - FlutterMacOS
+  - flutter_udid (0.0.1):
+    - FlutterMacOS
+    - SAMKeychain
   - FlutterMacOS (1.0.0)
   - just_audio (0.0.1):
     - FlutterMacOS
@@ -17,6 +20,7 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - SAMKeychain (1.5.3)
   - screen_retriever (0.0.1):
     - FlutterMacOS
   - Sentry/HybridSDK (8.25.0)
@@ -37,6 +41,7 @@ DEPENDENCIES:
   - audio_service (from `Flutter/ephemeral/.symlinks/plugins/audio_service/macos`)
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
+  - flutter_udid (from `Flutter/ephemeral/.symlinks/plugins/flutter_udid/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/macos`)
   - mediakeys_proxy (from `Flutter/ephemeral/.symlinks/plugins/mediakeys_proxy/macos`)
@@ -51,6 +56,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - MediaKeyTap
+    - SAMKeychain
     - Sentry
 
 EXTERNAL SOURCES:
@@ -60,6 +66,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/audio_session/macos
   flutter_secure_storage_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
+  flutter_udid:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_udid/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   just_audio:
@@ -85,12 +93,14 @@ SPEC CHECKSUMS:
   audio_service: b88ff778e0e3915efd4cd1a5ad6f0beef0c950a9
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
   flutter_secure_storage_macos: 59459653abe1adb92abbc8ea747d79f8d19866c9
+  flutter_udid: 6b2b89780c3dfeecf0047bdf93f622d6416b1c07
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   just_audio: 9b67ca7b97c61cfc9784ea23cd8cc55eb226d489
   mediakeys_proxy: ebad274dd18f1ff6ebe290abb0f1b196917d21d9
   MediaKeyTap: d71493f6ac56a35c06d8aa1087522b05956781f0
   package_info_plus: fa739dd842b393193c5ca93c26798dff6e3d0e0c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  SAMKeychain: 483e1c9f32984d50ca961e26818a534283b4cd5c
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
   Sentry: cd86fc55628f5b7c572cabe66cc8f95a9d2f165a
   sentry_flutter: 0cf2507eb90ff7a6aa3304e900dd7f08edbbefdf

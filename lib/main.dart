@@ -1,11 +1,9 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -14,11 +12,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 late SharedPreferences prefs;
+late String? deviceId;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   prefs = await SharedPreferences.getInstance();
+  deviceId = await FlutterUdid.udid;
 
   ResponsiveSizingConfig.instance.setCustomBreakpoints(
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),

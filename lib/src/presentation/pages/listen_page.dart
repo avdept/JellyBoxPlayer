@@ -44,6 +44,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         EntityFilter.dateCreated: 'Date Added',
         EntityFilter.albumArtist: 'Album Artist',
         EntityFilter.sortName: 'Name',
+        EntityFilter.random: 'Random',
       };
 
   Map<EntityFilter, bool> get _defaultSorting => {

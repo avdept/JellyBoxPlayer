@@ -2,6 +2,7 @@ enum EntityFilter {
   sortName,
   albumArtist,
   dateCreated,
+  random,
 }
 
 enum ArtistFilter {
