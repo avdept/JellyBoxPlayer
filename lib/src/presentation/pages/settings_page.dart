@@ -1,22 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   void _onLibrariesPressed(BuildContext context) => context.go(Routes.library);
+
   void _onPaletteSettingsPressed(BuildContext context) {
     final location = GoRouterState.of(context).fullPath;
     context.go('$location${Routes.palette}');
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final padding = MediaQuery.paddingOf(context);
     final screenSize = MediaQuery.sizeOf(context);
     final deviceType = getDeviceType(screenSize);
@@ -63,9 +66,7 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
-                  if (!isDesktop) _logOutButton(),
-
-
+                  if (!isDesktop) _logOutButton(ref),
                 ],
               ),
             ),
@@ -88,8 +89,8 @@ class SettingsPage extends StatelessWidget {
         label: const Text('Music libraries'),
       );
 
-  Widget _logOutButton() => TextButton.icon(
-        onPressed: () {},
+  Widget _logOutButton(WidgetRef ref) => TextButton.icon(
+        onPressed: ref.read(authProvider.notifier).logout,
         icon: const Icon(JPlayer.log_out),
         label: const Text('Log out'),
       );

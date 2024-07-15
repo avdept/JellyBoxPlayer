@@ -19,14 +19,23 @@ abstract class JellyfinApi {
   );
 
   @POST('/Users/{userId}/FavoriteItems/{itemId}')
-  Future<void> saveFavorite({@Path('userId') required String userId, @Path('itemId') required String itemId});
+  Future<void> saveFavorite({
+    @Path('userId') required String userId,
+    @Path('itemId') required String itemId,
+  });
 
   @DELETE('/Users/{userId}/FavoriteItems/{itemId}')
-  Future<void> removeFavorite({@Path('userId') required String userId, @Path('itemId') required String itemId});
+  Future<void> removeFavorite({
+    @Path('userId') required String userId,
+    @Path('itemId') required String itemId,
+  });
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<SongsWrapper>> getSongs(
-      {@Path('userId') required String userId, @Query('ParentId') required String albumId, @Query('IncludeItemTypes') String includeType = 'music'});
+  Future<HttpResponse<SongsWrapper>> getSongs({
+    @Path('userId') required String userId,
+    @Query('ParentId') required String albumId,
+    @Query('IncludeItemTypes') String includeType = 'music',
+  });
 
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<AlbumsWrapper>> getAlbums({
@@ -54,10 +63,37 @@ abstract class JellyfinApi {
     @Query('Recursive') bool recursive = true,
   });
 
+  @GET('/Users/{userId}/Items')
+  Future<HttpResponse<AlbumsWrapper>> getPlaylists({
+    @Path('userId') required String userId,
+    @Query('ParentId') required String libraryId,
+    @Query('IncludeItemTypes') String type = 'Playlist',
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '100',
+    @Query('SortBy') String sortBy = 'DateCreated,SortName',
+    @Query('ContributingArtistIds') String? contributingArtistIds,
+    @Query('SortOrder') String sortOrder = 'Descending',
+    @Query('AlbumArtistIds') List<String> artistIds = const [],
+    @Query('Recursive') bool recursive = true,
+  });
+
+  @GET('/Users/{userId}/Items')
+  Future<HttpResponse<AlbumsWrapper>> searchPlaylists({
+    @Path('userId') required String userId,
+    @Query('ParentId') required String libraryId,
+    @Query('searchTerm') required String searchTerm,
+    @Query('IncludeItemTypes') String type = 'Playlist',
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '100',
+    @Query('SortOrder') String sortOrder = 'Descending',
+    @Query('Recursive') bool recursive = true,
+  });
+
   @GET('/Artists')
   Future<HttpResponse<AlbumsWrapper>> getArtists({
     @Query('userId') required String userId,
-    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('Fields')
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
@@ -70,8 +106,9 @@ abstract class JellyfinApi {
   @GET('/Artists')
   Future<HttpResponse<AlbumsWrapper>> searchArtists({
     @Query('userId') required String userId,
-    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('searchTerm') required String searchTerm,
+    @Query('Fields')
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',

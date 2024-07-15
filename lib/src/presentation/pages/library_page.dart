@@ -31,7 +31,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     super.initState();
     ref.read(currentLibraryProvider.notifier).fetchLibraries().then((value) {
       setState(() {
-        libraries = value.where((element) => element.type == 'CollectionFolder' && element.collectionType == 'music').toList();
+        libraries = value
+            .where((element) =>
+                element.type == 'CollectionFolder' &&
+                element.collectionType == 'music')
+            .toList();
         isLoading = false;
       });
     });
@@ -48,12 +52,14 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     return KeyboardListener(
       onKeyEvent: (value) {
         if (value.logicalKey == LogicalKeyboardKey.enter) {
-          _onLibraryTap(libraries[0]).then((value) => context.go(Routes.listen));
+          _onLibraryTap(libraries[0])
+              .then((value) => context.go(Routes.listen));
         }
       },
       focusNode: FocusNode(
         onKeyEvent: (node, event) {
-          debugPrint('Focus node ${node.debugLabel} got key event: ${event.logicalKey}');
+          debugPrint(
+              'Focus node ${node.debugLabel} got key event: ${event.logicalKey}');
           return KeyEventResult.handled;
         },
       ),
@@ -71,7 +77,10 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 _titleText(),
                 const Spacer(),
                 _searchButton(),
-                TextButton(onPressed: () => {ref.read(authProvider.notifier).logout()}, child: const Text('Logout')),
+                TextButton(
+                  onPressed: ref.read(authProvider.notifier).logout,
+                  child: const Text('Logout'),
+                ),
               ],
             ),
           ),
@@ -88,19 +97,21 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 right: isMobile ? 16 : 30,
               ),
               sliver: SliverGrid.builder(
-            gridDelegate: isDesktop || isTablet
-                ? SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: isTablet ? 370 : 358,
-                    mainAxisSpacing: isMobile ? 13 : 34,
-                    crossAxisSpacing: isDesktop ? 24 : (isMobile ? 16 : 34),
-                    childAspectRatio: 370 / 255,
-                  )
-                : const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 1, mainAxisExtent: 250),
-            itemBuilder: (context, index) => LibraryView(
-              library: libraries[index],
-              onTap: () => _onLibraryTap(libraries[index]).then((value) => context.go(Routes.listen)),
-            ),
-            itemCount: libraries.length,
+                gridDelegate: isDesktop || isTablet
+                    ? SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: isTablet ? 370 : 358,
+                        mainAxisSpacing: isMobile ? 13 : 34,
+                        crossAxisSpacing: isDesktop ? 24 : (isMobile ? 16 : 34),
+                        childAspectRatio: 370 / 255,
+                      )
+                    : const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 1, mainAxisExtent: 250),
+                itemBuilder: (context, index) => LibraryView(
+                  library: libraries[index],
+                  onTap: () => _onLibraryTap(libraries[index])
+                      .then((value) => context.go(Routes.listen)),
+                ),
+                itemCount: libraries.length,
               )),
         ],
       ),

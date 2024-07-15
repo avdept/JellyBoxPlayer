@@ -8,10 +8,12 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/wrappers/wrappers_dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/album_provider.dart';
-import 'package:jplayer/src/domain/providers/artist_provider.dart';
+import 'package:jplayer/src/domain/providers/albums_provider.dart';
+import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/current_album_provider.dart';
+import 'package:jplayer/src/domain/providers/current_playlist_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
+import 'package:jplayer/src/domain/providers/playlists_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -28,7 +30,8 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
 
-  AlbumsWrapper albumsWrapper = const AlbumsWrapper(items: [], totalRecordCount: 0);
+  AlbumsWrapper albumsWrapper =
+      const AlbumsWrapper(items: [], totalRecordCount: 0);
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -38,6 +41,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   Map<ListenView, String> get _viewLabels => {
         ListenView.albums: 'Albums',
         ListenView.artists: 'Artists',
+        ListenView.playlists: 'Playlists',
       };
 
   Map<EntityFilter, String> get _filtersLabels => {
@@ -63,26 +67,36 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     context.go('$location${Routes.artist}', extra: {'artist': artist});
   }
 
+  void _onPlaylistTap(ItemDTO playlist) {
+    final location = GoRouterState.of(context).fullPath;
+    ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
+    context.go('$location${Routes.playlist}', extra: {'playlist': playlist});
+  }
+
   @override
   void initState() {
     super.initState();
-    _currentView = ValueNotifier(ListenView.values.first);
+    _currentView = ValueNotifier(ListenView.values.first)
+      ..addListener(
+        () => _appliedFilter.value = Filter(
+          orderBy: _currentView.value == ListenView.albums
+              ? EntityFilter.dateCreated
+              : EntityFilter.sortName,
+          desc: true,
+        ),
+      );
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
     };
-    _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first));
-    ref.read(albumsProvider.notifier).loadMore();
-    ref.read(artistsProvider.notifier).loadMore();
+    _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))
+      ..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
   }
 
-  Future<void> loadMore() async {
-    switch (_currentView.value) {
-      case ListenView.albums:
-        await ref.read(albumsProvider.notifier).loadMore();
-      case ListenView.artists:
-        await ref.read(artistsProvider.notifier).loadMore();
-    }
-  }
+  Future<void> loadMore() async => switch (_currentView.value) {
+        ListenView.albums => ref.read(albumsProvider.notifier).loadMore(),
+        ListenView.artists => ref.read(artistsProvider.notifier).loadMore(),
+        ListenView.playlists => ref.read(playlistsProvider.notifier).loadMore(),
+      };
 
   @override
   void didChangeDependencies() {
@@ -94,57 +108,6 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     _isMobile = deviceType == DeviceScreenType.mobile;
     _isTablet = deviceType == DeviceScreenType.tablet;
   }
-
-  Widget get _albumsView => Consumer(
-        builder: (context, ref, child) {
-          final albumsState = ref.watch(albumsProvider);
-          return albumsState.when(
-            data: (AlbumsState state) {
-              return SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _isTablet ? 360 : 200,
-                  mainAxisSpacing: _isMobile ? 15 : 24,
-                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  album: state.items[index],
-                  onTap: () => _onAlbumTap(state.items[index]),
-                ),
-                itemCount: state.items.length,
-              );
-            },
-            error: (error, stackTrace) => SliverToBoxAdapter(child: Text(error.toString())),
-            loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
-          );
-        },
-      );
-
-  Widget get _artistsView => Consumer(
-        builder: (context, ref, child) {
-          final artistsState = ref.watch(artistsProvider);
-
-          return artistsState.when(
-            data: (ArtistState state) {
-              return SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _isTablet ? 360 : 200,
-                  mainAxisSpacing: _isMobile ? 15 : 24,
-                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  album: state.items[index],
-                  onTap: () => _onArtistTap(state.items[index]),
-                ),
-                itemCount: state.items.length,
-              );
-            },
-            error: (error, stackTrace) => SliverToBoxAdapter(child: Text(error.toString())),
-            loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
-          );
-        },
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -172,14 +135,43 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       slivers: [
         ValueListenableBuilder(
           valueListenable: _currentView,
-          builder: (context, value, child) {
-            switch (value) {
-              case ListenView.albums:
-                return _albumsView;
-              case ListenView.artists:
-                return _artistsView;
-            }
-          },
+          builder: (context, value, child) => Consumer(
+            builder: (context, ref, child) {
+              final provider = switch (value) {
+                ListenView.albums => ref.watch(albumsProvider),
+                ListenView.artists => ref.watch(artistsProvider),
+                ListenView.playlists => ref.watch(playlistsProvider),
+              };
+              return provider.when(
+                data: (ItemsPage state) => SliverGrid.builder(
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: _isTablet ? 360 : 200,
+                    mainAxisSpacing: _isMobile ? 15 : 24,
+                    crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+                    childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = state.items[index];
+                    return AlbumView(
+                      album: item,
+                      onTap: () => switch (value) {
+                        ListenView.albums => _onAlbumTap(item),
+                        ListenView.artists => _onArtistTap(item),
+                        ListenView.playlists => _onPlaylistTap(item),
+                      },
+                    );
+                  },
+                  itemCount: state.items.length,
+                ),
+                error: (error, stackTrace) => SliverToBoxAdapter(
+                  child: Text(error.toString()),
+                ),
+                loading: () => const SliverToBoxAdapter(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -204,17 +196,15 @@ class _ListenPageState extends ConsumerState<ListenPage> {
               ValueListenableBuilder(
                 valueListenable: _currentView,
                 builder: (context, currentView, child) => ActionChip(
-                    label: Text(_viewLabels[value] ?? '???'),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: (value == currentView) ? _theme.chipTheme.selectedColor : _theme.chipTheme.backgroundColor,
-                    onPressed: () {
-                      _currentView.value = value;
-                      _applyProviderFilter(_currentView.value == ListenView.albums ? EntityFilter.dateCreated : EntityFilter.sortName);
-                      _appliedFilter.value =
-                          Filter(orderBy: _currentView.value == ListenView.albums ? EntityFilter.dateCreated : EntityFilter.sortName, desc: true);
-                    }),
+                  label: Text(_viewLabels[value] ?? '???'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: (value == currentView)
+                      ? _theme.chipTheme.selectedColor
+                      : _theme.chipTheme.backgroundColor,
+                  onPressed: () => _currentView.value = value,
+                ),
               ),
           ],
         ),
@@ -224,14 +214,11 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     return _filtersLabels[filter] ?? '???';
   }
 
-  List<EntityFilter> getFilterItems() {
-    switch (_currentView.value) {
-      case ListenView.albums:
-        return EntityFilter.values.toList();
-      case ListenView.artists:
-        return [EntityFilter.sortName, EntityFilter.dateCreated];
-    }
-  }
+  List<EntityFilter> getFilterItems() => switch (_currentView.value) {
+        ListenView.albums => EntityFilter.values.toList(),
+        ListenView.artists => [EntityFilter.sortName, EntityFilter.dateCreated],
+        ListenView.playlists => [],
+      };
 
   void _applyProviderFilter(EntityFilter? value) {
     final filter = ref.read(filterProvider);
@@ -239,7 +226,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       final desc = !filter.desc;
       ref.read(filterProvider.notifier).filter(value!, desc);
     } else {
-      ref.read(filterProvider.notifier).filter(value!, _defaultSorting[value] ?? false);
+      ref
+          .read(filterProvider.notifier)
+          .filter(value!, _defaultSorting[value] ?? false);
     }
   }
 
@@ -257,12 +246,14 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                       valueListenable: _filterOpened,
                       builder: (context, isOpened, child) => Icon(
                         JPlayer.sliders,
-                        color: isOpened ? _theme.colorScheme.primary : _theme.iconTheme.color,
+                        color: isOpened
+                            ? _theme.colorScheme.primary
+                            : _theme.iconTheme.color,
                       ),
                     ),
                   ),
                   buttonStyleData: const ButtonStyleData(
-                    overlayColor: MaterialStatePropertyAll(Colors.transparent),
+                    overlayColor: WidgetStatePropertyAll(Colors.transparent),
                   ),
                   dropdownStyleData: DropdownStyleData(
                     width: 150,
@@ -284,13 +275,19 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   height: 1.2,
-                                  color: (filter.orderBy == value) ? _theme.colorScheme.primary : _theme.colorScheme.onPrimary,
+                                  color: (filter.orderBy == value)
+                                      ? _theme.colorScheme.primary
+                                      : _theme.colorScheme.onPrimary,
                                 ),
                               ),
                             ),
                             Icon(
-                              filter.desc ? Icons.arrow_upward : Icons.arrow_downward,
-                              color: (filter.orderBy == value) ? _theme.colorScheme.primary : _theme.colorScheme.onPrimary,
+                              filter.desc
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                              color: (filter.orderBy == value)
+                                  ? _theme.colorScheme.primary
+                                  : _theme.colorScheme.onPrimary,
                             ),
                           ],
                         ),
