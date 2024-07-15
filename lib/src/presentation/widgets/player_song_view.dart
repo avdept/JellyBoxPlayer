@@ -13,6 +13,7 @@ class PlayerSongView extends ConsumerWidget {
     this.downloadProgress,
     this.onTap,
     this.onLikePressed,
+    this.optionsBuilder,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class PlayerSongView extends ConsumerWidget {
   final double? downloadProgress;
   final VoidCallback? onTap;
   final VoidCallback? onLikePressed;
+  final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final int position;
 
   Duration get duration {
@@ -46,7 +48,9 @@ class PlayerSongView extends ConsumerWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SimpleListTile(
-        backgroundColor: isPlaying ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75) : Colors.transparent,
+        backgroundColor: isPlaying
+            ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
+            : Colors.transparent,
         padding: EdgeInsets.symmetric(
           vertical: 12,
           horizontal: isMobile ? 16 : 30,
@@ -98,6 +102,12 @@ class PlayerSongView extends ConsumerWidget {
                   color: theme.colorScheme.primary,
                 ),
                 isSelected: song.songUserData.isFavorite,
+              ),
+            if (optionsBuilder != null)
+              PopupMenuButton<void>(
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'More',
+                itemBuilder: optionsBuilder!,
               ),
           ],
         ),

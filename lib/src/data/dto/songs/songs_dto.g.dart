@@ -9,13 +9,17 @@ part of 'songs_dto.dart';
 _$SongDTOImpl _$$SongDTOImplFromJson(Map<String, dynamic> json) =>
     _$SongDTOImpl(
       id: json['Id'] as String,
-      runTimeTicks: json['RunTimeTicks'] as int,
-      indexNumber: json['IndexNumber'] as int? ?? 0,
+      runTimeTicks: (json['RunTimeTicks'] as num).toInt(),
+      indexNumber: (json['IndexNumber'] as num?)?.toInt() ?? 0,
       songUserData:
           SongUserData.fromJson(json['UserData'] as Map<String, dynamic>),
       type: json['Type'] as String,
       albumArtist: json['AlbumArtist'] as String?,
+      albumArtists: (json['AlbumArtists'] as List<dynamic>?)
+          ?.map((e) => ArtistDTO.fromJson(e as Map<String, dynamic>))
+          .toList(),
       albumName: json['Album'] as String?,
+      albumId: json['AlbumId'] as String?,
       name: json['Name'] as String?,
       imageTags: (json['ImageTags'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, e as String),
@@ -31,7 +35,9 @@ Map<String, dynamic> _$$SongDTOImplToJson(_$SongDTOImpl instance) =>
       'UserData': instance.songUserData,
       'Type': instance.type,
       'AlbumArtist': instance.albumArtist,
+      'AlbumArtists': instance.albumArtists,
       'Album': instance.albumName,
+      'AlbumId': instance.albumId,
       'Name': instance.name,
       'ImageTags': instance.imageTags,
     };
@@ -50,8 +56,8 @@ Map<String, dynamic> _$$SongsWrapperImplToJson(_$SongsWrapperImpl instance) =>
 
 _$SongUserDataImpl _$$SongUserDataImplFromJson(Map<String, dynamic> json) =>
     _$SongUserDataImpl(
-      playbackPositionTicks: json['PlaybackPositionTicks'] as int,
-      playCount: json['PlayCount'] as int,
+      playbackPositionTicks: (json['PlaybackPositionTicks'] as num).toInt(),
+      playCount: (json['PlayCount'] as num).toInt(),
       isFavorite: json['IsFavorite'] as bool,
       played: json['Played'] as bool,
     );

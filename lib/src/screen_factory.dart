@@ -25,7 +25,9 @@ class ScreenFactory {
     GoRouterState router,
   ) {
     final params = router.extra! as Map<String, dynamic>;
-    final artist = params['artist'] is ItemDTO ? params['artist'] as ItemDTO : ItemDTO.fromJson(params['artist'] as Map<String, dynamic>);
+    final artist = params['artist'] is ItemDTO
+        ? params['artist'] as ItemDTO
+        : ItemDTO.fromJson(params['artist'] as Map<String, dynamic>);
     return CupertinoPage(
       child: ArtistPage(artist: artist),
     );
@@ -92,6 +94,20 @@ class ScreenFactory {
   ) {
     return const NoTransitionPage(
       child: ColorPalettePage(),
+    );
+  }
+
+  Page<void> playlistPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final params = router.extra! as Map<String, dynamic>;
+    final playlist = params['playlist'] is ItemDTO
+        ? params['playlist'] as ItemDTO
+        : ItemDTO.fromJson(params['playlist'] as Map<String, dynamic>);
+
+    return CupertinoPage(
+      child: PlaylistPage(playlist: playlist),
     );
   }
 

@@ -108,6 +108,10 @@ class _AppState extends ConsumerState<App> {
                         ),
                       ],
                     ),
+                    GoRoute(
+                      path: Routes.playlist.name,
+                      pageBuilder: widget.screenFactory.playlistPage,
+                    ),
                   ],
                 ),
               ],
@@ -122,12 +126,16 @@ class _AppState extends ConsumerState<App> {
                       path: Routes.album.name,
                       pageBuilder: widget.screenFactory.albumPage,
                     ),
-                    GoRoute(path: Routes.artist.name, pageBuilder: widget.screenFactory.artistPage, routes: [
-                      GoRoute(
-                        path: Routes.album.name,
-                        pageBuilder: widget.screenFactory.albumPage,
-                      ),
-                    ]),
+                    GoRoute(
+                      path: Routes.artist.name,
+                      pageBuilder: widget.screenFactory.artistPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.album.name,
+                          pageBuilder: widget.screenFactory.albumPage,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -212,13 +220,12 @@ class _AppState extends ConsumerState<App> {
       builder: (context, child) {
         final theme = Theme.of(context);
 
-        switch (theme.brightness) {
-          case Brightness.dark:
-            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-
-          case Brightness.light:
-            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-        }
+        SystemChrome.setSystemUIOverlayStyle(
+          switch (theme.brightness) {
+            Brightness.dark => SystemUiOverlayStyle.light,
+            Brightness.light => SystemUiOverlayStyle.dark,
+          },
+        );
 
         return child!;
       },
