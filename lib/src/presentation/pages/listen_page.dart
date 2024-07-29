@@ -6,7 +6,6 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/wrappers/wrappers_dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/albums_provider.dart';
 import 'package:jplayer/src/domain/providers/artists_provider.dart';
@@ -29,9 +28,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
-
-  AlbumsWrapper albumsWrapper =
-      const AlbumsWrapper(items: [], totalRecordCount: 0);
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late ThemeData _theme;
   late Size _screenSize;
@@ -73,6 +70,28 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     context.go('$location${Routes.playlist}', extra: {'playlist': playlist});
   }
 
+  void _onCreateNewPlaylist() {
+    if (_isMobile) {
+      PersistentBottomSheetController? controller;
+      _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
+      controller = _scaffoldKey.currentState?.showBottomSheet(
+        (context) => CreatePlaylistForm(
+          controller: controller,
+          onCreated: () => ref.refresh(playlistsProvider),
+        ),
+      );
+    } else {
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: CreatePlaylistForm(
+            onCreated: () => ref.refresh(playlistsProvider),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -111,69 +130,73 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ScrollablePageScaffold(
-      useGradientBackground: true,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(_isMobile ? 60 : 100),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _pageViewToggle(),
-              _filterButton(),
-            ],
+    return Scaffold(
+      key: _scaffoldKey,
+      body: ScrollablePageScaffold(
+        useGradientBackground: true,
+        navigationBar: PreferredSize(
+          preferredSize: Size.fromHeight(_isMobile ? 60 : 100),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
+            child: Row(
+              children: [
+                _pageViewToggle(),
+                const Spacer(),
+                _addButton(),
+                _filterButton(),
+              ],
+            ),
           ),
         ),
-      ),
-      loadMoreData: loadMore,
-      contentPadding: EdgeInsets.only(
-        left: _isMobile ? 16 : 30,
-        right: _isMobile ? 16 : 30,
-        bottom: 30,
-      ),
-      slivers: [
-        ValueListenableBuilder(
-          valueListenable: _currentView,
-          builder: (context, value, child) => Consumer(
-            builder: (context, ref, child) {
-              final provider = switch (value) {
-                ListenView.albums => ref.watch(albumsProvider),
-                ListenView.artists => ref.watch(artistsProvider),
-                ListenView.playlists => ref.watch(playlistsProvider),
-              };
-              return provider.when(
-                data: (ItemsPage state) => SliverGrid.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: _isTablet ? 360 : 200,
-                    mainAxisSpacing: _isMobile ? 15 : 24,
-                    crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                    childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+        loadMoreData: loadMore,
+        contentPadding: EdgeInsets.only(
+          left: _isMobile ? 16 : 30,
+          right: _isMobile ? 16 : 30,
+          bottom: 30,
+        ),
+        slivers: [
+          ValueListenableBuilder(
+            valueListenable: _currentView,
+            builder: (context, value, child) => Consumer(
+              builder: (context, ref, child) {
+                final provider = switch (value) {
+                  ListenView.albums => ref.watch(albumsProvider),
+                  ListenView.artists => ref.watch(artistsProvider),
+                  ListenView.playlists => ref.watch(playlistsProvider),
+                };
+                return provider.when(
+                  data: (ItemsPage state) => SliverGrid.builder(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: _isTablet ? 360 : 200,
+                      mainAxisSpacing: _isMobile ? 15 : 24,
+                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
+                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                    ),
+                    itemBuilder: (context, index) {
+                      final item = state.items[index];
+                      return AlbumView(
+                        album: item,
+                        onTap: () => switch (value) {
+                          ListenView.albums => _onAlbumTap(item),
+                          ListenView.artists => _onArtistTap(item),
+                          ListenView.playlists => _onPlaylistTap(item),
+                        },
+                      );
+                    },
+                    itemCount: state.items.length,
                   ),
-                  itemBuilder: (context, index) {
-                    final item = state.items[index];
-                    return AlbumView(
-                      album: item,
-                      onTap: () => switch (value) {
-                        ListenView.albums => _onAlbumTap(item),
-                        ListenView.artists => _onArtistTap(item),
-                        ListenView.playlists => _onPlaylistTap(item),
-                      },
-                    );
-                  },
-                  itemCount: state.items.length,
-                ),
-                error: (error, stackTrace) => SliverToBoxAdapter(
-                  child: Text(error.toString()),
-                ),
-                loading: () => const SliverToBoxAdapter(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              );
-            },
+                  error: (error, stackTrace) => SliverToBoxAdapter(
+                    child: Text(error.toString()),
+                  ),
+                  loading: () => const SliverToBoxAdapter(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -217,7 +240,10 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   List<EntityFilter> getFilterItems() => switch (_currentView.value) {
         ListenView.albums => EntityFilter.values.toList(),
         ListenView.artists => [EntityFilter.sortName, EntityFilter.dateCreated],
-        ListenView.playlists => [],
+        ListenView.playlists => [
+            EntityFilter.sortName,
+            EntityFilter.dateCreated
+          ],
       };
 
   void _applyProviderFilter(EntityFilter? value) {
@@ -299,6 +325,25 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                 );
               },
             );
+          },
+        ),
+      );
+
+  Widget _addButton() => ValueListenableBuilder(
+        valueListenable: _currentView,
+        builder: (context, currentView, child) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 100),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: child,
+          ),
+          child: switch (currentView) {
+            ListenView.albums => const SizedBox.shrink(),
+            ListenView.artists => const SizedBox.shrink(),
+            ListenView.playlists => IconButton(
+                onPressed: _onCreateNewPlaylist,
+                icon: const Icon(Icons.add),
+              ),
           },
         ),
       );

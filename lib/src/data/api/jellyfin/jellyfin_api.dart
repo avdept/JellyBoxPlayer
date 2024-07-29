@@ -95,6 +95,11 @@ abstract class JellyfinApi {
     @Query('IncludeItemTypes') String includeType = 'music',
   });
 
+  @POST('/Playlists')
+  Future<void> createPlaylist(
+    @Body() Map<String, dynamic> arguments,
+  );
+
   @POST('/Playlists/{playlistId}/Items')
   Future<void> addPlaylistItems({
     @Path('playlistId') required String playlistId,
