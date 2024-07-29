@@ -226,7 +226,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                       const snackBar = SnackBar(
                                         backgroundColor: Colors.black87,
                                         content: Text(
-                                          'Succesfully removed item from playlist',
+                                          'Successfully removed item from playlist',
                                           style: TextStyle(color: Colors.white),
                                         ),
                                       );

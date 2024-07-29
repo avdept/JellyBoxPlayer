@@ -41,20 +41,22 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onAddToPlaylistPressed() async {
+  Future<void> _onAddToPlaylistPressed(SongDTO song) async {
+    ItemDTO? playlist;
+
     if (_isDesktop) {
-      await showDialog<void>(
+      playlist = await showDialog<ItemDTO>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text(
             'Choose a playlist',
             textAlign: TextAlign.center,
           ),
-          content: _playlistsList(),
+          content: _availablePlaylistsList(),
         ),
       );
     } else {
-      await showModalBottomSheet<void>(
+      playlist = await showModalBottomSheet<ItemDTO>(
         context: context,
         clipBehavior: Clip.antiAlias,
         builder: (context) => Scaffold(
@@ -72,7 +74,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             child: SafeArea(
               top: false,
               child: SingleChildScrollView(
-                child: _playlistsList(
+                child: _availablePlaylistsList(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                 ),
               ),
@@ -80,6 +82,23 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
           ),
         ),
       );
+    }
+
+    if (playlist != null) {
+      await ref.read(jellyfinApiProvider).addPlaylistItems(
+            playlistId: playlist.id,
+            userId: ref.read(currentUserProvider)!.userId,
+            entryIds: song.id,
+          );
+      const snackBar = SnackBar(
+        backgroundColor: Colors.black87,
+        content: Text(
+          'Successfully added item to playlist',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+      _getSongs();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
   }
 
@@ -241,10 +260,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _currentSong,
                           builder: (context, item, other) {
+                            final song = songs[index];
                             return PlayerSongView(
-                              song: songs[index],
-                              isPlaying:
-                                  item != null && songs[index].id == item.id,
+                              song: song,
+                              isPlaying: item != null && song.id == item.id,
                               downloadProgress:
                                   null, // index == 2 ? 0.8 : null,
                               onTap: (song) => ref
@@ -264,7 +283,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               },
                               optionsBuilder: (context) => [
                                 PopupMenuItem(
-                                  onTap: _onAddToPlaylistPressed,
+                                  onTap: () => _onAddToPlaylistPressed(song),
                                   child: const Text('Add to playlist'),
                                 ),
                               ],
@@ -490,9 +509,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     );
   }
 
-  Widget _playlistsList({
-    EdgeInsets padding = EdgeInsets.zero,
-  }) {
+  Widget _availablePlaylistsList({EdgeInsets padding = EdgeInsets.zero}) {
     return Consumer(
       builder: (context, ref, child) {
         final data = ref.watch(playlistsProvider);
@@ -506,7 +523,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             SizedBox(height: padding.top),
             for (final playlist in data.value.items)
               SimpleListTile(
-                onTap: () {},
+                onTap: () => Navigator.of(context).pop(playlist),
                 padding: padding.copyWith(top: 6, bottom: 6),
                 title: Text(
                   playlist.name,
