@@ -66,7 +66,6 @@ abstract class JellyfinApi {
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<AlbumsWrapper>> getPlaylists({
     @Path('userId') required String userId,
-    @Query('ParentId') required String libraryId,
     @Query('IncludeItemTypes') String type = 'Playlist',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
@@ -89,11 +88,23 @@ abstract class JellyfinApi {
     @Query('Recursive') bool recursive = true,
   });
 
+  @GET('/Playlists/{playlistId}/Items')
+  Future<HttpResponse<SongsWrapper>> getPlaylistSongs({
+    @Path('playlistId') required String playlistId,
+    @Query('userId') required String userId,
+    @Query('IncludeItemTypes') String includeType = 'music',
+  });
+
+  @DELETE('/Playlists/{playlistId}/Items')
+  Future<void> removePlaylistItem({
+    @Path('playlistId') required String playlistId,
+    @Query('EntryIds') required String entryIds,
+  });
+
   @GET('/Artists')
   Future<HttpResponse<AlbumsWrapper>> getArtists({
     @Query('userId') required String userId,
-    @Query('Fields')
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
@@ -107,8 +118,7 @@ abstract class JellyfinApi {
   Future<HttpResponse<AlbumsWrapper>> searchArtists({
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
-    @Query('Fields')
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',

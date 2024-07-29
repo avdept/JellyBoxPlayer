@@ -13,6 +13,7 @@ class SongDTO with _$SongDTO {
     @JsonKey(name: 'UserData') required SongUserData songUserData,
     @JsonKey(name: 'Type') required String type,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
+    @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
     @JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,
     @JsonKey(name: 'Album') String? albumName,
     @JsonKey(name: 'AlbumId') String? albumId,
