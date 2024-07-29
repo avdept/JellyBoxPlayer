@@ -32,6 +32,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   late ThemeData _theme;
   late Size _screenSize;
+  late bool _isDesktop;
   late bool _isMobile;
   late bool _isTablet;
 
@@ -71,22 +72,22 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   }
 
   void _onCreateNewPlaylist() {
-    if (_isMobile) {
-      PersistentBottomSheetController? controller;
-      _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
-      controller = _scaffoldKey.currentState?.showBottomSheet(
-        (context) => CreatePlaylistForm(
-          controller: controller,
-          onCreated: () => ref.refresh(playlistsProvider),
-        ),
-      );
-    } else {
+    if (_isDesktop) {
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           content: CreatePlaylistForm(
             onCreated: () => ref.refresh(playlistsProvider),
           ),
+        ),
+      );
+    } else {
+      PersistentBottomSheetController? controller;
+      _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
+      controller = _scaffoldKey.currentState?.showBottomSheet(
+        (context) => CreatePlaylistForm(
+          controller: controller,
+          onCreated: () => ref.refresh(playlistsProvider),
         ),
       );
     }
@@ -124,6 +125,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     _screenSize = MediaQuery.sizeOf(context);
 
     final deviceType = getDeviceType(_screenSize);
+    _isDesktop = deviceType == DeviceScreenType.desktop;
     _isMobile = deviceType == DeviceScreenType.mobile;
     _isTablet = deviceType == DeviceScreenType.tablet;
   }
