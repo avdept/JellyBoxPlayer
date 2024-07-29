@@ -8,14 +8,16 @@ class LabeledTextField extends StatelessWidget {
     this.controller,
     this.obscureText = false,
     this.textInputAction,
+    this.autofocus = false,
     super.key,
   });
 
   final String label;
   final bool obscureText;
   final TextEditingController? controller;
-  final TextInputType? keyboardType;
+  final TextInputType keyboardType;
   final TextInputAction? textInputAction;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -53,5 +55,6 @@ class LabeledTextField extends StatelessWidget {
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         ),
+        autofocus: autofocus,
       );
 }

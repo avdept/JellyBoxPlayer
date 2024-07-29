@@ -515,7 +515,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         final data = ref.watch(playlistsProvider);
 
         if (data.isLoading) {
-          return const Center(child: CircularProgressIndicator.adaptive());
+          return const Center(child: CircularProgressIndicator());
         }
 
         return ListBody(
