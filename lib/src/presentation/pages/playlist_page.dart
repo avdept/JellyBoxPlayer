@@ -190,9 +190,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _currentSong,
                           builder: (context, item, other) {
+                            final song = songs[index];
                             return PlayerSongView(
-                              song: songs[index],
-                              isPlaying: item != null && songs[index].id == item.id,
+                              song: song,
+                              isPlaying: item != null && song.id == item.id,
                               downloadProgress: null, // index == 2 ? 0.8 : null,
                               onTap: (song) => ref.read(playbackProvider.notifier).play(song, songs, widget.playlist),
                               position: index + 1,
@@ -211,7 +212,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                 PopupMenuItem(
                                   onTap: () async {
                                     final api = ref.read(jellyfinApiProvider);
-                                    if (songs[index].playlistItemId == null) {
+                                    if (song.playlistItemId == null) {
                                       const snackBar = SnackBar(
                                         backgroundColor: Colors.black87,
                                         content: Text(
@@ -221,7 +222,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                       );
                                       ScaffoldMessenger.of(context).showSnackBar(snackBar);
                                     } else {
-                                      await api.removePlaylistItem(playlistId: widget.playlist.id, entryIds: songs[index].playlistItemId!);
+                                      await api.removePlaylistItem(playlistId: widget.playlist.id, entryIds: song.playlistItemId!);
                                       const snackBar = SnackBar(
                                         backgroundColor: Colors.black87,
                                         content: Text(
@@ -235,48 +236,46 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   },
                                   child: const Text('Remove from playlist'),
                                 ),
-                                PopupMenuItem(
-                                  onTap: () async {
-                                    final location = GoRouterState.of(context).matchedLocation;
-                                    final artistName = songs[index].albumArtists?.first.name;
-                                    if (artistName == null) return;
-                                    final res = await ref.read(jellyfinApiProvider).searchArtists(
-                                      userId: ref.read(currentUserProvider)!.userId,
-                                      searchTerm: artistName,
-                                    );
-                                    if (context.mounted) {
-                                      context.go(
-                                        '$location${Routes.artist}',
-                                        extra: {
-                                          'playlist': widget.playlist,
-                                          'artist': res.data.items.first,
-                                        },
+                                if (song.albumArtists?.isNotEmpty ?? false)
+                                  PopupMenuItem(
+                                    onTap: () async {
+                                      final location = GoRouterState.of(context).matchedLocation;
+                                      final res = await ref.read(jellyfinApiProvider).searchArtists(
+                                        userId: ref.read(currentUserProvider)!.userId,
+                                        searchTerm: song.albumArtists!.first.name,
                                       );
-                                    }
-                                  },
-                                  child: const Text('Go to artist'),
-                                ),
-                                PopupMenuItem(
-                                  onTap: () async {
-                                    final location = GoRouterState.of(context).matchedLocation;
-                                    final albumName = songs[index].albumName;
-                                    if (albumName == null) return;
-                                    final res = await ref.read(jellyfinApiProvider).searchAlbums(
-                                      userId: ref.read(currentUserProvider)!.userId,
-                                      searchTerm: albumName,
-                                    );
-                                    if (context.mounted) {
-                                      context.go(
-                                        '$location${Routes.album}',
-                                        extra: {
-                                          'playlist': widget.playlist,
-                                          'album': res.data.items.first,
-                                        },
+                                      if (context.mounted) {
+                                        context.go(
+                                          '$location${Routes.artist}',
+                                          extra: {
+                                            'playlist': widget.playlist,
+                                            'artist': res.data.items.first,
+                                          },
+                                        );
+                                      }
+                                    },
+                                    child: const Text('Go to artist'),
+                                  ),
+                                if (song.albumName != null)
+                                  PopupMenuItem(
+                                    onTap: () async {
+                                      final location = GoRouterState.of(context).matchedLocation;
+                                      final res = await ref.read(jellyfinApiProvider).searchAlbums(
+                                        userId: ref.read(currentUserProvider)!.userId,
+                                        searchTerm: song.albumName!,
                                       );
-                                    }
-                                  },
-                                  child: const Text('Go to album'),
-                                ),
+                                      if (context.mounted) {
+                                        context.go(
+                                          '$location${Routes.album}',
+                                          extra: {
+                                            'playlist': widget.playlist,
+                                            'album': res.data.items.first,
+                                          },
+                                        );
+                                      }
+                                    },
+                                    child: const Text('Go to album'),
+                                  ),
                               ],
                             );
                           },
