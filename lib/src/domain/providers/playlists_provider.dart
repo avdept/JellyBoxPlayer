@@ -18,7 +18,6 @@ class PlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
   Future<void> loadMore() async {
     final resp = await ref.read(jellyfinApiProvider).getPlaylists(
           userId: ref.read(currentUserProvider.notifier).state!.userId,
-          // libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
           sortOrder: filterState.desc ? 'Descending' : 'Ascending',
           sortBy: filterState.orderBy.name.capitalize(),
           startIndex:

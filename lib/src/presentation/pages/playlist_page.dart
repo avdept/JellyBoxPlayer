@@ -9,6 +9,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -193,15 +194,17 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               song: songs[index],
                               isPlaying: item != null && songs[index].id == item.id,
                               downloadProgress: null, // index == 2 ? 0.8 : null,
-                              onTap: () {
-                                ref.read(playbackProvider.notifier).play(songs[index], songs, widget.playlist);
-                              },
+                              onTap: (song) => ref.read(playbackProvider.notifier).play(song, songs, widget.playlist),
                               position: index + 1,
-                              onLikePressed: () async {
+                              onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
-                                songs[index].songUserData.isFavorite
-                                    ? await api.removeFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id)
-                                    : await api.saveFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id);
+                                final callback = song.songUserData.isFavorite
+                                    ? api.removeFavorite
+                                    : api.saveFavorite;
+                                await callback.call(
+                                  userId: ref.read(currentUserProvider)!.userId,
+                                  itemId: song.id,
+                                );
                                 _getSongs();
                               },
                               optionsBuilder: (context) => [
@@ -233,22 +236,45 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   child: const Text('Remove from playlist'),
                                 ),
                                 PopupMenuItem(
-                                  onTap: () {
-                                    final location = GoRouterState.of(context).fullPath;
-                                    context.go('$location${Routes.artist}',
-                                        extra: {'playlist': widget.playlist, 'artist': songs[index].albumArtists?.firstOrNull?.toJson()});
+                                  onTap: () async {
+                                    final location = GoRouterState.of(context).matchedLocation;
+                                    final artistName = songs[index].albumArtists?.first.name;
+                                    if (artistName == null) return;
+                                    final res = await ref.read(jellyfinApiProvider).searchArtists(
+                                      userId: ref.read(currentUserProvider)!.userId,
+                                      searchTerm: artistName,
+                                    );
+                                    if (context.mounted) {
+                                      context.go(
+                                        '$location${Routes.artist}',
+                                        extra: {
+                                          'playlist': widget.playlist,
+                                          'artist': res.data.items.first,
+                                        },
+                                      );
+                                    }
                                   },
-                                  // context.push(
-                                  //   Routes.artist,
-                                  //   extra: {'artist': songs[index].albumArtists?.firstOrNull},
-                                  // ),
                                   child: const Text('Go to artist'),
                                 ),
                                 PopupMenuItem(
-                                  onTap: () => context.push(
-                                    Routes.album.name,
-                                    extra: {'album': songs[index].albumId},
-                                  ),
+                                  onTap: () async {
+                                    final location = GoRouterState.of(context).matchedLocation;
+                                    final albumName = songs[index].albumName;
+                                    if (albumName == null) return;
+                                    final res = await ref.read(jellyfinApiProvider).searchAlbums(
+                                      userId: ref.read(currentUserProvider)!.userId,
+                                      searchTerm: albumName,
+                                    );
+                                    if (context.mounted) {
+                                      context.go(
+                                        '$location${Routes.album}',
+                                        extra: {
+                                          'playlist': widget.playlist,
+                                          'album': res.data.items.first,
+                                        },
+                                      );
+                                    }
+                                  },
                                   child: const Text('Go to album'),
                                 ),
                               ],

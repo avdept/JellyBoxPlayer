@@ -139,7 +139,7 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<AlbumsWrapper>> getAlbums({
     required String userId,
-    required String libraryId,
+    String? libraryId,
     String type = 'MusicAlbum',
     String startIndex = '0',
     String limit = '100',
@@ -189,8 +189,8 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<AlbumsWrapper>> searchAlbums({
     required String userId,
-    required String libraryId,
     required String searchTerm,
+    String? libraryId,
     String type = 'MusicAlbum',
     String startIndex = '0',
     String limit = '100',
@@ -199,14 +199,15 @@ class _JellyfinApi implements JellyfinApi {
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'ParentId': libraryId,
       r'searchTerm': searchTerm,
+      r'ParentId': libraryId,
       r'IncludeItemTypes': type,
       r'StartIndex': startIndex,
       r'Limit': limit,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
