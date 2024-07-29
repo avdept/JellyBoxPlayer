@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:string_capitalize/string_capitalize.dart';
@@ -19,7 +18,7 @@ class PlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
   Future<void> loadMore() async {
     final resp = await ref.read(jellyfinApiProvider).getPlaylists(
           userId: ref.read(currentUserProvider.notifier).state!.userId,
-          libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
+          // libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
           sortOrder: filterState.desc ? 'Descending' : 'Ascending',
           sortBy: filterState.orderBy.name.capitalize(),
           startIndex:

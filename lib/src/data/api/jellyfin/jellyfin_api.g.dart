@@ -234,7 +234,6 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<AlbumsWrapper>> getPlaylists({
     required String userId,
-    required String libraryId,
     String type = 'Playlist',
     String startIndex = '0',
     String limit = '100',
@@ -246,7 +245,6 @@ class _JellyfinApi implements JellyfinApi {
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'ParentId': libraryId,
       r'IncludeItemTypes': type,
       r'StartIndex': startIndex,
       r'Limit': limit,
@@ -324,6 +322,68 @@ class _JellyfinApi implements JellyfinApi {
     final _value = AlbumsWrapper.fromJson(_result.data!);
     final httpResponse = HttpResponse(_value, _result);
     return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<SongsWrapper>> getPlaylistSongs({
+    required String playlistId,
+    required String userId,
+    String includeType = 'music',
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'userId': userId,
+      r'IncludeItemTypes': includeType,
+    };
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<SongsWrapper>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/Playlists/${playlistId}/Items',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final _value = SongsWrapper.fromJson(_result.data!);
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<void> removePlaylistItem({
+    required String playlistId,
+    required String entryIds,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'EntryIds': entryIds};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    await _dio.fetch<void>(_setStreamType<void>(Options(
+      method: 'DELETE',
+      headers: _headers,
+      extra: _extra,
+    )
+        .compose(
+          _dio.options,
+          '/Playlists/${playlistId}/Items',
+          queryParameters: queryParameters,
+          data: _data,
+        )
+        .copyWith(
+            baseUrl: _combineBaseUrls(
+          _dio.options.baseUrl,
+          baseUrl,
+        ))));
   }
 
   @override

@@ -82,7 +82,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   }
 
   void _getSongs() {
-    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, albumId: widget.playlist.id).then((value) {
+    ref.read(jellyfinApiProvider).getPlaylistSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, playlistId: widget.playlist.id).then((value) {
       setState(() {
         final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
         songs = items;
@@ -105,7 +105,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -207,14 +206,42 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               },
                               optionsBuilder: (context) => [
                                 PopupMenuItem(
-                                  onTap: () {}, // TODO
+                                  onTap: () async {
+                                    final api = ref.read(jellyfinApiProvider);
+                                    if (songs[index].playlistItemId == null) {
+                                      const snackBar = SnackBar(
+                                        backgroundColor: Colors.black87,
+                                        content: Text(
+                                          'Uff! Something went wrong...',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                    } else {
+                                      await api.removePlaylistItem(playlistId: widget.playlist.id, entryIds: songs[index].playlistItemId!);
+                                      const snackBar = SnackBar(
+                                        backgroundColor: Colors.black87,
+                                        content: Text(
+                                          'Succesfully removed item from playlist',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      );
+                                      _getSongs();
+                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                    }
+                                  },
                                   child: const Text('Remove from playlist'),
                                 ),
                                 PopupMenuItem(
-                                  onTap: () => context.push(
-                                    Routes.artist.name,
-                                    extra: {'artist': songs[index].albumArtists?.firstOrNull?.id},
-                                  ),
+                                  onTap: () {
+                                    final location = GoRouterState.of(context).fullPath;
+                                    context.go('$location${Routes.artist}',
+                                        extra: {'playlist': widget.playlist, 'artist': songs[index].albumArtists?.firstOrNull?.toJson()});
+                                  },
+                                  // context.push(
+                                  //   Routes.artist,
+                                  //   extra: {'artist': songs[index].albumArtists?.firstOrNull},
+                                  // ),
                                   child: const Text('Go to artist'),
                                 ),
                                 PopupMenuItem(
