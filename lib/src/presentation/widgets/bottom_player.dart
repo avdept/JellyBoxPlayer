@@ -230,52 +230,49 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
               height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
               color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
               padding: EdgeInsets.only(bottom: _viewPadding.bottom),
-              child: GestureDetector(
+              child: SimpleListTile(
                 onTap: !_isDesktop ? () => _onExpand(currentSong) : null,
-                behavior: HitTestBehavior.opaque,
-                child: SimpleListTile(
-                  padding: const EdgeInsets.only(right: 8),
-                  leading: AspectRatio(
-                    aspectRatio: 1,
-                    child: Image(
-                      image: image,
-                      fit: BoxFit.cover,
-                    ),
+                padding: const EdgeInsets.only(right: 8),
+                leading: AspectRatio(
+                  aspectRatio: 1,
+                  child: Image(
+                    image: image,
+                    fit: BoxFit.cover,
                   ),
-                  title: Text(
-                    currentSong?.title ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 18 : 24,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  ),
-                  subtitle: Text(
-                    currentSong?.artist ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 12 : 18,
-                      height: 1.2,
-                    ),
-                  ),
-                  trailing: Wrap(
-                    spacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      if (_isDesktop) const RemainingDuration(),
-                      if (_isDesktop) const RandomQueueButton(),
-                      _prevTrackButton(),
-                      SizedBox.square(
-                        dimension: 45,
-                        child: _playPauseButton(),
-                      ),
-                      _nextTrackButton(),
-                      if (_isDesktop) _repeatTrackButton(),
-                    ],
-                  ),
-                  leadingToTitle: 15,
                 ),
+                title: Text(
+                  currentSong?.title ?? '',
+                  style: TextStyle(
+                    fontSize: _isMobile ? 18 : 24,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  maxLines: 1,
+                ),
+                subtitle: Text(
+                  currentSong?.artist ?? '',
+                  style: TextStyle(
+                    fontSize: _isMobile ? 12 : 18,
+                    height: 1.2,
+                  ),
+                ),
+                trailing: Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (_isDesktop) const RemainingDuration(),
+                    if (_isDesktop) const RandomQueueButton(),
+                    _prevTrackButton(),
+                    SizedBox.square(
+                      dimension: 45,
+                      child: _playPauseButton(),
+                    ),
+                    _nextTrackButton(),
+                    if (_isDesktop) _repeatTrackButton(),
+                  ],
+                ),
+                leadingToTitle: 15,
               ),
             );
           },

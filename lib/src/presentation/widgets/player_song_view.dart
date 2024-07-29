@@ -20,8 +20,8 @@ class PlayerSongView extends ConsumerWidget {
   final SongDTO song;
   final bool isPlaying;
   final double? downloadProgress;
-  final VoidCallback? onTap;
-  final VoidCallback? onLikePressed;
+  final void Function(SongDTO)? onTap;
+  final void Function(SongDTO)? onLikePressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final int position;
 
@@ -44,73 +44,74 @@ class PlayerSongView extends ConsumerWidget {
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SimpleListTile(
-        backgroundColor: isPlaying
-            ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
-            : Colors.transparent,
-        padding: EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: isMobile ? 16 : 30,
+    return SimpleListTile(
+      onTap: (onTap != null) ? () => onTap!.call(song) : null,
+      backgroundColor: isPlaying
+          ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
+          : Colors.transparent,
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 16 : 30,
+        12,
+        (optionsBuilder != null) ? 4 : (isMobile ? 16 : 30),
+        12,
+      ),
+      title: Text(
+        song.name ?? '',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          height: 1.2,
         ),
-        title: Text(
-          song.name ?? '',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
+      ),
+      subtitle: Text(
+        song.albumArtist ?? '',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w300,
+          height: 1.2,
         ),
-        subtitle: Text(
-          song.albumArtist ?? '',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w300,
-            height: 1.2,
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.only(right: 10.0),
-          child: Text(position.toString()),
-        ),
-        trailing: Wrap(
-          spacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(formattedDuration),
-            if (downloadProgress != null)
-              SizedBox.square(
-                dimension: 30,
-                child: CircularProgressIndicator(
-                  value: downloadProgress,
-                  color: const Color(0xFF0066FF),
-                  backgroundColor: theme.colorScheme.onPrimary,
-                  strokeWidth: 2,
-                ),
+      ),
+      leading: Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Text(position.toString()),
+      ),
+      trailing: Wrap(
+        spacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(formattedDuration),
+          if (downloadProgress != null)
+            SizedBox.square(
+              dimension: 30,
+              child: CircularProgressIndicator(
+                value: downloadProgress,
+                color: const Color(0xFF0066FF),
+                backgroundColor: theme.colorScheme.onPrimary,
+                strokeWidth: 2,
               ),
-            if (isDesktop)
-              IconButton(
-                onPressed: onLikePressed,
-                icon: Icon(
-                  CupertinoIcons.heart,
-                  color: theme.colorScheme.onPrimary,
-                ),
-                selectedIcon: Icon(
-                  CupertinoIcons.heart_fill,
-                  color: theme.colorScheme.primary,
-                ),
-                isSelected: song.songUserData.isFavorite,
+            ),
+          if (isDesktop)
+            IconButton(
+              onPressed: (onLikePressed != null)
+                  ? () => onLikePressed!.call(song)
+                  : null,
+              icon: Icon(
+                CupertinoIcons.heart,
+                color: theme.colorScheme.onPrimary,
               ),
-            if (optionsBuilder != null)
-              PopupMenuButton<void>(
-                icon: const Icon(Icons.more_vert),
-                tooltip: 'More',
-                itemBuilder: optionsBuilder!,
+              selectedIcon: Icon(
+                CupertinoIcons.heart_fill,
+                color: theme.colorScheme.primary,
               ),
-          ],
-        ),
+              isSelected: song.songUserData.isFavorite,
+            ),
+          if (optionsBuilder != null)
+            PopupMenuButton<void>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More',
+              itemBuilder: optionsBuilder!,
+            ),
+        ],
       ),
     );
   }

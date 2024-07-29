@@ -40,7 +40,7 @@ abstract class JellyfinApi {
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<AlbumsWrapper>> getAlbums({
     @Path('userId') required String userId,
-    @Query('ParentId') required String libraryId,
+    @Query('ParentId') String? libraryId,
     @Query('IncludeItemTypes') String type = 'MusicAlbum',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
@@ -54,8 +54,8 @@ abstract class JellyfinApi {
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<AlbumsWrapper>> searchAlbums({
     @Path('userId') required String userId,
-    @Query('ParentId') required String libraryId,
     @Query('searchTerm') required String searchTerm,
+    @Query('ParentId') String? libraryId,
     @Query('IncludeItemTypes') String type = 'MusicAlbum',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',

@@ -10,6 +10,7 @@ import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/playlists_provider.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -40,13 +41,56 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late bool _isMobile;
   late bool _isDesktop;
 
+  Future<void> _onAddToPlaylistPressed() async {
+    if (_isDesktop) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text(
+            'Choose a playlist',
+            textAlign: TextAlign.center,
+          ),
+          content: _playlistsList(),
+        ),
+      );
+    } else {
+      await showModalBottomSheet<void>(
+        context: context,
+        clipBehavior: Clip.antiAlias,
+        builder: (context) => Scaffold(
+          // backgroundColor: ,
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: _theme.bottomSheetTheme.backgroundColor,
+            automaticallyImplyLeading: false,
+            title: const Text('Choose a playlist'),
+            actions: const [
+              CloseButton(),
+            ],
+          ),
+          body: CustomScrollbar(
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                child: _playlistsList(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   void _onScroll() {
     final titleContext = _titleKey.currentContext;
 
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox =
+          scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -63,12 +107,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   void initState() {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
-    _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
+    _imageService =
+        ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (event != null) {
         if (mounted) {
-          _currentSong.value = event.sequence[event.currentIndex].tag as MediaItem;
+          _currentSong.value =
+              event.sequence[event.currentIndex].tag as MediaItem;
           ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
             id: widget.album.id,
             tagId: widget.album.imageTags['Primary'],
@@ -80,9 +126,16 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   void _getSongs() {
-    ref.read(jellyfinApiProvider).getSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, albumId: widget.album.id).then((value) {
+    ref
+        .read(jellyfinApiProvider)
+        .getSongs(
+          userId: ref.read(currentUserProvider)!.userId,
+          albumId: widget.album.id,
+        )
+        .then((value) {
       setState(() {
-        final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+        final items = [...value.data.items]
+          ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
         songs = items;
       });
     });
@@ -99,11 +152,11 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _isDesktop = deviceType == DeviceScreenType.desktop;
   }
 
-  ImageProvider get albumCover => _imageService.albumIP(id: widget.album.id, tagId: widget.album.imageTags['Primary']);
+  ImageProvider get albumCover => _imageService.albumIP(
+      id: widget.album.id, tagId: widget.album.imageTags['Primary']);
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -190,19 +243,31 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           builder: (context, item, other) {
                             return PlayerSongView(
                               song: songs[index],
-                              isPlaying: item != null && songs[index].id == item.id,
-                              downloadProgress: null, // index == 2 ? 0.8 : null,
-                              onTap: () {
-                                ref.read(playbackProvider.notifier).play(songs[index], songs, widget.album);
-                              },
+                              isPlaying:
+                                  item != null && songs[index].id == item.id,
+                              downloadProgress:
+                                  null, // index == 2 ? 0.8 : null,
+                              onTap: (song) => ref
+                                  .read(playbackProvider.notifier)
+                                  .play(song, songs, widget.album),
                               position: index + 1,
-                              onLikePressed: () async {
+                              onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
-                                songs[index].songUserData.isFavorite
-                                    ? await api.removeFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id)
-                                    : await api.saveFavorite(userId: ref.read(currentUserProvider.notifier).state!.userId, itemId: songs[index].id);
+                                final callback = song.songUserData.isFavorite
+                                    ? api.removeFavorite
+                                    : api.saveFavorite;
+                                await callback.call(
+                                  userId: ref.read(currentUserProvider)!.userId,
+                                  itemId: song.id,
+                                );
                                 _getSongs();
                               },
+                              optionsBuilder: (context) => [
+                                PopupMenuItem(
+                                  onTap: _onAddToPlaylistPressed,
+                                  child: const Text('Add to playlist'),
+                                ),
+                              ],
                             );
                           },
                         ),
@@ -313,7 +378,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       _albumDetails(
                         duration: widget.album.duration,
                         soundsCount: songs.length,
-                        albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
+                        albumArtist:
+                            songs.isNotEmpty ? songs.first.albumArtist : '',
                         year: widget.album.productionYear,
                         divider: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -383,7 +449,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }) {
     final durationInSeconds = duration.inSeconds;
     final hours = durationInSeconds ~/ Duration.secondsPerHour;
-    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/ Duration.secondsPerMinute;
+    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/
+        Duration.secondsPerMinute;
     final seconds = durationInSeconds % Duration.secondsPerMinute;
 
     return DefaultTextStyle(
@@ -422,6 +489,39 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       ),
     );
   }
+
+  Widget _playlistsList({
+    EdgeInsets padding = EdgeInsets.zero,
+  }) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final data = ref.watch(playlistsProvider);
+
+        if (data.isLoading) {
+          return const Center(child: CircularProgressIndicator.adaptive());
+        }
+
+        return ListBody(
+          children: [
+            SizedBox(height: padding.top),
+            for (final playlist in data.value.items)
+              SimpleListTile(
+                onTap: () {},
+                padding: padding.copyWith(top: 6, bottom: 6),
+                title: Text(
+                  playlist.name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            SizedBox(height: padding.bottom),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
@@ -455,5 +555,6 @@ class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) => image != oldDelegate.image || isMobile != oldDelegate.isMobile;
+  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) =>
+      image != oldDelegate.image || isMobile != oldDelegate.isMobile;
 }

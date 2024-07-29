@@ -21,36 +21,33 @@ class SingerView extends StatelessWidget {
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isTablet = deviceType == DeviceScreenType.tablet;
 
-    return GestureDetector(
+    return SimpleListTile(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SimpleListTile(
-        leading: Image(
-          image: const AssetImage(Images.artistSample),
-          width: isMobile ? 42 : 80,
-          height: isMobile ? 42 : 80,
-        ),
-        title: Text(
-          name,
-          style: TextStyle(
-            fontSize: isTablet ? 20 : 16,
-            height: 1.2,
-            color: theme.colorScheme.onPrimary,
-            overflow: TextOverflow.ellipsis,
-          ),
-          maxLines: 1,
-        ),
-        subtitle: Text(
-          'Artist',
-          style: TextStyle(
-            fontSize: isTablet ? 16 : 12,
-            height: 1.2,
-            color: theme.colorScheme.onPrimary.withOpacity(0.61),
-          ),
-        ),
-        trailing: const Icon(JPlayer.chevron_right),
-        leadingToTitle: isMobile ? 6 : (isTablet ? 16 : 20),
+      leading: Image(
+        image: const AssetImage(Images.artistSample),
+        width: isMobile ? 42 : 80,
+        height: isMobile ? 42 : 80,
       ),
+      title: Text(
+        name,
+        style: TextStyle(
+          fontSize: isTablet ? 20 : 16,
+          height: 1.2,
+          color: theme.colorScheme.onPrimary,
+          overflow: TextOverflow.ellipsis,
+        ),
+        maxLines: 1,
+      ),
+      subtitle: Text(
+        'Artist',
+        style: TextStyle(
+          fontSize: isTablet ? 16 : 12,
+          height: 1.2,
+          color: theme.colorScheme.onPrimary.withOpacity(0.61),
+        ),
+      ),
+      trailing: const Icon(JPlayer.chevron_right),
+      leadingToTitle: isMobile ? 6 : (isTablet ? 16 : 20),
     );
   }
 }
