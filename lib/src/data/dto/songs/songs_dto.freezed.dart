@@ -32,8 +32,14 @@ mixin _$SongDTO {
   String get type => throw _privateConstructorUsedError;
   @JsonKey(name: 'AlbumArtist')
   String? get albumArtist => throw _privateConstructorUsedError;
+  @JsonKey(name: 'PlaylistItemId')
+  String? get playlistItemId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'AlbumArtists')
+  List<ArtistDTO>? get albumArtists => throw _privateConstructorUsedError;
   @JsonKey(name: 'Album')
   String? get albumName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'AlbumId')
+  String? get albumId => throw _privateConstructorUsedError;
   @JsonKey(name: 'Name')
   String? get name => throw _privateConstructorUsedError;
   @JsonKey(name: 'ImageTags')
@@ -56,7 +62,10 @@ abstract class $SongDTOCopyWith<$Res> {
       @JsonKey(name: 'UserData') SongUserData songUserData,
       @JsonKey(name: 'Type') String type,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
+      @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
+      @JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,
       @JsonKey(name: 'Album') String? albumName,
+      @JsonKey(name: 'AlbumId') String? albumId,
       @JsonKey(name: 'Name') String? name,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 
@@ -82,7 +91,10 @@ class _$SongDTOCopyWithImpl<$Res, $Val extends SongDTO>
     Object? songUserData = null,
     Object? type = null,
     Object? albumArtist = freezed,
+    Object? playlistItemId = freezed,
+    Object? albumArtists = freezed,
     Object? albumName = freezed,
+    Object? albumId = freezed,
     Object? name = freezed,
     Object? imageTags = null,
   }) {
@@ -111,9 +123,21 @@ class _$SongDTOCopyWithImpl<$Res, $Val extends SongDTO>
           ? _value.albumArtist
           : albumArtist // ignore: cast_nullable_to_non_nullable
               as String?,
+      playlistItemId: freezed == playlistItemId
+          ? _value.playlistItemId
+          : playlistItemId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumArtists: freezed == albumArtists
+          ? _value.albumArtists
+          : albumArtists // ignore: cast_nullable_to_non_nullable
+              as List<ArtistDTO>?,
       albumName: freezed == albumName
           ? _value.albumName
           : albumName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumId: freezed == albumId
+          ? _value.albumId
+          : albumId // ignore: cast_nullable_to_non_nullable
               as String?,
       name: freezed == name
           ? _value.name
@@ -149,7 +173,10 @@ abstract class _$$SongDTOImplCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
       @JsonKey(name: 'UserData') SongUserData songUserData,
       @JsonKey(name: 'Type') String type,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
+      @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
+      @JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,
       @JsonKey(name: 'Album') String? albumName,
+      @JsonKey(name: 'AlbumId') String? albumId,
       @JsonKey(name: 'Name') String? name,
       @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 
@@ -174,7 +201,10 @@ class __$$SongDTOImplCopyWithImpl<$Res>
     Object? songUserData = null,
     Object? type = null,
     Object? albumArtist = freezed,
+    Object? playlistItemId = freezed,
+    Object? albumArtists = freezed,
     Object? albumName = freezed,
+    Object? albumId = freezed,
     Object? name = freezed,
     Object? imageTags = null,
   }) {
@@ -203,9 +233,21 @@ class __$$SongDTOImplCopyWithImpl<$Res>
           ? _value.albumArtist
           : albumArtist // ignore: cast_nullable_to_non_nullable
               as String?,
+      playlistItemId: freezed == playlistItemId
+          ? _value.playlistItemId
+          : playlistItemId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumArtists: freezed == albumArtists
+          ? _value._albumArtists
+          : albumArtists // ignore: cast_nullable_to_non_nullable
+              as List<ArtistDTO>?,
       albumName: freezed == albumName
           ? _value.albumName
           : albumName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumId: freezed == albumId
+          ? _value.albumId
+          : albumId // ignore: cast_nullable_to_non_nullable
               as String?,
       name: freezed == name
           ? _value.name
@@ -229,11 +271,15 @@ class _$SongDTOImpl implements _SongDTO {
       @JsonKey(name: 'UserData') required this.songUserData,
       @JsonKey(name: 'Type') required this.type,
       @JsonKey(name: 'AlbumArtist') this.albumArtist,
+      @JsonKey(name: 'PlaylistItemId') this.playlistItemId,
+      @JsonKey(name: 'AlbumArtists') final List<ArtistDTO>? albumArtists,
       @JsonKey(name: 'Album') this.albumName,
+      @JsonKey(name: 'AlbumId') this.albumId,
       @JsonKey(name: 'Name') this.name,
       @JsonKey(name: 'ImageTags')
       final Map<String, String> imageTags = const {}})
-      : _imageTags = imageTags;
+      : _albumArtists = albumArtists,
+        _imageTags = imageTags;
 
   factory _$SongDTOImpl.fromJson(Map<String, dynamic> json) =>
       _$$SongDTOImplFromJson(json);
@@ -257,8 +303,25 @@ class _$SongDTOImpl implements _SongDTO {
   @JsonKey(name: 'AlbumArtist')
   final String? albumArtist;
   @override
+  @JsonKey(name: 'PlaylistItemId')
+  final String? playlistItemId;
+  final List<ArtistDTO>? _albumArtists;
+  @override
+  @JsonKey(name: 'AlbumArtists')
+  List<ArtistDTO>? get albumArtists {
+    final value = _albumArtists;
+    if (value == null) return null;
+    if (_albumArtists is EqualUnmodifiableListView) return _albumArtists;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
   @JsonKey(name: 'Album')
   final String? albumName;
+  @override
+  @JsonKey(name: 'AlbumId')
+  final String? albumId;
   @override
   @JsonKey(name: 'Name')
   final String? name;
@@ -273,7 +336,7 @@ class _$SongDTOImpl implements _SongDTO {
 
   @override
   String toString() {
-    return 'SongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, albumName: $albumName, name: $name, imageTags: $imageTags)';
+    return 'SongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, playlistItemId: $playlistItemId, albumArtists: $albumArtists, albumName: $albumName, albumId: $albumId, name: $name, imageTags: $imageTags)';
   }
 
   @override
@@ -291,8 +354,13 @@ class _$SongDTOImpl implements _SongDTO {
             (identical(other.type, type) || other.type == type) &&
             (identical(other.albumArtist, albumArtist) ||
                 other.albumArtist == albumArtist) &&
+            (identical(other.playlistItemId, playlistItemId) ||
+                other.playlistItemId == playlistItemId) &&
+            const DeepCollectionEquality()
+                .equals(other._albumArtists, _albumArtists) &&
             (identical(other.albumName, albumName) ||
                 other.albumName == albumName) &&
+            (identical(other.albumId, albumId) || other.albumId == albumId) &&
             (identical(other.name, name) || other.name == name) &&
             const DeepCollectionEquality()
                 .equals(other._imageTags, _imageTags));
@@ -308,7 +376,10 @@ class _$SongDTOImpl implements _SongDTO {
       songUserData,
       type,
       albumArtist,
+      playlistItemId,
+      const DeepCollectionEquality().hash(_albumArtists),
       albumName,
+      albumId,
       name,
       const DeepCollectionEquality().hash(_imageTags));
 
@@ -334,7 +405,10 @@ abstract class _SongDTO implements SongDTO {
           @JsonKey(name: 'UserData') required final SongUserData songUserData,
           @JsonKey(name: 'Type') required final String type,
           @JsonKey(name: 'AlbumArtist') final String? albumArtist,
+          @JsonKey(name: 'PlaylistItemId') final String? playlistItemId,
+          @JsonKey(name: 'AlbumArtists') final List<ArtistDTO>? albumArtists,
           @JsonKey(name: 'Album') final String? albumName,
+          @JsonKey(name: 'AlbumId') final String? albumId,
           @JsonKey(name: 'Name') final String? name,
           @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
       _$SongDTOImpl;
@@ -360,8 +434,17 @@ abstract class _SongDTO implements SongDTO {
   @JsonKey(name: 'AlbumArtist')
   String? get albumArtist;
   @override
+  @JsonKey(name: 'PlaylistItemId')
+  String? get playlistItemId;
+  @override
+  @JsonKey(name: 'AlbumArtists')
+  List<ArtistDTO>? get albumArtists;
+  @override
   @JsonKey(name: 'Album')
   String? get albumName;
+  @override
+  @JsonKey(name: 'AlbumId')
+  String? get albumId;
   @override
   @JsonKey(name: 'Name')
   String? get name;

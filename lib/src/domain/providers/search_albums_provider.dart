@@ -4,22 +4,20 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
-
-
-class SearchAlbumNotifier extends StateNotifier<AsyncData<ItemState>> {
-  SearchAlbumNotifier(this.ref, this._searchTerm, AsyncData<ItemState> initialState) : super(initialState) {
+class SearchAlbumsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
+  SearchAlbumsNotifier(this.ref, this._searchTerm, AsyncData<ItemsPage> initialState) : super(initialState) {
     ref.listen(searchProvider, (previous, next) {
       _searchTerm = next;
       search();
     });
   }
 
-  StateNotifierProviderRef<SearchAlbumNotifier, AsyncData<ItemState>> ref;
+  StateNotifierProviderRef<SearchAlbumsNotifier, AsyncData<ItemsPage>> ref;
   String? _searchTerm;
 
   Future<void> search() async {
     if (_searchTerm == null || _searchTerm!.isEmpty) {
-      state = AsyncData(ItemState(items: []));
+      state = const AsyncData(ItemsPage());
       return;
     }
 
@@ -28,10 +26,10 @@ class SearchAlbumNotifier extends StateNotifier<AsyncData<ItemState>> {
           libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
           searchTerm: _searchTerm!,
         );
-    state = AsyncData(ItemState(items: resp.data.items));
+    state = AsyncData(ItemsPage(items: resp.data.items));
   }
 }
 
-final searchAlbumProvider = StateNotifierProvider<SearchAlbumNotifier, AsyncData<ItemState>>((ref) {
-  return SearchAlbumNotifier(ref, ref.read(searchProvider), AsyncData<ItemState>(ItemState()));
+final searchAlbumProvider = StateNotifierProvider<SearchAlbumsNotifier, AsyncData<ItemsPage>>((ref) {
+  return SearchAlbumsNotifier(ref, ref.read(searchProvider), const AsyncData<ItemsPage>(ItemsPage()));
 });

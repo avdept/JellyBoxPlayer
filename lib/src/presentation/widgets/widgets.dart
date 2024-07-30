@@ -1,6 +1,7 @@
 export 'adaptive_builder.dart';
 export 'album_view.dart';
 export 'bottom_player.dart';
+export 'create_playlist_form.dart';
 export 'custom_navigation_rail.dart';
 export 'custom_scrollbar.dart';
 export 'downloaded_album_view.dart';

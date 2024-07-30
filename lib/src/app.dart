@@ -31,7 +31,7 @@ class MediaKeyHandler {
       case 'prev':
         ref.read(playbackProvider.notifier).prev();
       default:
-        print('Unknown event: $event');
+        debugPrint('Unknown event: $event');
     }
   }
 }
@@ -108,6 +108,20 @@ class _AppState extends ConsumerState<App> {
                         ),
                       ],
                     ),
+                    GoRoute(
+                      path: Routes.playlist.name,
+                      pageBuilder: widget.screenFactory.playlistPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.album.name,
+                          pageBuilder: widget.screenFactory.albumPage,
+                        ),
+                        GoRoute(
+                          path: Routes.artist.name,
+                          pageBuilder: widget.screenFactory.artistPage,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -122,12 +136,16 @@ class _AppState extends ConsumerState<App> {
                       path: Routes.album.name,
                       pageBuilder: widget.screenFactory.albumPage,
                     ),
-                    GoRoute(path: Routes.artist.name, pageBuilder: widget.screenFactory.artistPage, routes: [
-                      GoRoute(
-                        path: Routes.album.name,
-                        pageBuilder: widget.screenFactory.albumPage,
-                      ),
-                    ]),
+                    GoRoute(
+                      path: Routes.artist.name,
+                      pageBuilder: widget.screenFactory.artistPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.album.name,
+                          pageBuilder: widget.screenFactory.albumPage,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -160,22 +178,15 @@ class _AppState extends ConsumerState<App> {
       redirect: (context, router) async {
         final authenticated = _authState.value;
         final location = router.matchedLocation;
-        if (authenticated == null) {
-          return Routes.root;
-        } else if (authenticated == false) {
-          return Routes.login;
-        } else if (authenticated) {
-          if (location.startsWith(Routes.listen)) return null;
-          if (location.startsWith(Routes.search)) return null;
-          if (location.startsWith(Routes.settings)) return null;
-          if (location.startsWith(Routes.downloads)) return null;
+        if (authenticated == null) return '/'; // If auth state is unknown
+        if (!authenticated && location != Routes.login) return Routes.login;
+        if (authenticated && (location == Routes.login || location == '/')) {
           final selectedLibrary = ref.read(currentLibraryProvider);
-          if (selectedLibrary != null) {
-            return widget.initialRoute ?? Routes.listen;
-          }
-          return widget.initialRoute ?? Routes.library;
-        } else if (location != Routes.login) {
-          return Routes.login;
+          final initialRoute = widget.initialRoute ?? '/';
+
+          return (initialRoute == '/' || initialRoute == Routes.login)
+              ? ((selectedLibrary != null) ? Routes.listen : Routes.library)
+              : initialRoute;
         }
 
         return null;
@@ -212,13 +223,12 @@ class _AppState extends ConsumerState<App> {
       builder: (context, child) {
         final theme = Theme.of(context);
 
-        switch (theme.brightness) {
-          case Brightness.dark:
-            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-
-          case Brightness.light:
-            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-        }
+        SystemChrome.setSystemUIOverlayStyle(
+          switch (theme.brightness) {
+            Brightness.dark => SystemUiOverlayStyle.light,
+            Brightness.light => SystemUiOverlayStyle.dark,
+          },
+        );
 
         return child!;
       },

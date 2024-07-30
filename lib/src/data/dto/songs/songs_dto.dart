@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 
 part 'songs_dto.freezed.dart';
 part 'songs_dto.g.dart';
 
 @freezed
 class SongDTO with _$SongDTO {
-
   const factory SongDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'RunTimeTicks') required int runTimeTicks,
@@ -13,21 +13,26 @@ class SongDTO with _$SongDTO {
     @JsonKey(name: 'UserData') required SongUserData songUserData,
     @JsonKey(name: 'Type') required String type,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
+    @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
+    @JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,
     @JsonKey(name: 'Album') String? albumName,
+    @JsonKey(name: 'AlbumId') String? albumId,
     @JsonKey(name: 'Name') String? name,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
   }) = _SongDTO;
 
-  factory SongDTO.fromJson(Map<String, dynamic> json) => _$SongDTOFromJson(json);
+  factory SongDTO.fromJson(Map<String, dynamic> json) =>
+      _$SongDTOFromJson(json);
 }
 
 @freezed
 class SongsWrapper with _$SongsWrapper {
-  const factory SongsWrapper({@JsonKey(name: 'Items') required List<SongDTO> items}) = _SongsWrapper;
+  const factory SongsWrapper(
+      {@JsonKey(name: 'Items') required List<SongDTO> items}) = _SongsWrapper;
 
-  factory SongsWrapper.fromJson(Map<String, dynamic> json) => _$SongsWrapperFromJson(json);
+  factory SongsWrapper.fromJson(Map<String, dynamic> json) =>
+      _$SongsWrapperFromJson(json);
 }
-
 
 @freezed
 class SongUserData with _$SongUserData {
@@ -38,5 +43,6 @@ class SongUserData with _$SongUserData {
     @JsonKey(name: 'Played') required bool played,
   }) = _SongUserData;
 
-  factory SongUserData.fromJson(Map<String, dynamic> json) => _$SongUserDataFromJson(json);
+  factory SongUserData.fromJson(Map<String, dynamic> json) =>
+      _$SongUserDataFromJson(json);
 }

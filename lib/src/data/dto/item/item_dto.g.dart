@@ -13,8 +13,8 @@ _$ItemDTOImpl _$$ItemDTOImplFromJson(Map<String, dynamic> json) =>
       serverId: json['ServerId'] as String,
       type: json['Type'] as String,
       overview: json['Overview'] as String?,
-      durationInTicks: json['RunTimeTicks'] as int?,
-      productionYear: json['ProductionYear'] as int?,
+      durationInTicks: (json['RunTimeTicks'] as num?)?.toInt(),
+      productionYear: (json['ProductionYear'] as num?)?.toInt(),
       albumArtist: json['AlbumArtist'] as String?,
       backgropImageTags: (json['BackdropImageTags'] as List<dynamic>?)
               ?.map((e) => e as String)

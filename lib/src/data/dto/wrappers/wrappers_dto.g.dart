@@ -11,7 +11,7 @@ _$AlbumsWrapperImpl _$$AlbumsWrapperImplFromJson(Map<String, dynamic> json) =>
       items: (json['Items'] as List<dynamic>)
           .map((e) => ItemDTO.fromJson(e as Map<String, dynamic>))
           .toList(),
-      totalRecordCount: json['TotalRecordCount'] as int,
+      totalRecordCount: (json['TotalRecordCount'] as num).toInt(),
     );
 
 Map<String, dynamic> _$$AlbumsWrapperImplToJson(_$AlbumsWrapperImpl instance) =>

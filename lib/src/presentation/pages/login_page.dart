@@ -34,7 +34,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
     if (!Uri.parse(credentials.serverUrl).isAbsolute) {
       setState(() {
-        error = 'Server URL is invalid. Should start with http/https and does not contain any path or query parameters';
+        error =
+            'Server URL is invalid. Should start with http/https and does not contain any path or query parameters';
       });
       return;
     }
@@ -79,8 +80,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
                         _loginField(),
                         const SizedBox(height: 8),
                         _passwordField(),
-                        if (error != null) const SizedBox(height: 8),
-                        if (error != null) Text(error!),
+                        if (error != null) ...[
+                          const SizedBox(height: 8),
+                          Text(error!),
+                        ],
                         const SizedBox(height: 63),
                         _signInButton(),
                       ],
