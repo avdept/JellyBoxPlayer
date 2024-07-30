@@ -100,6 +100,11 @@ abstract class JellyfinApi {
     @Body() Map<String, dynamic> arguments,
   );
 
+  @DELETE('/Items/{playlistId}')
+  Future<void> deletePlaylist({
+    @Path('playlistId') required String playlistId,
+  });
+
   @POST('/Playlists/{playlistId}/Items')
   Future<void> addPlaylistItems({
     @Path('playlistId') required String playlistId,
@@ -116,7 +121,8 @@ abstract class JellyfinApi {
   @GET('/Artists')
   Future<HttpResponse<AlbumsWrapper>> getArtists({
     @Query('userId') required String userId,
-    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('Fields')
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
@@ -130,7 +136,8 @@ abstract class JellyfinApi {
   Future<HttpResponse<AlbumsWrapper>> searchArtists({
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
-    @Query('Fields') List<String> fields = const ['BackdropImageTags', 'Overview'],
+    @Query('Fields')
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',

@@ -1,4 +1,5 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/albums_provider.dart';
 import 'package:jplayer/src/domain/providers/artists_provider.dart';
@@ -70,11 +72,11 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   void _onCreateNewPlaylist() {
     if (_device.isDesktop) {
-      showDialog<void>(
+      showAdaptiveDialog<void>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => CupertinoAlertDialog(
           content: CreatePlaylistForm(
-            onCreated: () => ref.refresh(playlistsProvider),
+            onCreated: () => ref.invalidate(playlistsProvider),
           ),
         ),
       );
@@ -84,9 +86,47 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       controller = _scaffoldKey.currentState?.showBottomSheet(
         (context) => CreatePlaylistForm(
           controller: controller,
-          onCreated: () => ref.refresh(playlistsProvider),
+          onCreated: () => ref.invalidate(playlistsProvider),
         ),
       );
+    }
+  }
+
+  Future<void> _onDeletePlaylist(ItemDTO playlist) async {
+    final shouldDelete = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text.rich(
+          TextSpan(
+            text: 'Delete ',
+            children: [
+              TextSpan(
+                text: '"${playlist.name}"',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: '?'),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDefaultAction: true,
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete ?? false) {
+      await ref
+          .read(jellyfinApiProvider)
+          .deletePlaylist(playlistId: playlist.id);
+      ref.invalidate(playlistsProvider);
     }
   }
 
@@ -160,7 +200,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                   ListenView.playlists => ref.watch(playlistsProvider),
                 };
                 return provider.when(
-                  data: (ItemsPage state) => SliverGrid.builder(
+                  data: (state) => SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: _device.isTablet ? 360 : 200,
                       mainAxisSpacing: _device.isMobile ? 15 : 24,
@@ -169,14 +209,26 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                       childAspectRatio:
                           _device.isTablet ? 360 / 413 : 175 / 215.7,
                     ),
-                    itemBuilder: (context, index) => AlbumView(
-                      album: state.items[index],
-                      onTap: (item) => switch (value) {
-                        ListenView.albums => _onAlbumTap(item),
-                        ListenView.artists => _onArtistTap(item),
-                        ListenView.playlists => _onPlaylistTap(item),
-                      },
-                    ),
+                    itemBuilder: (context, index) {
+                      final item = state.items[index];
+                      return AlbumView(
+                        album: item,
+                        onTap: (item) => switch (value) {
+                          ListenView.albums => _onAlbumTap(item),
+                          ListenView.artists => _onArtistTap(item),
+                          ListenView.playlists => _onPlaylistTap(item),
+                        },
+                        optionsBuilder: switch (value) {
+                          ListenView.playlists => (context) => [
+                                PopupMenuItem(
+                                  onTap: () => _onDeletePlaylist(item),
+                                  child: const Text('Delete playlist'),
+                                ),
+                              ],
+                          _ => null,
+                        },
+                      );
+                    },
                     itemCount: state.items.length,
                   ),
                   error: (error, stackTrace) => SliverToBoxAdapter(
