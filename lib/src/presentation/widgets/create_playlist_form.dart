@@ -7,11 +7,13 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 class CreatePlaylistForm extends ConsumerStatefulWidget {
   const CreatePlaylistForm({
     this.controller,
+    this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
     this.onCreated,
     super.key,
   });
 
   final PersistentBottomSheetController? controller;
+  final EdgeInsets padding;
   final VoidCallback? onCreated;
 
   @override
@@ -42,13 +44,13 @@ class _CreatePlaylistBottomSheetState
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      minimum: widget.padding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           LabeledTextField(
             controller: _inputController,
-            label: 'Playlist name',
+            placeholder: 'Playlist name',
             keyboardType: TextInputType.text,
             autofocus: true,
           ),

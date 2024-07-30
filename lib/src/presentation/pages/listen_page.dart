@@ -84,9 +84,17 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       PersistentBottomSheetController? controller;
       _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
       controller = _scaffoldKey.currentState?.showBottomSheet(
-        (context) => CreatePlaylistForm(
-          controller: controller,
-          onCreated: () => ref.invalidate(playlistsProvider),
+        (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CloseButton(onPressed: controller?.close),
+            CreatePlaylistForm(
+              controller: controller,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              onCreated: () => ref.invalidate(playlistsProvider),
+            ),
+          ],
         ),
       );
     }
