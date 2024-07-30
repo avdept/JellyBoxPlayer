@@ -13,8 +13,8 @@ import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/current_playlist_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends ConsumerStatefulWidget {
   const ListenPage({super.key});
@@ -31,10 +31,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late ThemeData _theme;
-  late Size _screenSize;
-  late bool _isDesktop;
-  late bool _isMobile;
-  late bool _isTablet;
+  late DeviceType _device;
 
   Map<ListenView, String> get _viewLabels => {
         ListenView.albums: 'Albums',
@@ -72,7 +69,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   }
 
   void _onCreateNewPlaylist() {
-    if (_isDesktop) {
+    if (_device.isDesktop) {
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
@@ -122,12 +119,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _theme = Theme.of(context);
-    _screenSize = MediaQuery.sizeOf(context);
-
-    final deviceType = getDeviceType(_screenSize);
-    _isDesktop = deviceType == DeviceScreenType.desktop;
-    _isMobile = deviceType == DeviceScreenType.mobile;
-    _isTablet = deviceType == DeviceScreenType.tablet;
+    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
   @override
@@ -137,9 +129,10 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       body: ScrollablePageScaffold(
         useGradientBackground: true,
         navigationBar: PreferredSize(
-          preferredSize: Size.fromHeight(_isMobile ? 60 : 100),
+          preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
+            padding:
+                EdgeInsets.symmetric(horizontal: _device.isMobile ? 16 : 30),
             child: Row(
               children: [
                 _pageViewToggle(),
@@ -152,8 +145,8 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         ),
         loadMoreData: loadMore,
         contentPadding: EdgeInsets.only(
-          left: _isMobile ? 16 : 30,
-          right: _isMobile ? 16 : 30,
+          left: _device.isMobile ? 16 : 30,
+          right: _device.isMobile ? 16 : 30,
           bottom: 30,
         ),
         slivers: [
@@ -169,10 +162,12 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                 return provider.when(
                   data: (ItemsPage state) => SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: _isTablet ? 360 : 200,
-                      mainAxisSpacing: _isMobile ? 15 : 24,
-                      crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                      childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
+                      maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+                      mainAxisSpacing: _device.isMobile ? 15 : 24,
+                      crossAxisSpacing:
+                          _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
+                      childAspectRatio:
+                          _device.isTablet ? 360 / 413 : 175 / 215.7,
                     ),
                     itemBuilder: (context, index) {
                       final item = state.items[index];
@@ -212,7 +207,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   Widget _pageViewToggle() => ChipTheme(
         data: ChipTheme.of(context).copyWith(
-          labelStyle: TextStyle(fontSize: _isMobile ? 14 : 16),
+          labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
         ),
         child: Wrap(
           spacing: 12,
@@ -241,10 +236,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   List<EntityFilter> getFilterItems() => switch (_currentView.value) {
         ListenView.albums => EntityFilter.values.toList(),
-        ListenView.artists => [EntityFilter.sortName, EntityFilter.dateCreated],
+        ListenView.artists => [
+            EntityFilter.sortName,
+            EntityFilter.dateCreated,
+          ],
         ListenView.playlists => [
             EntityFilter.sortName,
-            EntityFilter.dateCreated
+            EntityFilter.dateCreated,
           ],
       };
 

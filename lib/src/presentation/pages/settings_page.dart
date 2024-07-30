@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -21,15 +21,12 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final padding = MediaQuery.paddingOf(context);
-    final screenSize = MediaQuery.sizeOf(context);
-    final deviceType = getDeviceType(screenSize);
-    final isMobile = deviceType == DeviceScreenType.mobile;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
+    final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
     final contentPadding = EdgeInsets.only(
-      left: padding.left + (isMobile ? 16 : 30),
-      top: padding.top + (isMobile ? 16 : 30),
-      right: padding.right + (isMobile ? 16 : 30),
-      bottom: isMobile ? 22 : 26,
+      left: padding.left + (device.isMobile ? 16 : 30),
+      top: padding.top + (device.isMobile ? 16 : 30),
+      right: padding.right + (device.isMobile ? 16 : 30),
+      bottom: device.isMobile ? 22 : 26,
     );
 
     return Scaffold(
@@ -48,7 +45,7 @@ class SettingsPage extends ConsumerWidget {
                 child: Text(
                   'Settings',
                   style: TextStyle(
-                    fontSize: isMobile ? 24 : 36,
+                    fontSize: device.isMobile ? 24 : 36,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
                   ),
@@ -66,7 +63,7 @@ class SettingsPage extends ConsumerWidget {
                 children: [
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
-                  if (!isDesktop) _logOutButton(ref),
+                  if (!device.isDesktop) _logOutButton(ref),
                 ],
               ),
             ),
