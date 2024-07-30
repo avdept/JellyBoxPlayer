@@ -169,17 +169,14 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                       childAspectRatio:
                           _device.isTablet ? 360 / 413 : 175 / 215.7,
                     ),
-                    itemBuilder: (context, index) {
-                      final item = state.items[index];
-                      return AlbumView(
-                        album: item,
-                        onTap: () => switch (value) {
-                          ListenView.albums => _onAlbumTap(item),
-                          ListenView.artists => _onArtistTap(item),
-                          ListenView.playlists => _onPlaylistTap(item),
-                        },
-                      );
-                    },
+                    itemBuilder: (context, index) => AlbumView(
+                      album: state.items[index],
+                      onTap: (item) => switch (value) {
+                        ListenView.albums => _onAlbumTap(item),
+                        ListenView.artists => _onArtistTap(item),
+                        ListenView.playlists => _onPlaylistTap(item),
+                      },
+                    ),
                     itemCount: state.items.length,
                   ),
                   error: (error, stackTrace) => SliverToBoxAdapter(

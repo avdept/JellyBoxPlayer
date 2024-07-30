@@ -214,18 +214,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
                   childAspectRatio: _device.isTablet ? 0.8 : 175 / 215.7,
                 ),
-                itemBuilder: (context, index) {
-                  return AlbumView(
-                    album: artists.value.items[index],
-                    onTap: () {
-                      final location = GoRouterState.of(context).fullPath;
-                      context.go(
-                        '$location${Routes.artist}',
-                        extra: {'artist': artists.value.items[index]},
-                      );
-                    },
-                  );
-                },
+                itemBuilder: (context, index) => AlbumView(
+                  album: artists.value.items[index],
+                  onTap: (artist) {
+                    final location = GoRouterState.of(context).fullPath;
+                    context.go(
+                      '$location${Routes.artist}',
+                      extra: {'artist': artist},
+                    );
+                  },
+                ),
                 itemCount: value == SearchView.albums
                     ? artists.value.items.length
                     : min(firstRowCount, artists.value.items.length),
@@ -268,22 +266,18 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
                   childAspectRatio: _device.isTablet ? 0.8 : 175 / 215.7,
                 ),
-                itemBuilder: (context, index) {
-                  return AlbumView(
-                    album: albums.value.items[index],
-                    showArtist: false,
-                    onTap: () {
-                      final location = GoRouterState.of(context).fullPath;
-                      ref
-                          .read(currentAlbumProvider.notifier)
-                          .setAlbum(albums.value.items[index]);
-                      context.go(
-                        '$location${Routes.album}',
-                        extra: {'album': albums.value.items[index]},
-                      );
-                    },
-                  );
-                },
+                itemBuilder: (context, index) => AlbumView(
+                  album: albums.value.items[index],
+                  showArtist: false,
+                  onTap: (album) {
+                    final location = GoRouterState.of(context).fullPath;
+                    ref.read(currentAlbumProvider.notifier).setAlbum(album);
+                    context.go(
+                      '$location${Routes.album}',
+                      extra: {'album': album},
+                    );
+                  },
+                ),
                 itemCount: value == SearchView.albums
                     ? albums.value.items.length
                     : min(firstRowCount, albums.value.items.length),

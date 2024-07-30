@@ -362,12 +362,12 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             itemBuilder: (context, index) => AlbumView(
               showArtist: false,
               album: _albums[index],
-              onTap: () {
+              onTap: (album) {
                 final location = GoRouterState.of(context).fullPath;
                 context.go(
                   '$location${Routes.album}',
                   extra: {
-                    'album': _albums[index],
+                    'album': album,
                     'artist': widget.artist,
                   },
                 );
@@ -404,12 +404,12 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           itemBuilder: (context, index) => AlbumView(
             showArtist: false,
             album: _appearsOn[index],
-            onTap: () {
+            onTap: (album) {
               final location = GoRouterState.of(context).fullPath;
               context.go(
                 '$location${Routes.album}',
                 extra: {
-                  'album': _appearsOn[index],
+                  'album': album,
                   'artist': widget.artist,
                 },
               );
