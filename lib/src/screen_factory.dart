@@ -28,6 +28,7 @@ class ScreenFactory {
     final artist = params['artist'] is ItemDTO
         ? params['artist'] as ItemDTO
         : ItemDTO.fromJson(params['artist'] as Map<String, dynamic>);
+
     return CupertinoPage(
       child: ArtistPage(artist: artist),
     );

@@ -11,13 +11,13 @@ import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class AlbumPage extends ConsumerStatefulWidget {
   const AlbumPage({required this.album, super.key});
@@ -37,14 +37,12 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late final ImageService _imageService;
 
   late ThemeData _theme;
-  late Size _screenSize;
-  late bool _isMobile;
-  late bool _isDesktop;
+  late DeviceType _device;
 
   Future<void> _onAddToPlaylistPressed(SongDTO song) async {
     ItemDTO? playlist;
 
-    if (_isDesktop) {
+    if (_device.isDesktop) {
       playlist = await showDialog<ItemDTO>(
         context: context,
         builder: (context) => AlertDialog(
@@ -164,11 +162,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _theme = Theme.of(context);
-    _screenSize = MediaQuery.sizeOf(context);
-
-    final deviceType = getDeviceType(_screenSize);
-    _isMobile = deviceType == DeviceScreenType.mobile;
-    _isDesktop = deviceType == DeviceScreenType.desktop;
+    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
   ImageProvider get albumCover => _imageService.albumIP(
@@ -187,7 +181,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 previousPageTitle: 'Albums',
                 backgroundColor: Colors.transparent,
                 padding: EdgeInsetsDirectional.symmetric(
-                  horizontal: _isMobile ? 16 : 30,
+                  horizontal: _device.isMobile ? 16 : 30,
                 ),
                 middle: ValueListenableBuilder(
                   valueListenable: _titleOpacity,
@@ -202,7 +196,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     widget.album.name,
                     overflow: TextOverflow.clip,
                     style: TextStyle(
-                      fontSize: _isMobile ? 14 : 20,
+                      fontSize: _device.isMobile ? 14 : 20,
                       color: _theme.colorScheme.onPrimary,
                     ),
                   ),
@@ -214,7 +208,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                   child: CustomScrollView(
                     controller: _scrollController,
                     slivers: [
-                      if (_isDesktop)
+                      if (_device.isDesktop)
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
@@ -234,22 +228,22 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       else ...[
                         SliverPadding(
                           padding: EdgeInsets.symmetric(
-                            horizontal: _isMobile ? 16 : 30,
+                            horizontal: _device.isMobile ? 16 : 30,
                           ),
                           sliver: SliverPersistentHeader(
                             pinned: true,
                             delegate: _FadeOutImageDelegate(
                               image: albumCover,
-                              isMobile: _isMobile,
+                              isMobile: _device.isMobile,
                             ),
                           ),
                         ),
                         SliverPadding(
                           padding: EdgeInsets.only(
-                            left: _isMobile ? 16 : 30,
-                            top: _isMobile ? 15 : 35,
-                            right: _isMobile ? 16 : 30,
-                            bottom: _isMobile ? 0 : 18,
+                            left: _device.isMobile ? 16 : 30,
+                            top: _device.isMobile ? 15 : 35,
+                            right: _device.isMobile ? 16 : 30,
+                            bottom: _device.isMobile ? 0 : 18,
                           ),
                           sliver: SliverToBoxAdapter(
                             child: _albumPanelMobile(),
@@ -312,7 +306,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   Widget _albumPanelMobile() => IconTheme(
-        data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),
+        data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -324,7 +318,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     widget.album.name,
                     key: _titleKey,
                     style: TextStyle(
-                      fontSize: _isMobile ? 18 : 32,
+                      fontSize: _device.isMobile ? 18 : 32,
                       fontWeight: FontWeight.w600,
                       height: 1.2,
                     ),
@@ -344,7 +338,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                   divider: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Offstage(
-                      offstage: _isMobile,
+                      offstage: _device.isMobile,
                       child: const Icon(Icons.circle, size: 4),
                     ),
                   ),
@@ -355,7 +349,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     // _downloadAlbumButton(),
                     const RandomQueueButton(),
                     SizedBox.square(
-                      dimension: _isMobile ? 38 : 48,
+                      dimension: _device.isMobile ? 38 : 48,
                       child: _playAlbumButton(),
                     ),
                   ],
@@ -367,7 +361,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       );
 
   Widget _albumPanel() => IconTheme(
-        data: _theme.iconTheme.copyWith(size: _isMobile ? 24 : 28),
+        data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -383,7 +377,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           widget.album.name,
                           key: _titleKey,
                           style: TextStyle(
-                            fontSize: _isMobile ? 18 : 32,
+                            fontSize: _device.isMobile ? 18 : 32,
                             fontWeight: FontWeight.w600,
                             height: 1.2,
                           ),
@@ -403,7 +397,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         divider: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Offstage(
-                            offstage: _isMobile,
+                            offstage: _device.isMobile,
                             child: const Icon(Icons.circle, size: 4),
                           ),
                         ),
@@ -413,8 +407,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 ],
               ),
             ),
-            SizedBox(width: _isDesktop ? 35 : 32),
-            if (_isDesktop)
+            SizedBox(width: _device.isDesktop ? 35 : 32),
+            if (_device.isDesktop)
               Container()
             // StreamBuilder<PlayerState>(
             //   stream: ref.read(playerProvider).playerStateStream,
@@ -435,13 +429,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             // )
             else
               Wrap(
-                spacing: _isMobile ? 6 : 32,
+                spacing: _device.isMobile ? 6 : 32,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   _downloadAlbumButton(),
                   const RandomQueueButton(),
                   SizedBox.square(
-                    dimension: _isMobile ? 40 : 48,
+                    dimension: _device.isMobile ? 40 : 48,
                     child: _playAlbumButton(),
                   ),
                 ],

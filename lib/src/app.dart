@@ -31,7 +31,7 @@ class MediaKeyHandler {
       case 'prev':
         ref.read(playbackProvider.notifier).prev();
       default:
-        print('Unknown event: $event');
+        debugPrint('Unknown event: $event');
     }
   }
 }
