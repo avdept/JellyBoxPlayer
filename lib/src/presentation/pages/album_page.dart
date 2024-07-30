@@ -43,9 +43,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     ItemDTO? playlist;
 
     if (_device.isDesktop) {
-      playlist = await showDialog<ItemDTO>(
+      playlist = await showAdaptiveDialog<ItemDTO>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => CupertinoAlertDialog(
           title: const Text(
             'Choose a playlist',
             textAlign: TextAlign.center,

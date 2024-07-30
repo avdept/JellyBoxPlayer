@@ -9,6 +9,7 @@ class AlbumView extends ConsumerWidget {
   const AlbumView({
     required this.album,
     this.onTap,
+    this.optionsBuilder,
     this.mainTextStyle,
     this.subTextStyle,
     this.showArtist = true,
@@ -18,6 +19,7 @@ class AlbumView extends ConsumerWidget {
   final ItemDTO album;
   final bool showArtist;
   final void Function(ItemDTO)? onTap;
+  final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
 
@@ -56,13 +58,31 @@ class AlbumView extends ConsumerWidget {
         children: [
           AspectRatio(
             aspectRatio: 1,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: libraryImage(ref),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: libraryImage(ref),
+                    ),
+                  ),
                 ),
-              ),
+                if (optionsBuilder != null)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: PopupMenuButton<void>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: 'More',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black45,
+                      ),
+                      itemBuilder: optionsBuilder!,
+                    ),
+                  ),
+              ],
             ),
           ),
           Text(
