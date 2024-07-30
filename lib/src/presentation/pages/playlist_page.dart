@@ -47,7 +47,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox =
+          scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -64,12 +65,14 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   void initState() {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
-    _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
+    _imageService =
+        ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (event != null) {
         if (mounted) {
-          _currentSong.value = event.sequence[event.currentIndex].tag as MediaItem;
+          _currentSong.value =
+              event.sequence[event.currentIndex].tag as MediaItem;
           ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
             id: widget.playlist.id,
             tagId: widget.playlist.imageTags['Primary'],
@@ -81,9 +84,16 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   }
 
   void _getSongs() {
-    ref.read(jellyfinApiProvider).getPlaylistSongs(userId: ref.read(currentUserProvider.notifier).state!.userId, playlistId: widget.playlist.id).then((value) {
+    ref
+        .read(jellyfinApiProvider)
+        .getPlaylistSongs(
+          userId: ref.read(currentUserProvider.notifier).state!.userId,
+          playlistId: widget.playlist.id,
+        )
+        .then((value) {
       setState(() {
-        final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+        final items = [...value.data.items]
+          ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
         songs = items;
       });
     });
@@ -96,7 +106,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
-  ImageProvider get albumCover => _imageService.albumIP(id: widget.playlist.id, tagId: widget.playlist.imageTags['Primary']);
+  ImageProvider get albumCover => _imageService.albumIP(
+        id: widget.playlist.id,
+        tagId: widget.playlist.imageTags['Primary'],
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -188,8 +201,11 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                             return PlayerSongView(
                               song: song,
                               isPlaying: item != null && song.id == item.id,
-                              downloadProgress: null, // index == 2 ? 0.8 : null,
-                              onTap: (song) => ref.read(playbackProvider.notifier).play(song, songs, widget.playlist),
+                              downloadProgress:
+                                  null, // index == 2 ? 0.8 : null,
+                              onTap: (song) => ref
+                                  .read(playbackProvider.notifier)
+                                  .play(song, songs, widget.playlist),
                               position: index + 1,
                               onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
@@ -214,9 +230,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                           style: TextStyle(color: Colors.white),
                                         ),
                                       );
-                                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(snackBar);
                                     } else {
-                                      await api.removePlaylistItem(playlistId: widget.playlist.id, entryIds: song.playlistItemId!);
+                                      await api.removePlaylistItem(
+                                          playlistId: widget.playlist.id,
+                                          entryIds: song.playlistItemId!);
                                       const snackBar = SnackBar(
                                         backgroundColor: Colors.black87,
                                         content: Text(
@@ -225,7 +244,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                         ),
                                       );
                                       _getSongs();
-                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(snackBar);
+                                      }
                                     }
                                   },
                                   child: const Text('Remove from playlist'),
@@ -233,11 +255,17 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                 if (song.albumArtists?.isNotEmpty ?? false)
                                   PopupMenuItem(
                                     onTap: () async {
-                                      final location = GoRouterState.of(context).matchedLocation;
-                                      final res = await ref.read(jellyfinApiProvider).searchArtists(
-                                        userId: ref.read(currentUserProvider)!.userId,
-                                        searchTerm: song.albumArtists!.first.name,
-                                      );
+                                      final location = GoRouterState.of(context)
+                                          .matchedLocation;
+                                      final res = await ref
+                                          .read(jellyfinApiProvider)
+                                          .searchArtists(
+                                            userId: ref
+                                                .read(currentUserProvider)!
+                                                .userId,
+                                            searchTerm:
+                                                song.albumArtists!.first.name,
+                                          );
                                       if (context.mounted) {
                                         context.go(
                                           '$location${Routes.artist}',
@@ -253,11 +281,16 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                 if (song.albumName != null)
                                   PopupMenuItem(
                                     onTap: () async {
-                                      final location = GoRouterState.of(context).matchedLocation;
-                                      final res = await ref.read(jellyfinApiProvider).searchAlbums(
-                                        userId: ref.read(currentUserProvider)!.userId,
-                                        searchTerm: song.albumName!,
-                                      );
+                                      final location = GoRouterState.of(context)
+                                          .matchedLocation;
+                                      final res = await ref
+                                          .read(jellyfinApiProvider)
+                                          .searchAlbums(
+                                            userId: ref
+                                                .read(currentUserProvider)!
+                                                .userId,
+                                            searchTerm: song.albumName!,
+                                          );
                                       if (context.mounted) {
                                         context.go(
                                           '$location${Routes.album}',
@@ -381,7 +414,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                       _albumDetails(
                         duration: widget.playlist.duration,
                         soundsCount: songs.length,
-                        albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
+                        albumArtist:
+                            songs.isNotEmpty ? songs.first.albumArtist : '',
                         year: widget.playlist.productionYear,
                         divider: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -451,7 +485,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   }) {
     final durationInSeconds = duration.inSeconds;
     final hours = durationInSeconds ~/ Duration.secondsPerHour;
-    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/ Duration.secondsPerMinute;
+    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/
+        Duration.secondsPerMinute;
     final seconds = durationInSeconds % Duration.secondsPerMinute;
 
     return DefaultTextStyle(
@@ -523,5 +558,6 @@ class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) => image != oldDelegate.image || isMobile != oldDelegate.isMobile;
+  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) =>
+      image != oldDelegate.image || isMobile != oldDelegate.isMobile;
 }

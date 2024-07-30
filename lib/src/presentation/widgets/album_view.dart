@@ -17,14 +17,16 @@ class AlbumView extends ConsumerWidget {
 
   final ItemDTO album;
   final bool showArtist;
-  final VoidCallback? onTap;
+  final void Function(ItemDTO)? onTap;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
 
   String? imagePath(WidgetRef ref) {
     if (album.imageTags['Primary'] == null) return null;
 
-    return ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id);
+    return ref
+        .read(imageProvider)
+        .imagePath(tagId: album.imageTags['Primary']!, id: album.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {
@@ -47,7 +49,7 @@ class AlbumView extends ConsumerWidget {
     final isTablet = deviceType == DeviceScreenType.tablet;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: (onTap != null) ? () => onTap!.call(album) : null,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -73,7 +75,6 @@ class AlbumView extends ConsumerWidget {
             ).merge(mainTextStyle),
             maxLines: 1,
           ),
-
           Text(
             artistName,
             style: TextStyle(
