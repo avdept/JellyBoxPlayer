@@ -3,8 +3,9 @@ import 'package:jplayer/resources/resources.dart';
 
 class LabeledTextField extends StatelessWidget {
   const LabeledTextField({
-    required this.label,
-    required this.keyboardType,
+    this.label,
+    this.placeholder,
+    this.keyboardType,
     this.controller,
     this.obscureText = false,
     this.textInputAction,
@@ -12,10 +13,11 @@ class LabeledTextField extends StatelessWidget {
     super.key,
   });
 
-  final String label;
+  final String? label;
+  final String? placeholder;
   final bool obscureText;
   final TextEditingController? controller;
-  final TextInputType keyboardType;
+  final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final bool autofocus;
 
@@ -25,15 +27,17 @@ class LabeledTextField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _labelText(),
-        const SizedBox(height: 4),
+        if (label != null) ...[
+          _labelText(label!),
+          const SizedBox(height: 4),
+        ],
         _textField(),
       ],
     );
   }
 
-  Widget _labelText() => Text(
-        label,
+  Widget _labelText(String value) => Text(
+        value,
         style: const TextStyle(
           fontFamily: FontFamily.inter,
           fontSize: 12,
@@ -54,6 +58,11 @@ class LabeledTextField extends StatelessWidget {
             borderRadius: BorderRadius.circular(21.391),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          hintText: placeholder,
+          hintStyle: const TextStyle(
+            fontSize: 16,
+            color: Colors.black54,
+          ),
         ),
         autofocus: autofocus,
       );
