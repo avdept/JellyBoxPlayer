@@ -18,7 +18,7 @@ dependencies:
   flutter_udid: ^3.0.0
   dropdown_button2: ^2.3.0
   flutter_svg: ^2.0.0
-  sentry_flutter: ^7.18.0
+  sentry_flutter: ^8.6.0
   freezed_annotation: ^2.4.4
   mediakeys_proxy:
     path: ./mediakeys_proxy
