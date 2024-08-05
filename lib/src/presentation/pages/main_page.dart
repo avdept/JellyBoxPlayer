@@ -25,6 +25,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   Set<(IconData, String)> get _menuItems => {
         (JPlayer.play_circle_outlined, 'Listen'),
         (JPlayer.search, 'Search'),
+        (JPlayer.like, 'Favorites'),
         (JPlayer.settings, 'Settings'),
         // (JPlayer.download, 'Downloads'),
       };

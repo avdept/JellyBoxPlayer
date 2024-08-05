@@ -9,37 +9,46 @@ import 'package:string_capitalize/string_capitalize.dart';
 class AlbumsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
   AlbumsNotifier(
     this.ref,
-    this.filterState,
-    AsyncData<ItemsPage> initialState,
-  ) : super(initialState);
+    this.filterState, {
+    this.filters,
+  }) : super(const AsyncData(ItemsPage()));
 
-  StateNotifierProviderRef<AlbumsNotifier, AsyncData<ItemsPage>> ref;
-  Filter filterState;
+  final StateNotifierProviderRef<AlbumsNotifier, AsyncData<ItemsPage>> ref;
+  final Filter filterState;
+  final String? filters;
 
   Future<void> loadMore() async {
+    final value = state.value;
     final resp = await ref.read(jellyfinApiProvider).getAlbums(
-          userId: ref.read(currentUserProvider.notifier).state!.userId,
-          libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
+          userId: ref.read(currentUserProvider)!.userId,
+          libraryId: ref.read(currentLibraryProvider)!.id,
           sortOrder: filterState.desc ? 'Descending' : 'Ascending',
           sortBy: filterState.orderBy.name.capitalize(),
-          startIndex:
-              (state.value.currentPage * state.value.totalPerPage).toString(),
+          startIndex: (value.currentPage * value.totalPerPage).toString(),
+          filters: filters,
         );
     state = AsyncData(
-      state.value.copyWith(
-        items: [...state.value.items, ...resp.data.items],
-        currentPage: state.value.currentPage + 1,
+      value.copyWith(
+        items: [...value.items, ...resp.data.items],
+        currentPage: value.currentPage + 1,
       ),
     );
   }
 }
 
 final albumsProvider =
-    StateNotifierProvider<AlbumsNotifier, AsyncData<ItemsPage>>((ref) {
-  final prov = AlbumsNotifier(
+    StateNotifierProvider<AlbumsNotifier, AsyncData<ItemsPage>>(
+  (ref) => AlbumsNotifier(
     ref,
     ref.watch(filterProvider),
-    const AsyncData<ItemsPage>(ItemsPage()),
-  )..loadMore();
-  return prov;
-});
+  )..loadMore(),
+);
+
+final favoriteAlbumsProvider =
+    StateNotifierProvider<AlbumsNotifier, AsyncData<ItemsPage>>(
+  (ref) => AlbumsNotifier(
+    ref,
+    ref.watch(filterProvider),
+    filters: 'IsFavorite',
+  )..loadMore(),
+);

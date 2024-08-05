@@ -104,14 +104,17 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<SongsWrapper>> getSongs({
     required String userId,
-    required String albumId,
+    String? albumId,
     String includeType = 'music',
+    String? filters,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'ParentId': albumId,
       r'IncludeItemTypes': includeType,
+      r'Filters': filters,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
@@ -148,6 +151,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
     bool recursive = true,
+    String? filters,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -160,6 +164,7 @@ class _JellyfinApi implements JellyfinApi {
       r'SortOrder': sortOrder,
       r'AlbumArtistIds': artistIds,
       r'Recursive': recursive,
+      r'Filters': filters,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -243,6 +248,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
     bool recursive = true,
+    String? filters,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -254,6 +260,7 @@ class _JellyfinApi implements JellyfinApi {
       r'SortOrder': sortOrder,
       r'AlbumArtistIds': artistIds,
       r'Recursive': recursive,
+      r'Filters': filters,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -478,6 +485,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortBy = 'SortName',
     String sortOrder = 'Descending',
     bool recursive = true,
+    String? filters,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -490,7 +498,9 @@ class _JellyfinApi implements JellyfinApi {
       r'SortBy': sortBy,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
+      r'Filters': filters,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _result = await _dio.fetch<Map<String, dynamic>>(
@@ -587,6 +597,69 @@ class _JellyfinApi implements JellyfinApi {
               baseUrl,
             ))));
     final _value = Libraries.fromJson(_result.data!);
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<SongUserData>> getItemUserData({
+    required String itemId,
+    required String userId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'userId': userId};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<SongUserData>>(Options(
+      method: 'GET',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/UserItems/${itemId}/UserData',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final _value = SongUserData.fromJson(_result.data!);
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<SongUserData>> updateItemUserData(
+    SongUserData data, {
+    required String itemId,
+    required String userId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'userId': userId};
+    final _headers = <String, dynamic>{};
+    final _data = data;
+    final _result = await _dio.fetch<Map<String, dynamic>>(
+        _setStreamType<HttpResponse<SongUserData>>(Options(
+      method: 'POST',
+      headers: _headers,
+      extra: _extra,
+    )
+            .compose(
+              _dio.options,
+              '/UserItems/${itemId}/UserData',
+              queryParameters: queryParameters,
+              data: _data,
+            )
+            .copyWith(
+                baseUrl: _combineBaseUrls(
+              _dio.options.baseUrl,
+              baseUrl,
+            ))));
+    final _value = SongUserData.fromJson(_result.data!);
     final httpResponse = HttpResponse(_value, _result);
     return httpResponse;
   }

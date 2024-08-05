@@ -28,10 +28,10 @@ mixin _$ItemDTO {
   String get serverId => throw _privateConstructorUsedError;
   @JsonKey(name: 'Type')
   String get type => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Overview')
-  String? get overview => throw _privateConstructorUsedError;
   @JsonKey(name: 'RunTimeTicks')
   int? get durationInTicks => throw _privateConstructorUsedError;
+  @JsonKey(name: 'Overview')
+  String? get overview => throw _privateConstructorUsedError;
   @JsonKey(name: 'ProductionYear')
   int? get productionYear => throw _privateConstructorUsedError;
   @JsonKey(name: 'AlbumArtist')
@@ -56,8 +56,8 @@ abstract class $ItemDTOCopyWith<$Res> {
       @JsonKey(name: 'Name') String name,
       @JsonKey(name: 'ServerId') String serverId,
       @JsonKey(name: 'Type') String type,
-      @JsonKey(name: 'Overview') String? overview,
       @JsonKey(name: 'RunTimeTicks') int? durationInTicks,
+      @JsonKey(name: 'Overview') String? overview,
       @JsonKey(name: 'ProductionYear') int? productionYear,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
       @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
@@ -81,8 +81,8 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
     Object? name = null,
     Object? serverId = null,
     Object? type = null,
-    Object? overview = freezed,
     Object? durationInTicks = freezed,
+    Object? overview = freezed,
     Object? productionYear = freezed,
     Object? albumArtist = freezed,
     Object? backgropImageTags = null,
@@ -105,14 +105,14 @@ class _$ItemDTOCopyWithImpl<$Res, $Val extends ItemDTO>
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
-      overview: freezed == overview
-          ? _value.overview
-          : overview // ignore: cast_nullable_to_non_nullable
-              as String?,
       durationInTicks: freezed == durationInTicks
           ? _value.durationInTicks
           : durationInTicks // ignore: cast_nullable_to_non_nullable
               as int?,
+      overview: freezed == overview
+          ? _value.overview
+          : overview // ignore: cast_nullable_to_non_nullable
+              as String?,
       productionYear: freezed == productionYear
           ? _value.productionYear
           : productionYear // ignore: cast_nullable_to_non_nullable
@@ -145,8 +145,8 @@ abstract class _$$ItemDTOImplCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
       @JsonKey(name: 'Name') String name,
       @JsonKey(name: 'ServerId') String serverId,
       @JsonKey(name: 'Type') String type,
-      @JsonKey(name: 'Overview') String? overview,
       @JsonKey(name: 'RunTimeTicks') int? durationInTicks,
+      @JsonKey(name: 'Overview') String? overview,
       @JsonKey(name: 'ProductionYear') int? productionYear,
       @JsonKey(name: 'AlbumArtist') String? albumArtist,
       @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
@@ -168,8 +168,8 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
     Object? name = null,
     Object? serverId = null,
     Object? type = null,
-    Object? overview = freezed,
     Object? durationInTicks = freezed,
+    Object? overview = freezed,
     Object? productionYear = freezed,
     Object? albumArtist = freezed,
     Object? backgropImageTags = null,
@@ -192,14 +192,14 @@ class __$$ItemDTOImplCopyWithImpl<$Res>
           ? _value.type
           : type // ignore: cast_nullable_to_non_nullable
               as String,
-      overview: freezed == overview
-          ? _value.overview
-          : overview // ignore: cast_nullable_to_non_nullable
-              as String?,
       durationInTicks: freezed == durationInTicks
           ? _value.durationInTicks
           : durationInTicks // ignore: cast_nullable_to_non_nullable
               as int?,
+      overview: freezed == overview
+          ? _value.overview
+          : overview // ignore: cast_nullable_to_non_nullable
+              as String?,
       productionYear: freezed == productionYear
           ? _value.productionYear
           : productionYear // ignore: cast_nullable_to_non_nullable
@@ -228,8 +228,8 @@ class _$ItemDTOImpl extends _ItemDTO {
       @JsonKey(name: 'Name') required this.name,
       @JsonKey(name: 'ServerId') required this.serverId,
       @JsonKey(name: 'Type') required this.type,
-      @JsonKey(name: 'Overview') this.overview,
       @JsonKey(name: 'RunTimeTicks') required this.durationInTicks,
+      @JsonKey(name: 'Overview') this.overview,
       @JsonKey(name: 'ProductionYear') this.productionYear,
       @JsonKey(name: 'AlbumArtist') this.albumArtist,
       @JsonKey(name: 'BackdropImageTags')
@@ -256,11 +256,11 @@ class _$ItemDTOImpl extends _ItemDTO {
   @JsonKey(name: 'Type')
   final String type;
   @override
-  @JsonKey(name: 'Overview')
-  final String? overview;
-  @override
   @JsonKey(name: 'RunTimeTicks')
   final int? durationInTicks;
+  @override
+  @JsonKey(name: 'Overview')
+  final String? overview;
   @override
   @JsonKey(name: 'ProductionYear')
   final int? productionYear;
@@ -288,7 +288,7 @@ class _$ItemDTOImpl extends _ItemDTO {
 
   @override
   String toString() {
-    return 'ItemDTO(id: $id, name: $name, serverId: $serverId, type: $type, overview: $overview, durationInTicks: $durationInTicks, productionYear: $productionYear, albumArtist: $albumArtist, backgropImageTags: $backgropImageTags, imageTags: $imageTags)';
+    return 'ItemDTO(id: $id, name: $name, serverId: $serverId, type: $type, durationInTicks: $durationInTicks, overview: $overview, productionYear: $productionYear, albumArtist: $albumArtist, backgropImageTags: $backgropImageTags, imageTags: $imageTags)';
   }
 
   @override
@@ -301,10 +301,10 @@ class _$ItemDTOImpl extends _ItemDTO {
             (identical(other.serverId, serverId) ||
                 other.serverId == serverId) &&
             (identical(other.type, type) || other.type == type) &&
-            (identical(other.overview, overview) ||
-                other.overview == overview) &&
             (identical(other.durationInTicks, durationInTicks) ||
                 other.durationInTicks == durationInTicks) &&
+            (identical(other.overview, overview) ||
+                other.overview == overview) &&
             (identical(other.productionYear, productionYear) ||
                 other.productionYear == productionYear) &&
             (identical(other.albumArtist, albumArtist) ||
@@ -323,8 +323,8 @@ class _$ItemDTOImpl extends _ItemDTO {
       name,
       serverId,
       type,
-      overview,
       durationInTicks,
+      overview,
       productionYear,
       albumArtist,
       const DeepCollectionEquality().hash(_backgropImageTags),
@@ -350,8 +350,8 @@ abstract class _ItemDTO extends ItemDTO {
       @JsonKey(name: 'Name') required final String name,
       @JsonKey(name: 'ServerId') required final String serverId,
       @JsonKey(name: 'Type') required final String type,
-      @JsonKey(name: 'Overview') final String? overview,
       @JsonKey(name: 'RunTimeTicks') required final int? durationInTicks,
+      @JsonKey(name: 'Overview') final String? overview,
       @JsonKey(name: 'ProductionYear') final int? productionYear,
       @JsonKey(name: 'AlbumArtist') final String? albumArtist,
       @JsonKey(name: 'BackdropImageTags') final List<String> backgropImageTags,
@@ -374,11 +374,11 @@ abstract class _ItemDTO extends ItemDTO {
   @JsonKey(name: 'Type')
   String get type;
   @override
-  @JsonKey(name: 'Overview')
-  String? get overview;
-  @override
   @JsonKey(name: 'RunTimeTicks')
   int? get durationInTicks;
+  @override
+  @JsonKey(name: 'Overview')
+  String? get overview;
   @override
   @JsonKey(name: 'ProductionYear')
   int? get productionYear;

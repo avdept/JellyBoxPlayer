@@ -12,7 +12,9 @@ import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/item_user_data_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/playlists_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -369,6 +371,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    _likePlaylistButton(),
                     // _downloadAlbumButton(),
                     const RandomQueueButton(),
                     SizedBox.square(
@@ -474,6 +477,22 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   Widget _downloadAlbumButton() => IconButton(
         onPressed: () {},
         icon: const Icon(JPlayer.download),
+      );
+
+  Widget _likePlaylistButton() => Consumer(
+        builder: (context, ref, child) => FavoriteButton(
+          value: ref
+                  .watch(itemUserDataProvider(widget.playlist.id))
+                  .value
+                  ?.isFavorite ??
+              false,
+          onChanged: (value) async {
+            await ref
+                .read(itemUserDataProvider(widget.playlist.id).notifier)
+                .toggleFavorite(value);
+            ref.invalidate(favoritePlaylistsProvider);
+          },
+        ),
       );
 
   Widget _albumDetails({

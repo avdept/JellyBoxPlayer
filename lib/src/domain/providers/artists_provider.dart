@@ -8,37 +8,45 @@ import 'package:string_capitalize/string_capitalize.dart';
 class ArtistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
   ArtistsNotifier(
     this.ref,
-    this.filterState,
-    AsyncData<ItemsPage> initialState,
-  ) : super(initialState);
+    this.filterState, {
+    this.filters,
+  }) : super(const AsyncData(ItemsPage()));
 
-  StateNotifierProviderRef<ArtistsNotifier, AsyncData<ItemsPage>> ref;
-  Filter filterState;
+  final StateNotifierProviderRef<ArtistsNotifier, AsyncData<ItemsPage>> ref;
+  final Filter filterState;
+  final String? filters;
 
   Future<void> loadMore() async {
+    final value = state.value;
     final resp = await ref.read(jellyfinApiProvider).getArtists(
-          userId: ref.read(currentUserProvider.notifier).state!.userId,
+          userId: ref.read(currentUserProvider)!.userId,
           sortOrder: filterState.desc ? 'Descending' : 'Ascending',
           sortBy: filterState.orderBy.name.capitalize(),
-          startIndex:
-              (state.value.currentPage * state.value.totalPerPage).toString(),
+          startIndex: (value.currentPage * value.totalPerPage).toString(),
+          filters: filters,
         );
     state = AsyncData(
-      state.value.copyWith(
-        items: [...state.value.items, ...resp.data.items],
-        currentPage: state.value.currentPage + 1,
+      value.copyWith(
+        items: [...value.items, ...resp.data.items],
+        currentPage: value.currentPage + 1,
       ),
     );
   }
 }
 
-//create a global provider as you would normally in riverpod:
 final artistsProvider =
-    StateNotifierProvider<ArtistsNotifier, AsyncData<ItemsPage>>((ref) {
-  final prov = ArtistsNotifier(
+    StateNotifierProvider<ArtistsNotifier, AsyncData<ItemsPage>>(
+  (ref) => ArtistsNotifier(
     ref,
     ref.watch(filterProvider),
-    const AsyncData<ItemsPage>(ItemsPage()),
-  )..loadMore();
-  return prov;
-});
+  )..loadMore(),
+);
+
+final favoriteArtistsProvider =
+    StateNotifierProvider<ArtistsNotifier, AsyncData<ItemsPage>>(
+  (ref) => ArtistsNotifier(
+    ref,
+    ref.watch(filterProvider),
+    filters: 'IsFavorite',
+  )..loadMore(),
+);

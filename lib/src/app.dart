@@ -153,6 +153,44 @@ class _AppState extends ConsumerState<App> {
             StatefulShellBranch(
               routes: [
                 GoRoute(
+                  path: Routes.favorites,
+                  pageBuilder: widget.screenFactory.favoritesPage,
+                  routes: [
+                    GoRoute(
+                      path: Routes.album.name,
+                      pageBuilder: widget.screenFactory.albumPage,
+                    ),
+                    GoRoute(
+                      path: Routes.artist.name,
+                      pageBuilder: widget.screenFactory.artistPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.album.name,
+                          pageBuilder: widget.screenFactory.albumPage,
+                        ),
+                      ],
+                    ),
+                    GoRoute(
+                      path: Routes.playlist.name,
+                      pageBuilder: widget.screenFactory.playlistPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.album.name,
+                          pageBuilder: widget.screenFactory.albumPage,
+                        ),
+                        GoRoute(
+                          path: Routes.artist.name,
+                          pageBuilder: widget.screenFactory.artistPage,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
                   path: Routes.settings,
                   pageBuilder: widget.screenFactory.settingsPage,
                   routes: [

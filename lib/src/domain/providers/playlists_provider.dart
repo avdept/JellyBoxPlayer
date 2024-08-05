@@ -8,36 +8,45 @@ import 'package:string_capitalize/string_capitalize.dart';
 class PlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
   PlaylistsNotifier(
     this.ref,
-    this.filterState,
-    AsyncData<ItemsPage> initialState,
-  ) : super(initialState);
+    this.filterState, {
+    this.filters,
+  }) : super(const AsyncData(ItemsPage()));
 
-  StateNotifierProviderRef<PlaylistsNotifier, AsyncData<ItemsPage>> ref;
-  Filter filterState;
+  final StateNotifierProviderRef<PlaylistsNotifier, AsyncData<ItemsPage>> ref;
+  final Filter filterState;
+  final String? filters;
 
   Future<void> loadMore() async {
+    final value = state.value;
     final resp = await ref.read(jellyfinApiProvider).getPlaylists(
-          userId: ref.read(currentUserProvider.notifier).state!.userId,
+          userId: ref.read(currentUserProvider)!.userId,
           sortOrder: filterState.desc ? 'Descending' : 'Ascending',
           sortBy: filterState.orderBy.name.capitalize(),
-          startIndex:
-              (state.value.currentPage * state.value.totalPerPage).toString(),
+          startIndex: (value.currentPage * value.totalPerPage).toString(),
+          filters: filters,
         );
     state = AsyncData(
-      state.value.copyWith(
-        items: [...state.value.items, ...resp.data.items],
-        currentPage: state.value.currentPage + 1,
+      value.copyWith(
+        items: [...value.items, ...resp.data.items],
+        currentPage: value.currentPage + 1,
       ),
     );
   }
 }
 
 final playlistsProvider =
-    StateNotifierProvider<PlaylistsNotifier, AsyncData<ItemsPage>>((ref) {
-  final prov = PlaylistsNotifier(
+    StateNotifierProvider<PlaylistsNotifier, AsyncData<ItemsPage>>(
+  (ref) => PlaylistsNotifier(
     ref,
     ref.watch(filterProvider),
-    const AsyncData<ItemsPage>(ItemsPage()),
-  )..loadMore();
-  return prov;
-});
+  )..loadMore(),
+);
+
+final favoritePlaylistsProvider =
+    StateNotifierProvider<PlaylistsNotifier, AsyncData<ItemsPage>>(
+  (ref) => PlaylistsNotifier(
+    ref,
+    ref.watch(filterProvider),
+    filters: 'IsFavorite',
+  )..loadMore(),
+);

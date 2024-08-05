@@ -33,8 +33,9 @@ abstract class JellyfinApi {
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<SongsWrapper>> getSongs({
     @Path('userId') required String userId,
-    @Query('ParentId') required String albumId,
+    @Query('ParentId') String? albumId,
     @Query('IncludeItemTypes') String includeType = 'music',
+    @Query('Filters') String? filters,
   });
 
   @GET('/Users/{userId}/Items')
@@ -49,6 +50,7 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('Recursive') bool recursive = true,
+    @Query('Filters') String? filters,
   });
 
   @GET('/Users/{userId}/Items')
@@ -74,6 +76,7 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('Recursive') bool recursive = true,
+    @Query('Filters') String? filters,
   });
 
   @GET('/Users/{userId}/Items')
@@ -130,6 +133,7 @@ abstract class JellyfinApi {
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
+    @Query('Filters') String? filters,
   });
 
   @GET('/Artists')
@@ -149,5 +153,18 @@ abstract class JellyfinApi {
   @GET('/Users/{userId}/Views')
   Future<HttpResponse<Libraries>> getLibraries({
     @Path('userId') required String userId,
+  });
+
+  @GET('/UserItems/{itemId}/UserData')
+  Future<HttpResponse<SongUserData>> getItemUserData({
+    @Path('itemId') required String itemId,
+    @Query('userId') required String userId,
+  });
+
+  @POST('/UserItems/{itemId}/UserData')
+  Future<HttpResponse<SongUserData>> updateItemUserData(
+    @Body() SongUserData data, {
+    @Path('itemId') required String itemId,
+    @Query('userId') required String userId,
   });
 }

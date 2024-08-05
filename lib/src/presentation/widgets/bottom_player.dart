@@ -372,17 +372,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
 
   Widget _likeTrackButton() => ValueListenableBuilder(
         valueListenable: _likeTrack,
-        builder: (context, isLiked, child) => IconButton(
-          onPressed: () => _likeTrack.value = !isLiked,
-          icon: Icon(
-            CupertinoIcons.heart,
-            color: _theme.colorScheme.onPrimary,
-          ),
-          selectedIcon: Icon(
-            CupertinoIcons.heart_fill,
-            color: _theme.colorScheme.primary,
-          ),
-          isSelected: isLiked,
+        builder: (context, isLiked, child) => FavoriteButton(
+          value: isLiked,
+          onChanged: (value) => _likeTrack.value = value,
         ),
       );
 }

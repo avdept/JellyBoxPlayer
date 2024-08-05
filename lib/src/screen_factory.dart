@@ -43,6 +43,15 @@ class ScreenFactory {
     );
   }
 
+  Page<void> favoritesPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const NoTransitionPage(
+      child: ListenPage.favorites(),
+    );
+  }
+
   Page<void> initialPage(
     BuildContext context,
     GoRouterState router,

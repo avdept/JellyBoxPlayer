@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/item_user_data_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -173,6 +175,11 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                     ],
                   ),
                 ),
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: _likeArtistButton(),
+                ),
               ],
             ),
           ),
@@ -327,6 +334,22 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _playButton() => SizedBox(
         height: 48,
         child: PlayButton(onPressed: () {}),
+      );
+
+  Widget _likeArtistButton() => Consumer(
+        builder: (context, ref, child) => FavoriteButton(
+          value: ref
+                  .watch(itemUserDataProvider(widget.artist.id))
+                  .value
+                  ?.isFavorite ??
+              false,
+          onChanged: (value) async {
+            await ref
+                .read(itemUserDataProvider(widget.artist.id).notifier)
+                .toggleFavorite(value);
+            ref.invalidate(favoriteArtistsProvider);
+          },
+        ),
       );
 
   List<Widget> _albumsWidgets() {

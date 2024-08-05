@@ -1,9 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class PlayerSongView extends ConsumerWidget {
   const PlayerSongView({
@@ -20,8 +19,8 @@ class PlayerSongView extends ConsumerWidget {
   final SongDTO song;
   final bool isPlaying;
   final double? downloadProgress;
-  final void Function(SongDTO)? onTap;
-  final void Function(SongDTO)? onLikePressed;
+  final ValueChanged<SongDTO>? onTap;
+  final ValueChanged<SongDTO>? onLikePressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final int position;
 
@@ -40,9 +39,7 @@ class PlayerSongView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final deviceType = getDeviceType(MediaQuery.sizeOf(context));
-    final isMobile = deviceType == DeviceScreenType.mobile;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
+    final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
 
     return SimpleListTile(
       onTap: (onTap != null) ? () => onTap!.call(song) : null,
@@ -50,9 +47,9 @@ class PlayerSongView extends ConsumerWidget {
           ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
           : Colors.transparent,
       padding: EdgeInsets.fromLTRB(
-        isMobile ? 16 : 30,
+        device.isMobile ? 16 : 30,
         12,
-        (optionsBuilder != null) ? 4 : (isMobile ? 16 : 30),
+        (optionsBuilder != null) ? 4 : (device.isMobile ? 16 : 30),
         12,
       ),
       title: Text(
@@ -90,20 +87,12 @@ class PlayerSongView extends ConsumerWidget {
                 strokeWidth: 2,
               ),
             ),
-          if (isDesktop)
-            IconButton(
-              onPressed: (onLikePressed != null)
-                  ? () => onLikePressed!.call(song)
+          if (device.isDesktop)
+            FavoriteButton(
+              value: song.songUserData.isFavorite,
+              onChanged: (onLikePressed != null)
+                  ? (_) => onLikePressed!.call(song)
                   : null,
-              icon: Icon(
-                CupertinoIcons.heart,
-                color: theme.colorScheme.onPrimary,
-              ),
-              selectedIcon: Icon(
-                CupertinoIcons.heart_fill,
-                color: theme.colorScheme.primary,
-              ),
-              isSelected: song.songUserData.isFavorite,
             ),
           if (optionsBuilder != null)
             PopupMenuButton<void>(

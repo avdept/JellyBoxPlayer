@@ -7,6 +7,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/albums_provider.dart';
@@ -15,11 +16,23 @@ import 'package:jplayer/src/domain/providers/current_album_provider.dart';
 import 'package:jplayer/src/domain/providers/current_playlist_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/domain/providers/songs_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+
+enum _ListenPageType {
+  regular,
+  favorites,
+}
 
 class ListenPage extends ConsumerStatefulWidget {
-  const ListenPage({super.key});
+  const ListenPage({super.key}) : _type = _ListenPageType.regular;
+
+  const ListenPage.favorites({super.key}) : _type = _ListenPageType.favorites;
+
+  final _ListenPageType _type;
 
   @override
   ConsumerState<ListenPage> createState() => _ListenPageState();
@@ -30,15 +43,19 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
+  final _currentSong = ValueNotifier<MediaItem?>(null);
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late ThemeData _theme;
   late DeviceType _device;
 
+  bool get _isFavorites => widget._type == _ListenPageType.favorites;
+
   Map<ListenView, String> get _viewLabels => {
         ListenView.albums: 'Albums',
         ListenView.artists: 'Artists',
         ListenView.playlists: 'Playlists',
+        ListenView.songs: 'Songs',
       };
 
   Map<EntityFilter, String> get _filtersLabels => {
@@ -155,12 +172,33 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     };
     _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))
       ..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
+    ref.read(playerProvider).sequenceStateStream.listen((event) {
+      if (event != null && mounted) {
+        _currentSong.value =
+            event.sequence[event.currentIndex].tag as MediaItem;
+      }
+    });
   }
 
   Future<void> loadMore() async => switch (_currentView.value) {
-        ListenView.albums => ref.read(albumsProvider.notifier).loadMore(),
-        ListenView.artists => ref.read(artistsProvider.notifier).loadMore(),
-        ListenView.playlists => ref.read(playlistsProvider.notifier).loadMore(),
+        ListenView.albums => ref
+            .read(
+              (_isFavorites ? favoriteAlbumsProvider : albumsProvider).notifier,
+            )
+            .loadMore(),
+        ListenView.artists => ref
+            .read(
+              (_isFavorites ? favoriteArtistsProvider : artistsProvider)
+                  .notifier,
+            )
+            .loadMore(),
+        ListenView.playlists => ref
+            .read(
+              (_isFavorites ? favoritePlaylistsProvider : playlistsProvider)
+                  .notifier,
+            )
+            .loadMore(),
+        ListenView.songs => ref.read(favoriteSongsProvider.notifier).loadMore(),
       };
 
   @override
@@ -179,12 +217,12 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         navigationBar: PreferredSize(
           preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
           child: Padding(
-            padding:
-                EdgeInsets.symmetric(horizontal: _device.isMobile ? 16 : 30),
+            padding: EdgeInsets.symmetric(
+              horizontal: _device.isMobile ? 16 : 30,
+            ),
             child: Row(
               children: [
-                _pageViewToggle(),
-                const Spacer(),
+                Expanded(child: _pageViewToggle()),
                 _addButton(),
                 _filterButton(),
               ],
@@ -203,42 +241,73 @@ class _ListenPageState extends ConsumerState<ListenPage> {
             builder: (context, value, child) => Consumer(
               builder: (context, ref, child) {
                 final provider = switch (value) {
-                  ListenView.albums => ref.watch(albumsProvider),
-                  ListenView.artists => ref.watch(artistsProvider),
-                  ListenView.playlists => ref.watch(playlistsProvider),
-                };
-                return provider.when(
-                  data: (state) => SliverGrid.builder(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: _device.isTablet ? 360 : 200,
-                      mainAxisSpacing: _device.isMobile ? 15 : 24,
-                      crossAxisSpacing:
-                          _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
-                      childAspectRatio:
-                          _device.isTablet ? 360 / 413 : 175 / 215.7,
+                  ListenView.albums => ref.watch(
+                      _isFavorites ? favoriteAlbumsProvider : albumsProvider,
                     ),
-                    itemBuilder: (context, index) {
-                      final item = state.items[index];
-                      return AlbumView(
-                        album: item,
-                        onTap: (item) => switch (value) {
-                          ListenView.albums => _onAlbumTap(item),
-                          ListenView.artists => _onArtistTap(item),
-                          ListenView.playlists => _onPlaylistTap(item),
-                        },
-                        optionsBuilder: switch (value) {
-                          ListenView.playlists => (context) => [
-                                PopupMenuItem(
-                                  onTap: () => _onDeletePlaylist(item),
-                                  child: const Text('Delete playlist'),
-                                ),
-                              ],
-                          _ => null,
-                        },
+                  ListenView.artists => ref.watch(
+                      _isFavorites ? favoriteArtistsProvider : artistsProvider,
+                    ),
+                  ListenView.playlists => ref.watch(
+                      _isFavorites
+                          ? favoritePlaylistsProvider
+                          : playlistsProvider,
+                    ),
+                  ListenView.songs => ref.watch(favoriteSongsProvider),
+                };
+
+                return provider.when(
+                  data: (state) {
+                    if (state is List<SongDTO>) {
+                      return ValueListenableBuilder(
+                        valueListenable: _currentSong,
+                        builder: (context, item, other) => SliverSongsList(
+                          state,
+                          selectedItem: item,
+                          // onSelect: (song) => ref
+                          //     .read(playbackProvider.notifier)
+                          //     .play(song, _songs, widget.album),
+                          onListUpdated: () =>
+                              ref.invalidate(favoriteSongsProvider),
+                        ),
                       );
-                    },
-                    itemCount: state.items.length,
-                  ),
+                    }
+                    if (state is ItemsPage) {
+                      return SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+                          mainAxisSpacing: _device.isMobile ? 15 : 24,
+                          crossAxisSpacing: _device.isMobile
+                              ? 8
+                              : (_device.isTablet ? 56 : 28),
+                          childAspectRatio:
+                              _device.isTablet ? 360 / 413 : 175 / 215.7,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = state.items[index];
+                          return AlbumView(
+                            album: item,
+                            onTap: (item) => switch (value) {
+                              ListenView.albums => _onAlbumTap(item),
+                              ListenView.artists => _onArtistTap(item),
+                              ListenView.playlists => _onPlaylistTap(item),
+                              ListenView.songs => null,
+                            },
+                            optionsBuilder: switch (value) {
+                              ListenView.playlists => (context) => [
+                                    PopupMenuItem(
+                                      onTap: () => _onDeletePlaylist(item),
+                                      child: const Text('Delete playlist'),
+                                    ),
+                                  ],
+                              _ => null,
+                            },
+                          );
+                        },
+                        itemCount: state.items.length,
+                      );
+                    }
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  },
                   error: (error, stackTrace) => SliverToBoxAdapter(
                     child: Text(error.toString()),
                   ),
@@ -259,33 +328,40 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     _currentView.dispose();
     _appliedFilter.dispose();
     _filterOpened.dispose();
+    _currentSong.dispose();
     super.dispose();
   }
 
-  Widget _pageViewToggle() => ChipTheme(
-        data: ChipTheme.of(context).copyWith(
-          labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
-        ),
-        child: Wrap(
-          spacing: 12,
-          children: [
-            for (final value in ListenView.values)
-              ValueListenableBuilder(
-                valueListenable: _currentView,
-                builder: (context, currentView, child) => ActionChip(
-                  label: Text(_viewLabels[value] ?? '???'),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  backgroundColor: (value == currentView)
-                      ? _theme.chipTheme.selectedColor
-                      : _theme.chipTheme.backgroundColor,
-                  onPressed: () => _currentView.value = value,
+  Widget _pageViewToggle() {
+    final availableTabs = !_isFavorites
+        ? ListenView.values.where((tab) => tab != ListenView.songs)
+        : ListenView.values;
+    return ChipTheme(
+      data: ChipTheme.of(context).copyWith(
+        labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
+        padding: EdgeInsets.zero,
+      ),
+      child: Wrap(
+        spacing: 12,
+        children: [
+          for (final value in availableTabs)
+            ValueListenableBuilder(
+              valueListenable: _currentView,
+              builder: (context, currentView, child) => ActionChip(
+                label: Text(_viewLabels[value] ?? '???'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                backgroundColor: (value == currentView)
+                    ? _theme.chipTheme.selectedColor
+                    : _theme.chipTheme.backgroundColor,
+                onPressed: () => _currentView.value = value,
               ),
-          ],
-        ),
-      );
+            ),
+        ],
+      ),
+    );
+  }
 
   String _filterLabel(EntityFilter filter) {
     return _filtersLabels[filter] ?? '???';
@@ -298,6 +374,10 @@ class _ListenPageState extends ConsumerState<ListenPage> {
             EntityFilter.dateCreated,
           ],
         ListenView.playlists => [
+            EntityFilter.sortName,
+            EntityFilter.dateCreated,
+          ],
+        ListenView.songs => [
             EntityFilter.sortName,
             EntityFilter.dateCreated,
           ],
@@ -397,10 +477,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
           child: switch (currentView) {
             ListenView.albums => const SizedBox.shrink(),
             ListenView.artists => const SizedBox.shrink(),
-            ListenView.playlists => IconButton(
-                onPressed: _onCreateNewPlaylist,
-                icon: const Icon(Icons.add),
-              ),
+            ListenView.playlists => _isFavorites
+                ? const SizedBox.shrink()
+                : IconButton(
+                    onPressed: _onCreateNewPlaylist,
+                    icon: const Icon(Icons.add),
+                  ),
+            ListenView.songs => const SizedBox.shrink(),
           },
         ),
       );
