@@ -32,7 +32,7 @@ dependencies:
   modal_bottom_sheet: ^3.0.0-pre
   shared_preferences: ^2.2.3
   palette_generator:
-  responsive_builder: ^0.7.0
+  responsive_builder: ^0.7.1
   riverpod_infinite_scroll: ^1.0.0
   infinite_scroll_pagination: ^3.2.0
   flutter_riverpod: ^2.5.1
