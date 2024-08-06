@@ -39,7 +39,7 @@ dependencies:
   pretty_dio_logger: ^1.0.0
   flutter_secure_storage: ^9.0.0
   retrofit: ^4.1.0
-  dio: ^5.4.0
+  dio: ^5.5.0+1
   string_capitalize: ^0.0.10
   sliver_tools: ^0.2.0
 
