@@ -22,7 +22,7 @@ dependencies:
   freezed_annotation: ^2.4.4
   mediakeys_proxy:
     path: ./mediakeys_proxy
-  just_audio:
+  just_audio: 0.9.39
   cached_network_image: ^3.3.0
   just_audio_background: 0.0.1-beta.13
   go_router: ^14.2.1
