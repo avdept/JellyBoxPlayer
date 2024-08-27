@@ -4,8 +4,8 @@ import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
-class CreatePlaylistForm extends ConsumerStatefulWidget {
-  const CreatePlaylistForm({
+class CreateDesktopPlaylistForm extends ConsumerStatefulWidget {
+  const CreateDesktopPlaylistForm({
     this.controller,
     this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
     this.onCreated,
@@ -17,10 +17,10 @@ class CreatePlaylistForm extends ConsumerStatefulWidget {
   final VoidCallback? onCreated;
 
   @override
-  ConsumerState<CreatePlaylistForm> createState() => _CreatePlaylistBottomSheetState();
+  ConsumerState<CreateDesktopPlaylistForm> createState() => _CreatePlaylistBottomSheetState();
 }
 
-class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> {
+class _CreatePlaylistBottomSheetState extends ConsumerState<CreateDesktopPlaylistForm> {
   final _inputController = TextEditingController(text: 'My new playlist');
   var _isPublicPlaylist = true;
 
@@ -46,31 +46,14 @@ class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> 
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Name your playlist',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
-          ),
-          const Padding(padding: EdgeInsets.only(top: 36)),
-          TextField(
+          LabeledTextField(
             controller: _inputController,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: InputDecoration(
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(width: 2, color: Colors.grey[600]!)),
-              border: UnderlineInputBorder(
-                borderSide: BorderSide(width: 2, color: Colors.grey[700]!),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-              hintText: 'Playlist name',
-              hintStyle: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[400]!,
-              ),
-            ),
+            placeholder: 'Playlist name',
+            keyboardType: TextInputType.text,
             autofocus: true,
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               StatefulBuilder(
                 builder: (context, setState) => Checkbox(
@@ -81,14 +64,23 @@ class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> 
                 ),
               ),
               const Text('Is public'),
+              const Spacer(),
             ],
           ),
-          Padding(
-            padding: EdgeInsets.only(top: 72),
-          ),
+          Padding(padding: EdgeInsets.only(top: 16)),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              TextButton(
+                onPressed: () => {Navigator.of(context).pop()},
+                style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text('Cancel'),
+              ),
               TextButton(
                 onPressed: _onCreatePressed,
                 style: TextButton.styleFrom(

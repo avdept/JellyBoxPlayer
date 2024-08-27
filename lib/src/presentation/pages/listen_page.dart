@@ -16,6 +16,7 @@ import 'package:jplayer/src/domain/providers/current_playlist_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playlists_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
 class ListenPage extends ConsumerStatefulWidget {
@@ -72,23 +73,38 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   void _onCreateNewPlaylist() {
     if (_device.isDesktop) {
-      showAdaptiveDialog<void>(
+      showDialog<void>(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          content: CreatePlaylistForm(
-            onCreated: () => ref.invalidate(playlistsProvider),
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: SizedBox(
+            width: 360,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+              child: CreateDesktopPlaylistForm(
+                onCreated: () => ref.invalidate(playlistsProvider),
+              ),
+            ),
           ),
         ),
       );
     } else {
       PersistentBottomSheetController? controller;
-      _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
-      controller = _scaffoldKey.currentState?.showBottomSheet(
-        (context) => Column(
+      // _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
+      showModalBottomSheet<void>(
+        useRootNavigator: true,
+        backgroundColor: Colors.grey[900],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+        ),
+        context: context,
+        builder: (context) => Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            CloseButton(onPressed: controller?.close),
+            CloseButton(onPressed: () => Navigator.of(context).pop()),
             CreatePlaylistForm(
               controller: controller,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -131,9 +147,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       ),
     );
     if (shouldDelete ?? false) {
-      await ref
-          .read(jellyfinApiProvider)
-          .deletePlaylist(playlistId: playlist.id);
+      await ref.read(jellyfinApiProvider).deletePlaylist(playlistId: playlist.id);
       ref.invalidate(playlistsProvider);
     }
   }
@@ -144,17 +158,14 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     _currentView = ValueNotifier(ListenView.values.first)
       ..addListener(
         () => _appliedFilter.value = Filter(
-          orderBy: _currentView.value == ListenView.albums
-              ? EntityFilter.dateCreated
-              : EntityFilter.sortName,
+          orderBy: _currentView.value == ListenView.albums ? EntityFilter.dateCreated : EntityFilter.sortName,
           desc: true,
         ),
       );
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
     };
-    _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))
-      ..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
+    _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
   }
 
   Future<void> loadMore() async => switch (_currentView.value) {
@@ -179,8 +190,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         navigationBar: PreferredSize(
           preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
           child: Padding(
-            padding:
-                EdgeInsets.symmetric(horizontal: _device.isMobile ? 16 : 30),
+            padding: EdgeInsets.symmetric(horizontal: _device.isMobile ? 16 : 30),
             child: Row(
               children: [
                 _pageViewToggle(),
@@ -212,10 +222,8 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: _device.isTablet ? 360 : 200,
                       mainAxisSpacing: _device.isMobile ? 15 : 24,
-                      crossAxisSpacing:
-                          _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
-                      childAspectRatio:
-                          _device.isTablet ? 360 / 413 : 175 / 215.7,
+                      crossAxisSpacing: _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
+                      childAspectRatio: _device.isTablet ? 360 / 413 : 175 / 215.7,
                     ),
                     itemBuilder: (context, index) {
                       final item = state.items[index];
@@ -277,9 +285,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  backgroundColor: (value == currentView)
-                      ? _theme.chipTheme.selectedColor
-                      : _theme.chipTheme.backgroundColor,
+                  backgroundColor: (value == currentView) ? _theme.chipTheme.selectedColor : _theme.chipTheme.backgroundColor,
                   onPressed: () => _currentView.value = value,
                 ),
               ),
@@ -309,9 +315,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       final desc = !filter.desc;
       ref.read(filterProvider.notifier).filter(value!, desc);
     } else {
-      ref
-          .read(filterProvider.notifier)
-          .filter(value!, _defaultSorting[value] ?? false);
+      ref.read(filterProvider.notifier).filter(value!, _defaultSorting[value] ?? false);
     }
   }
 
@@ -329,9 +333,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                       valueListenable: _filterOpened,
                       builder: (context, isOpened, child) => Icon(
                         JPlayer.sliders,
-                        color: isOpened
-                            ? _theme.colorScheme.primary
-                            : _theme.iconTheme.color,
+                        color: isOpened ? _theme.colorScheme.primary : _theme.iconTheme.color,
                       ),
                     ),
                   ),
@@ -358,19 +360,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   height: 1.2,
-                                  color: (filter.orderBy == value)
-                                      ? _theme.colorScheme.primary
-                                      : _theme.colorScheme.onPrimary,
+                                  color: (filter.orderBy == value) ? _theme.colorScheme.primary : _theme.colorScheme.onPrimary,
                                 ),
                               ),
                             ),
                             Icon(
-                              filter.desc
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                              color: (filter.orderBy == value)
-                                  ? _theme.colorScheme.primary
-                                  : _theme.colorScheme.onPrimary,
+                              filter.desc ? Icons.arrow_upward : Icons.arrow_downward,
+                              color: (filter.orderBy == value) ? _theme.colorScheme.primary : _theme.colorScheme.onPrimary,
                             ),
                           ],
                         ),

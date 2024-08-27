@@ -55,7 +55,7 @@ class LabeledTextField extends StatelessWidget {
           fillColor: const Color(0xFFEEEEEE),
           border: OutlineInputBorder(
             borderSide: BorderSide.none,
-            borderRadius: BorderRadius.circular(21.391),
+            borderRadius: BorderRadius.circular(10),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
           hintText: placeholder,
