@@ -2,6 +2,10 @@
 
 <a href="https://github.com/avdept/jplayer/actions"><img src="https://github.com/avdept/jplayer/workflows/jellybox/badge.svg" alt="Build Status"></a>
 
+<a href="https://x.com/_avdept">
+  <img src="https://img.shields.io/badge/Twitter-blue?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter Badge"/>
+</a>
+
 
 [![Jellybox on the App Store](./appstore.svg)](https://apps.apple.com/us/app/jellybox-player/id6469732117)
 
