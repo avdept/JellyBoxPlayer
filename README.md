@@ -5,11 +5,11 @@
 <a href="https://x.com/_avdept">
   <img src="https://img.shields.io/badge/Twitter-blue?style=for-the-badge&logo=twitter&logoColor=white" alt="Twitter Badge"/>
 </a>
-
+<a href="https://www.buymeacoffee.com/avdept" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
 [![Jellybox on the App Store](./appstore.svg)](https://apps.apple.com/us/app/jellybox-player/id6469732117)
 
-<a href="https://www.buymeacoffee.com/avdept" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
 ### Description
 This is unofficial **audio** client for jellyfin app. Currently it supports macOS, iOS and android via APK file. I'm also working on adding Linux(deb) support and windows. 
 
