@@ -7,7 +7,7 @@
 
 <a href="https://www.buymeacoffee.com/avdept" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 ### Description
-This is unofficial **audio** client for jellyfin app. For now macos and ios only. Expect any kind of crashes, issues and generally its good if it even runs.
+This is unofficial **audio** client for jellyfin app. Currently it supports macOS, iOS and android via APK file. I'm also working on adding Linux(deb) support and windows. 
 
 ## IOS/Macos
 
