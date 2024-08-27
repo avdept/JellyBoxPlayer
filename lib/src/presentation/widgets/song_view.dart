@@ -23,39 +23,36 @@ class SongView extends StatelessWidget {
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isTablet = deviceType == DeviceScreenType.tablet;
 
-    return GestureDetector(
+    return SimpleListTile(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SimpleListTile(
-        leading: Image(
-          image: const AssetImage(Images.songSample),
-          width: isMobile ? 42 : 50,
-          height: isMobile ? 42 : 50,
-        ),
-        title: Text(
-          name,
-          style: TextStyle(
-            fontSize: isTablet ? 20 : 16,
-            height: 1.2,
-            color: theme.colorScheme.onPrimary,
-            overflow: TextOverflow.ellipsis,
-          ),
-          maxLines: 1,
-        ),
-        subtitle: Text(
-          'Song',
-          style: TextStyle(
-            fontSize: isTablet ? 16 : 12,
-            height: 1.2,
-            color: theme.colorScheme.onPrimary.withOpacity(0.61),
-          ),
-        ),
-        trailing: IconButton(
-          onPressed: onOptionsPressed,
-          icon: const Icon(JPlayer.more_horizontal),
-        ),
-        leadingToTitle: isMobile ? 6 : 16,
+      leading: Image(
+        image: const AssetImage(Images.songSample),
+        width: isMobile ? 42 : 50,
+        height: isMobile ? 42 : 50,
       ),
+      title: Text(
+        name,
+        style: TextStyle(
+          fontSize: isTablet ? 20 : 16,
+          height: 1.2,
+          color: theme.colorScheme.onPrimary,
+          overflow: TextOverflow.ellipsis,
+        ),
+        maxLines: 1,
+      ),
+      subtitle: Text(
+        'Song',
+        style: TextStyle(
+          fontSize: isTablet ? 16 : 12,
+          height: 1.2,
+          color: theme.colorScheme.onPrimary.withOpacity(0.61),
+        ),
+      ),
+      trailing: IconButton(
+        onPressed: onOptionsPressed,
+        icon: const Icon(JPlayer.more_horizontal),
+      ),
+      leadingToTitle: isMobile ? 6 : 16,
     );
   }
 }

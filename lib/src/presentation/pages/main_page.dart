@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
-import 'package:responsive_builder/responsive_builder.dart';
-
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({
     required this.shell,
@@ -21,10 +20,7 @@ class MainPage extends ConsumerStatefulWidget {
 
 class _MainPageState extends ConsumerState<MainPage> {
   late ThemeData _theme;
-  late Size _screenSize;
-  late bool _isMobile;
-  late bool _isTablet;
-  late bool _isDesktop;
+  late DeviceType _device;
 
   Set<(IconData, String)> get _menuItems => {
         (JPlayer.play_circle_outlined, 'Listen'),
@@ -42,12 +38,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _theme = Theme.of(context);
-    _screenSize = MediaQuery.sizeOf(context);
-
-    final deviceType = getDeviceType(_screenSize);
-    _isMobile = deviceType == DeviceScreenType.mobile;
-    _isTablet = deviceType == DeviceScreenType.tablet;
-    _isDesktop = deviceType == DeviceScreenType.desktop;
+    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
   @override
@@ -58,7 +49,7 @@ class _MainPageState extends ConsumerState<MainPage> {
       body: Row(
         children: [
           Visibility(
-            visible: _isDesktop,
+            visible: _device.isDesktop,
             child: CustomNavigationRail(
               padding: const EdgeInsets.symmetric(
                 vertical: 30,
@@ -109,12 +100,12 @@ class _MainPageState extends ConsumerState<MainPage> {
         ],
       ),
       bottomNavigationBar: Visibility(
-        visible: !_isDesktop,
+        visible: !_device.isDesktop,
         child: CupertinoTabBar(
           activeColor: _theme.colorScheme.primary,
           inactiveColor: _theme.colorScheme.onPrimary,
-          iconSize: _isMobile ? 28 : 24,
-          height: _isMobile ? 56 : 50,
+          iconSize: _device.isMobile ? 28 : 24,
+          height: _device.isMobile ? 56 : 50,
           currentIndex: currentIndex,
           onTap: _navigateToItem,
           items: List.generate(

@@ -3,14 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class ArtistPage extends ConsumerStatefulWidget {
@@ -23,16 +22,13 @@ class ArtistPage extends ConsumerStatefulWidget {
 
 class _ArtistPageState extends ConsumerState<ArtistPage> {
   final _scrollController = ScrollController();
-
-  late ModalRoute<dynamic>? _parentRoute;
-  late ThemeData _theme;
-  late Size _screenSize;
-  late bool _isMobile;
-  late bool _isTablet;
-  List<ItemDTO> _albums = [];
   final _titleOpacity = ValueNotifier<double>(0);
   final _titleKey = GlobalKey(debugLabel: 'title');
+  List<ItemDTO> _albums = [];
   List<ItemDTO> _appearsOn = [];
+
+  late ThemeData _theme;
+  late DeviceType _device;
 
   void _onScroll() {
     final titleContext = _titleKey.currentContext;
@@ -40,7 +36,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox =
+          scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -61,15 +58,22 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   }
 
   Future<void> _getAppearsOn() async {
-    final resp =
-        await ref.read(jellyfinApiProvider).getAlbums(userId: ref.read(currentUserProvider)!.userId, libraryId: '', contributingArtistIds: widget.artist.id);
+    final resp = await ref.read(jellyfinApiProvider).getAlbums(
+          userId: ref.read(currentUserProvider)!.userId,
+          libraryId: '',
+          contributingArtistIds: widget.artist.id,
+        );
     setState(() {
       _appearsOn = resp.data.items;
     });
   }
 
   Future<void> _getAlbums() async {
-    final resp = await ref.read(jellyfinApiProvider).getAlbums(userId: ref.read(currentUserProvider)!.userId, libraryId: '', artistIds: [widget.artist.id]);
+    final resp = await ref.read(jellyfinApiProvider).getAlbums(
+      userId: ref.read(currentUserProvider)!.userId,
+      libraryId: '',
+      artistIds: [widget.artist.id],
+    );
     setState(() {
       _albums = resp.data.items;
     });
@@ -78,13 +82,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _parentRoute = ModalRoute.of(context);
     _theme = Theme.of(context);
-    _screenSize = MediaQuery.sizeOf(context);
-
-    final deviceType = getDeviceType(_screenSize);
-    _isMobile = deviceType == DeviceScreenType.mobile;
-    _isTablet = deviceType == DeviceScreenType.tablet;
+    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
   Widget get mobileView {
@@ -92,87 +91,92 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       controller: _scrollController,
       slivers: [
         SliverAppBar(
-            title: ValueListenableBuilder(
-                valueListenable: _titleOpacity,
-                builder: (context, opacity, child) => Transform.translate(
-                      offset: Offset(0, 8 - 8 * opacity),
-                      child: Opacity(
-                        opacity: opacity,
-                        child: child,
-                      ),
-                    ),
-                child: Text(
-                  widget.artist.name,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                )),
-            floating: true,
-            pinned: true,
-            // snap: true,
-            expandedHeight: 250,
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.pin,
-              background: Stack(
-                alignment: Alignment.topCenter,
-                clipBehavior: Clip.none,
-                children: [
-                  if (widget.artist.backgropImageTags.isNotEmpty)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: -60,
-                      height: 340,
-                      child: _headerImage(),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20, top: 60),
-                    child: Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Flexible(
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: _mainImage(),
-                              ),
+          title: ValueListenableBuilder(
+            valueListenable: _titleOpacity,
+            builder: (context, opacity, child) => Transform.translate(
+              offset: Offset(0, 8 - 8 * opacity),
+              child: Opacity(
+                opacity: opacity,
+                child: child,
+              ),
+            ),
+            child: Text(
+              widget.artist.name,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+          ),
+          floating: true,
+          pinned: true,
+          // snap: true,
+          expandedHeight: 250,
+          flexibleSpace: FlexibleSpaceBar(
+            collapseMode: CollapseMode.pin,
+            background: Stack(
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.none,
+              children: [
+                if (widget.artist.backgropImageTags.isNotEmpty)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: -60,
+                    height: 340,
+                    child: _headerImage(),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20, top: 60),
+                  child: Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: _mainImage(),
                             ),
-                            Flexible(
-                              flex: 3,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 16, right: 16),
-                                child: SizedBox(
-                                  child: Column(
+                          ),
+                          Flexible(
+                            flex: 3,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              key: _titleKey,
-                                              widget.artist.name,
-                                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                                            ),
-                                          ),
-                                          _playButton(),
-                                        ],
+                                      Expanded(
+                                        child: Text(
+                                          key: _titleKey,
+                                          widget.artist.name,
+                                          style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       ),
-                                      DefaultTextStyle(
-                                        style: const TextStyle(fontSize: 14),
-                                        child: _infoText(),
-                                      ),
+                                      _playButton(),
                                     ],
                                   ),
-                                ),
+                                  DefaultTextStyle(
+                                    style: const TextStyle(fontSize: 14),
+                                    child: _infoText(),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )),
+                ),
+              ],
+            ),
+          ),
+        ),
         ..._albumsWidgets(),
       ],
     );
@@ -180,7 +184,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isMobile) {
+    if (_device.isMobile) {
       return mobileView;
     }
     return Scaffold(
@@ -195,13 +199,16 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               Positioned(
                 left: 0,
                 right: 0,
-                top: _isMobile ? -60 : 0,
+                top: _device.isMobile ? -60 : 0,
                 height: 340,
                 child: _headerImage(),
               ),
             const Positioned(top: 4, left: 10, child: BackButton()),
             Padding(
-              padding: EdgeInsets.only(left: _isMobile ? 20 : (_isTablet ? 64 : 40), top: _isMobile ? 60 : (_isTablet ? 140 : 238)),
+              padding: EdgeInsets.only(
+                left: _device.isMobile ? 20 : (_device.isTablet ? 64 : 40),
+                top: _device.isMobile ? 60 : (_device.isTablet ? 140 : 238),
+              ),
               child: Column(
                 children: [
                   Row(
@@ -216,28 +223,40 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                       Flexible(
                         flex: 3,
                         child: Padding(
-                          padding: EdgeInsets.only(
-                            left: _isMobile ? 16 : (_isTablet ? 64 : 40),
-                            right: _isMobile ? 16 : (_isTablet ? 64 : 40),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: _device.isMobile
+                                ? 16
+                                : (_device.isTablet ? 64 : 40),
                           ),
                           child: SizedBox(
                             child: Column(
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       widget.artist.name,
-                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                     _playButton(),
                                   ],
                                 ),
                                 DefaultTextStyle(
-                                  style: TextStyle(fontSize: _isMobile ? 14 : 16),
+                                  style: TextStyle(
+                                    fontSize: _device.isMobile ? 14 : 16,
+                                  ),
                                   child: _infoText(),
                                 ),
-                                if (!_isMobile) SizedBox(height: MediaQuery.of(context).size.height - (_isTablet ? 480 : 400), child: _albumsList())
+                                if (!_device.isMobile)
+                                  SizedBox(
+                                    height: _device.screenSize.height -
+                                        (_device.isTablet ? 480 : 400),
+                                    child: _albumsList(),
+                                  ),
                               ],
                             ),
                           ),
@@ -263,9 +282,10 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _headerImage() => Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: ref
-                .read(imageProvider)
-                .backdropIp(tagId: widget.artist.backgropImageTags.isNotEmpty ? widget.artist.backgropImageTags.first : null, id: widget.artist.id),
+            image: ref.read(imageProvider).backdropIp(
+                  tagId: widget.artist.backgropImageTags.firstOrNull,
+                  id: widget.artist.id,
+                ),
             fit: BoxFit.fitWidth,
           ),
         ),
@@ -281,26 +301,34 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         ),
       );
 
-  Widget _mainImage() => Image(image: ref.read(imageProvider).albumIP(tagId: widget.artist.imageTags["Primary"], id: widget.artist.id), width: 500);
+  Widget _mainImage() => Image(
+        image: ref.read(imageProvider).albumIP(
+              tagId: widget.artist.imageTags['Primary'],
+              id: widget.artist.id,
+            ),
+        width: 500,
+      );
 
   Widget _infoText() => Padding(
         padding: const EdgeInsets.only(top: 20),
-        child: Text(widget.artist.overview ?? 'This artist does not have any information.',
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
-            softWrap: true,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 14,
-                  height: 1.2,
-                )),
+        child: Text(
+          widget.artist.overview ??
+              'This artist does not have any information.',
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
+          softWrap: true,
+          style: _theme.textTheme.bodySmall?.copyWith(
+            fontSize: 14,
+            height: 1.2,
+          ),
+        ),
       );
 
   Widget _playButton() => SizedBox(
         height: 48,
-        child: PlayButton(
-          onPressed: () {},
-        ),
+        child: PlayButton(onPressed: () {}),
       );
+
   List<Widget> _albumsWidgets() {
     return [
       if (_albums.isNotEmpty)
@@ -310,7 +338,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             child: Text(
               'Albums',
               style: TextStyle(
-                fontSize: _isMobile ? 20 : 24,
+                fontSize: _device.isMobile ? 20 : 24,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -320,25 +348,31 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         SliverPadding(
           padding: EdgeInsets.only(
             top: 16,
-            right: _isMobile ? 16 : (_isTablet ? 0 : 60),
-            left: _isMobile ? 16 : (_isTablet ? 0 : 60),
+            right: _device.isMobile ? 16 : (_device.isTablet ? 0 : 60),
+            left: _device.isMobile ? 16 : (_device.isTablet ? 0 : 60),
             bottom: 16,
           ),
           sliver: SliverGrid.builder(
             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: _isMobile ? 200 : 160,
+              maxCrossAxisExtent: _device.isMobile ? 200 : 160,
               mainAxisSpacing: 12,
-              crossAxisSpacing: _isMobile ? 8 : 16,
-              childAspectRatio: _isMobile ? 175 / 225 : 120 / 163,
+              crossAxisSpacing: _device.isMobile ? 8 : 16,
+              childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
             ),
             itemBuilder: (context, index) => AlbumView(
               showArtist: false,
               album: _albums[index],
-              onTap: () {
+              onTap: (album) {
                 final location = GoRouterState.of(context).fullPath;
-                context.go('$location${Routes.album}', extra: {'album': _albums[index], 'artist': widget.artist});
+                context.go(
+                  '$location${Routes.album}',
+                  extra: {
+                    'album': album,
+                    'artist': widget.artist,
+                  },
+                );
               },
-              mainTextStyle: TextStyle(fontSize: _isMobile ? 16 : 14),
+              mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
               subTextStyle: const TextStyle(fontSize: 14),
             ),
             itemCount: _albums.length,
@@ -349,7 +383,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           child: Text(
             'Appears On',
             style: TextStyle(
-              fontSize: _isMobile ? 20 : 24,
+              fontSize: _device.isMobile ? 20 : 24,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -357,24 +391,30 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       SliverPadding(
         padding: EdgeInsets.only(
           top: 16,
-          right: _isMobile ? 16 : (_isTablet ? 64 : 60),
+          right: _device.isMobile ? 16 : (_device.isTablet ? 64 : 60),
           bottom: 16,
         ),
         sliver: SliverGrid.builder(
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: _isMobile ? 175 : 220,
-            mainAxisSpacing: _isTablet ? 24 : 12,
-            crossAxisSpacing: _isMobile ? 8 : 16,
-            childAspectRatio: _isMobile ? 175 / 225 : 120 / 163,
+            maxCrossAxisExtent: _device.isMobile ? 175 : 220,
+            mainAxisSpacing: _device.isTablet ? 24 : 12,
+            crossAxisSpacing: _device.isMobile ? 8 : 16,
+            childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
           ),
           itemBuilder: (context, index) => AlbumView(
             showArtist: false,
             album: _appearsOn[index],
-            onTap: () {
+            onTap: (album) {
               final location = GoRouterState.of(context).fullPath;
-              context.go('$location${Routes.album}', extra: {'album': _appearsOn[index], 'artist': widget.artist});
+              context.go(
+                '$location${Routes.album}',
+                extra: {
+                  'album': album,
+                  'artist': widget.artist,
+                },
+              );
             },
-            mainTextStyle: TextStyle(fontSize: _isMobile ? 16 : 14),
+            mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
             subTextStyle: const TextStyle(fontSize: 14),
           ),
           itemCount: _appearsOn.length,

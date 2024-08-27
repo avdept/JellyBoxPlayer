@@ -26,13 +26,10 @@ public class MediakeysProxyPlugin: NSObject, FlutterPlugin, NSApplicationDelegat
     switch mediaKey {
     case .playPause:
         self.sendEventToFlutter(eventName: "playPause")
-        print("Play/pause pressed")
     case .previous, .rewind:
         self.sendEventToFlutter(eventName: "prev")
-        print("Previous pressed")
     case .next, .fastForward:
         self.sendEventToFlutter(eventName: "next")
-        print("Next pressed")
     }
   }
 

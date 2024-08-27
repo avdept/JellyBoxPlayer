@@ -1,4 +1,5 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,14 +7,17 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/wrappers/wrappers_dto.dart';
+import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/album_provider.dart';
-import 'package:jplayer/src/domain/providers/artist_provider.dart';
+import 'package:jplayer/src/domain/providers/albums_provider.dart';
+import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/current_album_provider.dart';
+import 'package:jplayer/src/domain/providers/current_playlist_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
+import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class ListenPage extends ConsumerStatefulWidget {
   const ListenPage({super.key});
@@ -27,17 +31,15 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
-
-  AlbumsWrapper albumsWrapper = const AlbumsWrapper(items: [], totalRecordCount: 0);
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late ThemeData _theme;
-  late Size _screenSize;
-  late bool _isMobile;
-  late bool _isTablet;
+  late DeviceType _device;
 
   Map<ListenView, String> get _viewLabels => {
         ListenView.albums: 'Albums',
         ListenView.artists: 'Artists',
+        ListenView.playlists: 'Playlists',
       };
 
   Map<EntityFilter, String> get _filtersLabels => {
@@ -63,125 +65,200 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     context.go('$location${Routes.artist}', extra: {'artist': artist});
   }
 
+  void _onPlaylistTap(ItemDTO playlist) {
+    final location = GoRouterState.of(context).fullPath;
+    ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
+    context.go('$location${Routes.playlist}', extra: {'playlist': playlist});
+  }
+
+  void _onCreateNewPlaylist() {
+    if (_device.isDesktop) {
+      showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: SizedBox(
+            width: 360,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+              child: CreateDesktopPlaylistForm(
+                onCreated: () => ref.invalidate(playlistsProvider),
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      PersistentBottomSheetController? controller;
+      // _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
+      showModalBottomSheet<void>(
+        useRootNavigator: true,
+        backgroundColor: Colors.grey[900],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+        ),
+        context: context,
+        builder: (context) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CloseButton(onPressed: () => Navigator.of(context).pop()),
+            CreatePlaylistForm(
+              controller: controller,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              onCreated: () => ref.invalidate(playlistsProvider),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _onDeletePlaylist(ItemDTO playlist) async {
+    final shouldDelete = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text.rich(
+          TextSpan(
+            text: 'Delete ',
+            children: [
+              TextSpan(
+                text: '"${playlist.name}"',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: '?'),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDefaultAction: true,
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete ?? false) {
+      await ref.read(jellyfinApiProvider).deletePlaylist(playlistId: playlist.id);
+      ref.invalidate(playlistsProvider);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _currentView = ValueNotifier(ListenView.values.first);
+    _currentView = ValueNotifier(ListenView.values.first)
+      ..addListener(
+        () => _appliedFilter.value = Filter(
+          orderBy: _currentView.value == ListenView.albums ? EntityFilter.dateCreated : EntityFilter.sortName,
+          desc: true,
+        ),
+      );
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
     };
-    _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first));
-    ref.read(albumsProvider.notifier).loadMore();
-    ref.read(artistsProvider.notifier).loadMore();
+    _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
   }
 
-  Future<void> loadMore() async {
-    switch (_currentView.value) {
-      case ListenView.albums:
-        await ref.read(albumsProvider.notifier).loadMore();
-      case ListenView.artists:
-        await ref.read(artistsProvider.notifier).loadMore();
-    }
-  }
+  Future<void> loadMore() async => switch (_currentView.value) {
+        ListenView.albums => ref.read(albumsProvider.notifier).loadMore(),
+        ListenView.artists => ref.read(artistsProvider.notifier).loadMore(),
+        ListenView.playlists => ref.read(playlistsProvider.notifier).loadMore(),
+      };
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _theme = Theme.of(context);
-    _screenSize = MediaQuery.sizeOf(context);
-
-    final deviceType = getDeviceType(_screenSize);
-    _isMobile = deviceType == DeviceScreenType.mobile;
-    _isTablet = deviceType == DeviceScreenType.tablet;
+    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
-
-  Widget get _albumsView => Consumer(
-        builder: (context, ref, child) {
-          final albumsState = ref.watch(albumsProvider);
-          return albumsState.when(
-            data: (AlbumsState state) {
-              return SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _isTablet ? 360 : 200,
-                  mainAxisSpacing: _isMobile ? 15 : 24,
-                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  album: state.items[index],
-                  onTap: () => _onAlbumTap(state.items[index]),
-                ),
-                itemCount: state.items.length,
-              );
-            },
-            error: (error, stackTrace) => SliverToBoxAdapter(child: Text(error.toString())),
-            loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
-          );
-        },
-      );
-
-  Widget get _artistsView => Consumer(
-        builder: (context, ref, child) {
-          final artistsState = ref.watch(artistsProvider);
-
-          return artistsState.when(
-            data: (ArtistState state) {
-              return SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _isTablet ? 360 : 200,
-                  mainAxisSpacing: _isMobile ? 15 : 24,
-                  crossAxisSpacing: _isMobile ? 8 : (_isTablet ? 56 : 28),
-                  childAspectRatio: _isTablet ? 360 / 413 : 175 / 215.7,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  album: state.items[index],
-                  onTap: () => _onArtistTap(state.items[index]),
-                ),
-                itemCount: state.items.length,
-              );
-            },
-            error: (error, stackTrace) => SliverToBoxAdapter(child: Text(error.toString())),
-            loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
-          );
-        },
-      );
 
   @override
   Widget build(BuildContext context) {
-    return ScrollablePageScaffold(
-      useGradientBackground: true,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(_isMobile ? 60 : 100),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: _isMobile ? 16 : 30),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _pageViewToggle(),
-              _filterButton(),
-            ],
+    return Scaffold(
+      key: _scaffoldKey,
+      body: ScrollablePageScaffold(
+        useGradientBackground: true,
+        navigationBar: PreferredSize(
+          preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: _device.isMobile ? 16 : 30),
+            child: Row(
+              children: [
+                _pageViewToggle(),
+                const Spacer(),
+                _addButton(),
+                _filterButton(),
+              ],
+            ),
           ),
         ),
-      ),
-      loadMoreData: loadMore,
-      contentPadding: EdgeInsets.only(
-        left: _isMobile ? 16 : 30,
-        right: _isMobile ? 16 : 30,
-        bottom: 30,
-      ),
-      slivers: [
-        ValueListenableBuilder(
-          valueListenable: _currentView,
-          builder: (context, value, child) {
-            switch (value) {
-              case ListenView.albums:
-                return _albumsView;
-              case ListenView.artists:
-                return _artistsView;
-            }
-          },
+        loadMoreData: loadMore,
+        contentPadding: EdgeInsets.only(
+          left: _device.isMobile ? 16 : 30,
+          right: _device.isMobile ? 16 : 30,
+          bottom: 30,
         ),
-      ],
+        slivers: [
+          ValueListenableBuilder(
+            valueListenable: _currentView,
+            builder: (context, value, child) => Consumer(
+              builder: (context, ref, child) {
+                final provider = switch (value) {
+                  ListenView.albums => ref.watch(albumsProvider),
+                  ListenView.artists => ref.watch(artistsProvider),
+                  ListenView.playlists => ref.watch(playlistsProvider),
+                };
+                return provider.when(
+                  data: (state) => SliverGrid.builder(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+                      mainAxisSpacing: _device.isMobile ? 15 : 24,
+                      crossAxisSpacing: _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
+                      childAspectRatio: _device.isTablet ? 360 / 413 : 175 / 215.7,
+                    ),
+                    itemBuilder: (context, index) {
+                      final item = state.items[index];
+                      return AlbumView(
+                        album: item,
+                        onTap: (item) => switch (value) {
+                          ListenView.albums => _onAlbumTap(item),
+                          ListenView.artists => _onArtistTap(item),
+                          ListenView.playlists => _onPlaylistTap(item),
+                        },
+                        optionsBuilder: switch (value) {
+                          ListenView.playlists => (context) => [
+                                PopupMenuItem(
+                                  onTap: () => _onDeletePlaylist(item),
+                                  child: const Text('Delete playlist'),
+                                ),
+                              ],
+                          _ => null,
+                        },
+                      );
+                    },
+                    itemCount: state.items.length,
+                  ),
+                  error: (error, stackTrace) => SliverToBoxAdapter(
+                    child: Text(error.toString()),
+                  ),
+                  loading: () => const SliverToBoxAdapter(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -195,7 +272,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   Widget _pageViewToggle() => ChipTheme(
         data: ChipTheme.of(context).copyWith(
-          labelStyle: TextStyle(fontSize: _isMobile ? 14 : 16),
+          labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
         ),
         child: Wrap(
           spacing: 12,
@@ -204,17 +281,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
               ValueListenableBuilder(
                 valueListenable: _currentView,
                 builder: (context, currentView, child) => ActionChip(
-                    label: Text(_viewLabels[value] ?? '???'),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    backgroundColor: (value == currentView) ? _theme.chipTheme.selectedColor : _theme.chipTheme.backgroundColor,
-                    onPressed: () {
-                      _currentView.value = value;
-                      _applyProviderFilter(_currentView.value == ListenView.albums ? EntityFilter.dateCreated : EntityFilter.sortName);
-                      _appliedFilter.value =
-                          Filter(orderBy: _currentView.value == ListenView.albums ? EntityFilter.dateCreated : EntityFilter.sortName, desc: true);
-                    }),
+                  label: Text(_viewLabels[value] ?? '???'),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  backgroundColor: (value == currentView) ? _theme.chipTheme.selectedColor : _theme.chipTheme.backgroundColor,
+                  onPressed: () => _currentView.value = value,
+                ),
               ),
           ],
         ),
@@ -224,14 +297,17 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     return _filtersLabels[filter] ?? '???';
   }
 
-  List<EntityFilter> getFilterItems() {
-    switch (_currentView.value) {
-      case ListenView.albums:
-        return EntityFilter.values.toList();
-      case ListenView.artists:
-        return [EntityFilter.sortName, EntityFilter.dateCreated];
-    }
-  }
+  List<EntityFilter> getFilterItems() => switch (_currentView.value) {
+        ListenView.albums => EntityFilter.values.toList(),
+        ListenView.artists => [
+            EntityFilter.sortName,
+            EntityFilter.dateCreated,
+          ],
+        ListenView.playlists => [
+            EntityFilter.sortName,
+            EntityFilter.dateCreated,
+          ],
+      };
 
   void _applyProviderFilter(EntityFilter? value) {
     final filter = ref.read(filterProvider);
@@ -262,7 +338,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                     ),
                   ),
                   buttonStyleData: const ButtonStyleData(
-                    overlayColor: MaterialStatePropertyAll(Colors.transparent),
+                    overlayColor: WidgetStatePropertyAll(Colors.transparent),
                   ),
                   dropdownStyleData: DropdownStyleData(
                     width: 150,
@@ -302,6 +378,25 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                 );
               },
             );
+          },
+        ),
+      );
+
+  Widget _addButton() => ValueListenableBuilder(
+        valueListenable: _currentView,
+        builder: (context, currentView, child) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 100),
+          transitionBuilder: (child, animation) => ScaleTransition(
+            scale: animation,
+            child: child,
+          ),
+          child: switch (currentView) {
+            ListenView.albums => const SizedBox.shrink(),
+            ListenView.artists => const SizedBox.shrink(),
+            ListenView.playlists => IconButton(
+                onPressed: _onCreateNewPlaylist,
+                icon: const Icon(Icons.add),
+              ),
           },
         ),
       );

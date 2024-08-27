@@ -1,32 +1,32 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:responsive_builder/responsive_builder.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   void _onLibrariesPressed(BuildContext context) => context.go(Routes.library);
+
   void _onPaletteSettingsPressed(BuildContext context) {
     final location = GoRouterState.of(context).fullPath;
     context.go('$location${Routes.palette}');
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final padding = MediaQuery.paddingOf(context);
-    final screenSize = MediaQuery.sizeOf(context);
-    final deviceType = getDeviceType(screenSize);
-    final isMobile = deviceType == DeviceScreenType.mobile;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
+    final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
     final contentPadding = EdgeInsets.only(
-      left: padding.left + (isMobile ? 16 : 30),
-      top: padding.top + (isMobile ? 16 : 30),
-      right: padding.right + (isMobile ? 16 : 30),
-      bottom: isMobile ? 22 : 26,
+      left: padding.left + (device.isMobile ? 16 : 30),
+      top: padding.top + (device.isMobile ? 16 : 30),
+      right: padding.right + (device.isMobile ? 16 : 30),
+      bottom: device.isMobile ? 22 : 26,
     );
 
     return Scaffold(
@@ -45,7 +45,7 @@ class SettingsPage extends StatelessWidget {
                 child: Text(
                   'Settings',
                   style: TextStyle(
-                    fontSize: isMobile ? 24 : 36,
+                    fontSize: device.isMobile ? 24 : 36,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
                   ),
@@ -63,9 +63,7 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
-                  if (!isDesktop) _logOutButton(),
-
-
+                  if (!device.isDesktop) _logOutButton(ref),
                 ],
               ),
             ),
@@ -88,8 +86,8 @@ class SettingsPage extends StatelessWidget {
         label: const Text('Music libraries'),
       );
 
-  Widget _logOutButton() => TextButton.icon(
-        onPressed: () {},
+  Widget _logOutButton(WidgetRef ref) => TextButton.icon(
+        onPressed: ref.read(authProvider.notifier).logout,
         icon: const Icon(JPlayer.log_out),
         label: const Text('Log out'),
       );

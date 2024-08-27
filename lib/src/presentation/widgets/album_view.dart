@@ -9,6 +9,7 @@ class AlbumView extends ConsumerWidget {
   const AlbumView({
     required this.album,
     this.onTap,
+    this.optionsBuilder,
     this.mainTextStyle,
     this.subTextStyle,
     this.showArtist = true,
@@ -17,14 +18,17 @@ class AlbumView extends ConsumerWidget {
 
   final ItemDTO album;
   final bool showArtist;
-  final VoidCallback? onTap;
+  final void Function(ItemDTO)? onTap;
+  final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
 
   String? imagePath(WidgetRef ref) {
     if (album.imageTags['Primary'] == null) return null;
 
-    return ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id);
+    return ref
+        .read(imageProvider)
+        .imagePath(tagId: album.imageTags['Primary']!, id: album.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {
@@ -47,20 +51,38 @@ class AlbumView extends ConsumerWidget {
     final isTablet = deviceType == DeviceScreenType.tablet;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: (onTap != null) ? () => onTap!.call(album) : null,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           AspectRatio(
             aspectRatio: 1,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: libraryImage(ref),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: libraryImage(ref),
+                    ),
+                  ),
                 ),
-              ),
+                if (optionsBuilder != null)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: PopupMenuButton<void>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: 'More',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black45,
+                      ),
+                      itemBuilder: optionsBuilder!,
+                    ),
+                  ),
+              ],
             ),
           ),
           Text(
@@ -73,7 +95,6 @@ class AlbumView extends ConsumerWidget {
             ).merge(mainTextStyle),
             maxLines: 1,
           ),
-
           Text(
             artistName,
             style: TextStyle(

@@ -9,6 +9,7 @@ abstract class Routes {
   static const downloads = '/downloads';
   static const palette = '/palette';
   static const album = '/album';
+  static const playlist = '/playlist';
 }
 
 extension RouteName on String {
