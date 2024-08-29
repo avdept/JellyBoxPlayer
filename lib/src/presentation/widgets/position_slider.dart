@@ -24,7 +24,9 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
     if (playbackState.status == PlaybackStatus.stopped) return Container();
     return SeekBar(
       duration: playbackState.totalDuration ?? Duration.zero,
-      position: playbackState.position,
+      // Workaround for a bug where negative positions are passed which triggers an assert that stops the debugger
+      // Tracked in #79   
+      position: playbackState.position >= Duration.zero ? playbackState.position : Duration.zero,
       bufferedPosition: playbackState.cacheProgress,
       onChangeEnd: (value) => ref.read(playbackProvider.notifier).seek(value),
     );
