@@ -6,6 +6,7 @@ import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +52,12 @@ Future<void> main() async {
         await windowManager.show();
         await windowManager.focus();
       },
+    );
+  }
+
+  if (Platform.isLinux) {
+    JustAudioMediaKit.ensureInitialized(
+      windows: false,
     );
   }
 

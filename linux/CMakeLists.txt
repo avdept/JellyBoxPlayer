@@ -137,3 +137,7 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Configures MIMALLOC to be used instead of the default memory allocator
+# Required for Linux audio, see https://pub.dev/packages/just_audio_media_kit
+target_link_libraries(${BINARY_NAME} PRIVATE ${MIMALLOC_LIB})
