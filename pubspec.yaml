@@ -23,7 +23,7 @@ dependencies:
   mediakeys_proxy:
     path: ./mediakeys_proxy
   just_audio:
-  cached_network_image: ^3.3.1
+  cached_network_image: ^3.4.1
   just_audio_background:
   go_router: ^14.2.1
   intl: ^0.19.0
