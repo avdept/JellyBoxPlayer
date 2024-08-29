@@ -12,13 +12,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 late SharedPreferences prefs;
-late String? deviceId;
+late String deviceId;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   prefs = await SharedPreferences.getInstance();
-  deviceId = await FlutterUdid.udid;
+  deviceId = (await FlutterUdid.udid).trim();
 
   ResponsiveSizingConfig.instance.setCustomBreakpoints(
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),
