@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg_provider/flutter_svg_provider.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
@@ -224,7 +225,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           builder: (context, snapshot) {
             if (snapshot.data?.sequence.isEmpty ?? true) return Container();
             final currentSong = snapshot.data?.sequence[snapshot.data!.currentIndex].tag as MediaItem?;
-            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const AssetImage(Images.emptyItem) as ImageProvider;
+            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const Svg(Images.emptyItem) as ImageProvider;
             _imageProvider.value = image;
             return Container(
               height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
