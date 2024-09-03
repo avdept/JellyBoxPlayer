@@ -1,0 +1,127 @@
+name: Build and Release Flutter Desktop Apps
+# Workflow based on https://medium.com/illumination-curated/setting-up-ci-cd-for-flutter-desktop-applications-1f5fb2ab0bff
+
+on:
+  push:
+    branches:
+      - main # Always release the current main branch
+  workflow_dispatch:  # Enable manual trigger
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+      - name: Install OS dependencies
+        run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev mpv libmpv-dev
+      - name: Install project dependencies
+        run: flutter pub get
+      - name: Generate intermediates
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Enable Linux build
+        run: flutter config --enable-linux-desktop
+      - name: Build artifacts
+        run: flutter build linux --release
+      - name: Package release files
+        uses: thedoctor0/zip-release@main
+        with:
+          type: 'zip'
+          filename: JellyBox-${{github.ref_name}}-linux.zip 
+          directory: build/linux/x64/release/bundle
+      - name: Release to github
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{github.ref_name}}
+          files: build/linux/x64/release/bundle/JellyBox-${{github.ref_name}}-linux.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+      - name: Install project dependencies
+        run: flutter pub get
+      - name: Generate intermediates
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Enable Windows build
+        run: flutter config --enable-windows-desktop
+      - name: Build artifacts
+        run: flutter build windows --release
+      - name: Package release
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'zip'
+          filename: JellyBox-${{github.ref_name}}-windows.zip
+          directory: build/windows/x64/runner/Release
+      - name: Release to github
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{github.ref_name}}
+          files: build/windows/x64/runner/Release/JellyBox-${{github.ref_name}}-windows.zip
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 17 # Required for the package_info_plus flutter package
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+      - name: Install project dependencies
+        run: flutter pub get
+      - name: Generate intermediates
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      - name: Build artifacts
+        run: flutter build apk --release
+      - name: Rename out apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/JellyBox-${{github.ref_name}}-android.apk
+      - name: Release to github
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{github.ref_name}}
+          files: build/app/outputs/flutter-apk/JellyBox-${{github.ref_name}}-android.apk
+
+  # Not working atm; set signing as described e.g. here in step 2.2) https://medium.com/@fluttergems/packaging-and-distributing-flutter-desktop-apps-the-missing-guide-part-1-macos-b36438269285
+  #macos:
+  #  runs-on: macos-latest # macOS is required for building macOS apps
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #    - uses: subosito/flutter-action@v1
+  #      with:
+  #        channel: 'stable'
+  #    - name: Install project dependencies
+  #      run: flutter pub get
+  #    - name: Generate intermediates
+  #      run: flutter pub run build_runner build --delete-conflicting-outputs
+  #    - name: Enable MacOS build
+  #      run: flutter config --enable-macos-desktop
+  #    - name: Build artifacts
+  #      run: flutter build macos --release
+  #    - name: Package release
+  #      uses: thedoctor0/zip-release@master
+  #      with:
+  #        type: 'zip'
+  #        filename: JellyBox-${{github.ref_name}}-macos.zip
+  #        directory: build/macos/Build/Products/Release
+  #    - name: Release to github
+  #      uses: softprops/action-gh-release@v1
+  #      env:
+  #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #      with:
+  #        tag_name: ${{github.ref_name}}
+  #        files: build/macos/Build/Products/Release/JellyBox-${{github.ref_name}}-macos.zip
