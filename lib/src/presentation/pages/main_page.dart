@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,55 +49,74 @@ class _MainPageState extends ConsumerState<MainPage> {
     final currentIndex = widget.shell.currentIndex;
 
     return Scaffold(
-      body: Row(
+      body: Stack(
         children: [
-          Visibility(
-            visible: _device.isDesktop,
-            child: CustomNavigationRail(
-              padding: const EdgeInsets.symmetric(
-                vertical: 30,
-                horizontal: 20,
-              ),
-              selectedItemColor: _theme.colorScheme.primary,
-              unselectedItemColor: _theme.colorScheme.onPrimary,
-              selectedFontSize: 16,
-              unselectedFontSize: 16,
-              leading: const Text(
-                'JellyBox',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              trailing: TextButton.icon(
-                onPressed: () {
-                  ref.read(authProvider.notifier).logout();
-                },
-                icon: const Icon(JPlayer.log_out),
-                label: const Text('Log out'),
-              ),
-              selectedIndex: currentIndex,
-              onDestinationSelected: _navigateToItem,
-              destinations: List.generate(
-                _menuItems.length,
-                (index) => NavigationRailDestination(
-                  icon: Icon(_menuItems.elementAt(index).$1),
-                  label: Text(_menuItems.elementAt(index).$2),
-                  indicatorColor: const Color(0xFF341010),
+          Row(
+            children: [
+              Visibility(
+                visible: _device.isDesktop,
+                child: CustomNavigationRail(
                   padding: const EdgeInsets.symmetric(
-                    vertical: 20,
-                    horizontal: 10,
+                    vertical: 30,
+                    horizontal: 20,
+                  ),
+                  selectedItemColor: _theme.colorScheme.primary,
+                  unselectedItemColor: _theme.colorScheme.onPrimary,
+                  selectedFontSize: 16,
+                  unselectedFontSize: 16,
+                  leading: const Text(
+                    'JellyBox',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: TextButton.icon(
+                    onPressed: () {
+                      ref.read(authProvider.notifier).logout();
+                    },
+                    icon: const Icon(JPlayer.log_out),
+                    label: const Text('Log out'),
+                  ),
+                  selectedIndex: currentIndex,
+                  onDestinationSelected: _navigateToItem,
+                  destinations: List.generate(
+                    _menuItems.length,
+                    (index) => NavigationRailDestination(
+                      icon: Icon(_menuItems.elementAt(index).$1),
+                      label: Text(_menuItems.elementAt(index).$2),
+                      indicatorColor: const Color(0xFF341010),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 10,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(child: widget.shell),
+                    const BottomPlayer(),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(child: widget.shell),
-                const BottomPlayer(),
-              ],
+          Visibility(
+            visible: Platform.isLinux,
+            child: WindowTitleBarBox(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: MoveWindow(),
+                  ),
+                  MinimizeWindowButton(),
+                  MaximizeWindowButton(),
+                  CloseWindowButton(),
+                ],
+              ),
             ),
           ),
         ],

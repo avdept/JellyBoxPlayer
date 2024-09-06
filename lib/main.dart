@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
@@ -34,12 +35,17 @@ Future<void> main() async {
     );
   }
 
-  if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+  // Window settings
+  const minWindowSize = Size(1280, 800);
+  const initialWindowSize = Size(1440, 1000);
+
+  // Use window_manager package for MacOS & Windows
+  if (Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
 
     const windowOptions = WindowOptions(
-      size: Size(1440, 1000),
-      minimumSize: Size(1280, 800),
+      size: initialWindowSize,
+      minimumSize: minWindowSize,
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
@@ -69,4 +75,14 @@ Future<void> main() async {
     },
     appRunner: () => runApp(const ProviderScope(child: App(screenFactory: ScreenFactory()))),
   );
+
+  // Use bitsdojo_window for Linux
+  if (Platform.isLinux) {
+    doWhenWindowReady(() {
+      appWindow.size = initialWindowSize;
+      appWindow.minSize = minWindowSize;
+      appWindow.alignment = Alignment.center;
+      appWindow.show();
+    });
+  }
 }
