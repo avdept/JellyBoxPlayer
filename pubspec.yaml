@@ -20,7 +20,7 @@ dependencies:
   dropdown_button2: ^2.3.9
   flutter_svg: ^2.0.10+1
   flutter_svg_provider: ^1.0.7
-  sentry_flutter: ^7.18.0
+  sentry_flutter: ^8.9.0
   freezed_annotation: ^2.4.3
   mediakeys_proxy:
     path: ./mediakeys_proxy
