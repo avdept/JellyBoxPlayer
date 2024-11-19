@@ -16,6 +16,10 @@ _$ItemDTOImpl _$$ItemDTOImplFromJson(Map<String, dynamic> json) =>
       durationInTicks: (json['RunTimeTicks'] as num?)?.toInt(),
       productionYear: (json['ProductionYear'] as num?)?.toInt(),
       albumArtist: json['AlbumArtist'] as String?,
+      albumArtists: (json['AlbumArtists'] as List<dynamic>?)
+              ?.map((e) => ArtistDTO.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       backgropImageTags: (json['BackdropImageTags'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -36,6 +40,7 @@ Map<String, dynamic> _$$ItemDTOImplToJson(_$ItemDTOImpl instance) =>
       'RunTimeTicks': instance.durationInTicks,
       'ProductionYear': instance.productionYear,
       'AlbumArtist': instance.albumArtist,
+      'AlbumArtists': instance.albumArtists,
       'BackdropImageTags': instance.backgropImageTags,
       'ImageTags': instance.imageTags,
     };

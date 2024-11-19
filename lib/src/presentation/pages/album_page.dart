@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
@@ -12,6 +14,7 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/playlists_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -357,7 +360,26 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       ),
                     ],
                   ),
-                  Text(widget.album.albumArtist ?? ''),
+                  // Text(widget.album.albumArtist ?? ''),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Row(
+                      children: widget.album.albumArtists.map((a) {
+                        return ClickableWidget(
+                          onPressed: () async {
+                            final item = await ref.read(jellyfinApiProvider).getItem(itemId: a.id);
+                            if (!context.mounted) return;
+                            context.go(
+                              '${Routes.listen}${Routes.artist}',
+                              extra: {'artist': item.data},
+                            );
+                          },
+                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
+                          child: Text(a.name),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                   Row(
                     children: [
                       _albumDetails(

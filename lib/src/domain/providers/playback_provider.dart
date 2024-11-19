@@ -46,10 +46,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _audioPlayer.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
         state = PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, cacheProgress: Duration.zero, totalDuration: Duration.zero);
-        print(_audioPlayer.sequenceState?.currentIndex);
-        print('PlayerState: Completed');
-        _audioPlayer.stop();
-        _audioPlayer.setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
+        _audioPlayer
+          ..stop()
+          ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
       }
       // Handle other player states as needed
     });
@@ -82,12 +81,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
               ),
               tag: MediaItem(
                 id: song.id,
-                album: song.albumName,
-                artist: album.albumArtist,
-                duration: Duration(milliseconds: (song.runTimeTicks / 10000).ceil()),
+                album: song.albumId,
+                artist: song.albumArtists?.firstOrNull?.id,
+                duration: Duration(
+                  milliseconds: (song.runTimeTicks / 10000).ceil(),
+                ),
                 title: song.name ?? 'Untitled',
-                artUri:
-                    song.imageTags['Primary'] != null
+                displayTitle: song.name,
+                displaySubtitle: song.albumName,
+                displayDescription: song.albumArtist,
+                artUri: song.imageTags['Primary'] != null
                     ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: song.imageTags['Primary']!, id: song.id))
                     : album.imageTags['Primary'] != null
                         ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id))

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 
 part 'item_dto.freezed.dart';
 part 'item_dto.g.dart';
@@ -15,6 +16,7 @@ class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'RunTimeTicks') required int? durationInTicks,
     @JsonKey(name: 'ProductionYear') int? productionYear,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
+    @Default([]) @JsonKey(name: 'AlbumArtists') List<ArtistDTO> albumArtists,
     @Default([]) @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
   }) = _ItemDTO;

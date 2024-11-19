@@ -1,12 +1,18 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg_provider/flutter_svg_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
@@ -33,7 +39,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   final _randomQueue = ValueNotifier<bool>(false);
   final _repeatTrack = ValueNotifier<bool>(false);
   final _likeTrack = ValueNotifier<bool>(false);
-  SongDTO? currentSong;
   late ThemeData _theme;
   late MaterialLocalizations _localizations;
   late EdgeInsets _viewPadding;
@@ -110,12 +115,23 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         ),
                         maxLines: 1,
                       ),
-                      Text(
-                        currentSong?.artist ?? '',
-                        style: TextStyle(
+                      ClickableWidget(
+                        onPressed: (currentSong?.artist != null)
+                            ? () async {
+                                final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
+                                if (!context.mounted) return;
+                                Navigator.of(context).pop();
+                                context.go(
+                                  '${Routes.listen}${Routes.artist}',
+                                  extra: {'artist': item.data},
+                                );
+                              }
+                            : null,
+                        textStyle: TextStyle(
                           fontSize: _isMobile ? 18 : 24,
                           height: 1.2,
                         ),
+                        child: Text(currentSong?.displayDescription ?? ''),
                       ),
                       // SizedBox(height: _isMobile ? 17 : 0),
                       // Text(
@@ -251,13 +267,30 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                   ),
                   maxLines: 1,
                 ),
-                subtitle: Text(
-                  currentSong?.artist ?? '',
-                  style: TextStyle(
+                subtitle: ClickableWidget(
+                  onPressed: (currentSong?.artist != null)
+                      ? () async {
+                          final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
+                          if (!context.mounted) return;
+                          context.go(
+                            '${Routes.listen}${Routes.artist}',
+                            extra: {'artist': item.data},
+                          );
+                        }
+                      : null,
+                  textStyle: TextStyle(
                     fontSize: _isMobile ? 12 : 18,
                     height: 1.2,
                   ),
+                  child: Text(currentSong?.displayDescription ?? ''),
                 ),
+                // Text(
+                //   currentSong?.displayDescription ?? '',
+                //   style: TextStyle(
+                //     fontSize: _isMobile ? 12 : 18,
+                //     height: 1.2,
+                //   ),
+                // ),
                 trailing: Wrap(
                   spacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,

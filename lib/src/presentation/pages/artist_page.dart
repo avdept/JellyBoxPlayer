@@ -36,8 +36,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox =
-          scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -145,16 +144,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                               child: Column(
                                 children: [
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Text(
                                           key: _titleKey,
                                           widget.artist.name,
-                                          style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w700),
+                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                                         ),
                                       ),
                                       _playButton(),
@@ -209,31 +205,32 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                 left: _device.isMobile ? 20 : (_device.isTablet ? 64 : 40),
                 top: _device.isMobile ? 60 : (_device.isTablet ? 140 : 238),
               ),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: _mainImage(),
-                        ),
-                      ),
-                      Flexible(
-                        flex: 3,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: _device.isMobile
-                                ? 16
-                                : (_device.isTablet ? 64 : 40),
+              child: SizedBox(
+                height: MediaQuery.sizeOf(context).height - 80,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: _mainImage(),
                           ),
-                          child: SizedBox(
+                        ),
+                        Flexible(
+                          flex: 3,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _device.isMobile ? 16 : (_device.isTablet ? 64 : 40),
+                            ),
                             child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       widget.artist.name,
@@ -245,26 +242,31 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                                     _playButton(),
                                   ],
                                 ),
-                                DefaultTextStyle(
-                                  style: TextStyle(
-                                    fontSize: _device.isMobile ? 14 : 16,
-                                  ),
-                                  child: _infoText(),
+                                Row(
+                                  children: [
+                                    DefaultTextStyle(
+                                      textAlign: TextAlign.start,
+                                      style: TextStyle(
+                                        color: _theme.textTheme.bodySmall?.color,
+                                        fontSize: _device.isMobile ? 14 : 16,
+                                      ),
+                                      child: _infoText(),
+                                    ),
+                                  ],
                                 ),
                                 if (!_device.isMobile)
                                   SizedBox(
-                                    height: _device.screenSize.height -
-                                        (_device.isTablet ? 480 : 400),
-                                    child: _albumsList(),
+                                    height: MediaQuery.sizeOf(context).height - 323,
+                                    child: SizedBox(height: double.infinity, child: _albumsList()),
                                   ),
                               ],
                             ),
                           ),
                         ),
-                      )
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -312,8 +314,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _infoText() => Padding(
         padding: const EdgeInsets.only(top: 20),
         child: Text(
-          widget.artist.overview ??
-              'This artist does not have any information.',
+          widget.artist.overview ?? 'This artist does not have any information.',
           maxLines: 5,
           overflow: TextOverflow.ellipsis,
           softWrap: true,
@@ -348,8 +349,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         SliverPadding(
           padding: EdgeInsets.only(
             top: 16,
-            right: _device.isMobile ? 16 : (_device.isTablet ? 0 : 60),
-            left: _device.isMobile ? 16 : (_device.isTablet ? 0 : 60),
+            right: _device.isMobile ? 16 : 0,
+            left: _device.isMobile ? 16 : 0,
             bottom: 16,
           ),
           sliver: SliverGrid.builder(
