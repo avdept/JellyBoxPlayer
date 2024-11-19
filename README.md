@@ -20,7 +20,24 @@ By default apple restricts app from reading what user presses on keyboard. In or
 
 ## Android
 
-While it can already be built and launched, I havent uploaded it to google play yet. This is something I plan to do soon. Meanwhile you can download APK from [releases](https://github.com/avdept/JellyBoxPlayer/releases)
+While it can already be built and launched, I haven't uploaded it to google play yet. This is something I plan to do soon. Meanwhile you can download APKs from the [Releases](https://github.com/avdept/JellyBoxPlayer/releases) section.
+
+## Windows
+
+The app is currently available in the [Releases](https://github.com/avdept/JellyBoxPlayer/releases) section as a binary file.
+
+## Linux
+
+The app is currently available in the [Releases](https://github.com/avdept/JellyBoxPlayer/releases) section as a binary file. Flatpak releases are coming soon.
+
+### Build
+
+On Linux, the build depends on `mpv` being installed on your host machine. Make sure it is, by running e.g. `mpv -h`.
+To then build the app yourself, clone the repository and run:
+
+```bash
+flutter build linux --release
+```
 
 ## Screenshots
 <img align="right" width="380" src="./docs/4.PNG">
