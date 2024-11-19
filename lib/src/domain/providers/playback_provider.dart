@@ -32,10 +32,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(
     this._ref,
     this._audioPlayer,
-  ) : super(PlaybackState(
-            status: PlaybackStatus.stopped,
-            position: Duration.zero,
-            cacheProgress: Duration.zero)) {
+  ) : super(PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, cacheProgress: Duration.zero)) {
     // Listen for song completion
     _audioPlayer.positionStream.listen((position) {
       state = PlaybackState(
@@ -48,15 +45,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     _audioPlayer.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
-        state = PlaybackState(
-            status: PlaybackStatus.stopped,
-            position: Duration.zero,
-            cacheProgress: Duration.zero,
-            totalDuration: Duration.zero);
-        print(_audioPlayer.sequenceState?.currentIndex);
-        print('PlayerState: Completed');
-        _audioPlayer.stop();
-        _audioPlayer.setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
+        state = PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, cacheProgress: Duration.zero, totalDuration: Duration.zero);
+        _audioPlayer
+          ..stop()
+          ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
       }
       // Handle other player states as needed
     });
@@ -64,8 +56,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final AudioPlayer _audioPlayer;
   final StateNotifierProviderRef<PlaybackNotifier, PlaybackState> _ref;
 
-  Future<void> play(
-      SongDTO playSong, List<SongDTO> songs, ItemDTO album) async {
+  Future<void> play(SongDTO playSong, List<SongDTO> songs, ItemDTO album) async {
     try {
       final domainUri = Uri.parse(_ref.read(baseUrlProvider)!);
 
@@ -85,8 +76,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                   'TranscodingProtocol': 'http',
                   'TranscodingContainer': 'm4a',
                   'AudioCodec': 'm4a',
-                  'Container':
-                      'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
+                  'Container': 'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
                 },
               ),
               tag: MediaItem(
@@ -101,19 +91,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                 displaySubtitle: song.albumName,
                 displayDescription: song.albumArtist,
                 artUri: song.imageTags['Primary'] != null
-                    ? Uri.parse(_ref.read(imageProvider).imagePath(
-                        tagId: song.imageTags['Primary']!, id: song.id))
+                    ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: song.imageTags['Primary']!, id: song.id))
                     : album.imageTags['Primary'] != null
-                        ? Uri.parse(_ref.read(imageProvider).imagePath(
-                            tagId: album.imageTags['Primary']!, id: album.id))
+                        ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id))
                         : null,
               ),
             ),
         ],
       );
 
-      await _audioPlayer.setAudioSource(playlist,
-          initialIndex: songs.indexOf(playSong), preload: false);
+      await _audioPlayer.setAudioSource(playlist, initialIndex: songs.indexOf(playSong), preload: false);
       unawaited(_audioPlayer.play());
       state = PlaybackState(
         status: PlaybackStatus.playing,
@@ -165,13 +152,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> resume() async {
-    if ((state.status == PlaybackStatus.stopped) &&
-        state.totalDuration?.inSeconds == 0) {
+    if ((state.status == PlaybackStatus.stopped) && state.totalDuration?.inSeconds == 0) {
       final queue = _ref.read(audioQueueProvider.notifier);
       // Case when song has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
       if (queue.state.songs.isNotEmpty) {
-        await play(
-            queue.state.songs.first, queue.state.songs, queue.state.album!);
+        await play(queue.state.songs.first, queue.state.songs, queue.state.album!);
       }
 
       return;
@@ -229,14 +214,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     if (currentSong == null) return;
 
-    final currentIndex =
-        songs.indexOf(songs.firstWhere((element) => element == currentSong));
+    final currentIndex = songs.indexOf(songs.firstWhere((element) => element == currentSong));
     if (currentIndex != -1 && currentIndex + 1 < songs.length) {
       // There's a next song in the queue
       final nextSong = songs[currentIndex + 1];
       _ref.read(audioQueueProvider.notifier).setCurrentSong(nextSong);
-      unawaited(play(
-          nextSong, songs, queueState.album!)); // Start playing the next song
+      unawaited(play(nextSong, songs, queueState.album!)); // Start playing the next song
     } else {
       await _ref.read(playerProvider).stop();
       state = PlaybackState(
@@ -257,5 +240,4 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 }
 
-final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
-    (ref) => PlaybackNotifier(ref, ref.read(playerProvider)));
+final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>((ref) => PlaybackNotifier(ref, ref.read(playerProvider)));

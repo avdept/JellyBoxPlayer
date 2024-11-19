@@ -9,6 +9,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
@@ -29,8 +30,7 @@ class BottomPlayer extends ConsumerStatefulWidget {
   ConsumerState<BottomPlayer> createState() => _BottomPlayerState();
 }
 
-class _BottomPlayerState extends ConsumerState<BottomPlayer>
-    with SingleTickerProviderStateMixin {
+class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   final _imageProvider = ValueNotifier<ImageProvider?>(null);
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
@@ -46,8 +46,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onExpand(MediaItem? currentSong) =>
-      Navigator.of(context, rootNavigator: true).push(
+  Future<void> _onExpand(MediaItem? currentSong) => Navigator.of(context, rootNavigator: true).push(
         ModalSheetRoute(
           builder: (context) => SafeArea(
             top: false,
@@ -76,15 +75,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 aspectRatio: 1,
                                 child: ValueListenableBuilder(
                                   valueListenable: _imageProvider,
-                                  builder: (context, image, child) => (image ==
-                                          null)
+                                  builder: (context, image, child) => (image == null)
                                       ? const SizedBox.shrink()
                                       : Image(
                                           image: currentSong?.artUri != null
-                                              ? NetworkImage(currentSong!.artUri
-                                                  .toString())
-                                              : const AssetImage(Images.album)
-                                                  as ImageProvider,
+                                              ? NetworkImage(currentSong!.artUri.toString())
+                                              : const AssetImage(Images.album) as ImageProvider,
                                           fit: BoxFit.cover,
                                         ),
                                 ),
@@ -96,8 +92,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 size: _isMobile ? 28 : 24,
                               ),
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
                                   // _openListButton(),
                                   _randomQueueButton(),
@@ -123,26 +118,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                       ClickableWidget(
                         onPressed: (currentSong?.artist != null)
                             ? () async {
-                                ItemDTO? artist;
-                                while (artist == null) {
-                                  artist = ref
-                                      .watch(artistsProvider)
-                                      .value
-                                      .items
-                                      .firstWhereOrNull(
-                                        (e) => e.id == currentSong!.artist!,
-                                      );
-                                  if (artist == null) {
-                                    await ref
-                                        .read(artistsProvider.notifier)
-                                        .loadMore();
-                                  }
-                                }
+                                final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
                                 if (!context.mounted) return;
                                 Navigator.of(context).pop();
                                 context.go(
                                   '${Routes.listen}${Routes.artist}',
-                                  extra: {'artist': artist},
+                                  extra: {'artist': item.data},
                                 );
                               }
                             : null,
@@ -259,11 +240,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           stream: ref.read(playerProvider).sequenceStateStream,
           builder: (context, snapshot) {
             if (snapshot.data?.sequence.isEmpty ?? true) return Container();
-            final currentSong = snapshot
-                .data?.sequence[snapshot.data!.currentIndex].tag as MediaItem?;
-            final image = currentSong?.artUri != null
-                ? NetworkImage(currentSong!.artUri.toString())
-                : const Svg(Images.emptyItem) as ImageProvider;
+            final currentSong = snapshot.data?.sequence[snapshot.data!.currentIndex].tag as MediaItem?;
+            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const Svg(Images.emptyItem) as ImageProvider;
             _imageProvider.value = image;
             return Container(
               height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
@@ -289,13 +267,30 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                   ),
                   maxLines: 1,
                 ),
-                subtitle: Text(
-                  currentSong?.displayDescription ?? '',
-                  style: TextStyle(
+                subtitle: ClickableWidget(
+                  onPressed: (currentSong?.artist != null)
+                      ? () async {
+                          final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
+                          if (!context.mounted) return;
+                          context.go(
+                            '${Routes.listen}${Routes.artist}',
+                            extra: {'artist': item.data},
+                          );
+                        }
+                      : null,
+                  textStyle: TextStyle(
                     fontSize: _isMobile ? 12 : 18,
                     height: 1.2,
                   ),
+                  child: Text(currentSong?.displayDescription ?? ''),
                 ),
+                // Text(
+                //   currentSong?.displayDescription ?? '',
+                //   style: TextStyle(
+                //     fontSize: _isMobile ? 12 : 18,
+                //     height: 1.2,
+                //   ),
+                // ),
                 trailing: Wrap(
                   spacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
@@ -322,8 +317,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             data: Theme.of(context).copyWith(
               colorScheme: colorScheme,
             ),
-            child: const Positioned(
-                left: -25, top: -22, right: -25, child: PositionSlider()),
+            child: const Positioned(left: -25, top: -22, right: -25, child: PositionSlider()),
           ),
         ),
       ],
@@ -344,9 +338,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   Widget _playPauseButton() => PlayPauseButton(
-        onPressed: () => _isPlaying.value
-            ? ref.read(playbackProvider.notifier).pause()
-            : ref.read(playbackProvider.notifier).resume(),
+        onPressed: () => _isPlaying.value ? ref.read(playbackProvider.notifier).pause() : ref.read(playbackProvider.notifier).resume(),
         background: _theme.colorScheme.onPrimary,
         foreground: _theme.scaffoldBackgroundColor,
         stateNotifier: _isPlaying,
@@ -374,8 +366,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         stream: ref.read(playerProvider).shuffleModeEnabledStream,
         builder: (context, snapshot) {
           return IconButton(
-            onPressed: () => ref.read(playerProvider).setShuffleModeEnabled(
-                snapshot.data == null ? !snapshot.data! : true),
+            onPressed: () => ref.read(playerProvider).setShuffleModeEnabled(snapshot.data == null ? !snapshot.data! : true),
             icon: Icon(
               JPlayer.mix,
               color: _theme.colorScheme.onPrimary,
@@ -393,8 +384,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         stream: ref.read(playerProvider).loopModeStream,
         builder: (context, snapshot) {
           return IconButton(
-            onPressed: () => ref.read(playerProvider).setLoopMode(
-                snapshot.data == LoopMode.all ? LoopMode.off : LoopMode.all),
+            onPressed: () => ref.read(playerProvider).setLoopMode(snapshot.data == LoopMode.all ? LoopMode.off : LoopMode.all),
             icon: Icon(
               JPlayer.repeat,
               color: _theme.colorScheme.onPrimary,
