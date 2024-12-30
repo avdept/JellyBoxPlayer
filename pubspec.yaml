@@ -55,7 +55,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  retrofit_generator: ^8.1.2
+  retrofit_generator: ^9.1.7
   build_runner: ^2.4.11
   riverpod_lint: ^2.3.10
   freezed: ^2.5.2
