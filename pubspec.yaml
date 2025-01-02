@@ -38,7 +38,7 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_spinkit: ^5.2.1
   modal_bottom_sheet: ^3.0.0-pre
-  shared_preferences: ^2.2.3
+  shared_preferences: ^2.3.5
   palette_generator:
   responsive_builder: ^0.7.1
   riverpod_infinite_scroll: ^1.0.9
