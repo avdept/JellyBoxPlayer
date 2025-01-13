@@ -24,7 +24,7 @@ dependencies:
   freezed_annotation: ^2.4.3
   mediakeys_proxy:
     path: ./mediakeys_proxy
-  just_audio:
+  just_audio: 0.9.43
   just_audio_background:
   just_audio_media_kit: # Used for Linux
     git:                # Remove when https://github.com/Pato05/just_audio_media_kit/pull/17 is merged
