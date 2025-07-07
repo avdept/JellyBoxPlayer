@@ -17,7 +17,7 @@ late SharedPreferences prefs;
 late String deviceId;
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  SentryWidgetsFlutterBinding.ensureInitialized();
 
   prefs = await SharedPreferences.getInstance();
   deviceId = (await FlutterUdid.udid).trim();
