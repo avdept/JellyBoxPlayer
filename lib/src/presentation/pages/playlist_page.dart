@@ -69,15 +69,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
         ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
-      if (event != null) {
-        if (mounted) {
-          _currentSong.value =
-              event.sequence[event.currentIndex].tag as MediaItem;
-          ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
-            id: widget.playlist.id,
-            tagId: widget.playlist.imageTags['Primary'],
-          );
-        }
+      if (mounted) {
+        _currentSong.value = event.currentSource?.tag as MediaItem?;
+        ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
+          id: widget.playlist.id,
+          tagId: widget.playlist.imageTags['Primary'],
+        );
       }
     });
     _scrollController.addListener(_onScroll);

@@ -49,7 +49,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       playlist = await showAdaptiveDialog<ItemDTO>(
         context: context,
         builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: _availablePlaylistsList(),
         ),
       );
@@ -91,7 +92,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox =
+          scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -108,17 +110,16 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   void initState() {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
-    _imageService = ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
+    _imageService =
+        ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
-      if (event != null) {
-        if (mounted) {
-          _currentSong.value = event.sequence[event.currentIndex].tag as MediaItem;
-          ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
-            id: widget.album.id,
-            tagId: widget.album.imageTags['Primary'],
-          );
-        }
+      if (mounted) {
+        _currentSong.value = event.currentSource?.tag as MediaItem?;
+        ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
+          id: widget.album.id,
+          tagId: widget.album.imageTags['Primary'],
+        );
       }
     });
     _scrollController.addListener(_onScroll);
@@ -133,7 +134,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         )
         .then((value) {
       setState(() {
-        final items = [...value.data.items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+        final items = [...value.data.items]
+          ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
         songs = items;
       });
     });
@@ -146,7 +148,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
-  ImageProvider get albumCover => _imageService.albumIP(id: widget.album.id, tagId: widget.album.imageTags['Primary']);
+  ImageProvider get albumCover => _imageService.albumIP(
+      id: widget.album.id, tagId: widget.album.imageTags['Primary']);
 
   @override
   Widget build(BuildContext context) {
@@ -238,12 +241,17 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             return PlayerSongView(
                               song: song,
                               isPlaying: item != null && song.id == item.id,
-                              downloadProgress: null, // index == 2 ? 0.8 : null,
-                              onTap: (song) => ref.read(playbackProvider.notifier).play(song, songs, widget.album),
+                              downloadProgress:
+                                  null, // index == 2 ? 0.8 : null,
+                              onTap: (song) => ref
+                                  .read(playbackProvider.notifier)
+                                  .play(song, songs, widget.album),
                               position: index + 1,
                               onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
-                                final callback = song.songUserData.isFavorite ? api.removeFavorite : api.saveFavorite;
+                                final callback = song.songUserData.isFavorite
+                                    ? api.removeFavorite
+                                    : api.saveFavorite;
                                 await callback.call(
                                   userId: ref.read(currentUserProvider)!.userId,
                                   itemId: song.id,
@@ -367,14 +375,17 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       children: widget.album.albumArtists.map((a) {
                         return ClickableWidget(
                           onPressed: () async {
-                            final item = await ref.read(jellyfinApiProvider).getItem(itemId: a.id);
+                            final item = await ref
+                                .read(jellyfinApiProvider)
+                                .getItem(itemId: a.id);
                             if (!context.mounted) return;
                             context.go(
                               '${Routes.listen}${Routes.artist}',
                               extra: {'artist': item.data},
                             );
                           },
-                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
+                          textStyle: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w300),
                           child: Text(a.name),
                         );
                       }).toList(),
@@ -385,7 +396,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       _albumDetails(
                         duration: widget.album.duration,
                         soundsCount: songs.length,
-                        albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
+                        albumArtist:
+                            songs.isNotEmpty ? songs.first.albumArtist : '',
                         year: widget.album.productionYear,
                         divider: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -455,7 +467,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }) {
     final durationInSeconds = duration.inSeconds;
     final hours = durationInSeconds ~/ Duration.secondsPerHour;
-    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/ Duration.secondsPerMinute;
+    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/
+        Duration.secondsPerMinute;
     final seconds = durationInSeconds % Duration.secondsPerMinute;
 
     return DefaultTextStyle(
@@ -544,13 +557,16 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         Navigator.of(context).pop(value);
                       },
                       hint: Text(
-                        _device.isMobile ? 'Tap to find playlist' : 'Click to find playlist',
+                        _device.isMobile
+                            ? 'Tap to find playlist'
+                            : 'Click to find playlist',
                         style: const TextStyle(fontSize: 14),
                       ),
                       onChanged: (ItemDTO? item) {},
                       items: data.value.items.map<DropdownMenuItem<ItemDTO>>(
                         (ItemDTO item) {
-                          return DropdownMenuItem<ItemDTO>(value: item, child: Text(item.name));
+                          return DropdownMenuItem<ItemDTO>(
+                              value: item, child: Text(item.name));
                         },
                       ).toList(),
                     ),
@@ -562,7 +578,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       children: [
                         TextButton(
                           style: TextButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -638,5 +655,6 @@ class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) => image != oldDelegate.image || isMobile != oldDelegate.isMobile;
+  bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) =>
+      image != oldDelegate.image || isMobile != oldDelegate.isMobile;
 }

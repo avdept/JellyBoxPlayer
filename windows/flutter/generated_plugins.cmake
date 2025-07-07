@@ -6,12 +6,13 @@ list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
   flutter_secure_storage_windows
   flutter_udid
-  screen_retriever
+  screen_retriever_windows
   sentry_flutter
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
   media_kit_native_event_loop
 )
 
