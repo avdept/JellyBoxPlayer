@@ -4,7 +4,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 part 'filter.freezed.dart';
 
 @freezed
-class Filter with _$Filter {
+abstract class Filter with _$Filter {
   const factory Filter({
     required EntityFilter orderBy,
     @Default(false) bool desc,

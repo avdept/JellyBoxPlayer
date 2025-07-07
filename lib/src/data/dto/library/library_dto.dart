@@ -4,7 +4,7 @@ part 'library_dto.freezed.dart';
 part 'library_dto.g.dart';
 
 @freezed
-class LibraryDTO with _$LibraryDTO {
+abstract class LibraryDTO with _$LibraryDTO {
   const factory LibraryDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'Name') String? name,
@@ -18,7 +18,7 @@ class LibraryDTO with _$LibraryDTO {
 }
 
 @freezed
-class Libraries with _$Libraries {
+abstract class Libraries with _$Libraries {
   const factory Libraries({@JsonKey(name: 'Items') required List<LibraryDTO> libraries}) = _Libraries;
 
   factory Libraries.fromJson(Map<String, dynamic> json) => _$LibrariesFromJson(json);

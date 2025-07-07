@@ -5,7 +5,7 @@ part 'songs_dto.freezed.dart';
 part 'songs_dto.g.dart';
 
 @freezed
-class SongDTO with _$SongDTO {
+abstract class SongDTO with _$SongDTO {
   const factory SongDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'RunTimeTicks') required int runTimeTicks,
@@ -26,7 +26,7 @@ class SongDTO with _$SongDTO {
 }
 
 @freezed
-class SongsWrapper with _$SongsWrapper {
+abstract class SongsWrapper with _$SongsWrapper {
   const factory SongsWrapper(
       {@JsonKey(name: 'Items') required List<SongDTO> items}) = _SongsWrapper;
 
@@ -35,7 +35,7 @@ class SongsWrapper with _$SongsWrapper {
 }
 
 @freezed
-class SongUserData with _$SongUserData {
+abstract class SongUserData with _$SongUserData {
   const factory SongUserData({
     @JsonKey(name: 'PlaybackPositionTicks') required int playbackPositionTicks,
     @JsonKey(name: 'PlayCount') required int playCount,
