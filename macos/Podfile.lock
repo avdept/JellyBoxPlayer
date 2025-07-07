@@ -3,6 +3,8 @@ PODS:
     - FlutterMacOS
   - audio_session (0.0.1):
     - FlutterMacOS
+  - bitsdojo_window_macos (0.0.1):
+    - FlutterMacOS
   - flutter_secure_storage_macos (6.1.1):
     - FlutterMacOS
   - flutter_udid (0.0.1):
@@ -10,6 +12,8 @@ PODS:
     - SAMKeychain
   - FlutterMacOS (1.0.0)
   - just_audio (0.0.1):
+    - FlutterMacOS
+  - media_kit_native_event_loop (1.0.0):
     - FlutterMacOS
   - mediakeys_proxy (0.0.1):
     - FlutterMacOS
@@ -23,11 +27,11 @@ PODS:
   - SAMKeychain (1.5.3)
   - screen_retriever (0.0.1):
     - FlutterMacOS
-  - Sentry/HybridSDK (8.25.0)
-  - sentry_flutter (7.20.2):
+  - Sentry/HybridSDK (8.40.1)
+  - sentry_flutter (8.10.1):
     - Flutter
     - FlutterMacOS
-    - Sentry/HybridSDK (= 8.25.0)
+    - Sentry/HybridSDK (= 8.40.1)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -40,10 +44,12 @@ PODS:
 DEPENDENCIES:
   - audio_service (from `Flutter/ephemeral/.symlinks/plugins/audio_service/macos`)
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
+  - bitsdojo_window_macos (from `Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos`)
   - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
   - flutter_udid (from `Flutter/ephemeral/.symlinks/plugins/flutter_udid/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/macos`)
+  - media_kit_native_event_loop (from `Flutter/ephemeral/.symlinks/plugins/media_kit_native_event_loop/macos`)
   - mediakeys_proxy (from `Flutter/ephemeral/.symlinks/plugins/mediakeys_proxy/macos`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
@@ -64,6 +70,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/audio_service/macos
   audio_session:
     :path: Flutter/ephemeral/.symlinks/plugins/audio_session/macos
+  bitsdojo_window_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/bitsdojo_window_macos/macos
   flutter_secure_storage_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
   flutter_udid:
@@ -72,6 +80,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   just_audio:
     :path: Flutter/ephemeral/.symlinks/plugins/just_audio/macos
+  media_kit_native_event_loop:
+    :path: Flutter/ephemeral/.symlinks/plugins/media_kit_native_event_loop/macos
   mediakeys_proxy:
     :path: Flutter/ephemeral/.symlinks/plugins/mediakeys_proxy/macos
   package_info_plus:
@@ -90,23 +100,25 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  audio_service: b88ff778e0e3915efd4cd1a5ad6f0beef0c950a9
-  audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
-  flutter_secure_storage_macos: 59459653abe1adb92abbc8ea747d79f8d19866c9
-  flutter_udid: 6b2b89780c3dfeecf0047bdf93f622d6416b1c07
+  audio_service: 0d9e4e25347bb3efb768f3b9f005911a81e587a7
+  audio_session: 48ab6500f7a5e7c64363e206565a5dfe5a0c1441
+  bitsdojo_window_macos: 7959fb0ca65a3ccda30095c181ecb856fae48ea9
+  flutter_secure_storage_macos: b2d62a774c23b060f0b99d0173b0b36abb4a8632
+  flutter_udid: 1bb842a75fddf57decac286f4bc30c904c120bd5
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  just_audio: 9b67ca7b97c61cfc9784ea23cd8cc55eb226d489
-  mediakeys_proxy: ebad274dd18f1ff6ebe290abb0f1b196917d21d9
+  just_audio: eb8b016ac4493159ab24db4f7215e55303b39a84
+  media_kit_native_event_loop: 9a930fc84abbb3753b6b404e4c75851b46aa2eaa
+  mediakeys_proxy: 324ad686277d980777a72faede002425f71b31a0
   MediaKeyTap: d71493f6ac56a35c06d8aa1087522b05956781f0
-  package_info_plus: fa739dd842b393193c5ca93c26798dff6e3d0e0c
-  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  package_info_plus: a8a591e70e87ce97ce5d21b2594f69cea9e0312f
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   SAMKeychain: 483e1c9f32984d50ca961e26818a534283b4cd5c
-  screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
-  Sentry: cd86fc55628f5b7c572cabe66cc8f95a9d2f165a
-  sentry_flutter: 0cf2507eb90ff7a6aa3304e900dd7f08edbbefdf
-  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
-  sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
-  window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
+  screen_retriever: 4f97c103641aab8ce183fa5af3b87029df167936
+  Sentry: e9215d7b17f7902692b4f8700e061e4f853e3521
+  sentry_flutter: ba644c90ccccb202066a5218a593d1c35584cd37
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  sqflite: c35dad70033b8862124f8337cc994a809fcd9fa3
+  window_manager: 1d01fa7ac65a6e6f83b965471b1a7fdd3f06166c
 
 PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
 
