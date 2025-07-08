@@ -65,6 +65,8 @@ dev_dependencies:
   test: ^1.25.15
   integration_test:
     sdk: flutter
+  mocktail: ^1.0.4
+  faker_dart: ^0.2.2
 
 
 flutter:

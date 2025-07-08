@@ -230,29 +230,26 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      widget.artist.name,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w700,
+                                    Expanded(
+                                      child: Text(
+                                        widget.artist.name,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
                                     _playButton(),
                                   ],
                                 ),
-                                Row(
-                                  children: [
-                                    DefaultTextStyle(
-                                      textAlign: TextAlign.start,
-                                      style: TextStyle(
-                                        color: _theme.textTheme.bodySmall?.color,
-                                        fontSize: _device.isMobile ? 14 : 16,
-                                      ),
-                                      child: _infoText(),
-                                    ),
-                                  ],
+                                DefaultTextStyle(
+                                  textAlign: TextAlign.start,
+                                  style: TextStyle(
+                                    color: _theme.textTheme.bodySmall?.color,
+                                    fontSize: _device.isMobile ? 14 : 16,
+                                  ),
+                                  child: _infoText(),
                                 ),
                                 if (!_device.isMobile)
                                   SizedBox(
@@ -332,7 +329,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
 
   List<Widget> _albumsWidgets() {
     return [
-      if (_albums.isNotEmpty)
+      if (_albums.isNotEmpty) ...[
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(left: 8, top: 8),
@@ -345,7 +342,6 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             ),
           ),
         ),
-      if (_albums.isNotEmpty)
         SliverPadding(
           padding: EdgeInsets.only(
             top: 16,
@@ -379,6 +375,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             itemCount: _albums.length,
           ),
         ),
+      ],
       if (_appearsOn.isNotEmpty)
         SliverToBoxAdapter(
           child: Text(

@@ -54,44 +54,46 @@ class LoginPageState extends ConsumerState<LoginPage> {
         minimum: const EdgeInsets.symmetric(vertical: 36, horizontal: 48),
         child: Center(
           child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                  maxWidth: 440,
-                ),
-                child: IntrinsicHeight(
-                  child: KeyboardListener(
-                    focusNode: FocusNode(),
-                    onKeyEvent: (event) {
-                      if (event.logicalKey == LogicalKeyboardKey.enter) {
-                        signIn();
-                      }
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(Images.mainLogo),
-                        const SizedBox(height: 63),
-                        _serverURLField(),
-                        const SizedBox(height: 8),
-                        _loginField(),
-                        const SizedBox(height: 8),
-                        _passwordField(),
-                        if (error != null) ...[
-                          const SizedBox(height: 8),
-                          Text(error!),
-                        ],
-                        const SizedBox(height: 63),
-                        _signInButton(),
-                      ],
+            builder:
+                (context, constraints) => SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                      maxWidth: 440,
+                    ),
+                    child: IntrinsicHeight(
+                      child: KeyboardListener(
+                        focusNode: FocusNode(),
+                        onKeyEvent: (event) {
+                          if (event.logicalKey == LogicalKeyboardKey.enter) {
+                            signIn();
+                          }
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(Images.mainLogo),
+                            const SizedBox(height: 63),
+                            _serverURLField(),
+                            const SizedBox(height: 8),
+                            _loginField(),
+                            const SizedBox(height: 8),
+                            _passwordField(),
+                            if (error != null) ...[
+                              const SizedBox(height: 8),
+                              Text(error!),
+                            ],
+                            const SizedBox(height: 63),
+                            _signInButton(),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
           ),
         ),
       ),
@@ -99,52 +101,36 @@ class LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _serverURLField() => LabeledTextField(
-        label: 'Server URL',
-        keyboardType: TextInputType.url,
-        controller: _serverUrlInputController,
-        textInputAction: TextInputAction.next,
-      );
+    label: 'Server URL',
+    keyboardType: TextInputType.url,
+    controller: _serverUrlInputController,
+    textInputAction: TextInputAction.next,
+  );
 
   Widget _loginField() => LabeledTextField(
-        label: 'Login',
-        keyboardType: TextInputType.text,
-        controller: _emailInputController,
-        textInputAction: TextInputAction.next,
-      );
+    label: 'Login',
+    keyboardType: TextInputType.text,
+    controller: _emailInputController,
+    textInputAction: TextInputAction.next,
+  );
 
   Widget _passwordField() => LabeledTextField(
-        label: 'Password',
-        controller: _passwordInputController,
-        obscureText: true,
-        keyboardType: TextInputType.visiblePassword,
-        textInputAction: TextInputAction.done,
-      );
+    label: 'Password',
+    controller: _passwordInputController,
+    obscureText: true,
+    keyboardType: TextInputType.visiblePassword,
+    textInputAction: TextInputAction.done,
+  );
 
-  Widget _signInButton() => InkWell(
-        onTap: signIn,
-        borderRadius: BorderRadius.circular(36),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 74),
-          decoration: BoxDecoration(
-            color: const Color(0xFF404C6C),
-            borderRadius: BorderRadius.circular(36),
-            boxShadow: [
-              BoxShadow(
-                offset: const Offset(-1, 3),
-                color: const Color(0xFF404C6C).withOpacity(0.7),
-                spreadRadius: 4,
-                blurRadius: 10,
-              ),
-            ],
-          ),
-          child: const Text(
-            'Sign in',
-            style: TextStyle(
-              fontFamily: FontFamily.inter,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      );
+  Widget _signInButton() => ShadowedButton(
+    onPressed: signIn,
+    child: const Text(
+      'Sign in',
+      style: TextStyle(
+        fontFamily: FontFamily.inter,
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  );
 }
