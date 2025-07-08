@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class InitialPage extends ConsumerStatefulWidget {
+class InitialPage extends StatelessWidget {
   const InitialPage({super.key});
 
-  @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _InitialPageState();
-}
-
-class _InitialPageState extends ConsumerState<InitialPage> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(

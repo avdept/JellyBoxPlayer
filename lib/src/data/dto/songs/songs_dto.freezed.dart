@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,818 +9,875 @@ part of 'songs_dto.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
-SongDTO _$SongDTOFromJson(Map<String, dynamic> json) {
-  return _SongDTO.fromJson(json);
-}
 
 /// @nodoc
 mixin _$SongDTO {
-  @JsonKey(name: 'Id')
-  String get id => throw _privateConstructorUsedError;
-  @JsonKey(name: 'RunTimeTicks')
-  int get runTimeTicks => throw _privateConstructorUsedError;
-  @JsonKey(name: 'IndexNumber')
-  int get indexNumber => throw _privateConstructorUsedError;
-  @JsonKey(name: 'UserData')
-  SongUserData get songUserData => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Type')
-  String get type => throw _privateConstructorUsedError;
-  @JsonKey(name: 'AlbumArtist')
-  String? get albumArtist => throw _privateConstructorUsedError;
-  @JsonKey(name: 'PlaylistItemId')
-  String? get playlistItemId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'AlbumArtists')
-  List<ArtistDTO>? get albumArtists => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Album')
-  String? get albumName => throw _privateConstructorUsedError;
-  @JsonKey(name: 'AlbumId')
-  String? get albumId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Name')
-  String? get name => throw _privateConstructorUsedError;
-  @JsonKey(name: 'ImageTags')
-  Map<String, String> get imageTags => throw _privateConstructorUsedError;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $SongDTOCopyWith<SongDTO> get copyWith => throw _privateConstructorUsedError;
+@JsonKey(name: 'Id') String get id;@JsonKey(name: 'RunTimeTicks') int get runTimeTicks;@JsonKey(name: 'IndexNumber') int get indexNumber;@JsonKey(name: 'UserData') SongUserData get songUserData;@JsonKey(name: 'Type') String get type;@JsonKey(name: 'AlbumArtist') String? get albumArtist;@JsonKey(name: 'PlaylistItemId') String? get playlistItemId;@JsonKey(name: 'AlbumArtists') List<ArtistDTO>? get albumArtists;@JsonKey(name: 'Album') String? get albumName;@JsonKey(name: 'AlbumId') String? get albumId;@JsonKey(name: 'Name') String? get name;@JsonKey(name: 'ImageTags') Map<String, String> get imageTags;
+/// Create a copy of SongDTO
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SongDTOCopyWith<SongDTO> get copyWith => _$SongDTOCopyWithImpl<SongDTO>(this as SongDTO, _$identity);
+
+  /// Serializes this SongDTO to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SongDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.songUserData, songUserData) || other.songUserData == songUserData)&&(identical(other.type, type) || other.type == type)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&const DeepCollectionEquality().equals(other.albumArtists, albumArtists)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.imageTags, imageTags));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,runTimeTicks,indexNumber,songUserData,type,albumArtist,playlistItemId,const DeepCollectionEquality().hash(albumArtists),albumName,albumId,name,const DeepCollectionEquality().hash(imageTags));
+
+@override
+String toString() {
+  return 'SongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, playlistItemId: $playlistItemId, albumArtists: $albumArtists, albumName: $albumName, albumId: $albumId, name: $name, imageTags: $imageTags)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $SongDTOCopyWith<$Res> {
-  factory $SongDTOCopyWith(SongDTO value, $Res Function(SongDTO) then) =
-      _$SongDTOCopyWithImpl<$Res, SongDTO>;
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'Id') String id,
-      @JsonKey(name: 'RunTimeTicks') int runTimeTicks,
-      @JsonKey(name: 'IndexNumber') int indexNumber,
-      @JsonKey(name: 'UserData') SongUserData songUserData,
-      @JsonKey(name: 'Type') String type,
-      @JsonKey(name: 'AlbumArtist') String? albumArtist,
-      @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
-      @JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,
-      @JsonKey(name: 'Album') String? albumName,
-      @JsonKey(name: 'AlbumId') String? albumId,
-      @JsonKey(name: 'Name') String? name,
-      @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
+abstract mixin class $SongDTOCopyWith<$Res>  {
+  factory $SongDTOCopyWith(SongDTO value, $Res Function(SongDTO) _then) = _$SongDTOCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'Id') String id,@JsonKey(name: 'RunTimeTicks') int runTimeTicks,@JsonKey(name: 'IndexNumber') int indexNumber,@JsonKey(name: 'UserData') SongUserData songUserData,@JsonKey(name: 'Type') String type,@JsonKey(name: 'AlbumArtist') String? albumArtist,@JsonKey(name: 'PlaylistItemId') String? playlistItemId,@JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,@JsonKey(name: 'Album') String? albumName,@JsonKey(name: 'AlbumId') String? albumId,@JsonKey(name: 'Name') String? name,@JsonKey(name: 'ImageTags') Map<String, String> imageTags
+});
 
-  $SongUserDataCopyWith<$Res> get songUserData;
+
+$SongUserDataCopyWith<$Res> get songUserData;
+
 }
-
 /// @nodoc
-class _$SongDTOCopyWithImpl<$Res, $Val extends SongDTO>
+class _$SongDTOCopyWithImpl<$Res>
     implements $SongDTOCopyWith<$Res> {
-  _$SongDTOCopyWithImpl(this._value, this._then);
+  _$SongDTOCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final SongDTO _self;
+  final $Res Function(SongDTO) _then;
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? runTimeTicks = null,
-    Object? indexNumber = null,
-    Object? songUserData = null,
-    Object? type = null,
-    Object? albumArtist = freezed,
-    Object? playlistItemId = freezed,
-    Object? albumArtists = freezed,
-    Object? albumName = freezed,
-    Object? albumId = freezed,
-    Object? name = freezed,
-    Object? imageTags = null,
-  }) {
-    return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      runTimeTicks: null == runTimeTicks
-          ? _value.runTimeTicks
-          : runTimeTicks // ignore: cast_nullable_to_non_nullable
-              as int,
-      indexNumber: null == indexNumber
-          ? _value.indexNumber
-          : indexNumber // ignore: cast_nullable_to_non_nullable
-              as int,
-      songUserData: null == songUserData
-          ? _value.songUserData
-          : songUserData // ignore: cast_nullable_to_non_nullable
-              as SongUserData,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      albumArtist: freezed == albumArtist
-          ? _value.albumArtist
-          : albumArtist // ignore: cast_nullable_to_non_nullable
-              as String?,
-      playlistItemId: freezed == playlistItemId
-          ? _value.playlistItemId
-          : playlistItemId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      albumArtists: freezed == albumArtists
-          ? _value.albumArtists
-          : albumArtists // ignore: cast_nullable_to_non_nullable
-              as List<ArtistDTO>?,
-      albumName: freezed == albumName
-          ? _value.albumName
-          : albumName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      albumId: freezed == albumId
-          ? _value.albumId
-          : albumId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      name: freezed == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String?,
-      imageTags: null == imageTags
-          ? _value.imageTags
-          : imageTags // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>,
-    ) as $Val);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $SongUserDataCopyWith<$Res> get songUserData {
-    return $SongUserDataCopyWith<$Res>(_value.songUserData, (value) {
-      return _then(_value.copyWith(songUserData: value) as $Val);
-    });
-  }
+/// Create a copy of SongDTO
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? runTimeTicks = null,Object? indexNumber = null,Object? songUserData = null,Object? type = null,Object? albumArtist = freezed,Object? playlistItemId = freezed,Object? albumArtists = freezed,Object? albumName = freezed,Object? albumId = freezed,Object? name = freezed,Object? imageTags = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,runTimeTicks: null == runTimeTicks ? _self.runTimeTicks : runTimeTicks // ignore: cast_nullable_to_non_nullable
+as int,indexNumber: null == indexNumber ? _self.indexNumber : indexNumber // ignore: cast_nullable_to_non_nullable
+as int,songUserData: null == songUserData ? _self.songUserData : songUserData // ignore: cast_nullable_to_non_nullable
+as SongUserData,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,albumArtist: freezed == albumArtist ? _self.albumArtist : albumArtist // ignore: cast_nullable_to_non_nullable
+as String?,playlistItemId: freezed == playlistItemId ? _self.playlistItemId : playlistItemId // ignore: cast_nullable_to_non_nullable
+as String?,albumArtists: freezed == albumArtists ? _self.albumArtists : albumArtists // ignore: cast_nullable_to_non_nullable
+as List<ArtistDTO>?,albumName: freezed == albumName ? _self.albumName : albumName // ignore: cast_nullable_to_non_nullable
+as String?,albumId: freezed == albumId ? _self.albumId : albumId // ignore: cast_nullable_to_non_nullable
+as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,imageTags: null == imageTags ? _self.imageTags : imageTags // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
+  ));
+}
+/// Create a copy of SongDTO
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SongUserDataCopyWith<$Res> get songUserData {
+  
+  return $SongUserDataCopyWith<$Res>(_self.songUserData, (value) {
+    return _then(_self.copyWith(songUserData: value));
+  });
+}
 }
 
-/// @nodoc
-abstract class _$$SongDTOImplCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
-  factory _$$SongDTOImplCopyWith(
-          _$SongDTOImpl value, $Res Function(_$SongDTOImpl) then) =
-      __$$SongDTOImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'Id') String id,
-      @JsonKey(name: 'RunTimeTicks') int runTimeTicks,
-      @JsonKey(name: 'IndexNumber') int indexNumber,
-      @JsonKey(name: 'UserData') SongUserData songUserData,
-      @JsonKey(name: 'Type') String type,
-      @JsonKey(name: 'AlbumArtist') String? albumArtist,
-      @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
-      @JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,
-      @JsonKey(name: 'Album') String? albumName,
-      @JsonKey(name: 'AlbumId') String? albumId,
-      @JsonKey(name: 'Name') String? name,
-      @JsonKey(name: 'ImageTags') Map<String, String> imageTags});
 
-  @override
-  $SongUserDataCopyWith<$Res> get songUserData;
+/// Adds pattern-matching-related methods to [SongDTO].
+extension SongDTOPatterns on SongDTO {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SongDTO value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SongDTO() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SongDTO value)  $default,){
+final _that = this;
+switch (_that) {
+case _SongDTO():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SongDTO value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SongDTO() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'UserData')  SongUserData songUserData, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO>? albumArtists, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Name')  String? name, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SongDTO() when $default != null:
+return $default(_that.id,_that.runTimeTicks,_that.indexNumber,_that.songUserData,_that.type,_that.albumArtist,_that.playlistItemId,_that.albumArtists,_that.albumName,_that.albumId,_that.name,_that.imageTags);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'UserData')  SongUserData songUserData, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO>? albumArtists, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Name')  String? name, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags)  $default,) {final _that = this;
+switch (_that) {
+case _SongDTO():
+return $default(_that.id,_that.runTimeTicks,_that.indexNumber,_that.songUserData,_that.type,_that.albumArtist,_that.playlistItemId,_that.albumArtists,_that.albumName,_that.albumId,_that.name,_that.imageTags);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'UserData')  SongUserData songUserData, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO>? albumArtists, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Name')  String? name, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags)?  $default,) {final _that = this;
+switch (_that) {
+case _SongDTO() when $default != null:
+return $default(_that.id,_that.runTimeTicks,_that.indexNumber,_that.songUserData,_that.type,_that.albumArtist,_that.playlistItemId,_that.albumArtists,_that.albumName,_that.albumId,_that.name,_that.imageTags);case _:
+  return null;
+
+}
 }
 
-/// @nodoc
-class __$$SongDTOImplCopyWithImpl<$Res>
-    extends _$SongDTOCopyWithImpl<$Res, _$SongDTOImpl>
-    implements _$$SongDTOImplCopyWith<$Res> {
-  __$$SongDTOImplCopyWithImpl(
-      _$SongDTOImpl _value, $Res Function(_$SongDTOImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? id = null,
-    Object? runTimeTicks = null,
-    Object? indexNumber = null,
-    Object? songUserData = null,
-    Object? type = null,
-    Object? albumArtist = freezed,
-    Object? playlistItemId = freezed,
-    Object? albumArtists = freezed,
-    Object? albumName = freezed,
-    Object? albumId = freezed,
-    Object? name = freezed,
-    Object? imageTags = null,
-  }) {
-    return _then(_$SongDTOImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      runTimeTicks: null == runTimeTicks
-          ? _value.runTimeTicks
-          : runTimeTicks // ignore: cast_nullable_to_non_nullable
-              as int,
-      indexNumber: null == indexNumber
-          ? _value.indexNumber
-          : indexNumber // ignore: cast_nullable_to_non_nullable
-              as int,
-      songUserData: null == songUserData
-          ? _value.songUserData
-          : songUserData // ignore: cast_nullable_to_non_nullable
-              as SongUserData,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      albumArtist: freezed == albumArtist
-          ? _value.albumArtist
-          : albumArtist // ignore: cast_nullable_to_non_nullable
-              as String?,
-      playlistItemId: freezed == playlistItemId
-          ? _value.playlistItemId
-          : playlistItemId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      albumArtists: freezed == albumArtists
-          ? _value._albumArtists
-          : albumArtists // ignore: cast_nullable_to_non_nullable
-              as List<ArtistDTO>?,
-      albumName: freezed == albumName
-          ? _value.albumName
-          : albumName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      albumId: freezed == albumId
-          ? _value.albumId
-          : albumId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      name: freezed == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String?,
-      imageTags: null == imageTags
-          ? _value._imageTags
-          : imageTags // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>,
-    ));
-  }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$SongDTOImpl implements _SongDTO {
-  const _$SongDTOImpl(
-      {@JsonKey(name: 'Id') required this.id,
-      @JsonKey(name: 'RunTimeTicks') required this.runTimeTicks,
-      @JsonKey(name: 'IndexNumber') this.indexNumber = 0,
-      @JsonKey(name: 'UserData') required this.songUserData,
-      @JsonKey(name: 'Type') required this.type,
-      @JsonKey(name: 'AlbumArtist') this.albumArtist,
-      @JsonKey(name: 'PlaylistItemId') this.playlistItemId,
-      @JsonKey(name: 'AlbumArtists') final List<ArtistDTO>? albumArtists,
-      @JsonKey(name: 'Album') this.albumName,
-      @JsonKey(name: 'AlbumId') this.albumId,
-      @JsonKey(name: 'Name') this.name,
-      @JsonKey(name: 'ImageTags')
-      final Map<String, String> imageTags = const {}})
-      : _albumArtists = albumArtists,
-        _imageTags = imageTags;
 
-  factory _$SongDTOImpl.fromJson(Map<String, dynamic> json) =>
-      _$$SongDTOImplFromJson(json);
+class _SongDTO implements SongDTO {
+  const _SongDTO({@JsonKey(name: 'Id') required this.id, @JsonKey(name: 'RunTimeTicks') required this.runTimeTicks, @JsonKey(name: 'IndexNumber') this.indexNumber = 0, @JsonKey(name: 'UserData') required this.songUserData, @JsonKey(name: 'Type') required this.type, @JsonKey(name: 'AlbumArtist') this.albumArtist, @JsonKey(name: 'PlaylistItemId') this.playlistItemId, @JsonKey(name: 'AlbumArtists') final  List<ArtistDTO>? albumArtists, @JsonKey(name: 'Album') this.albumName, @JsonKey(name: 'AlbumId') this.albumId, @JsonKey(name: 'Name') this.name, @JsonKey(name: 'ImageTags') final  Map<String, String> imageTags = const {}}): _albumArtists = albumArtists,_imageTags = imageTags;
+  factory _SongDTO.fromJson(Map<String, dynamic> json) => _$SongDTOFromJson(json);
 
-  @override
-  @JsonKey(name: 'Id')
-  final String id;
-  @override
-  @JsonKey(name: 'RunTimeTicks')
-  final int runTimeTicks;
-  @override
-  @JsonKey(name: 'IndexNumber')
-  final int indexNumber;
-  @override
-  @JsonKey(name: 'UserData')
-  final SongUserData songUserData;
-  @override
-  @JsonKey(name: 'Type')
-  final String type;
-  @override
-  @JsonKey(name: 'AlbumArtist')
-  final String? albumArtist;
-  @override
-  @JsonKey(name: 'PlaylistItemId')
-  final String? playlistItemId;
-  final List<ArtistDTO>? _albumArtists;
-  @override
-  @JsonKey(name: 'AlbumArtists')
-  List<ArtistDTO>? get albumArtists {
-    final value = _albumArtists;
-    if (value == null) return null;
-    if (_albumArtists is EqualUnmodifiableListView) return _albumArtists;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
-  @override
-  @JsonKey(name: 'Album')
-  final String? albumName;
-  @override
-  @JsonKey(name: 'AlbumId')
-  final String? albumId;
-  @override
-  @JsonKey(name: 'Name')
-  final String? name;
-  final Map<String, String> _imageTags;
-  @override
-  @JsonKey(name: 'ImageTags')
-  Map<String, String> get imageTags {
-    if (_imageTags is EqualUnmodifiableMapView) return _imageTags;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_imageTags);
-  }
-
-  @override
-  String toString() {
-    return 'SongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, playlistItemId: $playlistItemId, albumArtists: $albumArtists, albumName: $albumName, albumId: $albumId, name: $name, imageTags: $imageTags)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$SongDTOImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.runTimeTicks, runTimeTicks) ||
-                other.runTimeTicks == runTimeTicks) &&
-            (identical(other.indexNumber, indexNumber) ||
-                other.indexNumber == indexNumber) &&
-            (identical(other.songUserData, songUserData) ||
-                other.songUserData == songUserData) &&
-            (identical(other.type, type) || other.type == type) &&
-            (identical(other.albumArtist, albumArtist) ||
-                other.albumArtist == albumArtist) &&
-            (identical(other.playlistItemId, playlistItemId) ||
-                other.playlistItemId == playlistItemId) &&
-            const DeepCollectionEquality()
-                .equals(other._albumArtists, _albumArtists) &&
-            (identical(other.albumName, albumName) ||
-                other.albumName == albumName) &&
-            (identical(other.albumId, albumId) || other.albumId == albumId) &&
-            (identical(other.name, name) || other.name == name) &&
-            const DeepCollectionEquality()
-                .equals(other._imageTags, _imageTags));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      runTimeTicks,
-      indexNumber,
-      songUserData,
-      type,
-      albumArtist,
-      playlistItemId,
-      const DeepCollectionEquality().hash(_albumArtists),
-      albumName,
-      albumId,
-      name,
-      const DeepCollectionEquality().hash(_imageTags));
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$SongDTOImplCopyWith<_$SongDTOImpl> get copyWith =>
-      __$$SongDTOImplCopyWithImpl<_$SongDTOImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$SongDTOImplToJson(
-      this,
-    );
-  }
+@override@JsonKey(name: 'Id') final  String id;
+@override@JsonKey(name: 'RunTimeTicks') final  int runTimeTicks;
+@override@JsonKey(name: 'IndexNumber') final  int indexNumber;
+@override@JsonKey(name: 'UserData') final  SongUserData songUserData;
+@override@JsonKey(name: 'Type') final  String type;
+@override@JsonKey(name: 'AlbumArtist') final  String? albumArtist;
+@override@JsonKey(name: 'PlaylistItemId') final  String? playlistItemId;
+ final  List<ArtistDTO>? _albumArtists;
+@override@JsonKey(name: 'AlbumArtists') List<ArtistDTO>? get albumArtists {
+  final value = _albumArtists;
+  if (value == null) return null;
+  if (_albumArtists is EqualUnmodifiableListView) return _albumArtists;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
 }
 
-abstract class _SongDTO implements SongDTO {
-  const factory _SongDTO(
-          {@JsonKey(name: 'Id') required final String id,
-          @JsonKey(name: 'RunTimeTicks') required final int runTimeTicks,
-          @JsonKey(name: 'IndexNumber') final int indexNumber,
-          @JsonKey(name: 'UserData') required final SongUserData songUserData,
-          @JsonKey(name: 'Type') required final String type,
-          @JsonKey(name: 'AlbumArtist') final String? albumArtist,
-          @JsonKey(name: 'PlaylistItemId') final String? playlistItemId,
-          @JsonKey(name: 'AlbumArtists') final List<ArtistDTO>? albumArtists,
-          @JsonKey(name: 'Album') final String? albumName,
-          @JsonKey(name: 'AlbumId') final String? albumId,
-          @JsonKey(name: 'Name') final String? name,
-          @JsonKey(name: 'ImageTags') final Map<String, String> imageTags}) =
-      _$SongDTOImpl;
-
-  factory _SongDTO.fromJson(Map<String, dynamic> json) = _$SongDTOImpl.fromJson;
-
-  @override
-  @JsonKey(name: 'Id')
-  String get id;
-  @override
-  @JsonKey(name: 'RunTimeTicks')
-  int get runTimeTicks;
-  @override
-  @JsonKey(name: 'IndexNumber')
-  int get indexNumber;
-  @override
-  @JsonKey(name: 'UserData')
-  SongUserData get songUserData;
-  @override
-  @JsonKey(name: 'Type')
-  String get type;
-  @override
-  @JsonKey(name: 'AlbumArtist')
-  String? get albumArtist;
-  @override
-  @JsonKey(name: 'PlaylistItemId')
-  String? get playlistItemId;
-  @override
-  @JsonKey(name: 'AlbumArtists')
-  List<ArtistDTO>? get albumArtists;
-  @override
-  @JsonKey(name: 'Album')
-  String? get albumName;
-  @override
-  @JsonKey(name: 'AlbumId')
-  String? get albumId;
-  @override
-  @JsonKey(name: 'Name')
-  String? get name;
-  @override
-  @JsonKey(name: 'ImageTags')
-  Map<String, String> get imageTags;
-  @override
-  @JsonKey(ignore: true)
-  _$$SongDTOImplCopyWith<_$SongDTOImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override@JsonKey(name: 'Album') final  String? albumName;
+@override@JsonKey(name: 'AlbumId') final  String? albumId;
+@override@JsonKey(name: 'Name') final  String? name;
+ final  Map<String, String> _imageTags;
+@override@JsonKey(name: 'ImageTags') Map<String, String> get imageTags {
+  if (_imageTags is EqualUnmodifiableMapView) return _imageTags;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_imageTags);
 }
 
-SongsWrapper _$SongsWrapperFromJson(Map<String, dynamic> json) {
-  return _SongsWrapper.fromJson(json);
+
+/// Create a copy of SongDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SongDTOCopyWith<_SongDTO> get copyWith => __$SongDTOCopyWithImpl<_SongDTO>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SongDTOToJson(this, );
 }
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SongDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.songUserData, songUserData) || other.songUserData == songUserData)&&(identical(other.type, type) || other.type == type)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&const DeepCollectionEquality().equals(other._albumArtists, _albumArtists)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._imageTags, _imageTags));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,runTimeTicks,indexNumber,songUserData,type,albumArtist,playlistItemId,const DeepCollectionEquality().hash(_albumArtists),albumName,albumId,name,const DeepCollectionEquality().hash(_imageTags));
+
+@override
+String toString() {
+  return 'SongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, playlistItemId: $playlistItemId, albumArtists: $albumArtists, albumName: $albumName, albumId: $albumId, name: $name, imageTags: $imageTags)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SongDTOCopyWith<$Res> implements $SongDTOCopyWith<$Res> {
+  factory _$SongDTOCopyWith(_SongDTO value, $Res Function(_SongDTO) _then) = __$SongDTOCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'Id') String id,@JsonKey(name: 'RunTimeTicks') int runTimeTicks,@JsonKey(name: 'IndexNumber') int indexNumber,@JsonKey(name: 'UserData') SongUserData songUserData,@JsonKey(name: 'Type') String type,@JsonKey(name: 'AlbumArtist') String? albumArtist,@JsonKey(name: 'PlaylistItemId') String? playlistItemId,@JsonKey(name: 'AlbumArtists') List<ArtistDTO>? albumArtists,@JsonKey(name: 'Album') String? albumName,@JsonKey(name: 'AlbumId') String? albumId,@JsonKey(name: 'Name') String? name,@JsonKey(name: 'ImageTags') Map<String, String> imageTags
+});
+
+
+@override $SongUserDataCopyWith<$Res> get songUserData;
+
+}
+/// @nodoc
+class __$SongDTOCopyWithImpl<$Res>
+    implements _$SongDTOCopyWith<$Res> {
+  __$SongDTOCopyWithImpl(this._self, this._then);
+
+  final _SongDTO _self;
+  final $Res Function(_SongDTO) _then;
+
+/// Create a copy of SongDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? runTimeTicks = null,Object? indexNumber = null,Object? songUserData = null,Object? type = null,Object? albumArtist = freezed,Object? playlistItemId = freezed,Object? albumArtists = freezed,Object? albumName = freezed,Object? albumId = freezed,Object? name = freezed,Object? imageTags = null,}) {
+  return _then(_SongDTO(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,runTimeTicks: null == runTimeTicks ? _self.runTimeTicks : runTimeTicks // ignore: cast_nullable_to_non_nullable
+as int,indexNumber: null == indexNumber ? _self.indexNumber : indexNumber // ignore: cast_nullable_to_non_nullable
+as int,songUserData: null == songUserData ? _self.songUserData : songUserData // ignore: cast_nullable_to_non_nullable
+as SongUserData,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,albumArtist: freezed == albumArtist ? _self.albumArtist : albumArtist // ignore: cast_nullable_to_non_nullable
+as String?,playlistItemId: freezed == playlistItemId ? _self.playlistItemId : playlistItemId // ignore: cast_nullable_to_non_nullable
+as String?,albumArtists: freezed == albumArtists ? _self._albumArtists : albumArtists // ignore: cast_nullable_to_non_nullable
+as List<ArtistDTO>?,albumName: freezed == albumName ? _self.albumName : albumName // ignore: cast_nullable_to_non_nullable
+as String?,albumId: freezed == albumId ? _self.albumId : albumId // ignore: cast_nullable_to_non_nullable
+as String?,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,imageTags: null == imageTags ? _self._imageTags : imageTags // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,
+  ));
+}
+
+/// Create a copy of SongDTO
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SongUserDataCopyWith<$Res> get songUserData {
+  
+  return $SongUserDataCopyWith<$Res>(_self.songUserData, (value) {
+    return _then(_self.copyWith(songUserData: value));
+  });
+}
+}
+
 
 /// @nodoc
 mixin _$SongsWrapper {
-  @JsonKey(name: 'Items')
-  List<SongDTO> get items => throw _privateConstructorUsedError;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $SongsWrapperCopyWith<SongsWrapper> get copyWith =>
-      throw _privateConstructorUsedError;
+@JsonKey(name: 'Items') List<SongDTO> get items;
+/// Create a copy of SongsWrapper
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SongsWrapperCopyWith<SongsWrapper> get copyWith => _$SongsWrapperCopyWithImpl<SongsWrapper>(this as SongsWrapper, _$identity);
+
+  /// Serializes this SongsWrapper to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SongsWrapper&&const DeepCollectionEquality().equals(other.items, items));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items));
+
+@override
+String toString() {
+  return 'SongsWrapper(items: $items)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $SongsWrapperCopyWith<$Res> {
-  factory $SongsWrapperCopyWith(
-          SongsWrapper value, $Res Function(SongsWrapper) then) =
-      _$SongsWrapperCopyWithImpl<$Res, SongsWrapper>;
-  @useResult
-  $Res call({@JsonKey(name: 'Items') List<SongDTO> items});
-}
+abstract mixin class $SongsWrapperCopyWith<$Res>  {
+  factory $SongsWrapperCopyWith(SongsWrapper value, $Res Function(SongsWrapper) _then) = _$SongsWrapperCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'Items') List<SongDTO> items
+});
 
+
+
+
+}
 /// @nodoc
-class _$SongsWrapperCopyWithImpl<$Res, $Val extends SongsWrapper>
+class _$SongsWrapperCopyWithImpl<$Res>
     implements $SongsWrapperCopyWith<$Res> {
-  _$SongsWrapperCopyWithImpl(this._value, this._then);
+  _$SongsWrapperCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final SongsWrapper _self;
+  final $Res Function(SongsWrapper) _then;
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? items = null,
-  }) {
-    return _then(_value.copyWith(
-      items: null == items
-          ? _value.items
-          : items // ignore: cast_nullable_to_non_nullable
-              as List<SongDTO>,
-    ) as $Val);
-  }
+/// Create a copy of SongsWrapper
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? items = null,}) {
+  return _then(_self.copyWith(
+items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
+as List<SongDTO>,
+  ));
 }
 
-/// @nodoc
-abstract class _$$SongsWrapperImplCopyWith<$Res>
-    implements $SongsWrapperCopyWith<$Res> {
-  factory _$$SongsWrapperImplCopyWith(
-          _$SongsWrapperImpl value, $Res Function(_$SongsWrapperImpl) then) =
-      __$$SongsWrapperImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({@JsonKey(name: 'Items') List<SongDTO> items});
 }
 
-/// @nodoc
-class __$$SongsWrapperImplCopyWithImpl<$Res>
-    extends _$SongsWrapperCopyWithImpl<$Res, _$SongsWrapperImpl>
-    implements _$$SongsWrapperImplCopyWith<$Res> {
-  __$$SongsWrapperImplCopyWithImpl(
-      _$SongsWrapperImpl _value, $Res Function(_$SongsWrapperImpl) _then)
-      : super(_value, _then);
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? items = null,
-  }) {
-    return _then(_$SongsWrapperImpl(
-      items: null == items
-          ? _value._items
-          : items // ignore: cast_nullable_to_non_nullable
-              as List<SongDTO>,
-    ));
-  }
+/// Adds pattern-matching-related methods to [SongsWrapper].
+extension SongsWrapperPatterns on SongsWrapper {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SongsWrapper value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SongsWrapper() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SongsWrapper value)  $default,){
+final _that = this;
+switch (_that) {
+case _SongsWrapper():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SongsWrapper value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SongsWrapper() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Items')  List<SongDTO> items)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SongsWrapper() when $default != null:
+return $default(_that.items);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Items')  List<SongDTO> items)  $default,) {final _that = this;
+switch (_that) {
+case _SongsWrapper():
+return $default(_that.items);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Items')  List<SongDTO> items)?  $default,) {final _that = this;
+switch (_that) {
+case _SongsWrapper() when $default != null:
+return $default(_that.items);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$SongsWrapperImpl implements _SongsWrapper {
-  const _$SongsWrapperImpl(
-      {@JsonKey(name: 'Items') required final List<SongDTO> items})
-      : _items = items;
 
-  factory _$SongsWrapperImpl.fromJson(Map<String, dynamic> json) =>
-      _$$SongsWrapperImplFromJson(json);
+class _SongsWrapper implements SongsWrapper {
+  const _SongsWrapper({@JsonKey(name: 'Items') required final  List<SongDTO> items}): _items = items;
+  factory _SongsWrapper.fromJson(Map<String, dynamic> json) => _$SongsWrapperFromJson(json);
 
-  final List<SongDTO> _items;
-  @override
-  @JsonKey(name: 'Items')
-  List<SongDTO> get items {
-    if (_items is EqualUnmodifiableListView) return _items;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_items);
-  }
-
-  @override
-  String toString() {
-    return 'SongsWrapper(items: $items)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$SongsWrapperImpl &&
-            const DeepCollectionEquality().equals(other._items, _items));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode =>
-      Object.hash(runtimeType, const DeepCollectionEquality().hash(_items));
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$SongsWrapperImplCopyWith<_$SongsWrapperImpl> get copyWith =>
-      __$$SongsWrapperImplCopyWithImpl<_$SongsWrapperImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$SongsWrapperImplToJson(
-      this,
-    );
-  }
+ final  List<SongDTO> _items;
+@override@JsonKey(name: 'Items') List<SongDTO> get items {
+  if (_items is EqualUnmodifiableListView) return _items;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_items);
 }
 
-abstract class _SongsWrapper implements SongsWrapper {
-  const factory _SongsWrapper(
-          {@JsonKey(name: 'Items') required final List<SongDTO> items}) =
-      _$SongsWrapperImpl;
 
-  factory _SongsWrapper.fromJson(Map<String, dynamic> json) =
-      _$SongsWrapperImpl.fromJson;
+/// Create a copy of SongsWrapper
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SongsWrapperCopyWith<_SongsWrapper> get copyWith => __$SongsWrapperCopyWithImpl<_SongsWrapper>(this, _$identity);
 
-  @override
-  @JsonKey(name: 'Items')
-  List<SongDTO> get items;
-  @override
-  @JsonKey(ignore: true)
-  _$$SongsWrapperImplCopyWith<_$SongsWrapperImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+Map<String, dynamic> toJson() {
+  return _$SongsWrapperToJson(this, );
 }
 
-SongUserData _$SongUserDataFromJson(Map<String, dynamic> json) {
-  return _SongUserData.fromJson(json);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SongsWrapper&&const DeepCollectionEquality().equals(other._items, _items));
 }
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items));
+
+@override
+String toString() {
+  return 'SongsWrapper(items: $items)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SongsWrapperCopyWith<$Res> implements $SongsWrapperCopyWith<$Res> {
+  factory _$SongsWrapperCopyWith(_SongsWrapper value, $Res Function(_SongsWrapper) _then) = __$SongsWrapperCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'Items') List<SongDTO> items
+});
+
+
+
+
+}
+/// @nodoc
+class __$SongsWrapperCopyWithImpl<$Res>
+    implements _$SongsWrapperCopyWith<$Res> {
+  __$SongsWrapperCopyWithImpl(this._self, this._then);
+
+  final _SongsWrapper _self;
+  final $Res Function(_SongsWrapper) _then;
+
+/// Create a copy of SongsWrapper
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? items = null,}) {
+  return _then(_SongsWrapper(
+items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
+as List<SongDTO>,
+  ));
+}
+
+
+}
+
 
 /// @nodoc
 mixin _$SongUserData {
-  @JsonKey(name: 'PlaybackPositionTicks')
-  int get playbackPositionTicks => throw _privateConstructorUsedError;
-  @JsonKey(name: 'PlayCount')
-  int get playCount => throw _privateConstructorUsedError;
-  @JsonKey(name: 'IsFavorite')
-  bool get isFavorite => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Played')
-  bool get played => throw _privateConstructorUsedError;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $SongUserDataCopyWith<SongUserData> get copyWith =>
-      throw _privateConstructorUsedError;
+@JsonKey(name: 'PlaybackPositionTicks') int get playbackPositionTicks;@JsonKey(name: 'PlayCount') int get playCount;@JsonKey(name: 'IsFavorite') bool get isFavorite;@JsonKey(name: 'Played') bool get played;
+/// Create a copy of SongUserData
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SongUserDataCopyWith<SongUserData> get copyWith => _$SongUserDataCopyWithImpl<SongUserData>(this as SongUserData, _$identity);
+
+  /// Serializes this SongUserData to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SongUserData&&(identical(other.playbackPositionTicks, playbackPositionTicks) || other.playbackPositionTicks == playbackPositionTicks)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.played, played) || other.played == played));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,playbackPositionTicks,playCount,isFavorite,played);
+
+@override
+String toString() {
+  return 'SongUserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $SongUserDataCopyWith<$Res> {
-  factory $SongUserDataCopyWith(
-          SongUserData value, $Res Function(SongUserData) then) =
-      _$SongUserDataCopyWithImpl<$Res, SongUserData>;
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,
-      @JsonKey(name: 'PlayCount') int playCount,
-      @JsonKey(name: 'IsFavorite') bool isFavorite,
-      @JsonKey(name: 'Played') bool played});
-}
+abstract mixin class $SongUserDataCopyWith<$Res>  {
+  factory $SongUserDataCopyWith(SongUserData value, $Res Function(SongUserData) _then) = _$SongUserDataCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,@JsonKey(name: 'PlayCount') int playCount,@JsonKey(name: 'IsFavorite') bool isFavorite,@JsonKey(name: 'Played') bool played
+});
 
+
+
+
+}
 /// @nodoc
-class _$SongUserDataCopyWithImpl<$Res, $Val extends SongUserData>
+class _$SongUserDataCopyWithImpl<$Res>
     implements $SongUserDataCopyWith<$Res> {
-  _$SongUserDataCopyWithImpl(this._value, this._then);
+  _$SongUserDataCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final SongUserData _self;
+  final $Res Function(SongUserData) _then;
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? playbackPositionTicks = null,
-    Object? playCount = null,
-    Object? isFavorite = null,
-    Object? played = null,
-  }) {
-    return _then(_value.copyWith(
-      playbackPositionTicks: null == playbackPositionTicks
-          ? _value.playbackPositionTicks
-          : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
-              as int,
-      playCount: null == playCount
-          ? _value.playCount
-          : playCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      isFavorite: null == isFavorite
-          ? _value.isFavorite
-          : isFavorite // ignore: cast_nullable_to_non_nullable
-              as bool,
-      played: null == played
-          ? _value.played
-          : played // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
-  }
+/// Create a copy of SongUserData
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? playbackPositionTicks = null,Object? playCount = null,Object? isFavorite = null,Object? played = null,}) {
+  return _then(_self.copyWith(
+playbackPositionTicks: null == playbackPositionTicks ? _self.playbackPositionTicks : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
+as int,playCount: null == playCount ? _self.playCount : playCount // ignore: cast_nullable_to_non_nullable
+as int,isFavorite: null == isFavorite ? _self.isFavorite : isFavorite // ignore: cast_nullable_to_non_nullable
+as bool,played: null == played ? _self.played : played // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
 }
 
-/// @nodoc
-abstract class _$$SongUserDataImplCopyWith<$Res>
-    implements $SongUserDataCopyWith<$Res> {
-  factory _$$SongUserDataImplCopyWith(
-          _$SongUserDataImpl value, $Res Function(_$SongUserDataImpl) then) =
-      __$$SongUserDataImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,
-      @JsonKey(name: 'PlayCount') int playCount,
-      @JsonKey(name: 'IsFavorite') bool isFavorite,
-      @JsonKey(name: 'Played') bool played});
 }
 
-/// @nodoc
-class __$$SongUserDataImplCopyWithImpl<$Res>
-    extends _$SongUserDataCopyWithImpl<$Res, _$SongUserDataImpl>
-    implements _$$SongUserDataImplCopyWith<$Res> {
-  __$$SongUserDataImplCopyWithImpl(
-      _$SongUserDataImpl _value, $Res Function(_$SongUserDataImpl) _then)
-      : super(_value, _then);
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? playbackPositionTicks = null,
-    Object? playCount = null,
-    Object? isFavorite = null,
-    Object? played = null,
-  }) {
-    return _then(_$SongUserDataImpl(
-      playbackPositionTicks: null == playbackPositionTicks
-          ? _value.playbackPositionTicks
-          : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
-              as int,
-      playCount: null == playCount
-          ? _value.playCount
-          : playCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      isFavorite: null == isFavorite
-          ? _value.isFavorite
-          : isFavorite // ignore: cast_nullable_to_non_nullable
-              as bool,
-      played: null == played
-          ? _value.played
-          : played // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
-  }
+/// Adds pattern-matching-related methods to [SongUserData].
+extension SongUserDataPatterns on SongUserData {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SongUserData value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SongUserData() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SongUserData value)  $default,){
+final _that = this;
+switch (_that) {
+case _SongUserData():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SongUserData value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SongUserData() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SongUserData() when $default != null:
+return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played)  $default,) {final _that = this;
+switch (_that) {
+case _SongUserData():
+return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played)?  $default,) {final _that = this;
+switch (_that) {
+case _SongUserData() when $default != null:
+return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$SongUserDataImpl implements _SongUserData {
-  const _$SongUserDataImpl(
-      {@JsonKey(name: 'PlaybackPositionTicks')
-      required this.playbackPositionTicks,
-      @JsonKey(name: 'PlayCount') required this.playCount,
-      @JsonKey(name: 'IsFavorite') required this.isFavorite,
-      @JsonKey(name: 'Played') required this.played});
 
-  factory _$SongUserDataImpl.fromJson(Map<String, dynamic> json) =>
-      _$$SongUserDataImplFromJson(json);
+class _SongUserData implements SongUserData {
+  const _SongUserData({@JsonKey(name: 'PlaybackPositionTicks') required this.playbackPositionTicks, @JsonKey(name: 'PlayCount') required this.playCount, @JsonKey(name: 'IsFavorite') required this.isFavorite, @JsonKey(name: 'Played') required this.played});
+  factory _SongUserData.fromJson(Map<String, dynamic> json) => _$SongUserDataFromJson(json);
 
-  @override
-  @JsonKey(name: 'PlaybackPositionTicks')
-  final int playbackPositionTicks;
-  @override
-  @JsonKey(name: 'PlayCount')
-  final int playCount;
-  @override
-  @JsonKey(name: 'IsFavorite')
-  final bool isFavorite;
-  @override
-  @JsonKey(name: 'Played')
-  final bool played;
+@override@JsonKey(name: 'PlaybackPositionTicks') final  int playbackPositionTicks;
+@override@JsonKey(name: 'PlayCount') final  int playCount;
+@override@JsonKey(name: 'IsFavorite') final  bool isFavorite;
+@override@JsonKey(name: 'Played') final  bool played;
 
-  @override
-  String toString() {
-    return 'SongUserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played)';
-  }
+/// Create a copy of SongUserData
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SongUserDataCopyWith<_SongUserData> get copyWith => __$SongUserDataCopyWithImpl<_SongUserData>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$SongUserDataImpl &&
-            (identical(other.playbackPositionTicks, playbackPositionTicks) ||
-                other.playbackPositionTicks == playbackPositionTicks) &&
-            (identical(other.playCount, playCount) ||
-                other.playCount == playCount) &&
-            (identical(other.isFavorite, isFavorite) ||
-                other.isFavorite == isFavorite) &&
-            (identical(other.played, played) || other.played == played));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType, playbackPositionTicks, playCount, isFavorite, played);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$SongUserDataImplCopyWith<_$SongUserDataImpl> get copyWith =>
-      __$$SongUserDataImplCopyWithImpl<_$SongUserDataImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$SongUserDataImplToJson(
-      this,
-    );
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SongUserDataToJson(this, );
 }
 
-abstract class _SongUserData implements SongUserData {
-  const factory _SongUserData(
-          {@JsonKey(name: 'PlaybackPositionTicks')
-          required final int playbackPositionTicks,
-          @JsonKey(name: 'PlayCount') required final int playCount,
-          @JsonKey(name: 'IsFavorite') required final bool isFavorite,
-          @JsonKey(name: 'Played') required final bool played}) =
-      _$SongUserDataImpl;
-
-  factory _SongUserData.fromJson(Map<String, dynamic> json) =
-      _$SongUserDataImpl.fromJson;
-
-  @override
-  @JsonKey(name: 'PlaybackPositionTicks')
-  int get playbackPositionTicks;
-  @override
-  @JsonKey(name: 'PlayCount')
-  int get playCount;
-  @override
-  @JsonKey(name: 'IsFavorite')
-  bool get isFavorite;
-  @override
-  @JsonKey(name: 'Played')
-  bool get played;
-  @override
-  @JsonKey(ignore: true)
-  _$$SongUserDataImplCopyWith<_$SongUserDataImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SongUserData&&(identical(other.playbackPositionTicks, playbackPositionTicks) || other.playbackPositionTicks == playbackPositionTicks)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.played, played) || other.played == played));
 }
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,playbackPositionTicks,playCount,isFavorite,played);
+
+@override
+String toString() {
+  return 'SongUserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SongUserDataCopyWith<$Res> implements $SongUserDataCopyWith<$Res> {
+  factory _$SongUserDataCopyWith(_SongUserData value, $Res Function(_SongUserData) _then) = __$SongUserDataCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,@JsonKey(name: 'PlayCount') int playCount,@JsonKey(name: 'IsFavorite') bool isFavorite,@JsonKey(name: 'Played') bool played
+});
+
+
+
+
+}
+/// @nodoc
+class __$SongUserDataCopyWithImpl<$Res>
+    implements _$SongUserDataCopyWith<$Res> {
+  __$SongUserDataCopyWithImpl(this._self, this._then);
+
+  final _SongUserData _self;
+  final $Res Function(_SongUserData) _then;
+
+/// Create a copy of SongUserData
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? playbackPositionTicks = null,Object? playCount = null,Object? isFavorite = null,Object? played = null,}) {
+  return _then(_SongUserData(
+playbackPositionTicks: null == playbackPositionTicks ? _self.playbackPositionTicks : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
+as int,playCount: null == playCount ? _self.playCount : playCount // ignore: cast_nullable_to_non_nullable
+as int,isFavorite: null == isFavorite ? _self.isFavorite : isFavorite // ignore: cast_nullable_to_non_nullable
+as bool,played: null == played ? _self.played : played // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+// dart format on

@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,190 +9,274 @@ part of 'user_credentials.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
-
 /// @nodoc
 mixin _$UserCredentials {
-  @JsonKey(name: 'Username')
-  String get username => throw _privateConstructorUsedError;
-  @JsonKey(name: 'Pw')
-  String get pw => throw _privateConstructorUsedError;
-  @JsonKey(includeFromJson: false)
-  String get serverUrl => throw _privateConstructorUsedError;
 
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $UserCredentialsCopyWith<UserCredentials> get copyWith =>
-      throw _privateConstructorUsedError;
+@JsonKey(name: 'Username') String get username;@JsonKey(name: 'Pw') String get pw;@JsonKey(includeFromJson: false) String get serverUrl;
+/// Create a copy of UserCredentials
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$UserCredentialsCopyWith<UserCredentials> get copyWith => _$UserCredentialsCopyWithImpl<UserCredentials>(this as UserCredentials, _$identity);
+
+  /// Serializes this UserCredentials to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserCredentials&&(identical(other.username, username) || other.username == username)&&(identical(other.pw, pw) || other.pw == pw)&&(identical(other.serverUrl, serverUrl) || other.serverUrl == serverUrl));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,username,pw,serverUrl);
+
+@override
+String toString() {
+  return 'UserCredentials(username: $username, pw: $pw, serverUrl: $serverUrl)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $UserCredentialsCopyWith<$Res> {
-  factory $UserCredentialsCopyWith(
-          UserCredentials value, $Res Function(UserCredentials) then) =
-      _$UserCredentialsCopyWithImpl<$Res, UserCredentials>;
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'Username') String username,
-      @JsonKey(name: 'Pw') String pw,
-      @JsonKey(includeFromJson: false) String serverUrl});
-}
+abstract mixin class $UserCredentialsCopyWith<$Res>  {
+  factory $UserCredentialsCopyWith(UserCredentials value, $Res Function(UserCredentials) _then) = _$UserCredentialsCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: 'Username') String username,@JsonKey(name: 'Pw') String pw,@JsonKey(includeFromJson: false) String serverUrl
+});
 
+
+
+
+}
 /// @nodoc
-class _$UserCredentialsCopyWithImpl<$Res, $Val extends UserCredentials>
+class _$UserCredentialsCopyWithImpl<$Res>
     implements $UserCredentialsCopyWith<$Res> {
-  _$UserCredentialsCopyWithImpl(this._value, this._then);
+  _$UserCredentialsCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final UserCredentials _self;
+  final $Res Function(UserCredentials) _then;
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? username = null,
-    Object? pw = null,
-    Object? serverUrl = null,
-  }) {
-    return _then(_value.copyWith(
-      username: null == username
-          ? _value.username
-          : username // ignore: cast_nullable_to_non_nullable
-              as String,
-      pw: null == pw
-          ? _value.pw
-          : pw // ignore: cast_nullable_to_non_nullable
-              as String,
-      serverUrl: null == serverUrl
-          ? _value.serverUrl
-          : serverUrl // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
-  }
+/// Create a copy of UserCredentials
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? username = null,Object? pw = null,Object? serverUrl = null,}) {
+  return _then(_self.copyWith(
+username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
+as String,pw: null == pw ? _self.pw : pw // ignore: cast_nullable_to_non_nullable
+as String,serverUrl: null == serverUrl ? _self.serverUrl : serverUrl // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
 }
 
-/// @nodoc
-abstract class _$$UserCredentialsImplCopyWith<$Res>
-    implements $UserCredentialsCopyWith<$Res> {
-  factory _$$UserCredentialsImplCopyWith(_$UserCredentialsImpl value,
-          $Res Function(_$UserCredentialsImpl) then) =
-      __$$UserCredentialsImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'Username') String username,
-      @JsonKey(name: 'Pw') String pw,
-      @JsonKey(includeFromJson: false) String serverUrl});
 }
 
-/// @nodoc
-class __$$UserCredentialsImplCopyWithImpl<$Res>
-    extends _$UserCredentialsCopyWithImpl<$Res, _$UserCredentialsImpl>
-    implements _$$UserCredentialsImplCopyWith<$Res> {
-  __$$UserCredentialsImplCopyWithImpl(
-      _$UserCredentialsImpl _value, $Res Function(_$UserCredentialsImpl) _then)
-      : super(_value, _then);
 
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? username = null,
-    Object? pw = null,
-    Object? serverUrl = null,
-  }) {
-    return _then(_$UserCredentialsImpl(
-      username: null == username
-          ? _value.username
-          : username // ignore: cast_nullable_to_non_nullable
-              as String,
-      pw: null == pw
-          ? _value.pw
-          : pw // ignore: cast_nullable_to_non_nullable
-              as String,
-      serverUrl: null == serverUrl
-          ? _value.serverUrl
-          : serverUrl // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
+/// Adds pattern-matching-related methods to [UserCredentials].
+extension UserCredentialsPatterns on UserCredentials {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _UserCredentials value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _UserCredentials() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _UserCredentials value)  $default,){
+final _that = this;
+switch (_that) {
+case _UserCredentials():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _UserCredentials value)?  $default,){
+final _that = this;
+switch (_that) {
+case _UserCredentials() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Username')  String username, @JsonKey(name: 'Pw')  String pw, @JsonKey(includeFromJson: false)  String serverUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _UserCredentials() when $default != null:
+return $default(_that.username,_that.pw,_that.serverUrl);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Username')  String username, @JsonKey(name: 'Pw')  String pw, @JsonKey(includeFromJson: false)  String serverUrl)  $default,) {final _that = this;
+switch (_that) {
+case _UserCredentials():
+return $default(_that.username,_that.pw,_that.serverUrl);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Username')  String username, @JsonKey(name: 'Pw')  String pw, @JsonKey(includeFromJson: false)  String serverUrl)?  $default,) {final _that = this;
+switch (_that) {
+case _UserCredentials() when $default != null:
+return $default(_that.username,_that.pw,_that.serverUrl);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 @JsonSerializable(createFactory: false)
-class _$UserCredentialsImpl implements _UserCredentials {
-  const _$UserCredentialsImpl(
-      {@JsonKey(name: 'Username') required this.username,
-      @JsonKey(name: 'Pw') required this.pw,
-      @JsonKey(includeFromJson: false) required this.serverUrl});
 
-  @override
-  @JsonKey(name: 'Username')
-  final String username;
-  @override
-  @JsonKey(name: 'Pw')
-  final String pw;
-  @override
-  @JsonKey(includeFromJson: false)
-  final String serverUrl;
+class _UserCredentials implements UserCredentials {
+  const _UserCredentials({@JsonKey(name: 'Username') required this.username, @JsonKey(name: 'Pw') required this.pw, @JsonKey(includeFromJson: false) required this.serverUrl});
+  
 
-  @override
-  String toString() {
-    return 'UserCredentials(username: $username, pw: $pw, serverUrl: $serverUrl)';
-  }
+@override@JsonKey(name: 'Username') final  String username;
+@override@JsonKey(name: 'Pw') final  String pw;
+@override@JsonKey(includeFromJson: false) final  String serverUrl;
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$UserCredentialsImpl &&
-            (identical(other.username, username) ||
-                other.username == username) &&
-            (identical(other.pw, pw) || other.pw == pw) &&
-            (identical(other.serverUrl, serverUrl) ||
-                other.serverUrl == serverUrl));
-  }
+/// Create a copy of UserCredentials
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$UserCredentialsCopyWith<_UserCredentials> get copyWith => __$UserCredentialsCopyWithImpl<_UserCredentials>(this, _$identity);
 
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(runtimeType, username, pw, serverUrl);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$UserCredentialsImplCopyWith<_$UserCredentialsImpl> get copyWith =>
-      __$$UserCredentialsImplCopyWithImpl<_$UserCredentialsImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$UserCredentialsImplToJson(
-      this,
-    );
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$UserCredentialsToJson(this, );
 }
 
-abstract class _UserCredentials implements UserCredentials {
-  const factory _UserCredentials(
-          {@JsonKey(name: 'Username') required final String username,
-          @JsonKey(name: 'Pw') required final String pw,
-          @JsonKey(includeFromJson: false) required final String serverUrl}) =
-      _$UserCredentialsImpl;
-
-  @override
-  @JsonKey(name: 'Username')
-  String get username;
-  @override
-  @JsonKey(name: 'Pw')
-  String get pw;
-  @override
-  @JsonKey(includeFromJson: false)
-  String get serverUrl;
-  @override
-  @JsonKey(ignore: true)
-  _$$UserCredentialsImplCopyWith<_$UserCredentialsImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserCredentials&&(identical(other.username, username) || other.username == username)&&(identical(other.pw, pw) || other.pw == pw)&&(identical(other.serverUrl, serverUrl) || other.serverUrl == serverUrl));
 }
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,username,pw,serverUrl);
+
+@override
+String toString() {
+  return 'UserCredentials(username: $username, pw: $pw, serverUrl: $serverUrl)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$UserCredentialsCopyWith<$Res> implements $UserCredentialsCopyWith<$Res> {
+  factory _$UserCredentialsCopyWith(_UserCredentials value, $Res Function(_UserCredentials) _then) = __$UserCredentialsCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: 'Username') String username,@JsonKey(name: 'Pw') String pw,@JsonKey(includeFromJson: false) String serverUrl
+});
+
+
+
+
+}
+/// @nodoc
+class __$UserCredentialsCopyWithImpl<$Res>
+    implements _$UserCredentialsCopyWith<$Res> {
+  __$UserCredentialsCopyWithImpl(this._self, this._then);
+
+  final _UserCredentials _self;
+  final $Res Function(_UserCredentials) _then;
+
+/// Create a copy of UserCredentials
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? username = null,Object? pw = null,Object? serverUrl = null,}) {
+  return _then(_UserCredentials(
+username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
+as String,pw: null == pw ? _self.pw : pw // ignore: cast_nullable_to_non_nullable
+as String,serverUrl: null == serverUrl ? _self.serverUrl : serverUrl // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+// dart format on

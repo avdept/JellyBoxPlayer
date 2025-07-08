@@ -4,7 +4,7 @@ part 'artist_dto.freezed.dart';
 part 'artist_dto.g.dart';
 
 @freezed
-class ArtistDTO with _$ArtistDTO {
+abstract class ArtistDTO with _$ArtistDTO {
   const factory ArtistDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'Name') required String name,

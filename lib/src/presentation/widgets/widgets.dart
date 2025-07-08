@@ -13,6 +13,7 @@ export 'play_button.dart';
 export 'play_pause_button.dart';
 export 'player_song_view.dart';
 export 'scrollable_page_scaffold.dart';
+export 'shadowed_button.dart';
 export 'simple_list_tile.dart';
 export 'singer_view.dart';
 export 'song_view.dart';

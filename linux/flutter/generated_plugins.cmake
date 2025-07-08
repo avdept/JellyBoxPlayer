@@ -7,12 +7,13 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_linux
   flutter_udid
   media_kit_libs_linux
-  screen_retriever
+  screen_retriever_linux
   sentry_flutter
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
   media_kit_native_event_loop
 )
 

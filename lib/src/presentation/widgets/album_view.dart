@@ -56,33 +56,35 @@ class AlbumView extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          AspectRatio(
-            aspectRatio: 1,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: libraryImage(ref),
-                    ),
-                  ),
-                ),
-                if (optionsBuilder != null)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: PopupMenuButton<void>(
-                      icon: const Icon(Icons.more_vert),
-                      tooltip: 'More',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black45,
+          Flexible(
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: libraryImage(ref),
                       ),
-                      itemBuilder: optionsBuilder!,
                     ),
                   ),
-              ],
+                  if (optionsBuilder != null)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: PopupMenuButton<void>(
+                        icon: const Icon(Icons.more_vert),
+                        tooltip: 'More',
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black45,
+                        ),
+                        itemBuilder: optionsBuilder!,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           Text(

@@ -4,7 +4,7 @@ import 'package:jplayer/src/data/dto/item/item_dto.dart';
 part 'items_page.freezed.dart';
 
 @freezed
-class ItemsPage with _$ItemsPage {
+abstract class ItemsPage with _$ItemsPage {
   const factory ItemsPage({
     @Default([]) List<ItemDTO> items,
     @Default(0) int currentPage,

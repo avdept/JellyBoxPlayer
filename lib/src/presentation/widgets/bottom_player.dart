@@ -240,8 +240,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           stream: ref.read(playerProvider).sequenceStateStream,
           builder: (context, snapshot) {
             if (snapshot.data?.sequence.isEmpty ?? true) return Container();
-            final currentSong = snapshot.data?.sequence[snapshot.data!.currentIndex].tag as MediaItem?;
-            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const Svg(Images.emptyItem) as ImageProvider;
+            final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
+            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const Svg(SvgPictures.emptyItem) as ImageProvider;
             _imageProvider.value = image;
             return Container(
               height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
