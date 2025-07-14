@@ -8,6 +8,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/providers/download_manager_provider.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -48,28 +49,34 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     if (_device.isDesktop) {
       playlist = await showAdaptiveDialog<ItemDTO>(
         context: context,
-        builder: (context) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: _availablePlaylistsList(),
-        ),
+        builder:
+            (context) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: _availablePlaylistsList(),
+            ),
       );
     } else {
       playlist = await showModalBottomSheet<ItemDTO>(
-          backgroundColor: Colors.grey[800],
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-          ),
-          context: context,
-          useRootNavigator: true,
-          clipBehavior: Clip.antiAlias,
-          builder: (context) => _availablePlaylistsList(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-              ));
+        backgroundColor: Colors.grey[800],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+        ),
+        context: context,
+        useRootNavigator: true,
+        clipBehavior: Clip.antiAlias,
+        builder:
+            (context) => _availablePlaylistsList(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+            ),
+      );
     }
 
     if (playlist != null) {
-      await ref.read(jellyfinApiProvider).addPlaylistItems(
+      await ref
+          .read(jellyfinApiProvider)
+          .addPlaylistItems(
             playlistId: playlist.id,
             userId: ref.read(currentUserProvider)!.userId,
             entryIds: song.id,
@@ -110,8 +117,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   void initState() {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
-    _imageService =
-        ImageService(serverUrl: ref.read(baseUrlProvider.notifier).state!);
+    _imageService = ImageService(
+      serverUrl: ref.read(baseUrlProvider.notifier).state!,
+    );
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (mounted) {
@@ -133,12 +141,12 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
           albumId: widget.album.id,
         )
         .then((value) {
-      setState(() {
-        final items = [...value.data.items]
-          ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
-        songs = items;
-      });
-    });
+          setState(() {
+            final items = [...value.data.items]
+              ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+            songs = items;
+          });
+        });
   }
 
   @override
@@ -149,7 +157,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   ImageProvider get albumCover => _imageService.albumIP(
-      id: widget.album.id, tagId: widget.album.imageTags['Primary']);
+    id: widget.album.id,
+    tagId: widget.album.imageTags['Primary'],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -168,13 +178,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 ),
                 middle: ValueListenableBuilder(
                   valueListenable: _titleOpacity,
-                  builder: (context, opacity, child) => Transform.translate(
-                    offset: Offset(0, 8 - 8 * opacity),
-                    child: Opacity(
-                      opacity: opacity,
-                      child: child,
-                    ),
-                  ),
+                  builder:
+                      (context, opacity, child) => Transform.translate(
+                        offset: Offset(0, 8 - 8 * opacity),
+                        child: Opacity(
+                          opacity: opacity,
+                          child: child,
+                        ),
+                      ),
                   child: Text(
                     widget.album.name,
                     overflow: TextOverflow.clip,
@@ -234,39 +245,44 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         ),
                       ],
                       SliverList.builder(
-                        itemBuilder: (context, index) => ValueListenableBuilder(
-                          valueListenable: _currentSong,
-                          builder: (context, item, other) {
-                            final song = songs[index];
-                            return PlayerSongView(
-                              song: song,
-                              isPlaying: item != null && song.id == item.id,
-                              downloadProgress:
-                                  null, // index == 2 ? 0.8 : null,
-                              onTap: (song) => ref
-                                  .read(playbackProvider.notifier)
-                                  .play(song, songs, widget.album),
-                              position: index + 1,
-                              onLikePressed: (song) async {
-                                final api = ref.read(jellyfinApiProvider);
-                                final callback = song.songUserData.isFavorite
-                                    ? api.removeFavorite
-                                    : api.saveFavorite;
-                                await callback.call(
-                                  userId: ref.read(currentUserProvider)!.userId,
-                                  itemId: song.id,
+                        itemBuilder:
+                            (context, index) => ValueListenableBuilder(
+                              valueListenable: _currentSong,
+                              builder: (context, item, other) {
+                                final song = songs[index];
+                                return PlayerSongView(
+                                  song: song,
+                                  isPlaying: item != null && song.id == item.id,
+                                  onTap:
+                                      (song) => ref
+                                          .read(playbackProvider.notifier)
+                                          .play(song, songs, widget.album),
+                                  position: index + 1,
+                                  onLikePressed: (song) async {
+                                    final api = ref.read(jellyfinApiProvider);
+                                    final callback =
+                                        song.songUserData.isFavorite
+                                            ? api.removeFavorite
+                                            : api.saveFavorite;
+                                    await callback.call(
+                                      userId:
+                                          ref.read(currentUserProvider)!.userId,
+                                      itemId: song.id,
+                                    );
+                                    _getSongs();
+                                  },
+                                  optionsBuilder:
+                                      (context) => [
+                                        PopupMenuItem(
+                                          onTap:
+                                              () =>
+                                                  _onAddToPlaylistPressed(song),
+                                          child: const Text('Add to playlist'),
+                                        ),
+                                      ],
                                 );
-                                _getSongs();
                               },
-                              optionsBuilder: (context) => [
-                                PopupMenuItem(
-                                  onTap: () => _onAddToPlaylistPressed(song),
-                                  child: const Text('Add to playlist'),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                            ),
                         itemCount: songs.length,
                       ),
                     ],
@@ -289,174 +305,196 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   Widget _albumPanelMobile() => IconTheme(
-        data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                widget.album.name,
+                key: _titleKey,
+                style: TextStyle(
+                  fontSize: _device.isMobile ? 18 : 32,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Text(widget.album.albumArtist ?? ''),
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    widget.album.name,
-                    key: _titleKey,
-                    style: TextStyle(
-                      fontSize: _device.isMobile ? 18 : 32,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                    ),
-                  ),
+            _albumDetails(
+              duration: widget.album.duration,
+              soundsCount: songs.length,
+              albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
+              year: widget.album.productionYear,
+              divider: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Offstage(
+                  offstage: _device.isMobile,
+                  child: const Icon(Icons.circle, size: 4),
                 ),
-              ],
+              ),
             ),
-            Text(widget.album.albumArtist ?? ''),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _albumDetails(
-                  duration: widget.album.duration,
-                  soundsCount: songs.length,
-                  albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
-                  year: widget.album.productionYear,
-                  divider: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Offstage(
-                      offstage: _device.isMobile,
-                      child: const Icon(Icons.circle, size: 4),
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // _downloadAlbumButton(),
-                    const RandomQueueButton(),
-                    SizedBox.square(
-                      dimension: _device.isMobile ? 38 : 48,
-                      child: _playAlbumButton(),
-                    ),
-                  ],
+                _downloadAlbumButton(),
+                const RandomQueueButton(),
+                SizedBox.square(
+                  dimension: _device.isMobile ? 38 : 48,
+                  child: _playAlbumButton(),
                 ),
               ],
             ),
           ],
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _albumPanel() => IconTheme(
-        data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          widget.album.name,
-                          key: _titleKey,
-                          style: TextStyle(
-                            fontSize: _device.isMobile ? 18 : 32,
-                            fontWeight: FontWeight.w600,
-                            height: 1.2,
-                          ),
-                        ),
+                  Flexible(
+                    child: Text(
+                      widget.album.name,
+                      key: _titleKey,
+                      style: TextStyle(
+                        fontSize: _device.isMobile ? 18 : 32,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
                       ),
-                    ],
+                    ),
                   ),
-                  // Text(widget.album.albumArtist ?? ''),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 5),
-                    child: Row(
-                      children: widget.album.albumArtists.map((a) {
+                ],
+              ),
+              // Text(widget.album.albumArtist ?? ''),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(
+                  children:
+                      widget.album.albumArtists.map((a) {
                         return ClickableWidget(
                           onPressed: () async {
                             final item = await ref
                                 .read(jellyfinApiProvider)
                                 .getItem(itemId: a.id);
-                            if (!context.mounted) return;
+                            if (!mounted) return;
                             context.go(
                               '${Routes.listen}${Routes.artist}',
                               extra: {'artist': item.data},
                             );
                           },
                           textStyle: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w300),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w300,
+                          ),
                           child: Text(a.name),
                         );
                       }).toList(),
+                ),
+              ),
+              Row(
+                children: [
+                  _albumDetails(
+                    duration: widget.album.duration,
+                    soundsCount: songs.length,
+                    albumArtist:
+                        songs.isNotEmpty ? songs.first.albumArtist : '',
+                    year: widget.album.productionYear,
+                    divider: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Offstage(
+                        offstage: _device.isMobile,
+                        child: const Icon(Icons.circle, size: 4),
+                      ),
                     ),
                   ),
-                  Row(
-                    children: [
-                      _albumDetails(
-                        duration: widget.album.duration,
-                        soundsCount: songs.length,
-                        albumArtist:
-                            songs.isNotEmpty ? songs.first.albumArtist : '',
-                        year: widget.album.productionYear,
-                        divider: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Offstage(
-                            offstage: _device.isMobile,
-                            child: const Icon(Icons.circle, size: 4),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
-            ),
-            SizedBox(width: _device.isDesktop ? 35 : 32),
-            if (_device.isDesktop)
-              Container()
-            // StreamBuilder<PlayerState>(
-            //   stream: ref.read(playerProvider).playerStateStream,
-            //   builder: (context, snapshot) {
-            //     return Expanded(
-            //       child: Row(
-            //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //         children: [
-            //           SizedBox.square(
-            //             dimension: 65,
-            //             child: _playAlbumButton(),
-            //           ),
-            //           _downloadAlbumButton(),
-            //         ],
-            //       ),
-            //     );
-            //   },
-            // )
-            else
-              Wrap(
-                spacing: _device.isMobile ? 6 : 32,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _downloadAlbumButton(),
-                  const RandomQueueButton(),
-                  SizedBox.square(
-                    dimension: _device.isMobile ? 40 : 48,
-                    child: _playAlbumButton(),
-                  ),
-                ],
-              ),
-          ],
+            ],
+          ),
         ),
-      );
+        SizedBox(width: _device.isDesktop ? 35 : 32),
+        if (_device.isDesktop)
+          Container()
+        // StreamBuilder<PlayerState>(
+        //   stream: ref.read(playerProvider).playerStateStream,
+        //   builder: (context, snapshot) {
+        //     return Expanded(
+        //       child: Row(
+        //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //         children: [
+        //           SizedBox.square(
+        //             dimension: 65,
+        //             child: _playAlbumButton(),
+        //           ),
+        //           _downloadAlbumButton(),
+        //         ],
+        //       ),
+        //     );
+        //   },
+        // )
+        else
+          Wrap(
+            spacing: _device.isMobile ? 6 : 32,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _downloadAlbumButton(),
+              const RandomQueueButton(),
+              SizedBox.square(
+                dimension: _device.isMobile ? 40 : 48,
+                child: _playAlbumButton(),
+              ),
+            ],
+          ),
+      ],
+    ),
+  );
 
   Widget _playAlbumButton() => PlayButton(
-        onPressed: () {},
-      );
+    onPressed: () {},
+  );
 
-  Widget _downloadAlbumButton() => IconButton(
-        onPressed: () {},
-        icon: const Icon(JPlayer.download),
-      );
+  Widget _downloadAlbumButton() => FutureBuilder<bool>(
+    future: ref
+        .read(downloadManagerProvider.notifier)
+        .isAlbumDownloaded(widget.album.id),
+    builder:
+        (context, snapshot) => Visibility(
+          visible: snapshot.data ?? false,
+          replacement: IconButton(
+            onPressed:
+                () => ref
+                    .read(downloadManagerProvider.notifier)
+                    .downloadAlbum(widget.album, songs),
+            icon: const Icon(JPlayer.download),
+          ),
+          child: IconButton(
+            onPressed:
+                () => ref
+                    .read(downloadManagerProvider.notifier)
+                    .deleteAlbum(widget.album.id),
+            icon: const Icon(JPlayer.trash_2),
+          ),
+        ),
+  );
 
   Widget _albumDetails({
     required Duration duration,
@@ -467,7 +505,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }) {
     final durationInSeconds = duration.inSeconds;
     final hours = durationInSeconds ~/ Duration.secondsPerHour;
-    final minutes = (durationInSeconds - hours * Duration.secondsPerHour) ~/
+    final minutes =
+        (durationInSeconds - hours * Duration.secondsPerHour) ~/
         Duration.secondsPerMinute;
     final seconds = durationInSeconds % Duration.secondsPerMinute;
 
@@ -563,12 +602,15 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         style: const TextStyle(fontSize: 14),
                       ),
                       onChanged: (ItemDTO? item) {},
-                      items: data.value.items.map<DropdownMenuItem<ItemDTO>>(
-                        (ItemDTO item) {
-                          return DropdownMenuItem<ItemDTO>(
-                              value: item, child: Text(item.name));
-                        },
-                      ).toList(),
+                      items:
+                          data.value.items.map<DropdownMenuItem<ItemDTO>>(
+                            (ItemDTO item) {
+                              return DropdownMenuItem<ItemDTO>(
+                                value: item,
+                                child: Text(item.name),
+                              );
+                            },
+                          ).toList(),
                     ),
                   ),
                   Padding(
@@ -578,8 +620,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       children: [
                         TextButton(
                           style: TextButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
+                            backgroundColor: _theme.colorScheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -590,7 +631,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               formKey.currentState!.save();
                             }
                           },
-                          child: const Text("Add to playlist"),
+                          child: const Text('Add to playlist'),
                         ),
                       ],
                     ),

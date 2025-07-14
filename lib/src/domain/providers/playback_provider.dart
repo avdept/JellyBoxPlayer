@@ -5,9 +5,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/providers/download_database_provider.dart';
+import 'package:jplayer/src/data/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -32,7 +35,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(
     this._ref,
     this._audioPlayer,
-  ) : super(PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, cacheProgress: Duration.zero)) {
+  ) : super(
+        PlaybackState(
+          status: PlaybackStatus.stopped,
+          position: Duration.zero,
+          cacheProgress: Duration.zero,
+        ),
+      ) {
     // Listen for song completion
     _audioPlayer.positionStream.listen((position) {
       state = PlaybackState(
@@ -45,7 +54,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     _audioPlayer.playerStateStream.listen((playerState) {
       if (playerState.processingState == ProcessingState.completed) {
-        state = PlaybackState(status: PlaybackStatus.stopped, position: Duration.zero, cacheProgress: Duration.zero, totalDuration: Duration.zero);
+        state = PlaybackState(
+          status: PlaybackStatus.stopped,
+          position: Duration.zero,
+          cacheProgress: Duration.zero,
+          totalDuration: Duration.zero,
+        );
         _audioPlayer
           ..stop()
           ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
@@ -56,51 +70,122 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final AudioPlayer _audioPlayer;
   final StateNotifierProviderRef<PlaybackNotifier, PlaybackState> _ref;
 
-  Future<void> play(SongDTO playSong, List<SongDTO> songs, ItemDTO album) async {
+  Future<void> play(
+    SongDTO playSong,
+    List<SongDTO> songs,
+    ItemDTO album,
+  ) async {
     try {
       final domainUri = Uri.parse(_ref.read(baseUrlProvider)!);
+      final downloadManager = _ref.read(downloadManagerProvider.notifier);
 
       final playlist = ConcatenatingAudioSource(
-        children: [
-          for (final song in songs)
-            AudioSource.uri(
-              Uri(
-                scheme: domainUri.scheme,
-                host: domainUri.host,
-                port: domainUri.port,
-                path: 'Audio/${song.id}/universal',
-                queryParameters: {
-                  'UserId': _ref.read(currentUserProvider)!.userId,
-                  'api_key': _ref.read(currentUserProvider)!.token,
-                  'DeviceId': '12345',
-                  'TranscodingProtocol': 'http',
-                  'TranscodingContainer': 'm4a',
-                  'AudioCodec': 'm4a',
-                  'Container': 'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
-                },
-              ),
-              tag: MediaItem(
-                id: song.id,
-                album: song.albumId,
-                artist: song.albumArtists?.firstOrNull?.id,
-                duration: Duration(
-                  milliseconds: (song.runTimeTicks / 10000).ceil(),
-                ),
-                title: song.name ?? 'Untitled',
-                displayTitle: song.name,
-                displaySubtitle: song.albumName,
-                displayDescription: song.albumArtist,
-                artUri: song.imageTags['Primary'] != null
-                    ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: song.imageTags['Primary']!, id: song.id))
-                    : album.imageTags['Primary'] != null
-                        ? Uri.parse(_ref.read(imageProvider).imagePath(tagId: album.imageTags['Primary']!, id: album.id))
-                        : null,
-              ),
-            ),
-        ],
+        children: await Future.wait(
+          songs.map((song) async {
+            // Check if song is downloaded*
+            final isDownloaded = await downloadManager.isSongDownloaded(
+              song.id,
+            );
+            final downloadedPath =
+                isDownloaded
+                    ? await _ref
+                        .read(downloadDatabaseProvider)
+                        .getDownloadedSongPath(song.id)
+                    : null;
+
+            // If downloaded, use local file, otherwise stream from server*
+            final audioSource =
+                downloadedPath != null
+                    ? AudioSource.uri(
+                      Uri.file(downloadedPath),
+                      tag: MediaItem(
+                        id: song.id,
+                        album: song.albumName,
+                        artist: album.albumArtist,
+                        duration: Duration(
+                          milliseconds: (song.runTimeTicks / 10000).ceil(),
+                        ),
+                        title: song.name ?? 'Untitled',
+                        artUri:
+                            song.imageTags['Primary'] != null
+                                ? Uri.parse(
+                                  _ref
+                                      .read(imageServiceProvider)
+                                      .imagePath(
+                                        tagId: song.imageTags['Primary']!,
+                                        id: song.id,
+                                      ),
+                                )
+                                : album.imageTags['Primary'] != null
+                                ? Uri.parse(
+                                  _ref
+                                      .read(imageServiceProvider)
+                                      .imagePath(
+                                        tagId: album.imageTags['Primary']!,
+                                        id: album.id,
+                                      ),
+                                )
+                                : null,
+                      ),
+                    )
+                    : AudioSource.uri(
+                      Uri(
+                        scheme: domainUri.scheme,
+                        host: domainUri.host,
+                        port: domainUri.port,
+                        path: 'Audio/${song.id}/universal',
+                        queryParameters: {
+                          'UserId': _ref.read(currentUserProvider)!.userId,
+                          'api_key': _ref.read(currentUserProvider)!.token,
+                          'DeviceId': '12345',
+                          'TranscodingProtocol': 'http',
+                          'TranscodingContainer': 'm4a',
+                          'AudioCodec': 'm4a',
+                          'Container':
+                              'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
+                        },
+                      ),
+                      tag: MediaItem(
+                        id: song.id,
+                        album: song.albumName,
+                        artist: album.albumArtist,
+                        duration: Duration(
+                          milliseconds: (song.runTimeTicks / 10000).ceil(),
+                        ),
+                        title: song.name ?? 'Untitled',
+                        artUri:
+                            song.imageTags['Primary'] != null
+                                ? Uri.parse(
+                                  _ref
+                                      .read(imageServiceProvider)
+                                      .imagePath(
+                                        tagId: song.imageTags['Primary']!,
+                                        id: song.id,
+                                      ),
+                                )
+                                : album.imageTags['Primary'] != null
+                                ? Uri.parse(
+                                  _ref
+                                      .read(imageServiceProvider)
+                                      .imagePath(
+                                        tagId: album.imageTags['Primary']!,
+                                        id: album.id,
+                                      ),
+                                )
+                                : null,
+                      ),
+                    );
+
+            return audioSource;
+          }),
+        ),
       );
 
-      await _audioPlayer.setAudioSource(playlist, initialIndex: songs.indexOf(playSong), preload: false);
+      await _audioPlayer.setAudioSource(
+        playlist,
+        initialIndex: songs.indexOf(playSong),
+        preload: false,
+      );
       unawaited(_audioPlayer.play());
       state = PlaybackState(
         status: PlaybackStatus.playing,
@@ -110,16 +195,22 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
     } catch (e) {
       if (e.toString().indexOf('setPitch') > 0) {
-        // This is hack to avoid playback state being error on ios. This error always throws
-        return;
+        // This is hack to avoid playback state being error on ios*`
+
+        state = PlaybackState(
+          status: PlaybackStatus.playing,
+          position: Duration.zero,
+          totalDuration: _audioPlayer.duration,
+          cacheProgress: state.cacheProgress,
+        );
+      } else {
+        state = PlaybackState(
+          status: PlaybackStatus.error,
+          position: state.position,
+          totalDuration: state.totalDuration,
+          cacheProgress: state.cacheProgress,
+        );
       }
-      print(e);
-      state = PlaybackState(
-        status: PlaybackStatus.error,
-        position: Duration.zero,
-        cacheProgress: state.cacheProgress,
-      );
-      // Handle the error as needed
     }
   }
 
@@ -152,11 +243,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> resume() async {
-    if ((state.status == PlaybackStatus.stopped) && state.totalDuration?.inSeconds == 0) {
+    if ((state.status == PlaybackStatus.stopped) &&
+        state.totalDuration?.inSeconds == 0) {
       final queue = _ref.read(audioQueueProvider.notifier);
       // Case when song has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
       if (queue.state.songs.isNotEmpty) {
-        await play(queue.state.songs.first, queue.state.songs, queue.state.album!);
+        await play(
+          queue.state.songs.first,
+          queue.state.songs,
+          queue.state.album!,
+        );
       }
 
       return;
@@ -214,12 +310,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     if (currentSong == null) return;
 
-    final currentIndex = songs.indexOf(songs.firstWhere((element) => element == currentSong));
+    final currentIndex = songs.indexOf(
+      songs.firstWhere((element) => element == currentSong),
+    );
     if (currentIndex != -1 && currentIndex + 1 < songs.length) {
       // There's a next song in the queue
       final nextSong = songs[currentIndex + 1];
       _ref.read(audioQueueProvider.notifier).setCurrentSong(nextSong);
-      unawaited(play(nextSong, songs, queueState.album!)); // Start playing the next song
+      unawaited(
+        play(nextSong, songs, queueState.album!),
+      ); // Start playing the next song
     } else {
       await _ref.read(playerProvider).stop();
       state = PlaybackState(
@@ -240,4 +340,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 }
 
-final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>((ref) => PlaybackNotifier(ref, ref.read(playerProvider)));
+final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
+  (ref) => PlaybackNotifier(ref, ref.read(playerProvider)),
+);

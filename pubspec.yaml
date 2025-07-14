@@ -15,13 +15,13 @@ dependencies:
   collection: any
   animations: ^2.0.11
   bitsdojo_window: ^0.1.6
-  window_manager: ^0.5.0
+  window_manager: ^0.5.1
   cupertino_icons: ^1.0.8
   flutter_udid: ^4.0.0
   dropdown_button2: ^2.3.9
   flutter_svg: ^2.2.0
   flutter_svg_provider: ^1.0.7
-  sentry_flutter: ^9.3.0
+  sentry_flutter: ^9.4.0
   freezed_annotation: ^3.1.0
   mediakeys_proxy:
     path: ./mediakeys_proxy
@@ -47,10 +47,13 @@ dependencies:
   flutter_riverpod: ^2.6.1
   pretty_dio_logger: ^1.4.0
   flutter_secure_storage: ^9.2.4
-  retrofit: ^4.5.0
+  retrofit: ^4.6.0
   dio: ^5.8.0+1
   string_capitalize: ^0.0.10
   sliver_tools: ^0.2.12
+  path_provider: ^2.1.5
+  sqflite: ^2.4.2
+  path: ^1.9.1
 
 
 dev_dependencies:

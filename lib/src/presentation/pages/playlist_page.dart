@@ -198,8 +198,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                             return PlayerSongView(
                               song: song,
                               isPlaying: item != null && song.id == item.id,
-                              downloadProgress:
-                                  null, // index == 2 ? 0.8 : null,
                               onTap: (song) => ref
                                   .read(playbackProvider.notifier)
                                   .play(song, songs, widget.playlist),
@@ -241,7 +239,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                         ),
                                       );
                                       _getSongs();
-                                      if (mounted) {
+                                      if (context.mounted) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(snackBar);
                                       }
