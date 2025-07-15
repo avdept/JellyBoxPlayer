@@ -46,8 +46,7 @@ class DownloadService {
     return task;
   }
 
-  Future<List<DownloadTask>> downloadAlbum(
-    ItemDTO album,
+  Future<List<DownloadTask>> downloadSongs(
     List<SongDTO> songs,
     String serverUrl,
     String token,

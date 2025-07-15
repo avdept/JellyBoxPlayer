@@ -12,33 +12,23 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
-class DownloadManagerNotifier
-    extends StateNotifier<AsyncValue<List<DownloadedItemDTO>>> {
-  DownloadManagerNotifier(this._downloadService, this._database, this._ref)
-    : super(const AsyncValue.loading()) {
-    _loadDownloadedSongs();
-  }
-  final DownloadService _downloadService;
-  final DownloadDatabase _database;
-  final StateNotifierProviderRef<
-    DownloadManagerNotifier,
-    AsyncValue<List<DownloadedItemDTO>>
-  >
-  _ref;
+class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedItemDTO>> {
+  DownloadManagerNotifier();
+  late DownloadService _downloadService;
+  late DownloadDatabase _database;
 
-  Future<void> _loadDownloadedSongs() async {
-    try {
-      final songs = await _database.getDownloadedSongs();
-      state = AsyncValue.data(songs);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+  @override
+  FutureOr<List<DownloadedItemDTO>> build() async {
+    _downloadService = ref.watch(downloadServiceProvider);
+    _database = ref.watch(downloadDatabaseProvider);
+    state = const AsyncValue.loading();
+    return _database.getDownloadedSongs();
   }
 
   Future<void> downloadSong(SongDTO song) async {
     // Get server URL and token
-    final serverUrl = _ref.read(baseUrlProvider)!;
-    final token = _ref.read(currentUserProvider)!.token;
+    final serverUrl = ref.read(baseUrlProvider)!;
+    final token = ref.read(currentUserProvider)!.token;
 
     try {
       // Start download
@@ -60,7 +50,7 @@ class DownloadManagerNotifier
         await _database.insertDownloadedSong(downloadedItem);
 
         // Refresh state
-        await _loadDownloadedSongs();
+        ref.invalidateSelf();
       }
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -69,13 +59,12 @@ class DownloadManagerNotifier
 
   Future<void> downloadAlbum(ItemDTO album, List<SongDTO> songs) async {
     // Get server URL and token
-    final serverUrl = _ref.read(baseUrlProvider)!;
-    final token = _ref.read(currentUserProvider)!.token;
+    final serverUrl = ref.read(baseUrlProvider)!;
+    final token = ref.read(currentUserProvider)!.token;
 
     try {
       // Start downloads
-      final tasks = await _downloadService.downloadAlbum(
-        album,
+      final tasks = await _downloadService.downloadSongs(
         songs,
         serverUrl,
         token,
@@ -110,7 +99,7 @@ class DownloadManagerNotifier
       }
 
       // Refresh state
-      await _loadDownloadedSongs();
+      ref.invalidateSelf();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
@@ -120,9 +109,13 @@ class DownloadManagerNotifier
     final completer = Completer<void>();
 
     void listener() {
-      if (task.status.value == DownloadStatus.completed ||
-          task.status.value == DownloadStatus.failed ||
-          task.status.value == DownloadStatus.canceled) {
+      const completedStatuses = {
+        DownloadStatus.completed,
+        DownloadStatus.failed,
+        DownloadStatus.canceled,
+      };
+
+      if (completedStatuses.contains(task.status.value)) {
         task.status.removeListener(listener);
         completer.complete();
       }
@@ -149,7 +142,7 @@ class DownloadManagerNotifier
         await _database.deleteDownloadedSong(id);
 
         // Refresh state
-        await _loadDownloadedSongs();
+        ref.invalidateSelf();
       }
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -171,7 +164,7 @@ class DownloadManagerNotifier
       await _database.deleteDownloadedAlbum(albumId);
 
       // Refresh state
-      await _loadDownloadedSongs();
+      ref.invalidateSelf();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
@@ -186,13 +179,7 @@ class DownloadManagerNotifier
       _database.getDownloadedAlbums();
 }
 
-final downloadManagerProvider = StateNotifierProvider<
-  DownloadManagerNotifier,
-  AsyncValue<List<DownloadedItemDTO>>
->((ref) {
-  return DownloadManagerNotifier(
-    ref.watch(downloadServiceProvider),
-    ref.watch(downloadDatabaseProvider),
-    ref,
-  );
-});
+final downloadManagerProvider =
+    AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedItemDTO>>(
+      DownloadManagerNotifier.new,
+    );

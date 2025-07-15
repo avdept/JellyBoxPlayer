@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
@@ -38,28 +38,22 @@ class DownloadsPage extends StatelessWidget {
               ),
               SizedBox(width: device.isMobile ? 12 : 24),
               Consumer(
-                builder:
-                    (context, ref, child) =>
-                        FutureBuilder<List<DownloadedAlbumDTO>>(
-                          future:
-                              ref
-                                  .watch(downloadManagerProvider.notifier)
-                                  .getDownloadedAlbums(),
-                          builder: (context, snapshot) {
-                            final albumCount = snapshot.data?.length ?? 0;
-                            return Text(
-                              Intl.plural(
-                                albumCount,
-                                one: '$albumCount album',
-                                other: '$albumCount albums',
-                              ),
-                              style: TextStyle(
-                                fontSize: device.isMobile ? 12 : 16,
-                                height: 1.2,
-                              ),
-                            );
-                          },
-                        ),
+                builder: (context, ref, child) {
+                  final albumCount =
+                      ref.watch(downloadedAlbumsProvider).valueOrNull?.length ??
+                      0;
+                  return Text(
+                    Intl.plural(
+                      albumCount,
+                      one: '$albumCount album',
+                      other: '$albumCount albums',
+                    ),
+                    style: TextStyle(
+                      fontSize: device.isMobile ? 12 : 16,
+                      height: 1.2,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -77,61 +71,57 @@ class DownloadsPage extends StatelessWidget {
           ),
           sliver: Consumer(
             builder: (context, ref, child) {
-              return FutureBuilder<List<DownloadedAlbumDTO>>(
-                future:
-                    ref
-                        .watch(downloadManagerProvider.notifier)
-                        .getDownloadedAlbums(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
+              return ref
+                  .watch(downloadedAlbumsProvider)
+                  .when(
+                    data: (albums) {
+                      if (albums.isEmpty) {
+                        return const SliverToBoxAdapter(
+                          child: Center(
+                            child: Text('No downloaded albums yet'),
+                          ),
+                        );
+                      }
 
-                  if (snapshot.hasError) {
-                    return SliverToBoxAdapter(
-                      child: Center(child: Text('Error: ${snapshot.error}')),
-                    );
-                  }
-
-                  final albums = snapshot.data ?? [];
-
-                  if (albums.isEmpty) {
-                    return const SliverToBoxAdapter(
-                      child: Center(child: Text('No downloaded albums yet')),
-                    );
-                  }
-
-                  return SliverGrid.builder(
-                    gridDelegate:
-                        device.isDesktop
-                            ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 245,
-                              mainAxisSpacing: 24,
-                              crossAxisSpacing: 30,
-                              childAspectRatio: 245 / 297.3,
-                            )
-                            : SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 1,
-                              mainAxisSpacing: device.isMobile ? 12 : 24,
-                              mainAxisExtent: device.isMobile ? 48 : 70,
-                            ),
-                    itemBuilder: (context, index) {
-                      final album = albums[index];
-                      return DownloadedAlbumView(
-                        album,
-                        onTap: () => _onAlbumTap(context, album.id),
-                        onDeletePressed:
-                            () => ref
-                                .read(downloadManagerProvider.notifier)
-                                .deleteAlbum(album.id),
+                      return SliverGrid.builder(
+                        gridDelegate:
+                            device.isDesktop
+                                ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 245,
+                                  mainAxisSpacing: 24,
+                                  crossAxisSpacing: 30,
+                                  childAspectRatio: 245 / 297.3,
+                                )
+                                : SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 1,
+                                  mainAxisSpacing: device.isMobile ? 12 : 24,
+                                  mainAxisExtent: device.isMobile ? 48 : 70,
+                                ),
+                        itemBuilder: (context, index) {
+                          final album = albums[index];
+                          return DownloadedAlbumView(
+                            album,
+                            onTap: () => _onAlbumTap(context, album.id),
+                            onDeletePressed:
+                                () => ref
+                                    .read(downloadManagerProvider.notifier)
+                                    .deleteAlbum(album.id),
+                          );
+                        },
+                        itemCount: albums.length,
                       );
                     },
-                    itemCount: albums.length,
+                    error: (error, stackTrace) {
+                      return SliverToBoxAdapter(
+                        child: Center(child: Text('Error: $error')),
+                      );
+                    },
+                    loading: () {
+                      return const SliverToBoxAdapter(
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    },
                   );
-                },
-              );
             },
           ),
         ),

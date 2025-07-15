@@ -30,6 +30,6 @@ class SearchPlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
   }
 }
 
-final searchAlbumProvider = StateNotifierProvider<SearchPlaylistsNotifier, AsyncData<ItemsPage>>((ref) {
+final searchPlaylistsProvider = StateNotifierProvider<SearchPlaylistsNotifier, AsyncData<ItemsPage>>((ref) {
   return SearchPlaylistsNotifier(ref, ref.read(searchProvider), const AsyncData<ItemsPage>(ItemsPage()));
 });

@@ -23,6 +23,11 @@ abstract class DownloadTask with _$DownloadTask {
   @override
   final ValueNotifier<double> progress = ValueNotifier(0);
 
+  bool get isDownloadingNow => const {
+    DownloadStatus.downloading,
+    DownloadStatus.paused,
+  }.contains(status.value);
+
   void dispose() {
     status.dispose();
     progress.dispose();

@@ -1,9 +1,8 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
-import 'package:jplayer/src/data/providers/download_manager_provider.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -44,6 +43,8 @@ class PlayerSongView extends ConsumerWidget {
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
+    final isDownloaded = ref.watch(isSongDownloadedProvider(song)).valueOrNull;
+    final currentTask = ref.read(downloadServiceProvider).getTask(song.id);
 
     return SimpleListTile(
       onTap: (onTap != null) ? () => onTap!.call(song) : null,
@@ -82,7 +83,23 @@ class PlayerSongView extends ConsumerWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(formattedDuration),
-          songDownloadProgress(ref, song.id),
+          if (isDownloaded ?? false)
+            const Icon(Icons.check_circle, color: Colors.green)
+          else if (currentTask?.isDownloadingNow ?? false)
+            SizedBox.square(
+              dimension: 30,
+              child: ValueListenableBuilder<double>(
+                valueListenable: currentTask!.progress,
+                builder: (context, progress, _) {
+                  return CircularProgressIndicator(
+                    value: progress,
+                    color: const Color(0xFF0066FF),
+                    backgroundColor: theme.colorScheme.onPrimary,
+                    strokeWidth: 2,
+                  );
+                },
+              ),
+            ),
           if (isDesktop)
             IconButton(
               onPressed:
@@ -107,42 +124,6 @@ class PlayerSongView extends ConsumerWidget {
             ),
         ],
       ),
-    );
-  }
-
-  Widget songDownloadProgress(WidgetRef ref, String songId) {
-    return FutureBuilder<bool>(
-      future: ref
-          .read(downloadManagerProvider.notifier)
-          .isSongDownloaded(songId),
-      builder: (context, snapshot) {
-        final theme = Theme.of(context);
-        final isDownloaded = snapshot.data ?? false;
-
-        if (isDownloaded) {
-          return const Icon(Icons.check_circle, color: Colors.green);
-        } else {
-          final downloadTasks = ref.read(downloadServiceProvider).getAllTasks();
-          final currentTask = downloadTasks.firstWhereOrNull(
-            (task) => task.id == songId,
-          );
-
-          if (currentTask == null) return const SizedBox.shrink();
-
-          return SizedBox.square(
-            dimension: 30,
-            child: ValueListenableBuilder<double>(
-              valueListenable: currentTask.progress,
-              builder: (context, progress, _) => CircularProgressIndicator(
-                value: progress,
-                color: const Color(0xFF0066FF),
-                backgroundColor: theme.colorScheme.onPrimary,
-                strokeWidth: 2,
-              ),
-            ),
-          );
-        }
-      },
     );
   }
 }

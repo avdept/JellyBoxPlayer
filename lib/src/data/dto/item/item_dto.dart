@@ -6,7 +6,6 @@ part 'item_dto.g.dart';
 
 @freezed
 abstract class ItemDTO with _$ItemDTO {
-
   const factory ItemDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'Name') required String name,
@@ -20,6 +19,7 @@ abstract class ItemDTO with _$ItemDTO {
     @Default([]) @JsonKey(name: 'BackdropImageTags') List<String> backgropImageTags,
     @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
   }) = _ItemDTO;
+
   const ItemDTO._();
 
   factory ItemDTO.fromJson(Map<String, dynamic> json) => _$ItemDTOFromJson(json);

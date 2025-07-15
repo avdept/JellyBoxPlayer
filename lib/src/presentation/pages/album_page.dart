@@ -11,9 +11,7 @@ import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/download_manager_provider.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
-import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
@@ -37,6 +35,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<SongDTO> songs = [];
+  var _isLoading = false;
 
   late final ImageService _imageService;
 
@@ -472,28 +471,31 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     onPressed: () {},
   );
 
-  Widget _downloadAlbumButton() => FutureBuilder<bool>(
-    future: ref
-        .read(downloadManagerProvider.notifier)
-        .isAlbumDownloaded(widget.album.id),
-    builder:
-        (context, snapshot) => Visibility(
-          visible: snapshot.data ?? false,
-          replacement: IconButton(
-            onPressed:
-                () => ref
-                    .read(downloadManagerProvider.notifier)
-                    .downloadAlbum(widget.album, songs),
-            icon: const Icon(JPlayer.download),
-          ),
-          child: IconButton(
-            onPressed:
-                () => ref
-                    .read(downloadManagerProvider.notifier)
-                    .deleteAlbum(widget.album.id),
-            icon: const Icon(JPlayer.trash_2),
-          ),
+  Widget _downloadAlbumButton() => Consumer(
+    builder: (context, ref, child) {
+      final isDownloaded =
+          ref.watch(isAlbumDownloadedProvider(widget.album)).valueOrNull;
+      if (isDownloaded == null) return const SizedBox.shrink();
+      return IgnorePointer(
+        ignoring: _isLoading,
+        child: IconButton(
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            await switch (isDownloaded) {
+              true => ref
+                  .read(downloadManagerProvider.notifier)
+                  .deleteAlbum(widget.album.id),
+              false => ref
+                  .read(downloadManagerProvider.notifier)
+                  .downloadAlbum(widget.album, songs),
+            };
+            _isLoading = false;
+            if (mounted) setState(() {});
+          },
+          icon: Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
         ),
+      );
+    },
   );
 
   Widget _albumDetails({
