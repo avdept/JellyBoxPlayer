@@ -12,13 +12,13 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
-class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedItemDTO>> {
+class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
   DownloadManagerNotifier();
   late DownloadService _downloadService;
   late DownloadDatabase _database;
 
   @override
-  FutureOr<List<DownloadedItemDTO>> build() async {
+  FutureOr<List<DownloadedSongDTO>> build() async {
     _downloadService = ref.watch(downloadServiceProvider);
     _database = ref.watch(downloadDatabaseProvider);
     state = const AsyncValue.loading();
@@ -42,7 +42,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedItemDTO>> {
         final file = File(task.destination);
         final fileSize = await file.length();
 
-        final downloadedItem = DownloadedItemDTO.fromSong(
+        final downloadedItem = DownloadedSongDTO.fromSong(
           song,
           filePath: task.destination,
           sizeInBytes: fileSize,
@@ -78,16 +78,17 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedItemDTO>> {
       for (final task in tasks) {
         if (task.status.value == DownloadStatus.completed) {
           final file = File(task.destination);
-          totalSize += await file.length();
+          final fileSize = await file.length();
+          totalSize += fileSize;
 
           // Find the corresponding song
           final song = songs.firstWhere((s) => s.id == task.id);
 
           // Add to database
-          final downloadedItem = DownloadedItemDTO.fromSong(
+          final downloadedItem = DownloadedSongDTO.fromSong(
             song,
             filePath: task.destination,
-            sizeInBytes: await file.length(),
+            sizeInBytes: fileSize,
           );
           await _database.insertDownloadedSong(downloadedItem);
         }
@@ -95,7 +96,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedItemDTO>> {
 
       // Add album to database
       if (totalSize > 0) {
-        await _database.insertDownloadedAlbum(album, totalSize);
+        await _database.insertDownloadedAlbum(
+          DownloadedAlbumDTO.fromAlbum(album, sizeInBytes: totalSize),
+        );
       }
 
       // Refresh state
@@ -180,6 +183,6 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedItemDTO>> {
 }
 
 final downloadManagerProvider =
-    AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedItemDTO>>(
+    AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedSongDTO>>(
       DownloadManagerNotifier.new,
     );

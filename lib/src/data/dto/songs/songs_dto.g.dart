@@ -69,3 +69,53 @@ Map<String, dynamic> _$SongUserDataToJson(_SongUserData instance) =>
       'IsFavorite': instance.isFavorite,
       'Played': instance.played,
     };
+
+_DownloadedSongDTO _$DownloadedSongDTOFromJson(Map<String, dynamic> json) =>
+    _DownloadedSongDTO(
+      id: json['Id'] as String,
+      runTimeTicks: (json['RunTimeTicks'] as num).toInt(),
+      indexNumber: (json['IndexNumber'] as num?)?.toInt() ?? 0,
+      songUserData: const SongUserDataConverter().fromJson(
+        json['UserData'] as String,
+      ),
+      type: json['Type'] as String,
+      albumArtist: json['AlbumArtist'] as String?,
+      playlistItemId: json['PlaylistItemId'] as String?,
+      albumName: json['Album'] as String?,
+      albumId: json['AlbumId'] as String?,
+      name: json['Name'] as String?,
+      imageTags:
+          json['ImageTags'] == null
+              ? const {}
+              : const TagsMapConverter().fromJson(json['ImageTags'] as String),
+      downloadDate: _$JsonConverterFromJson<int, DateTime>(
+        json['DownloadDate'],
+        const EpochDateTimeConverter().fromJson,
+      ),
+      filePath: json['FilePath'] as String,
+      sizeInBytes: (json['SizeInBytes'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$DownloadedSongDTOToJson(
+  _DownloadedSongDTO instance,
+) => <String, dynamic>{
+  'Id': instance.id,
+  'RunTimeTicks': instance.runTimeTicks,
+  'IndexNumber': instance.indexNumber,
+  'Type': instance.type,
+  'AlbumArtist': instance.albumArtist,
+  'PlaylistItemId': instance.playlistItemId,
+  'Album': instance.albumName,
+  'AlbumId': instance.albumId,
+  'Name': instance.name,
+  'UserData': const SongUserDataConverter().toJson(instance.songUserData),
+  'ImageTags': const TagsMapConverter().toJson(instance.imageTags),
+  'DownloadDate': const EpochDateTimeConverter().toJson(instance.downloadDate),
+  'FilePath': instance.filePath,
+  'SizeInBytes': instance.sizeInBytes,
+};
+
+Value? _$JsonConverterFromJson<Json, Value>(
+  Object? json,
+  Value? Function(Json json) fromJson,
+) => json == null ? null : fromJson(json as Json);

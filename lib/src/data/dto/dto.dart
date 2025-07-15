@@ -1,6 +1,4 @@
 export 'artist/artist_dto.dart';
-export 'downloaded_album/downloaded_album_dto.dart';
-export 'downloaded_item/downloaded_item_dto.dart';
 export 'item/item_dto.dart';
 export 'library/library_dto.dart';
 export 'songs/songs_dto.dart';

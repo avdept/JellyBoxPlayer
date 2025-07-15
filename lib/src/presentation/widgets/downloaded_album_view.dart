@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/dto/downloaded_album/downloaded_album_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';

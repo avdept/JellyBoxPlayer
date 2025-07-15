@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -11,9 +12,9 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 class DownloadsPage extends StatelessWidget {
   const DownloadsPage({super.key});
 
-  void _onAlbumTap(BuildContext context, String albumId) {
+  void _onAlbumTap(BuildContext context, ItemDTO album) {
     final location = GoRouterState.of(context).fullPath;
-    context.go('$location${Routes.album}', extra: {'albumId': albumId});
+    context.go('$location${Routes.album}', extra: {'album': album});
   }
 
   @override
@@ -101,7 +102,7 @@ class DownloadsPage extends StatelessWidget {
                           final album = albums[index];
                           return DownloadedAlbumView(
                             album,
-                            onTap: () => _onAlbumTap(context, album.id),
+                            onTap: () => _onAlbumTap(context, album),
                             onDeletePressed:
                                 () => ref
                                     .read(downloadManagerProvider.notifier)

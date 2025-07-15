@@ -114,7 +114,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               alignment: Alignment.topCenter,
               clipBehavior: Clip.none,
               children: [
-                if (widget.artist.backgropImageTags.isNotEmpty)
+                if (widget.artist.backdropImageTags.isNotEmpty)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -191,7 +191,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           alignment: Alignment.topCenter,
           clipBehavior: Clip.none,
           children: [
-            if (widget.artist.backgropImageTags.isNotEmpty)
+            if (widget.artist.backdropImageTags.isNotEmpty)
               Positioned(
                 left: 0,
                 right: 0,
@@ -282,7 +282,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         decoration: BoxDecoration(
           image: DecorationImage(
             image: ref.read(imageServiceProvider).backdropIp(
-                  tagId: widget.artist.backgropImageTags.firstOrNull,
+                  tagId: widget.artist.backdropImageTags.firstOrNull,
                   id: widget.artist.id,
                 ),
             fit: BoxFit.fitWidth,

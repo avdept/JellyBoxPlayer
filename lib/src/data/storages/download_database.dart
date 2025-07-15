@@ -25,100 +25,81 @@ class DownloadDatabase {
   Future<void> _createDB(Database db, int version) async {
     await Future.wait([
       db.execute('''
-        CREATE TABLE downloads (
-          id TEXT PRIMARY KEY,
-          name TEXT,
-          albumId TEXT,
-          albumName TEXT,
-          artistName TEXT,
-          downloadDate INTEGER NOT NULL,
-          filePath TEXT NOT NULL,
-          sizeInBytes INTEGER NOT NULL
+        CREATE TABLE Downloads (
+          Id TEXT PRIMARY KEY,
+          RunTimeTicks INTEGER NOT NULL,
+          IndexNumber INTEGER NOT NULL,
+          Type TEXT NOT NULL,
+          AlbumArtist TEXT,
+          PlaylistItemId TEXT,
+          Album TEXT,
+          AlbumId TEXT,
+          Name TEXT,
+          UserData TEXT NOT NULL,
+          ImageTags TEXT,
+          DownloadDate INTEGER NOT NULL,
+          FilePath TEXT NOT NULL,
+          SizeInBytes INTEGER NOT NULL
         )
       '''),
       db.execute('''
-        CREATE TABLE albums (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          artistName TEXT,
-          imageTags TEXT,
-          downloadDate INTEGER NOT NULL,
-          sizeInBytes INTEGER NOT NULL
+        CREATE TABLE Albums (
+          Id TEXT PRIMARY KEY,
+          Name TEXT NOT NULL,
+          ServerId TEXT NOT NULL,
+          Type TEXT NOT NULL,
+          Overview TEXT,
+          RunTimeTicks INTEGER,
+          ProductionYear INTEGER,
+          AlbumArtist TEXT,
+          ImageTags TEXT,
+          BackdropImageTags TEXT,
+          DownloadDate INTEGER NOT NULL,
+          SizeInBytes INTEGER NOT NULL
         )
       '''),
     ]);
   }
 
-  Future<int> insertDownloadedSong(DownloadedItemDTO item) async {
+  Future<int> insertDownloadedSong(DownloadedSongDTO song) async {
     final db = await database;
-    return db.insert('downloads', item.toJson());
+    return db.insert('Downloads', song.toJson());
   }
 
-  Future<int> insertDownloadedAlbum(ItemDTO album, int sizeInBytes) async {
+  Future<int> insertDownloadedAlbum(DownloadedAlbumDTO album) async {
     final db = await database;
-    return db.insert('albums', {
-      'id': album.id,
-      'name': album.name,
-      'artistName': album.albumArtist,
-      'imageTags': album.imageTags.entries
-          .map((tag) => '${tag.key}:${tag.value}')
-          .join(','),
-      'downloadDate': DateTime.now().millisecondsSinceEpoch,
-      'sizeInBytes': sizeInBytes,
-    });
+    return db.insert('Albums', album.toJson());
   }
 
-  Future<List<DownloadedItemDTO>> getDownloadedSongs() async {
+  Future<List<DownloadedSongDTO>> getDownloadedSongs() async {
     final db = await database;
-    final results = await db.query('downloads');
-    return results.map(DownloadedItemDTO.fromJson).toList();
+    final results = await db.query('Downloads');
+    return results.map(DownloadedSongDTO.fromJson).toList();
   }
 
-  Future<List<DownloadedItemDTO>> getDownloadedSongsByAlbum(
+  Future<List<DownloadedSongDTO>> getDownloadedSongsByAlbum(
     String albumId,
   ) async {
     final db = await database;
     final results = await db.query(
-      'downloads',
-      where: 'albumId = ?',
+      'Downloads',
+      where: 'AlbumId = ?',
       whereArgs: [albumId],
     );
-    return results.map(DownloadedItemDTO.fromJson).toList();
+    return results.map(DownloadedSongDTO.fromJson).toList();
   }
 
   Future<List<DownloadedAlbumDTO>> getDownloadedAlbums() async {
     final db = await database;
-    final results = await db.query('albums');
-    return List.from(
-      results.map(
-        (json) => DownloadedAlbumDTO(
-          id: json['id']! as String,
-          name: json['name']! as String,
-          artistName: json['artistName'] as String?,
-          imageTags: (json['imageTags']! as String)
-              .split(',')
-              .fold<Map<String, String>>(
-                {},
-                (map, tag) {
-                  final parts = tag.split(':');
-                  map[parts[0]] = parts[1];
-                  return map;
-                },
-              ),
-          downloadDate: DateTime.fromMillisecondsSinceEpoch(
-            json['downloadDate']! as int,
-          ),
-          sizeInBytes: json['sizeInBytes']! as int,
-        ),
-      ),
-    );
+    final results = await db.query('Albums');
+    return results.map(DownloadedAlbumDTO.fromJson).toList();
   }
 
   Future<int> deleteDownloadedSong(String id) async {
     final db = await database;
     return db.delete(
-      'downloads',
-      where: 'id = ?',
+      'Downloads',
+      where: 'Id = ?',
       whereArgs: [id],
     );
   }
@@ -129,14 +110,14 @@ class DownloadDatabase {
         db.batch()
           // Delete the album entry
           ..delete(
-            'albums',
-            where: 'id = ?',
+            'Albums',
+            where: 'Id = ?',
             whereArgs: [albumId],
           )
           // Delete all songs from this album
           ..delete(
-            'downloads',
-            where: 'albumId = ?',
+            'Downloads',
+            where: 'AlbumId = ?',
             whereArgs: [albumId],
           );
 
@@ -146,7 +127,7 @@ class DownloadDatabase {
   Future<bool> isSongDownloaded(String id) async {
     final db = await database;
     final count = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM downloads WHERE id = ?', [id]),
+      await db.rawQuery('SELECT COUNT(*) FROM Downloads WHERE Id = ?', [id]),
     );
     return count! > 0;
   }
@@ -154,7 +135,7 @@ class DownloadDatabase {
   Future<bool> isAlbumDownloaded(String albumId) async {
     final db = await database;
     final count = Sqflite.firstIntValue(
-      await db.rawQuery('SELECT COUNT(*) FROM albums WHERE id = ?', [albumId]),
+      await db.rawQuery('SELECT COUNT(*) FROM Albums WHERE Id = ?', [albumId]),
     );
     return count! > 0;
   }
@@ -162,13 +143,13 @@ class DownloadDatabase {
   Future<String?> getDownloadedSongPath(String id) async {
     final db = await database;
     final results = await db.query(
-      'downloads',
-      columns: ['filePath'],
-      where: 'id = ?',
+      'Downloads',
+      columns: ['FilePath'],
+      where: 'Id = ?',
       whereArgs: [id],
     );
 
-    return results.firstOrNull?['filePath'] as String?;
+    return results.firstOrNull?['FilePath'] as String?;
   }
 
   Future<void> close() async {
