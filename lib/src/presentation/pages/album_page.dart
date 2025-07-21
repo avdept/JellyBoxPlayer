@@ -8,7 +8,6 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
-import 'package:jplayer/src/data/providers/download_manager_provider.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';

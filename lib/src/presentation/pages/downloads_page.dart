@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';

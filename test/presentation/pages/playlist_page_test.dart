@@ -1,10 +1,12 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/pages.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -19,10 +21,17 @@ class MockHttpResponse<T> extends Mock implements HttpResponse<T> {}
 
 class MockUser extends Mock implements User {}
 
+class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>>
+    with Mock
+    implements DownloadManagerNotifier {}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late JellyfinApi mockJellyfinApi;
   late HttpResponse<SongsWrapper> mockSongsResponse;
   late User mockUser;
+  late DownloadManagerNotifier mockDownloadManagerNotifier;
 
   final faker = Faker.instance;
   final mockPlaylist = ItemDTO(
@@ -62,6 +71,7 @@ void main() {
       jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
       baseUrlProvider.overrideWith((_) => faker.internet.url()),
       currentUserProvider.overrideWith((_) => mockUser),
+      downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
     ],
     home: PlaylistPage(playlist: playlist),
   );
@@ -76,10 +86,15 @@ void main() {
     );
   }
 
+  setUpAll(() {
+    deviceId = faker.datatype.uuid();
+  });
+
   setUp(() {
     mockJellyfinApi = MockJellyfinApi();
     mockSongsResponse = MockHttpResponse();
     mockUser = MockUser();
+    mockDownloadManagerNotifier = MockDownloadManagerNotifier();
     when(
       () => mockGetPlaylistSongs(playlistId: mockPlaylist.id),
     ).thenAnswer((_) async => mockSongsResponse);

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 
 final isAlbumDownloadedProvider = FutureProviderFamily<bool, ItemDTO>(
   (ref, arg) {

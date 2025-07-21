@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
-import 'package:jplayer/src/data/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';

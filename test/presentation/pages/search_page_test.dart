@@ -6,6 +6,8 @@ import 'package:jplayer/src/presentation/pages/search_page.dart';
 import '../../app_wrapper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   Widget getWidgetUT() => createTestApp(
     home: const SearchPage(),
   );

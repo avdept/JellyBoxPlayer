@@ -25,6 +25,8 @@ class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
   late AuthNotifier mockAuthNotifier;
 

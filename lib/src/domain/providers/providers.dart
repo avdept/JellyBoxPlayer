@@ -4,6 +4,7 @@ export 'current_album_provider.dart';
 export 'current_library_provider.dart';
 export 'current_playlist_provider.dart';
 export 'current_user_provider.dart';
+export 'download_manager_provider.dart';
 export 'downloaded_albums_provider.dart';
 export 'is_album_downloaded_provider.dart';
 export 'is_song_downloaded_provider.dart';

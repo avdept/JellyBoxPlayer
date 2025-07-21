@@ -19,6 +19,8 @@ class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
 class FakeUserCredentials extends Fake implements UserCredentials {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late AuthNotifier mockAuthNotifier;
 
   final faker = Faker.instance;

@@ -20,6 +20,8 @@ class MockHttpResponse<T> extends Mock implements HttpResponse<T> {}
 class MockUser extends Mock implements User {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late JellyfinApi mockJellyfinApi;
   late HttpResponse<AlbumsWrapper> mockAlbumsResponse;
   late HttpResponse<AlbumsWrapper> mockAppearsOnResponse;

@@ -42,6 +42,8 @@ class MockCurrentLibraryNotifier extends StateNotifier<LibraryDTO?>
 class MockUser extends Mock implements User {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late AlbumsNotifier mockAlbumsNotifier;
   late ArtistsNotifier mockArtistsNotifier;
   late PlaylistsNotifier mockPlaylistsNotifier;

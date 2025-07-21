@@ -1,16 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DownloadDatabase {
-  const DownloadDatabase._();
+  DownloadDatabase([
+    @visibleForTesting Database? db,
+  ]) : _db = db;
 
-  static const instance = DownloadDatabase._();
-  static Database? _database;
+  Database? _db;
 
-  Future<Database> get database async {
-    _database ??= await _initDB('downloads.db');
-    return _database!;
+  Future<Database> get _database async {
+    _db ??= await _initDB('downloads.db');
+    return _db!;
   }
 
   Future<Database> _initDB(String filePath) async {
@@ -62,17 +64,17 @@ class DownloadDatabase {
   }
 
   Future<int> insertDownloadedSong(DownloadedSongDTO song) async {
-    final db = await database;
+    final db = await _database;
     return db.insert('Downloads', song.toJson());
   }
 
   Future<int> insertDownloadedAlbum(DownloadedAlbumDTO album) async {
-    final db = await database;
+    final db = await _database;
     return db.insert('Albums', album.toJson());
   }
 
   Future<List<DownloadedSongDTO>> getDownloadedSongs() async {
-    final db = await database;
+    final db = await _database;
     final results = await db.query('Downloads');
     return results.map(DownloadedSongDTO.fromJson).toList();
   }
@@ -80,7 +82,7 @@ class DownloadDatabase {
   Future<List<DownloadedSongDTO>> getDownloadedSongsByAlbum(
     String albumId,
   ) async {
-    final db = await database;
+    final db = await _database;
     final results = await db.query(
       'Downloads',
       where: 'AlbumId = ?',
@@ -90,13 +92,13 @@ class DownloadDatabase {
   }
 
   Future<List<DownloadedAlbumDTO>> getDownloadedAlbums() async {
-    final db = await database;
+    final db = await _database;
     final results = await db.query('Albums');
     return results.map(DownloadedAlbumDTO.fromJson).toList();
   }
 
   Future<int> deleteDownloadedSong(String id) async {
-    final db = await database;
+    final db = await _database;
     return db.delete(
       'Downloads',
       where: 'Id = ?',
@@ -105,27 +107,26 @@ class DownloadDatabase {
   }
 
   Future<void> deleteDownloadedAlbum(String albumId) async {
-    final db = await database;
-    final batch =
-        db.batch()
-          // Delete the album entry
-          ..delete(
-            'Albums',
-            where: 'Id = ?',
-            whereArgs: [albumId],
-          )
-          // Delete all songs from this album
-          ..delete(
-            'Downloads',
-            where: 'AlbumId = ?',
-            whereArgs: [albumId],
-          );
+    final db = await _database;
+    final batch = db.batch()
+      // Delete the album entry
+      ..delete(
+        'Albums',
+        where: 'Id = ?',
+        whereArgs: [albumId],
+      )
+      // Delete all songs from this album
+      ..delete(
+        'Downloads',
+        where: 'AlbumId = ?',
+        whereArgs: [albumId],
+      );
 
     await batch.commit();
   }
 
   Future<bool> isSongDownloaded(String id) async {
-    final db = await database;
+    final db = await _database;
     final count = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM Downloads WHERE Id = ?', [id]),
     );
@@ -133,7 +134,7 @@ class DownloadDatabase {
   }
 
   Future<bool> isAlbumDownloaded(String albumId) async {
-    final db = await database;
+    final db = await _database;
     final count = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM Albums WHERE Id = ?', [albumId]),
     );
@@ -141,7 +142,7 @@ class DownloadDatabase {
   }
 
   Future<String?> getDownloadedSongPath(String id) async {
-    final db = await database;
+    final db = await _database;
     final results = await db.query(
       'Downloads',
       columns: ['FilePath'],
@@ -153,7 +154,7 @@ class DownloadDatabase {
   }
 
   Future<void> close() async {
-    final db = await database;
+    final db = await _database;
     return db.close();
   }
 }
