@@ -88,7 +88,7 @@ class PlayerSongView extends ConsumerWidget {
           else if (currentTask?.isDownloadingNow ?? false)
             SizedBox.square(
               dimension: 30,
-              child: ValueListenableBuilder<double>(
+              child: ValueListenableBuilder(
                 valueListenable: currentTask!.progress,
                 builder: (context, progress, _) {
                   return CircularProgressIndicator(

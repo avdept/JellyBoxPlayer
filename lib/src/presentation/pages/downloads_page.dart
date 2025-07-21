@@ -85,28 +85,26 @@ class DownloadsPage extends StatelessWidget {
                       }
 
                       return SliverGrid.builder(
-                        gridDelegate:
-                            device.isDesktop
-                                ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 245,
-                                  mainAxisSpacing: 24,
-                                  crossAxisSpacing: 30,
-                                  childAspectRatio: 245 / 297.3,
-                                )
-                                : SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 1,
-                                  mainAxisSpacing: device.isMobile ? 12 : 24,
-                                  mainAxisExtent: device.isMobile ? 48 : 70,
-                                ),
+                        gridDelegate: device.isDesktop
+                            ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 245,
+                                mainAxisSpacing: 24,
+                                crossAxisSpacing: 30,
+                                childAspectRatio: 245 / 297.3,
+                              )
+                            : SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 1,
+                                mainAxisSpacing: device.isMobile ? 12 : 24,
+                                mainAxisExtent: device.isMobile ? 48 : 70,
+                              ),
                         itemBuilder: (context, index) {
                           final album = albums[index];
                           return DownloadedAlbumView(
                             album,
                             onTap: () => _onAlbumTap(context, album),
-                            onDeletePressed:
-                                () => ref
-                                    .read(downloadManagerProvider.notifier)
-                                    .deleteAlbum(album.id),
+                            onDelete: () => ref
+                                .read(downloadManagerProvider.notifier)
+                                .deleteAlbum(album.id),
                           );
                         },
                         itemCount: albums.length,

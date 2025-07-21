@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DownloadTask implements DiagnosticableTreeMixin {
 
- ValueNotifier<DownloadStatus> get status; ValueNotifier<double> get progress; String get id; String get name; String get url; String get destination;
+ ValueNotifier<DownloadStatus> get status; ValueNotifier<double?> get progress; String get id; String get name; String get url; String get destination;
 /// Create a copy of DownloadTask
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)

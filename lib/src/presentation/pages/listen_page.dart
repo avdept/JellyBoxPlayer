@@ -1,5 +1,4 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -73,7 +72,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   void _onCreateNewPlaylist() {
     if (_device.isDesktop) {
-      showDialog<void>(
+      showAdaptiveDialog<void>(
         context: context,
         builder: (context) => Dialog(
           shape: RoundedRectangleBorder(
@@ -119,7 +118,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   Future<void> _onDeletePlaylist(ItemDTO playlist) async {
     final shouldDelete = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (context) => AlertDialog.adaptive(
         title: Text.rich(
           TextSpan(
             text: 'Delete ',
@@ -134,19 +133,19 @@ class _ListenPageState extends ConsumerState<ListenPage> {
           textAlign: TextAlign.center,
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('No'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(true),
-            isDefaultAction: true,
+            isDestructiveAction: true,
             child: const Text('Yes'),
           ),
         ],
       ),
     );
-    if (shouldDelete ?? false) {
+    if ((shouldDelete ?? false) && mounted) {
       await ref.read(jellyfinApiProvider).deletePlaylist(playlistId: playlist.id);
       ref.invalidate(playlistsProvider);
     }

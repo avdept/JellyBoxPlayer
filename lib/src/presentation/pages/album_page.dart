@@ -13,8 +13,6 @@ import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
-import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
-import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
@@ -48,13 +46,12 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     if (_device.isDesktop) {
       playlist = await showAdaptiveDialog<ItemDTO>(
         context: context,
-        builder:
-            (context) => Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: _availablePlaylistsList(),
-            ),
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: _availablePlaylistsList(),
+        ),
       );
     } else {
       playlist = await showModalBottomSheet<ItemDTO>(
@@ -65,10 +62,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         context: context,
         useRootNavigator: true,
         clipBehavior: Clip.antiAlias,
-        builder:
-            (context) => _availablePlaylistsList(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-            ),
+        builder: (context) => _availablePlaylistsList(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+        ),
       );
     }
 
@@ -177,14 +173,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 ),
                 middle: ValueListenableBuilder(
                   valueListenable: _titleOpacity,
-                  builder:
-                      (context, opacity, child) => Transform.translate(
-                        offset: Offset(0, 8 - 8 * opacity),
-                        child: Opacity(
-                          opacity: opacity,
-                          child: child,
-                        ),
-                      ),
+                  builder: (context, opacity, child) => Transform.translate(
+                    offset: Offset(0, 8 - 8 * opacity),
+                    child: Opacity(
+                      opacity: opacity,
+                      child: child,
+                    ),
+                  ),
                   child: Text(
                     widget.album.name,
                     overflow: TextOverflow.clip,
@@ -244,44 +239,37 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         ),
                       ],
                       SliverList.builder(
-                        itemBuilder:
-                            (context, index) => ValueListenableBuilder(
-                              valueListenable: _currentSong,
-                              builder: (context, item, other) {
-                                final song = songs[index];
-                                return PlayerSongView(
-                                  song: song,
-                                  isPlaying: item != null && song.id == item.id,
-                                  onTap:
-                                      (song) => ref
-                                          .read(playbackProvider.notifier)
-                                          .play(song, songs, widget.album),
-                                  position: index + 1,
-                                  onLikePressed: (song) async {
-                                    final api = ref.read(jellyfinApiProvider);
-                                    final callback =
-                                        song.songUserData.isFavorite
-                                            ? api.removeFavorite
-                                            : api.saveFavorite;
-                                    await callback.call(
-                                      userId:
-                                          ref.read(currentUserProvider)!.userId,
-                                      itemId: song.id,
-                                    );
-                                    _getSongs();
-                                  },
-                                  optionsBuilder:
-                                      (context) => [
-                                        PopupMenuItem(
-                                          onTap:
-                                              () =>
-                                                  _onAddToPlaylistPressed(song),
-                                          child: const Text('Add to playlist'),
-                                        ),
-                                      ],
+                        itemBuilder: (context, index) => ValueListenableBuilder(
+                          valueListenable: _currentSong,
+                          builder: (context, item, other) {
+                            final song = songs[index];
+                            return PlayerSongView(
+                              song: song,
+                              isPlaying: item != null && song.id == item.id,
+                              onTap: (song) => ref
+                                  .read(playbackProvider.notifier)
+                                  .play(song, songs, widget.album),
+                              position: index + 1,
+                              onLikePressed: (song) async {
+                                final api = ref.read(jellyfinApiProvider);
+                                final callback = song.songUserData.isFavorite
+                                    ? api.removeFavorite
+                                    : api.saveFavorite;
+                                await callback.call(
+                                  userId: ref.read(currentUserProvider)!.userId,
+                                  itemId: song.id,
                                 );
+                                _getSongs();
                               },
-                            ),
+                              optionsBuilder: (context) => [
+                                PopupMenuItem(
+                                  onTap: () => _onAddToPlaylistPressed(song),
+                                  child: const Text('Add to playlist'),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                         itemCount: songs.length,
                       ),
                     ],
@@ -387,26 +375,25 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Row(
-                  children:
-                      widget.album.albumArtists.map((a) {
-                        return ClickableWidget(
-                          onPressed: () async {
-                            final item = await ref
-                                .read(jellyfinApiProvider)
-                                .getItem(itemId: a.id);
-                            if (!mounted) return;
-                            context.go(
-                              '${Routes.listen}${Routes.artist}',
-                              extra: {'artist': item.data},
-                            );
-                          },
-                          textStyle: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w300,
-                          ),
-                          child: Text(a.name),
+                  children: widget.album.albumArtists.map((a) {
+                    return ClickableWidget(
+                      onPressed: () async {
+                        final item = await ref
+                            .read(jellyfinApiProvider)
+                            .getItem(itemId: a.id);
+                        if (!mounted) return;
+                        context.go(
+                          '${Routes.listen}${Routes.artist}',
+                          extra: {'artist': item.data},
                         );
-                      }).toList(),
+                      },
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w300,
+                      ),
+                      child: Text(a.name),
+                    );
+                  }).toList(),
                 ),
               ),
               Row(
@@ -414,8 +401,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                   _albumDetails(
                     duration: widget.album.duration,
                     soundsCount: songs.length,
-                    albumArtist:
-                        songs.isNotEmpty ? songs.first.albumArtist : '',
+                    albumArtist: songs.isNotEmpty
+                        ? songs.first.albumArtist
+                        : '',
                     year: widget.album.productionYear,
                     divider: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -473,22 +461,55 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
   Widget _downloadAlbumButton() => Consumer(
     builder: (context, ref, child) {
-      final isDownloaded =
-          ref.watch(isAlbumDownloadedProvider(widget.album)).valueOrNull;
+      final isDownloaded = ref
+          .watch(isAlbumDownloadedProvider(widget.album))
+          .valueOrNull;
       if (isDownloaded == null) return const SizedBox.shrink();
       return IgnorePointer(
         ignoring: _isLoading,
         child: IconButton(
           onPressed: () async {
             setState(() => _isLoading = true);
-            await switch (isDownloaded) {
-              true => ref
+            if (!isDownloaded) {
+              await ref
                   .read(downloadManagerProvider.notifier)
-                  .deleteAlbum(widget.album.id),
-              false => ref
-                  .read(downloadManagerProvider.notifier)
-                  .downloadAlbum(widget.album, songs),
-            };
+                  .downloadAlbum(widget.album, songs);
+            } else {
+              final shouldDelete = await showAdaptiveDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog.adaptive(
+                  title: Text.rich(
+                    TextSpan(
+                      text: 'Delete ',
+                      children: [
+                        TextSpan(
+                          text: '"${widget.album.name}"',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const TextSpan(text: '?'),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  actions: [
+                    AdaptiveDialogAction(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('No'),
+                    ),
+                    AdaptiveDialogAction(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      isDestructiveAction: true,
+                      child: const Text('Yes'),
+                    ),
+                  ],
+                ),
+              );
+              if ((shouldDelete ?? false) && mounted) {
+                await ref
+                    .read(downloadManagerProvider.notifier)
+                    .deleteAlbum(widget.album.id);
+              }
+            }
             _isLoading = false;
             if (mounted) setState(() {});
           },
@@ -604,15 +625,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         style: const TextStyle(fontSize: 14),
                       ),
                       onChanged: (ItemDTO? item) {},
-                      items:
-                          data.value.items.map<DropdownMenuItem<ItemDTO>>(
-                            (ItemDTO item) {
-                              return DropdownMenuItem<ItemDTO>(
-                                value: item,
-                                child: Text(item.name),
-                              );
-                            },
-                          ).toList(),
+                      items: data.value.items.map<DropdownMenuItem<ItemDTO>>(
+                        (ItemDTO item) {
+                          return DropdownMenuItem<ItemDTO>(
+                            value: item,
+                            child: Text(item.name),
+                          );
+                        },
+                      ).toList(),
                     ),
                   ),
                   Padding(

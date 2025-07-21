@@ -8,10 +8,9 @@ part of 'wrappers_dto.dart';
 
 _AlbumsWrapper _$AlbumsWrapperFromJson(Map<String, dynamic> json) =>
     _AlbumsWrapper(
-      items:
-          (json['Items'] as List<dynamic>)
-              .map((e) => ItemDTO.fromJson(e as Map<String, dynamic>))
-              .toList(),
+      items: (json['Items'] as List<dynamic>)
+          .map((e) => ItemDTO.fromJson(e as Map<String, dynamic>))
+          .toList(),
       totalRecordCount: (json['TotalRecordCount'] as num).toInt(),
     );
 

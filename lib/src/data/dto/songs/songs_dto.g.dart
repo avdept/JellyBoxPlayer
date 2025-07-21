@@ -14,10 +14,9 @@ _SongDTO _$SongDTOFromJson(Map<String, dynamic> json) => _SongDTO(
   type: json['Type'] as String,
   albumArtist: json['AlbumArtist'] as String?,
   playlistItemId: json['PlaylistItemId'] as String?,
-  albumArtists:
-      (json['AlbumArtists'] as List<dynamic>?)
-          ?.map((e) => ArtistDTO.fromJson(e as Map<String, dynamic>))
-          .toList(),
+  albumArtists: (json['AlbumArtists'] as List<dynamic>?)
+      ?.map((e) => ArtistDTO.fromJson(e as Map<String, dynamic>))
+      .toList(),
   albumName: json['Album'] as String?,
   albumId: json['AlbumId'] as String?,
   name: json['Name'] as String?,
@@ -45,10 +44,9 @@ Map<String, dynamic> _$SongDTOToJson(_SongDTO instance) => <String, dynamic>{
 
 _SongsWrapper _$SongsWrapperFromJson(Map<String, dynamic> json) =>
     _SongsWrapper(
-      items:
-          (json['Items'] as List<dynamic>)
-              .map((e) => SongDTO.fromJson(e as Map<String, dynamic>))
-              .toList(),
+      items: (json['Items'] as List<dynamic>)
+          .map((e) => SongDTO.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$SongsWrapperToJson(_SongsWrapper instance) =>
@@ -84,10 +82,9 @@ _DownloadedSongDTO _$DownloadedSongDTOFromJson(Map<String, dynamic> json) =>
       albumName: json['Album'] as String?,
       albumId: json['AlbumId'] as String?,
       name: json['Name'] as String?,
-      imageTags:
-          json['ImageTags'] == null
-              ? const {}
-              : const TagsMapConverter().fromJson(json['ImageTags'] as String),
+      imageTags: json['ImageTags'] == null
+          ? const {}
+          : const TagsMapConverter().fromJson(json['ImageTags'] as String),
       downloadDate: _$JsonConverterFromJson<int, DateTime>(
         json['DownloadDate'],
         const EpochDateTimeConverter().fromJson,

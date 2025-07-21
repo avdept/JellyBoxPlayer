@@ -56,16 +56,14 @@ _DownloadedAlbumDTO _$DownloadedAlbumDTOFromJson(Map<String, dynamic> json) =>
       durationInTicks: (json['RunTimeTicks'] as num?)?.toInt(),
       productionYear: (json['ProductionYear'] as num?)?.toInt(),
       albumArtist: json['AlbumArtist'] as String?,
-      backdropImageTags:
-          json['BackdropImageTags'] == null
-              ? const []
-              : const TagsListConverter().fromJson(
-                json['BackdropImageTags'] as String,
-              ),
-      imageTags:
-          json['ImageTags'] == null
-              ? const {}
-              : const TagsMapConverter().fromJson(json['ImageTags'] as String),
+      backdropImageTags: json['BackdropImageTags'] == null
+          ? const []
+          : const TagsListConverter().fromJson(
+              json['BackdropImageTags'] as String,
+            ),
+      imageTags: json['ImageTags'] == null
+          ? const {}
+          : const TagsMapConverter().fromJson(json['ImageTags'] as String),
       downloadDate: _$JsonConverterFromJson<int, DateTime>(
         json['DownloadDate'],
         const EpochDateTimeConverter().fromJson,

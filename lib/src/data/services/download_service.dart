@@ -36,7 +36,7 @@ class DownloadService {
       id: song.id,
       name: song.name ?? 'Unknown',
       // Create URL for downloading
-      url: '$serverUrl/Audio/${song.id}/universal?api_key=$token',
+      url: '$serverUrl/Items/${song.id}/Download?api_key=$token',
       destination: '${songDir.path}/$fileName',
     );
 
@@ -66,9 +66,7 @@ class DownloadService {
         task.destination,
         cancelToken: _cancelTokens[task.id],
         onReceiveProgress: (received, total) {
-          if (total != -1) {
-            task.progress.value = received / total;
-          }
+          task.progress.value = (total > 0) ? received / total : null;
         },
       );
 
@@ -76,10 +74,9 @@ class DownloadService {
         ..progress.value = 1
         ..status.value = DownloadStatus.completed;
     } on DioException catch (e) {
-      task.status.value =
-          (e.type == DioExceptionType.cancel)
-              ? DownloadStatus.canceled
-              : DownloadStatus.failed;
+      task.status.value = (e.type == DioExceptionType.cancel)
+          ? DownloadStatus.canceled
+          : DownloadStatus.failed;
     }
   }
 
@@ -106,6 +103,7 @@ class DownloadService {
       // Optionally delete the partial file
       File(task.destination).delete().ignore();
       _tasks.remove(id);
+      task.dispose();
     }
   }
 
