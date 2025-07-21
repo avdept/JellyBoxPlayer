@@ -1,3 +1,6 @@
+import 'dart:io' show File;
+
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:path/path.dart';
@@ -63,14 +66,29 @@ class DownloadDatabase {
     ]);
   }
 
-  Future<int> insertDownloadedSong(DownloadedSongDTO song) async {
+  Future<int> insertDownloadedSong(
+    SongDTO song, {
+    required File file,
+  }) async {
     final db = await _database;
-    return db.insert('Downloads', song.toJson());
+    final songData = DownloadedSongDTO.fromSong(
+      song,
+      filePath: file.path,
+      sizeInBytes: file.lengthSync(),
+    );
+    return db.insert('Downloads', songData.toJson());
   }
 
-  Future<int> insertDownloadedAlbum(DownloadedAlbumDTO album) async {
+  Future<int> insertDownloadedAlbum(
+    ItemDTO album, {
+    required List<File> files,
+  }) async {
     final db = await _database;
-    return db.insert('Albums', album.toJson());
+    final albumData = DownloadedAlbumDTO.fromAlbum(
+      album,
+      sizeInBytes: files.map((e) => e.lengthSync()).sum,
+    );
+    return db.insert('Albums', albumData.toJson());
   }
 
   Future<List<DownloadedSongDTO>> getDownloadedSongs() async {

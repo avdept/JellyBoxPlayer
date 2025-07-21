@@ -28,6 +28,7 @@ void main() {
   late User mockUser;
 
   final faker = Faker.instance;
+  final mockBaseUrl = faker.internet.url();
   final mockArtist = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.name.fullName(),
@@ -72,7 +73,7 @@ void main() {
   Widget getWidgetUT({required ItemDTO artist}) => createTestApp(
     providesOverrides: [
       jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-      baseUrlProvider.overrideWith((_) => faker.internet.url()),
+      baseUrlProvider.overrideWith((_) => mockBaseUrl),
       currentUserProvider.overrideWith((_) => mockUser),
     ],
     home: ArtistPage(artist: artist),

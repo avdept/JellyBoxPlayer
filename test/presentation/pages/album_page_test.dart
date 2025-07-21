@@ -32,6 +32,7 @@ void main() {
   late DownloadManagerNotifier mockDownloadManagerNotifier;
 
   final faker = Faker.instance;
+  final mockBaseUrl = faker.internet.url();
   final mockAlbum = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
@@ -63,6 +64,11 @@ void main() {
     ),
   );
   final mockUserId = faker.datatype.uuid();
+  const keys = AlbumPageKeys(
+    downloadButton: Key('downloadButton'),
+    deleteButton: Key('deleteButton'),
+    confirmationDialog: Key('confirmationDialog'),
+  );
 
   Widget getWidgetUT({
     required ItemDTO album,
@@ -71,12 +77,12 @@ void main() {
     return createTestApp(
       providesOverrides: [
         jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-        baseUrlProvider.overrideWith((_) => faker.internet.url()),
+        baseUrlProvider.overrideWith((_) => mockBaseUrl),
         currentUserProvider.overrideWith((_) => mockUser),
         downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
         isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
       ],
-      home: AlbumPage(album: album),
+      home: AlbumPage(album: album, testKeys: keys),
     );
   }
 
@@ -91,6 +97,8 @@ void main() {
   }
 
   setUpAll(() {
+    registerFallbackValue(mockAlbum);
+    registerFallbackValue(mockSongs);
     deviceId = faker.datatype.uuid();
   });
 
@@ -142,13 +150,59 @@ void main() {
       },
     );
 
-    // testWidgets(
-    //   "- displays download button when album isn't downloaded",
-    //   (widgetTester) async {
-    //     await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
-    //     await widgetTester.pump(Duration.zero);
-    //     expect(find.byKey(const ValueKey('downloadButton')), findsOneWidget);
-    //   },
-    // );
+    testWidgets(
+      "- displays download button when album isn't downloaded",
+      (widgetTester) async {
+        when(
+          () => mockDownloadManagerNotifier.downloadAlbum(any(), any()),
+        ).thenAnswer((_) async {});
+        await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
+        await widgetTester.pump(Duration.zero);
+        final downloadButtonFinder = find.byKey(keys.downloadButton);
+        expect(downloadButtonFinder, findsOneWidget);
+        expect(find.byKey(keys.deleteButton), findsNothing);
+        // Should call downloadAlbum when pressed
+        await widgetTester.tap(downloadButtonFinder);
+        await widgetTester.pumpAndSettle();
+        verify(
+          () => mockDownloadManagerNotifier.downloadAlbum(
+            mockAlbum,
+            mockSongs.items,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      '- displays delete button when album is downloaded',
+      (widgetTester) async {
+        when(
+          () => mockDownloadManagerNotifier.deleteAlbum(any()),
+        ).thenAnswer((_) async {});
+        await widgetTester.pumpWidget(
+          getWidgetUT(album: mockAlbum, isAlbumDownloaded: true),
+        );
+        await widgetTester.pump(Duration.zero);
+        final deleteButtonFinder = find.byKey(keys.deleteButton);
+        expect(deleteButtonFinder, findsOneWidget);
+        expect(find.byKey(keys.downloadButton), findsNothing);
+        // Should show confirmation dialog
+        final confirmationDialogFinder = find.byKey(keys.confirmationDialog);
+        await widgetTester.tap(deleteButtonFinder);
+        await widgetTester.pumpAndSettle();
+        expect(confirmationDialogFinder, findsOneWidget);
+        // Should call deleteAlbum when accepted
+        await widgetTester.tap(
+          find.descendant(
+            of: confirmationDialogFinder,
+            matching: find.widgetWithText(AdaptiveDialogAction, 'Yes'),
+          ),
+        );
+        await widgetTester.pumpAndSettle();
+        verify(
+          () => mockDownloadManagerNotifier.deleteAlbum(mockAlbum.id),
+        ).called(1);
+      },
+    );
   });
 }

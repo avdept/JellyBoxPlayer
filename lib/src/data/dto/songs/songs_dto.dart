@@ -28,8 +28,9 @@ abstract class SongDTO with _$SongDTO {
 
 @freezed
 abstract class SongsWrapper with _$SongsWrapper {
-  const factory SongsWrapper(
-      {@JsonKey(name: 'Items') required List<SongDTO> items}) = _SongsWrapper;
+  const factory SongsWrapper({
+    @JsonKey(name: 'Items') required List<SongDTO> items,
+  }) = _SongsWrapper;
 
   factory SongsWrapper.fromJson(Map<String, dynamic> json) =>
       _$SongsWrapperFromJson(json);
@@ -111,7 +112,7 @@ abstract class DownloadedSongDTO extends _SongDTO with _$DownloadedSongDTO {
     required this.imageTags,
     DateTime? downloadDate,
   }) : downloadDate = downloadDate ?? DateTime.now(),
-        super(songUserData: songUserData);
+       super(songUserData: songUserData);
 
   @override
   @SongUserDataConverter()
@@ -120,7 +121,8 @@ abstract class DownloadedSongDTO extends _SongDTO with _$DownloadedSongDTO {
 
   @override
   @TagsMapConverter()
-  @Default({}) @JsonKey(name: 'ImageTags')
+  @Default({})
+  @JsonKey(name: 'ImageTags')
   final Map<String, String> imageTags;
 
   @override

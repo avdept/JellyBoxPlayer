@@ -18,9 +18,28 @@ import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
+@visibleForTesting
+class AlbumPageKeys {
+  @visibleForTesting
+  const AlbumPageKeys({
+    required this.downloadButton,
+    required this.deleteButton,
+    required this.confirmationDialog,
+  });
+
+  final Key downloadButton;
+  final Key deleteButton;
+  final Key confirmationDialog;
+}
+
 class AlbumPage extends ConsumerStatefulWidget {
-  const AlbumPage({required this.album, super.key});
+  const AlbumPage({
+    required this.album,
+    @visibleForTesting this.testKeys,
+    super.key,
+  });
   final ItemDTO album;
+  final AlbumPageKeys? testKeys;
 
   @override
   ConsumerState<AlbumPage> createState() => _AlbumPageState();
@@ -467,6 +486,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       return IgnorePointer(
         ignoring: _isLoading,
         child: IconButton(
+          key: isDownloaded
+              ? widget.testKeys?.deleteButton
+              : widget.testKeys?.downloadButton,
           onPressed: () async {
             setState(() => _isLoading = true);
             if (!isDownloaded) {
@@ -477,6 +499,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               final shouldDelete = await showAdaptiveDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog.adaptive(
+                  key: widget.testKeys?.confirmationDialog,
                   title: Text.rich(
                     TextSpan(
                       text: 'Delete ',

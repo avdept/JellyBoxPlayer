@@ -34,6 +34,7 @@ void main() {
   late DownloadManagerNotifier mockDownloadManagerNotifier;
 
   final faker = Faker.instance;
+  final mockBaseUrl = faker.internet.url();
   final mockPlaylist = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
@@ -69,7 +70,7 @@ void main() {
   Widget getWidgetUT({required ItemDTO playlist}) => createTestApp(
     providesOverrides: [
       jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-      baseUrlProvider.overrideWith((_) => faker.internet.url()),
+      baseUrlProvider.overrideWith((_) => mockBaseUrl),
       currentUserProvider.overrideWith((_) => mockUser),
       downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
     ],

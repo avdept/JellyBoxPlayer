@@ -40,14 +40,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       // If download completed successfully, add to database
       if (task.status.value == DownloadStatus.completed) {
         final file = File(task.destination);
-        final fileSize = await file.length();
 
-        final downloadedItem = DownloadedSongDTO.fromSong(
-          song,
-          filePath: task.destination,
-          sizeInBytes: fileSize,
-        );
-        await _database.insertDownloadedSong(downloadedItem);
+        // Add to database
+        await _database.insertDownloadedSong(song, file: file);
 
         // Refresh state
         ref.invalidateSelf();
@@ -74,31 +69,23 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       await Future.wait(tasks.map(_waitForDownloadCompletion));
 
       // Calculate total size of downloaded files
-      var totalSize = 0;
+      final files = <File>[];
       for (final task in tasks) {
         if (task.status.value == DownloadStatus.completed) {
           final file = File(task.destination);
-          final fileSize = await file.length();
-          totalSize += fileSize;
+          files.add(file);
 
           // Find the corresponding song
           final song = songs.firstWhere((s) => s.id == task.id);
 
           // Add to database
-          final downloadedItem = DownloadedSongDTO.fromSong(
-            song,
-            filePath: task.destination,
-            sizeInBytes: fileSize,
-          );
-          await _database.insertDownloadedSong(downloadedItem);
+          await _database.insertDownloadedSong(song, file: file);
         }
       }
 
       // Add album to database
-      if (totalSize > 0) {
-        await _database.insertDownloadedAlbum(
-          DownloadedAlbumDTO.fromAlbum(album, sizeInBytes: totalSize),
-        );
+      if (files.isNotEmpty) {
+        await _database.insertDownloadedAlbum(album, files: files);
       }
 
       // Refresh state
