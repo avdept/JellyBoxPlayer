@@ -40,10 +40,12 @@ void main() {
   );
 
   Widget getWidgetUT() => createTestApp(
-    providesOverrides: [
-      currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
-      authProvider.overrideWith((_) => mockAuthNotifier),
-    ],
+    providerContainer: ProviderContainer(
+      overrides: [
+        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
+        authProvider.overrideWith((_) => mockAuthNotifier),
+      ],
+    ),
     home: const LibraryPage(),
   );
 

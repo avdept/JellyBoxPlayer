@@ -102,13 +102,15 @@ void main() {
   );
 
   Widget getWidgetUT() => createTestApp(
-    providesOverrides: [
-      albumsProvider.overrideWith((_) => mockAlbumsNotifier),
-      artistsProvider.overrideWith((_) => mockArtistsNotifier),
-      playlistsProvider.overrideWith((_) => mockPlaylistsNotifier),
-      currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
-      currentUserProvider.overrideWith((_) => mockUser),
-    ],
+    providerContainer: ProviderContainer(
+      overrides: [
+        albumsProvider.overrideWith((_) => mockAlbumsNotifier),
+        artistsProvider.overrideWith((_) => mockArtistsNotifier),
+        playlistsProvider.overrideWith((_) => mockPlaylistsNotifier),
+        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
+        currentUserProvider.overrideWith((_) => mockUser),
+      ],
+    ),
     home: const ListenPage(),
   );
 

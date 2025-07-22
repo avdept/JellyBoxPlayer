@@ -26,6 +26,8 @@ class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>>
     implements DownloadManagerNotifier {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late JellyfinApi mockJellyfinApi;
   late HttpResponse<SongsWrapper> mockSongsResponse;
   late User mockUser;
@@ -75,13 +77,17 @@ void main() {
     bool isAlbumDownloaded = false,
   }) {
     return createTestApp(
-      providesOverrides: [
-        jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-        baseUrlProvider.overrideWith((_) => mockBaseUrl),
-        currentUserProvider.overrideWith((_) => mockUser),
-        downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
-        isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
-      ],
+      providerContainer: ProviderContainer(
+        overrides: [
+          jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
+          baseUrlProvider.overrideWith((_) => mockBaseUrl),
+          currentUserProvider.overrideWith((_) => mockUser),
+          downloadManagerProvider.overrideWith(
+            () => mockDownloadManagerNotifier,
+          ),
+          isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
+        ],
+      ),
       home: AlbumPage(album: album, testKeys: keys),
     );
   }

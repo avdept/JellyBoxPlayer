@@ -9,17 +9,31 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+@visibleForTesting
+class DownloadedAlbumViewKeys {
+  @visibleForTesting
+  const DownloadedAlbumViewKeys({
+    required this.deleteButton,
+    required this.confirmationDialog,
+  });
+
+  final Key deleteButton;
+  final Key confirmationDialog;
+}
+
 class DownloadedAlbumView extends ConsumerStatefulWidget {
-  const DownloadedAlbumView(
-    this.album, {
+  const DownloadedAlbumView({
+    required this.album,
     this.onTap,
     this.onDelete,
+    @visibleForTesting this.testKeys,
     super.key,
   });
 
   final DownloadedAlbumDTO album;
-  final VoidCallback? onTap;
-  final FutureOr<void> Function()? onDelete;
+  final void Function(DownloadedAlbumDTO)? onTap;
+  final FutureOr<void> Function(DownloadedAlbumDTO)? onDelete;
+  final DownloadedAlbumViewKeys? testKeys;
 
   @override
   ConsumerState<DownloadedAlbumView> createState() =>
@@ -28,6 +42,47 @@ class DownloadedAlbumView extends ConsumerStatefulWidget {
 
 class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
   var _isBusy = false;
+
+  Future<void> _onDeletePressed() async {
+    final shouldDelete = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        key: widget.testKeys?.confirmationDialog,
+        title: Text.rich(
+          TextSpan(
+            text: 'Delete ',
+            children: [
+              TextSpan(
+                text: '"${widget.album.name}"',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const TextSpan(text: '?'),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          AdaptiveDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          AdaptiveDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDestructiveAction: true,
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if ((shouldDelete ?? false) && mounted) {
+      setState(() => _isBusy = true);
+      await widget.onDelete?.call(widget.album);
+      _isBusy = false;
+      if (mounted) setState(() {});
+    }
+  }
 
   String _formatSize(int bytes) {
     const suffixes = ['B', 'KB', 'MB', 'GB'];
@@ -60,7 +115,9 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
           );
 
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: (widget.onTap != null)
+          ? () => widget.onTap!.call(widget.album)
+          : null,
       behavior: HitTestBehavior.opaque,
       child: LayoutBuilder(
         builder: (context, constraints) => Column(
@@ -113,49 +170,10 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
               trailing: IgnorePointer(
                 ignoring: _isBusy,
                 child: IconButton(
-                  onPressed: (widget.onDelete == null)
-                      ? null
-                      : () async {
-                          final shouldDelete = await showAdaptiveDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog.adaptive(
-                              title: Text.rich(
-                                TextSpan(
-                                  text: 'Delete ',
-                                  children: [
-                                    TextSpan(
-                                      text: '"${widget.album.name}"',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const TextSpan(text: '?'),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              actions: [
-                                AdaptiveDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(false),
-                                  child: const Text('No'),
-                                ),
-                                AdaptiveDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(true),
-                                  isDestructiveAction: true,
-                                  child: const Text('Yes'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if ((shouldDelete ?? false) && mounted) {
-                            setState(() => _isBusy = true);
-                            await widget.onDelete!();
-                            _isBusy = false;
-                            if (mounted) setState(() {});
-                          }
-                        },
+                  key: widget.testKeys?.deleteButton,
+                  onPressed: (widget.onDelete != null)
+                      ? _onDeletePressed
+                      : null,
                   padding: EdgeInsets.zero,
                   icon: const Icon(JPlayer.trash_2),
                 ),

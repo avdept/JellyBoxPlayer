@@ -8,8 +8,23 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
+@visibleForTesting
+class DownloadsPageKeys {
+  @visibleForTesting
+  const DownloadsPageKeys({
+    required this.counterText,
+  });
+
+  final Key counterText;
+}
+
 class DownloadsPage extends StatelessWidget {
-  const DownloadsPage({super.key});
+  const DownloadsPage({
+    @visibleForTesting this.testKeys,
+    super.key,
+  });
+
+  final DownloadsPageKeys? testKeys;
 
   void _onAlbumTap(BuildContext context, ItemDTO album) {
     final location = GoRouterState.of(context).fullPath;
@@ -48,6 +63,7 @@ class DownloadsPage extends StatelessWidget {
                       one: '$albumCount album',
                       other: '$albumCount albums',
                     ),
+                    key: testKeys?.counterText,
                     style: TextStyle(
                       fontSize: device.isMobile ? 12 : 16,
                       height: 1.2,
@@ -96,16 +112,13 @@ class DownloadsPage extends StatelessWidget {
                                 mainAxisSpacing: device.isMobile ? 12 : 24,
                                 mainAxisExtent: device.isMobile ? 48 : 70,
                               ),
-                        itemBuilder: (context, index) {
-                          final album = albums[index];
-                          return DownloadedAlbumView(
-                            album,
-                            onTap: () => _onAlbumTap(context, album),
-                            onDelete: () => ref
-                                .read(downloadManagerProvider.notifier)
-                                .deleteAlbum(album.id),
-                          );
-                        },
+                        itemBuilder: (context, index) => DownloadedAlbumView(
+                          album: albums[index],
+                          onTap: (album) => _onAlbumTap(context, album),
+                          onDelete: (album) => ref
+                              .read(downloadManagerProvider.notifier)
+                              .deleteAlbum(album.id),
+                        ),
                         itemCount: albums.length,
                       );
                     },

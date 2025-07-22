@@ -26,9 +26,11 @@ void main() {
   final faker = Faker.instance;
 
   Widget getWidgetUT() => createTestApp(
-    providesOverrides: [
-      authProvider.overrideWith((_) => mockAuthNotifier),
-    ],
+    providerContainer: ProviderContainer(
+      overrides: [
+        authProvider.overrideWith((_) => mockAuthNotifier),
+      ],
+    ),
     home: const LoginPage(),
   );
 

@@ -58,14 +58,14 @@ void main() {
 
   DownloadTask createDownloadTask({
     String? id,
-    DownloadStatus? status,
+    DownloadStatus status = DownloadStatus.pending,
   }) {
     return DownloadTask(
       id: id ?? mockSong.id,
       name: faker.lorem.sentence(),
       url: faker.internet.url(),
       destination: '/downloads/${faker.lorem.word()}.mp3',
-    )..status.value = status ?? DownloadStatus.pending;
+    )..status.value = status;
   }
 
   setUpAll(() {
@@ -157,7 +157,7 @@ void main() {
     );
 
     test(
-      '- can fetch a album and save it into database',
+      '- can fetch an album and save it into database',
       () async {
         final mockSongs = List.generate(
           faker.datatype.number(min: 1, max: 3),
@@ -219,6 +219,139 @@ void main() {
             files: any(named: 'files'),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      '- can delete a song from database',
+      () async {
+        when(
+          () => mockDownloadDatabase.deleteDownloadedSong(any()),
+        ).thenAnswer((_) async => faker.datatype.number());
+        providerContainer.listen(
+          downloadManagerProvider,
+          mockListener.call,
+          fireImmediately: true,
+        );
+        // ACTION
+        await expectLater(
+          providerContainer
+              .read(downloadManagerProvider.notifier)
+              .deleteSong(mockSong.id),
+          completes,
+        );
+        // Check if song is deleted from database
+        verify(
+          () => mockDownloadDatabase.deleteDownloadedSong(mockSong.id),
+        ).called(1);
+      },
+    );
+
+    test(
+      '- can delete an album from database',
+      () async {
+        when(
+          () => mockDownloadDatabase.deleteDownloadedAlbum(any()),
+        ).thenAnswer((_) async => faker.datatype.number());
+        providerContainer.listen(
+          downloadManagerProvider,
+          mockListener.call,
+          fireImmediately: true,
+        );
+        // ACTION
+        await expectLater(
+          providerContainer
+              .read(downloadManagerProvider.notifier)
+              .deleteAlbum(mockAlbum.id),
+          completes,
+        );
+        // Check if album is deleted from database
+        verify(
+          () => mockDownloadDatabase.deleteDownloadedAlbum(mockAlbum.id),
+        ).called(1);
+      },
+    );
+
+    test(
+      '- can check whether song is fetched',
+      () async {
+        final randomBool = faker.datatype.boolean();
+        when(
+          () => mockDownloadDatabase.isSongDownloaded(any()),
+        ).thenAnswer((_) async => randomBool);
+        providerContainer.listen(
+          downloadManagerProvider,
+          mockListener.call,
+          fireImmediately: true,
+        );
+        // ACTION
+        await expectLater(
+          providerContainer
+              .read(downloadManagerProvider.notifier)
+              .isSongDownloaded(mockSong.id),
+          completion(randomBool),
+        );
+        verify(
+          () => mockDownloadDatabase.isSongDownloaded(mockSong.id),
+        ).called(1);
+      },
+    );
+
+    test(
+      '- can check whether album is fetched',
+      () async {
+        final randomBool = faker.datatype.boolean();
+        when(
+          () => mockDownloadDatabase.isAlbumDownloaded(any()),
+        ).thenAnswer((_) async => randomBool);
+        providerContainer.listen(
+          downloadManagerProvider,
+          mockListener.call,
+          fireImmediately: true,
+        );
+        // ACTION
+        await expectLater(
+          providerContainer
+              .read(downloadManagerProvider.notifier)
+              .isAlbumDownloaded(mockAlbum.id),
+          completion(randomBool),
+        );
+        verify(
+          () => mockDownloadDatabase.isAlbumDownloaded(mockAlbum.id),
+        ).called(1);
+      },
+    );
+
+    test(
+      '- returns list of fetched albums',
+      () async {
+        final mockAlbums = List.generate(
+          faker.datatype.number(min: 1, max: 3),
+          (i) => DownloadedAlbumDTO(
+            id: faker.datatype.uuid(),
+            name: faker.lorem.sentence(),
+            serverId: faker.datatype.uuid(),
+            durationInTicks: faker.datatype.number(),
+            type: 'Album',
+            sizeInBytes: faker.datatype.number(),
+          ),
+        );
+        when(
+          () => mockDownloadDatabase.getDownloadedAlbums(),
+        ).thenAnswer((_) async => mockAlbums);
+        providerContainer.listen(
+          downloadManagerProvider,
+          mockListener.call,
+          fireImmediately: true,
+        );
+        // ACTION
+        await expectLater(
+          providerContainer
+              .read(downloadManagerProvider.notifier)
+              .getDownloadedAlbums(),
+          completion(mockAlbums),
+        );
+        verify(() => mockDownloadDatabase.getDownloadedAlbums()).called(1);
       },
     );
   });

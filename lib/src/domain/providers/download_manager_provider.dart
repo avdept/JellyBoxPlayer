@@ -121,19 +121,10 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
 
   Future<void> deleteSong(String id) async {
     try {
-      // Get file path
-      final filePath = await _database.getDownloadedSongPath(id);
-      if (filePath != null) {
-        // Delete file
-        final file = File(filePath);
-        if (file.existsSync()) await file.delete();
+      await _database.deleteDownloadedSong(id);
 
-        // Remove from database
-        await _database.deleteDownloadedSong(id);
-
-        // Refresh state
-        ref.invalidateSelf();
-      }
+      // Refresh state
+      ref.invalidateSelf();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
@@ -141,16 +132,6 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
 
   Future<void> deleteAlbum(String albumId) async {
     try {
-      // Get songs in album
-      final songs = await _database.getDownloadedSongsByAlbum(albumId);
-
-      // Delete each song file
-      for (final song in songs) {
-        final file = File(song.filePath);
-        if (file.existsSync()) await file.delete();
-      }
-
-      // Remove from database
       await _database.deleteDownloadedAlbum(albumId);
 
       // Refresh state

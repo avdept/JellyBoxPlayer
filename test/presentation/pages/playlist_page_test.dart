@@ -68,12 +68,14 @@ void main() {
   final mockUserId = faker.datatype.uuid();
 
   Widget getWidgetUT({required ItemDTO playlist}) => createTestApp(
-    providesOverrides: [
-      jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-      baseUrlProvider.overrideWith((_) => mockBaseUrl),
-      currentUserProvider.overrideWith((_) => mockUser),
-      downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
-    ],
+    providerContainer: ProviderContainer(
+      overrides: [
+        jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
+        baseUrlProvider.overrideWith((_) => mockBaseUrl),
+        currentUserProvider.overrideWith((_) => mockUser),
+        downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
+      ],
+    ),
     home: PlaylistPage(playlist: playlist),
   );
 

@@ -1,5 +1,6 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -71,11 +72,13 @@ void main() {
   final mockUserId = faker.datatype.uuid();
 
   Widget getWidgetUT({required ItemDTO artist}) => createTestApp(
-    providesOverrides: [
-      jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-      baseUrlProvider.overrideWith((_) => mockBaseUrl),
-      currentUserProvider.overrideWith((_) => mockUser),
-    ],
+    providerContainer: ProviderContainer(
+      overrides: [
+        jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
+        baseUrlProvider.overrideWith((_) => mockBaseUrl),
+        currentUserProvider.overrideWith((_) => mockUser),
+      ],
+    ),
     home: ArtistPage(artist: artist),
   );
 

@@ -91,21 +91,17 @@ class DownloadDatabase {
     return db.insert('Albums', albumData.toJson());
   }
 
-  Future<List<DownloadedSongDTO>> getDownloadedSongs() async {
+  Future<List<DownloadedSongDTO>> getDownloadedSongs([
+    String? albumId,
+  ]) async {
     final db = await _database;
-    final results = await db.query('Downloads');
-    return results.map(DownloadedSongDTO.fromJson).toList();
-  }
-
-  Future<List<DownloadedSongDTO>> getDownloadedSongsByAlbum(
-    String albumId,
-  ) async {
-    final db = await _database;
-    final results = await db.query(
-      'Downloads',
-      where: 'AlbumId = ?',
-      whereArgs: [albumId],
-    );
+    final results = (albumId == null)
+        ? await db.query('Downloads')
+        : await db.query(
+            'Downloads',
+            where: 'AlbumId = ?',
+            whereArgs: [albumId],
+          );
     return results.map(DownloadedSongDTO.fromJson).toList();
   }
 
@@ -117,6 +113,14 @@ class DownloadDatabase {
 
   Future<int> deleteDownloadedSong(String id) async {
     final db = await _database;
+    final filePath = await getDownloadedSongPath(id);
+
+    if (filePath != null) {
+      // Delete file
+      final file = File(filePath);
+      if (file.existsSync()) await file.delete();
+    }
+
     return db.delete(
       'Downloads',
       where: 'Id = ?',
@@ -126,6 +130,14 @@ class DownloadDatabase {
 
   Future<void> deleteDownloadedAlbum(String albumId) async {
     final db = await _database;
+    final songs = await getDownloadedSongs(albumId);
+
+    // Delete each song file
+    for (final song in songs) {
+      final file = File(song.filePath);
+      if (file.existsSync()) await file.delete();
+    }
+
     final batch = db.batch()
       // Delete the album entry
       ..delete(

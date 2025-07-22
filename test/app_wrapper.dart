@@ -5,13 +5,11 @@ import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 
 Widget createTestApp({
+  required ProviderContainer providerContainer,
   required Widget home,
-  List<Override> providesOverrides = const [],
-  List<ProviderObserver>? providesObservers,
 }) {
-  return ProviderScope(
-    overrides: providesOverrides,
-    observers: providesObservers,
+  return UncontrolledProviderScope(
+    container: providerContainer,
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
