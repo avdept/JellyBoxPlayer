@@ -1,6 +1,5 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -8,6 +7,7 @@ import 'package:jplayer/src/presentation/pages/downloads_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +28,7 @@ void main() {
   Widget getWidgetUT({
     required List<DownloadedAlbumDTO> albums,
   }) => createTestApp(
-    providerContainer: ProviderContainer(
+    providerContainer: createProviderContainer(
       overrides: [
         downloadedAlbumsProvider.overrideWith((_) async => albums),
       ],

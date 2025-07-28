@@ -14,6 +14,7 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockAlbumsNotifier extends StateNotifier<AsyncData<ItemsPage>>
     with Mock
@@ -102,7 +103,7 @@ void main() {
   );
 
   Widget getWidgetUT() => createTestApp(
-    providerContainer: ProviderContainer(
+    providerContainer: createProviderContainer(
       overrides: [
         albumsProvider.overrideWith((_) => mockAlbumsNotifier),
         artistsProvider.overrideWith((_) => mockArtistsNotifier),

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/presentation/pages/search_page.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Widget getWidgetUT() => createTestApp(
-    providerContainer: ProviderContainer(),
+    providerContainer: createProviderContainer(),
     home: const SearchPage(),
   );
 

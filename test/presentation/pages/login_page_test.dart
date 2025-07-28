@@ -9,6 +9,7 @@ import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
     with Mock
@@ -26,7 +27,7 @@ void main() {
   final faker = Faker.instance;
 
   Widget getWidgetUT() => createTestApp(
-    providerContainer: ProviderContainer(
+    providerContainer: createProviderContainer(
       overrides: [
         authProvider.overrideWith((_) => mockAuthNotifier),
       ],

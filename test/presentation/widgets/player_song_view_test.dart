@@ -1,6 +1,5 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -13,6 +12,7 @@ import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockDownloadService extends Mock implements DownloadService {}
 
@@ -49,7 +49,7 @@ void main() {
     bool isDownloaded = false,
   }) {
     return createTestApp(
-      providerContainer: ProviderContainer(
+      providerContainer: createProviderContainer(
         overrides: [
           downloadServiceProvider.overrideWithValue(mockDownloadService),
           isSongDownloadedProvider.overrideWith((_, _) async => isDownloaded),

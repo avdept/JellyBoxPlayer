@@ -15,6 +15,7 @@ import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mock_listener.dart';
+import '../../provider_container.dart';
 
 class MockDownloadService extends Mock implements DownloadService {}
 
@@ -79,7 +80,7 @@ void main() {
     mockDownloadDatabase = MockDownloadDatabase();
     mockUser = MockUser();
     mockListener = MockListener();
-    providerContainer = ProviderContainer(
+    providerContainer = createProviderContainer(
       overrides: [
         downloadServiceProvider.overrideWithValue(mockDownloadService),
         downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
@@ -89,10 +90,6 @@ void main() {
     );
     when(() => mockUser.userId).thenReturn(mockUserId);
     when(() => mockUser.token).thenReturn(mockToken);
-  });
-
-  tearDown(() {
-    providerContainer.dispose();
   });
 
   group('DownloadManagerNotifier', () {

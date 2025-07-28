@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockJellyfinApi extends Mock implements JellyfinApi {}
 
@@ -77,7 +78,7 @@ void main() {
     bool isAlbumDownloaded = false,
   }) {
     return createTestApp(
-      providerContainer: ProviderContainer(
+      providerContainer: createProviderContainer(
         overrides: [
           jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
           baseUrlProvider.overrideWith((_) => mockBaseUrl),
