@@ -16,9 +16,8 @@ void main() {
   final mockAlbum = DownloadedAlbumDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    serverId: faker.datatype.uuid(),
     type: 'Album',
-    durationInTicks: faker.datatype.number(),
+    runTimeTicks: faker.datatype.number(),
     sizeInBytes: faker.datatype.number(),
   );
   const keys = DownloadsPageKeys(

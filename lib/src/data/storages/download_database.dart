@@ -51,7 +51,6 @@ class DownloadDatabase {
         CREATE TABLE Albums (
           Id TEXT PRIMARY KEY,
           Name TEXT NOT NULL,
-          ServerId TEXT NOT NULL,
           Type TEXT NOT NULL,
           Overview TEXT,
           RunTimeTicks INTEGER,
@@ -67,7 +66,7 @@ class DownloadDatabase {
   }
 
   Future<int> insertDownloadedSong(
-    SongDTO song, {
+    ItemDTO song, {
     required File file,
   }) async {
     final db = await _database;

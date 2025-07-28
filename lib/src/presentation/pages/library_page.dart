@@ -19,11 +19,11 @@ class LibraryPage extends ConsumerStatefulWidget {
 
 class _LibraryPageState extends ConsumerState<LibraryPage> {
   bool isLoading = true;
-  List<LibraryDTO> libraries = [];
+  List<ItemDTO> libraries = [];
 
   late DeviceType _device;
 
-  Future<void> _onLibraryTap(LibraryDTO lib) async {
+  Future<void> _onLibraryTap(ItemDTO lib) async {
     await ref.read(currentLibraryProvider.notifier).setSelectLibrary(lib);
   }
 

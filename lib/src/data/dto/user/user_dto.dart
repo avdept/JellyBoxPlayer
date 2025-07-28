@@ -10,5 +10,7 @@ abstract class UserDTO with _$UserDTO {
     @JsonKey(name: 'Name') String? name,
   }) = _UserDTO;
 
-  factory UserDTO.fromJson(Map<String, dynamic> json) => _$UserDTOFromJson(json["User"] as Map<String, dynamic>);
+  factory UserDTO.fromJson(Map<String, dynamic> json) => _$UserDTOFromJson(
+    json['User'] as Map<String, dynamic>,
+  );
 }

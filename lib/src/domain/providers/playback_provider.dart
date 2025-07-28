@@ -3,11 +3,10 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
@@ -71,8 +70,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final StateNotifierProviderRef<PlaybackNotifier, PlaybackState> _ref;
 
   Future<void> play(
-    SongDTO playSong,
-    List<SongDTO> songs,
+    ItemDTO playSong,
+    List<ItemDTO> songs,
     ItemDTO album,
   ) async {
     try {

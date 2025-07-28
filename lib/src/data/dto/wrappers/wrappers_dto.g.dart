@@ -6,15 +6,15 @@ part of 'wrappers_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_AlbumsWrapper _$AlbumsWrapperFromJson(Map<String, dynamic> json) =>
-    _AlbumsWrapper(
+_ItemsWrapper _$ItemsWrapperFromJson(Map<String, dynamic> json) =>
+    _ItemsWrapper(
       items: (json['Items'] as List<dynamic>)
           .map((e) => ItemDTO.fromJson(e as Map<String, dynamic>))
           .toList(),
-      totalRecordCount: (json['TotalRecordCount'] as num).toInt(),
+      totalRecordCount: (json['TotalRecordCount'] as num?)?.toInt() ?? 0,
     );
 
-Map<String, dynamic> _$AlbumsWrapperToJson(_AlbumsWrapper instance) =>
+Map<String, dynamic> _$ItemsWrapperToJson(_ItemsWrapper instance) =>
     <String, dynamic>{
       'Items': instance.items,
       'TotalRecordCount': instance.totalRecordCount,

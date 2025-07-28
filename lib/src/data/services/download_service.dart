@@ -22,7 +22,7 @@ class DownloadService {
   }
 
   Future<DownloadTask> downloadSong(
-    SongDTO song,
+    ItemDTO song,
     String serverUrl,
     String token,
   ) async {
@@ -30,7 +30,7 @@ class DownloadService {
     final songDir = Directory('$downloadDir/${song.albumId ?? "unknown"}');
     if (!songDir.existsSync()) await songDir.create(recursive: true);
 
-    final fileName = '${song.name?.replaceAll('/', '_') ?? song.id}.mp3';
+    final fileName = '${song.name.replaceAll('/', '_') ?? song.id}.mp3';
 
     final task = DownloadTask(
       id: song.id,
@@ -47,7 +47,7 @@ class DownloadService {
   }
 
   Future<List<DownloadTask>> downloadSongs(
-    List<SongDTO> songs,
+    List<ItemDTO> songs,
     String serverUrl,
     String token,
   ) async {

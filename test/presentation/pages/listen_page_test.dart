@@ -34,7 +34,7 @@ class MockPlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>>
   MockPlaylistsNotifier(super.state);
 }
 
-class MockCurrentLibraryNotifier extends StateNotifier<LibraryDTO?>
+class MockCurrentLibraryNotifier extends StateNotifier<ItemDTO?>
     with Mock
     implements CurrentLibraryNotifier {
   MockCurrentLibraryNotifier(super.state);
@@ -58,9 +58,8 @@ void main() {
       (_) => ItemDTO(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        serverId: faker.datatype.uuid(),
         type: 'Album',
-        durationInTicks: faker.datatype.number(min: 10000),
+        runTimeTicks: faker.datatype.number(min: 10000),
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -72,9 +71,8 @@ void main() {
       (_) => ItemDTO(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        serverId: faker.datatype.uuid(),
         type: 'Artist',
-        durationInTicks: faker.datatype.number(min: 10000),
+        runTimeTicks: faker.datatype.number(min: 10000),
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -86,15 +84,14 @@ void main() {
       (_) => ItemDTO(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        serverId: faker.datatype.uuid(),
         type: 'Playlist',
-        durationInTicks: faker.datatype.number(min: 10000),
+        runTimeTicks: faker.datatype.number(min: 10000),
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
     ),
   );
-  final mockLibrary = LibraryDTO(
+  final mockLibrary = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
     path: faker.internet.url(),

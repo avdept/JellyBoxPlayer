@@ -6,8 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -50,7 +49,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _titleOpacity = ValueNotifier<double>(0);
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
-  List<SongDTO> songs = [];
+  List<ItemDTO> songs = [];
   var _isLoading = false;
 
   late final ImageService _imageService;
@@ -58,7 +57,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  Future<void> _onAddToPlaylistPressed(SongDTO song) async {
+  Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
     ItemDTO? playlist;
 
     if (_device.isDesktop) {
@@ -270,7 +269,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               position: index + 1,
                               onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
-                                final callback = song.songUserData.isFavorite
+                                final callback = song.userData.isFavorite
                                     ? api.removeFavorite
                                     : api.saveFavorite;
                                 await callback.call(

@@ -6,26 +6,32 @@ part 'item_dto.freezed.dart';
 part 'item_dto.g.dart';
 
 @freezed
-sealed class ItemDTO with _$ItemDTO {
+abstract class ItemDTO with _$ItemDTO {
   const factory ItemDTO({
     @JsonKey(name: 'Id') required String id,
     @JsonKey(name: 'Name') required String name,
-    @JsonKey(name: 'ServerId') required String serverId,
     @JsonKey(name: 'Type') required String type,
+    @JsonKey(name: 'IndexNumber') @Default(0) int indexNumber,
+    @JsonKey(name: 'RunTimeTicks') @Default(0) int runTimeTicks,
+    @JsonKey(name: 'Path') String? path,
+    @JsonKey(name: 'CollectionType') String? collectionType,
+    @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
     @JsonKey(name: 'Overview') String? overview,
-    @JsonKey(name: 'RunTimeTicks') required int? durationInTicks,
     @JsonKey(name: 'ProductionYear') int? productionYear,
+    @JsonKey(name: 'AlbumId') String? albumId,
+    @JsonKey(name: 'Album') String? albumName,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
-    @Default([]) @JsonKey(name: 'AlbumArtists') List<ArtistDTO> albumArtists,
-    @Default([]) @JsonKey(name: 'BackdropImageTags') List<String> backdropImageTags,
-    @Default({}) @JsonKey(name: 'ImageTags') Map<String, String> imageTags,
+    @JsonKey(name: 'AlbumArtists') @Default([]) List<ArtistDTO> albumArtists,
+    @JsonKey(name: 'BackdropImageTags') @Default([]) List<String> backdropImageTags,
+    @JsonKey(name: 'ImageTags') @Default({}) Map<String, String> imageTags,
+    @JsonKey(name: 'UserData') @Default(UserData()) UserData userData,
   }) = _ItemDTO;
 
   const ItemDTO._();
 
   factory ItemDTO.fromJson(Map<String, dynamic> json) => _$ItemDTOFromJson(json);
 
-  Duration get duration => durationInTicks == null ? Duration.zero : Duration(seconds: (durationInTicks! / 10000000).ceil());
+  Duration get duration => Duration(seconds: runTimeTicks ~/ 10000000);
 }
 
 @Freezed(copyWith: false)
@@ -33,10 +39,9 @@ abstract class DownloadedAlbumDTO extends _ItemDTO with _$DownloadedAlbumDTO {
   factory DownloadedAlbumDTO({
     required String id,
     required String name,
-    required String serverId,
     required String type,
+    required int runTimeTicks,
     String? overview,
-    required int? durationInTicks,
     int? productionYear,
     String? albumArtist,
     // @Default([]) List<ArtistDTO> albumArtists,
@@ -57,10 +62,9 @@ abstract class DownloadedAlbumDTO extends _ItemDTO with _$DownloadedAlbumDTO {
     return _DownloadedAlbumDTO(
       id: album.id,
       name: album.name,
-      serverId: album.serverId,
+      runTimeTicks: album.runTimeTicks,
       type: album.type,
       overview: album.overview,
-      durationInTicks: album.durationInTicks,
       productionYear: album.productionYear,
       albumArtist: album.albumArtist,
       // albumArtists: album.albumArtists,
@@ -74,10 +78,9 @@ abstract class DownloadedAlbumDTO extends _ItemDTO with _$DownloadedAlbumDTO {
   DownloadedAlbumDTO._({
     required super.id,
     required super.name,
-    required super.serverId,
+    required super.runTimeTicks,
     required super.type,
     required super.overview,
-    required super.durationInTicks,
     required super.productionYear,
     required super.albumArtist,
     // required super.albumArtists,
@@ -94,6 +97,88 @@ abstract class DownloadedAlbumDTO extends _ItemDTO with _$DownloadedAlbumDTO {
   @override
   @TagsMapConverter()
   @Default({}) @JsonKey(name: 'ImageTags')
+  final Map<String, String> imageTags;
+
+  @override
+  @EpochDateTimeConverter()
+  @JsonKey(name: 'DownloadDate')
+  final DateTime downloadDate;
+}
+
+@Freezed(copyWith: false)
+abstract class DownloadedSongDTO extends _ItemDTO with _$DownloadedSongDTO {
+  factory DownloadedSongDTO({
+    required String id,
+    required String name,
+    required int runTimeTicks,
+    @Default(0) int indexNumber,
+    required UserData userData,
+    required String type,
+    String? albumArtist,
+    String? playlistItemId,
+    // @Default([]) List<ArtistDTO> albumArtists,
+    String? albumName,
+    String? albumId,
+    @Default({}) Map<String, String> imageTags,
+    DateTime? downloadDate,
+    @JsonKey(name: 'FilePath') required String filePath,
+    @JsonKey(name: 'SizeInBytes') required int sizeInBytes,
+  }) = _DownloadedSongDTO;
+
+  factory DownloadedSongDTO.fromJson(Map<String, dynamic> json) =>
+      _$DownloadedSongDTOFromJson(json);
+
+  factory DownloadedSongDTO.fromSong(
+      ItemDTO song, {
+        DateTime? downloadDate,
+        required String filePath,
+        required int sizeInBytes,
+      }) {
+    return _DownloadedSongDTO(
+      id: song.id,
+      runTimeTicks: song.runTimeTicks,
+      indexNumber: song.indexNumber,
+      userData: song.userData,
+      type: song.type,
+      albumArtist: song.albumArtist,
+      playlistItemId: song.playlistItemId,
+      // albumArtists: album.albumArtists,
+      albumName: song.albumName,
+      albumId: song.albumId,
+      name: song.name,
+      imageTags: song.imageTags,
+      downloadDate: downloadDate,
+      filePath: filePath,
+      sizeInBytes: sizeInBytes,
+    );
+  }
+
+  DownloadedSongDTO._({
+    required super.id,
+    required super.runTimeTicks,
+    required super.indexNumber,
+    required super.type,
+    required super.albumArtist,
+    required super.playlistItemId,
+    // required super.albumArtists,
+    required super.albumName,
+    required super.albumId,
+    required super.name,
+    required this.userData,
+    required this.imageTags,
+    DateTime? downloadDate,
+  }) : downloadDate = downloadDate ?? DateTime.now(),
+        super(userData: userData);
+
+  @override
+  @UserDataConverter()
+  @JsonKey(name: 'UserData')
+  final UserData userData;
+
+  @override
+  @TagsMapConverter()
+  @Default({})
+  @JsonKey(name: 'ImageTags')
   final Map<String, String> imageTags;
 
   @override

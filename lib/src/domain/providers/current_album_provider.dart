@@ -3,8 +3,7 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
@@ -34,13 +33,13 @@ class CurrentAlbumNotifier extends StateNotifier<ItemDTO?> {
     state = album;
   }
 
-  Future<SongsWrapper> fetchSongs(String albumId) async {
+  Future<ItemsWrapper> fetchSongs(String albumId) async {
     try {
       final songs = await _api.getSongs(userId: _ref.read(currentUserProvider.notifier).state!.userId, albumId: albumId);
       return songs.data;
     } on DioException catch (e) {
       log(e.message ?? "Error while fetching Songs");
     }
-    return SongsWrapper(items: []);
+    return const ItemsWrapper(items: []);
   }
 }

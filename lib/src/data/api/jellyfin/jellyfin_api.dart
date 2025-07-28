@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/params/params.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'jellyfin_api.g.dart';
@@ -12,9 +13,9 @@ abstract class JellyfinApi {
   }) = _JellyfinApi;
 
   @POST('/Users/AuthenticateByName')
-  Future<HttpResponse<UserDTO>> signIn(
-    @Body() Map<String, dynamic> credentials,
-  );
+  Future<HttpResponse<UserDTO>> signIn({
+    @Body() required UserCredentials credentials,
+  });
 
   @POST('/Users/{userId}/FavoriteItems/{itemId}')
   Future<void> saveFavorite({
@@ -29,14 +30,14 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<SongsWrapper>> getSongs({
+  Future<HttpResponse<ItemsWrapper>> getSongs({
     @Path('userId') required String userId,
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'music',
   });
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<AlbumsWrapper>> getAlbums({
+  Future<HttpResponse<ItemsWrapper>> getAlbums({
     @Path('userId') required String userId,
     @Query('ParentId') String? libraryId,
     @Query('IncludeItemTypes') String type = 'MusicAlbum',
@@ -50,7 +51,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<AlbumsWrapper>> searchAlbums({
+  Future<HttpResponse<ItemsWrapper>> searchAlbums({
     @Path('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
     @Query('ParentId') String? libraryId,
@@ -62,7 +63,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<AlbumsWrapper>> getPlaylists({
+  Future<HttpResponse<ItemsWrapper>> getPlaylists({
     @Path('userId') required String userId,
     @Query('IncludeItemTypes') String type = 'Playlist',
     @Query('StartIndex') String startIndex = '0',
@@ -75,7 +76,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
-  Future<HttpResponse<AlbumsWrapper>> searchPlaylists({
+  Future<HttpResponse<ItemsWrapper>> searchPlaylists({
     @Path('userId') required String userId,
     @Query('ParentId') required String libraryId,
     @Query('searchTerm') required String searchTerm,
@@ -87,7 +88,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Playlists/{playlistId}/Items')
-  Future<HttpResponse<SongsWrapper>> getPlaylistSongs({
+  Future<HttpResponse<ItemsWrapper>> getPlaylistSongs({
     @Path('playlistId') required String playlistId,
     @Query('userId') required String userId,
     @Query('IncludeItemTypes') String includeType = 'music',
@@ -99,9 +100,9 @@ abstract class JellyfinApi {
   });
 
   @POST('/Playlists')
-  Future<void> createPlaylist(
-    @Body() Map<String, dynamic> arguments,
-  );
+  Future<void> createPlaylist({
+    @Body() required PlaylistData values,
+  });
 
   @DELETE('/Items/{playlistId}')
   Future<void> deletePlaylist({
@@ -122,7 +123,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Artists')
-  Future<HttpResponse<AlbumsWrapper>> getArtists({
+  Future<HttpResponse<ItemsWrapper>> getArtists({
     @Query('userId') required String userId,
     @Query('Fields')
     List<String> fields = const ['BackdropImageTags', 'Overview'],
@@ -136,7 +137,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Artists')
-  Future<HttpResponse<AlbumsWrapper>> searchArtists({
+  Future<HttpResponse<ItemsWrapper>> searchArtists({
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
     @Query('Fields')
@@ -150,7 +151,7 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Views')
-  Future<HttpResponse<Libraries>> getLibraries({
+  Future<HttpResponse<ItemsWrapper>> getLibraries({
     @Path('userId') required String userId,
   });
 }

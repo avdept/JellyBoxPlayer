@@ -13,7 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockCurrentLibraryNotifier extends StateNotifier<LibraryDTO?>
+class MockCurrentLibraryNotifier extends StateNotifier<ItemDTO?>
     with Mock
     implements CurrentLibraryNotifier {
   MockCurrentLibraryNotifier(super.state);
@@ -32,7 +32,7 @@ void main() {
   late AuthNotifier mockAuthNotifier;
 
   final faker = Faker.instance;
-  final mockLibrary = LibraryDTO(
+  final mockLibrary = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
     path: faker.internet.url(),
@@ -74,7 +74,7 @@ void main() {
         expect(
           find.descendant(
             of: libraryFinder,
-            matching: find.text(mockLibrary.name ?? 'Untitled'),
+            matching: find.text(mockLibrary.name),
           ),
           findsOneWidget,
         );

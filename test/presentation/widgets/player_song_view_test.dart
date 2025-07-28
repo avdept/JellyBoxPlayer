@@ -22,11 +22,11 @@ void main() {
   late DownloadService mockDownloadService;
 
   final faker = Faker.instance;
-  final mockSong = SongDTO(
+  final mockSong = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
     runTimeTicks: faker.datatype.number(min: 10000),
-    songUserData: SongUserData(
+    userData: UserData(
       playbackPositionTicks: faker.datatype.number(min: 1000),
       playCount: faker.datatype.number(),
       isFavorite: faker.datatype.boolean(),
@@ -43,7 +43,7 @@ void main() {
   );
 
   Widget getWidgetUT({
-    required SongDTO song,
+    required ItemDTO song,
     required int position,
     bool isPlaying = false,
     bool isDownloaded = false,
@@ -99,9 +99,7 @@ void main() {
         );
         await widgetTester.pump(Duration.zero);
         expect(find.text(position.toString()), findsOneWidget);
-        if (mockSong.name != null) {
-          expect(find.text(mockSong.name!), findsOneWidget);
-        }
+        expect(find.text(mockSong.name), findsOneWidget);
         if (mockSong.albumArtist != null) {
           expect(find.text(mockSong.albumArtist!), findsOneWidget);
         }

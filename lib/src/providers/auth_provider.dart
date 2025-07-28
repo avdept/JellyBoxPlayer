@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/main.dart';
-import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -85,7 +84,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool?>> {
     final serverUrl = normalizeUrl(credentials.serverUrl);
     _api = JellyfinApi(_client, baseUrl: serverUrl);
     try {
-      final response = await _api.signIn(credentials.toJson());
+      final response = await _api.signIn(credentials: credentials);
       final token = _getAuthHeaderFromResponse(response);
       await _storage.write(key: _tokenKey, value: token);
       await _storage.write(key: _userIdKey, value: response.data.id);

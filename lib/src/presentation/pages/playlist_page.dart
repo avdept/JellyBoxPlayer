@@ -6,15 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
-import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
@@ -34,7 +32,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   final _titleOpacity = ValueNotifier<double>(0);
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
-  List<SongDTO> songs = [];
+  List<ItemDTO> songs = [];
 
   late final ImageService _imageService;
 
@@ -204,7 +202,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               position: index + 1,
                               onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
-                                final callback = song.songUserData.isFavorite
+                                final callback = song.userData.isFavorite
                                     ? api.removeFavorite
                                     : api.saveFavorite;
                                 await callback.call(
@@ -247,7 +245,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   },
                                   child: const Text('Remove from playlist'),
                                 ),
-                                if (song.albumArtists?.isNotEmpty ?? false)
+                                if (song.albumArtists.isNotEmpty)
                                   PopupMenuItem(
                                     onTap: () async {
                                       final location = GoRouterState.of(context)
@@ -259,7 +257,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                                 .read(currentUserProvider)!
                                                 .userId,
                                             searchTerm:
-                                                song.albumArtists!.first.name,
+                                                song.albumArtists.first.name,
                                           );
                                       if (context.mounted) {
                                         context.go(

@@ -1,26 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 
 class AudioQueueState {
   AudioQueueState({required this.originalSongs, required this.shuffledSongs, this.album, this.currentSong, this.isShuffled = false});
-  final List<SongDTO> originalSongs;
-  final SongDTO? currentSong;
+  final List<ItemDTO> originalSongs;
+  final ItemDTO? currentSong;
   final ItemDTO? album;
-  final List<SongDTO> shuffledSongs;
+  final List<ItemDTO> shuffledSongs;
   final bool isShuffled;
 
-  List<SongDTO> get songs => isShuffled ? shuffledSongs : originalSongs;
+  List<ItemDTO> get songs => isShuffled ? shuffledSongs : originalSongs;
 }
 
 class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
   AudioQueueNotifier() : super(AudioQueueState(originalSongs: [], shuffledSongs: []));
 
   // Method to add a song to the queue
-  void setNewQueue(List<SongDTO> songs, SongDTO playNowSong, ItemDTO album) {
+  void setNewQueue(List<ItemDTO> songs, ItemDTO playNowSong, ItemDTO album) {
     state = AudioQueueState(
       originalSongs: songs,
-      shuffledSongs: state.isShuffled ? (List<SongDTO>.from(songs)..shuffle()) : songs,
+      shuffledSongs: state.isShuffled ? (List<ItemDTO>.from(songs)..shuffle()) : songs,
       currentSong: playNowSong,
       isShuffled: state.isShuffled,
       album: album,
@@ -42,7 +41,7 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
   }
 
   void shuffle() {
-    final shuffled = List<SongDTO>.from(state.originalSongs)..shuffle();
+    final shuffled = List<ItemDTO>.from(state.originalSongs)..shuffle();
 
     state = AudioQueueState(
       originalSongs: state.originalSongs,
@@ -69,20 +68,20 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
     return state.songs.indexOf(currSong);
   }
 
-  SongDTO get nextSong {
+  ItemDTO get nextSong {
     if (currentSongIndex == state.songs.length - 1 || currentSongIndex == -1) return state.songs.first; // We playing(yed) last song
 
     return state.songs[currentSongIndex + 1];
   }
 
-  SongDTO get prevSong {
+  ItemDTO get prevSong {
     if (currentSongIndex == -1 || currentSongIndex == 0) return state.songs.last; // We playing(yed) first song
 
     return state.songs[currentSongIndex - 1];
   }
 
   // Method to set the currently playing song
-  void setCurrentSong(SongDTO song) {
+  void setCurrentSong(ItemDTO song) {
     state = AudioQueueState(
       originalSongs: state.originalSongs,
       shuffledSongs: state.shuffledSongs,

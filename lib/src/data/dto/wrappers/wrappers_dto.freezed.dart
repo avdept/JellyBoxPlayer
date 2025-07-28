@@ -13,22 +13,22 @@ part of 'wrappers_dto.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
-mixin _$AlbumsWrapper {
+mixin _$ItemsWrapper {
 
 @JsonKey(name: 'Items') List<ItemDTO> get items;@JsonKey(name: 'TotalRecordCount') int get totalRecordCount;
-/// Create a copy of AlbumsWrapper
+/// Create a copy of ItemsWrapper
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$AlbumsWrapperCopyWith<AlbumsWrapper> get copyWith => _$AlbumsWrapperCopyWithImpl<AlbumsWrapper>(this as AlbumsWrapper, _$identity);
+$ItemsWrapperCopyWith<ItemsWrapper> get copyWith => _$ItemsWrapperCopyWithImpl<ItemsWrapper>(this as ItemsWrapper, _$identity);
 
-  /// Serializes this AlbumsWrapper to a JSON map.
+  /// Serializes this ItemsWrapper to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AlbumsWrapper&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.totalRecordCount, totalRecordCount) || other.totalRecordCount == totalRecordCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemsWrapper&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.totalRecordCount, totalRecordCount) || other.totalRecordCount == totalRecordCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,15 +37,15 @@ int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(
 
 @override
 String toString() {
-  return 'AlbumsWrapper(items: $items, totalRecordCount: $totalRecordCount)';
+  return 'ItemsWrapper(items: $items, totalRecordCount: $totalRecordCount)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AlbumsWrapperCopyWith<$Res>  {
-  factory $AlbumsWrapperCopyWith(AlbumsWrapper value, $Res Function(AlbumsWrapper) _then) = _$AlbumsWrapperCopyWithImpl;
+abstract mixin class $ItemsWrapperCopyWith<$Res>  {
+  factory $ItemsWrapperCopyWith(ItemsWrapper value, $Res Function(ItemsWrapper) _then) = _$ItemsWrapperCopyWithImpl;
 @useResult
 $Res call({
 @JsonKey(name: 'Items') List<ItemDTO> items,@JsonKey(name: 'TotalRecordCount') int totalRecordCount
@@ -56,14 +56,14 @@ $Res call({
 
 }
 /// @nodoc
-class _$AlbumsWrapperCopyWithImpl<$Res>
-    implements $AlbumsWrapperCopyWith<$Res> {
-  _$AlbumsWrapperCopyWithImpl(this._self, this._then);
+class _$ItemsWrapperCopyWithImpl<$Res>
+    implements $ItemsWrapperCopyWith<$Res> {
+  _$ItemsWrapperCopyWithImpl(this._self, this._then);
 
-  final AlbumsWrapper _self;
-  final $Res Function(AlbumsWrapper) _then;
+  final ItemsWrapper _self;
+  final $Res Function(ItemsWrapper) _then;
 
-/// Create a copy of AlbumsWrapper
+/// Create a copy of ItemsWrapper
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? totalRecordCount = null,}) {
   return _then(_self.copyWith(
@@ -76,8 +76,8 @@ as int,
 }
 
 
-/// Adds pattern-matching-related methods to [AlbumsWrapper].
-extension AlbumsWrapperPatterns on AlbumsWrapper {
+/// Adds pattern-matching-related methods to [ItemsWrapper].
+extension ItemsWrapperPatterns on ItemsWrapper {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -90,10 +90,10 @@ extension AlbumsWrapperPatterns on AlbumsWrapper {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AlbumsWrapper value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ItemsWrapper value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AlbumsWrapper() when $default != null:
+case _ItemsWrapper() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -112,10 +112,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AlbumsWrapper value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ItemsWrapper value)  $default,){
 final _that = this;
 switch (_that) {
-case _AlbumsWrapper():
+case _ItemsWrapper():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -133,10 +133,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AlbumsWrapper value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ItemsWrapper value)?  $default,){
 final _that = this;
 switch (_that) {
-case _AlbumsWrapper() when $default != null:
+case _ItemsWrapper() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -156,7 +156,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Items')  List<ItemDTO> items, @JsonKey(name: 'TotalRecordCount')  int totalRecordCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AlbumsWrapper() when $default != null:
+case _ItemsWrapper() when $default != null:
 return $default(_that.items,_that.totalRecordCount);case _:
   return orElse();
 
@@ -177,7 +177,7 @@ return $default(_that.items,_that.totalRecordCount);case _:
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Items')  List<ItemDTO> items, @JsonKey(name: 'TotalRecordCount')  int totalRecordCount)  $default,) {final _that = this;
 switch (_that) {
-case _AlbumsWrapper():
+case _ItemsWrapper():
 return $default(_that.items,_that.totalRecordCount);case _:
   throw StateError('Unexpected subclass');
 
@@ -197,7 +197,7 @@ return $default(_that.items,_that.totalRecordCount);case _:
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Items')  List<ItemDTO> items, @JsonKey(name: 'TotalRecordCount')  int totalRecordCount)?  $default,) {final _that = this;
 switch (_that) {
-case _AlbumsWrapper() when $default != null:
+case _ItemsWrapper() when $default != null:
 return $default(_that.items,_that.totalRecordCount);case _:
   return null;
 
@@ -209,9 +209,9 @@ return $default(_that.items,_that.totalRecordCount);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _AlbumsWrapper implements AlbumsWrapper {
-  const _AlbumsWrapper({@JsonKey(name: 'Items') required final  List<ItemDTO> items, @JsonKey(name: 'TotalRecordCount') required this.totalRecordCount}): _items = items;
-  factory _AlbumsWrapper.fromJson(Map<String, dynamic> json) => _$AlbumsWrapperFromJson(json);
+class _ItemsWrapper implements ItemsWrapper {
+  const _ItemsWrapper({@JsonKey(name: 'Items') required final  List<ItemDTO> items, @JsonKey(name: 'TotalRecordCount') this.totalRecordCount = 0}): _items = items;
+  factory _ItemsWrapper.fromJson(Map<String, dynamic> json) => _$ItemsWrapperFromJson(json);
 
  final  List<ItemDTO> _items;
 @override@JsonKey(name: 'Items') List<ItemDTO> get items {
@@ -222,20 +222,20 @@ class _AlbumsWrapper implements AlbumsWrapper {
 
 @override@JsonKey(name: 'TotalRecordCount') final  int totalRecordCount;
 
-/// Create a copy of AlbumsWrapper
+/// Create a copy of ItemsWrapper
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$AlbumsWrapperCopyWith<_AlbumsWrapper> get copyWith => __$AlbumsWrapperCopyWithImpl<_AlbumsWrapper>(this, _$identity);
+_$ItemsWrapperCopyWith<_ItemsWrapper> get copyWith => __$ItemsWrapperCopyWithImpl<_ItemsWrapper>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$AlbumsWrapperToJson(this, );
+  return _$ItemsWrapperToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AlbumsWrapper&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.totalRecordCount, totalRecordCount) || other.totalRecordCount == totalRecordCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemsWrapper&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.totalRecordCount, totalRecordCount) || other.totalRecordCount == totalRecordCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -244,15 +244,15 @@ int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(
 
 @override
 String toString() {
-  return 'AlbumsWrapper(items: $items, totalRecordCount: $totalRecordCount)';
+  return 'ItemsWrapper(items: $items, totalRecordCount: $totalRecordCount)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AlbumsWrapperCopyWith<$Res> implements $AlbumsWrapperCopyWith<$Res> {
-  factory _$AlbumsWrapperCopyWith(_AlbumsWrapper value, $Res Function(_AlbumsWrapper) _then) = __$AlbumsWrapperCopyWithImpl;
+abstract mixin class _$ItemsWrapperCopyWith<$Res> implements $ItemsWrapperCopyWith<$Res> {
+  factory _$ItemsWrapperCopyWith(_ItemsWrapper value, $Res Function(_ItemsWrapper) _then) = __$ItemsWrapperCopyWithImpl;
 @override @useResult
 $Res call({
 @JsonKey(name: 'Items') List<ItemDTO> items,@JsonKey(name: 'TotalRecordCount') int totalRecordCount
@@ -263,17 +263,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$AlbumsWrapperCopyWithImpl<$Res>
-    implements _$AlbumsWrapperCopyWith<$Res> {
-  __$AlbumsWrapperCopyWithImpl(this._self, this._then);
+class __$ItemsWrapperCopyWithImpl<$Res>
+    implements _$ItemsWrapperCopyWith<$Res> {
+  __$ItemsWrapperCopyWithImpl(this._self, this._then);
 
-  final _AlbumsWrapper _self;
-  final $Res Function(_AlbumsWrapper) _then;
+  final _ItemsWrapper _self;
+  final $Res Function(_ItemsWrapper) _then;
 
-/// Create a copy of AlbumsWrapper
+/// Create a copy of ItemsWrapper
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? totalRecordCount = null,}) {
-  return _then(_AlbumsWrapper(
+  return _then(_ItemsWrapper(
 items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<ItemDTO>,totalRecordCount: null == totalRecordCount ? _self.totalRecordCount : totalRecordCount // ignore: cast_nullable_to_non_nullable
 as int,

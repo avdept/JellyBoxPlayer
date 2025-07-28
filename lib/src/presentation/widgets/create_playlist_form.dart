@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
 class CreatePlaylistForm extends ConsumerStatefulWidget {
   const CreatePlaylistForm({
@@ -25,11 +25,13 @@ class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> 
   var _isPublicPlaylist = true;
 
   Future<void> _onCreatePressed() async {
-    await ref.read(jellyfinApiProvider).createPlaylist({
-      'Name': _inputController.text.trim(),
-      'UserId': ref.read(currentUserProvider)!.userId,
-      'IsPublic': _isPublicPlaylist,
-    });
+    await ref.read(jellyfinApiProvider).createPlaylist(
+      values: PlaylistData(
+        name: _inputController.text.trim(),
+        userId: ref.read(currentUserProvider)!.userId,
+        isPublic: _isPublicPlaylist,
+      ),
+    );
     widget.onCreated?.call();
     _onCloseBottomSheet();
   }
@@ -63,14 +65,13 @@ class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> 
               hintText: 'Playlist name',
               hintStyle: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[400]!,
+                color: Colors.grey.shade400,
               ),
             ),
             autofocus: true,
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               StatefulBuilder(
                 builder: (context, setState) => Checkbox(
@@ -83,9 +84,7 @@ class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> 
               const Text('Is public'),
             ],
           ),
-          Padding(
-            padding: EdgeInsets.only(top: 72),
-          ),
+          const SizedBox(height: 72),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

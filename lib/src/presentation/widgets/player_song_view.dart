@@ -31,10 +31,10 @@ class PlayerSongView extends ConsumerWidget {
     super.key,
   });
 
-  final SongDTO song;
+  final ItemDTO song;
   final bool isPlaying;
-  final void Function(SongDTO)? onTap;
-  final void Function(SongDTO)? onLikePressed;
+  final void Function(ItemDTO)? onTap;
+  final void Function(ItemDTO)? onLikePressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final int position;
   final PlayerSongViewKeys? testKeys;
@@ -69,7 +69,7 @@ class PlayerSongView extends ConsumerWidget {
         12,
       ),
       title: Text(
-        song.name ?? '',
+        song.name,
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -128,7 +128,7 @@ class PlayerSongView extends ConsumerWidget {
                 CupertinoIcons.heart_fill,
                 color: theme.colorScheme.primary,
               ),
-              isSelected: song.songUserData.isFavorite,
+              isSelected: song.userData.isFavorite,
             ),
           if (optionsBuilder != null)
             PopupMenuButton<void>(
