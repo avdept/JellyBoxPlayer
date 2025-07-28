@@ -2,7 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 
 class AudioQueueState {
-  AudioQueueState({required this.originalSongs, required this.shuffledSongs, this.album, this.currentSong, this.isShuffled = false});
+  AudioQueueState({
+    required this.originalSongs,
+    required this.shuffledSongs,
+    this.album,
+    this.currentSong,
+    this.isShuffled = false,
+  });
+
   final List<ItemDTO> originalSongs;
   final ItemDTO? currentSong;
   final ItemDTO? album;
@@ -13,13 +20,18 @@ class AudioQueueState {
 }
 
 class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
-  AudioQueueNotifier() : super(AudioQueueState(originalSongs: [], shuffledSongs: []));
+  AudioQueueNotifier()
+    : super(
+        AudioQueueState(originalSongs: [], shuffledSongs: []),
+      );
 
   // Method to add a song to the queue
   void setNewQueue(List<ItemDTO> songs, ItemDTO playNowSong, ItemDTO album) {
     state = AudioQueueState(
       originalSongs: songs,
-      shuffledSongs: state.isShuffled ? (List<ItemDTO>.from(songs)..shuffle()) : songs,
+      shuffledSongs: state.isShuffled
+          ? (List<ItemDTO>.from(songs)..shuffle())
+          : songs,
       currentSong: playNowSong,
       isShuffled: state.isShuffled,
       album: album,
@@ -32,7 +44,7 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
       shuffledSongs: state.shuffledSongs,
       currentSong: nextSong,
       isShuffled: state.isShuffled,
-      album: state.album
+      album: state.album,
     );
   }
 
@@ -64,18 +76,24 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
 
   int get currentSongIndex {
     if (state.currentSong == null) return 0;
-    final currSong = state.songs.firstWhere((element) => element.id == state.currentSong?.id);
+    final currSong = state.songs.firstWhere(
+      (element) => element.id == state.currentSong?.id,
+    );
     return state.songs.indexOf(currSong);
   }
 
   ItemDTO get nextSong {
-    if (currentSongIndex == state.songs.length - 1 || currentSongIndex == -1) return state.songs.first; // We playing(yed) last song
+    if (currentSongIndex == state.songs.length - 1 || currentSongIndex == -1) {
+      return state.songs.first; // We playing(yed) last song
+    }
 
     return state.songs[currentSongIndex + 1];
   }
 
   ItemDTO get prevSong {
-    if (currentSongIndex == -1 || currentSongIndex == 0) return state.songs.last; // We playing(yed) first song
+    if (currentSongIndex == -1 || currentSongIndex == 0) {
+      return state.songs.last; // We playing(yed) first song
+    }
 
     return state.songs[currentSongIndex - 1];
   }
@@ -90,7 +108,9 @@ class AudioQueueNotifier extends StateNotifier<AudioQueueState> {
       isShuffled: state.isShuffled,
     );
   }
-
 }
 
-final audioQueueProvider = StateNotifierProvider<AudioQueueNotifier, AudioQueueState>((ref) => AudioQueueNotifier());
+final audioQueueProvider =
+    StateNotifierProvider<AudioQueueNotifier, AudioQueueState>(
+      (_) => AudioQueueNotifier(),
+    );

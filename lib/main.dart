@@ -10,16 +10,13 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
-late SharedPreferences prefs;
 late String deviceId;
 
 Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
 
-  prefs = await SharedPreferences.getInstance();
   deviceId = (await FlutterUdid.udid).trim();
 
   ResponsiveSizingConfig.instance.setCustomBreakpoints(

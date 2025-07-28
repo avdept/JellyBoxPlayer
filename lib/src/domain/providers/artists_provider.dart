@@ -1,44 +1,49 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:string_capitalize/string_capitalize.dart';
 
-class ArtistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
-  ArtistsNotifier(
-    this.ref,
-    this.filterState,
-    AsyncData<ItemsPage> initialState,
-  ) : super(initialState);
+class ArtistsNotifier extends AutoDisposeAsyncNotifier<ItemsPage> {
+  late JellyfinApi _api;
+  late Filter _filterState;
 
-  StateNotifierProviderRef<ArtistsNotifier, AsyncData<ItemsPage>> ref;
-  Filter filterState;
+  @override
+  FutureOr<ItemsPage> build() async {
+    _api = ref.watch(jellyfinApiProvider);
+    _filterState = ref.watch(filterProvider);
+    state = const AsyncLoading();
+    return _fetchItems();
+  }
+
+  Future<ItemsPage> _fetchItems({int startIndex = 0}) async {
+    final resp = await _api.getArtists(
+      userId: ref.read(currentUserProvider)!.userId,
+      sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
+      sortBy: _filterState.orderBy.name.capitalize(),
+      startIndex: startIndex.toString(),
+    );
+    final value = state.value ?? const ItemsPage();
+    return value.copyWith(
+      items: [...value.items, ...resp.data.items],
+      currentPage: value.currentPage + 1,
+    );
+  }
 
   Future<void> loadMore() async {
-    final resp = await ref.read(jellyfinApiProvider).getArtists(
-          userId: ref.read(currentUserProvider.notifier).state!.userId,
-          sortOrder: filterState.desc ? 'Descending' : 'Ascending',
-          sortBy: filterState.orderBy.name.capitalize(),
-          startIndex:
-              (state.value.currentPage * state.value.totalPerPage).toString(),
-        );
-    state = AsyncData(
-      state.value.copyWith(
-        items: [...state.value.items, ...resp.data.items],
-        currentPage: state.value.currentPage + 1,
-      ),
+    state = const AsyncLoading();
+    final value = state.requireValue;
+    state = await AsyncValue.guard(
+      () => _fetchItems(startIndex: value.currentPage * value.totalPerPage),
     );
   }
 }
 
-//create a global provider as you would normally in riverpod:
 final artistsProvider =
-    StateNotifierProvider<ArtistsNotifier, AsyncData<ItemsPage>>((ref) {
-  final prov = ArtistsNotifier(
-    ref,
-    ref.watch(filterProvider),
-    const AsyncData<ItemsPage>(ItemsPage()),
-  )..loadMore();
-  return prov;
-});
+    AutoDisposeAsyncNotifierProvider<ArtistsNotifier, ItemsPage>(
+      ArtistsNotifier.new,
+    );

@@ -646,7 +646,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         style: const TextStyle(fontSize: 14),
                       ),
                       onChanged: (ItemDTO? item) {},
-                      items: data.value.items.map<DropdownMenuItem<ItemDTO>>(
+                      items: data.value?.items.map<DropdownMenuItem<ItemDTO>>(
                         (ItemDTO item) {
                           return DropdownMenuItem<ItemDTO>(
                             value: item,

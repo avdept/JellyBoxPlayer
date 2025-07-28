@@ -16,29 +16,21 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockAlbumsNotifier extends StateNotifier<AsyncData<ItemsPage>>
+class MockAlbumsNotifier extends AutoDisposeAsyncNotifier<ItemsPage>
     with Mock
-    implements AlbumsNotifier {
-  MockAlbumsNotifier(super.state);
-}
+    implements AlbumsNotifier {}
 
-class MockArtistsNotifier extends StateNotifier<AsyncData<ItemsPage>>
+class MockArtistsNotifier extends AutoDisposeAsyncNotifier<ItemsPage>
     with Mock
-    implements ArtistsNotifier {
-  MockArtistsNotifier(super.state);
-}
+    implements ArtistsNotifier {}
 
-class MockPlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>>
+class MockPlaylistsNotifier extends AutoDisposeAsyncNotifier<ItemsPage>
     with Mock
-    implements PlaylistsNotifier {
-  MockPlaylistsNotifier(super.state);
-}
+    implements PlaylistsNotifier {}
 
-class MockCurrentLibraryNotifier extends StateNotifier<ItemDTO?>
+class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?>
     with Mock
-    implements CurrentLibraryNotifier {
-  MockCurrentLibraryNotifier(super.state);
-}
+    implements CurrentLibraryNotifier {}
 
 class MockUser extends Mock implements User {}
 
@@ -102,10 +94,10 @@ void main() {
   Widget getWidgetUT() => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        albumsProvider.overrideWith((_) => mockAlbumsNotifier),
-        artistsProvider.overrideWith((_) => mockArtistsNotifier),
-        playlistsProvider.overrideWith((_) => mockPlaylistsNotifier),
-        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
+        albumsProvider.overrideWith(() => mockAlbumsNotifier),
+        artistsProvider.overrideWith(() => mockArtistsNotifier),
+        playlistsProvider.overrideWith(() => mockPlaylistsNotifier),
+        currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
         currentUserProvider.overrideWith((_) => mockUser),
       ],
     ),
@@ -113,15 +105,19 @@ void main() {
   );
 
   setUp(() {
-    mockAlbumsNotifier = MockAlbumsNotifier(AsyncData(mockAlbums));
-    mockArtistsNotifier = MockArtistsNotifier(AsyncData(mockArtists));
-    mockPlaylistsNotifier = MockPlaylistsNotifier(AsyncData(mockPlaylists));
-    mockCurrentLibraryNotifier = MockCurrentLibraryNotifier(mockLibrary);
+    mockAlbumsNotifier = MockAlbumsNotifier();
+    mockArtistsNotifier = MockArtistsNotifier();
+    mockPlaylistsNotifier = MockPlaylistsNotifier();
+    mockCurrentLibraryNotifier = MockCurrentLibraryNotifier();
     mockUser = MockUser();
     when(() => mockAlbumsNotifier.loadMore()).thenAnswer((_) async {});
     when(() => mockArtistsNotifier.loadMore()).thenAnswer((_) async {});
     when(() => mockPlaylistsNotifier.loadMore()).thenAnswer((_) async {});
     when(() => mockUser.userId).thenReturn(faker.datatype.uuid());
+    when(mockAlbumsNotifier.build).thenAnswer((_) async => mockAlbums);
+    when(mockArtistsNotifier.build).thenAnswer((_) async => mockArtists);
+    when(mockPlaylistsNotifier.build).thenAnswer((_) async => mockPlaylists);
+    when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
   });
 
   group('ListenPage', () {

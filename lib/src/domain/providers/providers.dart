@@ -9,6 +9,7 @@ export 'downloaded_albums_provider.dart';
 export 'is_album_downloaded_provider.dart';
 export 'is_song_downloaded_provider.dart';
 export 'items_filter_provider.dart';
+export 'libraries_provider.dart';
 export 'playback_provider.dart';
 export 'playlists_provider.dart';
 export 'queue_provider.dart';

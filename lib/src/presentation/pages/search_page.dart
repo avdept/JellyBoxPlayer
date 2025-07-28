@@ -42,37 +42,37 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Map<SearchView, String> get _viewLabels => {
-        SearchView.all: 'All',
-        SearchView.playlists: 'Playlists',
-        SearchView.albums: 'Albums',
-        SearchView.artists: 'Artists',
-        SearchView.songs: 'Songs',
-      };
+    SearchView.all: 'All',
+    SearchView.playlists: 'Playlists',
+    SearchView.albums: 'Albums',
+    SearchView.artists: 'Artists',
+    SearchView.songs: 'Songs',
+  };
 
   Widget _pageViewToggle() => ChipTheme(
-        data: ChipTheme.of(context).copyWith(
-          labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
-        ),
-        child: Wrap(
-          spacing: 12,
-          children: [
-            for (final value in SearchView.values)
-              ValueListenableBuilder(
-                valueListenable: _currentView,
-                builder: (context, currentView, child) => ActionChip(
-                  label: Text(_viewLabels[value] ?? '???'),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  backgroundColor: (value == currentView)
-                      ? _theme.chipTheme.selectedColor
-                      : _theme.chipTheme.backgroundColor,
-                  onPressed: () => _currentView.value = value,
-                ),
+    data: ChipTheme.of(context).copyWith(
+      labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
+    ),
+    child: Wrap(
+      spacing: 12,
+      children: [
+        for (final value in SearchView.values)
+          ValueListenableBuilder(
+            valueListenable: _currentView,
+            builder: (context, currentView, child) => ActionChip(
+              label: Text(_viewLabels[value] ?? '???'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-          ],
-        ),
-      );
+              backgroundColor: (value == currentView)
+                  ? _theme.chipTheme.selectedColor
+                  : _theme.chipTheme.backgroundColor,
+              onPressed: () => _currentView.value = value,
+            ),
+          ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -122,12 +122,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               return Consumer(
                 builder: (context, ref, child) {
                   final albums = ref.watch(searchAlbumProvider);
-                  return albums.value.items.isNotEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Text('Albums', style: TextStyle(fontSize: 18)),
-                        )
-                      : const SizedBox.shrink();
+                  if (albums.valueOrNull?.items.isEmpty ?? true) {
+                    return const SizedBox.shrink();
+                  }
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Albums',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  );
                 },
               );
             },
@@ -144,13 +148,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               return Consumer(
                 builder: (context, ref, child) {
                   final artists = ref.watch(searchArtistsProvider);
-                  return artists.value.items.isNotEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child:
-                              Text('Artists', style: TextStyle(fontSize: 18)),
-                        )
-                      : const SizedBox.shrink();
+                  if (artists.valueOrNull?.items.isEmpty ?? true) {
+                    return const SizedBox.shrink();
+                  }
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Artists',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  );
                 },
               );
             },
@@ -174,144 +181,148 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Widget _titleText() => Text(
-        'Search',
-        style: TextStyle(
-          fontSize: _device.isMobile ? 24 : 36,
-          fontWeight: FontWeight.w600,
-          height: 1.2,
-        ),
-      );
+    'Search',
+    style: TextStyle(
+      fontSize: _device.isMobile ? 24 : 36,
+      fontWeight: FontWeight.w600,
+      height: 1.2,
+    ),
+  );
 
   Widget get artists => ValueListenableBuilder(
-        valueListenable: _currentView,
-        builder: (context, value, child) {
-          if (value != SearchView.artists && value != SearchView.all) {
-            return const SliverPadding(
-              padding: EdgeInsets.zero,
-            );
+    valueListenable: _currentView,
+    builder: (context, value, child) {
+      if (value != SearchView.artists && value != SearchView.all) {
+        return const SliverPadding(
+          padding: EdgeInsets.zero,
+        );
+      }
+
+      return Consumer(
+        builder: (context, ref, child) {
+          final artists =
+              ref.watch(searchArtistsProvider).valueOrNull?.items ?? const [];
+
+          int firstRowCount;
+
+          if (_device.isDesktop || _device.isTablet) {
+            final screenWidth = _device.screenSize.width - 290;
+            final maxExtent = _device.isTablet ? 360 : 200;
+            firstRowCount = (screenWidth / maxExtent).floor();
+          } else {
+            firstRowCount =
+                2; // As per your SliverGridDelegateWithFixedCrossAxisCount
           }
 
-          return Consumer(
-            builder: (context, ref, child) {
-              final artists = ref.watch(searchArtistsProvider);
-
-              int firstRowCount;
-
-              if (_device.isDesktop || _device.isTablet) {
-                final screenWidth = _device.screenSize.width - 290;
-                final maxExtent = _device.isTablet ? 360 : 200;
-                firstRowCount = (screenWidth / maxExtent).floor();
-              } else {
-                firstRowCount =
-                    2; // As per your SliverGridDelegateWithFixedCrossAxisCount
-              }
-
-              return SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _device.isTablet ? 360 : 200,
-                  mainAxisSpacing: _device.isMobile ? 15 : 24,
-                  crossAxisSpacing:
-                      _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
-                  childAspectRatio: _device.isTablet ? 0.8 : 175 / 215.7,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  album: artists.value.items[index],
-                  onTap: (artist) {
-                    final location = GoRouterState.of(context).fullPath;
-                    context.go(
-                      '$location${Routes.artist}',
-                      extra: {'artist': artist},
-                    );
-                  },
-                ),
-                itemCount: value == SearchView.albums
-                    ? artists.value.items.length
-                    : min(firstRowCount, artists.value.items.length),
-              );
-            },
+          return SliverGrid.builder(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+              mainAxisSpacing: _device.isMobile ? 15 : 24,
+              crossAxisSpacing: _device.isMobile
+                  ? 8
+                  : (_device.isTablet ? 56 : 28),
+              childAspectRatio: _device.isTablet ? 0.8 : 175 / 215.7,
+            ),
+            itemBuilder: (context, index) => AlbumView(
+              album: artists[index],
+              onTap: (artist) {
+                final location = GoRouterState.of(context).fullPath;
+                context.go(
+                  '$location${Routes.artist}',
+                  extra: {'artist': artist},
+                );
+              },
+            ),
+            itemCount: value == SearchView.albums
+                ? artists.length
+                : min(firstRowCount, artists.length),
           );
         },
       );
+    },
+  );
 
   Widget get albums => ValueListenableBuilder(
-        valueListenable: _currentView,
-        builder: (context, value, child) {
-          if (value != SearchView.all &&
-              value != SearchView.albums &&
-              value != SearchView.playlists) {
-            return const SliverPadding(
-              padding: EdgeInsets.zero,
-            );
+    valueListenable: _currentView,
+    builder: (context, value, child) {
+      if (value != SearchView.all &&
+          value != SearchView.albums &&
+          value != SearchView.playlists) {
+        return const SliverPadding(
+          padding: EdgeInsets.zero,
+        );
+      }
+
+      return Consumer(
+        builder: (context, ref, child) {
+          final albums =
+              ref.watch(searchAlbumProvider).valueOrNull?.items ?? const [];
+
+          int firstRowCount;
+
+          if (_device.isDesktop || _device.isTablet) {
+            final screenWidth = MediaQuery.of(context).size.width - 290;
+            final maxExtent = _device.isTablet ? 360 : 200;
+            firstRowCount = (screenWidth / maxExtent).floor();
+          } else {
+            firstRowCount = 2;
           }
 
-          return Consumer(
-            builder: (context, ref, child) {
-              final albums = ref.watch(searchAlbumProvider);
-
-              int firstRowCount;
-
-              if (_device.isDesktop || _device.isTablet) {
-                final screenWidth = MediaQuery.of(context).size.width - 290;
-                final maxExtent = _device.isTablet ? 360 : 200;
-                firstRowCount = (screenWidth / maxExtent).floor();
-              } else {
-                firstRowCount = 2;
-              }
-
-              return SliverGrid.builder(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: _device.isTablet ? 360 : 200,
-                  mainAxisSpacing: _device.isMobile ? 15 : 24,
-                  crossAxisSpacing:
-                      _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
-                  childAspectRatio: _device.isTablet ? 0.8 : 175 / 215.7,
-                ),
-                itemBuilder: (context, index) => AlbumView(
-                  album: albums.value.items[index],
-                  showArtist: false,
-                  onTap: (album) {
-                    final location = GoRouterState.of(context).fullPath;
-                    ref.read(currentAlbumProvider.notifier).setAlbum(album);
-                    context.go(
-                      '$location${Routes.album}',
-                      extra: {'album': album},
-                    );
-                  },
-                ),
-                itemCount: value == SearchView.albums
-                    ? albums.value.items.length
-                    : min(firstRowCount, albums.value.items.length),
-              );
-            },
+          return SliverGrid.builder(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+              mainAxisSpacing: _device.isMobile ? 15 : 24,
+              crossAxisSpacing: _device.isMobile
+                  ? 8
+                  : (_device.isTablet ? 56 : 28),
+              childAspectRatio: _device.isTablet ? 0.8 : 175 / 215.7,
+            ),
+            itemBuilder: (context, index) => AlbumView(
+              album: albums[index],
+              showArtist: false,
+              onTap: (album) {
+                final location = GoRouterState.of(context).fullPath;
+                ref.read(currentAlbumProvider.notifier).setAlbum(album);
+                context.go(
+                  '$location${Routes.album}',
+                  extra: {'album': album},
+                );
+              },
+            ),
+            itemCount: value == SearchView.albums
+                ? albums.length
+                : min(firstRowCount, albums.length),
           );
         },
       );
+    },
+  );
 
   Widget _searchField() => TextField(
-        onChanged: _onSearchChanged,
-        controller: _searchFieldController,
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.search,
-        style: const TextStyle(
-          fontSize: 16,
-          height: 1.2,
-        ),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.24),
-          isDense: true,
-          contentPadding: const EdgeInsets.all(9),
-          border: OutlineInputBorder(
-            borderSide: BorderSide.none,
-            borderRadius: BorderRadius.circular(40),
-          ),
-          prefixIcon: const Icon(JPlayer.search),
-          suffixIcon: IconButton(
-            onPressed: _searchFieldController.clear,
-            padding: EdgeInsets.zero,
-            icon: const Icon(JPlayer.close),
-          ),
-          hintText: _device.isMobile ? 'Search' : null,
-        ),
-      );
+    onChanged: _onSearchChanged,
+    controller: _searchFieldController,
+    keyboardType: TextInputType.text,
+    textInputAction: TextInputAction.search,
+    style: const TextStyle(
+      fontSize: 16,
+      height: 1.2,
+    ),
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.24),
+      isDense: true,
+      contentPadding: const EdgeInsets.all(9),
+      border: OutlineInputBorder(
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(40),
+      ),
+      prefixIcon: const Icon(JPlayer.search),
+      suffixIcon: IconButton(
+        onPressed: _searchFieldController.clear,
+        padding: EdgeInsets.zero,
+        icon: const Icon(JPlayer.close),
+      ),
+      hintText: _device.isMobile ? 'Search' : null,
+    ),
+  );
 }

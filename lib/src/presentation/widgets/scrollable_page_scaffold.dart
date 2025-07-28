@@ -150,7 +150,7 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
               right: 0,
               height: _appBarHeight,
               child: MediaQuery(
-                data: _mediaQuery.copyWith(textScaleFactor: 1),
+                data: _mediaQuery.copyWith(textScaler: TextScaler.noScaling),
                 child: _appBar(),
               ),
             ),

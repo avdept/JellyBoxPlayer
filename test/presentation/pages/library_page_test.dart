@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/presentation/pages/library_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -13,11 +13,9 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockCurrentLibraryNotifier extends StateNotifier<ItemDTO?>
+class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>>
     with Mock
-    implements CurrentLibraryNotifier {
-  MockCurrentLibraryNotifier(super.state);
-}
+    implements LibrariesNotifier {}
 
 class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
     with Mock
@@ -28,7 +26,7 @@ class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late CurrentLibraryNotifier mockCurrentLibraryNotifier;
+  late LibrariesNotifier mockLibrariesNotifier;
   late AuthNotifier mockAuthNotifier;
 
   final faker = Faker.instance;
@@ -43,7 +41,7 @@ void main() {
   Widget getWidgetUT() => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
+        librariesProvider.overrideWith(() => mockLibrariesNotifier),
         authProvider.overrideWith((_) => mockAuthNotifier),
       ],
     ),
@@ -55,11 +53,9 @@ void main() {
   });
 
   setUp(() {
-    mockCurrentLibraryNotifier = MockCurrentLibraryNotifier(null);
+    mockLibrariesNotifier = MockLibrariesNotifier();
     mockAuthNotifier = MockAuthNotifier(const AsyncData(true));
-    when(
-      () => mockCurrentLibraryNotifier.fetchLibraries(),
-    ).thenAnswer((_) async => [mockLibrary]);
+    when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
     when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
   });
 

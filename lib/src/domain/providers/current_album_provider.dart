@@ -7,39 +7,37 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
-final currentAlbumProvider = StateNotifierProvider.autoDispose<CurrentAlbumNotifier, ItemDTO?>(
-  (ref) {
-    final notifier = CurrentAlbumNotifier(api: ref.read(jellyfinApiProvider), ref: ref);
-    final keepAliveLink = ref.keepAlive();
-
-    ref.onDispose(keepAliveLink.close);
-
-    return notifier;
-  },
-);
-
 class CurrentAlbumNotifier extends StateNotifier<ItemDTO?> {
-  CurrentAlbumNotifier({required JellyfinApi api, required AutoDisposeStateNotifierProviderRef<CurrentAlbumNotifier, ItemDTO?> ref})
-      : _api = api,
-        _ref = ref,
-        super(null);
+  CurrentAlbumNotifier(this._ref) : super(null) {
+    final keepAliveLink = _ref.keepAlive();
+    _ref.onDispose(keepAliveLink.close);
 
-  final JellyfinApi _api;
-  final String libraryIdStorageKey = 'library_id';
-  final String libraryPathStorageKey = 'library_path';
-  final AutoDisposeStateNotifierProviderRef<CurrentAlbumNotifier, ItemDTO?> _ref;
+    _api = _ref.watch(jellyfinApiProvider);
+  }
+
+  final Ref _ref;
+  late JellyfinApi _api;
 
   void setAlbum(ItemDTO album) {
     state = album;
   }
 
+  // TODO: should be moved to a separate provider
   Future<ItemsWrapper> fetchSongs(String albumId) async {
     try {
-      final songs = await _api.getSongs(userId: _ref.read(currentUserProvider.notifier).state!.userId, albumId: albumId);
+      final songs = await _api.getSongs(
+        userId: _ref.read(currentUserProvider)!.userId,
+        albumId: albumId,
+      );
       return songs.data;
     } on DioException catch (e) {
-      log(e.message ?? "Error while fetching Songs");
+      log(e.message ?? 'Error while fetching Songs');
     }
     return const ItemsWrapper(items: []);
   }
 }
+
+final AutoDisposeStateNotifierProvider<CurrentAlbumNotifier, ItemDTO?>
+currentAlbumProvider = StateNotifierProvider.autoDispose(
+  CurrentAlbumNotifier.new,
+);

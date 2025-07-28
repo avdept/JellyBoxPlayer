@@ -1,35 +1,40 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
-class SearchPlaylistsNotifier extends StateNotifier<AsyncData<ItemsPage>> {
-  SearchPlaylistsNotifier(this.ref, this._searchTerm, AsyncData<ItemsPage> initialState) : super(initialState) {
-    ref.listen(searchProvider, (previous, next) {
-      _searchTerm = next;
-      search();
-    });
-  }
+class SearchPlaylistsNotifier extends AutoDisposeAsyncNotifier<ItemsPage> {
+  late JellyfinApi _api;
+  var _searchTerm = '';
 
-  StateNotifierProviderRef<SearchPlaylistsNotifier, AsyncData<ItemsPage>> ref;
-  String? _searchTerm;
+  @override
+  FutureOr<ItemsPage> build() async {
+    _api = ref.watch(jellyfinApiProvider);
 
-  Future<void> search() async {
-    if (_searchTerm == null || _searchTerm!.isEmpty) {
-      state = const AsyncData(ItemsPage());
-      return;
+    final searchQuery = ref.watch(searchProvider)?.trim();
+
+    if (searchQuery == _searchTerm) {
+      return state.valueOrNull ?? const ItemsPage();
     }
 
-    final resp = await ref.read(jellyfinApiProvider).searchPlaylists(
-      userId: ref.read(currentUserProvider.notifier).state!.userId,
-      libraryId: ref.read(currentLibraryProvider.notifier).state!.id,
-      searchTerm: _searchTerm!,
+    _searchTerm = searchQuery ?? '';
+    if (_searchTerm.isEmpty) return const ItemsPage();
+
+    final resp = await _api.searchPlaylists(
+      userId: ref.read(currentUserProvider)!.userId,
+      libraryId: ref.read(currentLibraryProvider).valueOrNull!.id,
+      searchTerm: _searchTerm,
     );
-    state = AsyncData(ItemsPage(items: resp.data.items));
+
+    return ItemsPage(items: resp.data.items);
   }
 }
 
-final searchPlaylistsProvider = StateNotifierProvider<SearchPlaylistsNotifier, AsyncData<ItemsPage>>((ref) {
-  return SearchPlaylistsNotifier(ref, ref.read(searchProvider), const AsyncData<ItemsPage>(ItemsPage()));
-});
+final searchPlaylistsProvider =
+    AutoDisposeAsyncNotifierProvider<SearchPlaylistsNotifier, ItemsPage>(
+      SearchPlaylistsNotifier.new,
+    );

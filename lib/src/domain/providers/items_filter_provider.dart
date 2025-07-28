@@ -3,11 +3,22 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
 class FilterNotifier extends StateNotifier<Filter> {
-  FilterNotifier() : super(const Filter(orderBy: EntityFilter.dateCreated, desc: true));
+  FilterNotifier()
+    : super(
+        const Filter(
+          orderBy: EntityFilter.dateCreated,
+          desc: true,
+        ),
+      );
 
-  void filter(EntityFilter field, bool desc) {
+  void filter({
+    required EntityFilter field,
+    required bool desc,
+  }) {
     state = Filter(orderBy: field, desc: desc);
   }
 }
 
-final filterProvider = StateNotifierProvider<FilterNotifier, Filter>((ref) => FilterNotifier());
+final filterProvider = StateNotifierProvider<FilterNotifier, Filter>(
+  (_) => FilterNotifier(),
+);

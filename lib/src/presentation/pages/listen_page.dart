@@ -311,10 +311,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   void _applyProviderFilter(EntityFilter? value) {
     final filter = ref.read(filterProvider);
     if (filter.orderBy == value) {
-      final desc = !filter.desc;
-      ref.read(filterProvider.notifier).filter(value!, desc);
+      ref.read(filterProvider.notifier).filter(field: value!, desc: !filter.desc);
     } else {
-      ref.read(filterProvider.notifier).filter(value!, _defaultSorting[value] ?? false);
+      ref.read(filterProvider.notifier).filter(field: value!, desc: _defaultSorting[value] ?? false);
     }
   }
 

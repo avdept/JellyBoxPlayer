@@ -31,43 +31,42 @@ class PlaybackState {
 }
 
 class PlaybackNotifier extends StateNotifier<PlaybackState> {
-  PlaybackNotifier(
-    this._ref,
-    this._audioPlayer,
-  ) : super(
+  PlaybackNotifier(this._ref)
+    : super(
         PlaybackState(
           status: PlaybackStatus.stopped,
           position: Duration.zero,
           cacheProgress: Duration.zero,
         ),
       ) {
-    // Listen for song completion
-    _audioPlayer.positionStream.listen((position) {
-      state = PlaybackState(
-        status: state.status,
-        position: position,
-        cacheProgress: state.cacheProgress,
-        totalDuration: _audioPlayer.duration,
-      );
-    });
-
-    _audioPlayer.playerStateStream.listen((playerState) {
-      if (playerState.processingState == ProcessingState.completed) {
+    _audioPlayer = _ref.watch(playerProvider)
+      // Listen for song completion
+      ..positionStream.listen((position) {
         state = PlaybackState(
-          status: PlaybackStatus.stopped,
-          position: Duration.zero,
-          cacheProgress: Duration.zero,
-          totalDuration: Duration.zero,
+          status: state.status,
+          position: position,
+          cacheProgress: state.cacheProgress,
+          totalDuration: _audioPlayer.duration,
         );
-        _audioPlayer
-          ..stop()
-          ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
-      }
+      })
       // Handle other player states as needed
-    });
+      ..playerStateStream.listen((playerState) {
+        if (playerState.processingState == ProcessingState.completed) {
+          state = PlaybackState(
+            status: PlaybackStatus.stopped,
+            position: Duration.zero,
+            cacheProgress: Duration.zero,
+            totalDuration: Duration.zero,
+          );
+          _audioPlayer
+            ..stop()
+            ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
+        }
+      });
   }
-  final AudioPlayer _audioPlayer;
-  final StateNotifierProviderRef<PlaybackNotifier, PlaybackState> _ref;
+
+  final Ref _ref;
+  late AudioPlayer _audioPlayer;
 
   Future<void> play(
     ItemDTO playSong,
@@ -85,95 +84,91 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             final isDownloaded = await downloadManager.isSongDownloaded(
               song.id,
             );
-            final downloadedPath =
-                isDownloaded
-                    ? await _ref
-                        .read(downloadDatabaseProvider)
-                        .getDownloadedSongPath(song.id)
-                    : null;
+            final downloadedPath = isDownloaded
+                ? await _ref
+                      .read(downloadDatabaseProvider)
+                      .getDownloadedSongPath(song.id)
+                : null;
 
             // If downloaded, use local file, otherwise stream from server*
-            final audioSource =
-                downloadedPath != null
-                    ? AudioSource.uri(
-                      Uri.file(downloadedPath),
-                      tag: MediaItem(
-                        id: song.id,
-                        album: song.albumName,
-                        artist: album.albumArtist,
-                        duration: Duration(
-                          milliseconds: (song.runTimeTicks / 10000).ceil(),
-                        ),
-                        title: song.name ?? 'Untitled',
-                        artUri:
-                            song.imageTags['Primary'] != null
-                                ? Uri.parse(
-                                  _ref
-                                      .read(imageServiceProvider)
-                                      .imagePath(
-                                        tagId: song.imageTags['Primary']!,
-                                        id: song.id,
-                                      ),
-                                )
-                                : album.imageTags['Primary'] != null
-                                ? Uri.parse(
-                                  _ref
-                                      .read(imageServiceProvider)
-                                      .imagePath(
-                                        tagId: album.imageTags['Primary']!,
-                                        id: album.id,
-                                      ),
-                                )
-                                : null,
+            final audioSource = downloadedPath != null
+                ? AudioSource.uri(
+                    Uri.file(downloadedPath),
+                    tag: MediaItem(
+                      id: song.id,
+                      album: song.albumName,
+                      artist: album.albumArtist,
+                      duration: Duration(
+                        milliseconds: (song.runTimeTicks / 10000).ceil(),
                       ),
-                    )
-                    : AudioSource.uri(
-                      Uri(
-                        scheme: domainUri.scheme,
-                        host: domainUri.host,
-                        port: domainUri.port,
-                        path: 'Audio/${song.id}/universal',
-                        queryParameters: {
-                          'UserId': _ref.read(currentUserProvider)!.userId,
-                          'api_key': _ref.read(currentUserProvider)!.token,
-                          'DeviceId': '12345',
-                          'TranscodingProtocol': 'http',
-                          'TranscodingContainer': 'm4a',
-                          'AudioCodec': 'm4a',
-                          'Container':
-                              'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
-                        },
+                      title: song.name ?? 'Untitled',
+                      artUri: song.imageTags['Primary'] != null
+                          ? Uri.parse(
+                              _ref
+                                  .read(imageServiceProvider)
+                                  .imagePath(
+                                    tagId: song.imageTags['Primary']!,
+                                    id: song.id,
+                                  ),
+                            )
+                          : album.imageTags['Primary'] != null
+                          ? Uri.parse(
+                              _ref
+                                  .read(imageServiceProvider)
+                                  .imagePath(
+                                    tagId: album.imageTags['Primary']!,
+                                    id: album.id,
+                                  ),
+                            )
+                          : null,
+                    ),
+                  )
+                : AudioSource.uri(
+                    Uri(
+                      scheme: domainUri.scheme,
+                      host: domainUri.host,
+                      port: domainUri.port,
+                      path: 'Audio/${song.id}/universal',
+                      queryParameters: {
+                        'UserId': _ref.read(currentUserProvider)!.userId,
+                        'api_key': _ref.read(currentUserProvider)!.token,
+                        'DeviceId': '12345',
+                        'TranscodingProtocol': 'http',
+                        'TranscodingContainer': 'm4a',
+                        'AudioCodec': 'm4a',
+                        'Container':
+                            'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
+                      },
+                    ),
+                    tag: MediaItem(
+                      id: song.id,
+                      album: song.albumName,
+                      artist: album.albumArtist,
+                      duration: Duration(
+                        milliseconds: (song.runTimeTicks / 10000).ceil(),
                       ),
-                      tag: MediaItem(
-                        id: song.id,
-                        album: song.albumName,
-                        artist: album.albumArtist,
-                        duration: Duration(
-                          milliseconds: (song.runTimeTicks / 10000).ceil(),
-                        ),
-                        title: song.name ?? 'Untitled',
-                        artUri:
-                            song.imageTags['Primary'] != null
-                                ? Uri.parse(
-                                  _ref
-                                      .read(imageServiceProvider)
-                                      .imagePath(
-                                        tagId: song.imageTags['Primary']!,
-                                        id: song.id,
-                                      ),
-                                )
-                                : album.imageTags['Primary'] != null
-                                ? Uri.parse(
-                                  _ref
-                                      .read(imageServiceProvider)
-                                      .imagePath(
-                                        tagId: album.imageTags['Primary']!,
-                                        id: album.id,
-                                      ),
-                                )
-                                : null,
-                      ),
-                    );
+                      title: song.name,
+                      artUri: song.imageTags['Primary'] != null
+                          ? Uri.parse(
+                              _ref
+                                  .read(imageServiceProvider)
+                                  .imagePath(
+                                    tagId: song.imageTags['Primary']!,
+                                    id: song.id,
+                                  ),
+                            )
+                          : album.imageTags['Primary'] != null
+                          ? Uri.parse(
+                              _ref
+                                  .read(imageServiceProvider)
+                                  .imagePath(
+                                    tagId: album.imageTags['Primary']!,
+                                    id: album.id,
+                                  ),
+                            )
+                          : null,
+                    ),
+                  );
 
             return audioSource;
           }),
@@ -340,5 +335,5 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 }
 
 final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
-  (ref) => PlaybackNotifier(ref, ref.read(playerProvider)),
+  PlaybackNotifier.new,
 );

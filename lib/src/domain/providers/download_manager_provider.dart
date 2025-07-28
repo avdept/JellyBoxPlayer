@@ -13,7 +13,6 @@ import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
 class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
-  DownloadManagerNotifier();
   late DownloadService _downloadService;
   late DownloadDatabase _database;
 
