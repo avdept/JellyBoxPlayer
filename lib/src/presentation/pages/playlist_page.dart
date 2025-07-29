@@ -218,10 +218,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                     final api = ref.read(jellyfinApiProvider);
                                     if (song.playlistItemId == null) {
                                       const snackBar = SnackBar(
-                                        backgroundColor: Colors.black87,
                                         content: Text(
                                           'Uff! Something went wrong...',
-                                          style: TextStyle(color: Colors.white),
                                         ),
                                       );
                                       ScaffoldMessenger.of(
@@ -233,10 +231,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                         entryIds: song.playlistItemId!,
                                       );
                                       const snackBar = SnackBar(
-                                        backgroundColor: Colors.black87,
                                         content: Text(
                                           'Successfully removed item from playlist',
-                                          style: TextStyle(color: Colors.white),
                                         ),
                                       );
                                       _getSongs();

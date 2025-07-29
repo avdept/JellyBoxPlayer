@@ -21,7 +21,7 @@ dependencies:
   dropdown_button2: ^2.3.9
   flutter_svg: ^2.2.0
   flutter_svg_provider: ^1.0.7
-  sentry_flutter: ^9.4.1
+  sentry_flutter: ^9.5.0
   freezed_annotation: ^3.1.0
   mediakeys_proxy:
     path: ./mediakeys_proxy
@@ -47,7 +47,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   pretty_dio_logger: ^1.4.0
   flutter_secure_storage: ^9.2.4
-  retrofit: ^4.6.0
+  retrofit: ^4.7.0
   dio: ^5.8.0+1
   string_capitalize: ^0.0.10
   sliver_tools: ^0.2.12

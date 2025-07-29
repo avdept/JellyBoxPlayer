@@ -130,12 +130,13 @@ class DownloadDatabase {
   Future<void> deleteDownloadedAlbum(String albumId) async {
     final db = await _database;
     final songs = await getDownloadedSongs(albumId);
+    final files = songs.map((song) => File(song.filePath));
 
-    // Delete each song file
-    for (final song in songs) {
-      final file = File(song.filePath);
-      if (file.existsSync()) await file.delete();
-    }
+    await Future.wait([
+      // Delete each song file
+      for (final file in files)
+        if (file.existsSync()) file.delete(),
+    ]);
 
     final batch = db.batch()
       // Delete the album entry

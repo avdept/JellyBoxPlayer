@@ -19,6 +19,10 @@ abstract class Themes {
       barBackgroundColor: Color(0xFF471F27),
       scaffoldBackgroundColor: Colors.black,
     ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Colors.black87,
+      contentTextStyle: TextStyle(color: Colors.white),
+    ),
     sliderTheme: const SliderThemeData(
       trackHeight: 4,
       overlayColor: Colors.transparent,
