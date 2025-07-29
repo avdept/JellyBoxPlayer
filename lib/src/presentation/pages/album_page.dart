@@ -438,7 +438,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         ),
         SizedBox(width: _device.isDesktop ? 35 : 32),
         if (_device.isDesktop)
-          Container()
+          _downloadAlbumButton()
         // StreamBuilder<PlayerState>(
         //   stream: ref.read(playerProvider).playerStateStream,
         //   builder: (context, snapshot) {
