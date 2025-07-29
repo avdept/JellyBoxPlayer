@@ -20,7 +20,7 @@ class AdaptiveDialogAction extends StatelessWidget {
     final theme = Theme.of(context);
 
     return switch (theme.platform) {
-      TargetPlatform.iOS => CupertinoDialogAction(
+      TargetPlatform.iOS || TargetPlatform.macOS => CupertinoDialogAction(
         onPressed: onPressed,
         isDefaultAction: isDefaultAction,
         isDestructiveAction: isDestructiveAction,

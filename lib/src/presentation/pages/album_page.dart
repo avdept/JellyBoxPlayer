@@ -95,11 +95,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             entryIds: song.id,
           );
       const snackBar = SnackBar(
-        backgroundColor: Colors.black87,
-        content: Text(
-          'Successfully added item to playlist',
-          style: TextStyle(color: Colors.white),
-        ),
+        content: Text('Successfully added item to playlist'),
       );
       _getSongs();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -530,6 +526,12 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 await ref
                     .read(downloadManagerProvider.notifier)
                     .deleteAlbum(widget.album.id);
+                if (context.mounted) {
+                  const snackBar = SnackBar(
+                    content: Text('Successfully deleted album'),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                }
               }
             }
             _isLoading = false;

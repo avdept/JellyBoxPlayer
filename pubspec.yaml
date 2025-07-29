@@ -47,7 +47,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   pretty_dio_logger: ^1.4.0
   flutter_secure_storage: ^9.2.4
-  retrofit: ^4.6.0
+  retrofit: ^4.7.0
   dio: ^5.8.0+1
   string_capitalize: ^0.0.10
   sliver_tools: ^0.2.12
