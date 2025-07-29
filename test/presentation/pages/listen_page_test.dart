@@ -2,13 +2,12 @@ import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/albums_provider.dart';
-import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/domain/providers/item_list_providers.dart';
 import 'package:jplayer/src/presentation/pages/listen_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,17 +15,10 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockAlbumsNotifier extends AutoDisposeAsyncNotifier<ItemsPage>
+class MockItemListNotifier
+    extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList>
     with Mock
-    implements AlbumsNotifier {}
-
-class MockArtistsNotifier extends AutoDisposeAsyncNotifier<ItemsPage>
-    with Mock
-    implements ArtistsNotifier {}
-
-class MockPlaylistsNotifier extends AutoDisposeAsyncNotifier<ItemsPage>
-    with Mock
-    implements PlaylistsNotifier {}
+    implements ItemListNotifier {}
 
 class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?>
     with Mock
@@ -37,9 +29,7 @@ class MockUser extends Mock implements User {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late AlbumsNotifier mockAlbumsNotifier;
-  late ArtistsNotifier mockArtistsNotifier;
-  late PlaylistsNotifier mockPlaylistsNotifier;
+  late ItemListNotifier mockItemListNotifier;
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
   late User mockUser;
 
@@ -94,9 +84,7 @@ void main() {
   Widget getWidgetUT() => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        albumsProvider.overrideWith(() => mockAlbumsNotifier),
-        artistsProvider.overrideWith(() => mockArtistsNotifier),
-        playlistsProvider.overrideWith(() => mockPlaylistsNotifier),
+        itemListProvider.overrideWith(() => mockItemListNotifier),
         currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
         currentUserProvider.overrideWith((_) => mockUser),
       ],
@@ -105,18 +93,20 @@ void main() {
   );
 
   setUp(() {
-    mockAlbumsNotifier = MockAlbumsNotifier();
-    mockArtistsNotifier = MockArtistsNotifier();
-    mockPlaylistsNotifier = MockPlaylistsNotifier();
+    mockItemListNotifier = MockItemListNotifier();
     mockCurrentLibraryNotifier = MockCurrentLibraryNotifier();
     mockUser = MockUser();
-    when(() => mockAlbumsNotifier.loadMore()).thenAnswer((_) async {});
-    when(() => mockArtistsNotifier.loadMore()).thenAnswer((_) async {});
-    when(() => mockPlaylistsNotifier.loadMore()).thenAnswer((_) async {});
+    when(() => mockItemListNotifier.loadMore()).thenAnswer((_) async {});
     when(() => mockUser.userId).thenReturn(faker.datatype.uuid());
-    when(mockAlbumsNotifier.build).thenAnswer((_) async => mockAlbums);
-    when(mockArtistsNotifier.build).thenAnswer((_) async => mockArtists);
-    when(mockPlaylistsNotifier.build).thenAnswer((_) async => mockPlaylists);
+    when(
+      () => mockItemListNotifier.build(ItemList.albums),
+    ).thenAnswer((_) async => mockAlbums);
+    when(
+      () => mockItemListNotifier.build(ItemList.artists),
+    ).thenAnswer((_) async => mockArtists);
+    when(
+      () => mockItemListNotifier.build(ItemList.playlists),
+    ).thenAnswer((_) async => mockPlaylists);
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
   });
 

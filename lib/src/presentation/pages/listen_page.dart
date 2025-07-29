@@ -8,12 +8,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/albums_provider.dart';
-import 'package:jplayer/src/domain/providers/artists_provider.dart';
-import 'package:jplayer/src/domain/providers/current_album_provider.dart';
-import 'package:jplayer/src/domain/providers/current_playlist_provider.dart';
-import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
-import 'package:jplayer/src/domain/providers/playlists_provider.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -26,7 +21,7 @@ class ListenPage extends ConsumerStatefulWidget {
 }
 
 class _ListenPageState extends ConsumerState<ListenPage> {
-  late final ValueNotifier<ListenView> _currentView;
+  late final ValueNotifier<ItemList> _currentView;
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
@@ -35,10 +30,10 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  Map<ListenView, String> get _viewLabels => {
-    ListenView.albums: 'Albums',
-    ListenView.artists: 'Artists',
-    ListenView.playlists: 'Playlists',
+  Map<ItemList, String> get _viewLabels => {
+    ItemList.albums: 'Albums',
+    ItemList.artists: 'Artists',
+    ItemList.playlists: 'Playlists',
   };
 
   Map<EntityFilter, String> get _filtersLabels => {
@@ -152,10 +147,10 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   @override
   void initState() {
     super.initState();
-    _currentView = ValueNotifier(ListenView.values.first)
+    _currentView = ValueNotifier(ItemList.values.first)
       ..addListener(
         () => _appliedFilter.value = Filter(
-          orderBy: _currentView.value == ListenView.albums
+          orderBy: _currentView.value == ItemList.albums
               ? EntityFilter.dateCreated
               : EntityFilter.sortName,
           desc: true,
@@ -167,12 +162,6 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))
       ..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
   }
-
-  Future<void> loadMore() async => switch (_currentView.value) {
-    ListenView.albums => ref.read(albumsProvider.notifier).loadMore(),
-    ListenView.artists => ref.read(artistsProvider.notifier).loadMore(),
-    ListenView.playlists => ref.read(playlistsProvider.notifier).loadMore(),
-  };
 
   @override
   void didChangeDependencies() {
@@ -203,7 +192,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
             ),
           ),
         ),
-        loadMoreData: loadMore,
+        loadMoreData: ref
+            .read(itemListProvider(_currentView.value).notifier)
+            .loadMore,
         contentPadding: EdgeInsets.only(
           left: _device.isMobile ? 16 : 30,
           right: _device.isMobile ? 16 : 30,
@@ -214,13 +205,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
             valueListenable: _currentView,
             builder: (context, value, child) => Consumer(
               builder: (context, ref, child) {
-                final provider = switch (value) {
-                  ListenView.albums => ref.watch(albumsProvider),
-                  ListenView.artists => ref.watch(artistsProvider),
-                  ListenView.playlists => ref.watch(playlistsProvider),
-                };
+                final provider = ref.watch(itemListProvider(value));
                 return provider.when(
-                  data: (state) => SliverGrid.builder(
+                  data: (list) => SliverGrid.builder(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: _device.isTablet ? 360 : 200,
                       mainAxisSpacing: _device.isMobile ? 15 : 24,
@@ -232,16 +219,16 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                           : 175 / 215.7,
                     ),
                     itemBuilder: (context, index) {
-                      final item = state.items[index];
+                      final item = list.items[index];
                       return AlbumView(
                         album: item,
                         onTap: (item) => switch (value) {
-                          ListenView.albums => _onAlbumTap(item),
-                          ListenView.artists => _onArtistTap(item),
-                          ListenView.playlists => _onPlaylistTap(item),
+                          ItemList.albums => _onAlbumTap(item),
+                          ItemList.artists => _onArtistTap(item),
+                          ItemList.playlists => _onPlaylistTap(item),
                         },
                         optionsBuilder: switch (value) {
-                          ListenView.playlists => (context) => [
+                          ItemList.playlists => (context) => [
                             PopupMenuItem(
                               onTap: () => _onDeletePlaylist(item),
                               child: const Text('Delete playlist'),
@@ -251,7 +238,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                         },
                       );
                     },
-                    itemCount: state.items.length,
+                    itemCount: list.items.length,
                   ),
                   error: (error, stackTrace) => SliverToBoxAdapter(
                     child: Text(error.toString()),
@@ -283,7 +270,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     child: Wrap(
       spacing: 12,
       children: [
-        for (final value in ListenView.values)
+        for (final value in ItemList.values)
           ValueListenableBuilder(
             valueListenable: _currentView,
             builder: (context, currentView, child) => ActionChip(
@@ -306,12 +293,12 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   }
 
   List<EntityFilter> getFilterItems() => switch (_currentView.value) {
-    ListenView.albums => EntityFilter.values.toList(),
-    ListenView.artists => [
+    ItemList.albums => EntityFilter.values.toList(),
+    ItemList.artists => const [
       EntityFilter.sortName,
       EntityFilter.dateCreated,
     ],
-    ListenView.playlists => [
+    ItemList.playlists => const [
       EntityFilter.sortName,
       EntityFilter.dateCreated,
     ],
@@ -410,12 +397,11 @@ class _ListenPageState extends ConsumerState<ListenPage> {
         child: child,
       ),
       child: switch (currentView) {
-        ListenView.albums => const SizedBox.shrink(),
-        ListenView.artists => const SizedBox.shrink(),
-        ListenView.playlists => IconButton(
+        ItemList.playlists => IconButton(
           onPressed: _onCreateNewPlaylist,
           icon: const Icon(Icons.add),
         ),
+        _ => const SizedBox.shrink(),
       },
     ),
   );

@@ -1,17 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 
-class SearchAlbumsNotifier extends AutoDisposeAsyncNotifier<ItemsPage> {
+class SearchItemsNotifier
+    extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
   late JellyfinApi _api;
   var _searchTerm = '';
 
   @override
-  FutureOr<ItemsPage> build() async {
+  FutureOr<ItemsPage> build(ItemList arg) async {
     _api = ref.watch(jellyfinApiProvider);
 
     final searchQuery = ref.watch(searchProvider)?.trim();
@@ -33,7 +35,32 @@ class SearchAlbumsNotifier extends AutoDisposeAsyncNotifier<ItemsPage> {
   }
 }
 
-final searchAlbumProvider =
-    AutoDisposeAsyncNotifierProvider<SearchAlbumsNotifier, ItemsPage>(
-      SearchAlbumsNotifier.new,
+final searchItemsProvider =
+    AutoDisposeAsyncNotifierProviderFamily<
+      SearchItemsNotifier,
+      ItemsPage,
+      ItemList
+    >(
+      SearchItemsNotifier.new,
     );
+
+final AutoDisposeFamilyAsyncNotifierProvider<
+  SearchItemsNotifier,
+  ItemsPage,
+  ItemList
+>
+searchAlbumsProvider = searchItemsProvider(ItemList.albums);
+
+final AutoDisposeFamilyAsyncNotifierProvider<
+  SearchItemsNotifier,
+  ItemsPage,
+  ItemList
+>
+searchArtistsProvider = searchItemsProvider(ItemList.artists);
+
+final AutoDisposeFamilyAsyncNotifierProvider<
+  SearchItemsNotifier,
+  ItemsPage,
+  ItemList
+>
+searchPlaylistsProvider = searchItemsProvider(ItemList.playlists);

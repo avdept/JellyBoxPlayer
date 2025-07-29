@@ -121,7 +121,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               }
               return Consumer(
                 builder: (context, ref, child) {
-                  final albums = ref.watch(searchAlbumProvider);
+                  final albums = ref.watch(searchAlbumsProvider);
                   if (albums.valueOrNull?.items.isEmpty ?? true) {
                     return const SizedBox.shrink();
                   }
@@ -253,7 +253,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       return Consumer(
         builder: (context, ref, child) {
           final albums =
-              ref.watch(searchAlbumProvider).valueOrNull?.items ?? const [];
+              ref.watch(searchAlbumsProvider).valueOrNull?.items ?? const [];
 
           int firstRowCount;
 
