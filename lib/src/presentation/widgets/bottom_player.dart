@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +7,6 @@ import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/providers/artists_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -92,10 +90,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                           ),
                         ),
                         SizedBox(height: _isMobile ? 6 : 18),
-                        IconTheme(
-                          data: _theme.iconTheme.copyWith(
-                            size: _isMobile ? 28 : 24,
-                          ),
+                        IconTheme.merge(
+                          data: IconThemeData(size: _isMobile ? 28 : 24),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
@@ -127,8 +123,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 .read(jellyfinApiProvider)
                                 .getItem(itemId: currentSong!.artist!);
                             if (!context.mounted) return;
-                            context.pushReplacementNamed(
-                              Routes.artist.name,
+                            Navigator.of(context).pop();
+                            context.go(
+                              '${Routes.listen}${Routes.artist}',
                               extra: {'artist': item.data},
                             );
                           }
@@ -151,10 +148,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                   // ),
                   const PositionSlider(),
                   SizedBox(height: _isMobile ? 23 : 56),
-                  IconTheme(
-                    data: _theme.iconTheme.copyWith(
-                      size: _isMobile ? 37 : 44,
-                    ),
+                  IconTheme.merge(
+                    data: IconThemeData(size: _isMobile ? 37 : 44),
                     child: Wrap(
                       spacing: _isMobile ? 40 : 24,
                       crossAxisAlignment: WrapCrossAlignment.center,
@@ -282,8 +277,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                               .read(jellyfinApiProvider)
                               .getItem(itemId: currentSong!.artist!);
                           if (!context.mounted) return;
-                          await context.pushNamed(
-                            Routes.artist.name,
+                          context.go(
+                            '${Routes.listen}${Routes.artist}',
                             extra: {'artist': item.data},
                           );
                         }

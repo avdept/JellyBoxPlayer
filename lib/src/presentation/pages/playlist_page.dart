@@ -317,8 +317,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     _currentSong.dispose();
   }
 
-  Widget _albumPanelMobile() => IconTheme(
-    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+  Widget _albumPanelMobile() => IconTheme.merge(
+    data: IconThemeData(size: _device.isMobile ? 24 : 28),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -372,8 +372,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     ),
   );
 
-  Widget _albumPanel() => IconTheme(
-    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+  Widget _albumPanel() => IconTheme.merge(
+    data: IconThemeData(size: _device.isMobile ? 24 : 28),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

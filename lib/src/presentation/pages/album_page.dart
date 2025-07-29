@@ -304,8 +304,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _currentSong.dispose();
   }
 
-  Widget _albumPanelMobile() => IconTheme(
-    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+  Widget _albumPanelMobile() => IconTheme.merge(
+    data: IconThemeData(size: _device.isMobile ? 24 : 28),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -359,8 +359,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     ),
   );
 
-  Widget _albumPanel() => IconTheme(
-    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+  Widget _albumPanel() => IconTheme.merge(
+    data: const IconThemeData(size: 24),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -537,7 +537,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             if (mounted) setState(() {});
           },
           icon: Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
-          iconSize: _device.isDesktop ? 24 : null,
         ),
       );
     },
