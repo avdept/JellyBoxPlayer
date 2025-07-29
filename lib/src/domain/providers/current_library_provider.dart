@@ -2,24 +2,27 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?> {
+  late SharedPreferences _prefs;
+
   static const String _libraryIdStorageKey = 'library_id';
   static const String _libraryPathStorageKey = 'library_path';
   static const String _libraryNameStorageKey = 'library_name';
 
   @override
   FutureOr<ItemDTO?> build() async {
+    _prefs = ref.watch(sharedPreferencesProvider).requireValue;
     final keepAliveLink = ref.keepAlive();
     ref.onDispose(keepAliveLink.close);
 
     state = const AsyncLoading();
-    final prefs = await SharedPreferences.getInstance();
     final library = ItemDTO(
-      id: prefs.getString(_libraryIdStorageKey) ?? '',
-      path: prefs.getString(_libraryPathStorageKey),
-      name: prefs.getString(_libraryNameStorageKey) ?? '',
+      id: _prefs.getString(_libraryIdStorageKey) ?? '',
+      path: _prefs.getString(_libraryPathStorageKey),
+      name: _prefs.getString(_libraryNameStorageKey) ?? '',
       type: 'Library',
     );
 
@@ -30,11 +33,10 @@ class CurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?> {
 
   Future<void> setLibrary(ItemDTO lib) async {
     state = AsyncData(lib);
-    final prefs = await SharedPreferences.getInstance();
     await Future.wait([
-      prefs.setString(_libraryIdStorageKey, lib.id),
-      prefs.setString(_libraryPathStorageKey, lib.path ?? ''),
-      prefs.setString(_libraryNameStorageKey, lib.name),
+      _prefs.setString(_libraryIdStorageKey, lib.id),
+      _prefs.setString(_libraryPathStorageKey, lib.path ?? ''),
+      _prefs.setString(_libraryNameStorageKey, lib.name),
     ]);
   }
 }

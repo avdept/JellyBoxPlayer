@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -22,18 +23,12 @@ class MediaKeyHandler {
     });
   }
 
-  static void _handleMediaKey(String event, WidgetRef ref) {
-    switch (event) {
-      case 'playPause':
-        ref.read(playbackProvider.notifier).playPause();
-      case 'next':
-        ref.read(playbackProvider.notifier).next();
-      case 'prev':
-        ref.read(playbackProvider.notifier).prev();
-      default:
-        debugPrint('Unknown event: $event');
-    }
-  }
+  static void _handleMediaKey(String event, WidgetRef ref) => switch (event) {
+    'playPause' => ref.read(playbackProvider.notifier).playPause(),
+    'next' => ref.read(playbackProvider.notifier).next(),
+    'prev' => ref.read(playbackProvider.notifier).prev(),
+    _ => debugPrint('Unknown event: $event'),
+  };
 }
 
 class App extends ConsumerStatefulWidget {
@@ -52,18 +47,13 @@ class App extends ConsumerStatefulWidget {
 
 class _AppState extends ConsumerState<App> {
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-  final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(null);
   late GoRouter _router;
-
-  ScaffoldMessengerState get _messenger => _messengerKey.currentState!;
+  ItemDTO? _selectedLibrary;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => ref.read(authProvider.notifier).checkAuthState(),
-    );
     MediaKeyHandler.initialize(ref);
     initRoutes();
   }
@@ -187,11 +177,9 @@ class _AppState extends ConsumerState<App> {
         if (authenticated == null) return '/'; // If auth state is unknown
         if (!authenticated && location != Routes.login) return Routes.login;
         if (authenticated && (location == Routes.login || location == '/')) {
-          final selectedLibrary = ref.read(currentLibraryProvider);
           final initialRoute = widget.initialRoute ?? '/';
-
           return (initialRoute == '/' || initialRoute == Routes.login)
-              ? ((selectedLibrary != null) ? Routes.listen : Routes.library)
+              ? ((_selectedLibrary != null) ? Routes.listen : Routes.library)
               : initialRoute;
         }
 
@@ -203,16 +191,17 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(
-      authProvider,
-      (previous, next) {
-        if (next.error != null) {
+    ref
+      ..listen(authProvider, (previous, next) {
+        if (next.hasError) {
           _authState.value = false;
         } else {
           _authState.value = next.value;
         }
-      },
-    );
+      })
+      ..listen(currentLibraryProvider, (previous, next) {
+        _selectedLibrary = next.valueOrNull;
+      });
 
     return MaterialApp.router(
       theme: Themes.red,
@@ -224,7 +213,6 @@ class _AppState extends ConsumerState<App> {
         S.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,
-      scaffoldMessengerKey: _messengerKey,
       routerConfig: _router,
       builder: (context, child) {
         final theme = Theme.of(context);

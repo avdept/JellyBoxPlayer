@@ -17,11 +17,9 @@ class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>>
     with Mock
     implements LibrariesNotifier {}
 
-class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
+class MockAuthNotifier extends AsyncNotifier<bool?>
     with Mock
-    implements AuthNotifier {
-  MockAuthNotifier(super.state);
-}
+    implements AuthNotifier {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +40,7 @@ void main() {
     providerContainer: createProviderContainer(
       overrides: [
         librariesProvider.overrideWith(() => mockLibrariesNotifier),
-        authProvider.overrideWith((_) => mockAuthNotifier),
+        authProvider.overrideWith(() => mockAuthNotifier),
       ],
     ),
     home: const LibraryPage(),
@@ -54,8 +52,9 @@ void main() {
 
   setUp(() {
     mockLibrariesNotifier = MockLibrariesNotifier();
-    mockAuthNotifier = MockAuthNotifier(const AsyncData(true));
+    mockAuthNotifier = MockAuthNotifier();
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
+    when(mockAuthNotifier.build).thenAnswer((_) async => true);
     when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
   });
 
