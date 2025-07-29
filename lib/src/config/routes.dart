@@ -1,17 +1,16 @@
-abstract class Routes {
-  static const root = '/';
-  static const login = '/login';
-  static const library = '/library';
-  static const listen = '/listen';
-  static const search = '/search';
-  static const artist = '/artist';
-  static const settings = '/settings';
-  static const downloads = '/downloads';
-  static const palette = '/palette';
-  static const album = '/album';
-  static const playlist = '/playlist';
-}
+enum Routes {
+  login('/login'),
+  library('/library'),
+  search('/search'),
+  settings('/settings'),
+  downloads('/downloads'),
+  listen('/listen'),
+  album('album'),
+  artist('artist'),
+  palette('palette'),
+  playlist('playlist');
 
-extension RouteName on String {
-  String get name => substring(1);
+  const Routes(this.path);
+
+  final String path;
 }

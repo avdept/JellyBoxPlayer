@@ -27,8 +27,7 @@ class DownloadsPage extends StatelessWidget {
   final DownloadsPageKeys? testKeys;
 
   void _onAlbumTap(BuildContext context, ItemDTO album) {
-    final location = GoRouterState.of(context).fullPath;
-    context.go('$location${Routes.album}', extra: {'album': album});
+    context.pushNamed(Routes.album.name, extra: {'album': album});
   }
 
   @override

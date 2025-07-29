@@ -399,8 +399,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             .read(jellyfinApiProvider)
                             .getItem(itemId: a.id);
                         if (!mounted) return;
-                        context.go(
-                          '${Routes.listen}${Routes.artist}',
+                        await context.pushNamed(
+                          Routes.artist.name,
                           extra: {'artist': item.data},
                         );
                       },

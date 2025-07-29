@@ -24,7 +24,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   Future<void> _onLibraryTap(ItemDTO lib) async {
     await ref.read(currentLibraryProvider.notifier).setLibrary(lib);
-    if (mounted) context.go(Routes.listen);
+    if (mounted) await context.pushNamed(Routes.listen.name);
   }
 
   @override

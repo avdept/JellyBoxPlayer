@@ -64,14 +64,9 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     return tokenValidated && serverUrl.isNotEmpty && userId.isNotEmpty;
   }
 
-  String normalizeUrl(String url) {
-    if (url.startsWith('http')) return url;
-    return 'http://$url';
-  }
-
   Future<String?> login(UserCredentials credentials) async {
     // state = const AsyncLoading<bool>();
-    final serverUrl = normalizeUrl(credentials.serverUrl);
+    final serverUrl = _normalizeUrl(credentials.serverUrl);
     _api = JellyfinApi(_client, baseUrl: serverUrl);
     try {
       final response = await _api.signIn(credentials: credentials);
@@ -106,6 +101,11 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       _removeAuthHeader();
       state = const AsyncData(false);
     }
+  }
+
+  String _normalizeUrl(String url) {
+    if (RegExp('^https?').hasMatch(url)) return url;
+    return 'http://$url';
   }
 
   String? _getAuthHeaderFromResponse(HttpResponse<dynamic> response) {

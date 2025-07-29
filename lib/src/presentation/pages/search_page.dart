@@ -225,13 +225,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
             itemBuilder: (context, index) => AlbumView(
               album: artists[index],
-              onTap: (artist) {
-                final location = GoRouterState.of(context).fullPath;
-                context.go(
-                  '$location${Routes.artist}',
-                  extra: {'artist': artist},
-                );
-              },
+              onTap: (artist) => context.pushNamed(
+                Routes.artist.name,
+                extra: {'artist': artist},
+              ),
             ),
             itemCount: value == SearchView.albums
                 ? artists.length
@@ -281,10 +278,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               album: albums[index],
               showArtist: false,
               onTap: (album) {
-                final location = GoRouterState.of(context).fullPath;
                 ref.read(currentAlbumProvider.notifier).setAlbum(album);
-                context.go(
-                  '$location${Routes.album}',
+                context.pushNamed(
+                  Routes.album.name,
                   extra: {'album': album},
                 );
               },
