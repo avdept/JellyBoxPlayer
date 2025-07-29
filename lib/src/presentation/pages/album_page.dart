@@ -536,6 +536,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             if (mounted) setState(() {});
           },
           icon: Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
+          iconSize: _device.isDesktop ? 24 : null,
         ),
       );
     },
