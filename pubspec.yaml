@@ -76,6 +76,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/db/migrations/
     - assets/icons/
     - assets/images/
 
