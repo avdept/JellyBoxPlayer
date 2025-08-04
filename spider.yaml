@@ -35,5 +35,5 @@ groups:
     types: [ .svg ]
 
   - path: assets/db/migrations
-    class_name: DBMigrations
+    class_name: DbMigrations
     types: [ .sql ]

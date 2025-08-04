@@ -31,8 +31,8 @@ class DownloadDatabase {
 
   Future<void> _createDB(Database db, int version) async {
     const sqlFiles = {
-      DBMigrations.downloads,
-      DBMigrations.albums,
+      DbMigrations.downloads,
+      DbMigrations.albums,
     };
     final queries = await Future.wait(sqlFiles.map(rootBundle.loadString));
     await Future.wait(queries.map(db.execute));
