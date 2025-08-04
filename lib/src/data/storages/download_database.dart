@@ -39,7 +39,7 @@ class DownloadDatabase {
   }
 
   Future<int> insertDownloadedSong(
-    SongDTO song, {
+    ItemDTO song, {
     required File file,
   }) async {
     final db = await _database;

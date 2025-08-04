@@ -11,7 +11,7 @@ class LibraryView extends ConsumerWidget {
     super.key,
   });
 
-  final LibraryDTO library;
+  final ItemDTO library;
   final VoidCallback? onTap;
 
   String? imagePath(WidgetRef ref) {
@@ -42,7 +42,7 @@ class LibraryView extends ConsumerWidget {
             ),
           ),
           Text(
-            library.name ?? 'Untitled',
+            library.name,
             style: const TextStyle(
               fontSize: 16,
               height: 1.2,

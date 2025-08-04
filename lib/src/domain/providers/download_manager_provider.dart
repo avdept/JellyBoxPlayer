@@ -13,7 +13,6 @@ import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
 class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
-  DownloadManagerNotifier();
   late DownloadService _downloadService;
   late DownloadDatabase _database;
 
@@ -25,7 +24,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
     return _database.getDownloadedSongs();
   }
 
-  Future<void> downloadSong(SongDTO song) async {
+  Future<void> downloadSong(ItemDTO song) async {
     // Get server URL and token
     final serverUrl = ref.read(baseUrlProvider)!;
     final token = ref.read(currentUserProvider)!.token;
@@ -52,7 +51,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
     }
   }
 
-  Future<void> downloadAlbum(ItemDTO album, List<SongDTO> songs) async {
+  Future<void> downloadAlbum(ItemDTO album, List<ItemDTO> songs) async {
     // Get server URL and token
     final serverUrl = ref.read(baseUrlProvider)!;
     final token = ref.read(currentUserProvider)!.token;

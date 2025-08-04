@@ -38,10 +38,11 @@ void main() {
   final mockBaseUrl = faker.internet.url();
   final mockUserId = faker.datatype.uuid();
   final mockToken = faker.datatype.string();
-  final mockSong = SongDTO(
+  final mockSong = ItemDTO(
     id: faker.datatype.uuid(),
+    name: faker.lorem.sentence(),
     runTimeTicks: faker.datatype.number(),
-    songUserData: SongUserData(
+    userData: UserData(
       playbackPositionTicks: faker.datatype.number(),
       playCount: faker.datatype.number(),
       isFavorite: faker.datatype.boolean(),
@@ -52,8 +53,7 @@ void main() {
   final mockAlbum = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    serverId: faker.datatype.uuid(),
-    durationInTicks: faker.datatype.number(),
+    runTimeTicks: faker.datatype.number(),
     type: 'Album',
   );
 
@@ -327,8 +327,7 @@ void main() {
           (i) => DownloadedAlbumDTO(
             id: faker.datatype.uuid(),
             name: faker.lorem.sentence(),
-            serverId: faker.datatype.uuid(),
-            durationInTicks: faker.datatype.number(),
+            runTimeTicks: faker.datatype.number(),
             type: 'Album',
             sizeInBytes: faker.datatype.number(),
           ),

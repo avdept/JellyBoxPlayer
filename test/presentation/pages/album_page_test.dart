@@ -30,7 +30,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late JellyfinApi mockJellyfinApi;
-  late HttpResponse<SongsWrapper> mockSongsResponse;
+  late HttpResponse<ItemsWrapper> mockSongsResponse;
   late User mockUser;
   late DownloadManagerNotifier mockDownloadManagerNotifier;
 
@@ -39,21 +39,20 @@ void main() {
   final mockAlbum = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    serverId: faker.datatype.uuid(),
     type: 'Album',
-    durationInTicks: faker.datatype.number(min: 10000),
+    runTimeTicks: faker.datatype.number(min: 10000),
     productionYear: faker.date.past(DateTime.now()).year,
     albumArtist: faker.name.fullName(),
     imageTags: {'Primary': faker.datatype.uuid()},
   );
-  final mockSongs = SongsWrapper(
+  final mockSongs = ItemsWrapper(
     items: List.generate(
       10,
-      (_) => SongDTO(
+      (_) => ItemDTO(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
         runTimeTicks: faker.datatype.number(min: 10000),
-        songUserData: SongUserData(
+        userData: UserData(
           playbackPositionTicks: faker.datatype.number(min: 1000),
           playCount: faker.datatype.number(),
           isFavorite: faker.datatype.boolean(),
@@ -93,7 +92,7 @@ void main() {
     );
   }
 
-  Future<HttpResponse<SongsWrapper>> mockGetSongs({
+  Future<HttpResponse<ItemsWrapper>> mockGetSongs({
     String? albumId,
   }) {
     return mockJellyfinApi.getSongs(
@@ -143,7 +142,7 @@ void main() {
         expect(
           find.descendant(
             of: songFinder,
-            matching: find.text(songUT.name ?? ''),
+            matching: find.text(songUT.name),
           ),
           findsOneWidget,
         );

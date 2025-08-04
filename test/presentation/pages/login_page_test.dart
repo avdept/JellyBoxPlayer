@@ -11,11 +11,9 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
+class MockAuthNotifier extends AsyncNotifier<bool?>
     with Mock
-    implements AuthNotifier {
-  MockAuthNotifier(super.state);
-}
+    implements AuthNotifier {}
 
 class FakeUserCredentials extends Fake implements UserCredentials {}
 
@@ -29,7 +27,7 @@ void main() {
   Widget getWidgetUT() => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        authProvider.overrideWith((_) => mockAuthNotifier),
+        authProvider.overrideWith(() => mockAuthNotifier),
       ],
     ),
     home: const LoginPage(),
@@ -40,7 +38,8 @@ void main() {
   });
 
   setUp(() {
-    mockAuthNotifier = MockAuthNotifier(const AsyncData(true));
+    mockAuthNotifier = MockAuthNotifier();
+    when(mockAuthNotifier.build).thenAnswer((_) async => true);
     when(() => mockAuthNotifier.login(any())).thenAnswer((_) async => null);
   });
 

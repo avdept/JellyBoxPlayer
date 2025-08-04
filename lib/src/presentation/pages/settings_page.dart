@@ -11,12 +11,11 @@ import 'package:jplayer/src/providers/auth_provider.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
-  void _onLibrariesPressed(BuildContext context) => context.go(Routes.library);
+  void _onLibrariesPressed(BuildContext context) =>
+      context.pushNamed(Routes.library.name);
 
-  void _onPaletteSettingsPressed(BuildContext context) {
-    final location = GoRouterState.of(context).fullPath;
-    context.go('$location${Routes.palette}');
-  }
+  void _onPaletteSettingsPressed(BuildContext context) =>
+      context.pushNamed(Routes.palette.name);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -75,20 +74,20 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Widget _settingsButton(BuildContext context) => TextButton.icon(
-        onPressed: () => _onPaletteSettingsPressed(context),
-        icon: const Icon(JPlayer.music),
-        label: const Text('Palette settings'),
-      );
+    onPressed: () => _onPaletteSettingsPressed(context),
+    icon: const Icon(JPlayer.music),
+    label: const Text('Palette settings'),
+  );
 
   Widget _librariesButton(BuildContext context) => TextButton.icon(
-        onPressed: () => _onLibrariesPressed(context),
-        icon: const Icon(JPlayer.music),
-        label: const Text('Music libraries'),
-      );
+    onPressed: () => _onLibrariesPressed(context),
+    icon: const Icon(JPlayer.music),
+    label: const Text('Music libraries'),
+  );
 
   Widget _logOutButton(WidgetRef ref) => TextButton.icon(
-        onPressed: ref.read(authProvider.notifier).logout,
-        icon: const Icon(JPlayer.log_out),
-        label: const Text('Log out'),
-      );
+    onPressed: ref.read(authProvider.notifier).logout,
+    icon: const Icon(JPlayer.log_out),
+    label: const Text('Log out'),
+  );
 }

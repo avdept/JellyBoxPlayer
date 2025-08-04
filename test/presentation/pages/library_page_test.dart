@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/presentation/pages/library_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -13,26 +13,22 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockCurrentLibraryNotifier extends StateNotifier<LibraryDTO?>
+class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>>
     with Mock
-    implements CurrentLibraryNotifier {
-  MockCurrentLibraryNotifier(super.state);
-}
+    implements LibrariesNotifier {}
 
-class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
+class MockAuthNotifier extends AsyncNotifier<bool?>
     with Mock
-    implements AuthNotifier {
-  MockAuthNotifier(super.state);
-}
+    implements AuthNotifier {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late CurrentLibraryNotifier mockCurrentLibraryNotifier;
+  late LibrariesNotifier mockLibrariesNotifier;
   late AuthNotifier mockAuthNotifier;
 
   final faker = Faker.instance;
-  final mockLibrary = LibraryDTO(
+  final mockLibrary = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
     path: faker.internet.url(),
@@ -43,8 +39,8 @@ void main() {
   Widget getWidgetUT() => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
-        authProvider.overrideWith((_) => mockAuthNotifier),
+        librariesProvider.overrideWith(() => mockLibrariesNotifier),
+        authProvider.overrideWith(() => mockAuthNotifier),
       ],
     ),
     home: const LibraryPage(),
@@ -55,11 +51,10 @@ void main() {
   });
 
   setUp(() {
-    mockCurrentLibraryNotifier = MockCurrentLibraryNotifier(null);
-    mockAuthNotifier = MockAuthNotifier(const AsyncData(true));
-    when(
-      () => mockCurrentLibraryNotifier.fetchLibraries(),
-    ).thenAnswer((_) async => [mockLibrary]);
+    mockLibrariesNotifier = MockLibrariesNotifier();
+    mockAuthNotifier = MockAuthNotifier();
+    when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
+    when(mockAuthNotifier.build).thenAnswer((_) async => true);
     when(() => mockAuthNotifier.logout()).thenAnswer((_) async {});
   });
 
@@ -74,7 +69,7 @@ void main() {
         expect(
           find.descendant(
             of: libraryFinder,
-            matching: find.text(mockLibrary.name ?? 'Untitled'),
+            matching: find.text(mockLibrary.name),
           ),
           findsOneWidget,
         );

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -22,18 +23,12 @@ class MediaKeyHandler {
     });
   }
 
-  static void _handleMediaKey(String event, WidgetRef ref) {
-    switch (event) {
-      case 'playPause':
-        ref.read(playbackProvider.notifier).playPause();
-      case 'next':
-        ref.read(playbackProvider.notifier).next();
-      case 'prev':
-        ref.read(playbackProvider.notifier).prev();
-      default:
-        debugPrint('Unknown event: $event');
-    }
-  }
+  static void _handleMediaKey(String event, WidgetRef ref) => switch (event) {
+    'playPause' => ref.read(playbackProvider.notifier).playPause(),
+    'next' => ref.read(playbackProvider.notifier).next(),
+    'prev' => ref.read(playbackProvider.notifier).prev(),
+    _ => debugPrint('Unknown event: $event'),
+  };
 }
 
 class App extends ConsumerStatefulWidget {
@@ -51,38 +46,35 @@ class App extends ConsumerStatefulWidget {
 }
 
 class _AppState extends ConsumerState<App> {
+  late final GoRouter _router;
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-  final _messengerKey = GlobalKey<ScaffoldMessengerState>(debugLabel: 'msg');
   final _authState = ValueNotifier<bool?>(null);
-  late GoRouter _router;
-
-  ScaffoldMessengerState get _messenger => _messengerKey.currentState!;
+  ItemDTO? _selectedLibrary;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => ref.read(authProvider.notifier).checkAuthState(),
-    );
     MediaKeyHandler.initialize(ref);
     initRoutes();
   }
 
   void initRoutes() {
     _router = GoRouter(
-      initialLocation: Routes.root,
+      initialLocation: '/',
       navigatorKey: _rootNavigatorKey,
       routes: [
         GoRoute(
-          path: Routes.root,
+          path: '/',
           pageBuilder: widget.screenFactory.initialPage,
         ),
         GoRoute(
-          path: Routes.login,
+          path: Routes.login.path,
+          name: Routes.login.name,
           pageBuilder: widget.screenFactory.loginPage,
         ),
         GoRoute(
-          path: Routes.library,
+          path: Routes.library.path,
+          name: Routes.library.name,
           pageBuilder: widget.screenFactory.libraryPage,
         ),
         StatefulShellRoute.indexedStack(
@@ -91,36 +83,24 @@ class _AppState extends ConsumerState<App> {
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: Routes.listen,
+                  path: Routes.listen.path,
+                  name: Routes.listen.name,
                   pageBuilder: widget.screenFactory.listenPage,
                   routes: [
                     GoRoute(
-                      path: Routes.album.name,
+                      path: Routes.album.path,
+                      name: Routes.album.name,
                       pageBuilder: widget.screenFactory.albumPage,
                     ),
                     GoRoute(
-                      path: Routes.artist.name,
+                      path: Routes.artist.path,
+                      name: Routes.artist.name,
                       pageBuilder: widget.screenFactory.artistPage,
-                      routes: [
-                        GoRoute(
-                          path: Routes.album.name,
-                          pageBuilder: widget.screenFactory.albumPage,
-                        ),
-                      ],
                     ),
                     GoRoute(
-                      path: Routes.playlist.name,
+                      path: Routes.playlist.path,
+                      name: Routes.playlist.name,
                       pageBuilder: widget.screenFactory.playlistPage,
-                      routes: [
-                        GoRoute(
-                          path: Routes.album.name,
-                          pageBuilder: widget.screenFactory.albumPage,
-                        ),
-                        GoRoute(
-                          path: Routes.artist.name,
-                          pageBuilder: widget.screenFactory.artistPage,
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -129,35 +109,22 @@ class _AppState extends ConsumerState<App> {
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: Routes.search,
+                  path: Routes.search.path,
+                  name: Routes.search.name,
                   pageBuilder: widget.screenFactory.searchPage,
-                  routes: [
-                    GoRoute(
-                      path: Routes.album.name,
-                      pageBuilder: widget.screenFactory.albumPage,
-                    ),
-                    GoRoute(
-                      path: Routes.artist.name,
-                      pageBuilder: widget.screenFactory.artistPage,
-                      routes: [
-                        GoRoute(
-                          path: Routes.album.name,
-                          pageBuilder: widget.screenFactory.albumPage,
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
               ],
             ),
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: Routes.settings,
+                  path: Routes.settings.path,
+                  name: Routes.settings.name,
                   pageBuilder: widget.screenFactory.settingsPage,
                   routes: [
                     GoRoute(
-                      path: Routes.palette.name,
+                      path: Routes.palette.path,
+                      name: Routes.palette.name,
                       pageBuilder: widget.screenFactory.palettePage,
                     ),
                   ],
@@ -167,14 +134,9 @@ class _AppState extends ConsumerState<App> {
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: Routes.downloads,
+                  path: Routes.downloads.path,
+                  name: Routes.downloads.name,
                   pageBuilder: widget.screenFactory.downloadsPage,
-                  routes: [
-                    GoRoute(
-                      path: Routes.album.name,
-                      pageBuilder: widget.screenFactory.albumPage,
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -184,15 +146,18 @@ class _AppState extends ConsumerState<App> {
       redirect: (context, router) async {
         final authenticated = _authState.value;
         final location = router.matchedLocation;
+        final loginRoute = Routes.login.path;
         if (authenticated == null) return '/'; // If auth state is unknown
-        if (!authenticated && location != Routes.login) return Routes.login;
-        if (authenticated && (location == Routes.login || location == '/')) {
-          final selectedLibrary = ref.read(currentLibraryProvider);
+        if (!authenticated && location != loginRoute) return loginRoute;
+        if (authenticated && (location == loginRoute || location == '/')) {
           final initialRoute = widget.initialRoute ?? '/';
-
-          return (initialRoute == '/' || initialRoute == Routes.login)
-              ? ((selectedLibrary != null) ? Routes.listen : Routes.library)
-              : initialRoute;
+          if (initialRoute != '/' && initialRoute != loginRoute) {
+            return initialRoute;
+          } else if (_selectedLibrary != null) {
+            return Routes.listen.path;
+          } else {
+            return Routes.library.path;
+          }
         }
 
         return null;
@@ -203,16 +168,17 @@ class _AppState extends ConsumerState<App> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(
-      authProvider,
-      (previous, next) {
-        if (next.error != null) {
+    ref
+      ..listen(authProvider, (previous, next) {
+        if (next.hasError) {
           _authState.value = false;
         } else {
           _authState.value = next.value;
         }
-      },
-    );
+      })
+      ..listen(currentLibraryProvider, (previous, next) {
+        _selectedLibrary = next.valueOrNull;
+      });
 
     return MaterialApp.router(
       theme: Themes.red,
@@ -224,7 +190,6 @@ class _AppState extends ConsumerState<App> {
         S.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,
-      scaffoldMessengerKey: _messengerKey,
       routerConfig: _router,
       builder: (context, child) {
         final theme = Theme.of(context);

@@ -1,4 +1,4 @@
-enum ListenView {
+enum ItemList {
   albums,
   artists,
   playlists,

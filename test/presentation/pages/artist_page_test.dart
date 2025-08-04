@@ -1,6 +1,5 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -25,8 +24,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late JellyfinApi mockJellyfinApi;
-  late HttpResponse<AlbumsWrapper> mockAlbumsResponse;
-  late HttpResponse<AlbumsWrapper> mockAppearsOnResponse;
+  late HttpResponse<ItemsWrapper> mockAlbumsResponse;
+  late HttpResponse<ItemsWrapper> mockAppearsOnResponse;
   late User mockUser;
 
   final faker = Faker.instance;
@@ -34,36 +33,33 @@ void main() {
   final mockArtist = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.name.fullName(),
-    serverId: faker.datatype.uuid(),
     type: 'Artist',
-    durationInTicks: faker.datatype.number(min: 10000),
+    runTimeTicks: faker.datatype.number(min: 10000),
     albumArtist: faker.name.fullName(),
     imageTags: {'Primary': faker.datatype.uuid()},
   );
-  final mockAlbums = AlbumsWrapper(
+  final mockAlbums = ItemsWrapper(
     items: List.generate(
       5,
       (_) => ItemDTO(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        serverId: faker.datatype.uuid(),
         type: 'Album',
-        durationInTicks: faker.datatype.number(min: 10000),
+        runTimeTicks: faker.datatype.number(min: 10000),
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
     ),
     totalRecordCount: faker.datatype.number(),
   );
-  final mockAppearsOn = AlbumsWrapper(
+  final mockAppearsOn = ItemsWrapper(
     items: List.generate(
       5,
       (_) => ItemDTO(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        serverId: faker.datatype.uuid(),
         type: 'Album',
-        durationInTicks: faker.datatype.number(min: 10000),
+        runTimeTicks: faker.datatype.number(min: 10000),
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -83,7 +79,7 @@ void main() {
     home: ArtistPage(artist: artist),
   );
 
-  Future<HttpResponse<AlbumsWrapper>> mockGetAlbums({
+  Future<HttpResponse<ItemsWrapper>> mockGetAlbums({
     String? contributingArtistIds,
     List<String>? artistIds,
   }) {

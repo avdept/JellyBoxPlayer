@@ -36,7 +36,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     if (titleContext?.mounted ?? false) {
       final scrollPosition = _scrollController.position;
       final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox = scrollableContext.findRenderObject()! as RenderBox;
+      final scrollableRenderBox =
+          scrollableContext.findRenderObject()! as RenderBox;
       final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
       final titlePosition = titleRenderBox.localToGlobal(
         Offset.zero,
@@ -57,7 +58,9 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   }
 
   Future<void> _getAppearsOn() async {
-    final resp = await ref.read(jellyfinApiProvider).getAlbums(
+    final resp = await ref
+        .read(jellyfinApiProvider)
+        .getAlbums(
           userId: ref.read(currentUserProvider)!.userId,
           libraryId: '',
           contributingArtistIds: widget.artist.id,
@@ -68,11 +71,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   }
 
   Future<void> _getAlbums() async {
-    final resp = await ref.read(jellyfinApiProvider).getAlbums(
-      userId: ref.read(currentUserProvider)!.userId,
-      libraryId: '',
-      artistIds: [widget.artist.id],
-    );
+    final resp = await ref
+        .read(jellyfinApiProvider)
+        .getAlbums(
+          userId: ref.read(currentUserProvider)!.userId,
+          libraryId: '',
+          artistIds: [widget.artist.id],
+        );
     setState(() {
       _albums = resp.data.items;
     });
@@ -144,13 +149,17 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                               child: Column(
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Text(
                                           key: _titleKey,
                                           widget.artist.name,
-                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ),
                                       _playButton(),
@@ -223,7 +232,9 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                           flex: 3,
                           child: Padding(
                             padding: EdgeInsets.symmetric(
-                              horizontal: _device.isMobile ? 16 : (_device.isTablet ? 64 : 40),
+                              horizontal: _device.isMobile
+                                  ? 16
+                                  : (_device.isTablet ? 64 : 40),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -253,8 +264,12 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                                 ),
                                 if (!_device.isMobile)
                                   SizedBox(
-                                    height: MediaQuery.sizeOf(context).height - 323,
-                                    child: SizedBox(height: double.infinity, child: _albumsList()),
+                                    height:
+                                        MediaQuery.sizeOf(context).height - 323,
+                                    child: SizedBox(
+                                      height: double.infinity,
+                                      child: _albumsList(),
+                                    ),
                                   ),
                               ],
                             ),
@@ -279,53 +294,57 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   }
 
   Widget _headerImage() => Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: ref.read(imageServiceProvider).backdropIp(
-                  tagId: widget.artist.backdropImageTags.firstOrNull,
-                  id: widget.artist.id,
-                ),
-            fit: BoxFit.fitWidth,
-          ),
-        ),
-        foregroundDecoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _theme.scaffoldBackgroundColor.withOpacity(0),
-              _theme.scaffoldBackgroundColor.withOpacity(1),
-            ],
-          ),
-        ),
-      );
-
-  Widget _mainImage() => Image(
-        image: ref.read(imageServiceProvider).albumIP(
-              tagId: widget.artist.imageTags['Primary'],
+    decoration: BoxDecoration(
+      image: DecorationImage(
+        image: ref
+            .read(imageServiceProvider)
+            .backdropIp(
+              tagId: widget.artist.backdropImageTags.firstOrNull,
               id: widget.artist.id,
             ),
-        width: 500,
-      );
+        fit: BoxFit.fitWidth,
+      ),
+    ),
+    foregroundDecoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          _theme.scaffoldBackgroundColor.withOpacity(0),
+          _theme.scaffoldBackgroundColor.withOpacity(1),
+        ],
+      ),
+    ),
+  );
+
+  Widget _mainImage() => Image(
+    image: ref
+        .read(imageServiceProvider)
+        .albumIP(
+          tagId: widget.artist.imageTags['Primary'],
+          id: widget.artist.id,
+        ),
+    width: 500,
+  );
 
   Widget _infoText() => Padding(
-        padding: const EdgeInsets.only(top: 20),
-        child: Text(
-          widget.artist.overview ?? 'This artist does not have any information.',
-          maxLines: 5,
-          overflow: TextOverflow.ellipsis,
-          softWrap: true,
-          style: _theme.textTheme.bodySmall?.copyWith(
-            fontSize: 14,
-            height: 1.2,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(top: 20),
+    child: Text(
+      widget.artist.overview ?? 'This artist does not have any information.',
+      maxLines: 5,
+      overflow: TextOverflow.ellipsis,
+      softWrap: true,
+      style: _theme.textTheme.bodySmall?.copyWith(
+        fontSize: 14,
+        height: 1.2,
+      ),
+    ),
+  );
 
   Widget _playButton() => SizedBox(
-        height: 48,
-        child: PlayButton(onPressed: () {}),
-      );
+    height: 48,
+    child: PlayButton(onPressed: () {}),
+  );
 
   List<Widget> _albumsWidgets() {
     return [
@@ -359,16 +378,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             itemBuilder: (context, index) => AlbumView(
               showArtist: false,
               album: _albums[index],
-              onTap: (album) {
-                final location = GoRouterState.of(context).fullPath;
-                context.go(
-                  '$location${Routes.album}',
-                  extra: {
-                    'album': album,
-                    'artist': widget.artist,
-                  },
-                );
-              },
+              onTap: (album) => context.pushNamed(
+                Routes.album.name,
+                extra: {
+                  'album': album,
+                  'artist': widget.artist,
+                },
+              ),
               mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
               subTextStyle: const TextStyle(fontSize: 14),
             ),
@@ -402,16 +418,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           itemBuilder: (context, index) => AlbumView(
             showArtist: false,
             album: _appearsOn[index],
-            onTap: (album) {
-              final location = GoRouterState.of(context).fullPath;
-              context.go(
-                '$location${Routes.album}',
-                extra: {
-                  'album': album,
-                  'artist': widget.artist,
-                },
-              );
-            },
+            onTap: (album) => context.pushNamed(
+              Routes.album.name,
+              extra: {
+                'album': album,
+                'artist': widget.artist,
+              },
+            ),
             mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
             subTextStyle: const TextStyle(fontSize: 14),
           ),
@@ -422,29 +435,29 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   }
 
   Widget _albumsList() => CustomScrollbar(
-        controller: _scrollController,
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverPinnedHeader(
-              child: SizedBox.fromSize(
-                size: const Size.fromHeight(16),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        _theme.scaffoldBackgroundColor.withOpacity(1),
-                        _theme.scaffoldBackgroundColor.withOpacity(0),
-                      ],
-                    ),
-                  ),
+    controller: _scrollController,
+    child: CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverPinnedHeader(
+          child: SizedBox.fromSize(
+            size: const Size.fromHeight(16),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    _theme.scaffoldBackgroundColor.withOpacity(1),
+                    _theme.scaffoldBackgroundColor.withOpacity(0),
+                  ],
                 ),
               ),
             ),
-            ..._albumsWidgets()
-          ],
+          ),
         ),
-      );
+        ..._albumsWidgets(),
+      ],
+    ),
+  );
 }

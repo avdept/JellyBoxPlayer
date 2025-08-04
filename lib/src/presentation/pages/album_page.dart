@@ -6,8 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -50,7 +49,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _titleOpacity = ValueNotifier<double>(0);
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
-  List<SongDTO> songs = [];
+  List<ItemDTO> songs = [];
   var _isLoading = false;
 
   late final ImageService _imageService;
@@ -58,7 +57,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  Future<void> _onAddToPlaylistPressed(SongDTO song) async {
+  Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
     ItemDTO? playlist;
 
     if (_device.isDesktop) {
@@ -266,7 +265,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               position: index + 1,
                               onLikePressed: (song) async {
                                 final api = ref.read(jellyfinApiProvider);
-                                final callback = song.songUserData.isFavorite
+                                final callback = song.userData.isFavorite
                                     ? api.removeFavorite
                                     : api.saveFavorite;
                                 await callback.call(
@@ -305,8 +304,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _currentSong.dispose();
   }
 
-  Widget _albumPanelMobile() => IconTheme(
-    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+  Widget _albumPanelMobile() => IconTheme.merge(
+    data: IconThemeData(size: _device.isMobile ? 24 : 28),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -360,8 +359,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     ),
   );
 
-  Widget _albumPanel() => IconTheme(
-    data: _theme.iconTheme.copyWith(size: _device.isMobile ? 24 : 28),
+  Widget _albumPanel() => IconTheme.merge(
+    data: const IconThemeData(size: 24),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -396,8 +395,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             .read(jellyfinApiProvider)
                             .getItem(itemId: a.id);
                         if (!mounted) return;
-                        context.go(
-                          '${Routes.listen}${Routes.artist}',
+                        await context.pushNamed(
+                          Routes.artist.name,
                           extra: {'artist': item.data},
                         );
                       },
@@ -538,7 +537,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             if (mounted) setState(() {});
           },
           icon: Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
-          iconSize: _device.isDesktop ? 24 : null,
         ),
       );
     },
@@ -650,7 +648,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         style: const TextStyle(fontSize: 14),
                       ),
                       onChanged: (ItemDTO? item) {},
-                      items: data.value.items.map<DropdownMenuItem<ItemDTO>>(
+                      items: data.value?.items.map<DropdownMenuItem<ItemDTO>>(
                         (ItemDTO item) {
                           return DropdownMenuItem<ItemDTO>(
                             value: item,
