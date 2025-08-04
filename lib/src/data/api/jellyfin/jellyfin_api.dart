@@ -1,8 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
-import 'package:jplayer/src/data/dto/wrappers/wrappers_dto.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'jellyfin_api.g.dart';

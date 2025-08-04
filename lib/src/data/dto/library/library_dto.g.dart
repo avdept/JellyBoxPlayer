@@ -30,10 +30,9 @@ Map<String, dynamic> _$LibraryDTOToJson(_LibraryDTO instance) =>
     };
 
 _Libraries _$LibrariesFromJson(Map<String, dynamic> json) => _Libraries(
-  libraries:
-      (json['Items'] as List<dynamic>)
-          .map((e) => LibraryDTO.fromJson(e as Map<String, dynamic>))
-          .toList(),
+  libraries: (json['Items'] as List<dynamic>)
+      .map((e) => LibraryDTO.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$LibrariesToJson(_Libraries instance) =>

@@ -29,7 +29,7 @@ class _MainPageState extends ConsumerState<MainPage> {
         (JPlayer.play_circle_outlined, 'Listen'),
         (JPlayer.search, 'Search'),
         (JPlayer.settings, 'Settings'),
-        // (JPlayer.download, 'Downloads'),
+        (JPlayer.download, 'Downloads'),
       };
 
   void _navigateToItem(int index) => widget.shell.goBranch(

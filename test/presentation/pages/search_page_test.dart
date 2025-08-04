@@ -4,9 +4,13 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/presentation/pages/search_page.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   Widget getWidgetUT() => createTestApp(
+    providerContainer: createProviderContainer(),
     home: const SearchPage(),
   );
 

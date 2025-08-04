@@ -1,35 +1,46 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/songs/songs_dto.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+@visibleForTesting
+class PlayerSongViewKeys {
+  @visibleForTesting
+  const PlayerSongViewKeys({
+    required this.downloadedIcon,
+    required this.downloadProgressIndicator,
+  });
+
+  final Key downloadedIcon;
+  final Key downloadProgressIndicator;
+}
 
 class PlayerSongView extends ConsumerWidget {
   const PlayerSongView({
     required this.song,
     required this.position,
     this.isPlaying = false,
-    this.downloadProgress,
     this.onTap,
     this.onLikePressed,
     this.optionsBuilder,
+    @visibleForTesting this.testKeys,
     super.key,
   });
 
   final SongDTO song;
   final bool isPlaying;
-  final double? downloadProgress;
   final void Function(SongDTO)? onTap;
   final void Function(SongDTO)? onLikePressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final int position;
-
-  Duration get duration {
-    return Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
-  }
+  final PlayerSongViewKeys? testKeys;
 
   String get formattedDuration {
+    final duration = Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
     final negativeSign = duration.isNegative ? '-' : '';
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
@@ -43,6 +54,8 @@ class PlayerSongView extends ConsumerWidget {
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
+    final isDownloaded = ref.watch(isSongDownloadedProvider(song)).valueOrNull;
+    final currentTask = ref.read(downloadServiceProvider).getTask(song.id);
 
     return SimpleListTile(
       onTap: (onTap != null) ? () => onTap!.call(song) : null,
@@ -80,14 +93,26 @@ class PlayerSongView extends ConsumerWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(formattedDuration),
-          if (downloadProgress != null)
+          if (isDownloaded ?? false)
+            Icon(
+              Icons.check_circle,
+              key: testKeys?.downloadedIcon,
+              color: Colors.green,
+            )
+          else if (currentTask?.isDownloadingNow ?? false)
             SizedBox.square(
               dimension: 30,
-              child: CircularProgressIndicator(
-                value: downloadProgress,
-                color: const Color(0xFF0066FF),
-                backgroundColor: theme.colorScheme.onPrimary,
-                strokeWidth: 2,
+              child: ValueListenableBuilder(
+                valueListenable: currentTask!.progress,
+                builder: (context, progress, _) {
+                  return CircularProgressIndicator(
+                    key: testKeys?.downloadProgressIndicator,
+                    value: progress,
+                    color: const Color(0xFF0066FF),
+                    backgroundColor: theme.colorScheme.onPrimary,
+                    strokeWidth: 2,
+                  );
+                },
               ),
             ),
           if (isDesktop)

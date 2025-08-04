@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class LibraryView extends ConsumerWidget {
   const LibraryView({
@@ -17,7 +17,7 @@ class LibraryView extends ConsumerWidget {
   String? imagePath(WidgetRef ref) {
     if (library.imageTags['Primary'] == null) return null;
 
-    return ref.read(imageProvider).imagePath(tagId: library.imageTags['Primary']!, id: library.id);
+    return ref.read(imageServiceProvider).imagePath(tagId: library.imageTags['Primary']!, id: library.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {

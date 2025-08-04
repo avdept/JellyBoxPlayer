@@ -33,3 +33,7 @@ groups:
   - path: assets/images
     class_name: SvgPictures
     types: [ .svg ]
+
+  - path: assets/db/migrations
+    class_name: DbMigrations
+    types: [ .sql ]

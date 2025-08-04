@@ -9,7 +9,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class ArtistPage extends ConsumerStatefulWidget {
@@ -114,7 +114,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               alignment: Alignment.topCenter,
               clipBehavior: Clip.none,
               children: [
-                if (widget.artist.backgropImageTags.isNotEmpty)
+                if (widget.artist.backdropImageTags.isNotEmpty)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -191,7 +191,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           alignment: Alignment.topCenter,
           clipBehavior: Clip.none,
           children: [
-            if (widget.artist.backgropImageTags.isNotEmpty)
+            if (widget.artist.backdropImageTags.isNotEmpty)
               Positioned(
                 left: 0,
                 right: 0,
@@ -281,8 +281,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _headerImage() => Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: ref.read(imageProvider).backdropIp(
-                  tagId: widget.artist.backgropImageTags.firstOrNull,
+            image: ref.read(imageServiceProvider).backdropIp(
+                  tagId: widget.artist.backdropImageTags.firstOrNull,
                   id: widget.artist.id,
                 ),
             fit: BoxFit.fitWidth,
@@ -301,7 +301,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       );
 
   Widget _mainImage() => Image(
-        image: ref.read(imageProvider).albumIP(
+        image: ref.read(imageServiceProvider).albumIP(
               tagId: widget.artist.imageTags['Primary'],
               id: widget.artist.id,
             ),

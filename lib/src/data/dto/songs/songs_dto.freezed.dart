@@ -880,4 +880,201 @@ as bool,
 
 }
 
+
+/// @nodoc
+mixin _$DownloadedSongDTO {
+
+ SongUserData get songUserData; Map<String, String> get imageTags; DateTime get downloadDate; String get id; int get runTimeTicks; int get indexNumber; String get type; String? get albumArtist; String? get playlistItemId;// @Default([]) List<ArtistDTO> albumArtists,
+ String? get albumName; String? get albumId; String? get name;@JsonKey(name: 'FilePath') String get filePath;@JsonKey(name: 'SizeInBytes') int get sizeInBytes;
+
+  /// Serializes this DownloadedSongDTO to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DownloadedSongDTO&&(identical(other.songUserData, songUserData) || other.songUserData == songUserData)&&const DeepCollectionEquality().equals(other.imageTags, imageTags)&&(identical(other.downloadDate, downloadDate) || other.downloadDate == downloadDate)&&(identical(other.id, id) || other.id == id)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.type, type) || other.type == type)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.name, name) || other.name == name)&&(identical(other.filePath, filePath) || other.filePath == filePath)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,songUserData,const DeepCollectionEquality().hash(imageTags),downloadDate,id,runTimeTicks,indexNumber,type,albumArtist,playlistItemId,albumName,albumId,name,filePath,sizeInBytes);
+
+@override
+String toString() {
+  return 'DownloadedSongDTO(songUserData: $songUserData, imageTags: $imageTags, downloadDate: $downloadDate, id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, type: $type, albumArtist: $albumArtist, playlistItemId: $playlistItemId, albumName: $albumName, albumId: $albumId, name: $name, filePath: $filePath, sizeInBytes: $sizeInBytes)';
+}
+
+
+}
+
+
+
+
+/// Adds pattern-matching-related methods to [DownloadedSongDTO].
+extension DownloadedSongDTOPatterns on DownloadedSongDTO {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DownloadedSongDTO value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DownloadedSongDTO() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DownloadedSongDTO value)  $default,){
+final _that = this;
+switch (_that) {
+case _DownloadedSongDTO():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DownloadedSongDTO value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DownloadedSongDTO() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int runTimeTicks,  int indexNumber,  SongUserData songUserData,  String type,  String? albumArtist,  String? playlistItemId,  String? albumName,  String? albumId,  String? name,  Map<String, String> imageTags,  DateTime? downloadDate, @JsonKey(name: 'FilePath')  String filePath, @JsonKey(name: 'SizeInBytes')  int sizeInBytes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DownloadedSongDTO() when $default != null:
+return $default(_that.id,_that.runTimeTicks,_that.indexNumber,_that.songUserData,_that.type,_that.albumArtist,_that.playlistItemId,_that.albumName,_that.albumId,_that.name,_that.imageTags,_that.downloadDate,_that.filePath,_that.sizeInBytes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int runTimeTicks,  int indexNumber,  SongUserData songUserData,  String type,  String? albumArtist,  String? playlistItemId,  String? albumName,  String? albumId,  String? name,  Map<String, String> imageTags,  DateTime? downloadDate, @JsonKey(name: 'FilePath')  String filePath, @JsonKey(name: 'SizeInBytes')  int sizeInBytes)  $default,) {final _that = this;
+switch (_that) {
+case _DownloadedSongDTO():
+return $default(_that.id,_that.runTimeTicks,_that.indexNumber,_that.songUserData,_that.type,_that.albumArtist,_that.playlistItemId,_that.albumName,_that.albumId,_that.name,_that.imageTags,_that.downloadDate,_that.filePath,_that.sizeInBytes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int runTimeTicks,  int indexNumber,  SongUserData songUserData,  String type,  String? albumArtist,  String? playlistItemId,  String? albumName,  String? albumId,  String? name,  Map<String, String> imageTags,  DateTime? downloadDate, @JsonKey(name: 'FilePath')  String filePath, @JsonKey(name: 'SizeInBytes')  int sizeInBytes)?  $default,) {final _that = this;
+switch (_that) {
+case _DownloadedSongDTO() when $default != null:
+return $default(_that.id,_that.runTimeTicks,_that.indexNumber,_that.songUserData,_that.type,_that.albumArtist,_that.playlistItemId,_that.albumName,_that.albumId,_that.name,_that.imageTags,_that.downloadDate,_that.filePath,_that.sizeInBytes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DownloadedSongDTO extends DownloadedSongDTO {
+   _DownloadedSongDTO({required final  String id, required final  int runTimeTicks, final  int indexNumber = 0, required final  SongUserData songUserData, required final  String type, final  String? albumArtist, final  String? playlistItemId, final  String? albumName, final  String? albumId, final  String? name, final  Map<String, String> imageTags = const {}, final  DateTime? downloadDate, @JsonKey(name: 'FilePath') required this.filePath, @JsonKey(name: 'SizeInBytes') required this.sizeInBytes}): super._(id: id, runTimeTicks: runTimeTicks, indexNumber: indexNumber, type: type, albumArtist: albumArtist, playlistItemId: playlistItemId, albumName: albumName, albumId: albumId, name: name, songUserData: songUserData, imageTags: imageTags, downloadDate: downloadDate);
+  factory _DownloadedSongDTO.fromJson(Map<String, dynamic> json) => _$DownloadedSongDTOFromJson(json);
+
+@override@JsonKey(name: 'FilePath') final  String filePath;
+@override@JsonKey(name: 'SizeInBytes') final  int sizeInBytes;
+
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DownloadedSongDTOToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DownloadedSongDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.songUserData, songUserData) || other.songUserData == songUserData)&&(identical(other.type, type) || other.type == type)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._imageTags, _imageTags)&&(identical(other.downloadDate, downloadDate) || other.downloadDate == downloadDate)&&(identical(other.filePath, filePath) || other.filePath == filePath)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,runTimeTicks,indexNumber,songUserData,type,albumArtist,playlistItemId,albumName,albumId,name,const DeepCollectionEquality().hash(_imageTags),downloadDate,filePath,sizeInBytes);
+
+@override
+String toString() {
+  return 'DownloadedSongDTO(id: $id, runTimeTicks: $runTimeTicks, indexNumber: $indexNumber, songUserData: $songUserData, type: $type, albumArtist: $albumArtist, playlistItemId: $playlistItemId, albumName: $albumName, albumId: $albumId, name: $name, imageTags: $imageTags, downloadDate: $downloadDate, filePath: $filePath, sizeInBytes: $sizeInBytes)';
+}
+
+
+}
+
+
+
+
 // dart format on

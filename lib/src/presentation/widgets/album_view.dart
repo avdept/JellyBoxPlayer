@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class AlbumView extends ConsumerWidget {
@@ -27,7 +27,7 @@ class AlbumView extends ConsumerWidget {
     if (album.imageTags['Primary'] == null) return null;
 
     return ref
-        .read(imageProvider)
+        .read(imageServiceProvider)
         .imagePath(tagId: album.imageTags['Primary']!, id: album.id);
   }
 

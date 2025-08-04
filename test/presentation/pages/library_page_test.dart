@@ -11,6 +11,7 @@ import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockCurrentLibraryNotifier extends StateNotifier<LibraryDTO?>
     with Mock
@@ -25,6 +26,8 @@ class MockAuthNotifier extends StateNotifier<AsyncValue<bool?>>
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
   late AuthNotifier mockAuthNotifier;
 
@@ -38,10 +41,12 @@ void main() {
   );
 
   Widget getWidgetUT() => createTestApp(
-    providesOverrides: [
-      currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
-      authProvider.overrideWith((_) => mockAuthNotifier),
-    ],
+    providerContainer: createProviderContainer(
+      overrides: [
+        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
+        authProvider.overrideWith((_) => mockAuthNotifier),
+      ],
+    ),
     home: const LibraryPage(),
   );
 

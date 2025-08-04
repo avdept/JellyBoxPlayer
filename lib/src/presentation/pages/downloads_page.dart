@@ -1,16 +1,34 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
-class DownloadsPage extends StatelessWidget {
-  const DownloadsPage({super.key});
+@visibleForTesting
+class DownloadsPageKeys {
+  @visibleForTesting
+  const DownloadsPageKeys({
+    required this.counterText,
+  });
 
-  void _onAlbumTap(BuildContext context) {
+  final Key counterText;
+}
+
+class DownloadsPage extends StatelessWidget {
+  const DownloadsPage({
+    @visibleForTesting this.testKeys,
+    super.key,
+  });
+
+  final DownloadsPageKeys? testKeys;
+
+  void _onAlbumTap(BuildContext context, ItemDTO album) {
     final location = GoRouterState.of(context).fullPath;
-    context.go('$location${Routes.album}');
+    context.go('$location${Routes.album}', extra: {'album': album});
   }
 
   @override
@@ -34,12 +52,24 @@ class DownloadsPage extends StatelessWidget {
                 ),
               ),
               SizedBox(width: device.isMobile ? 12 : 24),
-              Text(
-                '12 albums',
-                style: TextStyle(
-                  fontSize: device.isMobile ? 12 : 16,
-                  height: 1.2,
-                ),
+              Consumer(
+                builder: (context, ref, child) {
+                  final albumCount =
+                      ref.watch(downloadedAlbumsProvider).valueOrNull?.length ??
+                      0;
+                  return Text(
+                    Intl.plural(
+                      albumCount,
+                      one: '$albumCount album',
+                      other: '$albumCount albums',
+                    ),
+                    key: testKeys?.counterText,
+                    style: TextStyle(
+                      fontSize: device.isMobile ? 12 : 16,
+                      height: 1.2,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -55,26 +85,55 @@ class DownloadsPage extends StatelessWidget {
           padding: EdgeInsets.symmetric(
             horizontal: device.isMobile ? 16 : 30,
           ),
-          sliver: SliverGrid.builder(
-            gridDelegate: device.isDesktop
-                ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 245,
-                    mainAxisSpacing: 24,
-                    crossAxisSpacing: 30,
-                    childAspectRatio: 245 / 297.3,
-                  )
-                : SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    mainAxisSpacing: device.isMobile ? 12 : 24,
-                    mainAxisExtent: device.isMobile ? 48 : 70,
-                  ),
-            itemBuilder: (context, index) => DownloadedAlbumView(
-              name: 'Album name',
-              size: '124.6 MB',
-              onTap: () => _onAlbumTap(context),
-              onDeletePressed: () {},
-            ),
-            itemCount: 20,
+          sliver: Consumer(
+            builder: (context, ref, child) {
+              return ref
+                  .watch(downloadedAlbumsProvider)
+                  .when(
+                    data: (albums) {
+                      if (albums.isEmpty) {
+                        return const SliverToBoxAdapter(
+                          child: Center(
+                            child: Text('No downloaded albums yet'),
+                          ),
+                        );
+                      }
+
+                      return SliverGrid.builder(
+                        gridDelegate: device.isDesktop
+                            ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 245,
+                                mainAxisSpacing: 24,
+                                crossAxisSpacing: 30,
+                                childAspectRatio: 245 / 297.3,
+                              )
+                            : SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 1,
+                                mainAxisSpacing: device.isMobile ? 12 : 24,
+                                mainAxisExtent: device.isMobile ? 48 : 70,
+                              ),
+                        itemBuilder: (context, index) => DownloadedAlbumView(
+                          album: albums[index],
+                          onTap: (album) => _onAlbumTap(context, album),
+                          onDelete: (album) => ref
+                              .read(downloadManagerProvider.notifier)
+                              .deleteAlbum(album.id),
+                        ),
+                        itemCount: albums.length,
+                      );
+                    },
+                    error: (error, stackTrace) {
+                      return SliverToBoxAdapter(
+                        child: Center(child: Text('Error: $error')),
+                      );
+                    },
+                    loading: () {
+                      return const SliverToBoxAdapter(
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                  );
+            },
           ),
         ),
       ],

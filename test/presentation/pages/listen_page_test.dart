@@ -14,6 +14,7 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockAlbumsNotifier extends StateNotifier<AsyncData<ItemsPage>>
     with Mock
@@ -42,6 +43,8 @@ class MockCurrentLibraryNotifier extends StateNotifier<LibraryDTO?>
 class MockUser extends Mock implements User {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late AlbumsNotifier mockAlbumsNotifier;
   late ArtistsNotifier mockArtistsNotifier;
   late PlaylistsNotifier mockPlaylistsNotifier;
@@ -100,13 +103,15 @@ void main() {
   );
 
   Widget getWidgetUT() => createTestApp(
-    providesOverrides: [
-      albumsProvider.overrideWith((_) => mockAlbumsNotifier),
-      artistsProvider.overrideWith((_) => mockArtistsNotifier),
-      playlistsProvider.overrideWith((_) => mockPlaylistsNotifier),
-      currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
-      currentUserProvider.overrideWith((_) => mockUser),
-    ],
+    providerContainer: createProviderContainer(
+      overrides: [
+        albumsProvider.overrideWith((_) => mockAlbumsNotifier),
+        artistsProvider.overrideWith((_) => mockArtistsNotifier),
+        playlistsProvider.overrideWith((_) => mockPlaylistsNotifier),
+        currentLibraryProvider.overrideWith((_) => mockCurrentLibraryNotifier),
+        currentUserProvider.overrideWith((_) => mockUser),
+      ],
+    ),
     home: const ListenPage(),
   );
 

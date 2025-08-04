@@ -1,5 +1,6 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -12,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockJellyfinApi extends Mock implements JellyfinApi {}
 
@@ -20,12 +22,15 @@ class MockHttpResponse<T> extends Mock implements HttpResponse<T> {}
 class MockUser extends Mock implements User {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late JellyfinApi mockJellyfinApi;
   late HttpResponse<AlbumsWrapper> mockAlbumsResponse;
   late HttpResponse<AlbumsWrapper> mockAppearsOnResponse;
   late User mockUser;
 
   final faker = Faker.instance;
+  final mockBaseUrl = faker.internet.url();
   final mockArtist = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.name.fullName(),
@@ -68,11 +73,13 @@ void main() {
   final mockUserId = faker.datatype.uuid();
 
   Widget getWidgetUT({required ItemDTO artist}) => createTestApp(
-    providesOverrides: [
-      jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-      baseUrlProvider.overrideWith((_) => faker.internet.url()),
-      currentUserProvider.overrideWith((_) => mockUser),
-    ],
+    providerContainer: createProviderContainer(
+      overrides: [
+        jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
+        baseUrlProvider.overrideWith((_) => mockBaseUrl),
+        currentUserProvider.overrideWith((_) => mockUser),
+      ],
+    ),
     home: ArtistPage(artist: artist),
   );
 

@@ -1,10 +1,12 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/album_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -12,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../../app_wrapper.dart';
+import '../../provider_container.dart';
 
 class MockJellyfinApi extends Mock implements JellyfinApi {}
 
@@ -19,12 +22,20 @@ class MockHttpResponse<T> extends Mock implements HttpResponse<T> {}
 
 class MockUser extends Mock implements User {}
 
+class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>>
+    with Mock
+    implements DownloadManagerNotifier {}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late JellyfinApi mockJellyfinApi;
   late HttpResponse<SongsWrapper> mockSongsResponse;
   late User mockUser;
+  late DownloadManagerNotifier mockDownloadManagerNotifier;
 
   final faker = Faker.instance;
+  final mockBaseUrl = faker.internet.url();
   final mockAlbum = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
@@ -56,15 +67,31 @@ void main() {
     ),
   );
   final mockUserId = faker.datatype.uuid();
-
-  Widget getWidgetUT({required ItemDTO album}) => createTestApp(
-    providesOverrides: [
-      jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
-      baseUrlProvider.overrideWith((_) => faker.internet.url()),
-      currentUserProvider.overrideWith((_) => mockUser),
-    ],
-    home: AlbumPage(album: album),
+  const keys = AlbumPageKeys(
+    downloadButton: Key('downloadButton'),
+    deleteButton: Key('deleteButton'),
+    confirmationDialog: Key('confirmationDialog'),
   );
+
+  Widget getWidgetUT({
+    required ItemDTO album,
+    bool isAlbumDownloaded = false,
+  }) {
+    return createTestApp(
+      providerContainer: createProviderContainer(
+        overrides: [
+          jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
+          baseUrlProvider.overrideWith((_) => mockBaseUrl),
+          currentUserProvider.overrideWith((_) => mockUser),
+          downloadManagerProvider.overrideWith(
+            () => mockDownloadManagerNotifier,
+          ),
+          isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
+        ],
+      ),
+      home: AlbumPage(album: album, testKeys: keys),
+    );
+  }
 
   Future<HttpResponse<SongsWrapper>> mockGetSongs({
     String? albumId,
@@ -76,10 +103,17 @@ void main() {
     );
   }
 
+  setUpAll(() {
+    registerFallbackValue(mockAlbum);
+    registerFallbackValue(mockSongs);
+    deviceId = faker.datatype.uuid();
+  });
+
   setUp(() {
     mockJellyfinApi = MockJellyfinApi();
     mockSongsResponse = MockHttpResponse();
     mockUser = MockUser();
+    mockDownloadManagerNotifier = MockDownloadManagerNotifier();
     when(
       () => mockGetSongs(albumId: mockAlbum.id),
     ).thenAnswer((_) async => mockSongsResponse);
@@ -120,6 +154,61 @@ void main() {
           ),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      "- displays download button when album isn't downloaded",
+      (widgetTester) async {
+        when(
+          () => mockDownloadManagerNotifier.downloadAlbum(any(), any()),
+        ).thenAnswer((_) async {});
+        await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
+        await widgetTester.pump(Duration.zero);
+        final downloadButtonFinder = find.byKey(keys.downloadButton);
+        expect(downloadButtonFinder, findsOneWidget);
+        expect(find.byKey(keys.deleteButton), findsNothing);
+        // Should call downloadAlbum when pressed
+        await widgetTester.tap(downloadButtonFinder);
+        await widgetTester.pumpAndSettle();
+        verify(
+          () => mockDownloadManagerNotifier.downloadAlbum(
+            mockAlbum,
+            mockSongs.items,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      '- displays delete button when album is downloaded',
+      (widgetTester) async {
+        when(
+          () => mockDownloadManagerNotifier.deleteAlbum(any()),
+        ).thenAnswer((_) async {});
+        await widgetTester.pumpWidget(
+          getWidgetUT(album: mockAlbum, isAlbumDownloaded: true),
+        );
+        await widgetTester.pump(Duration.zero);
+        final deleteButtonFinder = find.byKey(keys.deleteButton);
+        expect(deleteButtonFinder, findsOneWidget);
+        expect(find.byKey(keys.downloadButton), findsNothing);
+        // Should show confirmation dialog
+        final confirmationDialogFinder = find.byKey(keys.confirmationDialog);
+        await widgetTester.tap(deleteButtonFinder);
+        await widgetTester.pumpAndSettle();
+        expect(confirmationDialogFinder, findsOneWidget);
+        // Should call deleteAlbum when accepted
+        await widgetTester.tap(
+          find.descendant(
+            of: confirmationDialogFinder,
+            matching: find.widgetWithText(AdaptiveDialogAction, 'Yes'),
+          ),
+        );
+        await widgetTester.pumpAndSettle();
+        verify(
+          () => mockDownloadManagerNotifier.deleteAlbum(mockAlbum.id),
+        ).called(1);
       },
     );
   });
