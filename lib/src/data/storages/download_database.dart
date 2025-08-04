@@ -2,6 +2,8 @@ import 'dart:io' show File;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -28,42 +30,12 @@ class DownloadDatabase {
   }
 
   Future<void> _createDB(Database db, int version) async {
-    await Future.wait([
-      db.execute('''
-        CREATE TABLE Downloads (
-          Id TEXT PRIMARY KEY,
-          RunTimeTicks INTEGER NOT NULL,
-          IndexNumber INTEGER NOT NULL,
-          Type TEXT NOT NULL,
-          AlbumArtist TEXT,
-          PlaylistItemId TEXT,
-          Album TEXT,
-          AlbumId TEXT,
-          Name TEXT,
-          UserData TEXT NOT NULL,
-          ImageTags TEXT,
-          DownloadDate INTEGER NOT NULL,
-          FilePath TEXT NOT NULL,
-          SizeInBytes INTEGER NOT NULL
-        )
-      '''),
-      db.execute('''
-        CREATE TABLE Albums (
-          Id TEXT PRIMARY KEY,
-          Name TEXT NOT NULL,
-          ServerId TEXT NOT NULL,
-          Type TEXT NOT NULL,
-          Overview TEXT,
-          RunTimeTicks INTEGER,
-          ProductionYear INTEGER,
-          AlbumArtist TEXT,
-          ImageTags TEXT,
-          BackdropImageTags TEXT,
-          DownloadDate INTEGER NOT NULL,
-          SizeInBytes INTEGER NOT NULL
-        )
-      '''),
-    ]);
+    const sqlFiles = {
+      DBMigrations.downloads,
+      DBMigrations.albums,
+    };
+    final queries = await Future.wait(sqlFiles.map(rootBundle.loadString));
+    await Future.wait(queries.map(db.execute));
   }
 
   Future<int> insertDownloadedSong(
