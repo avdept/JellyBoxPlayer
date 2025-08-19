@@ -39,8 +39,8 @@ def ensure_temp_keychain(name, password)
 end
 
 platform :ios do
-  desc "Build and upload iOS app to App Store"
 
+  desc "Build and upload iOS app to TestFlight"
   lane :beta do
     keychain_name = TEMP_KEYCHAIN_USER
     keychain_password = TEMP_KEYCHAIN_PASSWORD
