@@ -155,9 +155,4 @@ class DownloadDatabase {
 
     return results.firstOrNull?['FilePath'] as String?;
   }
-
-  Future<void> close() async {
-    final db = await _database;
-    return db.close();
-  }
 }
