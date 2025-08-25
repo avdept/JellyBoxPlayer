@@ -35,19 +35,16 @@ Future<void> main() async {
   }
 
   // Window settings
-  final prefs = await SharedPreferences.getInstance();
-  final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
-  final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
   const minWindowSize = Size(1280, 800);
 
   // Use window_manager package for MacOS & Windows
   if (Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
 
-    final windowOptions = WindowOptions(
-      size: initialWindowSize,
+    const windowOptions = WindowOptions(
+      // size: initialWindowSize,
       minimumSize: minWindowSize,
-      center: true,
+      // center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
@@ -82,6 +79,10 @@ Future<void> main() async {
 
   // Use bitsdojo_window for Linux
   if (Platform.isLinux) {
+    final prefs = await SharedPreferences.getInstance();
+    final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
+    final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
+
     doWhenWindowReady(() {
       appWindow
         ..size = initialWindowSize
