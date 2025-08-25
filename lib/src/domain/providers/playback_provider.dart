@@ -58,9 +58,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             cacheProgress: Duration.zero,
             totalDuration: Duration.zero,
           );
-          _audioPlayer
-            ..stop()
-            ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
+          // _audioPlayer
+          //   ..stop()
+          //   ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
         }
       });
   }
@@ -74,109 +74,67 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     ItemDTO album,
   ) async {
     try {
-      final domainUri = Uri.parse(_ref.read(baseUrlProvider)!);
-      final downloadManager = _ref.read(downloadManagerProvider.notifier);
+      final audioSources = await Future.wait(
+        songs.map((song) async {
+          // Check if song is downloaded*
+          final isDownloaded = await _ref
+              .read(downloadManagerProvider.notifier)
+              .isSongDownloaded(song.id);
+          final downloadedPath = isDownloaded
+              ? await _ref
+                    .read(downloadDatabaseProvider)
+                    .getDownloadedSongPath(song.id)
+              : null;
+          final audioSourceUri = (downloadedPath != null)
+              ? Uri.file(downloadedPath)
+              : Uri.parse(_ref.read(baseUrlProvider)!).replace(
+                  path: 'Audio/${song.id}/universal',
+                  queryParameters: {
+                    'UserId': _ref.read(currentUserProvider)!.userId,
+                    'api_key': _ref.read(currentUserProvider)!.token,
+                    'DeviceId': '12345',
+                    'TranscodingProtocol': 'http',
+                    'TranscodingContainer': 'm4a',
+                    'AudioCodec': 'm4a',
+                    'Container': [
+                      'mp3,aac,m4a',
+                      'aac,m4b',
+                      'aac,flac,alac,m4a',
+                      'alac,m4b',
+                      'alac,wav,m4a,aiff,aif',
+                    ].join('|'),
+                  },
+                );
+          final imagePath =
+              song.imageTags['Primary'] ?? album.imageTags['Primary'];
 
-      final playlist = ConcatenatingAudioSource(
-        children: await Future.wait(
-          songs.map((song) async {
-            // Check if song is downloaded*
-            final isDownloaded = await downloadManager.isSongDownloaded(
-              song.id,
-            );
-            final downloadedPath = isDownloaded
-                ? await _ref
-                      .read(downloadDatabaseProvider)
-                      .getDownloadedSongPath(song.id)
-                : null;
+          // If downloaded, use local file, otherwise stream from server*
+          final audioSource = AudioSource.uri(
+            audioSourceUri,
+            tag: MediaItem(
+              id: song.id,
+              album: song.albumName,
+              artist: album.albumArtist,
+              duration: Duration(
+                milliseconds: (song.runTimeTicks / 10000).ceil(),
+              ),
+              title: song.name,
+              artUri: (imagePath == null)
+                  ? null
+                  : Uri.parse(
+                      _ref
+                          .read(imageServiceProvider)
+                          .imagePath(tagId: imagePath, id: song.id),
+                    ),
+            ),
+          );
 
-            // If downloaded, use local file, otherwise stream from server*
-            final audioSource = downloadedPath != null
-                ? AudioSource.uri(
-                    Uri.file(downloadedPath),
-                    tag: MediaItem(
-                      id: song.id,
-                      album: song.albumName,
-                      artist: album.albumArtist,
-                      duration: Duration(
-                        milliseconds: (song.runTimeTicks / 10000).ceil(),
-                      ),
-                      title: song.name ?? 'Untitled',
-                      artUri: song.imageTags['Primary'] != null
-                          ? Uri.parse(
-                              _ref
-                                  .read(imageServiceProvider)
-                                  .imagePath(
-                                    tagId: song.imageTags['Primary']!,
-                                    id: song.id,
-                                  ),
-                            )
-                          : album.imageTags['Primary'] != null
-                          ? Uri.parse(
-                              _ref
-                                  .read(imageServiceProvider)
-                                  .imagePath(
-                                    tagId: album.imageTags['Primary']!,
-                                    id: album.id,
-                                  ),
-                            )
-                          : null,
-                    ),
-                  )
-                : AudioSource.uri(
-                    Uri(
-                      scheme: domainUri.scheme,
-                      host: domainUri.host,
-                      port: domainUri.port,
-                      path: 'Audio/${song.id}/universal',
-                      queryParameters: {
-                        'UserId': _ref.read(currentUserProvider)!.userId,
-                        'api_key': _ref.read(currentUserProvider)!.token,
-                        'DeviceId': '12345',
-                        'TranscodingProtocol': 'http',
-                        'TranscodingContainer': 'm4a',
-                        'AudioCodec': 'm4a',
-                        'Container':
-                            'mp3,aac,m4a|aac,m4b|aac,flac,alac,m4a|alac,m4b|alac,wav,m4a,aiff,aif',
-                      },
-                    ),
-                    tag: MediaItem(
-                      id: song.id,
-                      album: song.albumName,
-                      artist: album.albumArtist,
-                      duration: Duration(
-                        milliseconds: (song.runTimeTicks / 10000).ceil(),
-                      ),
-                      title: song.name,
-                      artUri: song.imageTags['Primary'] != null
-                          ? Uri.parse(
-                              _ref
-                                  .read(imageServiceProvider)
-                                  .imagePath(
-                                    tagId: song.imageTags['Primary']!,
-                                    id: song.id,
-                                  ),
-                            )
-                          : album.imageTags['Primary'] != null
-                          ? Uri.parse(
-                              _ref
-                                  .read(imageServiceProvider)
-                                  .imagePath(
-                                    tagId: album.imageTags['Primary']!,
-                                    id: album.id,
-                                  ),
-                            )
-                          : null,
-                    ),
-                  );
-
-            return audioSource;
-          }),
-        ),
+          return audioSource;
+        }),
       );
 
-      await _audioPlayer.setAudioSource(
-        playlist,
+      await _audioPlayer.setAudioSources(
+        audioSources,
         initialIndex: songs.indexOf(playSong),
         preload: false,
       );
@@ -252,7 +210,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       return;
     }
 
-    // }
     unawaited(_audioPlayer.play());
     state = PlaybackState(
       status: PlaybackStatus.playing,

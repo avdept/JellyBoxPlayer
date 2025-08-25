@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
+import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 late String deviceId;
@@ -33,14 +35,16 @@ Future<void> main() async {
   }
 
   // Window settings
+  final prefs = await SharedPreferences.getInstance();
+  final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
+  final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
   const minWindowSize = Size(1280, 800);
-  const initialWindowSize = Size(1440, 1000);
 
   // Use window_manager package for MacOS & Windows
   if (Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
 
-    const windowOptions = WindowOptions(
+    final windowOptions = WindowOptions(
       size: initialWindowSize,
       minimumSize: minWindowSize,
       center: true,
@@ -59,27 +63,31 @@ Future<void> main() async {
   }
 
   if (Platform.isLinux) {
-    JustAudioMediaKit.ensureInitialized(
-      windows: false,
-    );
+    JustAudioMediaKit.ensureInitialized(windows: false);
   }
 
   await SentryFlutter.init(
     (options) {
       options
-        ..dsn = 'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
+        ..dsn =
+            'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
         ..tracesSampleRate = 1.0;
     },
-    appRunner: () => runApp(const ProviderScope(child: App(screenFactory: ScreenFactory()))),
+    appRunner: () => runApp(
+      const ProviderScope(
+        child: App(screenFactory: ScreenFactory()),
+      ),
+    ),
   );
 
   // Use bitsdojo_window for Linux
   if (Platform.isLinux) {
     doWhenWindowReady(() {
-      appWindow.size = initialWindowSize;
-      appWindow.minSize = minWindowSize;
-      appWindow.alignment = Alignment.center;
-      appWindow.show();
+      appWindow
+        ..size = initialWindowSize
+        ..minSize = minWindowSize
+        ..alignment = Alignment.center
+        ..show();
     });
   }
 }
