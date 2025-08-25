@@ -15,7 +15,12 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ItemDTO {
 
+<<<<<<< HEAD
 @JsonKey(name: 'Id') String get id;@JsonKey(name: 'Name') String get name;@JsonKey(name: 'Type') String get type;@JsonKey(name: 'IndexNumber') int get indexNumber;@JsonKey(name: 'RunTimeTicks') int get runTimeTicks;@JsonKey(name: 'Path') String? get path;@JsonKey(name: 'CollectionType') String? get collectionType;@JsonKey(name: 'PlaylistItemId') String? get playlistItemId;@JsonKey(name: 'Overview') String? get overview;@JsonKey(name: 'ProductionYear') int? get productionYear;@JsonKey(name: 'AlbumId') String? get albumId;@JsonKey(name: 'Album') String? get albumName;@JsonKey(name: 'AlbumArtist') String? get albumArtist;@JsonKey(name: 'AlbumArtists') List<ArtistDTO> get albumArtists;@JsonKey(name: 'BackdropImageTags') List<String> get backdropImageTags;@JsonKey(name: 'ImageTags') Map<String, String> get imageTags;@JsonKey(name: 'UserData') UserData get userData;@JsonKey(name: 'MediaSources') List<MediaSourceDTO> get mediaSources;
+=======
+@JsonKey(name: 'Id') String get id;@JsonKey(name: 'Name') String get name;@JsonKey(name: 'Type') String get type;@JsonKey(name: 'IndexNumber') int get indexNumber;@JsonKey(name: 'RunTimeTicks') int get runTimeTicks;@JsonKey(name: 'Path') String? get path;@JsonKey(name: 'CollectionType') String? get collectionType;@JsonKey(name: 'PlaylistItemId') String? get playlistItemId;@JsonKey(name: 'Overview') String? get overview;@JsonKey(name: 'ProductionYear') int? get productionYear;// @JsonKey(name: 'ArtistItems') @Default([]) List<ArtistDTO> artists,
+@JsonKey(name: 'AlbumId') String? get albumId;@JsonKey(name: 'Album') String? get albumName;@JsonKey(name: 'AlbumArtist') String? get albumArtist;@JsonKey(name: 'AlbumArtists') List<ArtistDTO> get albumArtists;@JsonKey(name: 'BackdropImageTags') List<String> get backdropImageTags;@JsonKey(name: 'ImageTags') Map<String, String> get imageTags;@JsonKey(name: 'UserData') UserData get userData;
+>>>>>>> e5a6e12 (Fix bottom player and ArtistPage layout, don't set initial window bounds manually for MacOS and Windows)
 /// Create a copy of ItemDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -248,6 +253,7 @@ class _ItemDTO extends ItemDTO {
 @override@JsonKey(name: 'PlaylistItemId') final  String? playlistItemId;
 @override@JsonKey(name: 'Overview') final  String? overview;
 @override@JsonKey(name: 'ProductionYear') final  int? productionYear;
+// @JsonKey(name: 'ArtistItems') @Default([]) List<ArtistDTO> artists,
 @override@JsonKey(name: 'AlbumId') final  String? albumId;
 @override@JsonKey(name: 'Album') final  String? albumName;
 @override@JsonKey(name: 'AlbumArtist') final  String? albumArtist;

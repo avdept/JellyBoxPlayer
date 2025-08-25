@@ -27,6 +27,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   List<ItemDTO> _albums = [];
   List<ItemDTO> _appearsOn = [];
 
+  late Size _screenSize;
   late ThemeData _theme;
   late DeviceType _device;
 
@@ -86,8 +87,9 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _screenSize = MediaQuery.sizeOf(context);
     _theme = Theme.of(context);
-    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
+    _device = DeviceType.fromScreenSize(_screenSize);
   }
 
   Widget get mobileView {
@@ -209,76 +211,58 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                 child: _headerImage(),
               ),
             const Positioned(top: 4, left: 10, child: BackButton()),
-            Padding(
-              padding: EdgeInsets.only(
-                left: _device.isMobile ? 20 : (_device.isTablet ? 64 : 40),
-                top: _device.isMobile ? 60 : (_device.isTablet ? 140 : 238),
-              ),
-              child: SizedBox(
-                height: MediaQuery.sizeOf(context).height - 80,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: _mainImage(),
-                          ),
-                        ),
-                        Flexible(
-                          flex: 3,
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: _device.isMobile
-                                  ? 16
-                                  : (_device.isTablet ? 64 : 40),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        widget.artist.name,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    _playButton(),
-                                  ],
-                                ),
-                                DefaultTextStyle(
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                    color: _theme.textTheme.bodySmall?.color,
-                                    fontSize: _device.isMobile ? 14 : 16,
-                                  ),
-                                  child: _infoText(),
-                                ),
-                                if (!_device.isMobile)
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.sizeOf(context).height - 323,
-                                    child: SizedBox(
-                                      height: double.infinity,
-                                      child: _albumsList(),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+            Positioned.fill(
+              left: _device.isMobile ? 20 : (_device.isTablet ? 64 : 40),
+              top: _device.isMobile ? 60 : (_device.isTablet ? 140 : 238),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: _mainImage(),
                     ),
-                  ],
-                ),
+                  ),
+                  Flexible(
+                    flex: 3,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _device.isMobile
+                            ? 16
+                            : (_device.isTablet ? 64 : 40),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.artist.name,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              _playButton(),
+                            ],
+                          ),
+                          DefaultTextStyle(
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                              color: _theme.textTheme.bodySmall?.color,
+                              fontSize: _device.isMobile ? 14 : 16,
+                            ),
+                            child: _infoText(),
+                          ),
+                          if (!_device.isMobile) Expanded(child: _albumsList()),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,4 +1,5 @@
-import 'dart:async';
+import 'dart:async' show Timer;
+import 'dart:io' show Platform;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -66,16 +67,18 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
 
   @override
   void didChangeMetrics() {
-    _resizeTimer?.cancel();
-    _resizeTimer = Timer(
-      const Duration(seconds: 2),
-      () async {
-        _resizeTimer = null;
-        ref.read(sharedPreferencesProvider).whenData((prefs) {
-          if (mounted) WindowSizeStorage(prefs).saveWindowSize(context.size!);
-        });
-      },
-    );
+    if (Platform.isLinux) {
+      _resizeTimer?.cancel();
+      _resizeTimer = Timer(
+        const Duration(seconds: 2),
+        () async {
+          _resizeTimer = null;
+          ref.read(sharedPreferencesProvider).whenData((prefs) {
+            if (mounted) WindowSizeStorage(prefs).saveWindowSize(context.size!);
+          });
+        },
+      );
+    }
   }
 
   void initRoutes() {
