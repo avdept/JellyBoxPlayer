@@ -45,10 +45,10 @@ class AlbumPage extends ConsumerStatefulWidget {
 }
 
 class _AlbumPageState extends ConsumerState<AlbumPage> {
+  final _titleKey = GlobalKey(debugLabel: 'title');
   final _scrollController = ScrollController();
   final _titleOpacity = ValueNotifier<double>(0);
-  late ValueNotifier<MediaItem?> _currentSong;
-  final _titleKey = GlobalKey(debugLabel: 'title');
+  final _currentSong = ValueNotifier<MediaItem?>(null);
   List<ItemDTO> songs = [];
   var _isLoading = false;
 
@@ -124,7 +124,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   @override
   void initState() {
     super.initState();
-    _currentSong = ValueNotifier<MediaItem?>(null);
     _imageService = ImageService(
       serverUrl: ref.read(baseUrlProvider.notifier).state!,
     );
