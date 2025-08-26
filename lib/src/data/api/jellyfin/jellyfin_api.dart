@@ -13,18 +13,18 @@ abstract class JellyfinApi {
   }) = _JellyfinApi;
 
   @POST('/Users/AuthenticateByName')
-  Future<HttpResponse<UserDTO>> signIn({
+  Future<HttpResponse<SignInResultDTO>> signIn({
     @Body() required UserCredentials credentials,
   });
 
   @POST('/Users/{userId}/FavoriteItems/{itemId}')
-  Future<void> saveFavorite({
+  Future<HttpResponse<void>> saveFavorite({
     @Path('userId') required String userId,
     @Path('itemId') required String itemId,
   });
 
   @DELETE('/Users/{userId}/FavoriteItems/{itemId}')
-  Future<void> removeFavorite({
+  Future<HttpResponse<void>> removeFavorite({
     @Path('userId') required String userId,
     @Path('itemId') required String itemId,
   });
@@ -103,24 +103,24 @@ abstract class JellyfinApi {
   });
 
   @POST('/Playlists')
-  Future<void> createPlaylist({
+  Future<HttpResponse<void>> createPlaylist({
     @Body() required PlaylistData values,
   });
 
   @DELETE('/Items/{playlistId}')
-  Future<void> deletePlaylist({
+  Future<HttpResponse<void>> deletePlaylist({
     @Path('playlistId') required String playlistId,
   });
 
   @POST('/Playlists/{playlistId}/Items')
-  Future<void> addPlaylistItems({
+  Future<HttpResponse<void>> addPlaylistItems({
     @Path('playlistId') required String playlistId,
     @Query('userId') required String userId,
     @Query('ids') required String entryIds,
   });
 
   @DELETE('/Playlists/{playlistId}/Items')
-  Future<void> removePlaylistItem({
+  Future<HttpResponse<void>> removePlaylistItem({
     @Path('playlistId') required String playlistId,
     @Query('EntryIds') required String entryIds,
   });
@@ -157,4 +157,17 @@ abstract class JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> getLibraries({
     @Path('userId') required String userId,
   });
+
+  @POST('/Sessions/Playing')
+  Future<HttpResponse<void>> playbackStarted({
+    @Body() required PlaystateData values,
+  });
+
+  @POST('/Sessions/Playing/Stopped')
+  Future<HttpResponse<void>> playbackStopped({
+    @Body() required PlaystateData values,
+  });
+
+  @POST('/Sessions/Logout')
+  Future<HttpResponse<void>> signOut();
 }

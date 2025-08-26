@@ -10,7 +10,6 @@ import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
-import 'package:retrofit/retrofit.dart';
 
 class AuthNotifier extends AsyncNotifier<bool?> {
   AuthNotifier() {
@@ -70,17 +69,19 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     _api = JellyfinApi(_client, baseUrl: serverUrl);
     try {
       final response = await _api.signIn(credentials: credentials);
-      final token = _getAuthHeaderFromResponse(response);
+      print(response.data.sessionInfo); // TODO: remove after testing
+      final token = response.data.accessToken;
+      final userId = response.data.user.id;
       await _storage.write(key: _tokenKey, value: token);
-      await _storage.write(key: _userIdKey, value: response.data.id);
+      await _storage.write(key: _userIdKey, value: userId);
       await _storage.write(key: _serverUrlKey, value: serverUrl);
 
       ref.read(baseUrlProvider.notifier).state = serverUrl;
       ref.read(currentUserProvider.notifier).state = User(
-        userId: response.data.id,
-        token: token!,
+        userId: userId,
+        token: token,
       );
-      final tokenValidated = _validateAuthToken(token, response.data.id);
+      final tokenValidated = _validateAuthToken(token, userId);
       if (tokenValidated) _setAuthHeader(token);
       state = AsyncData(tokenValidated);
     } on DioException catch (e) {
@@ -96,6 +97,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       await Future.wait([
         ref.read(sharedPreferencesProvider).requireValue.clear(),
         _storage.deleteAll(),
+        _api.signOut(),
       ]);
     } finally {
       _removeAuthHeader();
@@ -106,10 +108,6 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   String _normalizeUrl(String url) {
     if (RegExp('^https?').hasMatch(url)) return url;
     return 'http://$url';
-  }
-
-  String? _getAuthHeaderFromResponse(HttpResponse<dynamic> response) {
-    return response.response.data['AccessToken'] as String?;
   }
 
   bool _validateAuthToken(String? token, String userId) {

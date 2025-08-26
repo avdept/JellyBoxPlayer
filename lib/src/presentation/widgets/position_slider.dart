@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
 
@@ -21,14 +22,16 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
   Widget build(BuildContext context) {
     final playbackState = ref.watch(playbackProvider);
 
-    if (playbackState.status == PlaybackStatus.stopped) return Container();
-    return SeekBar(
-      duration: playbackState.totalDuration ?? Duration.zero,
-      // Workaround for a bug where negative positions are passed which triggers an assert that stops the debugger
-      // Tracked in #79   
-      position: playbackState.position >= Duration.zero ? playbackState.position : Duration.zero,
-      bufferedPosition: playbackState.cacheProgress,
-      onChangeEnd: (value) => ref.read(playbackProvider.notifier).seek(value),
+    return Offstage(
+      offstage: playbackState.status == PlaybackStatus.stopped,
+      child: SeekBar(
+        duration: playbackState.totalDuration ?? Duration.zero,
+        // Workaround for a bug where negative positions are passed which triggers an assert that stops the debugger
+        // Tracked in #79
+        position: playbackState.position >= Duration.zero ? playbackState.position : Duration.zero,
+        bufferedPosition: playbackState.cacheProgress,
+        onChangeEnd: (value) => ref.read(playbackProvider.notifier).seek(value),
+      ),
     );
     // return GestureDetector(
     //   onHorizontalDragDown: (details) {
