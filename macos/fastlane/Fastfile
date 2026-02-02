@@ -69,6 +69,7 @@ platform :mac do
         path: "Runner.xcodeproj",
         team_id: ENV["TEAM_ID"],
         bundle_identifier: ENV["APP_IDENTIFIER"],
+        code_sign_identity: "Apple Distribution",
         profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-name"]
     )
 
@@ -83,8 +84,8 @@ platform :mac do
     build_app(
         workspace: "Runner.xcworkspace",
         scheme: "Runner",
-        export_method: "app-store",
-        xcargs: "DEVELOPMENT_TEAM=#{ENV['TEAM_ID']}"
+        xcargs: "DEVELOPMENT_TEAM='#{ENV['TEAM_ID']}' CODE_SIGN_IDENTITY='Apple Distribution'",
+        export_method: "app-store"
     )
 
     upload_to_testflight(skip_waiting_for_build_processing: true)
