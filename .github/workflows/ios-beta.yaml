@@ -11,16 +11,16 @@ jobs:
         working-directory: ios
     env:
       BUILD_NUMBER: ${{ github.run_number }}
-      APP_IDENTIFIER: ${{ secrets.APP_IDENTIFIER }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
-      TEAM_ID: ${{ secrets.TEAM_ID }}
+      APP_IDENTIFIER: ${{ vars.APP_IDENTIFIER }}
+      APPLE_ID: ${{ vars.APPLE_ID }}
+      ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
+      TEAM_ID: ${{ vars.TEAM_ID }}
       APPSTORE_P8_KEY_CONTENT: ${{ secrets.APPSTORE_P8_KEY_CONTENT }}
       APPSTORE_KEY_ISSUER_ID: ${{ secrets.APPSTORE_KEY_ISSUER_ID }}
       APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-      GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
+      GIT_USERNAME: ${{ vars.GIT_USERNAME }}
       GIT_AUTHORIZATION: ${{ secrets.GIT_AUTHORIZATION }}
-      GIT_REPOSITORY: ${{ secrets.GIT_REPOSITORY }}
+      GIT_REPOSITORY: ${{ vars.GIT_REPOSITORY }}
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
     steps:
@@ -32,7 +32,7 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: "3.2"
           bundler-cache: true
           working-directory: ios
 
