@@ -1,12 +1,10 @@
 name: jplayer
 description: Jellyfin client
-publish_to: 'none'
-version: 1.8.4+25
-
+publish_to: "none"
+version: 1.8.5+25
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
-
+  sdk: ">=3.8.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -28,7 +26,7 @@ dependencies:
   just_audio:
   just_audio_background:
   just_audio_media_kit: # Used for Linux
-    git:                # Remove when https://github.com/Pato05/just_audio_media_kit/pull/17 is merged
+    git: # Remove when https://github.com/Pato05/just_audio_media_kit/pull/17 is merged
       url: https://github.com/lvyueyang/just_audio_media_kit.git
       ref: main
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
@@ -55,7 +53,6 @@ dependencies:
   sqflite: ^2.4.2
   path: ^1.9.1
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,7 +67,6 @@ dev_dependencies:
     sdk: flutter
   mocktail: ^1.0.4
   faker_dart: ^0.2.2
-
 
 flutter:
   uses-material-design: true
