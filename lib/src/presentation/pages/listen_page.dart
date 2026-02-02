@@ -50,15 +50,23 @@ class _ListenPageState extends ConsumerState<ListenPage> {
 
   void _onAlbumTap(ItemDTO album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
-    context.pushNamed(Routes.album.name, extra: {'album': album});
+    context.pushNamed(
+      Routes.album.name,
+      extra: {'album': album},
+    );
   }
 
-  void _onArtistTap(ItemDTO artist) =>
-      context.pushNamed(Routes.artist.name, extra: {'artist': artist});
+  void _onArtistTap(ItemDTO artist) => context.pushNamed(
+    Routes.artist.name,
+    extra: {'artist': artist},
+  );
 
   void _onPlaylistTap(ItemDTO playlist) {
     ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
-    context.pushNamed(Routes.playlist.name, extra: {'playlist': playlist});
+    context.pushNamed(
+      Routes.playlist.name,
+      extra: {'playlist': playlist},
+    );
   }
 
   void _onCreateNewPlaylist() {

@@ -72,9 +72,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                     ),
                   ),
                   trailing: TextButton.icon(
-                    onPressed: () {
-                      ref.read(authProvider.notifier).logout();
-                    },
+                    onPressed: ref.read(authProvider.notifier).logout,
                     icon: const Icon(JPlayer.log_out),
                     label: const Text('Log out'),
                   ),

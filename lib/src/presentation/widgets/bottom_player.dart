@@ -7,6 +7,7 @@ import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
@@ -42,9 +43,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onExpand(
-    MediaItem? currentSong,
-  ) => Navigator.of(context, rootNavigator: true).push(
+  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
     ModalSheetRoute(
       builder: (context) => SafeArea(
         top: false,
@@ -60,109 +59,121 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             valueListenable: _dynamicColors,
             builder: (context, colorScheme, child) => Theme(
               data: Theme.of(context).copyWith(colorScheme: colorScheme),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 444),
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: ValueListenableBuilder(
-                              valueListenable: _imageProvider,
-                              builder: (context, image, child) =>
-                                  (image == null)
-                                  ? const SizedBox.shrink()
-                                  : Image(
-                                      image: currentSong?.artUri != null
-                                          ? NetworkImage(
-                                              currentSong!.artUri.toString(),
-                                            )
-                                          : const AssetImage(Images.album)
-                                                as ImageProvider,
-                                      fit: BoxFit.cover,
-                                    ),
+              child: StreamBuilder<SequenceState?>(
+                stream: ref.read(playerProvider).sequenceStateStream,
+                builder: (context, snapshot) {
+                  if (snapshot.data?.sequence.isEmpty ?? true) {
+                    return const SizedBox.shrink();
+                  }
+                  final currentSong =
+                      snapshot.data?.currentSource?.tag as MediaItem?;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 444),
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: ValueListenableBuilder(
+                                  valueListenable: _imageProvider,
+                                  builder: (context, image, child) =>
+                                      (image == null)
+                                      ? const SizedBox.shrink()
+                                      : Image(
+                                          image: currentSong?.artUri != null
+                                              ? NetworkImage(
+                                                  currentSong!.artUri
+                                                      .toString(),
+                                                )
+                                              : const AssetImage(Images.album)
+                                                    as ImageProvider,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(height: _isMobile ? 6 : 18),
+                            IconTheme.merge(
+                              data: IconThemeData(size: _isMobile ? 28 : 24),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  // _openListButton(),
+                                  _randomQueueButton(),
+                                  _repeatTrackButton(),
+                                  // _downloadTrackButton(),
+                                  _likeTrackButton(),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: _isMobile ? 6 : 18),
-                        IconTheme.merge(
-                          data: IconThemeData(size: _isMobile ? 28 : 24),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              // _openListButton(),
-                              _randomQueueButton(),
-                              _repeatTrackButton(),
-                              // _downloadTrackButton(),
-                              _likeTrackButton(),
-                            ],
-                          ),
+                      ),
+                      Text(
+                        currentSong?.title ?? '',
+                        style: TextStyle(
+                          fontSize: _isMobile ? 30 : 40,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    currentSong?.title ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 30 : 40,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  ),
-                  ClickableWidget(
-                    onPressed: (currentSong?.artist != null)
-                        ? () async {
-                            final item = await ref
-                                .read(jellyfinApiProvider)
-                                .getItem(itemId: currentSong!.artist!);
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                            context.go(
-                              '${Routes.listen}${Routes.artist}',
-                              extra: {'artist': item.data},
-                            );
-                          }
-                        : null,
-                    textStyle: TextStyle(
-                      fontSize: _isMobile ? 18 : 24,
-                      height: 1.2,
-                    ),
-                    child: Text(currentSong?.displayDescription ?? ''),
-                  ),
+                        maxLines: 1,
+                      ),
+                      ClickableWidget(
+                        onPressed: (currentSong?.artist != null)
+                            ? () async {
+                                final item = await ref
+                                    .read(jellyfinApiProvider)
+                                    .getItem(itemId: currentSong!.artist!);
+                                if (!context.mounted) return;
+                                Navigator.of(context).pop();
+                                context.goNamed(
+                                  Routes.artist.name,
+                                  extra: {'artist': item.data},
+                                );
+                              }
+                            : null,
+                        textStyle: TextStyle(
+                          fontSize: _isMobile ? 18 : 24,
+                          height: 1.2,
+                        ),
+                        child: Text(currentSong?.displayDescription ?? ''),
+                      ),
 
-                  // SizedBox(height: _isMobile ? 17 : 0),
-                  // Text(
-                  //   'FLAC 44.1Khz/1080Kbps',
-                  //   style: TextStyle(
-                  //     fontSize: _isMobile ? 14 : 18,
-                  //     color: colorScheme?.onPrimary,
-                  //     height: 1.2,
-                  //   ),
-                  // ),
-                  const PositionSlider(),
-                  SizedBox(height: _isMobile ? 23 : 56),
-                  IconTheme.merge(
-                    data: IconThemeData(size: _isMobile ? 37 : 44),
-                    child: Wrap(
-                      spacing: _isMobile ? 40 : 24,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _prevTrackButton(),
-                        SizedBox.square(
-                          dimension: _isMobile ? 68 : 72,
-                          child: _playPauseButton(),
+                      // SizedBox(height: _isMobile ? 17 : 0),
+                      // Text(
+                      //   'FLAC 44.1Khz/1080Kbps',
+                      //   style: TextStyle(
+                      //     fontSize: _isMobile ? 14 : 18,
+                      //     color: colorScheme?.onPrimary,
+                      //     height: 1.2,
+                      //   ),
+                      // ),
+                      const PositionSlider(),
+                      SizedBox(height: _isMobile ? 23 : 56),
+                      IconTheme.merge(
+                        data: IconThemeData(size: _isMobile ? 37 : 44),
+                        child: Wrap(
+                          spacing: _isMobile ? 40 : 24,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            _prevTrackButton(),
+                            SizedBox.square(
+                              dimension: _isMobile ? 68 : 72,
+                              child: _playPauseButton(),
+                            ),
+                            _nextTrackButton(),
+                          ],
                         ),
-                        _nextTrackButton(),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -239,79 +250,98 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         StreamBuilder<SequenceState?>(
           stream: ref.read(playerProvider).sequenceStateStream,
           builder: (context, snapshot) {
-            if (snapshot.data?.sequence.isEmpty ?? true) return Container();
             final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-            final image = currentSong?.artUri != null
+            final image = (currentSong?.artUri != null)
                 ? NetworkImage(currentSong!.artUri.toString())
                 : const Svg(SvgPictures.emptyItem) as ImageProvider;
-            _imageProvider.value = image;
-            return Container(
-              height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-              color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
-              padding: EdgeInsets.only(bottom: _viewPadding.bottom),
-              child: SimpleListTile(
-                onTap: !_isDesktop ? () => _onExpand(currentSong) : null,
-                padding: const EdgeInsets.only(right: 8),
-                leading: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image(
-                    image: image,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                title: Text(
-                  currentSong?.title ?? '',
-                  style: TextStyle(
-                    fontSize: _isMobile ? 18 : 24,
-                    fontWeight: FontWeight.w500,
-                    height: 1.2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  maxLines: 1,
-                ),
-                subtitle: ClickableWidget(
-                  onPressed: (currentSong?.artist != null)
-                      ? () async {
-                          final item = await ref
-                              .read(jellyfinApiProvider)
-                              .getItem(itemId: currentSong!.artist!);
-                          if (!context.mounted) return;
-                          context.go(
-                            '${Routes.listen}${Routes.artist}',
-                            extra: {'artist': item.data},
-                          );
-                        }
-                      : null,
-                  textStyle: TextStyle(
-                    fontSize: _isMobile ? 12 : 18,
-                    height: 1.2,
-                  ),
-                  child: Text(currentSong?.displayDescription ?? ''),
-                ),
-                // Text(
-                //   currentSong?.displayDescription ?? '',
-                //   style: TextStyle(
-                //     fontSize: _isMobile ? 12 : 18,
-                //     height: 1.2,
-                //   ),
-                // ),
-                trailing: Wrap(
-                  spacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (_isDesktop) const RemainingDuration(),
-                    if (_isDesktop) const RandomQueueButton(),
-                    _prevTrackButton(),
-                    SizedBox.square(
-                      dimension: 45,
-                      child: _playPauseButton(),
-                    ),
-                    _nextTrackButton(),
-                    if (_isDesktop) _repeatTrackButton(),
-                  ],
-                ),
-                leadingToTitle: 15,
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _imageProvider.value = image,
+            );
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) => SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: child,
               ),
+              child: (snapshot.data?.sequence.isEmpty ?? true)
+                  ? const SizedBox(width: double.infinity)
+                  : Container(
+                      height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
+                      color: _theme.bottomSheetTheme.backgroundColor
+                          ?.withOpacity(0.75),
+                      padding: EdgeInsets.only(bottom: _viewPadding.bottom),
+                      child: SimpleListTile(
+                        onTap: !_isDesktop ? _onExpand : null,
+                        padding: const EdgeInsets.only(right: 8),
+                        leading: AspectRatio(
+                          aspectRatio: 1,
+                          child: Image(
+                            image: image,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        title: Text(
+                          currentSong?.title ?? '',
+                          style: TextStyle(
+                            fontSize: _isMobile ? 18 : 24,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 1,
+                        ),
+                        subtitle:
+                            (currentSong?.displayDescription?.isEmpty ?? true)
+                            ? null
+                            : ClickableWidget(
+                                onPressed: (currentSong!.artist != null)
+                                    ? () async {
+                                        final item = await ref
+                                            .read(jellyfinApiProvider)
+                                            .getItem(
+                                              itemId: currentSong.artist!,
+                                            );
+                                        if (!context.mounted) return;
+                                        context.goNamed(
+                                          Routes.artist.name,
+                                          extra: {'artist': item.data},
+                                        );
+                                      }
+                                    : null,
+                                textStyle: TextStyle(
+                                  fontSize: _isMobile ? 12 : 18,
+                                  height: 1.2,
+                                ),
+                                child: Text(
+                                  currentSong.displayDescription ?? '',
+                                ),
+                              ),
+                        // Text(
+                        //   currentSong?.displayDescription ?? '',
+                        //   style: TextStyle(
+                        //     fontSize: _isMobile ? 12 : 18,
+                        //     height: 1.2,
+                        //   ),
+                        // ),
+                        trailing: Wrap(
+                          spacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (_isDesktop) const RemainingDuration(),
+                            if (_isDesktop) const RandomQueueButton(),
+                            _prevTrackButton(),
+                            SizedBox.square(
+                              dimension: 45,
+                              child: _playPauseButton(),
+                            ),
+                            _nextTrackButton(),
+                            if (_isDesktop) _repeatTrackButton(),
+                          ],
+                        ),
+                        leadingToTitle: 15,
+                      ),
+                    ),
             );
           },
         ),
@@ -347,22 +377,22 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   Widget _playPauseButton() => PlayPauseButton(
-    onPressed: () => _isPlaying.value
-        ? ref.read(playbackProvider.notifier).pause()
-        : ref.read(playbackProvider.notifier).resume(),
+    onPressed: _isPlaying.value
+        ? ref.read(playbackProvider.notifier).pause
+        : ref.read(playbackProvider.notifier).resume,
     background: _theme.colorScheme.onPrimary,
     foreground: _theme.scaffoldBackgroundColor,
     stateNotifier: _isPlaying,
   );
 
   Widget _prevTrackButton() => IconButton(
-    onPressed: () => ref.read(playbackProvider.notifier).prev(),
+    onPressed: ref.read(playbackProvider.notifier).prev,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_backward),
   );
 
   Widget _nextTrackButton() => IconButton(
-    onPressed: () => ref.read(playbackProvider.notifier).next(),
+    onPressed: ref.read(playbackProvider.notifier).next,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_forward),
   );

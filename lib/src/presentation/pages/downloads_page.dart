@@ -26,9 +26,10 @@ class DownloadsPage extends StatelessWidget {
 
   final DownloadsPageKeys? testKeys;
 
-  void _onAlbumTap(BuildContext context, ItemDTO album) {
-    context.pushNamed(Routes.album.name, extra: {'album': album});
-  }
+  void _onAlbumTap(BuildContext context, ItemDTO album) => context.pushNamed(
+    Routes.album.name,
+    extra: {'album': album},
+  );
 
   @override
   Widget build(BuildContext context) {
