@@ -70,7 +70,8 @@ platform :ios do
         team_id: ENV["TEAM_ID"],
         bundle_identifier: ENV["APP_IDENTIFIER"],
         code_sign_identity: "Apple Distribution",
-        profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-name"]
+        profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-name"],
+        targets: ["Runner"]
     )
 
     sh("flutter pub get")
@@ -84,8 +85,8 @@ platform :ios do
     build_app(
         workspace: "Runner.xcworkspace",
         scheme: "Runner",
-        xcargs: "DEVELOPMENT_TEAM='#{ENV['TEAM_ID']}' CODE_SIGN_IDENTITY='Apple Distribution'",
-        export_method: "app-store"
+        export_method: "app-store",
+        xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['TEAM_ID']} PROVISIONING_PROFILE_SPECIFIER='match AppStore #{ENV['APP_IDENTIFIER']}' CODE_SIGN_IDENTITY='Apple Distribution'"
     )
 
     upload_to_testflight(skip_waiting_for_build_processing: true)
