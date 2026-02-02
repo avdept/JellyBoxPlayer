@@ -1,0 +1,45 @@
+name: Android Beta
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      PACKAGE_NAME: ${{ secrets.PACKAGE_NAME }}
+      ANDROID_KEYSTORE_ENV_VAR: ${{ secrets.ANDROID_KEYSTORE_ENV_VAR }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: android
+
+      - name: Decode Google Play JSON key
+        run: echo "${{ secrets.GOOGLE_PLAY_JSON_KEY }}" | base64 -d > google-play-key.json
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+
+      - name: Build and upload to Crashlytics
+        run: bundle exec fastlane android beta
+        env:
+          JSON_KEY_FILE: google-play-key.json
