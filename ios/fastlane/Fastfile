@@ -64,6 +64,14 @@ platform :ios do
         app_identifier: ENV["APP_IDENTIFIER"]
     )
 
+    update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "Runner.xcodeproj",
+        team_id: ENV["TEAM_ID"],
+        bundle_identifier: ENV["APP_IDENTIFIER"],
+        profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-name"]
+    )
+
     sh("flutter pub get")
     flutter_versioner(
         pubspec_file_path: "../pubspec.yaml",
@@ -71,7 +79,12 @@ platform :ios do
         version_component: "version_code"
     )
     cocoapods
-    sh("flutter build ipa --release")
+
+    build_app(
+        workspace: "Runner.xcworkspace",
+        scheme: "Runner",
+        export_method: "app-store"
+    )
 
     upload_to_testflight(skip_waiting_for_build_processing: true)
     delete_temp_keychain(keychain_name)
