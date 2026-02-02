@@ -1,0 +1,47 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+def create_upload_key
+  upload_key = "upload_key.jks"
+  if !File.exist?(upload_key)
+      Dir.chdir "../" do
+        sh "echo  \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" |  base64 -d > #{upload_key}"
+        sh "echo \"storeFile=../#{upload_key}\" > key.properties"
+        sh "echo \"storePassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
+        sh "echo \"keyPassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
+        sh "echo \"keyAlias=#{ENV["ANDROID_KEY_ALIAS"]}\" >> key.properties"
+      end
+  end
+end
+
+platform :android do
+  desc "Build and upload Android app to Crashlytics Beta"
+
+  lane :beta do
+    sh("flutter pub get")
+    create_upload_key
+    flutter_versioner(
+        pubspec_file_path: "../pubspec.yaml",
+        value: ENV["BUILD_NUMBER"],
+        version_component: "version_code"
+    )
+    sh("flutter build appbundle --release")
+
+    crashlytics
+    puts "Android build #{lane_context[SharedValues::BUILD_NUMBER]} was uploaded to Crashlytics Beta"
+  end
+end

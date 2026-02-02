@@ -1,0 +1,7 @@
+git_url(ENV["GIT_REPOSITORY"])
+
+storage_mode("git")
+
+type("appstore")
+
+git_basic_authorization(Base64.strict_encode64("#{ENV["GIT_USERNAME"]}:#{ENV["GIT_AUTHORIZATION"]}"))
