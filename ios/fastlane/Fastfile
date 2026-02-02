@@ -64,14 +64,11 @@ platform :ios do
         app_identifier: ENV["APP_IDENTIFIER"]
     )
 
-    update_code_signing_settings(
-        use_automatic_signing: false,
-        path: "Runner.xcodeproj",
-        team_id: ENV["TEAM_ID"],
-        bundle_identifier: ENV["APP_IDENTIFIER"],
-        code_sign_identity: "Apple Distribution",
-        profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-name"],
-        targets: ["Runner"]
+    update_project_provisioning(
+        xcodeproj: "Runner.xcodeproj",
+        build_configuration: "Release",
+        target_filter: "Runner",
+        profile: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-path"]
     )
 
     sh("flutter pub get")
@@ -82,11 +79,11 @@ platform :ios do
     )
     cocoapods
 
+    sh("flutter build ipa --release --no-codesign")
+
     build_app(
         workspace: "Runner.xcworkspace",
-        scheme: "Runner",
-        export_method: "app-store",
-        xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=#{ENV['TEAM_ID']} PROVISIONING_PROFILE_SPECIFIER='match AppStore #{ENV['APP_IDENTIFIER']}' CODE_SIGN_IDENTITY='Apple Distribution'"
+        scheme: "Runner"
     )
 
     upload_to_testflight(skip_waiting_for_build_processing: true)
