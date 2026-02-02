@@ -83,6 +83,7 @@ platform :ios do
     build_app(
         workspace: "Runner.xcworkspace",
         scheme: "Runner",
+        xcargs: "DEVELOPMENT_TEAM=#{ENV['TEAM_ID']}"
         export_method: "app-store"
     )
 
