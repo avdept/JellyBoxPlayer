@@ -62,7 +62,8 @@ platform :mac do
         type: "appstore",
         readonly: false,
         app_identifier: ENV["APP_IDENTIFIER"],
-        platform: "macos"
+        platform: "macos",
+        additional_cert_types: ["mac_installer_distribution"]
     )
 
     update_project_provisioning(
