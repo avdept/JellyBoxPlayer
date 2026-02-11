@@ -65,6 +65,11 @@ platform :mac do
         platform: "macos"
     )
 
+    update_project_team(
+        path: "Runner.xcodeproj",
+        teamid: ENV["TEAM_ID"]
+    )
+
     update_project_provisioning(
         xcodeproj: "Runner.xcodeproj",
         build_configuration: "Release",
@@ -80,7 +85,7 @@ platform :mac do
     )
     cocoapods
 
-    sh("flutter build macos --release --no-codesign")
+    sh("flutter build macos --release")
 
     build_app(
         workspace: "Runner.xcworkspace",
