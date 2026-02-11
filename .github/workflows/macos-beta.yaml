@@ -10,7 +10,7 @@ jobs:
       run:
         working-directory: macos
     env:
-      BUILD_NUMBER: ${{ github.run_number }}
+      BUILD_NUMBER: ${{ github.run_number + 20 }}
       APP_IDENTIFIER: ${{ vars.APP_IDENTIFIER }}
       APPLE_ID: ${{ vars.APPLE_ID }}
       ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
