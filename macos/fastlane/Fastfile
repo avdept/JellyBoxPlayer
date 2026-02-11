@@ -76,7 +76,7 @@ platform :mac do
     sh("flutter pub get")
     flutter_versioner(
         pubspec_file_path: "../pubspec.yaml",
-        value: ENV["BUILD_NUMBER"],
+        value: (ENV["BUILD_NUMBER"].to_i + 20).to_s,
         version_component: "version_code"
     )
     cocoapods
