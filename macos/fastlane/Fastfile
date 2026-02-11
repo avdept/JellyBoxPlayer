@@ -61,14 +61,15 @@ platform :mac do
     match(
         type: "appstore",
         readonly: false,
-        app_identifier: ENV["APP_IDENTIFIER"]
+        app_identifier: ENV["APP_IDENTIFIER"],
+        platform: "macos"
     )
 
     update_project_provisioning(
         xcodeproj: "Runner.xcodeproj",
         build_configuration: "Release",
         target_filter: "Runner",
-        profile: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-path"]
+        profile: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_macos_profile-path"]
     )
 
     sh("flutter pub get")
