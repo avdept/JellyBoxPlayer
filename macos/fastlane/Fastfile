@@ -65,11 +65,6 @@ platform :mac do
         platform: "macos"
     )
 
-    update_project_team(
-        path: "Runner.xcodeproj",
-        teamid: ENV["TEAM_ID"]
-    )
-
     update_project_provisioning(
         xcodeproj: "Runner.xcodeproj",
         build_configuration: "Release",
