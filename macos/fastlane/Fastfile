@@ -80,7 +80,7 @@ platform :mac do
     )
     cocoapods
 
-    sh("flutter build macos --release")
+    sh("flutter build macos --release --no-codesign")
 
     build_app(
         workspace: "Runner.xcworkspace",
