@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/dto/media/media_source_dto.dart';
 import 'package:jplayer/src/data/json_converters/json_converters.dart';
 
 part 'item_dto.freezed.dart';
@@ -25,6 +26,7 @@ abstract class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'BackdropImageTags') @Default([]) List<String> backdropImageTags,
     @JsonKey(name: 'ImageTags') @Default({}) Map<String, String> imageTags,
     @JsonKey(name: 'UserData') @Default(UserData()) UserData userData,
+    @JsonKey(name: 'MediaSources') @Default([]) List<MediaSourceDTO> mediaSources,
   }) = _ItemDTO;
 
   const ItemDTO._();

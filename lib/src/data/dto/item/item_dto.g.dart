@@ -38,6 +38,11 @@ _ItemDTO _$ItemDTOFromJson(Map<String, dynamic> json) => _ItemDTO(
   userData: json['UserData'] == null
       ? const UserData()
       : UserData.fromJson(json['UserData'] as Map<String, dynamic>),
+  mediaSources:
+      (json['MediaSources'] as List<dynamic>?)
+          ?.map((e) => MediaSourceDTO.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
@@ -58,6 +63,7 @@ Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
   'BackdropImageTags': instance.backdropImageTags,
   'ImageTags': instance.imageTags,
   'UserData': instance.userData,
+  'MediaSources': instance.mediaSources,
 };
 
 _DownloadedAlbumDTO _$DownloadedAlbumDTOFromJson(Map<String, dynamic> json) =>

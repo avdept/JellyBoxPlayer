@@ -34,6 +34,7 @@ abstract class JellyfinApi {
     @Path('userId') required String userId,
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'music',
+    @Query('Fields') List<String> fields = const ['MediaSources'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -92,11 +93,13 @@ abstract class JellyfinApi {
     @Path('playlistId') required String playlistId,
     @Query('userId') required String userId,
     @Query('IncludeItemTypes') String includeType = 'music',
+    @Query('Fields') List<String> fields = const ['MediaSources'],
   });
 
   @GET('/Items/{itemId}')
   Future<HttpResponse<ItemDTO>> getItem({
     @Path('itemId') required String itemId,
+    @Query('Fields') List<String> fields = const ['MediaSources'],
   });
 
   @POST('/Playlists')

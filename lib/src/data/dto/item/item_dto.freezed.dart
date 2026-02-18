@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ItemDTO {
 
-@JsonKey(name: 'Id') String get id;@JsonKey(name: 'Name') String get name;@JsonKey(name: 'Type') String get type;@JsonKey(name: 'IndexNumber') int get indexNumber;@JsonKey(name: 'RunTimeTicks') int get runTimeTicks;@JsonKey(name: 'Path') String? get path;@JsonKey(name: 'CollectionType') String? get collectionType;@JsonKey(name: 'PlaylistItemId') String? get playlistItemId;@JsonKey(name: 'Overview') String? get overview;@JsonKey(name: 'ProductionYear') int? get productionYear;@JsonKey(name: 'AlbumId') String? get albumId;@JsonKey(name: 'Album') String? get albumName;@JsonKey(name: 'AlbumArtist') String? get albumArtist;@JsonKey(name: 'AlbumArtists') List<ArtistDTO> get albumArtists;@JsonKey(name: 'BackdropImageTags') List<String> get backdropImageTags;@JsonKey(name: 'ImageTags') Map<String, String> get imageTags;@JsonKey(name: 'UserData') UserData get userData;
+@JsonKey(name: 'Id') String get id;@JsonKey(name: 'Name') String get name;@JsonKey(name: 'Type') String get type;@JsonKey(name: 'IndexNumber') int get indexNumber;@JsonKey(name: 'RunTimeTicks') int get runTimeTicks;@JsonKey(name: 'Path') String? get path;@JsonKey(name: 'CollectionType') String? get collectionType;@JsonKey(name: 'PlaylistItemId') String? get playlistItemId;@JsonKey(name: 'Overview') String? get overview;@JsonKey(name: 'ProductionYear') int? get productionYear;@JsonKey(name: 'AlbumId') String? get albumId;@JsonKey(name: 'Album') String? get albumName;@JsonKey(name: 'AlbumArtist') String? get albumArtist;@JsonKey(name: 'AlbumArtists') List<ArtistDTO> get albumArtists;@JsonKey(name: 'BackdropImageTags') List<String> get backdropImageTags;@JsonKey(name: 'ImageTags') Map<String, String> get imageTags;@JsonKey(name: 'UserData') UserData get userData;@JsonKey(name: 'MediaSources') List<MediaSourceDTO> get mediaSources;
 /// Create a copy of ItemDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ItemDTOCopyWith<ItemDTO> get copyWith => _$ItemDTOCopyWithImpl<ItemDTO>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other.albumArtists, albumArtists)&&const DeepCollectionEquality().equals(other.backdropImageTags, backdropImageTags)&&const DeepCollectionEquality().equals(other.imageTags, imageTags)&&(identical(other.userData, userData) || other.userData == userData));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ItemDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other.albumArtists, albumArtists)&&const DeepCollectionEquality().equals(other.backdropImageTags, backdropImageTags)&&const DeepCollectionEquality().equals(other.imageTags, imageTags)&&(identical(other.userData, userData) || other.userData == userData)&&const DeepCollectionEquality().equals(other.mediaSources, mediaSources));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,indexNumber,runTimeTicks,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(albumArtists),const DeepCollectionEquality().hash(backdropImageTags),const DeepCollectionEquality().hash(imageTags),userData);
+int get hashCode => Object.hash(runtimeType,id,name,type,indexNumber,runTimeTicks,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(albumArtists),const DeepCollectionEquality().hash(backdropImageTags),const DeepCollectionEquality().hash(imageTags),userData,const DeepCollectionEquality().hash(mediaSources));
 
 @override
 String toString() {
-  return 'ItemDTO(id: $id, name: $name, type: $type, indexNumber: $indexNumber, runTimeTicks: $runTimeTicks, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, backdropImageTags: $backdropImageTags, imageTags: $imageTags, userData: $userData)';
+  return 'ItemDTO(id: $id, name: $name, type: $type, indexNumber: $indexNumber, runTimeTicks: $runTimeTicks, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, backdropImageTags: $backdropImageTags, imageTags: $imageTags, userData: $userData, mediaSources: $mediaSources)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ItemDTOCopyWith<$Res>  {
   factory $ItemDTOCopyWith(ItemDTO value, $Res Function(ItemDTO) _then) = _$ItemDTOCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'Id') String id,@JsonKey(name: 'Name') String name,@JsonKey(name: 'Type') String type,@JsonKey(name: 'IndexNumber') int indexNumber,@JsonKey(name: 'RunTimeTicks') int runTimeTicks,@JsonKey(name: 'Path') String? path,@JsonKey(name: 'CollectionType') String? collectionType,@JsonKey(name: 'PlaylistItemId') String? playlistItemId,@JsonKey(name: 'Overview') String? overview,@JsonKey(name: 'ProductionYear') int? productionYear,@JsonKey(name: 'AlbumId') String? albumId,@JsonKey(name: 'Album') String? albumName,@JsonKey(name: 'AlbumArtist') String? albumArtist,@JsonKey(name: 'AlbumArtists') List<ArtistDTO> albumArtists,@JsonKey(name: 'BackdropImageTags') List<String> backdropImageTags,@JsonKey(name: 'ImageTags') Map<String, String> imageTags,@JsonKey(name: 'UserData') UserData userData
+@JsonKey(name: 'Id') String id,@JsonKey(name: 'Name') String name,@JsonKey(name: 'Type') String type,@JsonKey(name: 'IndexNumber') int indexNumber,@JsonKey(name: 'RunTimeTicks') int runTimeTicks,@JsonKey(name: 'Path') String? path,@JsonKey(name: 'CollectionType') String? collectionType,@JsonKey(name: 'PlaylistItemId') String? playlistItemId,@JsonKey(name: 'Overview') String? overview,@JsonKey(name: 'ProductionYear') int? productionYear,@JsonKey(name: 'AlbumId') String? albumId,@JsonKey(name: 'Album') String? albumName,@JsonKey(name: 'AlbumArtist') String? albumArtist,@JsonKey(name: 'AlbumArtists') List<ArtistDTO> albumArtists,@JsonKey(name: 'BackdropImageTags') List<String> backdropImageTags,@JsonKey(name: 'ImageTags') Map<String, String> imageTags,@JsonKey(name: 'UserData') UserData userData,@JsonKey(name: 'MediaSources') List<MediaSourceDTO> mediaSources
 });
 
 
@@ -65,7 +65,7 @@ class _$ItemDTOCopyWithImpl<$Res>
 
 /// Create a copy of ItemDTO
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? indexNumber = null,Object? runTimeTicks = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? backdropImageTags = null,Object? imageTags = null,Object? userData = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? indexNumber = null,Object? runTimeTicks = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? backdropImageTags = null,Object? imageTags = null,Object? userData = null,Object? mediaSources = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -84,7 +84,8 @@ as String?,albumArtists: null == albumArtists ? _self.albumArtists : albumArtist
 as List<ArtistDTO>,backdropImageTags: null == backdropImageTags ? _self.backdropImageTags : backdropImageTags // ignore: cast_nullable_to_non_nullable
 as List<String>,imageTags: null == imageTags ? _self.imageTags : imageTags // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,userData: null == userData ? _self.userData : userData // ignore: cast_nullable_to_non_nullable
-as UserData,
+as UserData,mediaSources: null == mediaSources ? _self.mediaSources : mediaSources // ignore: cast_nullable_to_non_nullable
+as List<MediaSourceDTO>,
   ));
 }
 /// Create a copy of ItemDTO
@@ -178,10 +179,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'CollectionType')  String? collectionType, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'Overview')  String? overview, @JsonKey(name: 'ProductionYear')  int? productionYear, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO> albumArtists, @JsonKey(name: 'BackdropImageTags')  List<String> backdropImageTags, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags, @JsonKey(name: 'UserData')  UserData userData)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'CollectionType')  String? collectionType, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'Overview')  String? overview, @JsonKey(name: 'ProductionYear')  int? productionYear, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO> albumArtists, @JsonKey(name: 'BackdropImageTags')  List<String> backdropImageTags, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags, @JsonKey(name: 'UserData')  UserData userData, @JsonKey(name: 'MediaSources')  List<MediaSourceDTO> mediaSources)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ItemDTO() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTicks,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.backdropImageTags,_that.imageTags,_that.userData);case _:
+return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTicks,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.backdropImageTags,_that.imageTags,_that.userData,_that.mediaSources);case _:
   return orElse();
 
 }
@@ -199,10 +200,10 @@ return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'CollectionType')  String? collectionType, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'Overview')  String? overview, @JsonKey(name: 'ProductionYear')  int? productionYear, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO> albumArtists, @JsonKey(name: 'BackdropImageTags')  List<String> backdropImageTags, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags, @JsonKey(name: 'UserData')  UserData userData)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'CollectionType')  String? collectionType, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'Overview')  String? overview, @JsonKey(name: 'ProductionYear')  int? productionYear, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO> albumArtists, @JsonKey(name: 'BackdropImageTags')  List<String> backdropImageTags, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags, @JsonKey(name: 'UserData')  UserData userData, @JsonKey(name: 'MediaSources')  List<MediaSourceDTO> mediaSources)  $default,) {final _that = this;
 switch (_that) {
 case _ItemDTO():
-return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTicks,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.backdropImageTags,_that.imageTags,_that.userData);case _:
+return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTicks,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.backdropImageTags,_that.imageTags,_that.userData,_that.mediaSources);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -219,10 +220,10 @@ return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'CollectionType')  String? collectionType, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'Overview')  String? overview, @JsonKey(name: 'ProductionYear')  int? productionYear, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO> albumArtists, @JsonKey(name: 'BackdropImageTags')  List<String> backdropImageTags, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags, @JsonKey(name: 'UserData')  UserData userData)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Id')  String id, @JsonKey(name: 'Name')  String name, @JsonKey(name: 'Type')  String type, @JsonKey(name: 'IndexNumber')  int indexNumber, @JsonKey(name: 'RunTimeTicks')  int runTimeTicks, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'CollectionType')  String? collectionType, @JsonKey(name: 'PlaylistItemId')  String? playlistItemId, @JsonKey(name: 'Overview')  String? overview, @JsonKey(name: 'ProductionYear')  int? productionYear, @JsonKey(name: 'AlbumId')  String? albumId, @JsonKey(name: 'Album')  String? albumName, @JsonKey(name: 'AlbumArtist')  String? albumArtist, @JsonKey(name: 'AlbumArtists')  List<ArtistDTO> albumArtists, @JsonKey(name: 'BackdropImageTags')  List<String> backdropImageTags, @JsonKey(name: 'ImageTags')  Map<String, String> imageTags, @JsonKey(name: 'UserData')  UserData userData, @JsonKey(name: 'MediaSources')  List<MediaSourceDTO> mediaSources)?  $default,) {final _that = this;
 switch (_that) {
 case _ItemDTO() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTicks,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.backdropImageTags,_that.imageTags,_that.userData);case _:
+return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTicks,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.backdropImageTags,_that.imageTags,_that.userData,_that.mediaSources);case _:
   return null;
 
 }
@@ -234,7 +235,7 @@ return $default(_that.id,_that.name,_that.type,_that.indexNumber,_that.runTimeTi
 @JsonSerializable()
 
 class _ItemDTO extends ItemDTO {
-  const _ItemDTO({@JsonKey(name: 'Id') required this.id, @JsonKey(name: 'Name') required this.name, @JsonKey(name: 'Type') required this.type, @JsonKey(name: 'IndexNumber') this.indexNumber = 0, @JsonKey(name: 'RunTimeTicks') this.runTimeTicks = 0, @JsonKey(name: 'Path') this.path, @JsonKey(name: 'CollectionType') this.collectionType, @JsonKey(name: 'PlaylistItemId') this.playlistItemId, @JsonKey(name: 'Overview') this.overview, @JsonKey(name: 'ProductionYear') this.productionYear, @JsonKey(name: 'AlbumId') this.albumId, @JsonKey(name: 'Album') this.albumName, @JsonKey(name: 'AlbumArtist') this.albumArtist, @JsonKey(name: 'AlbumArtists') final  List<ArtistDTO> albumArtists = const [], @JsonKey(name: 'BackdropImageTags') final  List<String> backdropImageTags = const [], @JsonKey(name: 'ImageTags') final  Map<String, String> imageTags = const {}, @JsonKey(name: 'UserData') this.userData = const UserData()}): _albumArtists = albumArtists,_backdropImageTags = backdropImageTags,_imageTags = imageTags,super._();
+  const _ItemDTO({@JsonKey(name: 'Id') required this.id, @JsonKey(name: 'Name') required this.name, @JsonKey(name: 'Type') required this.type, @JsonKey(name: 'IndexNumber') this.indexNumber = 0, @JsonKey(name: 'RunTimeTicks') this.runTimeTicks = 0, @JsonKey(name: 'Path') this.path, @JsonKey(name: 'CollectionType') this.collectionType, @JsonKey(name: 'PlaylistItemId') this.playlistItemId, @JsonKey(name: 'Overview') this.overview, @JsonKey(name: 'ProductionYear') this.productionYear, @JsonKey(name: 'AlbumId') this.albumId, @JsonKey(name: 'Album') this.albumName, @JsonKey(name: 'AlbumArtist') this.albumArtist, @JsonKey(name: 'AlbumArtists') final  List<ArtistDTO> albumArtists = const [], @JsonKey(name: 'BackdropImageTags') final  List<String> backdropImageTags = const [], @JsonKey(name: 'ImageTags') final  Map<String, String> imageTags = const {}, @JsonKey(name: 'UserData') this.userData = const UserData(), @JsonKey(name: 'MediaSources') final  List<MediaSourceDTO> mediaSources = const []}): _albumArtists = albumArtists,_backdropImageTags = backdropImageTags,_imageTags = imageTags,_mediaSources = mediaSources,super._();
   factory _ItemDTO.fromJson(Map<String, dynamic> json) => _$ItemDTOFromJson(json);
 
 @override@JsonKey(name: 'Id') final  String id;
@@ -272,6 +273,13 @@ class _ItemDTO extends ItemDTO {
 }
 
 @override@JsonKey(name: 'UserData') final  UserData userData;
+ final  List<MediaSourceDTO> _mediaSources;
+@override@JsonKey(name: 'MediaSources') List<MediaSourceDTO> get mediaSources {
+  if (_mediaSources is EqualUnmodifiableListView) return _mediaSources;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_mediaSources);
+}
+
 
 /// Create a copy of ItemDTO
 /// with the given fields replaced by the non-null parameter values.
@@ -286,16 +294,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other._albumArtists, _albumArtists)&&const DeepCollectionEquality().equals(other._backdropImageTags, _backdropImageTags)&&const DeepCollectionEquality().equals(other._imageTags, _imageTags)&&(identical(other.userData, userData) || other.userData == userData));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ItemDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.runTimeTicks, runTimeTicks) || other.runTimeTicks == runTimeTicks)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other._albumArtists, _albumArtists)&&const DeepCollectionEquality().equals(other._backdropImageTags, _backdropImageTags)&&const DeepCollectionEquality().equals(other._imageTags, _imageTags)&&(identical(other.userData, userData) || other.userData == userData)&&const DeepCollectionEquality().equals(other._mediaSources, _mediaSources));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,indexNumber,runTimeTicks,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(_albumArtists),const DeepCollectionEquality().hash(_backdropImageTags),const DeepCollectionEquality().hash(_imageTags),userData);
+int get hashCode => Object.hash(runtimeType,id,name,type,indexNumber,runTimeTicks,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(_albumArtists),const DeepCollectionEquality().hash(_backdropImageTags),const DeepCollectionEquality().hash(_imageTags),userData,const DeepCollectionEquality().hash(_mediaSources));
 
 @override
 String toString() {
-  return 'ItemDTO(id: $id, name: $name, type: $type, indexNumber: $indexNumber, runTimeTicks: $runTimeTicks, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, backdropImageTags: $backdropImageTags, imageTags: $imageTags, userData: $userData)';
+  return 'ItemDTO(id: $id, name: $name, type: $type, indexNumber: $indexNumber, runTimeTicks: $runTimeTicks, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, backdropImageTags: $backdropImageTags, imageTags: $imageTags, userData: $userData, mediaSources: $mediaSources)';
 }
 
 
@@ -306,7 +314,7 @@ abstract mixin class _$ItemDTOCopyWith<$Res> implements $ItemDTOCopyWith<$Res> {
   factory _$ItemDTOCopyWith(_ItemDTO value, $Res Function(_ItemDTO) _then) = __$ItemDTOCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'Id') String id,@JsonKey(name: 'Name') String name,@JsonKey(name: 'Type') String type,@JsonKey(name: 'IndexNumber') int indexNumber,@JsonKey(name: 'RunTimeTicks') int runTimeTicks,@JsonKey(name: 'Path') String? path,@JsonKey(name: 'CollectionType') String? collectionType,@JsonKey(name: 'PlaylistItemId') String? playlistItemId,@JsonKey(name: 'Overview') String? overview,@JsonKey(name: 'ProductionYear') int? productionYear,@JsonKey(name: 'AlbumId') String? albumId,@JsonKey(name: 'Album') String? albumName,@JsonKey(name: 'AlbumArtist') String? albumArtist,@JsonKey(name: 'AlbumArtists') List<ArtistDTO> albumArtists,@JsonKey(name: 'BackdropImageTags') List<String> backdropImageTags,@JsonKey(name: 'ImageTags') Map<String, String> imageTags,@JsonKey(name: 'UserData') UserData userData
+@JsonKey(name: 'Id') String id,@JsonKey(name: 'Name') String name,@JsonKey(name: 'Type') String type,@JsonKey(name: 'IndexNumber') int indexNumber,@JsonKey(name: 'RunTimeTicks') int runTimeTicks,@JsonKey(name: 'Path') String? path,@JsonKey(name: 'CollectionType') String? collectionType,@JsonKey(name: 'PlaylistItemId') String? playlistItemId,@JsonKey(name: 'Overview') String? overview,@JsonKey(name: 'ProductionYear') int? productionYear,@JsonKey(name: 'AlbumId') String? albumId,@JsonKey(name: 'Album') String? albumName,@JsonKey(name: 'AlbumArtist') String? albumArtist,@JsonKey(name: 'AlbumArtists') List<ArtistDTO> albumArtists,@JsonKey(name: 'BackdropImageTags') List<String> backdropImageTags,@JsonKey(name: 'ImageTags') Map<String, String> imageTags,@JsonKey(name: 'UserData') UserData userData,@JsonKey(name: 'MediaSources') List<MediaSourceDTO> mediaSources
 });
 
 
@@ -323,7 +331,7 @@ class __$ItemDTOCopyWithImpl<$Res>
 
 /// Create a copy of ItemDTO
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? indexNumber = null,Object? runTimeTicks = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? backdropImageTags = null,Object? imageTags = null,Object? userData = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? indexNumber = null,Object? runTimeTicks = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? backdropImageTags = null,Object? imageTags = null,Object? userData = null,Object? mediaSources = null,}) {
   return _then(_ItemDTO(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -342,7 +350,8 @@ as String?,albumArtists: null == albumArtists ? _self._albumArtists : albumArtis
 as List<ArtistDTO>,backdropImageTags: null == backdropImageTags ? _self._backdropImageTags : backdropImageTags // ignore: cast_nullable_to_non_nullable
 as List<String>,imageTags: null == imageTags ? _self._imageTags : imageTags // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,userData: null == userData ? _self.userData : userData // ignore: cast_nullable_to_non_nullable
-as UserData,
+as UserData,mediaSources: null == mediaSources ? _self._mediaSources : mediaSources // ignore: cast_nullable_to_non_nullable
+as List<MediaSourceDTO>,
   ));
 }
 
