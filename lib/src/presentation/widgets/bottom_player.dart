@@ -128,18 +128,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                       fontSize: _isMobile ? 18 : 24,
                       height: 1.2,
                     ),
-                    child: Text(currentSong?.displayDescription ?? ''),
+                    child: Text(currentSong?.displayDescription ?? currentSong?.artist ?? ''),
                   ),
-
-                  // SizedBox(height: _isMobile ? 17 : 0),
-                  // Text(
-                  //   'FLAC 44.1Khz/1080Kbps',
-                  //   style: TextStyle(
-                  //     fontSize: _isMobile ? 14 : 18,
-                  //     color: colorScheme?.onPrimary,
-                  //     height: 1.2,
-                  //   ),
-                  // ),
+                  AudioQualityBadge(
+                    codec: currentSong?.extras?['codec'] as String?,
+                    bitRate: currentSong?.extras?['bitRate'] as int?,
+                    sampleRate: currentSong?.extras?['sampleRate'] as int?,
+                  ),
                   const PositionSlider(),
                   SizedBox(height: _isMobile ? 23 : 56),
                   IconTheme.merge(
@@ -267,12 +262,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         maxLines: 1,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    AudioQualityBadge(
-                      codec: currentSong?.extras?['codec'] as String?,
-                      bitRate: currentSong?.extras?['bitRate'] as int?,
-                      sampleRate: currentSong?.extras?['sampleRate'] as int?,
-                    ),
+                    if (_isDesktop) const SizedBox(width: 8),
+                    if (_isDesktop)
+                      AudioQualityBadge(
+                        codec: currentSong?.extras?['codec'] as String?,
+                        bitRate: currentSong?.extras?['bitRate'] as int?,
+                        sampleRate: currentSong?.extras?['sampleRate'] as int?,
+                      ),
                   ],
                 ),
                 subtitle: ClickableWidget(
