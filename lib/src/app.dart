@@ -67,7 +67,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
 
   @override
   void didChangeMetrics() {
-    if (Platform.isLinux) {
+    if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
       _resizeTimer?.cancel();
       _resizeTimer = Timer(
         const Duration(seconds: 2),

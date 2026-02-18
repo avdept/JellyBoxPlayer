@@ -290,7 +290,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                               ),
                           ],
                         ),
-                        subtitle: (currentSong?.displayDescription ?? currentSong?.artist) == null
+                        subtitle: currentSong?.artist == null
                             ? null
                             : ClickableWidget(
                                 onPressed: (currentSong!.artist != null)
@@ -312,7 +312,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                   height: 1.2,
                                 ),
                                 child: Text(
-                                  currentSong.displayDescription ?? '',
+                                  currentSong.artist ?? '',
                                 ),
                               ),
                         // Text(

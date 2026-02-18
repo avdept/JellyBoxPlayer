@@ -34,6 +34,10 @@ Future<void> main() async {
     );
   }
 
+  final prefs = await SharedPreferences.getInstance();
+  final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
+  final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
+
   // Window settings
   const minWindowSize = Size(1280, 800);
 
@@ -41,10 +45,10 @@ Future<void> main() async {
   if (Platform.isMacOS || Platform.isWindows) {
     await windowManager.ensureInitialized();
 
-    const windowOptions = WindowOptions(
-      // size: initialWindowSize,
+    final windowOptions = WindowOptions(
+      size: initialWindowSize,
       minimumSize: minWindowSize,
-      // center: true,
+      center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
@@ -66,8 +70,7 @@ Future<void> main() async {
   await SentryFlutter.init(
     (options) {
       options
-        ..dsn =
-            'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
+        ..dsn = 'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
         ..tracesSampleRate = 1.0;
     },
     appRunner: () => runApp(
