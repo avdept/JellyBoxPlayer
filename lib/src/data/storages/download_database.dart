@@ -48,7 +48,11 @@ class DownloadDatabase {
       filePath: file.path,
       sizeInBytes: file.lengthSync(),
     );
-    return db.insert('Downloads', songData.toJson());
+    return db.insert(
+      'Downloads',
+      songData.toJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<int> insertDownloadedAlbum(
@@ -60,7 +64,11 @@ class DownloadDatabase {
       album,
       sizeInBytes: files.map((e) => e.lengthSync()).sum,
     );
-    return db.insert('Albums', albumData.toJson());
+    return db.insert(
+      'Albums',
+      albumData.toJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<List<DownloadedSongDTO>> getDownloadedSongs([

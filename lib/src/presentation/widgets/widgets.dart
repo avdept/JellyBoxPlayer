@@ -1,4 +1,5 @@
 export 'adaptive_builder.dart';
+export 'audio_quality_badge.dart';
 export 'adaptive_dialog_action.dart';
 export 'album_view.dart';
 export 'bottom_player.dart';

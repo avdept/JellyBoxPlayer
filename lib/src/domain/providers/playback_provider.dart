@@ -91,6 +91,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                 : null;
 
             // If downloaded, use local file, otherwise stream from server*
+            final audioStream = song.mediaSources.firstOrNull?.mediaStreams
+                .where((s) => s.type == 'Audio')
+                .firstOrNull;
+            final extras = <String, dynamic>{
+              if (audioStream?.codec != null) 'codec': audioStream!.codec,
+              if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
+              if (audioStream?.sampleRate != null)
+                'sampleRate': audioStream!.sampleRate,
+            };
+
             final audioSource = downloadedPath != null
                 ? AudioSource.uri(
                     Uri.file(downloadedPath),
@@ -102,6 +112,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                         milliseconds: (song.runTimeTicks / 10000).ceil(),
                       ),
                       title: song.name ?? 'Untitled',
+                      extras: extras.isNotEmpty ? extras : null,
                       artUri: song.imageTags['Primary'] != null
                           ? Uri.parse(
                               _ref
@@ -148,6 +159,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                         milliseconds: (song.runTimeTicks / 10000).ceil(),
                       ),
                       title: song.name,
+                      extras: extras.isNotEmpty ? extras : null,
                       artUri: song.imageTags['Primary'] != null
                           ? Uri.parse(
                               _ref

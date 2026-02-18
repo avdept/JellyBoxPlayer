@@ -96,11 +96,13 @@ class _JellyfinApi implements JellyfinApi {
     required String userId,
     required String albumId,
     String includeType = 'music',
+    List<String> fields = const ['MediaSources'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'ParentId': albumId,
       r'IncludeItemTypes': includeType,
+      r'Fields': fields,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -320,11 +322,13 @@ class _JellyfinApi implements JellyfinApi {
     required String playlistId,
     required String userId,
     String includeType = 'music',
+    List<String> fields = const ['MediaSources'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'IncludeItemTypes': includeType,
+      r'Fields': fields,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -351,9 +355,12 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
-  Future<HttpResponse<ItemDTO>> getItem({required String itemId}) async {
+  Future<HttpResponse<ItemDTO>> getItem({
+    required String itemId,
+    List<String> fields = const ['MediaSources'],
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'Fields': fields};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemDTO>>(
