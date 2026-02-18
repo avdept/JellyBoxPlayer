@@ -117,6 +117,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             if (audioStream?.codec != null) 'codec': audioStream!.codec,
             if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
             if (audioStream?.sampleRate != null) 'sampleRate': audioStream!.sampleRate,
+            if (album.albumArtists.isNotEmpty) 'artistId': album.albumArtists.first.id,
           };
 
           // If downloaded, use local file, otherwise stream from server*

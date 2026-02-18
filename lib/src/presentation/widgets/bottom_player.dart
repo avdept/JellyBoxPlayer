@@ -119,9 +119,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         maxLines: 1,
                       ),
                       ClickableWidget(
-                        onPressed: (currentSong?.artist != null)
+                        onPressed: currentSong?.extras?['artistId'] != null
                             ? () async {
-                                final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
+                                final artistId = currentSong!.extras!['artistId'] as String;
+                                final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
                                 if (!context.mounted) return;
                                 Navigator.of(context).pop();
                                 context.goNamed(
@@ -134,7 +135,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                           fontSize: _isMobile ? 18 : 24,
                           height: 1.2,
                         ),
-                        child: Text(currentSong?.displayDescription ?? currentSong?.artist ?? ''),
+                        child: Text(currentSong?.artist ?? ''),
                       ),
 
                       AudioQualityBadge(
@@ -290,16 +291,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                               ),
                           ],
                         ),
-                        subtitle: currentSong?.artist == null
-                            ? null
-                            : ClickableWidget(
-                                onPressed: (currentSong!.artist != null)
+                        subtitle: ClickableWidget(
+                                onPressed: currentSong?.extras?['artistId'] != null
                                     ? () async {
+                                        final artistId = currentSong!.extras!['artistId'] as String;
                                         final item = await ref
                                             .read(jellyfinApiProvider)
-                                            .getItem(
-                                              itemId: currentSong.artist!,
-                                            );
+                                            .getItem(itemId: artistId);
                                         if (!context.mounted) return;
                                         context.goNamed(
                                           Routes.artist.name,
@@ -312,7 +310,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                   height: 1.2,
                                 ),
                                 child: Text(
-                                  currentSong.artist ?? '',
+                                  currentSong?.artist ?? '',
                                 ),
                               ),
                         // Text(
