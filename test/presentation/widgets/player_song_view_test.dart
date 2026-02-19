@@ -51,7 +51,7 @@ void main() {
     return createTestApp(
       providerContainer: createProviderContainer(
         overrides: [
-          downloadServiceProvider.overrideWithValue(mockDownloadService),
+          downloadServiceProvider.overrideWith((_) => mockDownloadService),
           isSongDownloadedProvider.overrideWith((_, _) async => isDownloaded),
         ],
       ),
