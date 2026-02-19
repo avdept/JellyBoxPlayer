@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -55,7 +56,7 @@ class PlayerSongView extends ConsumerWidget {
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isDesktop = deviceType == DeviceScreenType.desktop;
     final isDownloaded = ref.watch(isSongDownloadedProvider(song)).valueOrNull;
-    final currentTask = ref.read(downloadServiceProvider).getTask(song.id);
+    final currentTask = ref.watch(downloadServiceProvider).getTask(song.id);
 
     return SimpleListTile(
       onTap: (onTap != null) ? () => onTap!.call(song) : null,
@@ -93,27 +94,40 @@ class PlayerSongView extends ConsumerWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(formattedDuration),
-          if (isDownloaded ?? false)
+          if (currentTask != null)
+            ValueListenableBuilder<DownloadStatus>(
+              valueListenable: currentTask.status,
+              builder: (context, status, _) {
+                if (isDownloaded ?? false) {
+                  return Icon(
+                    Icons.check_circle,
+                    key: testKeys?.downloadedIcon,
+                    color: Colors.green,
+                  );
+                }
+                if (!currentTask.isDownloadingNow) return const SizedBox.shrink();
+                return SizedBox.square(
+                  dimension: 30,
+                  child: ValueListenableBuilder<double?>(
+                    valueListenable: currentTask.progress,
+                    builder: (context, progress, _) {
+                      return CircularProgressIndicator(
+                        key: testKeys?.downloadProgressIndicator,
+                        value: progress,
+                        color: const Color(0xFF0066FF),
+                        backgroundColor: theme.colorScheme.onPrimary,
+                        strokeWidth: 2,
+                      );
+                    },
+                  ),
+                );
+              },
+            )
+          else if (isDownloaded ?? false)
             Icon(
               Icons.check_circle,
               key: testKeys?.downloadedIcon,
               color: Colors.green,
-            )
-          else if (currentTask?.isDownloadingNow ?? false)
-            SizedBox.square(
-              dimension: 30,
-              child: ValueListenableBuilder(
-                valueListenable: currentTask!.progress,
-                builder: (context, progress, _) {
-                  return CircularProgressIndicator(
-                    key: testKeys?.downloadProgressIndicator,
-                    value: progress,
-                    color: const Color(0xFF0066FF),
-                    backgroundColor: theme.colorScheme.onPrimary,
-                    strokeWidth: 2,
-                  );
-                },
-              ),
             ),
           if (isDesktop)
             IconButton(

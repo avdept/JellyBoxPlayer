@@ -9,7 +9,8 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -100,7 +101,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                   // _openListButton(),
                                   _randomQueueButton(),
                                   _repeatTrackButton(),
-                                  // _downloadTrackButton(),
+                                  _downloadTrackButton(),
                                   _likeTrackButton(),
                                 ],
                               ),
@@ -441,10 +442,62 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     },
   );
 
-  Widget _downloadTrackButton() => IconButton(
-    onPressed: () {},
-    color: _theme.colorScheme.onPrimary,
-    icon: const Icon(JPlayer.download),
+  Widget _downloadTrackButton() => Consumer(
+    builder: (context, ref, _) {
+      final playback = ref.watch(playbackProvider);
+      final currentSong = playback.currentMediaIndex != null
+          ? playback.songs.elementAtOrNull(playback.currentMediaIndex!)
+          : null;
+
+      if (currentSong == null) return const SizedBox.shrink();
+
+      final isDownloaded = ref
+          .watch(isSongDownloadedProvider(currentSong))
+          .valueOrNull;
+      final currentTask = ref
+          .watch(downloadServiceProvider)
+          .getTask(currentSong.id);
+
+      if (isDownloaded == true) {
+        return Icon(Icons.check_circle, color: Colors.green);
+      }
+
+      if (currentTask != null) {
+        return ValueListenableBuilder<DownloadStatus>(
+          valueListenable: currentTask.status,
+          builder: (context, status, _) {
+            if (!currentTask.isDownloadingNow) {
+              return IconButton(
+                onPressed: () => ref
+                    .read(downloadManagerProvider.notifier)
+                    .downloadSong(currentSong),
+                color: _theme.colorScheme.onPrimary,
+                icon: const Icon(JPlayer.download),
+              );
+            }
+            return SizedBox.square(
+              dimension: _isMobile ? 28 : 24,
+              child: ValueListenableBuilder<double?>(
+                valueListenable: currentTask.progress,
+                builder: (context, progress, _) => CircularProgressIndicator(
+                  value: progress,
+                  color: _theme.colorScheme.primary,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      return IconButton(
+        onPressed: () => ref
+            .read(downloadManagerProvider.notifier)
+            .downloadSong(currentSong),
+        color: _theme.colorScheme.onPrimary,
+        icon: const Icon(JPlayer.download),
+      );
+    },
   );
 
   Widget _likeTrackButton() => ValueListenableBuilder(

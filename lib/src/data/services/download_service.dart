@@ -1,23 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
+import 'package:background_downloader/background_downloader.dart' as bd;
+import 'package:flutter/foundation.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 
-class DownloadService {
-  DownloadService(this._dio);
-  final Dio _dio;
+class DownloadService extends ChangeNotifier {
   final _tasks = <String, DownloadTask>{};
-  final _cancelTokens = <String, CancelToken>{};
+  final _bdTasks = <String, bd.DownloadTask>{};
 
   Future<String> getDownloadDirectory() async {
     final dir = await getApplicationDocumentsDirectory();
     final downloadDir = Directory('${dir.path}/music');
     if (!downloadDir.existsSync()) await downloadDir.create(recursive: true);
-
     return downloadDir.path;
   }
 
@@ -26,81 +24,108 @@ class DownloadService {
     String serverUrl,
     String token,
   ) async {
-    final downloadDir = await getDownloadDirectory();
-    final songDir = Directory('$downloadDir/${song.albumId ?? "unknown"}');
-    if (!songDir.existsSync()) await songDir.create(recursive: true);
-
+    final dir = await getApplicationDocumentsDirectory();
+    final albumSubdir = song.albumId ?? 'unknown';
     final fileName = '${song.name.replaceAll('/', '_')}.mp3';
+    final destination = '${dir.path}/music/$albumSubdir/$fileName';
 
     final task = DownloadTask(
       id: song.id,
       name: song.name,
-      // Create URL for downloading
-      url: '$serverUrl/Items/${song.id}/Download?api_key=$token',
-      destination: '${songDir.path}/$fileName',
+      url: '$serverUrl/Items/${song.id}/Download',
+      destination: destination,
     );
 
     _tasks[song.id] = task;
-    unawaited(_startDownload(task));
+    notifyListeners();
+    unawaited(_startDownload(task, token, albumSubdir, fileName));
 
     return task;
   }
 
-  Future<List<DownloadTask>> downloadSongs(
-    List<ItemDTO> songs,
-    String serverUrl,
+  Future<void> _startDownload(
+    DownloadTask task,
     String token,
+    String albumSubdir,
+    String fileName,
   ) async {
-    return Future.wait(
-      songs.map((song) => downloadSong(song, serverUrl, token)),
-    );
-  }
-
-  Future<void> _startDownload(DownloadTask task) async {
-    _cancelTokens[task.id] = CancelToken();
     task.status.value = DownloadStatus.downloading;
 
-    try {
-      await _dio.download(
-        task.url,
-        task.destination,
-        cancelToken: _cancelTokens[task.id],
-        onReceiveProgress: (received, total) {
-          task.progress.value = (total > 0) ? received / total : null;
-        },
-      );
+    final bdTask = bd.DownloadTask(
+      taskId: task.id,
+      url: '${task.url}?api_key=$token',
+      filename: fileName,
+      directory: 'music/$albumSubdir',
+      baseDirectory: bd.BaseDirectory.applicationDocuments,
+      allowPause: true,
+      retries: 3,
+    );
 
-      task
-        ..progress.value = 1
-        ..status.value = DownloadStatus.completed;
-    } on DioException catch (e) {
-      task.status.value = (e.type == DioExceptionType.cancel)
-          ? DownloadStatus.canceled
-          : DownloadStatus.failed;
+    _bdTasks[task.id] = bdTask;
+
+    debugPrint('[Download] Starting "${task.name}" → $fileName');
+
+    final result = await bd.FileDownloader().download(
+      bdTask,
+      onProgress: (progress) {
+        task.progress.value = progress;
+        debugPrint('[Download] "${task.name}": ${(progress * 100).toStringAsFixed(1)}%');
+      },
+      onStatus: (status) {
+        debugPrint('[Download] "${task.name}" status: $status');
+        switch (status) {
+          case bd.TaskStatus.running:
+            task.status.value = DownloadStatus.downloading;
+          case bd.TaskStatus.paused:
+            task.status.value = DownloadStatus.paused;
+          case bd.TaskStatus.failed:
+          case bd.TaskStatus.notFound:
+            task.status.value = DownloadStatus.failed;
+          case bd.TaskStatus.canceled:
+            task.status.value = DownloadStatus.canceled;
+          case bd.TaskStatus.complete:
+            task.progress.value = 1;
+            task.status.value = DownloadStatus.completed;
+          default:
+            break;
+        }
+      },
+    );
+
+    debugPrint('[Download] "${task.name}" finished with result: ${result.status} (exception: ${result.exception})');
+
+    // Ensure final state is set after await returns
+    if (result.status == bd.TaskStatus.complete) {
+      task.progress.value = 1;
+      task.status.value = DownloadStatus.completed;
+    } else if (result.status == bd.TaskStatus.failed ||
+        result.status == bd.TaskStatus.notFound) {
+      task.status.value = DownloadStatus.failed;
     }
   }
 
-  void pauseDownload(String id) {
-    final task = _tasks[id];
-    if (task != null && task.status.value == DownloadStatus.downloading) {
-      _cancelTokens[task.id]?.cancel();
-      task.status.value = DownloadStatus.paused;
+  Future<void> pauseDownload(String id) async {
+    final bdTask = _bdTasks[id];
+    if (bdTask != null) {
+      await bd.FileDownloader().pause(bdTask);
     }
   }
 
-  void resumeDownload(String id) {
-    final task = _tasks[id];
-    if (task != null && task.status.value == DownloadStatus.paused) {
-      _startDownload(task);
+  Future<void> resumeDownload(String id) async {
+    final bdTask = _bdTasks[id];
+    if (bdTask != null) {
+      await bd.FileDownloader().resume(bdTask);
     }
   }
 
-  void cancelDownload(String id) {
+  Future<void> cancelDownload(String id) async {
     final task = _tasks[id];
     if (task != null) {
-      _cancelTokens[task.id]?.cancel();
+      final bdTask = _bdTasks.remove(id);
+      if (bdTask != null) {
+        await bd.FileDownloader().cancelTasksWithIds([id]);
+      }
       task.status.value = DownloadStatus.canceled;
-      // Optionally delete the partial file
       File(task.destination).delete().ignore();
       _tasks.remove(id);
       task.dispose();
