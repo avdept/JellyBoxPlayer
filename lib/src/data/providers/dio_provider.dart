@@ -22,6 +22,7 @@ String getCurrentPlatformName() {
     return 'Unknown';
   }
 }
+
 final dioProvider = Provider<Dio>(
   (ref) => Dio(
     BaseOptions(

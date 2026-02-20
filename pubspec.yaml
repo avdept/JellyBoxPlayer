@@ -19,7 +19,7 @@ dependencies:
   dropdown_button2: ^2.3.9
   flutter_svg: ^2.2.0
   flutter_svg_provider: ^1.0.7
-  sentry_flutter: ^9.5.0
+  sentry_flutter: ^9.6.0
   freezed_annotation: ^3.1.0
   mediakeys_proxy:
     path: ./mediakeys_proxy
@@ -35,7 +35,7 @@ dependencies:
   go_router: ^17.1.0
   intl: ^0.20.2
   json_annotation: ^4.9.0
-  flutter_spinkit: ^5.2.1
+  flutter_spinkit: ^5.2.2
   modal_bottom_sheet: ^3.0.0-pre
   shared_preferences: ^2.5.3
   palette_generator:
@@ -52,6 +52,7 @@ dependencies:
   path_provider: ^2.1.5
   sqflite: ^2.4.2
   path: ^1.9.1
+  background_downloader: ^9.5.2
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +66,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   mocktail: ^1.0.4
-  faker_dart: ^0.2.2
+  faker_dart: ^0.2.3
 
 flutter:
   uses-material-design: true

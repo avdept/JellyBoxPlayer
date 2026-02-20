@@ -7,8 +7,10 @@ import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -41,9 +43,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onExpand(
-    MediaItem? currentSong,
-  ) => Navigator.of(context, rootNavigator: true).push(
+  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
     ModalSheetRoute(
       builder: (context) => SafeArea(
         top: false,
@@ -59,100 +59,111 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
             valueListenable: _dynamicColors,
             builder: (context, colorScheme, child) => Theme(
               data: Theme.of(context).copyWith(colorScheme: colorScheme),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 444),
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: ValueListenableBuilder(
-                              valueListenable: _imageProvider,
-                              builder: (context, image, child) => (image == null)
-                                  ? const SizedBox.shrink()
-                                  : Image(
-                                      image: currentSong?.artUri != null
-                                          ? NetworkImage(
-                                              currentSong!.artUri.toString(),
-                                            )
-                                          : const AssetImage(Images.album) as ImageProvider,
-                                      fit: BoxFit.cover,
-                                    ),
+              child: StreamBuilder<SequenceState?>(
+                stream: ref.read(playerProvider).sequenceStateStream,
+                builder: (context, snapshot) {
+                  if (snapshot.data?.sequence.isEmpty ?? true) {
+                    return const SizedBox.shrink();
+                  }
+                  final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 444),
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: ValueListenableBuilder(
+                                  valueListenable: _imageProvider,
+                                  builder: (context, image, child) => (image == null)
+                                      ? const SizedBox.shrink()
+                                      : Image(
+                                          image: currentSong?.artUri != null
+                                              ? NetworkImage(
+                                                  currentSong!.artUri.toString(),
+                                                )
+                                              : const AssetImage(Images.album) as ImageProvider,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(height: _isMobile ? 6 : 18),
+                            IconTheme.merge(
+                              data: IconThemeData(size: _isMobile ? 28 : 24),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  // _openListButton(),
+                                  _randomQueueButton(),
+                                  _repeatTrackButton(),
+                                  _downloadTrackButton(),
+                                  _likeTrackButton(),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: _isMobile ? 6 : 18),
-                        IconTheme.merge(
-                          data: IconThemeData(size: _isMobile ? 28 : 24),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              // _openListButton(),
-                              _randomQueueButton(),
-                              _repeatTrackButton(),
-                              // _downloadTrackButton(),
-                              _likeTrackButton(),
-                            ],
-                          ),
+                      ),
+                      Text(
+                        currentSong?.title ?? '',
+                        style: TextStyle(
+                          fontSize: _isMobile ? 30 : 40,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    currentSong?.title ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 30 : 40,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  ),
-                  ClickableWidget(
-                    onPressed: (currentSong?.artist != null)
-                        ? () async {
-                            final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                            context.go(
-                              '${Routes.listen}${Routes.artist}',
-                              extra: {'artist': item.data},
-                            );
-                          }
-                        : null,
-                    textStyle: TextStyle(
-                      fontSize: _isMobile ? 18 : 24,
-                      height: 1.2,
-                    ),
-                    child: Text(currentSong?.displayDescription ?? currentSong?.artist ?? ''),
-                  ),
-                  AudioQualityBadge(
-                    codec: currentSong?.extras?['codec'] as String?,
-                    bitRate: currentSong?.extras?['bitRate'] as int?,
-                    sampleRate: currentSong?.extras?['sampleRate'] as int?,
-                  ),
-                  const PositionSlider(),
-                  SizedBox(height: _isMobile ? 23 : 56),
-                  IconTheme.merge(
-                    data: IconThemeData(size: _isMobile ? 37 : 44),
-                    child: Wrap(
-                      spacing: _isMobile ? 40 : 24,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _prevTrackButton(),
-                        SizedBox.square(
-                          dimension: _isMobile ? 68 : 72,
-                          child: _playPauseButton(),
+                        maxLines: 1,
+                      ),
+                      ClickableWidget(
+                        onPressed: currentSong?.extras?['artistId'] != null
+                            ? () async {
+                                final artistId = currentSong!.extras!['artistId'] as String;
+                                final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+                                if (!context.mounted) return;
+                                Navigator.of(context).pop();
+                                context.goNamed(
+                                  Routes.artist.name,
+                                  extra: {'artist': item.data},
+                                );
+                              }
+                            : null,
+                        textStyle: TextStyle(
+                          fontSize: _isMobile ? 18 : 24,
+                          height: 1.2,
                         ),
-                        _nextTrackButton(),
-                      ],
-                    ),
-                  ),
-                ],
+                        child: Text(currentSong?.artist ?? ''),
+                      ),
+
+                      AudioQualityBadge(
+                        codec: currentSong?.extras?['codec'] as String?,
+                        bitRate: currentSong?.extras?['bitRate'] as int?,
+                        sampleRate: currentSong?.extras?['sampleRate'] as int?,
+                      ),
+                      const PositionSlider(),
+                      SizedBox(height: _isMobile ? 23 : 56),
+                      IconTheme.merge(
+                        data: IconThemeData(size: _isMobile ? 37 : 44),
+                        child: Wrap(
+                          spacing: _isMobile ? 40 : 24,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            _prevTrackButton(),
+                            SizedBox.square(
+                              dimension: _isMobile ? 68 : 72,
+                              child: _playPauseButton(),
+                            ),
+                            _nextTrackButton(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -229,89 +240,105 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
         StreamBuilder<SequenceState?>(
           stream: ref.read(playerProvider).sequenceStateStream,
           builder: (context, snapshot) {
-            if (snapshot.data?.sequence.isEmpty ?? true) return Container();
             final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-            final image = currentSong?.artUri != null ? NetworkImage(currentSong!.artUri.toString()) : const Svg(SvgPictures.emptyItem) as ImageProvider;
-            _imageProvider.value = image;
-            return Container(
-              height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-              color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
-              padding: EdgeInsets.only(bottom: _viewPadding.bottom),
-              child: SimpleListTile(
-                onTap: !_isDesktop ? () => _onExpand(currentSong) : null,
-                padding: const EdgeInsets.only(right: 8),
-                leading: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image(
-                    image: image,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                title: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        currentSong?.title ?? '',
-                        style: TextStyle(
-                          fontSize: _isMobile ? 18 : 24,
-                          fontWeight: FontWeight.w500,
-                          height: 1.2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        maxLines: 1,
-                      ),
-                    ),
-                    if (_isDesktop) const SizedBox(width: 8),
-                    if (_isDesktop)
-                      AudioQualityBadge(
-                        codec: currentSong?.extras?['codec'] as String?,
-                        bitRate: currentSong?.extras?['bitRate'] as int?,
-                        sampleRate: currentSong?.extras?['sampleRate'] as int?,
-                      ),
-                  ],
-                ),
-                subtitle: ClickableWidget(
-                  onPressed: (currentSong?.artist != null)
-                      ? () async {
-                          final item = await ref.read(jellyfinApiProvider).getItem(itemId: currentSong!.artist!);
-                          if (!context.mounted) return;
-                          context.go(
-                            '${Routes.listen}${Routes.artist}',
-                            extra: {'artist': item.data},
-                          );
-                        }
-                      : null,
-                  textStyle: TextStyle(
-                    fontSize: _isMobile ? 12 : 18,
-                    height: 1.2,
-                  ),
-                  child: Text(currentSong?.displayDescription ?? currentSong?.artist ?? ''),
-                ),
-                // Text(
-                //   currentSong?.displayDescription ?? '',
-                //   style: TextStyle(
-                //     fontSize: _isMobile ? 12 : 18,
-                //     height: 1.2,
-                //   ),
-                // ),
-                trailing: Wrap(
-                  spacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (_isDesktop) const RemainingDuration(),
-                    if (_isDesktop) const RandomQueueButton(),
-                    _prevTrackButton(),
-                    SizedBox.square(
-                      dimension: 45,
-                      child: _playPauseButton(),
-                    ),
-                    _nextTrackButton(),
-                    if (_isDesktop) _repeatTrackButton(),
-                  ],
-                ),
-                leadingToTitle: 15,
+            final image = (currentSong?.artUri != null) ? NetworkImage(currentSong!.artUri.toString()) : const Svg(SvgPictures.emptyItem) as ImageProvider;
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _imageProvider.value = image,
+            );
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) => SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: child,
               ),
+              child: (snapshot.data?.sequence.isEmpty ?? true)
+                  ? const SizedBox(width: double.infinity)
+                  : Container(
+                      height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
+                      color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
+                      padding: EdgeInsets.only(bottom: _viewPadding.bottom),
+                      child: SimpleListTile(
+                        onTap: !_isDesktop ? _onExpand : null,
+                        padding: const EdgeInsets.only(right: 8),
+                        leading: AspectRatio(
+                          aspectRatio: 1,
+                          child: Image(
+                            image: image,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        title: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                currentSong?.title ?? '',
+                                style: TextStyle(
+                                  fontSize: _isMobile ? 18 : 24,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                maxLines: 1,
+                              ),
+                            ),
+                            if (_isDesktop) const SizedBox(width: 8),
+                            if (_isDesktop)
+                              AudioQualityBadge(
+                                codec: currentSong?.extras?['codec'] as String?,
+                                bitRate: currentSong?.extras?['bitRate'] as int?,
+                                sampleRate: currentSong?.extras?['sampleRate'] as int?,
+                              ),
+                          ],
+                        ),
+                        subtitle: ClickableWidget(
+                                onPressed: currentSong?.extras?['artistId'] != null
+                                    ? () async {
+                                        final artistId = currentSong!.extras!['artistId'] as String;
+                                        final item = await ref
+                                            .read(jellyfinApiProvider)
+                                            .getItem(itemId: artistId);
+                                        if (!context.mounted) return;
+                                        context.goNamed(
+                                          Routes.artist.name,
+                                          extra: {'artist': item.data},
+                                        );
+                                      }
+                                    : null,
+                                textStyle: TextStyle(
+                                  fontSize: _isMobile ? 12 : 18,
+                                  height: 1.2,
+                                ),
+                                child: Text(
+                                  currentSong?.artist ?? '',
+                                ),
+                              ),
+                        // Text(
+                        //   currentSong?.displayDescription ?? '',
+                        //   style: TextStyle(
+                        //     fontSize: _isMobile ? 12 : 18,
+                        //     height: 1.2,
+                        //   ),
+                        // ),
+                        trailing: Wrap(
+                          spacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (_isDesktop) const RemainingDuration(),
+                            if (_isDesktop) const RandomQueueButton(),
+                            _prevTrackButton(),
+                            SizedBox.square(
+                              dimension: 45,
+                              child: _playPauseButton(),
+                            ),
+                            _nextTrackButton(),
+                            if (_isDesktop) _repeatTrackButton(),
+                          ],
+                        ),
+                        leadingToTitle: 15,
+                      ),
+                    ),
             );
           },
         ),
@@ -354,13 +381,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   );
 
   Widget _prevTrackButton() => IconButton(
-    onPressed: () => ref.read(playbackProvider.notifier).prev(),
+    onPressed: ref.read(playbackProvider.notifier).prev,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_backward),
   );
 
   Widget _nextTrackButton() => IconButton(
-    onPressed: () => ref.read(playbackProvider.notifier).next(),
+    onPressed: ref.read(playbackProvider.notifier).next,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_forward),
   );
@@ -415,10 +442,62 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     },
   );
 
-  Widget _downloadTrackButton() => IconButton(
-    onPressed: () {},
-    color: _theme.colorScheme.onPrimary,
-    icon: const Icon(JPlayer.download),
+  Widget _downloadTrackButton() => Consumer(
+    builder: (context, ref, _) {
+      final playback = ref.watch(playbackProvider);
+      final currentSong = playback.currentMediaIndex != null
+          ? playback.songs.elementAtOrNull(playback.currentMediaIndex!)
+          : null;
+
+      if (currentSong == null) return const SizedBox.shrink();
+
+      final isDownloaded = ref
+          .watch(isSongDownloadedProvider(currentSong))
+          .valueOrNull;
+      final currentTask = ref
+          .watch(downloadServiceProvider)
+          .getTask(currentSong.id);
+
+      if (isDownloaded == true) {
+        return Icon(Icons.check_circle, color: Colors.green);
+      }
+
+      if (currentTask != null) {
+        return ValueListenableBuilder<DownloadStatus>(
+          valueListenable: currentTask.status,
+          builder: (context, status, _) {
+            if (!currentTask.isDownloadingNow) {
+              return IconButton(
+                onPressed: () => ref
+                    .read(downloadManagerProvider.notifier)
+                    .downloadSong(currentSong),
+                color: _theme.colorScheme.onPrimary,
+                icon: const Icon(JPlayer.download),
+              );
+            }
+            return SizedBox.square(
+              dimension: _isMobile ? 28 : 24,
+              child: ValueListenableBuilder<double?>(
+                valueListenable: currentTask.progress,
+                builder: (context, progress, _) => CircularProgressIndicator(
+                  value: progress,
+                  color: _theme.colorScheme.primary,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      return IconButton(
+        onPressed: () => ref
+            .read(downloadManagerProvider.notifier)
+            .downloadSong(currentSong),
+        color: _theme.colorScheme.onPrimary,
+        icon: const Icon(JPlayer.download),
+      );
+    },
   );
 
   Widget _likeTrackButton() => ValueListenableBuilder(

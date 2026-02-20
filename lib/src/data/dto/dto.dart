@@ -2,6 +2,8 @@ export 'artist/artist_dto.dart';
 export 'item/item_dto.dart';
 export 'media/media_source_dto.dart';
 export 'media/media_stream_dto.dart';
+export 'session_info/session_info_dto.dart';
+export 'sign_in_result/sign_in_result_dto.dart';
 export 'user/user_dto.dart';
 export 'user_data/user_data_dto.dart';
 export 'wrappers/wrappers_dto.dart';

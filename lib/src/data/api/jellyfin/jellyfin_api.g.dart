@@ -2,11 +2,13 @@
 
 part of 'jellyfin_api.dart';
 
+// dart format off
+
 // **************************************************************************
 // RetrofitGenerator
 // **************************************************************************
 
-// ignore_for_file: unnecessary_brace_in_string_interps,no_leading_underscores_for_local_identifiers,unused_element,unnecessary_string_interpolations,unused_element_parameter
+// ignore_for_file: unnecessary_brace_in_string_interps,no_leading_underscores_for_local_identifiers,unused_element,unnecessary_string_interpolations,unused_element_parameter,avoid_unused_constructor_parameters,unreachable_from_main
 
 class _JellyfinApi implements JellyfinApi {
   _JellyfinApi(this._dio, {this.baseUrl, this.errorLogger});
@@ -18,14 +20,14 @@ class _JellyfinApi implements JellyfinApi {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<HttpResponse<UserDTO>> signIn({
+  Future<HttpResponse<SignInResultDTO>> signIn({
     required UserCredentials credentials,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = credentials;
-    final _options = _setStreamType<HttpResponse<UserDTO>>(
+    final _options = _setStreamType<HttpResponse<SignInResultDTO>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -36,11 +38,11 @@ class _JellyfinApi implements JellyfinApi {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late UserDTO _value;
+    late SignInResultDTO _value;
     try {
-      _value = UserDTO.fromJson(_result.data!);
+      _value = SignInResultDTO.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -48,7 +50,7 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
-  Future<void> saveFavorite({
+  Future<HttpResponse<void>> saveFavorite({
     required String userId,
     required String itemId,
   }) async {
@@ -56,7 +58,7 @@ class _JellyfinApi implements JellyfinApi {
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<void>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -66,11 +68,13 @@ class _JellyfinApi implements JellyfinApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
   }
 
   @override
-  Future<void> removeFavorite({
+  Future<HttpResponse<void>> removeFavorite({
     required String userId,
     required String itemId,
   }) async {
@@ -78,7 +82,7 @@ class _JellyfinApi implements JellyfinApi {
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<void>>(
       Options(method: 'DELETE', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -88,7 +92,9 @@ class _JellyfinApi implements JellyfinApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
   }
 
   @override
@@ -121,7 +127,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -171,7 +177,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -217,7 +223,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -265,7 +271,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -310,7 +316,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -347,7 +353,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -378,7 +384,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemDTO.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -386,12 +392,14 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
-  Future<void> createPlaylist({required PlaylistData values}) async {
+  Future<HttpResponse<void>> createPlaylist({
+    required PlaylistData values,
+  }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = values;
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<void>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -401,16 +409,20 @@ class _JellyfinApi implements JellyfinApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
   }
 
   @override
-  Future<void> deletePlaylist({required String playlistId}) async {
+  Future<HttpResponse<void>> deletePlaylist({
+    required String playlistId,
+  }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<void>>(
       Options(method: 'DELETE', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -420,11 +432,13 @@ class _JellyfinApi implements JellyfinApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
   }
 
   @override
-  Future<void> addPlaylistItems({
+  Future<HttpResponse<void>> addPlaylistItems({
     required String playlistId,
     required String userId,
     required String entryIds,
@@ -436,7 +450,7 @@ class _JellyfinApi implements JellyfinApi {
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<void>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -446,11 +460,13 @@ class _JellyfinApi implements JellyfinApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
   }
 
   @override
-  Future<void> removePlaylistItem({
+  Future<HttpResponse<void>> removePlaylistItem({
     required String playlistId,
     required String entryIds,
   }) async {
@@ -458,7 +474,7 @@ class _JellyfinApi implements JellyfinApi {
     final queryParameters = <String, dynamic>{r'EntryIds': entryIds};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<void>(
+    final _options = _setStreamType<HttpResponse<void>>(
       Options(method: 'DELETE', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -468,7 +484,9 @@ class _JellyfinApi implements JellyfinApi {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    await _dio.fetch<void>(_options);
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
   }
 
   @override
@@ -512,7 +530,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -560,7 +578,7 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -590,10 +608,77 @@ class _JellyfinApi implements JellyfinApi {
     try {
       _value = ItemsWrapper.fromJson(_result.data!);
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, response: _result);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<void>> playbackStarted({
+    required PlaystateData values,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = values;
+    final _options = _setStreamType<HttpResponse<void>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Sessions/Playing',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<void>> playbackStopped({
+    required PlaystateData values,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = values;
+    final _options = _setStreamType<HttpResponse<void>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Sessions/Playing/Stopped',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<void>> signOut() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<void>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Sessions/Logout',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<void>(_options);
+    final httpResponse = HttpResponse(null, _result);
     return httpResponse;
   }
 
@@ -624,3 +709,5 @@ class _JellyfinApi implements JellyfinApi {
     return Uri.parse(dioBaseUrl).resolveUri(url).toString();
   }
 }
+
+// dart format on

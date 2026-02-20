@@ -82,7 +82,7 @@ void main() {
     mockListener = MockListener();
     providerContainer = createProviderContainer(
       overrides: [
-        downloadServiceProvider.overrideWithValue(mockDownloadService),
+        downloadServiceProvider.overrideWith((_) => mockDownloadService),
         downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
         baseUrlProvider.overrideWith((_) => mockBaseUrl),
         currentUserProvider.overrideWith((_) => mockUser),
@@ -160,13 +160,11 @@ void main() {
           faker.datatype.number(min: 1, max: 3),
           (i) => mockSong,
         );
-        final mockTasks = List.generate(
-          mockSongs.length,
-          (i) => createDownloadTask(status: DownloadStatus.completed),
-        );
         when(
-          () => mockDownloadService.downloadSongs(any(), any(), any()),
-        ).thenAnswer((_) async => mockTasks);
+          () => mockDownloadService.downloadSong(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => createDownloadTask(status: DownloadStatus.completed),
+        );
         when(
           () => mockDownloadDatabase.insertDownloadedSong(
             any(),
@@ -191,17 +189,14 @@ void main() {
               .downloadAlbum(mockAlbum, mockSongs),
           completes,
         );
-        for (final task in mockTasks) {
-          task.dispose();
-        }
-        // Check if songs are fetched from backend
+        // Check if each song is fetched from backend individually
         verify(
-          () => mockDownloadService.downloadSongs(
-            mockSongs,
+          () => mockDownloadService.downloadSong(
+            mockSong,
             mockBaseUrl,
             mockToken,
           ),
-        ).called(1);
+        ).called(mockSongs.length);
         // Check if each song is saved to database
         verify(
           () => mockDownloadDatabase.insertDownloadedSong(

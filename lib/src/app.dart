@@ -1,3 +1,6 @@
+import 'dart:async' show Timer;
+import 'dart:io' show Platform;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -45,17 +50,35 @@ class App extends ConsumerStatefulWidget {
   ConsumerState<App> createState() => _AppState();
 }
 
-class _AppState extends ConsumerState<App> {
+class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   late final GoRouter _router;
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   final _authState = ValueNotifier<bool?>(null);
   ItemDTO? _selectedLibrary;
+  Timer? _resizeTimer;
 
   @override
   void initState() {
     super.initState();
     MediaKeyHandler.initialize(ref);
     initRoutes();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+      _resizeTimer?.cancel();
+      _resizeTimer = Timer(
+        const Duration(seconds: 2),
+        () async {
+          _resizeTimer = null;
+          ref.read(sharedPreferencesProvider).whenData((prefs) {
+            if (mounted) WindowSizeStorage(prefs).saveWindowSize(context.size!);
+          });
+        },
+      );
+    }
   }
 
   void initRoutes() {
@@ -208,6 +231,8 @@ class _AppState extends ConsumerState<App> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _resizeTimer?.cancel();
     _authState.dispose();
     super.dispose();
   }
