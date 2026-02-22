@@ -7,6 +7,7 @@ import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
@@ -52,17 +53,30 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                       mediaSourceId: state.album?.id,
                     ),
                   );
+              final album = state.album;
+              if (album != null) {
+                unawaited(_saveToStorage(songId: nextSong.id, positionMs: 0));
+              }
             }
           }
         }
       })
-      // Listen for song completion
       ..positionStream.listen((position) {
         state = state.copyWith(
           position: position,
           totalDuration: _audioPlayer.duration,
           currentMediaIndex: _audioPlayer.currentIndex,
         );
+
+        final now = DateTime.now();
+        if (state.status.isPlaying && (_lastPositionSave == null || now.difference(_lastPositionSave!).inSeconds >= 5)) {
+          _lastPositionSave = now;
+          final currentIndex = _audioPlayer.currentIndex;
+          final currentSong = currentIndex != null ? state.songs.elementAtOrNull(currentIndex) : null;
+          if (currentSong != null) {
+            unawaited(_saveToStorage(songId: currentSong.id, positionMs: position.inMilliseconds));
+          }
+        }
       })
       // Handle other player states as needed
       ..playerStateStream.listen((playerState) {
@@ -78,12 +92,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final Ref _ref;
   late AudioPlayer _audioPlayer;
   var _playSessionId = '';
+  DateTime? _lastPositionSave;
 
   Future<void> play(
     ItemDTO playSong,
     List<ItemDTO> songs,
-    ItemDTO album,
-  ) async {
+    ItemDTO album, {
+    Duration? initialPosition,
+    bool autoPlay = true,
+  }) async {
     try {
       final audioSources = await Future.wait(
         songs.map((song) async {
@@ -145,19 +162,26 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
 
       _playSessionId = DateTime.now().toIso8601String(); // Any unique ID
+      final startIndex = songs.indexWhere((s) => s.id == playSong.id);
+      final startPosition = initialPosition ?? Duration.zero;
       await _audioPlayer.setAudioSources(
         audioSources,
-        initialIndex: songs.indexOf(playSong),
-        preload: false,
+        initialIndex: startIndex >= 0 ? startIndex : 0,
+        initialPosition: startPosition,
+        preload: true,
       );
+
       state = state.copyWith(
         songs: songs,
         album: album,
-        status: PlaybackStatus.playing,
-        position: Duration.zero,
+        status: autoPlay ? PlaybackStatus.playing : PlaybackStatus.paused,
+        position: startPosition,
         totalDuration: _audioPlayer.duration,
+        currentMediaIndex: startIndex >= 0 ? startIndex : 0,
       );
-      unawaited(_audioPlayer.play());
+
+      unawaited(_saveToStorage(songId: playSong.id, positionMs: startPosition.inMilliseconds, songs: songs, album: album));
+      if (autoPlay) unawaited(_audioPlayer.play());
     } catch (e) {
       if (e.toString().indexOf('setPitch') > 0) {
         // This is hack to avoid playback state being error on ios*`
@@ -176,6 +200,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> seek(Duration position) async {
     await _audioPlayer.seek(position);
     state = state.copyWith(position: position);
+    final currentIndex = _audioPlayer.currentIndex;
+    final currentSong = currentIndex != null ? state.songs.elementAtOrNull(currentIndex) : null;
+    if (currentSong != null) {
+      unawaited(_saveToStorage(songId: currentSong.id, positionMs: position.inMilliseconds));
+    }
   }
 
   Future<void> playPause() => switch (state.status.isPlaying) {
@@ -270,6 +299,46 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
       // Handle the end of the queue (e.g., loop, stop playback, etc.)
     }
+  }
+
+  Future<void> _saveToStorage({
+    required String songId,
+    required int positionMs,
+    List<ItemDTO>? songs,
+    ItemDTO? album,
+  }) async {
+    final effectiveSongs = songs ?? state.songs;
+    final effectiveAlbum = album ?? state.album;
+    if (effectiveSongs.isEmpty || effectiveAlbum == null) {
+      return;
+    }
+    await PlaybackStorage().save(
+      songs: effectiveSongs,
+      album: effectiveAlbum,
+      songId: songId,
+      positionMs: positionMs,
+    );
+  }
+
+  Future<bool> tryRestore() async {
+    final snapshot = await PlaybackStorage().load();
+    if (snapshot == null) {
+      return false;
+    }
+
+    final song = snapshot.songs.firstWhere(
+      (s) => s.id == snapshot.songId,
+      orElse: () => snapshot.songs.first,
+    );
+
+    await play(
+      song,
+      snapshot.songs,
+      snapshot.album,
+      initialPosition: Duration(milliseconds: snapshot.positionMs),
+      autoPlay: false,
+    );
+    return true;
   }
 
   @override
