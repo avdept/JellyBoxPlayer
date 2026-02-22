@@ -1,4 +1,4 @@
-import 'dart:async' show Timer;
+import 'dart:async' show Timer, unawaited;
 import 'dart:io' show Platform;
 
 import 'package:flutter/cupertino.dart';
@@ -201,6 +201,9 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
       })
       ..listen(currentLibraryProvider, (previous, next) {
         _selectedLibrary = next.valueOrNull;
+        if (next.valueOrNull != null) {
+          unawaited(ref.read(playbackProvider.notifier).tryRestore());
+        }
       });
 
     return MaterialApp.router(
