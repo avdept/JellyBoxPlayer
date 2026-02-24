@@ -19,11 +19,13 @@ class ItemListNotifier
   FutureOr<ItemsPage> build(ItemList arg) async {
     _api = ref.watch(jellyfinApiProvider);
     _filterState = ref.watch(filterProvider);
-    state = const AsyncLoading();
-    return _fetchItems();
+    return _fetchItems(startPage: const ItemsPage());
   }
 
-  Future<ItemsPage> _fetchItems({int startIndex = 0}) async {
+  Future<ItemsPage> _fetchItems({
+    int startIndex = 0,
+    ItemsPage startPage = const ItemsPage(),
+  }) async {
     final resp = await switch (arg) {
       ItemList.albums => _api.getAlbums(
         userId: ref.read(currentUserProvider)!.userId,
@@ -45,18 +47,20 @@ class ItemListNotifier
         startIndex: startIndex.toString(),
       ),
     };
-    final value = state.value ?? const ItemsPage();
-    return value.copyWith(
-      items: [...value.items, ...resp.data.items],
-      currentPage: value.currentPage + 1,
+    return startPage.copyWith(
+      items: [...startPage.items, ...resp.data.items],
+      currentPage: startPage.currentPage + 1,
     );
   }
 
   Future<void> loadMore() async {
+    final current = state.requireValue;
     state = const AsyncLoading();
-    final value = state.requireValue;
     state = await AsyncValue.guard(
-      () => _fetchItems(startIndex: value.currentPage * value.totalPerPage),
+      () => _fetchItems(
+        startIndex: current.currentPage * current.totalPerPage,
+        startPage: current,
+      ),
     );
   }
 }
