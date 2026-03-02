@@ -293,27 +293,25 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                           ],
                         ),
                         subtitle: ClickableWidget(
-                                onPressed: currentSong?.extras?['artistId'] != null
-                                    ? () async {
-                                        final artistId = currentSong!.extras!['artistId'] as String;
-                                        final item = await ref
-                                            .read(jellyfinApiProvider)
-                                            .getItem(itemId: artistId);
-                                        if (!context.mounted) return;
-                                        context.goNamed(
-                                          Routes.artist.name,
-                                          extra: {'artist': item.data},
-                                        );
-                                      }
-                                    : null,
-                                textStyle: TextStyle(
-                                  fontSize: _isMobile ? 12 : 18,
-                                  height: 1.2,
-                                ),
-                                child: Text(
-                                  currentSong?.artist ?? '',
-                                ),
-                              ),
+                          onPressed: currentSong?.extras?['artistId'] != null
+                              ? () async {
+                                  final artistId = currentSong!.extras!['artistId'] as String;
+                                  final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+                                  if (!context.mounted) return;
+                                  context.goNamed(
+                                    Routes.artist.name,
+                                    extra: {'artist': item.data},
+                                  );
+                                }
+                              : null,
+                          textStyle: TextStyle(
+                            fontSize: _isMobile ? 12 : 18,
+                            height: 1.2,
+                          ),
+                          child: Text(
+                            currentSong?.artist ?? '',
+                          ),
+                        ),
                         // Text(
                         //   currentSong?.displayDescription ?? '',
                         //   style: TextStyle(
@@ -445,18 +443,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   Widget _downloadTrackButton() => Consumer(
     builder: (context, ref, _) {
       final playback = ref.watch(playbackProvider);
-      final currentSong = playback.currentMediaIndex != null
-          ? playback.songs.elementAtOrNull(playback.currentMediaIndex!)
-          : null;
+      final currentSong = playback.currentMediaIndex != null ? playback.songs.elementAtOrNull(playback.currentMediaIndex!) : null;
 
       if (currentSong == null) return const SizedBox.shrink();
 
-      final isDownloaded = ref
-          .watch(isSongDownloadedProvider(currentSong))
-          .valueOrNull;
-      final currentTask = ref
-          .watch(downloadServiceProvider)
-          .getTask(currentSong.id);
+      final isDownloaded = ref.watch(isSongDownloadedProvider(currentSong)).valueOrNull;
+      final currentTask = ref.watch(downloadServiceProvider).getTask(currentSong.id);
 
       if (isDownloaded == true) {
         return Icon(Icons.check_circle, color: Colors.green);
@@ -468,9 +460,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           builder: (context, status, _) {
             if (!currentTask.isDownloadingNow) {
               return IconButton(
-                onPressed: () => ref
-                    .read(downloadManagerProvider.notifier)
-                    .downloadSong(currentSong),
+                onPressed: () => ref.read(downloadManagerProvider.notifier).downloadSong(currentSong),
                 color: _theme.colorScheme.onPrimary,
                 icon: const Icon(JPlayer.download),
               );
@@ -491,9 +481,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       }
 
       return IconButton(
-        onPressed: () => ref
-            .read(downloadManagerProvider.notifier)
-            .downloadSong(currentSong),
+        onPressed: () => ref.read(downloadManagerProvider.notifier).downloadSong(currentSong),
         color: _theme.colorScheme.onPrimary,
         icon: const Icon(JPlayer.download),
       );

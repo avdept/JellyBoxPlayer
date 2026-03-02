@@ -9,6 +9,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:updatify_flutter/updatify_flutter.dart';
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({
     required this.shell,
@@ -64,12 +65,24 @@ class _MainPageState extends ConsumerState<MainPage> {
                   unselectedItemColor: _theme.colorScheme.onPrimary,
                   selectedFontSize: 16,
                   unselectedFontSize: 16,
-                  leading: const Text(
-                    'JellyBox',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  leading: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'JellyBox',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () => showUpdatifyDialog(
+                          context,
+                          projectId: 'jellybox',
+                        ),
+                      ),
+                    ],
                   ),
                   trailing: TextButton.icon(
                     onPressed: ref.read(authProvider.notifier).logout,

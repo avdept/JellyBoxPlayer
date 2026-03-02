@@ -34,6 +34,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     ItemList.albums: 'Albums',
     ItemList.artists: 'Artists',
     ItemList.playlists: 'Playlists',
+    ItemList.songs: 'Songs',
   };
 
   Map<EntityFilter, String> get _filtersLabels => {
@@ -67,6 +68,68 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       Routes.playlist.name,
       extra: {'playlist': playlist},
     );
+  }
+
+  Future<void> _onSongGoToAlbum(ItemDTO song) async {
+    final albumId = song.albumId;
+    if (albumId == null) return;
+    final item = await ref.read(jellyfinApiProvider).getItem(itemId: albumId);
+    if (!mounted) return;
+    _onAlbumTap(item.data);
+  }
+
+  Future<void> _onSongArtistTap(ItemDTO song) async {
+    final artistId = song.albumArtists.firstOrNull?.id;
+    if (artistId == null) return;
+    final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+    if (!mounted) return;
+    context.pushNamed(Routes.artist.name, extra: {'artist': item.data});
+  }
+
+  void _onSongTap(ItemDTO song, List<ItemDTO> allSongs) {
+    final syntheticAlbum = ItemDTO(
+      id: song.albumId ?? song.id,
+      name: song.albumName ?? '',
+      type: 'MusicAlbum',
+      albumArtist: song.albumArtist,
+      albumArtists: song.albumArtists,
+      imageTags: song.imageTags,
+    );
+    ref.read(playbackProvider.notifier).play(song, allSongs, syntheticAlbum);
+  }
+
+  Future<void> _onLikePressed(ItemDTO song) async {
+    final api = ref.read(jellyfinApiProvider);
+    final isFavorite = song.userData.isFavorite;
+    final callback = isFavorite ? api.removeFavorite : api.saveFavorite;
+    await callback.call(
+      userId: ref.read(currentUserProvider)!.userId,
+      itemId: song.id,
+    );
+    ref.read(itemListProvider(ItemList.songs).notifier).updateItem(
+      song.copyWith(
+        userData: song.userData.copyWith(isFavorite: !isFavorite),
+      ),
+    );
+  }
+
+  Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
+    final playlist = await showPlaylistPicker(
+      context,
+      isDesktop: _device.isDesktop,
+    );
+    if (playlist != null && mounted) {
+      await ref.read(jellyfinApiProvider).addPlaylistItems(
+        playlistId: playlist.id,
+        userId: ref.read(currentUserProvider)!.userId,
+        entryIds: song.id,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Successfully added to playlist')),
+        );
+      }
+    }
   }
 
   void _onCreateNewPlaylist() {
@@ -156,19 +219,23 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   void initState() {
     super.initState();
     _currentView = ValueNotifier(ItemList.values.first)
-      ..addListener(
-        () => _appliedFilter.value = Filter(
-          orderBy: _currentView.value == ItemList.albums
-              ? EntityFilter.dateCreated
-              : EntityFilter.sortName,
+      ..addListener(() {
+        final isAlbums = _currentView.value == ItemList.albums;
+        ref.read(filterProvider.notifier).filter(
+          field: isAlbums ? EntityFilter.dateCreated : EntityFilter.sortName,
           desc: true,
-        ),
-      );
+        );
+      });
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
     };
     _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))
-      ..addListener(() => _applyProviderFilter(_appliedFilter.value.orderBy));
+      ..addListener(
+        () => ref.read(filterProvider.notifier).filter(
+          field: _appliedFilter.value.orderBy,
+          desc: _appliedFilter.value.desc,
+        ),
+      );
   }
 
   @override
@@ -200,9 +267,8 @@ class _ListenPageState extends ConsumerState<ListenPage> {
             ),
           ),
         ),
-        loadMoreData: ref
-            .read(itemListProvider(_currentView.value).notifier)
-            .loadMore,
+        loadMoreData: () =>
+            ref.read(itemListProvider(_currentView.value).notifier).loadMore(),
         contentPadding: EdgeInsets.only(
           left: _device.isMobile ? 16 : 30,
           right: _device.isMobile ? 16 : 30,
@@ -215,39 +281,81 @@ class _ListenPageState extends ConsumerState<ListenPage> {
               builder: (context, ref, child) {
                 final provider = ref.watch(itemListProvider(value));
                 return provider.when(
-                  data: (list) => SliverGrid.builder(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: _device.isTablet ? 360 : 200,
-                      mainAxisSpacing: _device.isMobile ? 15 : 24,
-                      crossAxisSpacing: _device.isMobile
-                          ? 8
-                          : (_device.isTablet ? 56 : 28),
-                      childAspectRatio: _device.isTablet
-                          ? 360 / 413
-                          : 175 / 215.7,
-                    ),
-                    itemBuilder: (context, index) {
-                      final item = list.items[index];
-                      return AlbumView(
-                        album: item,
-                        onTap: (item) => switch (value) {
-                          ItemList.albums => _onAlbumTap(item),
-                          ItemList.artists => _onArtistTap(item),
-                          ItemList.playlists => _onPlaylistTap(item),
-                        },
-                        optionsBuilder: switch (value) {
-                          ItemList.playlists => (context) => [
-                            PopupMenuItem(
-                              onTap: () => _onDeletePlaylist(item),
-                              child: const Text('Delete playlist'),
-                            ),
-                          ],
-                          _ => null,
-                        },
+                  data: (list) {
+                    if (value == ItemList.songs) {
+                      final currentSongId = ref.watch(
+                        playbackProvider.select((s) {
+                          final idx = s.currentMediaIndex;
+                          return idx != null
+                              ? s.songs.elementAtOrNull(idx)?.id
+                              : null;
+                        }),
                       );
-                    },
-                    itemCount: list.items.length,
-                  ),
+                      return SliverList.builder(
+                        itemBuilder: (context, index) {
+                          final song = list.items[index];
+                          return SongRowView(
+                            song: song,
+                            isPlaying: currentSongId == song.id,
+                            onTap: (song) => _onSongTap(song, list.items),
+                            onLikePressed: _onLikePressed,
+                            onArtistTap: _onSongArtistTap,
+                            optionsBuilder: (context) => [
+                              PopupMenuItem(
+                                onTap: () => _onAddToPlaylistPressed(song),
+                                child: const Text('Add to playlist'),
+                              ),
+                              if (song.albumArtists.isNotEmpty)
+                                PopupMenuItem(
+                                  onTap: () => _onSongArtistTap(song),
+                                  child: const Text('Go to Artist'),
+                                ),
+                              if (song.albumId != null)
+                                PopupMenuItem(
+                                  onTap: () => _onSongGoToAlbum(song),
+                                  child: const Text('Go to Album'),
+                                ),
+                            ],
+                          );
+                        },
+                        itemCount: list.items.length,
+                      );
+                    }
+                    return SliverGrid.builder(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+                        mainAxisSpacing: _device.isMobile ? 15 : 24,
+                        crossAxisSpacing: _device.isMobile
+                            ? 8
+                            : (_device.isTablet ? 56 : 28),
+                        childAspectRatio: _device.isTablet
+                            ? 360 / 413
+                            : 175 / 215.7,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = list.items[index];
+                        return AlbumView(
+                          album: item,
+                          onTap: (item) => switch (value) {
+                            ItemList.albums => _onAlbumTap(item),
+                            ItemList.artists => _onArtistTap(item),
+                            ItemList.playlists => _onPlaylistTap(item),
+                            ItemList.songs => null,
+                          },
+                          optionsBuilder: switch (value) {
+                            ItemList.playlists => (context) => [
+                              PopupMenuItem(
+                                onTap: () => _onDeletePlaylist(item),
+                                child: const Text('Delete playlist'),
+                              ),
+                            ],
+                            _ => null,
+                          },
+                        );
+                      },
+                      itemCount: list.items.length,
+                    );
+                  },
                   error: (error, stackTrace) => SliverToBoxAdapter(
                     child: Text(error.toString()),
                   ),
@@ -309,6 +417,12 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     ItemList.playlists => const [
       EntityFilter.sortName,
       EntityFilter.dateCreated,
+    ],
+    ItemList.songs => const [
+      EntityFilter.sortName,
+      EntityFilter.dateCreated,
+      EntityFilter.albumArtist,
+      EntityFilter.random,
     ],
   };
 

@@ -127,15 +127,25 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                     ].join('|'),
                   },
                 );
-          final imagePath = song.imageTags['Primary'] ?? album.imageTags['Primary'];
+          final songImageTag = song.imageTags['Primary'];
+          final albumImageTag = album.imageTags['Primary'];
 
           final audioStream = song.mediaSources.firstOrNull?.mediaStreams.where((s) => s.type == 'Audio').firstOrNull;
           final extras = <String, dynamic>{
             if (audioStream?.codec != null) 'codec': audioStream!.codec,
             if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
             if (audioStream?.sampleRate != null) 'sampleRate': audioStream!.sampleRate,
-            if (album.albumArtists.isNotEmpty) 'artistId': album.albumArtists.first.id,
+            if (song.albumArtists.isNotEmpty) 'artistId': song.albumArtists.first.id
+            else if (album.albumArtists.isNotEmpty) 'artistId': album.albumArtists.first.id,
           };
+
+          final imageService = _ref.read(imageServiceProvider);
+          Uri? artUri;
+          if (songImageTag != null) {
+            artUri = Uri.parse(imageService.imagePath(tagId: songImageTag, id: song.id));
+          } else if (albumImageTag != null) {
+            artUri = Uri.parse(imageService.imagePath(tagId: albumImageTag, id: album.id));
+          }
 
           // If downloaded, use local file, otherwise stream from server*
           final audioSource = AudioSource.uri(
@@ -143,17 +153,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             tag: MediaItem(
               id: song.id,
               album: song.albumName,
-              artist: album.albumArtist,
+              artist: song.albumArtist ?? album.albumArtist,
               duration: Duration(
                 milliseconds: (song.runTimeTicks / 10000).ceil(),
               ),
               title: song.name,
               extras: extras,
-              artUri: (imagePath == null)
-                  ? null
-                  : Uri.parse(
-                      _ref.read(imageServiceProvider).imagePath(tagId: imagePath, id: song.id),
-                    ),
+              artUri: artUri,
             ),
           );
 
@@ -265,40 +271,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void toggleRepeat() {
     state = state.copyWith();
-  }
-
-  Future<void> _handleSongCompletion() async {
-    final queueState = _ref.read(audioQueueProvider);
-    state = state.copyWith(
-      status: PlaybackStatus.paused,
-      position: Duration.zero,
-      totalDuration: Duration.zero,
-    );
-    final currentSong = queueState.currentSong;
-    final songs = queueState.songs;
-
-    if (currentSong == null) return;
-
-    final currentIndex = songs.indexOf(
-      songs.firstWhere((element) => element == currentSong),
-    );
-    if (currentIndex != -1 && currentIndex + 1 < songs.length) {
-      // There's a next song in the queue
-      final nextSong = songs[currentIndex + 1];
-      _ref.read(audioQueueProvider.notifier).setCurrentSong(nextSong);
-      unawaited(
-        play(nextSong, songs, queueState.album!),
-      ); // Start playing the next song
-    } else {
-      await _ref.read(playerProvider).stop();
-      state = state.copyWith(
-        status: PlaybackStatus.stopped,
-        position: Duration.zero,
-        totalDuration: Duration.zero,
-      );
-
-      // Handle the end of the queue (e.g., loop, stop playback, etc.)
-    }
   }
 
   Future<void> _saveToStorage({

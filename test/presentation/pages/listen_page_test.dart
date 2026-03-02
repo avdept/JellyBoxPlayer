@@ -131,7 +131,7 @@ void main() {
       (widgetTester) async {
         await widgetTester.pumpWidget(getWidgetUT());
         await widgetTester.pump(Duration.zero);
-        const views = {'Albums', 'Artists', 'Playlists'};
+        const views = {'Albums', 'Artists', 'Playlists', 'Songs'};
         final chipFinder = find.byType(ActionChip);
         expect(chipFinder, findsNWidgets(views.length));
         for (final label in views) {

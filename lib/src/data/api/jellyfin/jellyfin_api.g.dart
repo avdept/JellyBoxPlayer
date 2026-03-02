@@ -135,6 +135,54 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
+  Future<HttpResponse<ItemsWrapper>> getAllSongs({
+    required String userId,
+    String? libraryId,
+    String type = 'Audio',
+    String startIndex = '0',
+    String limit = '100',
+    String sortBy = 'SortName',
+    String sortOrder = 'Ascending',
+    bool recursive = true,
+    List<String> fields = const ['MediaSources'],
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'ParentId': libraryId,
+      r'IncludeItemTypes': type,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'SortBy': sortBy,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+      r'Fields': fields,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Users/${userId}/Items',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ItemsWrapper _value;
+    try {
+      _value = ItemsWrapper.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<ItemsWrapper>> getAlbums({
     required String userId,
     String? libraryId,

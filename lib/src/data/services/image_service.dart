@@ -10,6 +10,10 @@ class ImageService {
     return '$serverUrl/Items/$id/Images/Primary?fillHeight=420&fillWidth=420&quality=96&tag=$tagId';
   }
 
+  String imagePathById({required String id}) {
+    return '$serverUrl/Items/$id/Images/Primary?fillHeight=420&fillWidth=420&quality=96';
+  }
+
   ImageProvider albumIP({required String? tagId, required String id}) {
     if (tagId == null) return const AssetImage(Images.album);
 
