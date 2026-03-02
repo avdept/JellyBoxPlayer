@@ -58,46 +58,22 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late DeviceType _device;
 
   Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
-    ItemDTO? playlist;
-
-    if (_device.isDesktop) {
-      playlist = await showAdaptiveDialog<ItemDTO>(
-        context: context,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: _availablePlaylistsList(),
-        ),
-      );
-    } else {
-      playlist = await showModalBottomSheet<ItemDTO>(
-        backgroundColor: Colors.grey[800],
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-        ),
-        context: context,
-        useRootNavigator: true,
-        clipBehavior: Clip.antiAlias,
-        builder: (context) => _availablePlaylistsList(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-      );
-    }
-
+    final playlist = await showPlaylistPicker(
+      context,
+      isDesktop: _device.isDesktop,
+    );
     if (playlist != null) {
-      await ref
-          .read(jellyfinApiProvider)
-          .addPlaylistItems(
-            playlistId: playlist.id,
-            userId: ref.read(currentUserProvider)!.userId,
-            entryIds: song.id,
-          );
-      const snackBar = SnackBar(
-        content: Text('Successfully added item to playlist'),
+      await ref.read(jellyfinApiProvider).addPlaylistItems(
+        playlistId: playlist.id,
+        userId: ref.read(currentUserProvider)!.userId,
+        entryIds: song.id,
       );
       _getSongs();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Successfully added item to playlist')),
+        );
+      }
     }
   }
 
@@ -592,121 +568,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     );
   }
 
-  Widget _availablePlaylistsList({EdgeInsets padding = EdgeInsets.zero}) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final data = ref.watch(playlistsProvider);
-        final formKey = GlobalKey<FormState>();
-        if (data.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(_device.isDesktop ? 6 : 0),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: SizedBox(
-              width: _device.isDesktop ? 380 : double.infinity,
-              child: Flex(
-                mainAxisSize: MainAxisSize.min,
-                direction: Axis.vertical,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Add to playlist',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                  const Padding(padding: EdgeInsets.only(top: 10)),
-                  Form(
-                    key: formKey,
-                    child: DropdownButtonFormField<ItemDTO>(
-                      onSaved: (ItemDTO? value) {
-                        Navigator.of(context).pop(value);
-                      },
-                      hint: Text(
-                        _device.isMobile
-                            ? 'Tap to find playlist'
-                            : 'Click to find playlist',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      onChanged: (ItemDTO? item) {},
-                      items: data.value?.items.map<DropdownMenuItem<ItemDTO>>(
-                        (ItemDTO item) {
-                          return DropdownMenuItem<ItemDTO>(
-                            value: item,
-                            child: Text(item.name),
-                          );
-                        },
-                      ).toList(),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 36),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            backgroundColor: _theme.colorScheme.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                          ),
-                          onPressed: () {
-                            if (formKey.currentState!.validate()) {
-                              formKey.currentState!.save();
-                            }
-                          },
-                          child: const Text('Add to playlist'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-
-        // return ListBody(
-        //   children: [
-        //     SizedBox(height: padding.top),
-        //     for (final playlist in data.value.items)
-        //       SimpleListTile(
-        //         onTap: () => Navigator.of(context).pop(playlist),
-        //         padding: padding.copyWith(top: 6, bottom: 6),
-        //         title: Text(
-        //           playlist.name,
-        //           style: const TextStyle(
-        //             fontSize: 16,
-        //             fontWeight: FontWeight.w500,
-        //           ),
-        //         ),
-        //       ),
-        //     SizedBox(height: padding.bottom),
-        //   ],
-        // );
-      },
-    );
-  }
 }
 
 class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -46,6 +47,15 @@ class ItemListNotifier
         sortBy: _filterState.orderBy.name.capitalize(),
         startIndex: startIndex.toString(),
       ),
+      ItemList.songs => _api.getAllSongs(
+        userId: ref.read(currentUserProvider)!.userId,
+        libraryId: ref.read(currentLibraryProvider).valueOrNull?.id,
+        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
+        sortBy: _filterState.orderBy == EntityFilter.sortName
+            ? 'Name'
+            : _filterState.orderBy.name.capitalize(),
+        startIndex: startIndex.toString(),
+      ),
     };
     return startPage.copyWith(
       items: [...startPage.items, ...resp.data.items],
@@ -53,9 +63,21 @@ class ItemListNotifier
     );
   }
 
+  void updateItem(ItemDTO updated) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    state = AsyncData(
+      current.copyWith(
+        items: [
+          for (final item in current.items)
+            if (item.id == updated.id) updated else item,
+        ],
+      ),
+    );
+  }
+
   Future<void> loadMore() async {
     final current = state.requireValue;
-    state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => _fetchItems(
         startIndex: current.currentPage * current.totalPerPage,
