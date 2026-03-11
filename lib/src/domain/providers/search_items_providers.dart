@@ -25,13 +25,31 @@ class SearchItemsNotifier
     _searchTerm = searchQuery ?? '';
     if (_searchTerm.isEmpty) return const ItemsPage();
 
-    final resp = await _api.searchAlbums(
-      userId: ref.read(currentUserProvider)!.userId,
-      libraryId: ref.read(currentLibraryProvider).valueOrNull?.id,
-      searchTerm: _searchTerm,
-    );
+    final userId = ref.read(currentUserProvider)!.userId;
+    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
 
-    return ItemsPage(items: resp.data.items);
+    switch (arg) {
+      case ItemList.artists:
+        final resp = await _api.searchArtists(
+          userId: userId,
+          searchTerm: _searchTerm,
+        );
+        return ItemsPage(items: resp.data.items);
+      case ItemList.playlists:
+        final resp = await _api.searchPlaylists(
+          userId: userId,
+          libraryId: libraryId ?? '',
+          searchTerm: _searchTerm,
+        );
+        return ItemsPage(items: resp.data.items);
+      default:
+        final resp = await _api.searchAlbums(
+          userId: userId,
+          libraryId: libraryId,
+          searchTerm: _searchTerm,
+        );
+        return ItemsPage(items: resp.data.items);
+    }
   }
 }
 
