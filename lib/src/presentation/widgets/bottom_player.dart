@@ -264,6 +264,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         leading: AspectRatio(
                           aspectRatio: 1,
                           child: Image(
+                            key: ValueKey(currentSong?.artUri?.toString()),
                             image: image,
                             fit: BoxFit.cover,
                           ),
