@@ -25,10 +25,7 @@ dependencies:
     path: ./mediakeys_proxy
   just_audio:
   just_audio_background:
-  just_audio_media_kit: # Used for Linux
-    git: # Remove when https://github.com/Pato05/just_audio_media_kit/pull/17 is merged
-      url: https://github.com/lvyueyang/just_audio_media_kit.git
-      ref: main
+  just_audio_media_kit: any
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
   media_kit_native_event_loop: any
   cached_network_image: ^3.4.1
@@ -51,6 +48,7 @@ dependencies:
   sliver_tools: ^0.2.12
   path_provider: ^2.1.5
   sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.3.0
   path: ^1.9.1
   background_downloader: ^9.5.2
   updatify_flutter:
