@@ -25,7 +25,8 @@ jobs:
             libgtk-3-dev liblzma-dev libstdc++-12-dev \
             libmpv-dev mpv \
             libsecret-1-dev libjsoncpp-dev \
-            libsqlite3-dev
+            libsqlite3-dev \
+            libcurl4-openssl-dev
 
       - name: Build Linux bundle
         run: |
