@@ -46,7 +46,7 @@ platform :android do
           version_component: "version_name"
       )
     end
-    sh("flutter build appbundle --release")
+    sh("flutter build apk --release")
 
     crashlytics
     puts "Android build #{lane_context[SharedValues::BUILD_NUMBER]} was uploaded to Crashlytics Beta"
