@@ -19,7 +19,7 @@ def create_upload_key
   upload_key = "upload_key.jks"
   if !File.exist?(upload_key)
       Dir.chdir "../" do
-        sh "echo  \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" |  base64 -d > #{upload_key}"
+        sh "printf '%s' \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" | base64 -d > #{upload_key}"
         sh "echo \"storeFile=../#{upload_key}\" > key.properties"
         sh "echo \"storePassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
         sh "echo \"keyPassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
