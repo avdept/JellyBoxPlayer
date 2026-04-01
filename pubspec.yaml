@@ -26,6 +26,7 @@ dependencies:
   just_audio:
   just_audio_background:
   just_audio_media_kit: any
+  audio_service_mpris: ^0.1.0
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
   media_kit_native_event_loop: any
   cached_network_image: ^3.4.1

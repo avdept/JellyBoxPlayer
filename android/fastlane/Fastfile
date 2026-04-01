@@ -39,6 +39,13 @@ platform :android do
         value: ENV["BUILD_NUMBER"],
         version_component: "version_code"
     )
+    if ENV["BUILD_VERSION"]
+      flutter_versioner(
+          pubspec_file_path: "../pubspec.yaml",
+          value: ENV["BUILD_VERSION"],
+          version_component: "version_name"
+      )
+    end
     sh("flutter build appbundle --release")
 
     crashlytics

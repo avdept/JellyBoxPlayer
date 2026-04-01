@@ -3,8 +3,8 @@ name: Linux Release
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -15,6 +15,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          VERSION="${TAG%+*}"
+          BUILD_NUMBER="${TAG#*+}"
+          if [ "$BUILD_NUMBER" = "$TAG" ]; then
+            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "tag=v${TAG}" >> "$GITHUB_OUTPUT"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -29,12 +42,15 @@ jobs:
             libmpv-dev mpv \
             libsecret-1-dev libjsoncpp-dev \
             libsqlite3-dev \
-            libcurl4-openssl-dev
+            libcurl4-openssl-dev \
+            libdbus-1-dev
 
       - name: Build Linux bundle
         run: |
           flutter pub get
-          flutter build linux --release
+          flutter build linux --release \
+            --build-name=${{ steps.version.outputs.version }} \
+            --build-number=${{ steps.version.outputs.build_number }}
 
       - name: Create archive
         run: |
@@ -48,11 +64,10 @@ jobs:
           path: jellybox-linux-x64.tar.gz
 
       - name: Upload to release
-        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}-linux
-          name: Linux Build ${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
           files: jellybox-linux-x64.tar.gz
           generate_release_notes: true
         env:

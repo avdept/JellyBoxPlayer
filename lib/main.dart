@@ -33,7 +33,7 @@ Future<void> main() async {
     customRefinedBreakpoints: const RefinedBreakpoints(),
   );
 
-  if (Platform.isIOS || Platform.isAndroid || Platform.isLinux) {
+  if (Platform.isIOS || Platform.isAndroid) {
     await JustAudioBackground.init(
       androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
       androidNotificationChannelName: 'Audio playback',

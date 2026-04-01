@@ -91,9 +91,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       ..playerStateStream.listen((playerState) {
         if (playerState.processingState == ProcessingState.completed) {
           state = PlaybackState.initial();
-          // _audioPlayer
-          //   ..stop()
-          //   ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
+        } else if (playerState.playing && !state.status.isPlaying) {
+          state = state.copyWith(status: PlaybackStatus.playing);
+        } else if (!playerState.playing &&
+            state.status.isPlaying &&
+            playerState.processingState == ProcessingState.ready) {
+          state = state.copyWith(
+            status: PlaybackStatus.paused,
+            position: _audioPlayer.position,
+          );
         }
       });
   }
