@@ -9,7 +9,7 @@ var _audioServiceInitialized = false;
 
 final playerProvider = Provider<AudioPlayer>((ref) {
   final player = AudioPlayer();
-  if (Platform.isLinux && !_audioServiceInitialized) {
+  if (!_audioServiceInitialized) {
     _audioServiceInitialized = true;
     AudioService.init(
       builder: () => JellyBoxAudioHandler(player),
