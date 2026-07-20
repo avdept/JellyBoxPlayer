@@ -1,0 +1,74 @@
+name: Linux Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          VERSION="${TAG%+*}"
+          BUILD_NUMBER="${TAG#*+}"
+          if [ "$BUILD_NUMBER" = "$TAG" ]; then
+            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "tag=v${TAG}" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libmpv-dev mpv \
+            libsecret-1-dev libjsoncpp-dev \
+            libsqlite3-dev \
+            libcurl4-openssl-dev \
+            libdbus-1-dev
+
+      - name: Build Linux bundle
+        run: |
+          flutter pub get
+          flutter build linux --release \
+            --build-name=${{ steps.version.outputs.version }} \
+            --build-number=${{ steps.version.outputs.build_number }}
+
+      - name: Create archive
+        run: |
+          cd build/linux/x64/release/bundle
+          tar czf "$GITHUB_WORKSPACE/jellybox-linux-x64.tar.gz" .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jellybox-linux-x64
+          path: jellybox-linux-x64.tar.gz
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
+          files: jellybox-linux-x64.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

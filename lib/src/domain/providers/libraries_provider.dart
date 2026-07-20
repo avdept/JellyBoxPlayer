@@ -24,7 +24,8 @@ class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>> {
               element.collectionType == 'music',
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      print('Error in build: type=${e.runtimeType}, message=$e');
       return const [];
     }
   }

@@ -4,7 +4,7 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "jplayer")
+set(BINARY_NAME "jellybox")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "com.example.jplayer")
@@ -122,6 +122,8 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+install(CODE "execute_process(COMMAND chmod +x \"${INSTALL_BUNDLE_LIB_DIR}/crashpad_handler\")")
 
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.

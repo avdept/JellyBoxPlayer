@@ -47,6 +47,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
         ref.invalidateSelf();
       }
     } catch (error, stackTrace) {
+      print(
+        'Error in downloadSong: type=${error.runtimeType}, message=$error\n$stackTrace',
+      );
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -61,7 +64,11 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
 
       // Download songs one at a time sequentially
       for (final song in songs) {
-        final task = await _downloadService.downloadSong(song, serverUrl, token);
+        final task = await _downloadService.downloadSong(
+          song,
+          serverUrl,
+          token,
+        );
         await _waitForDownloadCompletion(task);
 
         if (task.status.value == DownloadStatus.completed) {
@@ -79,6 +86,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       // Refresh state
       ref.invalidateSelf();
     } catch (error, stackTrace) {
+      print(
+        'Error in downloadAlbum: type=${error.runtimeType}, message=$error\n$stackTrace',
+      );
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -114,6 +124,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       // Refresh state
       ref.invalidateSelf();
     } catch (error, stackTrace) {
+      print(
+        'Error in deleteSong: type=${error.runtimeType}, message=$error\n$stackTrace',
+      );
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -125,6 +138,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       // Refresh state
       ref.invalidateSelf();
     } catch (error, stackTrace) {
+      print(
+        'Error in deleteAlbum: type=${error.runtimeType}, message=$error\n$stackTrace',
+      );
       state = AsyncValue.error(error, stackTrace);
     }
   }

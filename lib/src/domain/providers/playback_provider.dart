@@ -69,12 +69,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         );
 
         final now = DateTime.now();
-        if (state.status.isPlaying && (_lastPositionSave == null || now.difference(_lastPositionSave!).inSeconds >= 5)) {
+        if (state.status.isPlaying &&
+            (_lastPositionSave == null ||
+                now.difference(_lastPositionSave!).inSeconds >= 5)) {
           _lastPositionSave = now;
           final currentIndex = _audioPlayer.currentIndex;
-          final currentSong = currentIndex != null ? state.songs.elementAtOrNull(currentIndex) : null;
+          final currentSong = currentIndex != null
+              ? state.songs.elementAtOrNull(currentIndex)
+              : null;
           if (currentSong != null) {
-            unawaited(_saveToStorage(songId: currentSong.id, positionMs: position.inMilliseconds));
+            unawaited(
+              _saveToStorage(
+                songId: currentSong.id,
+                positionMs: position.inMilliseconds,
+              ),
+            );
           }
         }
       })
@@ -82,9 +91,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       ..playerStateStream.listen((playerState) {
         if (playerState.processingState == ProcessingState.completed) {
           state = PlaybackState.initial();
-          // _audioPlayer
-          //   ..stop()
-          //   ..setAudioSource(_audioPlayer.audioSource!, initialIndex: 0);
+        } else if (playerState.playing && !state.status.isPlaying) {
+          state = state.copyWith(status: PlaybackStatus.playing);
+        } else if (!playerState.playing &&
+            state.status.isPlaying &&
+            playerState.processingState == ProcessingState.ready) {
+          state = state.copyWith(
+            status: PlaybackStatus.paused,
+            position: _audioPlayer.position,
+          );
         }
       });
   }
@@ -105,8 +120,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       final audioSources = await Future.wait(
         songs.map((song) async {
           // Check if song is downloaded*
-          final isDownloaded = await _ref.read(downloadManagerProvider.notifier).isSongDownloaded(song.id);
-          final downloadedPath = isDownloaded ? await _ref.read(downloadDatabaseProvider).getDownloadedSongPath(song.id) : null;
+          final isDownloaded = await _ref
+              .read(downloadManagerProvider.notifier)
+              .isSongDownloaded(song.id);
+          final downloadedPath = isDownloaded
+              ? await _ref
+                    .read(downloadDatabaseProvider)
+                    .getDownloadedSongPath(song.id)
+              : null;
           final audioSourceUri = (downloadedPath != null)
               ? Uri.file(downloadedPath)
               : Uri.parse(_ref.read(baseUrlProvider)!).replace(
@@ -130,21 +151,30 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           final songImageTag = song.imageTags['Primary'];
           final albumImageTag = album.imageTags['Primary'];
 
-          final audioStream = song.mediaSources.firstOrNull?.mediaStreams.where((s) => s.type == 'Audio').firstOrNull;
+          final audioStream = song.mediaSources.firstOrNull?.mediaStreams
+              .where((s) => s.type == 'Audio')
+              .firstOrNull;
           final extras = <String, dynamic>{
             if (audioStream?.codec != null) 'codec': audioStream!.codec,
             if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
-            if (audioStream?.sampleRate != null) 'sampleRate': audioStream!.sampleRate,
-            if (song.albumArtists.isNotEmpty) 'artistId': song.albumArtists.first.id
-            else if (album.albumArtists.isNotEmpty) 'artistId': album.albumArtists.first.id,
+            if (audioStream?.sampleRate != null)
+              'sampleRate': audioStream!.sampleRate,
+            if (song.albumArtists.isNotEmpty)
+              'artistId': song.albumArtists.first.id
+            else if (album.albumArtists.isNotEmpty)
+              'artistId': album.albumArtists.first.id,
           };
 
           final imageService = _ref.read(imageServiceProvider);
           Uri? artUri;
           if (songImageTag != null) {
-            artUri = Uri.parse(imageService.imagePath(tagId: songImageTag, id: song.id));
+            artUri = Uri.parse(
+              imageService.imagePath(tagId: songImageTag, id: song.id),
+            );
           } else if (albumImageTag != null) {
-            artUri = Uri.parse(imageService.imagePath(tagId: albumImageTag, id: album.id));
+            artUri = Uri.parse(
+              imageService.imagePath(tagId: albumImageTag, id: album.id),
+            );
           }
 
           // If downloaded, use local file, otherwise stream from server*
@@ -186,9 +216,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         currentMediaIndex: startIndex >= 0 ? startIndex : 0,
       );
 
-      unawaited(_saveToStorage(songId: playSong.id, positionMs: startPosition.inMilliseconds, songs: songs, album: album));
+      unawaited(
+        _saveToStorage(
+          songId: playSong.id,
+          positionMs: startPosition.inMilliseconds,
+          songs: songs,
+          album: album,
+        ),
+      );
       if (autoPlay) unawaited(_audioPlayer.play());
-    } catch (e) {
+    } catch (e, st) {
+      print('Error in play(): type=${e.runtimeType}, message=$e\n$st');
       if (e.toString().indexOf('setPitch') > 0) {
         // This is hack to avoid playback state being error on ios*`
 
@@ -207,9 +245,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     await _audioPlayer.seek(position);
     state = state.copyWith(position: position);
     final currentIndex = _audioPlayer.currentIndex;
-    final currentSong = currentIndex != null ? state.songs.elementAtOrNull(currentIndex) : null;
+    final currentSong = currentIndex != null
+        ? state.songs.elementAtOrNull(currentIndex)
+        : null;
     if (currentSong != null) {
-      unawaited(_saveToStorage(songId: currentSong.id, positionMs: position.inMilliseconds));
+      unawaited(
+        _saveToStorage(
+          songId: currentSong.id,
+          positionMs: position.inMilliseconds,
+        ),
+      );
     }
   }
 
@@ -255,9 +300,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> prev() async {
-    await _audioPlayer.seekToPrevious();
+    const restartThreshold = Duration(seconds: 3);
+    final hasPrev = (_audioPlayer.currentIndex ?? 0) > 0;
+    if (_audioPlayer.position > restartThreshold || !hasPrev) {
+      await seek(Duration.zero);
+    } else {
+      await _audioPlayer.seekToPrevious();
+    }
     if (!_audioPlayer.playing) await _audioPlayer.play();
-    // await play(_ref.read(audioQueueProvider.notifier).prevSong, _ref.read(audioQueueProvider).songs, _ref.read(audioQueueProvider).album!);
   }
 
   Future<void> stop() async {

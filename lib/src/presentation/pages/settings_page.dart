@@ -7,15 +7,21 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:updatify_flutter/updatify_flutter.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
+
+  static const _updatifyProjectId = '0ebf56de-26b5-4107-bc87-1aa89b328924';
 
   void _onLibrariesPressed(BuildContext context) =>
       context.pushNamed(Routes.library.name);
 
   void _onPaletteSettingsPressed(BuildContext context) =>
       context.pushNamed(Routes.palette.name);
+
+  void _onChangelogPressed(BuildContext context) =>
+      showUpdatifyDialog(context, projectId: _updatifyProjectId);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,6 +68,7 @@ class SettingsPage extends ConsumerWidget {
                 children: [
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
+                  _changelogButton(context),
                   if (!device.isDesktop) _logOutButton(ref),
                 ],
               ),
@@ -83,6 +90,12 @@ class SettingsPage extends ConsumerWidget {
     onPressed: () => _onLibrariesPressed(context),
     icon: const Icon(JPlayer.music),
     label: const Text('Music libraries'),
+  );
+
+  Widget _changelogButton(BuildContext context) => TextButton.icon(
+    onPressed: () => _onChangelogPressed(context),
+    icon: const Icon(Icons.history),
+    label: const Text('Changelog'),
   );
 
   Widget _logOutButton(WidgetRef ref) => TextButton.icon(

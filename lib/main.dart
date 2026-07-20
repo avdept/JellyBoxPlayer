@@ -1,5 +1,7 @@
 import 'dart:io' show Platform;
 
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +15,25 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:plausible/plausible.dart';
 
 late String deviceId;
 
 Future<void> main() async {
+  if (Platform.isLinux) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
   SentryWidgetsFlutterBinding.ensureInitialized();
+
+  final analytics = Plausible(
+    domain: "jellybox.app",
+    server: Uri.https("plausible.prodigytech.dev", '/api/event'),
+   );
+
+  analytics.send(path: '/');
+  analytics.send(event: 'app-launched', props: {'os': Platform.operatingSystem});
 
   deviceId = (await FlutterUdid.udid).trim();
 
@@ -70,7 +86,8 @@ Future<void> main() async {
   await SentryFlutter.init(
     (options) {
       options
-        ..dsn = 'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
+        ..dsn =
+            'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
         ..tracesSampleRate = 1.0;
     },
     appRunner: () => runApp(

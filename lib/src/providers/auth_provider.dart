@@ -124,6 +124,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       tokenValid = true;
       _removeAuthHeader();
     } catch (e) {
+      print('Error validating token: type=${e.runtimeType}, message=$e');
       tokenValid = false;
     }
 

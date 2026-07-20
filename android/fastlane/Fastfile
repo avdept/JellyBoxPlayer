@@ -19,7 +19,7 @@ def create_upload_key
   upload_key = "upload_key.jks"
   if !File.exist?(upload_key)
       Dir.chdir "../" do
-        sh "echo  \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" |  base64 -d > #{upload_key}"
+        sh "printf '%s' \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" | base64 -d > #{upload_key}"
         sh "echo \"storeFile=../#{upload_key}\" > key.properties"
         sh "echo \"storePassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
         sh "echo \"keyPassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
@@ -39,7 +39,14 @@ platform :android do
         value: ENV["BUILD_NUMBER"],
         version_component: "version_code"
     )
-    sh("flutter build appbundle --release")
+    if ENV["BUILD_VERSION"]
+      flutter_versioner(
+          pubspec_file_path: "../pubspec.yaml",
+          value: ENV["BUILD_VERSION"],
+          version_component: "version_name"
+      )
+    end
+    sh("flutter build apk --release")
 
     crashlytics
     puts "Android build #{lane_context[SharedValues::BUILD_NUMBER]} was uploaded to Crashlytics Beta"
