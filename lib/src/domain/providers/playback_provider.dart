@@ -300,9 +300,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> prev() async {
-    await _audioPlayer.seekToPrevious();
+    const restartThreshold = Duration(seconds: 3);
+    final hasPrev = (_audioPlayer.currentIndex ?? 0) > 0;
+    if (_audioPlayer.position > restartThreshold || !hasPrev) {
+      await seek(Duration.zero);
+    } else {
+      await _audioPlayer.seekToPrevious();
+    }
     if (!_audioPlayer.playing) await _audioPlayer.play();
-    // await play(_ref.read(audioQueueProvider.notifier).prevSong, _ref.read(audioQueueProvider).songs, _ref.read(audioQueueProvider).album!);
   }
 
   Future<void> stop() async {

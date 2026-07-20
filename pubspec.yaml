@@ -52,9 +52,8 @@ dependencies:
   sqflite_common_ffi: ^2.3.0
   path: ^1.9.1
   background_downloader: ^9.5.2
-  updatify_flutter:
-    git:
-      url: https://git.prodigytech.dev/avdept/updatify_flutter
+  updatify_flutter: ^1.1.0
+  plausible: ^1.0.1
 
 dev_dependencies:
   flutter_test:

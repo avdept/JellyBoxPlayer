@@ -1,7 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg_provider/flutter_svg_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -83,7 +83,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                                       ? const SizedBox.shrink()
                                       : Image(
                                           image: currentSong?.artUri != null
-                                              ? NetworkImage(
+                                              ? CachedNetworkImageProvider(
                                                   currentSong!.artUri.toString(),
                                                 )
                                               : const AssetImage(Images.album) as ImageProvider,
@@ -241,7 +241,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           stream: ref.read(playerProvider).sequenceStateStream,
           builder: (context, snapshot) {
             final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-            final image = (currentSong?.artUri != null) ? NetworkImage(currentSong!.artUri.toString()) : const Svg(SvgPictures.emptyItem) as ImageProvider;
+            final image = (currentSong?.artUri != null) ? CachedNetworkImageProvider(currentSong!.artUri.toString()) : const AssetImage(Images.album) as ImageProvider;
             WidgetsBinding.instance.addPostFrameCallback(
               (_) => _imageProvider.value = image,
             );
