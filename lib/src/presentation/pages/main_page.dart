@@ -75,13 +75,11 @@ class _MainPageState extends ConsumerState<MainPage> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined),
-                        onPressed: () => showUpdatifyDialog(
-                          context,
-                          projectId: 'jellybox',
-                        ),
-                      ),
+                      UpdatifyTrigger(
+                        projectId: '0ebf56de-26b5-4107-bc87-1aa89b328924',
+                        borderRadius: BorderRadius.circular(8),
+                        width: _device.isDesktop ? MediaQuery.sizeOf(context).width / 2 : double.infinity,
+                      )
                     ],
                   ),
                   trailing: TextButton.icon(

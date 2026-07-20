@@ -13,11 +13,20 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:plausible/plausible.dart';
 
 late String deviceId;
 
 Future<void> main() async {
   SentryWidgetsFlutterBinding.ensureInitialized();
+
+  final analytics = Plausible(
+    domain: "jellybox.app",
+    server: Uri.https("plausible.prodigytech.dev", '/api/event'),
+   );
+
+  analytics.send(path: '/');
+  analytics.send(event: 'app-launched', props: {'os': Platform.operatingSystem});
 
   deviceId = (await FlutterUdid.udid).trim();
 

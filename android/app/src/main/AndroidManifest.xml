@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <!-- For Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
     <application
         android:usesCleartextTraffic="true"
         android:label="JellyBox Player"

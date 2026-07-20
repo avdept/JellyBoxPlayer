@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -105,7 +106,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
     final isDesktop = deviceType == DeviceScreenType.desktop;
     final imageProvider = (widget.album.imageTags['Primary'] == null)
         ? const AssetImage(Images.albumSample)
-        : NetworkImage(
+        : CachedNetworkImageProvider(
             ref
                 .read(imageServiceProvider)
                 .imagePath(
