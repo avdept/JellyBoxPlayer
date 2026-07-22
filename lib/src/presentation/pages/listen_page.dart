@@ -259,8 +259,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
             ),
             child: Row(
               children: [
-                _pageViewToggle(),
-                const Spacer(),
+                Expanded(child: _pageViewToggle()),
                 _addButton(),
                 _filterButton(),
               ],
@@ -383,24 +382,27 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     data: ChipTheme.of(context).copyWith(
       labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
     ),
-    child: Wrap(
-      spacing: 12,
-      children: [
-        for (final value in ItemList.values)
-          ValueListenableBuilder(
-            valueListenable: _currentView,
-            builder: (context, currentView, child) => ActionChip(
-              label: Text(_viewLabels[value] ?? '???'),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        spacing: 12,
+        children: [
+          for (final value in ItemList.values)
+            ValueListenableBuilder(
+              valueListenable: _currentView,
+              builder: (context, currentView, child) => ActionChip(
+                label: Text(_viewLabels[value] ?? '???'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                backgroundColor: (value == currentView)
+                    ? _theme.chipTheme.selectedColor
+                    : _theme.chipTheme.backgroundColor,
+                onPressed: () => _currentView.value = value,
               ),
-              backgroundColor: (value == currentView)
-                  ? _theme.chipTheme.selectedColor
-                  : _theme.chipTheme.backgroundColor,
-              onPressed: () => _currentView.value = value,
             ),
-          ),
-      ],
+        ],
+      ),
     ),
   );
 
