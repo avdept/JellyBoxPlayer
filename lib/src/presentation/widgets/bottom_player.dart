@@ -19,6 +19,7 @@ import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import 'package:native_route_picker/native_route_picker.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class BottomPlayer extends ConsumerStatefulWidget {
@@ -194,6 +195,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                           children: [
                             _randomQueueButton(),
                             _repeatTrackButton(),
+                            if (NativeRoutePicker.isSupported) _outputRouteButton(),
                             _downloadTrackButton(),
                             _likeTrackButton(),
                           ],
@@ -367,6 +369,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                             ),
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
+                            if (_isDesktop && NativeRoutePicker.isSupported) _outputRouteButton(size: 44),
                           ],
                         ),
                         leadingToTitle: 15,
@@ -609,6 +612,17 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
         isSelected: snapshot.data == LoopMode.all,
       );
     },
+  );
+
+  Widget _outputRouteButton({double? size}) => RoutePickerButton(
+    size: size ?? (_isMobile ? 40 : 36),
+    color: _theme.colorScheme.onPrimary,
+    activeColor: _theme.colorScheme.primary,
+    onUnsupported: () => ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Switch output from the notification or system settings'),
+      ),
+    ),
   );
 
   Widget _downloadTrackButton() => Consumer(

@@ -12,6 +12,7 @@ import flutter_secure_storage_darwin
 import flutter_udid
 import just_audio
 import mediakeys_proxy
+import native_route_picker
 import package_info_plus
 import screen_retriever_macos
 import sentry_flutter
@@ -28,6 +29,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FlutterUdidPlugin.register(with: registry.registrar(forPlugin: "FlutterUdidPlugin"))
   JustAudioPlugin.register(with: registry.registrar(forPlugin: "JustAudioPlugin"))
   MediakeysProxyPlugin.register(with: registry.registrar(forPlugin: "MediakeysProxyPlugin"))
+  NativeRoutePickerPlugin.register(with: registry.registrar(forPlugin: "NativeRoutePickerPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
   SentryFlutterPlugin.register(with: registry.registrar(forPlugin: "SentryFlutterPlugin"))
