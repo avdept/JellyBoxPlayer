@@ -618,11 +618,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     size: size ?? (_isMobile ? 40 : 36),
     color: _theme.colorScheme.onPrimary,
     activeColor: _theme.colorScheme.primary,
-    onUnsupported: () => ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Switch output from the notification or system settings'),
-      ),
-    ),
   );
 
   Widget _downloadTrackButton() => Consumer(
