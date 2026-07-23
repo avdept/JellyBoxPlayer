@@ -37,6 +37,7 @@ class _ClickableWidgetState extends State<ClickableWidget> {
           decoration: isActive ? TextDecoration.underline : TextDecoration.none,
           decorationColor: widget.textStyle?.color,
         ).merge(widget.textStyle),
+        textWidthBasis: TextWidthBasis.longestLine,
         child: widget.child,
       ),
     );
