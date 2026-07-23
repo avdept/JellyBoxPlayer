@@ -9,12 +9,17 @@ class NativeRoutePicker {
 
   static const String viewType = 'native_route_picker/view';
 
+  /// Whether an in-app native picker is available on the current platform.
+  ///
+  /// Android is intentionally excluded: there's no reliable in-app output
+  /// picker there. Local outputs (Bluetooth/wired/speaker) are handled by the
+  /// OS media-notification switcher, and networked/Chromecast output needs a
+  /// separate Cast integration (not yet implemented).
   static bool get isSupported {
     if (kIsWeb) return false;
     switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
-      case TargetPlatform.android:
         return true;
       default:
         return false;
@@ -77,17 +82,8 @@ class RoutePickerButton extends StatelessWidget {
             creationParamsCodec: const StandardMessageCodec(),
           ),
         );
-      case TargetPlatform.android:
-        return IconButton(
-          iconSize: size,
-          color: tint,
-          tooltip: 'Output device',
-          onPressed: () async {
-            final shown = await NativeRoutePicker.showOutputSwitcher();
-            if (!shown) onUnsupported?.call();
-          },
-          icon: const Icon(Icons.speaker_group_outlined),
-        );
+      // Android is handled by the OS notification switcher; no in-app button
+      // for now (a Cast-based picker would go here later).
       default:
         return const SizedBox.shrink();
     }
