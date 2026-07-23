@@ -23,6 +23,3 @@ flutter:
         pluginClass: NativeRoutePickerPlugin
       macos:
         pluginClass: NativeRoutePickerPlugin
-      android:
-        package: com.example.native_route_picker
-        pluginClass: NativeRoutePickerPlugin

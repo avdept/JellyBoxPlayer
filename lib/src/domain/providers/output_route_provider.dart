@@ -5,8 +5,6 @@ class OutputRouteController {
   const OutputRouteController();
 
   bool get isSupported => NativeRoutePicker.isSupported;
-
-  Future<bool> showAndroidSwitcher() => NativeRoutePicker.showOutputSwitcher();
 }
 
 final outputRouteProvider = Provider<OutputRouteController>(

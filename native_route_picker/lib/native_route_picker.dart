@@ -5,8 +5,6 @@ import 'package:flutter/services.dart';
 class NativeRoutePicker {
   NativeRoutePicker._();
 
-  static const MethodChannel _channel = MethodChannel('native_route_picker');
-
   static const String viewType = 'native_route_picker/view';
 
   /// Whether an in-app native picker is available on the current platform.
@@ -23,16 +21,6 @@ class NativeRoutePicker {
         return true;
       default:
         return false;
-    }
-  }
-
-  static Future<bool> showOutputSwitcher() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
-    try {
-      final result = await _channel.invokeMethod<bool>('showOutputSwitcher');
-      return result ?? false;
-    } on PlatformException {
-      return false;
     }
   }
 }
