@@ -32,6 +32,7 @@ dependencies:
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
   media_kit_native_event_loop: any
   cached_network_image: ^3.4.1
+  flutter_chrome_cast: ^1.4.6
   go_router: ^17.1.0
   intl: ^0.20.2
   json_annotation: ^4.9.0
