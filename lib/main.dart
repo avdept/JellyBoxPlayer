@@ -9,6 +9,7 @@ import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -48,6 +49,14 @@ Future<void> main() async {
       androidNotificationChannelName: 'Audio playback',
       androidNotificationOngoing: true,
       androidNotificationIcon: 'drawable/ic_stat_music',
+    );
+  }
+
+  if (Platform.isAndroid) {
+    await GoogleCastContext.instance.setSharedInstanceWithOptions(
+      GoogleCastOptionsAndroid(
+        appId: GoogleCastDiscoveryCriteria.kDefaultApplicationId,
+      ),
     );
   }
 

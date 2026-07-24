@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
+import 'package:jplayer/src/presentation/widgets/cast_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -195,7 +197,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                           children: [
                             _randomQueueButton(),
                             _repeatTrackButton(),
-                            if (NativeRoutePicker.isSupported) _outputRouteButton(),
+                            if (_hasOutputButton) _outputRouteButton(),
                             _downloadTrackButton(),
                             _likeTrackButton(),
                           ],
@@ -614,11 +616,25 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     },
   );
 
-  Widget _outputRouteButton({double? size}) => RoutePickerButton(
-    size: size ?? (_isMobile ? 40 : 36),
-    color: _theme.colorScheme.onPrimary,
-    activeColor: _theme.colorScheme.primary,
-  );
+  bool get _hasOutputButton =>
+      NativeRoutePicker.isSupported ||
+      defaultTargetPlatform == TargetPlatform.android;
+
+  Widget _outputRouteButton({double? size}) {
+    final dimension = size ?? (_isMobile ? 40 : 36);
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return CastButton(
+        size: dimension,
+        color: _theme.colorScheme.onPrimary,
+        activeColor: _theme.colorScheme.primary,
+      );
+    }
+    return RoutePickerButton(
+      size: dimension,
+      color: _theme.colorScheme.onPrimary,
+      activeColor: _theme.colorScheme.primary,
+    );
+  }
 
   Widget _downloadTrackButton() => Consumer(
     builder: (context, ref, _) {
