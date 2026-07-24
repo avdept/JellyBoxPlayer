@@ -15,11 +15,13 @@ class ItemListNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
   late JellyfinApi _api;
   late Filter _filterState;
+  String? _libraryId;
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
     _api = ref.watch(jellyfinApiProvider);
     _filterState = ref.watch(filterProvider);
+    _libraryId = ref.watch(currentLibraryProvider).valueOrNull?.id;
     return _fetchItems(startPage: const ItemsPage());
   }
 
@@ -30,7 +32,7 @@ class ItemListNotifier
     final resp = await switch (arg) {
       ItemList.albums => _api.getAlbums(
         userId: ref.read(currentUserProvider)!.userId,
-        libraryId: ref.read(currentLibraryProvider).valueOrNull?.id,
+        libraryId: _libraryId,
         sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
         sortBy: _filterState.orderBy.name.capitalize(),
         startIndex: startIndex.toString(),
@@ -49,7 +51,7 @@ class ItemListNotifier
       ),
       ItemList.songs => _api.getAllSongs(
         userId: ref.read(currentUserProvider)!.userId,
-        libraryId: ref.read(currentLibraryProvider).valueOrNull?.id,
+        libraryId: _libraryId,
         sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
         sortBy: _filterState.orderBy == EntityFilter.sortName
             ? 'Name'

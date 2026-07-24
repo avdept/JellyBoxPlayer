@@ -139,13 +139,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                     'TranscodingProtocol': 'http',
                     'TranscodingContainer': 'm4a',
                     'AudioCodec': 'm4a',
-                    'Container': [
-                      'mp3,aac,m4a',
-                      'aac,m4b',
-                      'aac,flac,alac,m4a',
-                      'alac,m4b',
-                      'alac,wav,m4a,aiff,aif',
-                    ].join('|'),
+                    'Container': 'mp3,aac,m4a,m4b,flac,alac,wav,aiff,aif',
                   },
                 );
           final songImageTag = song.imageTags['Primary'];
@@ -170,6 +164,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           if (songImageTag != null) {
             artUri = Uri.parse(
               imageService.imagePath(tagId: songImageTag, id: song.id),
+            );
+          } else if (song.albumId != null &&
+              song.albumPrimaryImageTag != null) {
+            artUri = Uri.parse(
+              imageService.imagePath(
+                tagId: song.albumPrimaryImageTag!,
+                id: song.albumId!,
+              ),
             );
           } else if (albumImageTag != null) {
             artUri = Uri.parse(

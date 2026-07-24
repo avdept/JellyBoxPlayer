@@ -12,6 +12,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class ListenPage extends ConsumerStatefulWidget {
   const ListenPage({super.key});
@@ -106,11 +107,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       userId: ref.read(currentUserProvider)!.userId,
       itemId: song.id,
     );
-    ref.read(itemListProvider(ItemList.songs).notifier).updateItem(
-      song.copyWith(
-        userData: song.userData.copyWith(isFavorite: !isFavorite),
-      ),
-    );
+    ref
+        .read(itemListProvider(ItemList.songs).notifier)
+        .updateItem(
+          song.copyWith(
+            userData: song.userData.copyWith(isFavorite: !isFavorite),
+          ),
+        );
   }
 
   Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
@@ -119,11 +122,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       isDesktop: _device.isDesktop,
     );
     if (playlist != null && mounted) {
-      await ref.read(jellyfinApiProvider).addPlaylistItems(
-        playlistId: playlist.id,
-        userId: ref.read(currentUserProvider)!.userId,
-        entryIds: song.id,
-      );
+      await ref
+          .read(jellyfinApiProvider)
+          .addPlaylistItems(
+            playlistId: playlist.id,
+            userId: ref.read(currentUserProvider)!.userId,
+            entryIds: song.id,
+          );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Successfully added to playlist')),
@@ -221,20 +226,26 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     _currentView = ValueNotifier(ItemList.values.first)
       ..addListener(() {
         final isAlbums = _currentView.value == ItemList.albums;
-        ref.read(filterProvider.notifier).filter(
-          field: isAlbums ? EntityFilter.dateCreated : EntityFilter.sortName,
-          desc: true,
-        );
+        ref
+            .read(filterProvider.notifier)
+            .filter(
+              field: isAlbums
+                  ? EntityFilter.dateCreated
+                  : EntityFilter.sortName,
+              desc: true,
+            );
       });
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
     };
     _appliedFilter = ValueNotifier(Filter(orderBy: EntityFilter.values.first))
       ..addListener(
-        () => ref.read(filterProvider.notifier).filter(
-          field: _appliedFilter.value.orderBy,
-          desc: _appliedFilter.value.desc,
-        ),
+        () => ref
+            .read(filterProvider.notifier)
+            .filter(
+              field: _appliedFilter.value.orderBy,
+              desc: _appliedFilter.value.desc,
+            ),
       );
   }
 
@@ -262,6 +273,8 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                 Expanded(child: _pageViewToggle()),
                 _addButton(),
                 _filterButton(),
+                const SizedBox(width: 12),
+                _libraryButton(),
               ],
             ),
           ),
@@ -405,6 +418,79 @@ class _ListenPageState extends ConsumerState<ListenPage> {
       ),
     ),
   );
+
+  Widget _libraryAvatar(ItemDTO? library, double size) {
+    final tag = library?.imageTags['Primary'];
+    final image = (tag != null)
+        ? ref.read(imageServiceProvider).albumIP(tagId: tag, id: library!.id)
+        : null;
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: _theme.colorScheme.surface,
+      backgroundImage: image,
+      child: image == null ? Icon(Icons.library_music, size: size / 2) : null,
+    );
+  }
+
+  Widget _libraryButton() {
+    final current = ref.watch(currentLibraryProvider).valueOrNull;
+    final libraries =
+        ref.watch(librariesProvider).valueOrNull ?? const <ItemDTO>[];
+    final size = _device.isMobile ? 32.0 : 45.0;
+
+    // The library restored from prefs carries no imageTags, so resolve the
+    // full DTO from librariesProvider (by id) to show the real cover image.
+    final selected = libraries.cast<ItemDTO?>().firstWhere(
+      (l) => l?.id == current?.id,
+      orElse: () => null,
+    );
+
+    return DropdownButtonHideUnderline(
+      child: DropdownButton2<ItemDTO>(
+        customButton: _libraryAvatar(selected ?? current, size),
+        buttonStyleData: const ButtonStyleData(
+          overlayColor: WidgetStatePropertyAll(Colors.transparent),
+        ),
+        dropdownStyleData: DropdownStyleData(
+          width: 220,
+          padding: const EdgeInsets.all(8),
+          offset: const Offset(0, -8),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
+        ),
+        items: [
+          for (final lib in libraries)
+            DropdownMenuItem<ItemDTO>(
+              value: lib,
+              child: Row(
+                children: [
+                  _libraryAvatar(lib, 28),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      lib.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.2,
+                        color: (lib.id == current?.id)
+                            ? _theme.colorScheme.primary
+                            : _theme.colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        value: selected,
+        onChanged: (lib) {
+          if (lib != null) {
+            ref.read(currentLibraryProvider.notifier).setLibrary(lib);
+          }
+        },
+      ),
+    );
+  }
 
   String _filterLabel(EntityFilter filter) {
     return _filtersLabels[filter] ?? '???';

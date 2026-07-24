@@ -18,6 +18,7 @@ _ItemDTO _$ItemDTOFromJson(Map<String, dynamic> json) => _ItemDTO(
   overview: json['Overview'] as String?,
   productionYear: (json['ProductionYear'] as num?)?.toInt(),
   albumId: json['AlbumId'] as String?,
+  albumPrimaryImageTag: json['AlbumPrimaryImageTag'] as String?,
   albumName: json['Album'] as String?,
   albumArtist: json['AlbumArtist'] as String?,
   albumArtists:
@@ -57,6 +58,7 @@ Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
   'Overview': instance.overview,
   'ProductionYear': instance.productionYear,
   'AlbumId': instance.albumId,
+  'AlbumPrimaryImageTag': instance.albumPrimaryImageTag,
   'Album': instance.albumName,
   'AlbumArtist': instance.albumArtist,
   'AlbumArtists': instance.albumArtists,
