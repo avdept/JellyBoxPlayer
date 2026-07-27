@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart' as bd;
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -23,29 +24,59 @@ class DownloadService extends ChangeNotifier {
     ItemDTO song,
     String serverUrl,
     String token,
+    String userId,
+    String deviceId,
   ) async {
     final dir = await getApplicationDocumentsDirectory();
     final albumSubdir = song.albumId ?? 'unknown';
-    final fileName = '${song.name.replaceAll('/', '_')}.mp3';
+
+    // Download through the same transcoding endpoint the player streams from,
+    // so codecs the local player can't decode (e.g. ALAC on Android/ExoPlayer)
+    // are fetched as a playable, still-lossless FLAC rather than the raw
+    // original. The file extension must match the container that endpoint
+    // actually returns. See [AudioStreamProfile].
+    final mediaSource = song.mediaSources.firstOrNull;
+    final audioStream = mediaSource?.mediaStreams
+        .where((s) => s.type == 'Audio')
+        .firstOrNull;
+    final profile = AudioStreamProfile.forSource(
+      sourceContainer: mediaSource?.container,
+      sourceCodec: audioStream?.codec,
+    );
+
+    final fileName =
+        '${song.name.replaceAll('/', '_')}.${profile.outputContainer}';
     final destination = '${dir.path}/music/$albumSubdir/$fileName';
+
+    final url = Uri.parse(serverUrl).replace(
+      path: 'Audio/${song.id}/universal',
+      queryParameters: {
+        'UserId': userId,
+        'api_key': token,
+        'DeviceId': deviceId,
+        'TranscodingProtocol': 'http',
+        'TranscodingContainer': profile.transcodingContainer,
+        'AudioCodec': profile.transcodingAudioCodec,
+        'Container': profile.directPlayContainers,
+      },
+    ).toString();
 
     final task = DownloadTask(
       id: song.id,
       name: song.name,
-      url: '$serverUrl/Items/${song.id}/Download',
+      url: url,
       destination: destination,
     );
 
     _tasks[song.id] = task;
     notifyListeners();
-    unawaited(_startDownload(task, token, albumSubdir, fileName));
+    unawaited(_startDownload(task, albumSubdir, fileName));
 
     return task;
   }
 
   Future<void> _startDownload(
     DownloadTask task,
-    String token,
     String albumSubdir,
     String fileName,
   ) async {
@@ -53,7 +84,7 @@ class DownloadService extends ChangeNotifier {
 
     final bdTask = bd.DownloadTask(
       taskId: task.id,
-      url: '${task.url}?api_key=$token',
+      url: task.url,
       filename: fileName,
       directory: 'music/$albumSubdir',
       baseDirectory: bd.BaseDirectory.applicationDocuments,

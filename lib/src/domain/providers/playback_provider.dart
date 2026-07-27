@@ -4,6 +4,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
+import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -128,6 +130,20 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                     .read(downloadDatabaseProvider)
                     .getDownloadedSongPath(song.id)
               : null;
+          final mediaSource = song.mediaSources.firstOrNull;
+          final audioStream = mediaSource?.mediaStreams
+              .where((s) => s.type == 'Audio')
+              .firstOrNull;
+
+          // Resolve platform-correct direct-play/transcode params so codecs the
+          // player can't decode (notably ALAC on Android's ExoPlayer) transcode
+          // to a lossless FLAC stream instead of silently failing. See
+          // [AudioStreamProfile].
+          final streamProfile = AudioStreamProfile.forSource(
+            sourceContainer: mediaSource?.container,
+            sourceCodec: audioStream?.codec,
+          );
+
           final audioSourceUri = (downloadedPath != null)
               ? Uri.file(downloadedPath)
               : Uri.parse(_ref.read(baseUrlProvider)!).replace(
@@ -137,17 +153,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
                     'api_key': _ref.read(currentUserProvider)!.token,
                     'DeviceId': deviceId,
                     'TranscodingProtocol': 'http',
-                    'TranscodingContainer': 'm4a',
-                    'AudioCodec': 'm4a',
-                    'Container': 'mp3,aac,m4a,m4b,flac,alac,wav,aiff,aif',
+                    'TranscodingContainer': streamProfile.transcodingContainer,
+                    'AudioCodec': streamProfile.transcodingAudioCodec,
+                    'Container': streamProfile.directPlayContainers,
                   },
                 );
           final songImageTag = song.imageTags['Primary'];
           final albumImageTag = album.imageTags['Primary'];
-
-          final audioStream = song.mediaSources.firstOrNull?.mediaStreams
-              .where((s) => s.type == 'Audio')
-              .firstOrNull;
           final extras = <String, dynamic>{
             if (audioStream?.codec != null) 'codec': audioStream!.codec,
             if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
@@ -301,16 +313,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     // await play(_ref.read(audioQueueProvider.notifier).nextSong, _ref.read(audioQueueProvider).songs, _ref.read(audioQueueProvider).album!);
   }
 
-  Future<void> prev() async {
-    const restartThreshold = Duration(seconds: 3);
-    final hasPrev = (_audioPlayer.currentIndex ?? 0) > 0;
-    if (_audioPlayer.position > restartThreshold || !hasPrev) {
-      await seek(Duration.zero);
-    } else {
-      await _audioPlayer.seekToPrevious();
-    }
-    if (!_audioPlayer.playing) await _audioPlayer.play();
-  }
+  Future<void> prev() => _audioPlayer.smartSeekToPrevious();
 
   Future<void> stop() async {
     await _audioPlayer.stop();

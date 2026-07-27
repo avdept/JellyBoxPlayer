@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -27,11 +28,17 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
   Future<void> downloadSong(ItemDTO song) async {
     // Get server URL and token
     final serverUrl = ref.read(baseUrlProvider)!;
-    final token = ref.read(currentUserProvider)!.token;
+    final user = ref.read(currentUserProvider)!;
 
     try {
       // Start download
-      final task = await _downloadService.downloadSong(song, serverUrl, token);
+      final task = await _downloadService.downloadSong(
+        song,
+        serverUrl,
+        user.token,
+        user.userId,
+        deviceId,
+      );
 
       // Wait for download to complete
       await _waitForDownloadCompletion(task);
@@ -57,7 +64,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
   Future<void> downloadAlbum(ItemDTO album, List<ItemDTO> songs) async {
     // Get server URL and token
     final serverUrl = ref.read(baseUrlProvider)!;
-    final token = ref.read(currentUserProvider)!.token;
+    final user = ref.read(currentUserProvider)!;
 
     try {
       final files = <File>[];
@@ -67,7 +74,9 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
         final task = await _downloadService.downloadSong(
           song,
           serverUrl,
-          token,
+          user.token,
+          user.userId,
+          deviceId,
         );
         await _waitForDownloadCompletion(task);
 
