@@ -129,6 +129,21 @@ platform :mac do
         # fail trying to create a "Direct_*.provisionprofile" that isn't needed.
         skip_provisioning_profiles: true
     )
+
+    # `flutter build macos --release` would otherwise use the project's
+    # Automatic signing, which fails on CI ("requires a provisioning profile")
+    # because it can't provision against the portal. Switch Release to manual
+    # ad-hoc signing (identity "-", no profile) so the build just succeeds;
+    # the workflow then re-signs the built .app with the Developer ID identity.
+    update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "Runner.xcodeproj",
+        targets: ["Runner"],
+        build_configurations: ["Release"],
+        code_sign_identity: "-",
+        team_id: "",
+        profile_name: ""
+    )
   end
 
 end
