@@ -116,19 +116,30 @@ platform :mac do
         is_key_content_base64: true
     )
 
-    # Developer ID Application cert for distribution OUTSIDE the App Store.
-    # Seed it once locally with `bundle exec fastlane match developer_id`;
-    # CI pulls it read-only. No provisioning profile is needed for Developer ID.
+    # Developer ID Application cert + the "Direct" (MAC_APP_DIRECT) provisioning
+    # profile for distribution OUTSIDE the App Store. The profile is what
+    # authorizes the sandbox + keychain-access-groups entitlements in a notarized
+    # Developer ID app; without it, taskgated kills the app at launch.
+    # Seed both once locally with Apple ID auth (the App Store Connect API key
+    # can't manage Developer ID assets):
+    #   env -u APPSTORE_KEY_ID -u APPSTORE_KEY_ISSUER_ID -u APPSTORE_P8_KEY_CONTENT \
+    #     bundle exec fastlane match developer_id --username <apple-id> --readonly false
+    # CI then pulls both read-only.
     match(
         type: "developer_id",
         readonly: true,
         app_identifier: ENV["APP_IDENTIFIER"],
-        platform: "macos",
-        # A notarized DMG needs only the Developer ID Application certificate,
-        # not a provisioning profile — skip profile sync so readonly doesn't
-        # fail trying to create a "Direct_*.provisionprofile" that isn't needed.
-        skip_provisioning_profiles: true
+        platform: "macos"
     )
+
+    # Hand the installed profile's path to the workflow so it can embed it into
+    # the .app before signing. match exports it as an env var like
+    # sigh_<app_id>_developer_id_macos_profile-path.
+    profile_path = ENV.select { |k, _| k.start_with?("sigh_") && k.include?("developer_id") && k.end_with?("profile-path") }.values.first
+    if profile_path && ENV["GITHUB_ENV"]
+      File.open(ENV["GITHUB_ENV"], "a") { |f| f.puts("DEVID_PROFILE=#{profile_path}") }
+      UI.message("Exported DEVID_PROFILE=#{profile_path}")
+    end
 
     # `flutter build macos --release` would otherwise use the project's
     # Automatic signing, which fails on CI ("requires a provisioning profile")

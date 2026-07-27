@@ -80,10 +80,27 @@ jobs:
           echo "Signing $APP"
           IDENTITY="Developer ID Application"
 
-          # Resolve the $(AppIdentifierPrefix) Xcode variable (== Team ID) so
-          # codesign gets a literal entitlements value.
+          # Derive the real team id straight from the installed signing identity.
+          # (Do NOT rely on $TEAM_ID from env — it can be empty, which silently
+          # produced an invalid ".<bundleid>" keychain-access-group before.)
+          TEAMID="$(security find-identity -v -p codesigning \
+            | grep 'Developer ID Application' | head -1 \
+            | sed -E 's/.*\(([A-Z0-9]+)\).*/\1/')"
+          if [ -z "$TEAMID" ]; then echo "::error::No Developer ID identity found"; exit 1; fi
+          echo "Team ID: $TEAMID"
+
+          # Embed the Developer ID (Direct) provisioning profile that match
+          # installed — this authorizes the sandbox + keychain-access-groups
+          # entitlements so taskgated doesn't kill the app at launch.
+          if [ -z "${DEVID_PROFILE:-}" ] || [ ! -f "$DEVID_PROFILE" ]; then
+            echo "::error::DEVID_PROFILE not set/found — did the certificates lane install the Direct profile?"; exit 1
+          fi
+          cp "$DEVID_PROFILE" "$APP/Contents/embedded.provisionprofile"
+
+          # Resolve the $(AppIdentifierPrefix) Xcode variable (== Team ID) to a
+          # literal so codesign gets a valid keychain-access-group value.
           ENTITLEMENTS="$RUNNER_TEMP/dmg-entitlements.plist"
-          sed "s/\$(AppIdentifierPrefix)/${TEAM_ID}./g" \
+          sed "s/\$(AppIdentifierPrefix)/${TEAMID}./g" \
             macos/Runner/Release.entitlements > "$ENTITLEMENTS"
 
           # Sign inside-out: loose dylibs, then frameworks, then the app itself.
@@ -98,7 +115,12 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$APP"
 
       - name: Install create-dmg
-        run: brew install create-dmg
+        run: |
+          # The runner preinstalls aws/tap, which newer Homebrew won't trust and
+          # warns about on every command. create-dmg comes from homebrew/core, so
+          # drop the untrusted tap to keep the output clean and the step reliable.
+          brew untap aws/tap || true
+          brew install create-dmg
 
       - name: Create DMG
         working-directory: .
