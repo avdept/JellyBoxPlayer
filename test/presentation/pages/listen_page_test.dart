@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/item_list_providers.dart';
+import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/presentation/pages/listen_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
@@ -24,6 +25,10 @@ class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?>
     with Mock
     implements CurrentLibraryNotifier {}
 
+class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>>
+    with Mock
+    implements LibrariesNotifier {}
+
 class MockUser extends Mock implements User {}
 
 void main() {
@@ -31,6 +36,7 @@ void main() {
 
   late ItemListNotifier mockItemListNotifier;
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
+  late LibrariesNotifier mockLibrariesNotifier;
   late User mockUser;
 
   final faker = Faker.instance;
@@ -86,6 +92,7 @@ void main() {
       overrides: [
         itemListProvider.overrideWith(() => mockItemListNotifier),
         currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
+        librariesProvider.overrideWith(() => mockLibrariesNotifier),
         currentUserProvider.overrideWith((_) => mockUser),
       ],
     ),
@@ -95,6 +102,7 @@ void main() {
   setUp(() {
     mockItemListNotifier = MockItemListNotifier();
     mockCurrentLibraryNotifier = MockCurrentLibraryNotifier();
+    mockLibrariesNotifier = MockLibrariesNotifier();
     mockUser = MockUser();
     when(() => mockItemListNotifier.loadMore()).thenAnswer((_) async {});
     when(() => mockUser.userId).thenReturn(faker.datatype.uuid());
@@ -108,6 +116,7 @@ void main() {
       () => mockItemListNotifier.build(ItemList.playlists),
     ).thenAnswer((_) async => mockPlaylists);
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
+    when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
   });
 
   group('ListenPage', () {

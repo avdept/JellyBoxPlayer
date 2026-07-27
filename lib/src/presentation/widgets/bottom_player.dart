@@ -329,24 +329,27 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                               ),
                           ],
                         ),
-                        subtitle: ClickableWidget(
-                          onPressed: currentSong?.extras?['artistId'] != null
-                              ? () async {
-                                  final artistId = currentSong!.extras!['artistId'] as String;
-                                  final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
-                                  if (!context.mounted) return;
-                                  context.goNamed(
-                                    Routes.artist.name,
-                                    extra: {'artist': item.data},
-                                  );
-                                }
-                              : null,
-                          textStyle: TextStyle(
-                            fontSize: _isMobile ? 12 : 18,
-                            height: 1.2,
-                          ),
-                          child: Text(
-                            currentSong?.artist ?? '',
+                        subtitle: Align(
+                          alignment: Alignment.centerLeft,
+                          child: ClickableWidget(
+                            onPressed: (_isDesktop && currentSong?.extras?['artistId'] != null)
+                                ? () async {
+                                    final artistId = currentSong!.extras!['artistId'] as String;
+                                    final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+                                    if (!context.mounted) return;
+                                    context.goNamed(
+                                      Routes.artist.name,
+                                      extra: {'artist': item.data},
+                                    );
+                                  }
+                                : null,
+                            textStyle: TextStyle(
+                              fontSize: _isMobile ? 12 : 18,
+                              height: 1.2,
+                            ),
+                            child: Text(
+                              currentSong?.artist ?? '',
+                            ),
                           ),
                         ),
                         // Text(

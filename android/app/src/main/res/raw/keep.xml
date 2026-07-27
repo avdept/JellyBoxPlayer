@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The media-notification icon is referenced only by name string from Dart
+  (main.dart: androidNotificationIcon: 'drawable/ic_stat_music'), so the release
+  resource shrinker (shrinkResources) can't see a static reference and strips it.
+  Without it, audio_service posts a notification with no valid small icon and
+  Android throws IllegalArgumentException, crashing playback on start.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_music" />

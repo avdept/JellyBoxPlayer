@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -38,6 +39,7 @@ void main() {
   final mockBaseUrl = faker.internet.url();
   final mockUserId = faker.datatype.uuid();
   final mockToken = faker.datatype.string();
+  final mockDeviceId = faker.datatype.uuid();
   final mockSong = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
@@ -90,6 +92,9 @@ void main() {
     );
     when(() => mockUser.userId).thenReturn(mockUserId);
     when(() => mockUser.token).thenReturn(mockToken);
+    // downloadSong reads the deviceId global (set in main() at app startup,
+    // which doesn't run under tests), so seed it here.
+    deviceId = mockDeviceId;
   });
 
   group('DownloadManagerNotifier', () {
@@ -114,7 +119,13 @@ void main() {
       () async {
         final mockTask = createDownloadTask(status: DownloadStatus.completed);
         when(
-          () => mockDownloadService.downloadSong(any(), any(), any()),
+          () => mockDownloadService.downloadSong(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+          ),
         ).thenAnswer((_) async => mockTask);
         when(
           () => mockDownloadDatabase.insertDownloadedSong(
@@ -141,6 +152,8 @@ void main() {
             mockSong,
             mockBaseUrl,
             mockToken,
+            mockUserId,
+            mockDeviceId,
           ),
         ).called(1);
         // Check if song is saved to database
@@ -161,7 +174,13 @@ void main() {
           (i) => mockSong,
         );
         when(
-          () => mockDownloadService.downloadSong(any(), any(), any()),
+          () => mockDownloadService.downloadSong(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+          ),
         ).thenAnswer(
           (_) async => createDownloadTask(status: DownloadStatus.completed),
         );
@@ -195,6 +214,8 @@ void main() {
             mockSong,
             mockBaseUrl,
             mockToken,
+            mockUserId,
+            mockDeviceId,
           ),
         ).called(mockSongs.length);
         // Check if each song is saved to database
