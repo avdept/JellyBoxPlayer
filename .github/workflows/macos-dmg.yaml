@@ -97,17 +97,39 @@ jobs:
 
           codesign --verify --deep --strict --verbose=2 "$APP"
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Create DMG
         working-directory: .
         run: |
           set -euo pipefail
           APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
+          APP_NAME="$(basename "$APP")"
           DMG="JellyBox-${{ steps.version.outputs.version }}.dmg"
+
+          # Stage only the app; create-dmg adds the Applications drop target.
           STAGING="$(mktemp -d)"
           cp -R "$APP" "$STAGING/"
-          ln -s /Applications "$STAGING/Applications"
-          hdiutil create -volname "JellyBox" -srcfolder "$STAGING" \
-            -ov -format UDZO "$DMG"
+
+          # Lay out a Finder window with the app on the left and an Applications
+          # shortcut on the right, so mounting the DMG shows a drag-to-install UI.
+          # (A background image can be added later via --background.)
+          # create-dmg occasionally exits non-zero after successfully building
+          # the image (e.g. it can't set an AppleScript window property on the
+          # runner), so we tolerate that and assert the file exists instead.
+          create-dmg \
+            --volname "JellyBox" \
+            --window-pos 200 120 \
+            --window-size 660 420 \
+            --icon-size 120 \
+            --icon "$APP_NAME" 165 250 \
+            --hide-extension "$APP_NAME" \
+            --app-drop-link 495 250 \
+            "$DMG" \
+            "$STAGING" || true
+          test -f "$DMG"
+
           # Sign the DMG itself (recommended for Developer ID distribution).
           codesign --force --timestamp --options runtime \
             -s "Developer ID Application" "$DMG"
@@ -136,7 +158,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jellybox-macos-dmg
-          path: macos/${{ env.DMG }}
+          path: ${{ env.DMG }}
 
       - name: Upload to release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -144,7 +166,7 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.version }}
-          files: macos/${{ env.DMG }}
+          files: ${{ env.DMG }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
