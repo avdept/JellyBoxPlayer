@@ -100,4 +100,31 @@ platform :mac do
     puts "MacOS build #{lane_context[SharedValues::BUILD_NUMBER]} was uploaded to Test Flight"
   end
 
+  desc "Install the Developer ID Application certificate into the CI keychain (for notarized DMG builds)"
+  lane :certificates do
+    # setup_ci creates a temporary keychain and adds it to the search list so
+    # `codesign -s "Developer ID Application"` can find the identity later in the job.
+    # We intentionally do NOT delete the keychain here — the workflow's signing
+    # steps run after this lane and need the identity to remain available.
+    setup_ci if ENV["CI"]
+
+    app_store_connect_api_key(
+        key_id: ENV["APPSTORE_KEY_ID"],
+        issuer_id: ENV["APPSTORE_KEY_ISSUER_ID"],
+        key_content: ENV["APPSTORE_P8_KEY_CONTENT"],
+        duration: 200,
+        is_key_content_base64: true
+    )
+
+    # Developer ID Application cert for distribution OUTSIDE the App Store.
+    # Seed it once locally with `bundle exec fastlane match developer_id`;
+    # CI pulls it read-only. No provisioning profile is needed for Developer ID.
+    match(
+        type: "developer_id",
+        readonly: true,
+        app_identifier: ENV["APP_IDENTIFIER"],
+        platform: "macos"
+    )
+  end
+
 end

@@ -1,0 +1,150 @@
+name: macOS DMG (notarized)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: macos
+    env:
+      APP_IDENTIFIER: ${{ vars.APP_IDENTIFIER }}
+      APPLE_ID: ${{ vars.APPLE_ID }}
+      ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
+      TEAM_ID: ${{ vars.TEAM_ID }}
+      APPSTORE_P8_KEY_CONTENT: ${{ secrets.APPSTORE_P8_KEY_CONTENT }}
+      APPSTORE_KEY_ISSUER_ID: ${{ secrets.APPSTORE_KEY_ISSUER_ID }}
+      APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+      GIT_USERNAME: ${{ vars.GIT_USERNAME }}
+      GIT_AUTHORIZATION: ${{ secrets.GIT_AUTHORIZATION }}
+      GIT_REPOSITORY: ${{ vars.GIT_REPOSITORY }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        working-directory: .
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            VERSION="${TAG%+*}"
+            BUILD_NUMBER="${TAG#*+}"
+            if [ "$BUILD_NUMBER" = "$TAG" ]; then
+              BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+            fi
+            echo "tag=v${TAG}" >> "$GITHUB_OUTPUT"
+          else
+            # Manual dispatch: fall back to pubspec version
+            VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+          working-directory: macos
+
+      - name: Install Developer ID certificate (fastlane match)
+        run: bundle exec fastlane mac certificates
+
+      - name: Build macOS app
+        run: |
+          flutter pub get
+          flutter build macos --release \
+            --build-name=${{ steps.version.outputs.version }} \
+            --build-number=${{ steps.version.outputs.build_number }}
+
+      - name: Sign app with Developer ID + hardened runtime
+        working-directory: .
+        run: |
+          set -euo pipefail
+          APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
+          echo "Signing $APP"
+          IDENTITY="Developer ID Application"
+
+          # Resolve the $(AppIdentifierPrefix) Xcode variable (== Team ID) so
+          # codesign gets a literal entitlements value.
+          ENTITLEMENTS="$RUNNER_TEMP/dmg-entitlements.plist"
+          sed "s/\$(AppIdentifierPrefix)/${TEAM_ID}./g" \
+            macos/Runner/Release.entitlements > "$ENTITLEMENTS"
+
+          # Sign inside-out: loose dylibs, then frameworks, then the app itself.
+          find "$APP/Contents/Frameworks" -type f -name "*.dylib" \
+            -exec codesign --force --timestamp --options runtime -s "$IDENTITY" {} +
+          find "$APP/Contents/Frameworks" -type d -name "*.framework" \
+            -exec codesign --force --timestamp --options runtime -s "$IDENTITY" {} +
+
+          codesign --force --timestamp --options runtime \
+            --entitlements "$ENTITLEMENTS" -s "$IDENTITY" "$APP"
+
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Create DMG
+        working-directory: .
+        run: |
+          set -euo pipefail
+          APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
+          DMG="JellyBox-${{ steps.version.outputs.version }}.dmg"
+          STAGING="$(mktemp -d)"
+          cp -R "$APP" "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          hdiutil create -volname "JellyBox" -srcfolder "$STAGING" \
+            -ov -format UDZO "$DMG"
+          # Sign the DMG itself (recommended for Developer ID distribution).
+          codesign --force --timestamp --options runtime \
+            -s "Developer ID Application" "$DMG"
+          echo "DMG=$DMG" >> "$GITHUB_ENV"
+
+      - name: Notarize DMG
+        working-directory: .
+        run: |
+          set -euo pipefail
+          # notarytool authenticates with the SAME App Store Connect API key
+          # already used for TestFlight — no extra secrets required.
+          KEY="$RUNNER_TEMP/AuthKey.p8"
+          echo "$APPSTORE_P8_KEY_CONTENT" | base64 --decode > "$KEY"
+
+          xcrun notarytool submit "$DMG" \
+            --key "$KEY" \
+            --key-id "$APPSTORE_KEY_ID" \
+            --issuer "$APPSTORE_KEY_ISSUER_ID" \
+            --wait
+
+          # Attach the notarization ticket so the DMG validates offline.
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jellybox-macos-dmg
+          path: macos/${{ env.DMG }}
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
+          files: macos/${{ env.DMG }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
