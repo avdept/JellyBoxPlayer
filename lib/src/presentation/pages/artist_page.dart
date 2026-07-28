@@ -7,6 +7,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
@@ -82,6 +83,36 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     setState(() {
       _albums = resp.data.items;
     });
+  }
+
+  Future<void> _onAlbumPlayPressed(ItemDTO album) => _playSet(
+    album,
+    () => ref.read(setPlaybackProvider.notifier).playAlbum(album),
+  );
+
+  Future<void> _onArtistPlayPressed() => _playSet(
+    widget.artist,
+    () => ref.read(setPlaybackProvider.notifier).playArtist(widget.artist),
+  );
+
+  Future<void> _playSet(
+    ItemDTO setItem,
+    Future<SetPlaybackResult> Function() play,
+  ) async {
+    try {
+      final result = await play();
+      if (result == SetPlaybackResult.empty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nothing to play in "${setItem.name}"')),
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start playing "${setItem.name}"')),
+        );
+      }
+    }
   }
 
   @override
@@ -327,7 +358,10 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
 
   Widget _playButton() => SizedBox(
     height: 48,
-    child: PlayButton(onPressed: () {}),
+    child: PlayButton(
+      isLoading: ref.watch(setPlaybackProvider) == widget.artist.id,
+      onPressed: _onArtistPlayPressed,
+    ),
   );
 
   List<Widget> _albumsWidgets() {
@@ -369,6 +403,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                   'artist': widget.artist,
                 },
               ),
+              onPlayPressed: _onAlbumPlayPressed,
               mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
               subTextStyle: const TextStyle(fontSize: 14),
             ),
@@ -409,6 +444,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                 'artist': widget.artist,
               },
             ),
+            onPlayPressed: _onAlbumPlayPressed,
             mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
             subTextStyle: const TextStyle(fontSize: 14),
           ),

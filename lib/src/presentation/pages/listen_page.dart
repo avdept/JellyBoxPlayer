@@ -93,6 +93,30 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     context.pushNamed(Routes.artist.name, extra: {'artist': item.data});
   }
 
+  Future<void> _onPlaySetPressed(ItemDTO item, ItemList view) async {
+    final notifier = ref.read(setPlaybackProvider.notifier);
+    try {
+      final result = await switch (view) {
+        ItemList.albums => notifier.playAlbum(item),
+        ItemList.artists => notifier.playArtist(item),
+        ItemList.genres => notifier.playGenre(item),
+        ItemList.playlists => notifier.playPlaylist(item),
+        ItemList.songs => Future.value(SetPlaybackResult.busy),
+      };
+      if (result == SetPlaybackResult.empty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nothing to play in "${item.name}"')),
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start playing "${item.name}"')),
+        );
+      }
+    }
+  }
+
   void _onSongTap(ItemDTO song, List<ItemDTO> allSongs) {
     final syntheticAlbum = ItemDTO(
       id: song.albumId ?? song.id,
@@ -359,6 +383,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                             ItemList.playlists => _onPlaylistTap(item),
                             ItemList.songs => null,
                           },
+                          onPlayPressed: (value == ItemList.songs)
+                              ? null
+                              : (item) => _onPlaySetPressed(item, value),
                           optionsBuilder: switch (value) {
                             ItemList.playlists => (context) => [
                               PopupMenuItem(

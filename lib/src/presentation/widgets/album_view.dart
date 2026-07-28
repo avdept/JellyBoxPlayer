@@ -6,10 +6,11 @@ import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class AlbumView extends ConsumerWidget {
+class AlbumView extends ConsumerStatefulWidget {
   const AlbumView({
     required this.album,
     this.onTap,
+    this.onPlayPressed,
     this.optionsBuilder,
     this.mainTextStyle,
     this.subTextStyle,
@@ -20,39 +21,55 @@ class AlbumView extends ConsumerWidget {
   final ItemDTO album;
   final bool showArtist;
   final void Function(ItemDTO)? onTap;
+  final Future<void> Function(ItemDTO)? onPlayPressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
 
-  String? imagePath(WidgetRef ref) {
-    if (album.imageTags['Primary'] == null) return null;
+  @override
+  ConsumerState<AlbumView> createState() => _AlbumViewState();
+}
 
-    return ref
-        .read(imageServiceProvider)
-        .imagePath(tagId: album.imageTags['Primary']!, id: album.id);
+class _AlbumViewState extends ConsumerState<AlbumView> {
+  var _isHovered = false;
+  var _isPlayHovered = false;
+  var _isPlayLoading = false;
+
+  String? get _imagePath {
+    final tag = widget.album.imageTags['Primary'];
+    if (tag == null) return null;
+
+    return ref.read(imageServiceProvider).imagePath(tagId: tag, id: widget.album.id);
   }
 
-  ImageProvider libraryImage(WidgetRef ref) {
-    if (imagePath(ref) != null) return CachedNetworkImageProvider(imagePath(ref)!);
+  ImageProvider get _libraryImage {
+    final path = _imagePath;
+    if (path != null) return CachedNetworkImageProvider(path);
 
     return const AssetImage(Images.album);
   }
 
-  String get artistName {
-    if (showArtist) {
-      return album.albumArtist ?? '';
-    } else {
-      return '';
+  String get _artistName =>
+      widget.showArtist ? (widget.album.albumArtist ?? '') : '';
+
+  Future<void> _onPlayPressed() async {
+    final onPlayPressed = widget.onPlayPressed;
+    if (onPlayPressed == null || _isPlayLoading) return;
+    setState(() => _isPlayLoading = true);
+    try {
+      await onPlayPressed(widget.album);
+    } finally {
+      if (mounted) setState(() => _isPlayLoading = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isTablet = deviceType == DeviceScreenType.tablet;
 
-    return GestureDetector(
-      onTap: (onTap != null) ? () => onTap!.call(album) : null,
+    final card = GestureDetector(
+      onTap: (widget.onTap != null) ? () => widget.onTap!.call(widget.album) : null,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -67,11 +84,11 @@ class AlbumView extends ConsumerWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       image: DecorationImage(
-                        image: libraryImage(ref),
+                        image: _libraryImage,
                       ),
                     ),
                   ),
-                  if (optionsBuilder != null)
+                  if (widget.optionsBuilder != null)
                     Positioned(
                       top: 0,
                       right: 0,
@@ -81,34 +98,96 @@ class AlbumView extends ConsumerWidget {
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.black45,
                         ),
-                        itemBuilder: optionsBuilder!,
+                        itemBuilder: widget.optionsBuilder!,
                       ),
+                    ),
+                  if (widget.onPlayPressed != null)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: _playButton(isTablet ? 48 : 40),
                     ),
                 ],
               ),
             ),
           ),
           Text(
-            album.name,
+            widget.album.name,
             style: TextStyle(
               fontSize: isTablet ? 24 : 16,
               fontWeight: FontWeight.w500,
               height: 1.2,
               overflow: TextOverflow.ellipsis,
-            ).merge(mainTextStyle),
+            ).merge(widget.mainTextStyle),
             maxLines: 1,
           ),
           Text(
-            artistName,
+            _artistName,
             style: TextStyle(
               fontSize: isTablet ? 22 : 14,
               fontWeight: FontWeight.w400,
               height: 1.2,
               color: const Color.fromARGB(130, 255, 255, 255),
               overflow: TextOverflow.ellipsis,
-            ).merge(subTextStyle),
+            ).merge(widget.subTextStyle),
           ),
         ],
+      ),
+    );
+
+    if (widget.onPlayPressed == null) return card;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() {
+        _isHovered = false;
+        _isPlayHovered = false;
+      }),
+      child: card,
+    );
+  }
+
+  Widget _playButton(double size) {
+    final isVisible = _isHovered || _isPlayLoading;
+
+    return IgnorePointer(
+      ignoring: !isVisible,
+      child: AnimatedOpacity(
+        opacity: isVisible ? 1 : 0,
+        duration: const Duration(milliseconds: 150),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isPlayHovered = true),
+          onExit: (_) => setState(() => _isPlayHovered = false),
+          child: AnimatedScale(
+            scale: _isPlayHovered ? 1.15 : 1,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+            child: SizedBox.square(
+              dimension: size,
+              child: MaterialButton(
+                onPressed: _isPlayLoading ? null : _onPlayPressed,
+                color: const Color(0xFF0066FF),
+                disabledColor: const Color(0xFF0066FF),
+                shape: const CircleBorder(),
+                padding: EdgeInsets.zero,
+                elevation: _isPlayHovered ? 8 : 4,
+                child: _isPlayLoading
+                    ? SizedBox.square(
+                        dimension: size * 0.4,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(
+                        Icons.play_arrow_outlined,
+                        size: size * 0.65,
+                        color: Colors.white,
+                      ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

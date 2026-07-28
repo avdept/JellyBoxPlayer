@@ -51,6 +51,22 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
+  Future<HttpResponse<ItemsWrapper>> getSongsOfSet({
+    @Path('userId') required String userId,
+    @Query('ParentId') String? libraryId,
+    @Query('AlbumArtistIds') List<String> artistIds = const [],
+    @Query('GenreIds') List<String> genreIds = const [],
+    @Query('IncludeItemTypes') String type = 'Audio',
+    @Query('SortBy')
+    String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
+    @Query('SortOrder') String sortOrder = 'Ascending',
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '300',
+    @Query('Recursive') bool recursive = true,
+    @Query('Fields') List<String> fields = const ['MediaSources'],
+  });
+
+  @GET('/Users/{userId}/Items')
   Future<HttpResponse<ItemsWrapper>> getAlbums({
     @Path('userId') required String userId,
     @Query('ParentId') String? libraryId,
