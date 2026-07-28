@@ -34,6 +34,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   Map<ItemList, String> get _viewLabels => {
     ItemList.albums: 'Albums',
     ItemList.artists: 'Artists',
+    ItemList.genres: 'Genres',
     ItemList.playlists: 'Playlists',
     ItemList.songs: 'Songs',
   };
@@ -63,6 +64,11 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     extra: {'artist': artist},
   );
 
+  void _onGenreTap(ItemDTO genre) => context.pushNamed(
+    Routes.genre.name,
+    extra: {'genre': genre},
+  );
+
   void _onPlaylistTap(ItemDTO playlist) {
     ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
     context.pushNamed(
@@ -85,6 +91,30 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
     if (!mounted) return;
     context.pushNamed(Routes.artist.name, extra: {'artist': item.data});
+  }
+
+  Future<void> _onPlaySetPressed(ItemDTO item, ItemList view) async {
+    final notifier = ref.read(setPlaybackProvider.notifier);
+    try {
+      final result = await switch (view) {
+        ItemList.albums => notifier.playAlbum(item),
+        ItemList.artists => notifier.playArtist(item),
+        ItemList.genres => notifier.playGenre(item),
+        ItemList.playlists => notifier.playPlaylist(item),
+        ItemList.songs => Future.value(SetPlaybackResult.busy),
+      };
+      if (result == SetPlaybackResult.empty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nothing to play in "${item.name}"')),
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start playing "${item.name}"')),
+        );
+      }
+    }
   }
 
   void _onSongTap(ItemDTO song, List<ItemDTO> allSongs) {
@@ -225,14 +255,12 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     super.initState();
     _currentView = ValueNotifier(ItemList.values.first)
       ..addListener(() {
-        final isAlbums = _currentView.value == ItemList.albums;
+        final view = _currentView.value;
         ref
             .read(filterProvider.notifier)
             .filter(
-              field: isAlbums
-                  ? EntityFilter.dateCreated
-                  : EntityFilter.sortName,
-              desc: true,
+              field: view.defaultSortField,
+              desc: view.defaultSortDescending,
             );
       });
     _availableFilters = {
@@ -351,9 +379,13 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                           onTap: (item) => switch (value) {
                             ItemList.albums => _onAlbumTap(item),
                             ItemList.artists => _onArtistTap(item),
+                            ItemList.genres => _onGenreTap(item),
                             ItemList.playlists => _onPlaylistTap(item),
                             ItemList.songs => null,
                           },
+                          onPlayPressed: (value == ItemList.songs)
+                              ? null
+                              : (item) => _onPlaySetPressed(item, value),
                           optionsBuilder: switch (value) {
                             ItemList.playlists => (context) => [
                               PopupMenuItem(
@@ -501,6 +533,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     ItemList.artists => const [
       EntityFilter.sortName,
       EntityFilter.dateCreated,
+    ],
+    ItemList.genres => const [
+      EntityFilter.sortName,
     ],
     ItemList.playlists => const [
       EntityFilter.sortName,

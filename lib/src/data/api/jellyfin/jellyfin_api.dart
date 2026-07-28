@@ -51,6 +51,22 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
+  Future<HttpResponse<ItemsWrapper>> getSongsOfSet({
+    @Path('userId') required String userId,
+    @Query('ParentId') String? libraryId,
+    @Query('AlbumArtistIds') List<String> artistIds = const [],
+    @Query('GenreIds') List<String> genreIds = const [],
+    @Query('IncludeItemTypes') String type = 'Audio',
+    @Query('SortBy')
+    String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
+    @Query('SortOrder') String sortOrder = 'Ascending',
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '300',
+    @Query('Recursive') bool recursive = true,
+    @Query('Fields') List<String> fields = const ['MediaSources'],
+  });
+
+  @GET('/Users/{userId}/Items')
   Future<HttpResponse<ItemsWrapper>> getAlbums({
     @Path('userId') required String userId,
     @Query('ParentId') String? libraryId,
@@ -61,6 +77,18 @@ abstract class JellyfinApi {
     @Query('ContributingArtistIds') String? contributingArtistIds,
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('AlbumArtistIds') List<String> artistIds = const [],
+    @Query('GenreIds') List<String> genreIds = const [],
+    @Query('Recursive') bool recursive = true,
+  });
+
+  @GET('/MusicGenres')
+  Future<HttpResponse<ItemsWrapper>> getGenres({
+    @Query('userId') required String userId,
+    @Query('ParentId') String? libraryId,
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '100',
+    @Query('SortBy') String sortBy = 'SortName',
+    @Query('SortOrder') String sortOrder = 'Ascending',
     @Query('Recursive') bool recursive = true,
   });
 

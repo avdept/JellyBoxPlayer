@@ -7,6 +7,7 @@ enum Routes {
   listen('/listen'),
   album('album'),
   artist('artist'),
+  genre('genre'),
   palette('palette'),
   playlist('playlist');
 

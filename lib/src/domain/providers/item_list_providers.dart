@@ -43,6 +43,15 @@ class ItemListNotifier
         sortBy: _filterState.orderBy.name.capitalize(),
         startIndex: startIndex.toString(),
       ),
+      ItemList.genres => _api.getGenres(
+        userId: ref.read(currentUserProvider)!.userId,
+        libraryId: _libraryId,
+        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
+        sortBy: _filterState.orderBy == EntityFilter.sortName
+            ? 'SortName'
+            : _filterState.orderBy.name.capitalize(),
+        startIndex: startIndex.toString(),
+      ),
       ItemList.playlists => _api.getPlaylists(
         userId: ref.read(currentUserProvider)!.userId,
         sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
@@ -118,3 +127,10 @@ final AutoDisposeFamilyAsyncNotifierProvider<
   ItemList
 >
 playlistsProvider = itemListProvider(ItemList.playlists);
+
+final AutoDisposeFamilyAsyncNotifierProvider<
+  ItemListNotifier,
+  ItemsPage,
+  ItemList
+>
+genresProvider = itemListProvider(ItemList.genres);

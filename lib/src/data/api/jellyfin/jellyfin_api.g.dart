@@ -183,6 +183,58 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
+  Future<HttpResponse<ItemsWrapper>> getSongsOfSet({
+    required String userId,
+    String? libraryId,
+    List<String> artistIds = const [],
+    List<String> genreIds = const [],
+    String type = 'Audio',
+    String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
+    String sortOrder = 'Ascending',
+    String startIndex = '0',
+    String limit = '300',
+    bool recursive = true,
+    List<String> fields = const ['MediaSources'],
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'ParentId': libraryId,
+      r'AlbumArtistIds': artistIds,
+      r'GenreIds': genreIds,
+      r'IncludeItemTypes': type,
+      r'SortBy': sortBy,
+      r'SortOrder': sortOrder,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'Recursive': recursive,
+      r'Fields': fields,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Users/${userId}/Items',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ItemsWrapper _value;
+    try {
+      _value = ItemsWrapper.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<ItemsWrapper>> getAlbums({
     required String userId,
     String? libraryId,
@@ -193,6 +245,7 @@ class _JellyfinApi implements JellyfinApi {
     String? contributingArtistIds,
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
+    List<String> genreIds = const [],
     bool recursive = true,
   }) async {
     final _extra = <String, dynamic>{};
@@ -205,6 +258,7 @@ class _JellyfinApi implements JellyfinApi {
       r'ContributingArtistIds': contributingArtistIds,
       r'SortOrder': sortOrder,
       r'AlbumArtistIds': artistIds,
+      r'GenreIds': genreIds,
       r'Recursive': recursive,
     };
     queryParameters.removeWhere((k, v) => v == null);
@@ -215,6 +269,51 @@ class _JellyfinApi implements JellyfinApi {
           .compose(
             _dio.options,
             '/Users/${userId}/Items',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ItemsWrapper _value;
+    try {
+      _value = ItemsWrapper.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<ItemsWrapper>> getGenres({
+    required String userId,
+    String? libraryId,
+    String startIndex = '0',
+    String limit = '100',
+    String sortBy = 'SortName',
+    String sortOrder = 'Ascending',
+    bool recursive = true,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'userId': userId,
+      r'ParentId': libraryId,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'SortBy': sortBy,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/MusicGenres',
             queryParameters: queryParameters,
             data: _data,
           )
