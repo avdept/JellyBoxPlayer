@@ -69,6 +69,7 @@ jobs:
         run: |
           flutter pub get
           flutter build macos --release \
+            --dart-define=JELLYBOX_DIRECT_DOWNLOAD=true \
             --build-name=${{ steps.version.outputs.version }} \
             --build-number=${{ steps.version.outputs.build_number }}
 
@@ -80,47 +81,29 @@ jobs:
           echo "Signing $APP"
           IDENTITY="Developer ID Application"
 
-          # Derive the real team id straight from the installed signing identity.
-          # (Do NOT rely on $TEAM_ID from env — it can be empty, which silently
-          # produced an invalid ".<bundleid>" keychain-access-group before.)
-          TEAMID="$(security find-identity -v -p codesigning \
-            | grep 'Developer ID Application' | head -1 \
-            | sed -E 's/.*\(([A-Z0-9]+)\).*/\1/')"
-          if [ -z "$TEAMID" ]; then echo "::error::No Developer ID identity found"; exit 1; fi
-          echo "Team ID: $TEAMID"
+          # Diagnostic: show what signing identities the runner actually has.
+          # If no "Developer ID Application" identity appears here, match did not
+          # install the cert+key (usually a password-protected .p12 in storage).
+          echo "=== codesigning identities on the runner ==="
+          security find-identity -v -p codesigning || true
+          echo "============================================="
 
-          # Embed the Developer ID (Direct) provisioning profile that match
-          # installed — this authorizes the sandbox + keychain-access-groups
-          # entitlements so taskgated doesn't kill the app at launch.
-          # Prefer the path the certificates lane exported; otherwise scan the
-          # installed profiles for the one matching this app id.
-          PROFILE="${DEVID_PROFILE:-}"
-          if [ -z "$PROFILE" ] || [ ! -f "$PROFILE" ]; then
-            # macOS profiles install under Xcode/UserData; iOS ones under MobileDevice.
-            for PPDIR in \
-              "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" \
-              "$HOME/Library/MobileDevice/Provisioning Profiles"; do
-              [ -d "$PPDIR" ] || continue
-              for p in "$PPDIR"/*.provisionprofile "$PPDIR"/*.mobileprovision; do
-                [ -f "$p" ] || continue
-                # macOS profiles key the app id under com.apple.application-identifier.
-                aid="$(security cms -D -i "$p" 2>/dev/null | plutil -extract Entitlements.com\\.apple\\.application-identifier raw - 2>/dev/null \
-                  || security cms -D -i "$p" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null || true)"
-                case "$aid" in *".${APP_IDENTIFIER}"|*"${APP_IDENTIFIER}") PROFILE="$p"; break 2;; esac
-              done
-            done
-          fi
-          if [ -z "$PROFILE" ] || [ ! -f "$PROFILE" ]; then
-            echo "::error::No Developer ID provisioning profile found for ${APP_IDENTIFIER} — did the certificates lane pull it from match?"; exit 1
-          fi
-          echo "Embedding profile: $PROFILE"
-          cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
-
-          # Resolve the $(AppIdentifierPrefix) Xcode variable (== Team ID) to a
-          # literal so codesign gets a valid keychain-access-group value.
+          # Entitlements for the DIRECT-DOWNLOAD build. Unlike the App Store
+          # build's Release.entitlements, this is intentionally EMPTY:
+          #   * NO app-sandbox and NO keychain-access-groups — both require a
+          #     provisioning profile for out-of-App-Store distribution, and
+          #     including them without one gets the app taskgated-killed.
+          #   * flutter_secure_storage still works because this build runs with
+          #     --dart-define=JELLYBOX_DIRECT_DOWNLOAD=true, which switches it to
+          #     the legacy macOS keychain (needs no profile/entitlements).
+          # The Hardened Runtime (required for notarization) is applied via
+          # `codesign --options runtime`.
           ENTITLEMENTS="$RUNNER_TEMP/dmg-entitlements.plist"
-          sed "s/\$(AppIdentifierPrefix)/${TEAMID}./g" \
-            macos/Runner/Release.entitlements > "$ENTITLEMENTS"
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0"><dict></dict></plist>' > "$ENTITLEMENTS"
+          plutil -lint "$ENTITLEMENTS"
 
           # Sign inside-out: loose dylibs, then frameworks, then the app itself.
           find "$APP/Contents/Frameworks" -type f -name "*.dylib" \

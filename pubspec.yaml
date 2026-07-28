@@ -48,7 +48,7 @@ dependencies:
   infinite_scroll_pagination: ^4.1.0
   flutter_riverpod: ^2.6.1
   pretty_dio_logger: ^1.4.0
-  flutter_secure_storage: ^10.0.0
+  flutter_secure_storage: ^10.3.1
   retrofit: ^4.7.0
   dio: ^5.8.0+1
   string_capitalize: ^0.0.10

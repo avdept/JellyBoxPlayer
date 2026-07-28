@@ -116,30 +116,19 @@ platform :mac do
         is_key_content_base64: true
     )
 
-    # Developer ID Application cert + the "Direct" (MAC_APP_DIRECT) provisioning
-    # profile for distribution OUTSIDE the App Store. The profile is what
-    # authorizes the sandbox + keychain-access-groups entitlements in a notarized
-    # Developer ID app; without it, taskgated kills the app at launch.
-    # Seed both once locally with Apple ID auth (the App Store Connect API key
-    # can't manage Developer ID assets):
-    #   env -u APPSTORE_KEY_ID -u APPSTORE_KEY_ISSUER_ID -u APPSTORE_P8_KEY_CONTENT \
-    #     bundle exec fastlane match developer_id --username <apple-id> --readonly false
-    # CI then pulls both read-only.
+    # Developer ID Application cert for distribution OUTSIDE the App Store.
+    # The notarized DMG build is NOT sandboxed and uses the legacy keychain, so
+    # it needs no provisioning profile — only the signing certificate. Seed it
+    # once locally, then CI pulls it read-only.
     match(
         type: "developer_id",
         readonly: true,
         app_identifier: ENV["APP_IDENTIFIER"],
-        platform: "macos"
+        platform: "macos",
+        # No provisioning profile is needed (no sandbox / keychain-access-groups
+        # in the direct-download build), so don't try to sync one.
+        skip_provisioning_profiles: true
     )
-
-    # Hand the installed profile's path to the workflow so it can embed it into
-    # the .app before signing. match exports it as an env var like
-    # sigh_<app_id>_developer_id_macos_profile-path.
-    profile_path = ENV.select { |k, _| k.start_with?("sigh_") && k.include?("developer_id") && k.end_with?("profile-path") }.values.first
-    if profile_path && ENV["GITHUB_ENV"]
-      File.open(ENV["GITHUB_ENV"], "a") { |f| f.puts("DEVID_PROFILE=#{profile_path}") }
-      UI.message("Exported DEVID_PROFILE=#{profile_path}")
-    end
 
     # `flutter build macos --release` would otherwise use the project's
     # Automatic signing, which fails on CI ("requires a provisioning profile")
