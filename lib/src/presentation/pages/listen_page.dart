@@ -34,6 +34,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   Map<ItemList, String> get _viewLabels => {
     ItemList.albums: 'Albums',
     ItemList.artists: 'Artists',
+    ItemList.genres: 'Genres',
     ItemList.playlists: 'Playlists',
     ItemList.songs: 'Songs',
   };
@@ -61,6 +62,11 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   void _onArtistTap(ItemDTO artist) => context.pushNamed(
     Routes.artist.name,
     extra: {'artist': artist},
+  );
+
+  void _onGenreTap(ItemDTO genre) => context.pushNamed(
+    Routes.genre.name,
+    extra: {'genre': genre},
   );
 
   void _onPlaylistTap(ItemDTO playlist) {
@@ -225,14 +231,12 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     super.initState();
     _currentView = ValueNotifier(ItemList.values.first)
       ..addListener(() {
-        final isAlbums = _currentView.value == ItemList.albums;
+        final view = _currentView.value;
         ref
             .read(filterProvider.notifier)
             .filter(
-              field: isAlbums
-                  ? EntityFilter.dateCreated
-                  : EntityFilter.sortName,
-              desc: true,
+              field: view.defaultSortField,
+              desc: view.defaultSortDescending,
             );
       });
     _availableFilters = {
@@ -351,6 +355,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                           onTap: (item) => switch (value) {
                             ItemList.albums => _onAlbumTap(item),
                             ItemList.artists => _onArtistTap(item),
+                            ItemList.genres => _onGenreTap(item),
                             ItemList.playlists => _onPlaylistTap(item),
                             ItemList.songs => null,
                           },
@@ -501,6 +506,9 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     ItemList.artists => const [
       EntityFilter.sortName,
       EntityFilter.dateCreated,
+    ],
+    ItemList.genres => const [
+      EntityFilter.sortName,
     ],
     ItemList.playlists => const [
       EntityFilter.sortName,

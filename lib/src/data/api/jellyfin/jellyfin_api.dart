@@ -61,6 +61,18 @@ abstract class JellyfinApi {
     @Query('ContributingArtistIds') String? contributingArtistIds,
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('AlbumArtistIds') List<String> artistIds = const [],
+    @Query('GenreIds') List<String> genreIds = const [],
+    @Query('Recursive') bool recursive = true,
+  });
+
+  @GET('/MusicGenres')
+  Future<HttpResponse<ItemsWrapper>> getGenres({
+    @Query('userId') required String userId,
+    @Query('ParentId') String? libraryId,
+    @Query('StartIndex') String startIndex = '0',
+    @Query('Limit') String limit = '100',
+    @Query('SortBy') String sortBy = 'SortName',
+    @Query('SortOrder') String sortOrder = 'Ascending',
     @Query('Recursive') bool recursive = true,
   });
 

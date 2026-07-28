@@ -2,6 +2,7 @@ export 'album_page.dart';
 export 'artist_page.dart';
 export 'color_pallete_page.dart';
 export 'downloads_page.dart';
+export 'genre_albums_page.dart';
 export 'initial_page.dart';
 export 'library_page.dart';
 export 'listen_page.dart';

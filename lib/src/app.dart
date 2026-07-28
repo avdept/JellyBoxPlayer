@@ -125,6 +125,11 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
                       name: Routes.playlist.name,
                       pageBuilder: widget.screenFactory.playlistPage,
                     ),
+                    GoRoute(
+                      path: Routes.genre.path,
+                      name: Routes.genre.name,
+                      pageBuilder: widget.screenFactory.genrePage,
+                    ),
                   ],
                 ),
               ],

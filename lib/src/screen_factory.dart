@@ -34,6 +34,20 @@ class ScreenFactory {
     );
   }
 
+  Page<void> genrePage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final params = router.extra! as Map<String, dynamic>;
+    final genre = params['genre'] is ItemDTO
+        ? params['genre'] as ItemDTO
+        : ItemDTO.fromJson(params['genre'] as Map<String, dynamic>);
+
+    return CupertinoPage(
+      child: GenreAlbumsPage(genre: genre),
+    );
+  }
+
   Page<void> downloadsPage(
     BuildContext context,
     GoRouterState router,
