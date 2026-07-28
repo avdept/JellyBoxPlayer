@@ -34,7 +34,6 @@ class MockUser extends Mock implements User {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late ItemListNotifier mockItemListNotifier;
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
   late LibrariesNotifier mockLibrariesNotifier;
   late User mockUser;
@@ -79,6 +78,17 @@ void main() {
       ),
     ),
   );
+  final mockGenres = ItemsPage(
+    items: List.generate(
+      5,
+      (_) => ItemDTO(
+        id: faker.datatype.uuid(),
+        name: faker.lorem.word(),
+        type: 'MusicGenre',
+        runTimeTicks: faker.datatype.number(min: 10000),
+      ),
+    ),
+  );
   final mockLibrary = ItemDTO(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
@@ -87,10 +97,28 @@ void main() {
     collectionType: 'music',
   );
 
+  ItemListNotifier createItemListMock() {
+    final mock = MockItemListNotifier();
+    when(() => mock.loadMore()).thenAnswer((_) async {});
+    when(
+      () => mock.build(ItemList.albums),
+    ).thenAnswer((_) async => mockAlbums);
+    when(
+      () => mock.build(ItemList.artists),
+    ).thenAnswer((_) async => mockArtists);
+    when(
+      () => mock.build(ItemList.playlists),
+    ).thenAnswer((_) async => mockPlaylists);
+    when(
+      () => mock.build(ItemList.genres),
+    ).thenAnswer((_) async => mockGenres);
+    return mock;
+  }
+
   Widget getWidgetUT() => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        itemListProvider.overrideWith(() => mockItemListNotifier),
+        itemListProvider.overrideWith(createItemListMock),
         currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
         librariesProvider.overrideWith(() => mockLibrariesNotifier),
         currentUserProvider.overrideWith((_) => mockUser),
@@ -100,21 +128,10 @@ void main() {
   );
 
   setUp(() {
-    mockItemListNotifier = MockItemListNotifier();
     mockCurrentLibraryNotifier = MockCurrentLibraryNotifier();
     mockLibrariesNotifier = MockLibrariesNotifier();
     mockUser = MockUser();
-    when(() => mockItemListNotifier.loadMore()).thenAnswer((_) async {});
     when(() => mockUser.userId).thenReturn(faker.datatype.uuid());
-    when(
-      () => mockItemListNotifier.build(ItemList.albums),
-    ).thenAnswer((_) async => mockAlbums);
-    when(
-      () => mockItemListNotifier.build(ItemList.artists),
-    ).thenAnswer((_) async => mockArtists);
-    when(
-      () => mockItemListNotifier.build(ItemList.playlists),
-    ).thenAnswer((_) async => mockPlaylists);
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
   });
@@ -136,11 +153,28 @@ void main() {
     );
 
     testWidgets(
+      '- displays list of genres when the Genres tab is selected',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await widgetTester.tap(find.widgetWithText(ActionChip, 'Genres'));
+        await widgetTester.pumpAndSettle();
+        final genreUT = mockGenres.items.first;
+        final genreFinder = find.byType(AlbumView);
+        expect(genreFinder, findsWidgets);
+        expect(
+          find.descendant(of: genreFinder, matching: find.text(genreUT.name)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       '- displays view toggles',
       (widgetTester) async {
         await widgetTester.pumpWidget(getWidgetUT());
         await widgetTester.pump(Duration.zero);
-        const views = {'Albums', 'Artists', 'Playlists', 'Songs'};
+        const views = {'Albums', 'Artists', 'Genres', 'Playlists', 'Songs'};
         final chipFinder = find.byType(ActionChip);
         expect(chipFinder, findsNWidgets(views.length));
         for (final label in views) {
