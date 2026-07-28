@@ -92,10 +92,29 @@ jobs:
           # Embed the Developer ID (Direct) provisioning profile that match
           # installed — this authorizes the sandbox + keychain-access-groups
           # entitlements so taskgated doesn't kill the app at launch.
-          if [ -z "${DEVID_PROFILE:-}" ] || [ ! -f "$DEVID_PROFILE" ]; then
-            echo "::error::DEVID_PROFILE not set/found — did the certificates lane install the Direct profile?"; exit 1
+          # Prefer the path the certificates lane exported; otherwise scan the
+          # installed profiles for the one matching this app id.
+          PROFILE="${DEVID_PROFILE:-}"
+          if [ -z "$PROFILE" ] || [ ! -f "$PROFILE" ]; then
+            # macOS profiles install under Xcode/UserData; iOS ones under MobileDevice.
+            for PPDIR in \
+              "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" \
+              "$HOME/Library/MobileDevice/Provisioning Profiles"; do
+              [ -d "$PPDIR" ] || continue
+              for p in "$PPDIR"/*.provisionprofile "$PPDIR"/*.mobileprovision; do
+                [ -f "$p" ] || continue
+                # macOS profiles key the app id under com.apple.application-identifier.
+                aid="$(security cms -D -i "$p" 2>/dev/null | plutil -extract Entitlements.com\\.apple\\.application-identifier raw - 2>/dev/null \
+                  || security cms -D -i "$p" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null || true)"
+                case "$aid" in *".${APP_IDENTIFIER}"|*"${APP_IDENTIFIER}") PROFILE="$p"; break 2;; esac
+              done
+            done
           fi
-          cp "$DEVID_PROFILE" "$APP/Contents/embedded.provisionprofile"
+          if [ -z "$PROFILE" ] || [ ! -f "$PROFILE" ]; then
+            echo "::error::No Developer ID provisioning profile found for ${APP_IDENTIFIER} — did the certificates lane pull it from match?"; exit 1
+          fi
+          echo "Embedding profile: $PROFILE"
+          cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
 
           # Resolve the $(AppIdentifierPrefix) Xcode variable (== Team ID) to a
           # literal so codesign gets a valid keychain-access-group value.
