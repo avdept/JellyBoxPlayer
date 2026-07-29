@@ -45,7 +45,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late bool _isDesktop;
 
   Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
-    ModalSheetRoute(
+    ModalSheetRoute<void>(
       builder: (context) => SafeArea(
         top: false,
         minimum: EdgeInsets.only(
@@ -69,14 +69,29 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       Expanded(
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: _isPlaying,
-                          builder: (context, isPlaying, child) => SwipeableArtwork(
-                            sequenceState: snapshot.data!,
-                            borderRadius: _isMobile ? 12 : 16,
-                            artworkBuilder: _artwork,
-                            horizontalPadding: _sheetHorizontalPadding,
-                            scale: isPlaying ? 1 : 0.82,
+                        child: Consumer(
+                          builder: (context, ref, child) => AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: ref.watch(lyricsShownProvider)
+                                ? const Padding(
+                                    key: ValueKey('lyrics'),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: _sheetHorizontalPadding,
+                                    ),
+                                    child: LyricsView(),
+                                  )
+                                : child,
+                          ),
+                          child: ValueListenableBuilder<bool>(
+                            key: const ValueKey('artwork'),
+                            valueListenable: _isPlaying,
+                            builder: (context, isPlaying, child) => SwipeableArtwork(
+                              sequenceState: snapshot.data!,
+                              borderRadius: _isMobile ? 12 : 16,
+                              artworkBuilder: _artwork,
+                              horizontalPadding: _sheetHorizontalPadding,
+                              scale: isPlaying ? 1 : 0.82,
+                            ),
                           ),
                         ),
                       ),
@@ -113,7 +128,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       barrierLabel: _localizations.modalBarrierDismissLabel,
       duration: const Duration(milliseconds: 300),
     ),
-  );
+  ).whenComplete(_onSheetClosed);
+
+  void _onSheetClosed() {
+    if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
+  }
 
   Widget _sheetDetails(BuildContext context, MediaItem? currentSong) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: _sheetHorizontalPadding),
@@ -219,6 +238,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
               _randomQueueButton(),
               _repeatTrackButton(),
               if (NativeRoutePicker.isSupported) _outputRouteButton(),
+              _lyricsButton(),
               _downloadTrackButton(),
               _likeTrackButton(),
             ],
@@ -371,6 +391,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                             ),
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
+                            if (_isDesktop) _lyricsButton(),
                             if (_isDesktop && NativeRoutePicker.isSupported) _outputRouteButton(size: 44),
                           ],
                         ),
@@ -594,6 +615,33 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     size: size ?? (_isMobile ? 40 : 36),
     color: _theme.colorScheme.onPrimary,
     activeColor: _theme.colorScheme.primary,
+  );
+
+  Widget _lyricsButton() => Consumer(
+    builder: (context, ref, _) {
+      final playback = ref.watch(playbackProvider);
+      final index = playback.currentMediaIndex;
+      final currentSong = index != null
+          ? playback.songs.elementAtOrNull(index)
+          : null;
+      final hasLyrics = currentSong?.hasLyrics ?? false;
+      final isShown = ref.watch(lyricsShownProvider);
+
+      return IconButton(
+        onPressed: hasLyrics
+            ? () => ref.read(lyricsVisibleProvider.notifier).state = !isShown
+            : null,
+        color: _theme.colorScheme.onPrimary,
+        disabledColor: _theme.colorScheme.onPrimary.withOpacity(0.3),
+        tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
+        icon: const Icon(Icons.lyrics_outlined),
+        selectedIcon: Icon(
+          Icons.lyrics,
+          color: _theme.colorScheme.primary,
+        ),
+        isSelected: isShown,
+      );
+    },
   );
 
   Widget _downloadTrackButton() => Consumer(

@@ -1,5 +1,6 @@
 export 'artist/artist_dto.dart';
 export 'item/item_dto.dart';
+export 'lyrics/lyrics_dto.dart';
 export 'media/media_source_dto.dart';
 export 'media/media_stream_dto.dart';
 export 'session_info/session_info_dto.dart';

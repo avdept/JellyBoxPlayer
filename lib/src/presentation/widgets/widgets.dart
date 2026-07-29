@@ -12,6 +12,7 @@ export 'gradient_background.dart';
 export 'gradient_panel_decoration.dart';
 export 'labeled_text_field.dart';
 export 'library_view.dart';
+export 'lyrics_overlay.dart';
 export 'play_button.dart';
 export 'playlist_picker_sheet.dart';
 export 'play_pause_button.dart';

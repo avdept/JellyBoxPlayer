@@ -143,6 +143,11 @@ abstract class JellyfinApi {
     @Query('Fields') List<String> fields = const ['MediaSources'],
   });
 
+  @GET('/Audio/{itemId}/Lyrics')
+  Future<HttpResponse<LyricsDTO>> getLyrics({
+    @Path('itemId') required String itemId,
+  });
+
   @POST('/Playlists')
   Future<HttpResponse<void>> createPlaylist({
     @Body() required PlaylistData values,
