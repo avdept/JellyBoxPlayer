@@ -14,6 +14,7 @@ import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
+import 'package:jplayer/src/presentation/widgets/playback_keyboard_shortcuts.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
 
@@ -232,7 +233,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
           },
         );
 
-        return child!;
+        return PlaybackKeyboardShortcuts(child: child!);
       },
     );
   }
