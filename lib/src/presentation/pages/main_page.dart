@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -33,10 +34,15 @@ class _MainPageState extends ConsumerState<MainPage> {
         (JPlayer.download, 'Downloads'),
       };
 
-  void _navigateToItem(int index) => widget.shell.goBranch(
-        index,
-        initialLocation: index == widget.shell.currentIndex,
-      );
+  void _navigateToItem(int index) {
+    // The overlay covers the content area, so leaving it up would hide the
+    // section the user just asked for.
+    ref.read(lyricsVisibleProvider.notifier).state = false;
+    widget.shell.goBranch(
+      index,
+      initialLocation: index == widget.shell.currentIndex,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -106,7 +112,17 @@ class _MainPageState extends ConsumerState<MainPage> {
               Expanded(
                 child: Column(
                   children: [
-                    Expanded(child: widget.shell),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          widget.shell,
+                          // Elsewhere the player sheet shows lyrics in place
+                          // of the artwork, so there is nothing to overlay.
+                          if (_device.isDesktop)
+                            const Positioned.fill(child: LyricsOverlay()),
+                        ],
+                      ),
+                    ),
                     const BottomPlayer(),
                   ],
                 ),

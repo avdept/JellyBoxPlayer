@@ -45,7 +45,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late bool _isDesktop;
 
   Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
-    ModalSheetRoute(
+    ModalSheetRoute<void>(
       builder: (context) => SafeArea(
         top: false,
         minimum: EdgeInsets.only(
@@ -68,15 +68,32 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                   return Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
+                      // Lyrics take over the artwork's space, running from
+                      // the top of the sheet down to the progress bar.
                       Expanded(
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: _isPlaying,
-                          builder: (context, isPlaying, child) => SwipeableArtwork(
-                            sequenceState: snapshot.data!,
-                            borderRadius: _isMobile ? 12 : 16,
-                            artworkBuilder: _artwork,
-                            horizontalPadding: _sheetHorizontalPadding,
-                            scale: isPlaying ? 1 : 0.82,
+                        child: Consumer(
+                          builder: (context, ref, child) => AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: ref.watch(lyricsVisibleProvider)
+                                ? const Padding(
+                                    key: ValueKey('lyrics'),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: _sheetHorizontalPadding,
+                                    ),
+                                    child: LyricsView(),
+                                  )
+                                : child,
+                          ),
+                          child: ValueListenableBuilder<bool>(
+                            key: const ValueKey('artwork'),
+                            valueListenable: _isPlaying,
+                            builder: (context, isPlaying, child) => SwipeableArtwork(
+                              sequenceState: snapshot.data!,
+                              borderRadius: _isMobile ? 12 : 16,
+                              artworkBuilder: _artwork,
+                              horizontalPadding: _sheetHorizontalPadding,
+                              scale: isPlaying ? 1 : 0.82,
+                            ),
                           ),
                         ),
                       ),
@@ -113,7 +130,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       barrierLabel: _localizations.modalBarrierDismissLabel,
       duration: const Duration(milliseconds: 300),
     ),
-  );
+  ).whenComplete(_onSheetClosed);
+
+  /// Lyrics are a mode of the expanded sheet here, so dismissing the sheet
+  /// has to drop out of that mode too — otherwise reopening it lands on the
+  /// lyrics instead of the artwork.
+  void _onSheetClosed() {
+    if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
+  }
 
   Widget _sheetDetails(BuildContext context, MediaItem? currentSong) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: _sheetHorizontalPadding),
@@ -219,6 +243,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
               _randomQueueButton(),
               _repeatTrackButton(),
               if (NativeRoutePicker.isSupported) _outputRouteButton(),
+              _lyricsButton(),
               _downloadTrackButton(),
               _likeTrackButton(),
             ],
@@ -371,6 +396,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                             ),
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
+                            if (_isDesktop) _lyricsButton(),
                             if (_isDesktop && NativeRoutePicker.isSupported) _outputRouteButton(size: 44),
                           ],
                         ),
@@ -594,6 +620,37 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     size: size ?? (_isMobile ? 40 : 36),
     color: _theme.colorScheme.onPrimary,
     activeColor: _theme.colorScheme.primary,
+  );
+
+  /// Always visible, greyed out for tracks the server has no lyrics for.
+  ///
+  /// Swaps the sheet's artwork for the lyrics on mobile and tablet, and
+  /// toggles the overlay over the content area on desktop.
+  Widget _lyricsButton() => Consumer(
+    builder: (context, ref, _) {
+      final playback = ref.watch(playbackProvider);
+      final index = playback.currentMediaIndex;
+      final currentSong = index != null
+          ? playback.songs.elementAtOrNull(index)
+          : null;
+      final hasLyrics = currentSong?.hasLyrics ?? false;
+      final isShown = ref.watch(lyricsVisibleProvider);
+
+      return IconButton(
+        onPressed: hasLyrics
+            ? () => ref.read(lyricsVisibleProvider.notifier).state = !isShown
+            : null,
+        color: _theme.colorScheme.onPrimary,
+        disabledColor: _theme.colorScheme.onPrimary.withOpacity(0.3),
+        tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
+        icon: const Icon(Icons.lyrics_outlined),
+        selectedIcon: Icon(
+          Icons.lyrics,
+          color: _theme.colorScheme.primary,
+        ),
+        isSelected: isShown && hasLyrics,
+      );
+    },
   );
 
   Widget _downloadTrackButton() => Consumer(
