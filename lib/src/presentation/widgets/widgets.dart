@@ -23,3 +23,4 @@ export 'simple_list_tile.dart';
 export 'singer_view.dart';
 export 'song_row_view.dart';
 export 'song_view.dart';
+export 'swipeable_artwork.dart';

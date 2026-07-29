@@ -22,6 +22,8 @@ import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:native_route_picker/native_route_picker.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+const _sheetHorizontalPadding = 30.0;
+
 class BottomPlayer extends ConsumerStatefulWidget {
   const BottomPlayer({super.key});
 
@@ -33,10 +35,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late final AnimationController _animationController;
   final _imageProvider = ValueNotifier<ImageProvider?>(null);
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
-  final _playProgress = ValueNotifier<double>(0.6);
   final _isPlaying = ValueNotifier<bool>(false);
-  final _randomQueue = ValueNotifier<bool>(false);
-  final _repeatTrack = ValueNotifier<bool>(false);
   final _likeTrack = ValueNotifier<bool>(false);
   late ThemeData _theme;
   late MaterialLocalizations _localizations;
@@ -50,9 +49,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       builder: (context) => SafeArea(
         top: false,
         minimum: EdgeInsets.only(
-          left: 30,
           top: _isMobile ? 0 : 20,
-          right: 30,
           bottom: _isMobile ? 20 : 60,
         ),
         child: ConstrainedBox(
@@ -71,136 +68,19 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                   return Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      // Large artwork that fills the free space and shrinks
-                      // slightly while paused, like Apple Music.
                       Expanded(
-                        child: Center(
-                          child: ValueListenableBuilder<bool>(
-                            valueListenable: _isPlaying,
-                            builder: (context, isPlaying, child) => AnimatedScale(
-                              scale: isPlaying ? 1 : 0.82,
-                              duration: const Duration(milliseconds: 350),
-                              curve: Curves.easeOutCubic,
-                              child: child,
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
-                              child: AspectRatio(
-                                aspectRatio: 1,
-                                child: _artwork(currentSong),
-                              ),
-                            ),
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _isPlaying,
+                          builder: (context, isPlaying, child) => SwipeableArtwork(
+                            sequenceState: snapshot.data!,
+                            borderRadius: _isMobile ? 12 : 16,
+                            artworkBuilder: _artwork,
+                            horizontalPadding: _sheetHorizontalPadding,
+                            scale: isPlaying ? 1 : 0.82,
                           ),
                         ),
                       ),
-                      SizedBox(height: _isMobile ? 24 : 32),
-                      // Title / artist on the left, more button on the right.
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  currentSong?.title ?? '',
-                                  style: TextStyle(
-                                    fontSize: _isMobile ? 24 : 32,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  maxLines: 1,
-                                ),
-                                const SizedBox(height: 2),
-                                ClickableWidget(
-                                  onPressed: currentSong?.extras?['artistId'] != null
-                                      ? () async {
-                                          final artistId = currentSong!.extras!['artistId'] as String;
-                                          final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
-                                          if (!context.mounted) return;
-                                          Navigator.of(context).pop();
-                                          context.goNamed(
-                                            Routes.artist.name,
-                                            extra: {'artist': item.data},
-                                          );
-                                        }
-                                      : null,
-                                  textStyle: TextStyle(
-                                    fontSize: _isMobile ? 16 : 20,
-                                    height: 1.2,
-                                    color: _theme.colorScheme.primary,
-                                  ),
-                                  child: Text(
-                                    currentSong?.artist ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final playback = ref.watch(playbackProvider);
-                              final index = playback.currentMediaIndex;
-                              final isLoaded = index != null && playback.songs.elementAtOrNull(index) != null;
-                              if (!isLoaded) return const SizedBox.shrink();
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(width: 8),
-                                  _moreButton(currentSong),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: _isMobile ? 12 : 20),
-                      // Scrubber with elapsed / remaining labels.
-                      const PositionSlider(),
-                      _positionLabels(),
-                      SizedBox(height: _isMobile ? 8 : 12),
-                      AudioQualityBadge(
-                        codec: currentSong?.extras?['codec'] as String?,
-                        bitRate: currentSong?.extras?['bitRate'] as int?,
-                        sampleRate: currentSong?.extras?['sampleRate'] as int?,
-                      ),
-                      SizedBox(height: _isMobile ? 12 : 24),
-                      // Large centered transport controls.
-                      IconTheme.merge(
-                        data: IconThemeData(size: _isMobile ? 40 : 44),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            _prevTrackButton(),
-                            SizedBox(width: _isMobile ? 32 : 24),
-                            SizedBox.square(
-                              dimension: 72,
-                              child: _playPauseButton(),
-                            ),
-                            SizedBox(width: _isMobile ? 32 : 24),
-                            _nextTrackButton(),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: _isMobile ? 24 : 32),
-                      // Bottom toolbar: shuffle / repeat / download / like.
-                      IconTheme.merge(
-                        data: IconThemeData(size: _isMobile ? 26 : 24),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _randomQueueButton(),
-                            _repeatTrackButton(),
-                            if (NativeRoutePicker.isSupported) _outputRouteButton(),
-                            _downloadTrackButton(),
-                            _likeTrackButton(),
-                          ],
-                        ),
-                      ),
+                      _sheetDetails(context, currentSong),
                     ],
                   );
                 },
@@ -232,6 +112,119 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       expanded: true,
       barrierLabel: _localizations.modalBarrierDismissLabel,
       duration: const Duration(milliseconds: 300),
+    ),
+  );
+
+  Widget _sheetDetails(BuildContext context, MediaItem? currentSong) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: _sheetHorizontalPadding),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: _isMobile ? 24 : 32),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentSong?.title ?? '',
+                    style: TextStyle(
+                      fontSize: _isMobile ? 24 : 32,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    maxLines: 1,
+                  ),
+                  const SizedBox(height: 2),
+                  ClickableWidget(
+                    onPressed: currentSong?.extras?['artistId'] != null
+                        ? () async {
+                            final artistId = currentSong!.extras!['artistId'] as String;
+                            final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop();
+                            context.goNamed(
+                              Routes.artist.name,
+                              extra: {'artist': item.data},
+                            );
+                          }
+                        : null,
+                    textStyle: TextStyle(
+                      fontSize: _isMobile ? 16 : 20,
+                      height: 1.2,
+                      color: _theme.colorScheme.primary,
+                    ),
+                    child: Text(
+                      currentSong?.artist ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                final playback = ref.watch(playbackProvider);
+                final index = playback.currentMediaIndex;
+                final isLoaded = index != null && playback.songs.elementAtOrNull(index) != null;
+                if (!isLoaded) return const SizedBox.shrink();
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(width: 8),
+                    _moreButton(currentSong),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+        SizedBox(height: _isMobile ? 12 : 20),
+        const PositionSlider(),
+        _positionLabels(),
+        SizedBox(height: _isMobile ? 8 : 12),
+        AudioQualityBadge(
+          codec: currentSong?.extras?['codec'] as String?,
+          bitRate: currentSong?.extras?['bitRate'] as int?,
+          sampleRate: currentSong?.extras?['sampleRate'] as int?,
+        ),
+        SizedBox(height: _isMobile ? 12 : 24),
+        IconTheme.merge(
+          data: IconThemeData(size: _isMobile ? 40 : 44),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _prevTrackButton(),
+              SizedBox(width: _isMobile ? 32 : 24),
+              SizedBox.square(
+                dimension: 72,
+                child: _playPauseButton(),
+              ),
+              SizedBox(width: _isMobile ? 32 : 24),
+              _nextTrackButton(),
+            ],
+          ),
+        ),
+        SizedBox(height: _isMobile ? 24 : 32),
+        IconTheme.merge(
+          data: IconThemeData(size: _isMobile ? 26 : 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _randomQueueButton(),
+              _repeatTrackButton(),
+              if (NativeRoutePicker.isSupported) _outputRouteButton(),
+              _downloadTrackButton(),
+              _likeTrackButton(),
+            ],
+          ),
+        ),
+      ],
     ),
   );
 
@@ -273,26 +266,32 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   Widget build(BuildContext context) {
     final playBackProvider = ref.watch(playbackProvider);
 
-    _isPlaying.value = playBackProvider.status == PlaybackStatus.playing;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        StreamBuilder<SequenceState?>(
-          stream: ref.read(playerProvider).sequenceStateStream,
-          builder: (context, snapshot) {
-            final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-            final image = (currentSong?.artUri != null) ? CachedNetworkImageProvider(currentSong!.artUri.toString()) : const AssetImage(Images.album) as ImageProvider;
-            WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _imageProvider.value = image,
-            );
-            return AnimatedSwitcher(
+    final isPlaying = playBackProvider.status == PlaybackStatus.playing;
+    if (_isPlaying.value != isPlaying) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _isPlaying.value = isPlaying;
+      });
+    }
+    return StreamBuilder<SequenceState?>(
+      stream: ref.read(playerProvider).sequenceStateStream,
+      builder: (context, snapshot) {
+        final isEmpty = snapshot.data?.sequence.isEmpty ?? true;
+        final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
+        final image = (currentSong?.artUri != null) ? CachedNetworkImageProvider(currentSong!.artUri.toString()) : const AssetImage(Images.album) as ImageProvider;
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _imageProvider.value = image,
+        );
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               transitionBuilder: (child, animation) => SizeTransition(
                 sizeFactor: animation,
                 axisAlignment: -1,
                 child: child,
               ),
-              child: (snapshot.data?.sequence.isEmpty ?? true)
+              child: isEmpty
                   ? const SizedBox(width: double.infinity)
                   : Container(
                       height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
@@ -378,34 +377,25 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                         leadingToTitle: 15,
                       ),
                     ),
-            );
-          },
-        ),
-        StreamBuilder<SequenceState?>(
-          stream: ref.read(playerProvider).sequenceStateStream,
-          builder: (context, snapshot) {
-            // Hide the progress bar when the queue is empty, matching the
-            // collapsed player bar above.
-            if (snapshot.data?.sequence.isEmpty ?? true) {
-              return const SizedBox.shrink();
-            }
-            return ValueListenableBuilder(
-              valueListenable: _dynamicColors,
-              builder: (context, colorScheme, child) => Theme(
-                data: Theme.of(context).copyWith(
-                  colorScheme: colorScheme,
-                ),
-                child: const Positioned(
-                  left: -25,
-                  top: -22,
-                  right: -25,
-                  child: PositionSlider(),
+            ),
+            if (!isEmpty)
+              ValueListenableBuilder(
+                valueListenable: _dynamicColors,
+                builder: (context, colorScheme, child) => Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: colorScheme,
+                  ),
+                  child: const Positioned(
+                    left: -25,
+                    top: -22,
+                    right: -25,
+                    child: PositionSlider(),
+                  ),
                 ),
               ),
-            );
-          },
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -414,18 +404,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     _animationController.dispose();
     _imageProvider.dispose();
     _dynamicColors.dispose();
-    _playProgress.dispose();
     _isPlaying.dispose();
-    _randomQueue.dispose();
-    _repeatTrack.dispose();
     _likeTrack.dispose();
     super.dispose();
   }
 
-  // Renders the current track's artwork, always falling back to the album
-  // placeholder when there is no art or the network image fails to load.
-  // Keyed by song id so the element is rebuilt per track and never keeps
-  // painting the previous song's cover.
   Widget _artwork(MediaItem? currentSong) {
     final artUri = currentSong?.artUri;
     return SizedBox.expand(
@@ -441,7 +424,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     );
   }
 
-  // Elapsed / remaining time labels shown under the scrubber.
   Widget _positionLabels() => Consumer(
     builder: (context, ref, _) {
       final playback = ref.watch(playbackProvider);
@@ -485,7 +467,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     icon: const Icon(JPlayer.more_horizontal),
   );
 
-  // Apple-Music-style context menu for the current track.
   Future<void> _onMorePressed(MediaItem? currentSong) async {
     final playback = ref.read(playbackProvider);
     final index = playback.currentMediaIndex;
@@ -542,9 +523,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
 
   Future<void> _goToArtist(BuildContext sheetContext, String artistId) async {
     final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
-    if (sheetContext.mounted) Navigator.of(sheetContext).pop(); // close menu
+    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
     if (!mounted) return;
-    Navigator.of(context).pop(); // close now playing sheet
+    Navigator.of(context).pop();
     context.goNamed(Routes.artist.name, extra: {'artist': item.data});
   }
 
@@ -567,21 +548,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     icon: const Icon(Entypo.fast_forward),
   );
 
-  Widget _openListButton() => IconButton(
-    onPressed: () {},
-    color: _theme.colorScheme.onPrimary,
-    icon: const Icon(CupertinoIcons.list_bullet),
-  );
-
   Widget _randomQueueButton() => StreamBuilder<bool?>(
     stream: ref.read(playerProvider).shuffleModeEnabledStream,
     builder: (context, snapshot) {
       return IconButton(
         onPressed: () => ref
             .read(playerProvider)
-            .setShuffleModeEnabled(
-              snapshot.data == null ? !snapshot.data! : true,
-            ),
+            .setShuffleModeEnabled(!(snapshot.data ?? false)),
         icon: Icon(
           JPlayer.mix,
           color: _theme.colorScheme.onPrimary,
