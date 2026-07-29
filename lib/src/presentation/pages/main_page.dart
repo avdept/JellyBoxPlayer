@@ -35,8 +35,6 @@ class _MainPageState extends ConsumerState<MainPage> {
       };
 
   void _navigateToItem(int index) {
-    // The overlay covers the content area, so leaving it up would hide the
-    // section the user just asked for.
     ref.read(lyricsVisibleProvider.notifier).state = false;
     widget.shell.goBranch(
       index,
@@ -116,8 +114,6 @@ class _MainPageState extends ConsumerState<MainPage> {
                       child: Stack(
                         children: [
                           widget.shell,
-                          // Elsewhere the player sheet shows lyrics in place
-                          // of the artwork, so there is nothing to overlay.
                           if (_device.isDesktop)
                             const Positioned.fill(child: LyricsOverlay()),
                         ],

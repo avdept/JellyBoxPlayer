@@ -3,7 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'lyrics_dto.freezed.dart';
 part 'lyrics_dto.g.dart';
 
-/// Jellyfin reports lyric timings in ticks (1 tick = 100 nanoseconds).
 Duration? _fromTicks(int? ticks) =>
     ticks == null ? null : Duration(microseconds: ticks ~/ 10);
 
@@ -21,17 +20,11 @@ abstract class LyricsDTO with _$LyricsDTO {
   factory LyricsDTO.fromJson(Map<String, dynamic> json) =>
       _$LyricsDTOFromJson(json);
 
-  /// Whether the lines carry timestamps and can be followed along with
-  /// playback. Servers that omit the flag are judged by their lines.
   bool get isSynced =>
       metadata.isSynced ?? lyrics.any((line) => line.start != null);
 
-  /// Whether any line carries word level (ELRC) timings. Only servers
-  /// running 10.11 or newer send these.
   bool get hasWordCues => lyrics.any((line) => line.cues?.isNotEmpty ?? false);
 
-  /// Shift of the whole lyric track against the audio, to be added on top
-  /// of every line's start time.
   Duration get offset => _fromTicks(metadata.offset) ?? Duration.zero;
 }
 
@@ -48,12 +41,9 @@ abstract class LyricLineDTO with _$LyricLineDTO {
   factory LyricLineDTO.fromJson(Map<String, dynamic> json) =>
       _$LyricLineDTOFromJson(json);
 
-  /// Null on unsynced lyrics.
   Duration? get startTime => _fromTicks(start);
 }
 
-/// Timing of a single word within a [LyricLineDTO], as a character range
-/// into that line's text.
 @freezed
 abstract class LyricLineCueDTO with _$LyricLineCueDTO {
   const factory LyricLineCueDTO({

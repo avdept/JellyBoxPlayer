@@ -7,10 +7,6 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 
-/// The scrolling lyric lines for whatever is playing.
-///
-/// Rendered inline in the player sheet on mobile and tablet, and under
-/// [LyricsOverlay] on desktop.
 class LyricsView extends ConsumerWidget {
   const LyricsView({
     this.padding = const EdgeInsets.symmetric(vertical: 24),
@@ -42,19 +38,12 @@ class LyricsView extends ConsumerWidget {
   }
 }
 
-/// Lyrics panel that fades in over the main content area — albums, artists,
-/// search results — leaving the navigation and the bottom player usable.
-///
-/// Desktop only: everywhere else the player sheet shows [LyricsView] in place
-/// of the artwork instead. Meant to be dropped into a [Stack] as a
-/// `Positioned.fill` child; while hidden it lays out an empty box, so taps
-/// fall through to the page below.
 class LyricsOverlay extends ConsumerWidget {
   const LyricsOverlay({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isVisible = ref.watch(lyricsVisibleProvider);
+    final isVisible = ref.watch(lyricsShownProvider);
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
@@ -180,14 +169,10 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
     );
   }
 
-  /// Picks the last line whose start has already passed. Cheap enough to run
-  /// on every position tick, and only rebuilds when the line actually changes.
   void _syncActiveLine(Duration position) {
     final lyrics = ref.read(lyricsProvider(widget.songId)).valueOrNull;
     if (lyrics == null || !lyrics.isSynced) return;
 
-    // An LRC offset shifts the lyrics against the audio, so fold it into the
-    // position we compare the line starts against.
     final shifted = position + lyrics.offset;
     var index = -1;
     for (var i = 0; i < lyrics.lyrics.length; i++) {
@@ -229,8 +214,6 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
         final lines = lyrics?.lyrics ?? const <LyricLineDTO>[];
         if (lines.isEmpty) return const _Message('No lyrics for this track');
 
-        // Keys let us scroll the active line into view. Lyrics run to a few
-        // dozen lines, so every line stays built and every key stays valid.
         if (_lineKeys.length != lines.length) {
           _lineKeys = List.generate(lines.length, (_) => GlobalKey());
         }
@@ -275,7 +258,6 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
           curve: Curves.easeOut,
           textAlign: TextAlign.center,
           style: TextStyle(
-            // Unsynced lyrics have no active line, so they all stay solid.
             color: (!isSynced || isActive)
                 ? Colors.white
                 : Colors.white.withOpacity(0.4),
@@ -285,7 +267,6 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             height: 1.35,
           ),
-          // Blank lines mark instrumental breaks in LRC files.
           child: Text(text.isEmpty ? '♪' : text, textAlign: TextAlign.center),
         ),
       ),

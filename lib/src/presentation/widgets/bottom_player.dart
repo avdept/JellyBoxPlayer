@@ -68,13 +68,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                   return Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      // Lyrics take over the artwork's space, running from
-                      // the top of the sheet down to the progress bar.
                       Expanded(
                         child: Consumer(
                           builder: (context, ref, child) => AnimatedSwitcher(
                             duration: const Duration(milliseconds: 250),
-                            child: ref.watch(lyricsVisibleProvider)
+                            child: ref.watch(lyricsShownProvider)
                                 ? const Padding(
                                     key: ValueKey('lyrics'),
                                     padding: EdgeInsets.symmetric(
@@ -132,9 +130,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     ),
   ).whenComplete(_onSheetClosed);
 
-  /// Lyrics are a mode of the expanded sheet here, so dismissing the sheet
-  /// has to drop out of that mode too — otherwise reopening it lands on the
-  /// lyrics instead of the artwork.
   void _onSheetClosed() {
     if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
   }
@@ -622,10 +617,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     activeColor: _theme.colorScheme.primary,
   );
 
-  /// Always visible, greyed out for tracks the server has no lyrics for.
-  ///
-  /// Swaps the sheet's artwork for the lyrics on mobile and tablet, and
-  /// toggles the overlay over the content area on desktop.
   Widget _lyricsButton() => Consumer(
     builder: (context, ref, _) {
       final playback = ref.watch(playbackProvider);
@@ -634,7 +625,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           ? playback.songs.elementAtOrNull(index)
           : null;
       final hasLyrics = currentSong?.hasLyrics ?? false;
-      final isShown = ref.watch(lyricsVisibleProvider);
+      final isShown = ref.watch(lyricsShownProvider);
 
       return IconButton(
         onPressed: hasLyrics
@@ -648,7 +639,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           Icons.lyrics,
           color: _theme.colorScheme.primary,
         ),
-        isSelected: isShown && hasLyrics,
+        isSelected: isShown,
       );
     },
   );
