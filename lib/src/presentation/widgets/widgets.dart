@@ -15,6 +15,7 @@ export 'library_view.dart';
 export 'play_button.dart';
 export 'playlist_picker_sheet.dart';
 export 'play_pause_button.dart';
+export 'playback_keyboard_shortcuts.dart';
 export 'player_song_view.dart';
 export 'random_queue_button.dart';
 export 'scrollable_page_scaffold.dart';
