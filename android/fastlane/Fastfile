@@ -17,6 +17,7 @@ default_platform(:android)
 
 UPLOAD_KEYSTORE = "upload_key.jks"
 AAB_PATH = "../../build/app/outputs/bundle/release/app-release.aab"
+UNIVERSAL_APK_PATH = "../../build/app/outputs/universal/jellybox-universal.apk"
 
 # Rebuilds android/key.properties from CI secrets so the release signingConfig in
 # app/build.gradle picks up the upload key. Locally it leaves an existing
@@ -40,6 +41,14 @@ def create_upload_key
   end
 end
 
+def play_package_name
+  ENV["PACKAGE_NAME"].to_s.empty? ? "com.prodigytech.jellybox" : ENV["PACKAGE_NAME"]
+end
+
+def play_track
+  ENV["PLAY_TRACK"].to_s.empty? ? "internal" : ENV["PLAY_TRACK"]
+end
+
 def version_args
   args = []
   args << "--build-name=#{ENV['BUILD_VERSION']}" unless ENV["BUILD_VERSION"].to_s.empty?
@@ -47,37 +56,80 @@ def version_args
   args.join(" ")
 end
 
-def build_release_artifacts
-  create_upload_key
+# The version code Play will have recorded for this build: the explicit CI build
+# number when present, otherwise whatever pubspec.yaml carries.
+def resolved_version_code
+  return ENV["BUILD_NUMBER"].to_i unless ENV["BUILD_NUMBER"].to_s.empty?
 
-  Dir.chdir("../../") do
-    sh("flutter pub get")
-    sh("flutter build appbundle --release #{version_args}")
-    sh("flutter build apk --release #{version_args}")
+  match = File.read("../../pubspec.yaml").match(/^version:\s*\S+\+(\d+)\s*$/)
+  UI.user_error!("Could not parse a version code out of pubspec.yaml") if match.nil?
+  match[1].to_i
+end
+
+# Play needs to finish processing the committed edit before the generated APKs
+# exist, so the first few attempts here are expected to fail.
+def download_universal_apk(version_code)
+  attempts = (ENV["PLAY_DOWNLOAD_ATTEMPTS"].to_s.empty? ? "10" : ENV["PLAY_DOWNLOAD_ATTEMPTS"]).to_i
+  interval = (ENV["PLAY_DOWNLOAD_INTERVAL"].to_s.empty? ? "60" : ENV["PLAY_DOWNLOAD_INTERVAL"]).to_i
+
+  require "fileutils"
+  FileUtils.mkdir_p(File.dirname(UNIVERSAL_APK_PATH))
+
+  options = {
+    package_name: play_package_name,
+    version_code: version_code,
+    json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
+    destination: UNIVERSAL_APK_PATH
+  }
+  options[:certificate_sha256_hash] = ENV["PLAY_CERTIFICATE_SHA256_HASH"] unless ENV["PLAY_CERTIFICATE_SHA256_HASH"].to_s.empty?
+
+  attempts.times do |attempt|
+    begin
+      return download_universal_apk_from_google_play(options)
+    rescue StandardError => e
+      raise if attempt == attempts - 1
+
+      UI.important("Universal APK for #{version_code} not available yet (#{e.message.strip}); retrying in #{interval}s (#{attempt + 1}/#{attempts})")
+      sleep(interval)
+    end
   end
 end
 
 platform :android do
-  desc "Build a signed app bundle and APK, then ship the bundle to a Play track"
+  desc "Build a signed app bundle, upload it to Play as a draft, and fetch the signed universal APK"
   lane :beta do
-    build_release_artifacts
+    create_upload_key
+
+    Dir.chdir("../../") do
+      sh("flutter pub get")
+      sh("flutter build appbundle --release #{version_args}")
+    end
 
     upload_to_play_store(
-      package_name: ENV["PACKAGE_NAME"] || "com.prodigytech.jellybox",
+      package_name: play_package_name,
       json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
       aab: AAB_PATH,
-      track: ENV["PLAY_TRACK"] || "internal",
-      release_status: ENV["PLAY_RELEASE_STATUS"] || "draft",
+      track: play_track,
+      release_status: "draft",
       skip_upload_apk: true,
       skip_upload_metadata: true,
       skip_upload_changelogs: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
     )
+
+    apk = download_universal_apk(resolved_version_code)
+    UI.success("Signed universal APK ready at #{apk}")
   end
 
-  desc "Build a signed app bundle and APK without uploading anywhere"
+  desc "Build a signed app bundle and APK locally without uploading anywhere"
   lane :build_only do
-    build_release_artifacts
+    create_upload_key
+
+    Dir.chdir("../../") do
+      sh("flutter pub get")
+      sh("flutter build appbundle --release #{version_args}")
+      sh("flutter build apk --release #{version_args}")
+    end
   end
 end
