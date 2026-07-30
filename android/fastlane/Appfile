@@ -1,4 +1,2 @@
-# The Play credentials are passed to upload_to_play_store as json_key_data in the
-# Fastfile, so JSON_KEY_FILE is only needed if you prefer a file on disk.
 json_key_file(ENV["JSON_KEY_FILE"]) unless ENV["JSON_KEY_FILE"].to_s.empty?
 package_name(ENV["PACKAGE_NAME"]) unless ENV["PACKAGE_NAME"].to_s.empty?

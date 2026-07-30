@@ -1,36 +1,16 @@
-# This file contains the fastlane.tools configuration
-# You can find the documentation at https://docs.fastlane.tools
-#
-# For a list of all available actions, check out
-#
-#     https://docs.fastlane.tools/actions
-#
-# For a list of all available plugins, check out
-#
-#     https://docs.fastlane.tools/plugins/available-plugins
-#
-
-# Uncomment the line if you want fastlane to automatically update itself
-# update_fastlane
-
 require "base64"
 require "fileutils"
 
 default_platform(:android)
 
-# Anchored to this file rather than the working directory, because fastlane does
-# not run actions from the same directory that sh() blocks execute in.
 PROJECT_ROOT = File.expand_path("../..", __dir__)
 ANDROID_ROOT = File.join(PROJECT_ROOT, "android")
 KEY_PROPERTIES_PATH = File.join(ANDROID_ROOT, "key.properties")
 UPLOAD_KEYSTORE_PATH = File.join(ANDROID_ROOT, "upload_key.jks")
 AAB_PATH = File.join(PROJECT_ROOT, "build/app/outputs/bundle/release/app-release.aab")
 UNIVERSAL_APK_PATH = File.join(PROJECT_ROOT, "build/app/outputs/universal/jellybox-universal.apk")
+PLAY_TRACKS = %w[internal alpha beta production].freeze
 
-# Rebuilds android/key.properties from CI secrets so the release signingConfig in
-# app/build.gradle picks up the upload key. Locally it leaves an existing
-# key.properties alone. The keystore is decoded in Ruby rather than through sh()
-# so the base64 secret never reaches a logged command line.
 def create_upload_key
   if ENV["ANDROID_KEYSTORE_ENV_VAR"].to_s.empty?
     UI.user_error!("ANDROID_KEYSTORE_ENV_VAR is unset and android/key.properties does not exist") unless File.exist?(KEY_PROPERTIES_PATH)
@@ -58,36 +38,61 @@ def play_track
   ENV["PLAY_TRACK"].to_s.empty? ? "internal" : ENV["PLAY_TRACK"]
 end
 
-def version_args
-  args = []
-  args << "--build-name=#{ENV['BUILD_VERSION']}" unless ENV["BUILD_VERSION"].to_s.empty?
-  args << "--build-number=#{ENV['BUILD_NUMBER']}" unless ENV["BUILD_NUMBER"].to_s.empty?
-  args.join(" ")
-end
-
-# The version code Play will have recorded for this build: the explicit CI build
-# number when present, otherwise whatever pubspec.yaml carries.
-def resolved_version_code
-  return ENV["BUILD_NUMBER"].to_i unless ENV["BUILD_NUMBER"].to_s.empty?
-
+def pubspec_version_code
   match = File.read(File.join(PROJECT_ROOT, "pubspec.yaml")).match(/^version:\s*\S+\+(\d+)\s*$/)
   UI.user_error!("Could not parse a version code out of pubspec.yaml") if match.nil?
   match[1].to_i
 end
 
-def build_appbundle
+def highest_play_version_code
+  codes = PLAY_TRACKS.flat_map do |track|
+    begin
+      google_play_track_version_codes(
+        package_name: play_package_name,
+        track: track,
+        json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"]
+      )
+    rescue StandardError => e
+      UI.verbose("No version codes readable for track '#{track}': #{e.message.strip}")
+      []
+    end
+  end
+
+  codes.map(&:to_i).max
+end
+
+def resolve_version_code
+  return ENV["BUILD_NUMBER"].to_i unless ENV["BUILD_NUMBER"].to_s.empty?
+
+  highest = highest_play_version_code
+  if highest.nil?
+    UI.message("Play reports no existing version codes; falling back to pubspec.yaml")
+    return pubspec_version_code
+  end
+
+  resolved = [highest + 1, pubspec_version_code].max
+  UI.message("Highest version code on Play is #{highest}; using #{resolved}")
+  resolved
+end
+
+def version_args(version_code)
+  args = []
+  args << "--build-name=#{ENV['BUILD_VERSION']}" unless ENV["BUILD_VERSION"].to_s.empty?
+  args << "--build-number=#{version_code}"
+  args.join(" ")
+end
+
+def build_appbundle(version_code)
   create_upload_key
 
   Dir.chdir(PROJECT_ROOT) do
     sh("flutter pub get")
-    sh("flutter build appbundle --release #{version_args}")
+    sh("flutter build appbundle --release #{version_args(version_code)}")
   end
 
   UI.user_error!("Expected an app bundle at #{AAB_PATH}") unless File.exist?(AAB_PATH)
 end
 
-# Play needs to finish processing the committed edit before the generated APKs
-# exist, so the first few attempts here are expected to fail.
 def download_universal_apk(version_code)
   attempts = (ENV["PLAY_DOWNLOAD_ATTEMPTS"].to_s.empty? ? "10" : ENV["PLAY_DOWNLOAD_ATTEMPTS"]).to_i
   interval = (ENV["PLAY_DOWNLOAD_INTERVAL"].to_s.empty? ? "60" : ENV["PLAY_DOWNLOAD_INTERVAL"]).to_i
@@ -117,7 +122,10 @@ end
 platform :android do
   desc "Build a signed app bundle, upload it to Play as a draft, and fetch the signed universal APK"
   lane :beta do
-    build_appbundle
+    version_code = resolve_version_code
+    UI.important("Building version code #{version_code}")
+
+    build_appbundle(version_code)
 
     upload_to_play_store(
       package_name: play_package_name,
@@ -132,16 +140,18 @@ platform :android do
       skip_upload_screenshots: true
     )
 
-    apk = download_universal_apk(resolved_version_code)
+    apk = download_universal_apk(version_code)
     UI.success("Signed universal APK ready at #{apk}")
   end
 
   desc "Build a signed app bundle and APK locally without uploading anywhere"
   lane :build_only do
-    build_appbundle
+    version_code = ENV["BUILD_NUMBER"].to_s.empty? ? pubspec_version_code : ENV["BUILD_NUMBER"].to_i
+
+    build_appbundle(version_code)
 
     Dir.chdir(PROJECT_ROOT) do
-      sh("flutter build apk --release #{version_args}")
+      sh("flutter build apk --release #{version_args(version_code)}")
     end
   end
 end
