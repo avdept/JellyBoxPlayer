@@ -13,32 +13,41 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
+require "base64"
+require "fileutils"
+
 default_platform(:android)
 
-UPLOAD_KEYSTORE = "upload_key.jks"
-AAB_PATH = "../../build/app/outputs/bundle/release/app-release.aab"
-UNIVERSAL_APK_PATH = "../../build/app/outputs/universal/jellybox-universal.apk"
+# Anchored to this file rather than the working directory, because fastlane does
+# not run actions from the same directory that sh() blocks execute in.
+PROJECT_ROOT = File.expand_path("../..", __dir__)
+ANDROID_ROOT = File.join(PROJECT_ROOT, "android")
+KEY_PROPERTIES_PATH = File.join(ANDROID_ROOT, "key.properties")
+UPLOAD_KEYSTORE_PATH = File.join(ANDROID_ROOT, "upload_key.jks")
+AAB_PATH = File.join(PROJECT_ROOT, "build/app/outputs/bundle/release/app-release.aab")
+UNIVERSAL_APK_PATH = File.join(PROJECT_ROOT, "build/app/outputs/universal/jellybox-universal.apk")
 
 # Rebuilds android/key.properties from CI secrets so the release signingConfig in
 # app/build.gradle picks up the upload key. Locally it leaves an existing
-# key.properties alone.
+# key.properties alone. The keystore is decoded in Ruby rather than through sh()
+# so the base64 secret never reaches a logged command line.
 def create_upload_key
   if ENV["ANDROID_KEYSTORE_ENV_VAR"].to_s.empty?
-    UI.user_error!("ANDROID_KEYSTORE_ENV_VAR is unset and android/key.properties does not exist") unless File.exist?("../key.properties")
+    UI.user_error!("ANDROID_KEYSTORE_ENV_VAR is unset and android/key.properties does not exist") unless File.exist?(KEY_PROPERTIES_PATH)
     UI.message("Signing with the existing android/key.properties")
     return
   end
 
-  Dir.chdir("../") do
-    sh("printf '%s' \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" | base64 -d > #{UPLOAD_KEYSTORE}") unless File.exist?(UPLOAD_KEYSTORE)
+  File.binwrite(UPLOAD_KEYSTORE_PATH, Base64.decode64(ENV["ANDROID_KEYSTORE_ENV_VAR"])) unless File.exist?(UPLOAD_KEYSTORE_PATH)
 
-    File.write("key.properties", <<~PROPERTIES)
-      storeFile=../#{UPLOAD_KEYSTORE}
-      storePassword=#{ENV['ANDROID_KEYSTORE_PASSWORD']}
-      keyPassword=#{ENV['ANDROID_KEYSTORE_PASSWORD']}
-      keyAlias=#{ENV['ANDROID_KEY_ALIAS']}
-    PROPERTIES
-  end
+  File.write(KEY_PROPERTIES_PATH, <<~PROPERTIES)
+    storeFile=#{UPLOAD_KEYSTORE_PATH}
+    storePassword=#{ENV['ANDROID_KEYSTORE_PASSWORD']}
+    keyPassword=#{ENV['ANDROID_KEYSTORE_PASSWORD']}
+    keyAlias=#{ENV['ANDROID_KEY_ALIAS']}
+  PROPERTIES
+
+  UI.message("Wrote key.properties for keystore #{UPLOAD_KEYSTORE_PATH} (#{File.size(UPLOAD_KEYSTORE_PATH)} bytes)")
 end
 
 def play_package_name
@@ -61,9 +70,20 @@ end
 def resolved_version_code
   return ENV["BUILD_NUMBER"].to_i unless ENV["BUILD_NUMBER"].to_s.empty?
 
-  match = File.read("../../pubspec.yaml").match(/^version:\s*\S+\+(\d+)\s*$/)
+  match = File.read(File.join(PROJECT_ROOT, "pubspec.yaml")).match(/^version:\s*\S+\+(\d+)\s*$/)
   UI.user_error!("Could not parse a version code out of pubspec.yaml") if match.nil?
   match[1].to_i
+end
+
+def build_appbundle
+  create_upload_key
+
+  Dir.chdir(PROJECT_ROOT) do
+    sh("flutter pub get")
+    sh("flutter build appbundle --release #{version_args}")
+  end
+
+  UI.user_error!("Expected an app bundle at #{AAB_PATH}") unless File.exist?(AAB_PATH)
 end
 
 # Play needs to finish processing the committed edit before the generated APKs
@@ -72,7 +92,6 @@ def download_universal_apk(version_code)
   attempts = (ENV["PLAY_DOWNLOAD_ATTEMPTS"].to_s.empty? ? "10" : ENV["PLAY_DOWNLOAD_ATTEMPTS"]).to_i
   interval = (ENV["PLAY_DOWNLOAD_INTERVAL"].to_s.empty? ? "60" : ENV["PLAY_DOWNLOAD_INTERVAL"]).to_i
 
-  require "fileutils"
   FileUtils.mkdir_p(File.dirname(UNIVERSAL_APK_PATH))
 
   options = {
@@ -98,12 +117,7 @@ end
 platform :android do
   desc "Build a signed app bundle, upload it to Play as a draft, and fetch the signed universal APK"
   lane :beta do
-    create_upload_key
-
-    Dir.chdir("../../") do
-      sh("flutter pub get")
-      sh("flutter build appbundle --release #{version_args}")
-    end
+    build_appbundle
 
     upload_to_play_store(
       package_name: play_package_name,
@@ -124,11 +138,9 @@ platform :android do
 
   desc "Build a signed app bundle and APK locally without uploading anywhere"
   lane :build_only do
-    create_upload_key
+    build_appbundle
 
-    Dir.chdir("../../") do
-      sh("flutter pub get")
-      sh("flutter build appbundle --release #{version_args}")
+    Dir.chdir(PROJECT_ROOT) do
       sh("flutter build apk --release #{version_args}")
     end
   end
