@@ -12,6 +12,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class ListenPage extends ConsumerStatefulWidget {
@@ -401,7 +402,16 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                     );
                   },
                   error: (error, stackTrace) => SliverToBoxAdapter(
-                    child: Text(error.toString()),
+                    child: ref.watch(isOfflineProvider)
+                        ? OfflineNotice(
+                            message:
+                                "You're offline. Your library will be back "
+                                'once the server is reachable.',
+                            onRetry: () =>
+                                ref.invalidate(itemListProvider(value)),
+                            showDownloadsLink: true,
+                          )
+                        : Text(error.toString()),
                   ),
                   loading: () => const SliverToBoxAdapter(
                     child: Center(child: CircularProgressIndicator()),

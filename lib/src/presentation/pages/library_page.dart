@@ -9,6 +9,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class LibraryPage extends ConsumerStatefulWidget {
   const LibraryPage({super.key});
@@ -114,7 +115,17 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           ],
         ),
       ),
-      error: (_, _) => const Scaffold(),
+      error: (_, _) => Scaffold(
+        body: Center(
+          child: OfflineNotice(
+            message: ref.watch(isOfflineProvider)
+                ? "You're offline, so your libraries can't be loaded."
+                : 'Could not load your libraries.',
+            onRetry: () => ref.invalidate(librariesProvider),
+            showDownloadsLink: true,
+          ),
+        ),
+      ),
       loading: () => const Scaffold(
         body: Center(
           child: CircularProgressIndicator.adaptive(),

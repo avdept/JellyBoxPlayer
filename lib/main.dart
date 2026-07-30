@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -30,12 +31,17 @@ Future<void> main() async {
   final analytics = Plausible(
     domain: "jellybox.app",
     server: Uri.https("plausible.prodigytech.dev", '/api/event'),
-   );
+  );
 
   analytics.send(path: '/');
-  analytics.send(event: 'app-launched', props: {'os': Platform.operatingSystem});
+  analytics.send(
+    event: 'app-launched',
+    props: {'os': Platform.operatingSystem},
+  );
 
   deviceId = (await FlutterUdid.udid).trim();
+
+  await DownloadPaths.init();
 
   ResponsiveSizingConfig.instance.setCustomBreakpoints(
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),

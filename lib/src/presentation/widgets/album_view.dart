@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -15,6 +16,9 @@ class AlbumView extends ConsumerStatefulWidget {
     this.mainTextStyle,
     this.subTextStyle,
     this.showArtist = true,
+    this.subtitle,
+    this.trailing,
+    this.alignTextStart = false,
     super.key,
   });
 
@@ -26,6 +30,11 @@ class AlbumView extends ConsumerStatefulWidget {
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
 
+  final String? subtitle;
+
+  final Widget? trailing;
+  final bool alignTextStart;
+
   @override
   ConsumerState<AlbumView> createState() => _AlbumViewState();
 }
@@ -35,22 +44,21 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
   var _isPlayHovered = false;
   var _isPlayLoading = false;
 
-  String? get _imagePath {
-    final tag = widget.album.imageTags['Primary'];
-    if (tag == null) return null;
-
-    return ref.read(imageServiceProvider).imagePath(tagId: tag, id: widget.album.id);
-  }
-
   ImageProvider get _libraryImage {
-    final path = _imagePath;
-    if (path != null) return CachedNetworkImageProvider(path);
+    final downloadedCover = DownloadPaths.coverFile(widget.album.id);
+    if (downloadedCover != null) return FileImage(downloadedCover);
 
-    return const AssetImage(Images.album);
+    final tag = widget.album.imageTags['Primary'];
+    if (tag == null) return const AssetImage(Images.album);
+
+    return CachedNetworkImageProvider(
+      ref.read(imageServiceProvider).imagePath(tagId: tag, id: widget.album.id),
+    );
   }
 
-  String get _artistName =>
-      widget.showArtist ? (widget.album.albumArtist ?? '') : '';
+  String get _subtitleText =>
+      widget.subtitle ??
+      (widget.showArtist ? (widget.album.albumArtist ?? '') : '');
 
   Future<void> _onPlayPressed() async {
     final onPlayPressed = widget.onPlayPressed;
@@ -69,9 +77,14 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
     final isTablet = deviceType == DeviceScreenType.tablet;
 
     final card = GestureDetector(
-      onTap: (widget.onTap != null) ? () => widget.onTap!.call(widget.album) : null,
+      onTap: (widget.onTap != null)
+          ? () => widget.onTap!.call(widget.album)
+          : null,
       behavior: HitTestBehavior.opaque,
       child: Column(
+        crossAxisAlignment: widget.alignTextStart
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
@@ -111,26 +124,28 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
               ),
             ),
           ),
-          Text(
-            widget.album.name,
-            style: TextStyle(
-              fontSize: isTablet ? 24 : 16,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-              overflow: TextOverflow.ellipsis,
-            ).merge(widget.mainTextStyle),
-            maxLines: 1,
-          ),
-          Text(
-            _artistName,
-            style: TextStyle(
-              fontSize: isTablet ? 22 : 14,
-              fontWeight: FontWeight.w400,
-              height: 1.2,
-              color: const Color.fromARGB(130, 255, 255, 255),
-              overflow: TextOverflow.ellipsis,
-            ).merge(widget.subTextStyle),
-          ),
+          if (widget.trailing != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: widget.alignTextStart
+                        ? CrossAxisAlignment.start
+                        : CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _titleText(isTablet: isTablet),
+                      _subtitleWidget(isTablet: isTablet),
+                    ],
+                  ),
+                ),
+                widget.trailing!,
+              ],
+            )
+          else ...[
+            _titleText(isTablet: isTablet),
+            _subtitleWidget(isTablet: isTablet),
+          ],
         ],
       ),
     );
@@ -146,6 +161,29 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
       child: card,
     );
   }
+
+  Widget _titleText({required bool isTablet}) => Text(
+    widget.album.name,
+    style: TextStyle(
+      fontSize: isTablet ? 24 : 16,
+      fontWeight: FontWeight.w500,
+      height: 1.2,
+      overflow: TextOverflow.ellipsis,
+    ).merge(widget.mainTextStyle),
+    maxLines: 1,
+  );
+
+  Widget _subtitleWidget({required bool isTablet}) => Text(
+    _subtitleText,
+    style: TextStyle(
+      fontSize: isTablet ? 22 : 14,
+      fontWeight: FontWeight.w400,
+      height: 1.2,
+      color: const Color.fromARGB(130, 255, 255, 255),
+      overflow: TextOverflow.ellipsis,
+    ).merge(widget.subTextStyle),
+    maxLines: 1,
+  );
 
   Widget _playButton(double size) {
     final isVisible = _isHovered || _isPlayLoading;

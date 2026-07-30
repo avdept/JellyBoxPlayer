@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart' as bd;
 import 'package:flutter/foundation.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -13,12 +14,7 @@ class DownloadService extends ChangeNotifier {
   final _tasks = <String, DownloadTask>{};
   final _bdTasks = <String, bd.DownloadTask>{};
 
-  Future<String> getDownloadDirectory() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final downloadDir = Directory('${dir.path}/music');
-    if (!downloadDir.existsSync()) await downloadDir.create(recursive: true);
-    return downloadDir.path;
-  }
+  Future<String> getDownloadDirectory() => DownloadPaths.init();
 
   Future<DownloadTask> downloadSong(
     ItemDTO song,
@@ -48,18 +44,20 @@ class DownloadService extends ChangeNotifier {
         '${song.name.replaceAll('/', '_')}.${profile.outputContainer}';
     final destination = '${dir.path}/music/$albumSubdir/$fileName';
 
-    final url = Uri.parse(serverUrl).replace(
-      path: 'Audio/${song.id}/universal',
-      queryParameters: {
-        'UserId': userId,
-        'api_key': token,
-        'DeviceId': deviceId,
-        'TranscodingProtocol': 'http',
-        'TranscodingContainer': profile.transcodingContainer,
-        'AudioCodec': profile.transcodingAudioCodec,
-        'Container': profile.directPlayContainers,
-      },
-    ).toString();
+    final url = Uri.parse(serverUrl)
+        .replace(
+          path: 'Audio/${song.id}/universal',
+          queryParameters: {
+            'UserId': userId,
+            'api_key': token,
+            'DeviceId': deviceId,
+            'TranscodingProtocol': 'http',
+            'TranscodingContainer': profile.transcodingContainer,
+            'AudioCodec': profile.transcodingAudioCodec,
+            'Container': profile.directPlayContainers,
+          },
+        )
+        .toString();
 
     final task = DownloadTask(
       id: song.id,
@@ -100,7 +98,9 @@ class DownloadService extends ChangeNotifier {
       bdTask,
       onProgress: (progress) {
         task.progress.value = progress;
-        debugPrint('[Download] "${task.name}": ${(progress * 100).toStringAsFixed(1)}%');
+        debugPrint(
+          '[Download] "${task.name}": ${(progress * 100).toStringAsFixed(1)}%',
+        );
       },
       onStatus: (status) {
         debugPrint('[Download] "${task.name}" status: $status');
@@ -123,7 +123,9 @@ class DownloadService extends ChangeNotifier {
       },
     );
 
-    debugPrint('[Download] "${task.name}" finished with result: ${result.status} (exception: ${result.exception})');
+    debugPrint(
+      '[Download] "${task.name}" finished with result: ${result.status} (exception: ${result.exception})',
+    );
 
     // Ensure final state is set after await returns
     if (result.status == bd.TaskStatus.complete) {
@@ -132,6 +134,48 @@ class DownloadService extends ChangeNotifier {
     } else if (result.status == bd.TaskStatus.failed ||
         result.status == bd.TaskStatus.notFound) {
       task.status.value = DownloadStatus.failed;
+    }
+  }
+
+  Future<File?> downloadAlbumCover(
+    String albumId,
+    String? imageTag,
+    String serverUrl,
+  ) async {
+    if (imageTag == null) return null;
+    await DownloadPaths.init();
+    final path = DownloadPaths.coverPath(albumId);
+    if (path == null) return null;
+
+    final file = File(path);
+    if (file.existsSync() && file.lengthSync() > 0) return file;
+
+    final uri = Uri.parse(serverUrl).replace(
+      path: 'Items/$albumId/Images/Primary',
+      queryParameters: {
+        'fillHeight': '420',
+        'fillWidth': '420',
+        'quality': '96',
+        'tag': imageTag,
+      },
+    );
+
+    final client = HttpClient();
+    try {
+      final response = await (await client.getUrl(uri)).close();
+      if (response.statusCode != HttpStatus.ok) {
+        await response.drain<void>();
+        return null;
+      }
+      await file.parent.create(recursive: true);
+      await response.pipe(file.openWrite());
+      return file;
+    } on Object catch (error) {
+      debugPrint('[Download] cover for $albumId failed: $error');
+      if (file.existsSync()) await file.delete();
+      return null;
+    } finally {
+      client.close(force: true);
     }
   }
 

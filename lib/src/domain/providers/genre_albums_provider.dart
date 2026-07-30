@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class GenreAlbumsNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, String> {
@@ -14,6 +16,7 @@ class GenreAlbumsNotifier
 
   @override
   FutureOr<ItemsPage> build(String arg) async {
+    if (ref.watch(isOfflineProvider)) throw const OfflineException();
     _api = ref.watch(jellyfinApiProvider);
     _libraryId = ref.watch(currentLibraryProvider).valueOrNull?.id;
     return _fetchItems(startPage: const ItemsPage());
@@ -38,7 +41,8 @@ class GenreAlbumsNotifier
   }
 
   Future<void> loadMore() async {
-    final current = state.requireValue;
+    final current = state.valueOrNull;
+    if (current == null) return;
     state = await AsyncValue.guard(
       () => _fetchItems(
         startIndex: current.currentPage * current.totalPerPage,

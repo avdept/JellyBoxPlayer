@@ -32,10 +32,14 @@ void main() {
     return createTestApp(
       providerContainer: createProviderContainer(),
       home: Center(
-        child: DownloadedAlbumView(
-          album: album,
-          onDelete: onDelete,
-          testKeys: keys,
+        child: SizedBox(
+          width: 200,
+          height: 246,
+          child: DownloadedAlbumView(
+            album: album,
+            onDelete: onDelete,
+            testKeys: keys,
+          ),
         ),
       ),
     );

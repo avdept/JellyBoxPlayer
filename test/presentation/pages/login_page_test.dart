@@ -90,7 +90,10 @@ void main() {
           find.widgetWithText(LabeledTextField, 'Password'),
           credentials.pw,
         );
-        await widgetTester.tap(find.widgetWithText(ShadowedButton, 'Sign in'));
+        final signInFinder = find.widgetWithText(ShadowedButton, 'Sign in');
+        await widgetTester.ensureVisible(signInFinder);
+        await widgetTester.pumpAndSettle();
+        await widgetTester.tap(signInFinder);
         await widgetTester.pumpAndSettle();
         verify(() => mockAuthNotifier.login(credentials)).called(1);
       },

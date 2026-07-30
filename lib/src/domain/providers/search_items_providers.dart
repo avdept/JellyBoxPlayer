@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class SearchItemsNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
@@ -14,6 +16,7 @@ class SearchItemsNotifier
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
+    if (ref.watch(isOfflineProvider)) throw const OfflineException();
     _api = ref.watch(jellyfinApiProvider);
 
     final searchQuery = ref.watch(searchProvider)?.trim();

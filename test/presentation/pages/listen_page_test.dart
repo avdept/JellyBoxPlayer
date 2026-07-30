@@ -81,9 +81,9 @@ void main() {
   final mockGenres = ItemsPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (index) => ItemDTO(
         id: faker.datatype.uuid(),
-        name: faker.lorem.word(),
+        name: '${faker.lorem.word()} $index',
         type: 'MusicGenre',
         runTimeTicks: faker.datatype.number(min: 10000),
       ),
