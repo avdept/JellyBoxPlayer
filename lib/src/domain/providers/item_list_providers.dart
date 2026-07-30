@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -9,6 +10,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:string_capitalize/string_capitalize.dart';
 
 class ItemListNotifier
@@ -19,6 +21,7 @@ class ItemListNotifier
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
+    if (ref.watch(isOfflineProvider)) throw const OfflineException();
     _api = ref.watch(jellyfinApiProvider);
     _filterState = ref.watch(filterProvider);
     _libraryId = ref.watch(currentLibraryProvider).valueOrNull?.id;
@@ -88,7 +91,8 @@ class ItemListNotifier
   }
 
   Future<void> loadMore() async {
-    final current = state.requireValue;
+    final current = state.valueOrNull;
+    if (current == null) return;
     state = await AsyncValue.guard(
       () => _fetchItems(
         startIndex: current.currentPage * current.totalPerPage,

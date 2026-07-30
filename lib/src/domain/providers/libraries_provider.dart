@@ -1,16 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>> {
   late JellyfinApi _api;
 
   @override
   FutureOr<List<ItemDTO>> build() async {
+    if (ref.watch(isOfflineProvider)) throw const OfflineException();
     _api = ref.watch(jellyfinApiProvider);
     state = const AsyncLoading();
     try {

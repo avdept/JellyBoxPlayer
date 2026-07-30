@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -7,13 +8,14 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -51,6 +53,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _currentSong = ValueNotifier<MediaItem?>(null);
   List<ItemDTO> songs = [];
   var _isLoading = false;
+  var _isLoadingSongs = true;
+  var _loadFailed = false;
 
   late final ImageService _imageService;
 
@@ -58,23 +62,36 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late DeviceType _device;
 
   Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
+    if (ref.read(isOfflineProvider)) {
+      _showOfflineSnackBar();
+      return;
+    }
     final playlist = await showPlaylistPicker(
       context,
       isDesktop: _device.isDesktop,
     );
     if (playlist != null) {
-      await ref.read(jellyfinApiProvider).addPlaylistItems(
-        playlistId: playlist.id,
-        userId: ref.read(currentUserProvider)!.userId,
-        entryIds: song.id,
-      );
-      _getSongs();
+      await ref
+          .read(jellyfinApiProvider)
+          .addPlaylistItems(
+            playlistId: playlist.id,
+            userId: ref.read(currentUserProvider)!.userId,
+            entryIds: song.id,
+          );
+      unawaited(_getSongs());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Successfully added item to playlist')),
         );
       }
     }
+  }
+
+  void _showOfflineSnackBar() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Not available offline')),
+    );
   }
 
   void _onScroll() {
@@ -103,7 +120,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _imageService = ImageService(
       serverUrl: ref.read(baseUrlProvider.notifier).state!,
     );
-    _getSongs();
+    unawaited(_loadSongs());
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (mounted) {
         _currentSong.value = event.currentSource?.tag as MediaItem?;
@@ -116,20 +133,72 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _scrollController.addListener(_onScroll);
   }
 
-  void _getSongs() {
-    ref
-        .read(jellyfinApiProvider)
-        .getSongs(
-          userId: ref.read(currentUserProvider)!.userId,
-          albumId: widget.album.id,
-        )
-        .then((value) {
-          setState(() {
-            final items = [...value.data.items]
-              ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
-            songs = items;
-          });
+  Future<void> _loadSongs() async {
+    var downloaded = const <DownloadedSongDTO>[];
+    try {
+      downloaded = await ref
+          .read(downloadDatabaseProvider)
+          .getDownloadedSongs(widget.album.id);
+    } on Object catch (error) {
+      debugPrint('[AlbumPage] could not read downloaded songs: $error');
+    }
+    if (!mounted) return;
+
+    if (downloaded.isNotEmpty) {
+      setState(() {
+        songs = _sortedByIndex(downloaded);
+        _isLoadingSongs = false;
+      });
+    }
+
+    await _getSongs(silent: downloaded.isNotEmpty);
+  }
+
+  Future<void> _getSongs({bool silent = true}) async {
+    if (ref.read(isOfflineProvider)) {
+      if (mounted) {
+        setState(() {
+          _isLoadingSongs = false;
+          if (!silent) _loadFailed = true;
         });
+      }
+      return;
+    }
+
+    try {
+      final response = await ref
+          .read(jellyfinApiProvider)
+          .getSongs(
+            userId: ref.read(currentUserProvider)!.userId,
+            albumId: widget.album.id,
+          );
+      if (!mounted) return;
+      setState(() {
+        songs = _sortedByIndex(response.data.items);
+        _isLoadingSongs = false;
+        _loadFailed = false;
+      });
+    } on Object catch (error) {
+      debugPrint('[AlbumPage] could not load songs: $error');
+      unawaited(ref.read(connectivityProvider.notifier).refresh());
+      if (!mounted) return;
+      setState(() {
+        _isLoadingSongs = false;
+        if (!silent) _loadFailed = true;
+      });
+    }
+  }
+
+  List<ItemDTO> _sortedByIndex(List<ItemDTO> items) =>
+      [...items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+
+  Future<void> _retryLoad() async {
+    setState(() {
+      _isLoadingSongs = true;
+      _loadFailed = false;
+    });
+    await ref.read(connectivityProvider.notifier).refresh();
+    if (mounted) await _getSongs(silent: false);
   }
 
   @override
@@ -226,40 +295,57 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                           ),
                         ),
                       ],
-                      SliverList.builder(
-                        itemBuilder: (context, index) => ValueListenableBuilder(
-                          valueListenable: _currentSong,
-                          builder: (context, item, other) {
-                            final song = songs[index];
-                            return PlayerSongView(
-                              song: song,
-                              isPlaying: item != null && song.id == item.id,
-                              onTap: (song) => ref
-                                  .read(playbackProvider.notifier)
-                                  .play(song, songs, widget.album),
-                              position: index + 1,
-                              onLikePressed: (song) async {
-                                final api = ref.read(jellyfinApiProvider);
-                                final callback = song.userData.isFavorite
-                                    ? api.removeFavorite
-                                    : api.saveFavorite;
-                                await callback.call(
-                                  userId: ref.read(currentUserProvider)!.userId,
-                                  itemId: song.id,
-                                );
-                                _getSongs();
-                              },
-                              optionsBuilder: (context) => [
-                                PopupMenuItem(
-                                  onTap: () => _onAddToPlaylistPressed(song),
-                                  child: const Text('Add to playlist'),
-                                ),
-                              ],
-                            );
-                          },
+                      if (songs.isEmpty)
+                        SliverToBoxAdapter(child: _songsPlaceholder())
+                      else
+                        SliverList.builder(
+                          itemBuilder: (context, index) =>
+                              ValueListenableBuilder(
+                                valueListenable: _currentSong,
+                                builder: (context, item, other) {
+                                  final song = songs[index];
+                                  return PlayerSongView(
+                                    song: song,
+                                    isPlaying:
+                                        item != null && song.id == item.id,
+                                    onTap: (song) => ref
+                                        .read(playbackProvider.notifier)
+                                        .play(song, songs, widget.album),
+                                    position: index + 1,
+                                    onLikePressed: (song) async {
+                                      if (ref.read(isOfflineProvider)) {
+                                        _showOfflineSnackBar();
+                                        return;
+                                      }
+                                      final api = ref.read(jellyfinApiProvider);
+                                      final callback = song.userData.isFavorite
+                                          ? api.removeFavorite
+                                          : api.saveFavorite;
+                                      try {
+                                        await callback.call(
+                                          userId: ref
+                                              .read(currentUserProvider)!
+                                              .userId,
+                                          itemId: song.id,
+                                        );
+                                      } on Object {
+                                        _showOfflineSnackBar();
+                                        return;
+                                      }
+                                      unawaited(_getSongs());
+                                    },
+                                    optionsBuilder: (context) => [
+                                      PopupMenuItem(
+                                        onTap: () =>
+                                            _onAddToPlaylistPressed(song),
+                                        child: const Text('Add to playlist'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                          itemCount: songs.length,
                         ),
-                        itemCount: songs.length,
-                      ),
                     ],
                   ),
                 ),
@@ -447,12 +533,38 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     onPressed: () {},
   );
 
+  Widget _songsPlaceholder() {
+    if (_isLoadingSongs) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_loadFailed && !ref.watch(isOfflineProvider)) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: Text('No songs in this album')),
+      );
+    }
+
+    return OfflineNotice(
+      message: ref.watch(isOfflineProvider)
+          ? "You're offline and this album isn't downloaded."
+          : 'Could not load this album.',
+      onRetry: _retryLoad,
+    );
+  }
+
   Widget _downloadAlbumButton() => Consumer(
     builder: (context, ref, child) {
       final isDownloaded = ref
           .watch(isAlbumDownloadedProvider(widget.album))
           .valueOrNull;
       if (isDownloaded == null) return const SizedBox.shrink();
+      if (!isDownloaded && ref.watch(isOfflineProvider)) {
+        return const SizedBox.shrink();
+      }
       return IgnorePointer(
         ignoring: _isLoading,
         child: IconButton(
@@ -460,6 +572,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               ? widget.testKeys?.deleteButton
               : widget.testKeys?.downloadButton,
           onPressed: () async {
+            if (!isDownloaded && songs.isEmpty) {
+              _showOfflineSnackBar();
+              return;
+            }
             setState(() => _isLoading = true);
             if (!isDownloaded) {
               await ref
@@ -567,7 +683,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       ),
     );
   }
-
 }
 
 class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {

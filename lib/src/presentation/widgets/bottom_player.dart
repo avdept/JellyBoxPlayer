@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +13,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
@@ -31,7 +31,8 @@ class BottomPlayer extends ConsumerStatefulWidget {
   ConsumerState<BottomPlayer> createState() => _BottomPlayerState();
 }
 
-class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerProviderStateMixin {
+class _BottomPlayerState extends ConsumerState<BottomPlayer>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _animationController;
   final _imageProvider = ValueNotifier<ImageProvider?>(null);
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
@@ -44,91 +45,98 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   late bool _isMobile;
   late bool _isDesktop;
 
-  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true).push(
-    ModalSheetRoute<void>(
-      builder: (context) => SafeArea(
-        top: false,
-        minimum: EdgeInsets.only(
-          top: _isMobile ? 0 : 20,
-          bottom: _isMobile ? 20 : 60,
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 518),
-          child: ValueListenableBuilder(
-            valueListenable: _dynamicColors,
-            builder: (context, colorScheme, child) => Theme(
-              data: Theme.of(context).copyWith(colorScheme: colorScheme),
-              child: StreamBuilder<SequenceState?>(
-                stream: ref.read(playerProvider).sequenceStateStream,
-                builder: (context, snapshot) {
-                  if (snapshot.data?.sequence.isEmpty ?? true) {
-                    return const SizedBox.shrink();
-                  }
-                  final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-                  return Column(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: Consumer(
-                          builder: (context, ref, child) => AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 250),
-                            child: ref.watch(lyricsShownProvider)
-                                ? const Padding(
-                                    key: ValueKey('lyrics'),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: _sheetHorizontalPadding,
+  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true)
+      .push(
+        ModalSheetRoute<void>(
+          builder: (context) => SafeArea(
+            top: false,
+            minimum: EdgeInsets.only(
+              top: _isMobile ? 0 : 20,
+              bottom: _isMobile ? 20 : 60,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 518),
+              child: ValueListenableBuilder(
+                valueListenable: _dynamicColors,
+                builder: (context, colorScheme, child) => Theme(
+                  data: Theme.of(context).copyWith(colorScheme: colorScheme),
+                  child: StreamBuilder<SequenceState?>(
+                    stream: ref.read(playerProvider).sequenceStateStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.data?.sequence.isEmpty ?? true) {
+                        return const SizedBox.shrink();
+                      }
+                      final currentSong =
+                          snapshot.data?.currentSource?.tag as MediaItem?;
+                      return Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Expanded(
+                            child: Consumer(
+                              builder: (context, ref, child) =>
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 250),
+                                    child: ref.watch(lyricsShownProvider)
+                                        ? const Padding(
+                                            key: ValueKey('lyrics'),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal:
+                                                  _sheetHorizontalPadding,
+                                            ),
+                                            child: LyricsView(),
+                                          )
+                                        : child,
+                                  ),
+                              child: ValueListenableBuilder<bool>(
+                                key: const ValueKey('artwork'),
+                                valueListenable: _isPlaying,
+                                builder: (context, isPlaying, child) =>
+                                    SwipeableArtwork(
+                                      sequenceState: snapshot.data!,
+                                      borderRadius: _isMobile ? 12 : 16,
+                                      artworkBuilder: _artwork,
+                                      horizontalPadding:
+                                          _sheetHorizontalPadding,
+                                      scale: isPlaying ? 1 : 0.82,
                                     ),
-                                    child: LyricsView(),
-                                  )
-                                : child,
-                          ),
-                          child: ValueListenableBuilder<bool>(
-                            key: const ValueKey('artwork'),
-                            valueListenable: _isPlaying,
-                            builder: (context, isPlaying, child) => SwipeableArtwork(
-                              sequenceState: snapshot.data!,
-                              borderRadius: _isMobile ? 12 : 16,
-                              artworkBuilder: _artwork,
-                              horizontalPadding: _sheetHorizontalPadding,
-                              scale: isPlaying ? 1 : 0.82,
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      _sheetDetails(context, currentSong),
-                    ],
-                  );
-                },
+                          _sheetDetails(context, currentSong),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-      containerBuilder: (context, animation, child) => LayoutBuilder(
-        builder: (context, constraints) => ValueListenableBuilder(
-          valueListenable: _dynamicColors,
-          builder: (context, colorScheme, child) => BottomSheet(
-            animationController: _animationController,
-            onClosing: () {},
-            enableDrag: false,
-            showDragHandle: true,
-            dragHandleSize: const Size(113, 10),
-            backgroundColor: colorScheme?.background,
-            constraints: BoxConstraints(
-              maxHeight: constraints.maxHeight * 0.92,
-              minWidth: constraints.maxWidth,
+          containerBuilder: (context, animation, child) => LayoutBuilder(
+            builder: (context, constraints) => ValueListenableBuilder(
+              valueListenable: _dynamicColors,
+              builder: (context, colorScheme, child) => BottomSheet(
+                animationController: _animationController,
+                onClosing: () {},
+                enableDrag: false,
+                showDragHandle: true,
+                dragHandleSize: const Size(113, 10),
+                backgroundColor: colorScheme?.background,
+                constraints: BoxConstraints(
+                  maxHeight: constraints.maxHeight * 0.92,
+                  minWidth: constraints.maxWidth,
+                ),
+                builder: (context) => child!,
+              ),
+              child: child,
             ),
-            builder: (context) => child!,
           ),
-          child: child,
+          bounce: true,
+          expanded: true,
+          barrierLabel: _localizations.modalBarrierDismissLabel,
+          duration: const Duration(milliseconds: 300),
         ),
-      ),
-      bounce: true,
-      expanded: true,
-      barrierLabel: _localizations.modalBarrierDismissLabel,
-      duration: const Duration(milliseconds: 300),
-    ),
-  ).whenComplete(_onSheetClosed);
+      )
+      .whenComplete(_onSheetClosed);
 
   void _onSheetClosed() {
     if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
@@ -161,8 +169,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                   ClickableWidget(
                     onPressed: currentSong?.extras?['artistId'] != null
                         ? () async {
-                            final artistId = currentSong!.extras!['artistId'] as String;
-                            final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+                            final artistId =
+                                currentSong!.extras!['artistId'] as String;
+                            final item = await ref
+                                .read(jellyfinApiProvider)
+                                .getItem(itemId: artistId);
                             if (!context.mounted) return;
                             Navigator.of(context).pop();
                             context.goNamed(
@@ -189,7 +200,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
               builder: (context, ref, _) {
                 final playback = ref.watch(playbackProvider);
                 final index = playback.currentMediaIndex;
-                final isLoaded = index != null && playback.songs.elementAtOrNull(index) != null;
+                final isLoaded =
+                    index != null &&
+                    playback.songs.elementAtOrNull(index) != null;
                 if (!isLoaded) return const SizedBox.shrink();
                 return Row(
                   mainAxisSize: MainAxisSize.min,
@@ -297,7 +310,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       builder: (context, snapshot) {
         final isEmpty = snapshot.data?.sequence.isEmpty ?? true;
         final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-        final image = (currentSong?.artUri != null) ? CachedNetworkImageProvider(currentSong!.artUri.toString()) : const AssetImage(Images.album) as ImageProvider;
+        final image = artworkImage(currentSong?.artUri);
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _imageProvider.value = image,
         );
@@ -315,7 +328,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                   ? const SizedBox(width: double.infinity)
                   : Container(
                       height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-                      color: _theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75),
+                      color: _theme.bottomSheetTheme.backgroundColor
+                          ?.withOpacity(0.75),
                       padding: EdgeInsets.only(bottom: _viewPadding.bottom),
                       child: SimpleListTile(
                         onTap: !_isDesktop ? _onExpand : null,
@@ -343,18 +357,26 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                             if (_isDesktop)
                               AudioQualityBadge(
                                 codec: currentSong?.extras?['codec'] as String?,
-                                bitRate: currentSong?.extras?['bitRate'] as int?,
-                                sampleRate: currentSong?.extras?['sampleRate'] as int?,
+                                bitRate:
+                                    currentSong?.extras?['bitRate'] as int?,
+                                sampleRate:
+                                    currentSong?.extras?['sampleRate'] as int?,
                               ),
                           ],
                         ),
                         subtitle: Align(
                           alignment: Alignment.centerLeft,
                           child: ClickableWidget(
-                            onPressed: (_isDesktop && currentSong?.extras?['artistId'] != null)
+                            onPressed:
+                                (_isDesktop &&
+                                    currentSong?.extras?['artistId'] != null)
                                 ? () async {
-                                    final artistId = currentSong!.extras!['artistId'] as String;
-                                    final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+                                    final artistId =
+                                        currentSong!.extras!['artistId']
+                                            as String;
+                                    final item = await ref
+                                        .read(jellyfinApiProvider)
+                                        .getItem(itemId: artistId);
                                     if (!context.mounted) return;
                                     context.goNamed(
                                       Routes.artist.name,
@@ -392,7 +414,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
                             if (_isDesktop) _lyricsButton(),
-                            if (_isDesktop && NativeRoutePicker.isSupported) _outputRouteButton(size: 44),
+                            if (_isDesktop && NativeRoutePicker.isSupported)
+                              _outputRouteButton(size: 44),
                           ],
                         ),
                         leadingToTitle: 15,
@@ -431,17 +454,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   }
 
   Widget _artwork(MediaItem? currentSong) {
-    final artUri = currentSong?.artUri;
     return SizedBox.expand(
       key: ValueKey(currentSong?.id),
-      child: (artUri == null)
-          ? Image.asset(Images.album, fit: BoxFit.cover)
-          : CachedNetworkImage(
-              imageUrl: artUri.toString(),
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Image.asset(Images.album, fit: BoxFit.cover),
-              errorWidget: (context, url, error) => Image.asset(Images.album, fit: BoxFit.cover),
-            ),
+      child: Image(
+        image: artworkImage(currentSong?.artUri),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            Image.asset(Images.album, fit: BoxFit.cover),
+      ),
     );
   }
 
@@ -449,7 +469,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     builder: (context, ref, _) {
       final playback = ref.watch(playbackProvider);
       final total = playback.totalDuration ?? Duration.zero;
-      final position = playback.position >= Duration.zero ? playback.position : Duration.zero;
+      final position = playback.position >= Duration.zero
+          ? playback.position
+          : Duration.zero;
       final remaining = total - position;
       final style = TextStyle(
         fontSize: _isMobile ? 12 : 13,
@@ -531,11 +553,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
     final playlist = await showPlaylistPicker(context, isDesktop: _isDesktop);
     if (playlist == null) return;
 
-    await ref.read(jellyfinApiProvider).addPlaylistItems(
-      playlistId: playlist.id,
-      userId: ref.read(currentUserProvider)!.userId,
-      entryIds: song.id,
-    );
+    await ref
+        .read(jellyfinApiProvider)
+        .addPlaylistItems(
+          playlistId: playlist.id,
+          userId: ref.read(currentUserProvider)!.userId,
+          entryIds: song.id,
+        );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Successfully added item to playlist')),
@@ -551,7 +575,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   }
 
   Widget _playPauseButton() => PlayPauseButton(
-    onPressed: () => _isPlaying.value ? ref.read(playbackProvider.notifier).pause() : ref.read(playbackProvider.notifier).resume(),
+    onPressed: () => _isPlaying.value
+        ? ref.read(playbackProvider.notifier).pause()
+        : ref.read(playbackProvider.notifier).resume(),
     background: _theme.colorScheme.onPrimary,
     foreground: _theme.scaffoldBackgroundColor,
     stateNotifier: _isPlaying,
@@ -647,12 +673,18 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
   Widget _downloadTrackButton() => Consumer(
     builder: (context, ref, _) {
       final playback = ref.watch(playbackProvider);
-      final currentSong = playback.currentMediaIndex != null ? playback.songs.elementAtOrNull(playback.currentMediaIndex!) : null;
+      final currentSong = playback.currentMediaIndex != null
+          ? playback.songs.elementAtOrNull(playback.currentMediaIndex!)
+          : null;
 
       if (currentSong == null) return const SizedBox.shrink();
 
-      final isDownloaded = ref.watch(isSongDownloadedProvider(currentSong)).valueOrNull;
-      final currentTask = ref.watch(downloadServiceProvider).getTask(currentSong.id);
+      final isDownloaded = ref
+          .watch(isSongDownloadedProvider(currentSong))
+          .valueOrNull;
+      final currentTask = ref
+          .watch(downloadServiceProvider)
+          .getTask(currentSong.id);
 
       if (isDownloaded == true) {
         return Icon(Icons.check_circle, color: Colors.green);
@@ -664,7 +696,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
           builder: (context, status, _) {
             if (!currentTask.isDownloadingNow) {
               return IconButton(
-                onPressed: () => ref.read(downloadManagerProvider.notifier).downloadSong(currentSong),
+                onPressed: () => ref
+                    .read(downloadManagerProvider.notifier)
+                    .downloadSong(currentSong),
                 color: _theme.colorScheme.onPrimary,
                 icon: const Icon(JPlayer.download),
               );
@@ -685,7 +719,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer> with SingleTickerPr
       }
 
       return IconButton(
-        onPressed: () => ref.read(downloadManagerProvider.notifier).downloadSong(currentSong),
+        onPressed: () => ref
+            .read(downloadManagerProvider.notifier)
+            .downloadSong(currentSong),
         color: _theme.colorScheme.onPrimary,
         icon: const Icon(JPlayer.download),
       );

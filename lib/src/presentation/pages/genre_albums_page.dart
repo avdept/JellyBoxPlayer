@@ -7,6 +7,7 @@ import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class GenreAlbumsPage extends ConsumerStatefulWidget {
   const GenreAlbumsPage({required this.genre, super.key});
@@ -103,7 +104,16 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
                   itemCount: list.items.length,
                 ),
                 error: (error, stackTrace) => SliverToBoxAdapter(
-                  child: Text(error.toString()),
+                  child: ref.watch(isOfflineProvider)
+                      ? OfflineNotice(
+                          message:
+                              "You're offline. This genre needs a connection.",
+                          onRetry: () => ref.invalidate(
+                            genreAlbumsProvider(widget.genre.id),
+                          ),
+                          showDownloadsLink: true,
+                        )
+                      : Text(error.toString()),
                 ),
                 loading: () => const SliverToBoxAdapter(
                   child: Center(child: CircularProgressIndicator()),

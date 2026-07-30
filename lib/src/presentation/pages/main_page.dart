@@ -10,7 +10,9 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
+
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({
     required this.shell,
@@ -28,11 +30,11 @@ class _MainPageState extends ConsumerState<MainPage> {
   late DeviceType _device;
 
   Set<(IconData, String)> get _menuItems => {
-        (JPlayer.play_circle_outlined, 'Listen'),
-        (JPlayer.search, 'Search'),
-        (JPlayer.settings, 'Settings'),
-        (JPlayer.download, 'Downloads'),
-      };
+    (JPlayer.play_circle_outlined, 'Listen'),
+    (JPlayer.search, 'Search'),
+    (JPlayer.settings, 'Settings'),
+    (JPlayer.download, 'Downloads'),
+  };
 
   void _navigateToItem(int index) {
     ref.read(lyricsVisibleProvider.notifier).state = false;
@@ -52,6 +54,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   @override
   Widget build(BuildContext context) {
     final currentIndex = widget.shell.currentIndex;
+    final isOffline = ref.watch(isOfflineProvider);
 
     return Scaffold(
       body: Stack(
@@ -82,8 +85,10 @@ class _MainPageState extends ConsumerState<MainPage> {
                       UpdatifyTrigger(
                         projectId: '0ebf56de-26b5-4107-bc87-1aa89b328924',
                         borderRadius: BorderRadius.circular(8),
-                        width: _device.isDesktop ? MediaQuery.sizeOf(context).width / 2 : double.infinity,
-                      )
+                        width: _device.isDesktop
+                            ? MediaQuery.sizeOf(context).width / 2
+                            : double.infinity,
+                      ),
                     ],
                   ),
                   trailing: TextButton.icon(
@@ -110,13 +115,18 @@ class _MainPageState extends ConsumerState<MainPage> {
               Expanded(
                 child: Column(
                   children: [
+                    if (isOffline) const OfflineBanner(),
                     Expanded(
-                      child: Stack(
-                        children: [
-                          widget.shell,
-                          if (_device.isDesktop)
-                            const Positioned.fill(child: LyricsOverlay()),
-                        ],
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeTop: isOffline,
+                        child: Stack(
+                          children: [
+                            widget.shell,
+                            if (_device.isDesktop)
+                              const Positioned.fill(child: LyricsOverlay()),
+                          ],
+                        ),
                       ),
                     ),
                     const BottomPlayer(),

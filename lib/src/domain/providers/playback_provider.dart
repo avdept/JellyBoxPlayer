@@ -2,10 +2,13 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
+import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -15,6 +18,7 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
@@ -30,31 +34,31 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           if (currentIndex != null) {
             final currentSong = state.songs.elementAtOrNull(currentIndex);
             if (currentSong != null) {
-              _ref
-                  .read(jellyfinApiProvider)
-                  .playbackStopped(
-                    values: PlaystateData(
-                      playSessionId: _playSessionId,
-                      itemId: currentSong.id,
-                      item: currentSong,
-                      mediaSourceId: state.album?.id,
-                    ),
-                  );
+              _report(
+                (api) => api.playbackStopped(
+                  values: PlaystateData(
+                    playSessionId: _playSessionId,
+                    itemId: currentSong.id,
+                    item: currentSong,
+                    mediaSourceId: state.album?.id,
+                  ),
+                ),
+              );
             }
           }
           if (nextIndex != null) {
             final nextSong = state.songs.elementAtOrNull(nextIndex);
             if (nextSong != null) {
-              _ref
-                  .read(jellyfinApiProvider)
-                  .playbackStarted(
-                    values: PlaystateData(
-                      playSessionId: _playSessionId,
-                      itemId: nextSong.id,
-                      item: nextSong,
-                      mediaSourceId: state.album?.id,
-                    ),
-                  );
+              _report(
+                (api) => api.playbackStarted(
+                  values: PlaystateData(
+                    playSessionId: _playSessionId,
+                    itemId: nextSong.id,
+                    item: nextSong,
+                    mediaSourceId: state.album?.id,
+                  ),
+                ),
+              );
               final album = state.album;
               if (album != null) {
                 unawaited(_saveToStorage(songId: nextSong.id, positionMs: 0));
@@ -111,6 +115,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _playSessionId = '';
   DateTime? _lastPositionSave;
 
+  void _report(Future<void> Function(JellyfinApi api) call) {
+    if (_ref.read(isOfflineProvider)) return;
+    try {
+      call(_ref.read(jellyfinApiProvider)).ignore();
+    } on Object catch (error) {
+      print('Playback report failed: $error');
+    }
+  }
+
   Future<void> play(
     ItemDTO playSong,
     List<ItemDTO> songs,
@@ -119,122 +132,49 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool autoPlay = true,
   }) async {
     try {
-      final audioSources = await Future.wait(
-        songs.map((song) async {
-          // Check if song is downloaded*
-          final isDownloaded = await _ref
-              .read(downloadManagerProvider.notifier)
-              .isSongDownloaded(song.id);
-          final downloadedPath = isDownloaded
-              ? await _ref
-                    .read(downloadDatabaseProvider)
-                    .getDownloadedSongPath(song.id)
-              : null;
-          final mediaSource = song.mediaSources.firstOrNull;
-          final audioStream = mediaSource?.mediaStreams
-              .where((s) => s.type == 'Audio')
-              .firstOrNull;
-
-          // Resolve platform-correct direct-play/transcode params so codecs the
-          // player can't decode (notably ALAC on Android's ExoPlayer) transcode
-          // to a lossless FLAC stream instead of silently failing. See
-          // [AudioStreamProfile].
-          final streamProfile = AudioStreamProfile.forSource(
-            sourceContainer: mediaSource?.container,
-            sourceCodec: audioStream?.codec,
-          );
-
-          final audioSourceUri = (downloadedPath != null)
-              ? Uri.file(downloadedPath)
-              : Uri.parse(_ref.read(baseUrlProvider)!).replace(
-                  path: 'Audio/${song.id}/universal',
-                  queryParameters: {
-                    'UserId': _ref.read(currentUserProvider)!.userId,
-                    'api_key': _ref.read(currentUserProvider)!.token,
-                    'DeviceId': deviceId,
-                    'TranscodingProtocol': 'http',
-                    'TranscodingContainer': streamProfile.transcodingContainer,
-                    'AudioCodec': streamProfile.transcodingAudioCodec,
-                    'Container': streamProfile.directPlayContainers,
-                  },
-                );
-          final songImageTag = song.imageTags['Primary'];
-          final albumImageTag = album.imageTags['Primary'];
-          final extras = <String, dynamic>{
-            if (audioStream?.codec != null) 'codec': audioStream!.codec,
-            if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
-            if (audioStream?.sampleRate != null)
-              'sampleRate': audioStream!.sampleRate,
-            if (song.albumArtists.isNotEmpty)
-              'artistId': song.albumArtists.first.id
-            else if (album.albumArtists.isNotEmpty)
-              'artistId': album.albumArtists.first.id,
-          };
-
-          final imageService = _ref.read(imageServiceProvider);
-          Uri? artUri;
-          if (songImageTag != null) {
-            artUri = Uri.parse(
-              imageService.imagePath(tagId: songImageTag, id: song.id),
-            );
-          } else if (song.albumId != null &&
-              song.albumPrimaryImageTag != null) {
-            artUri = Uri.parse(
-              imageService.imagePath(
-                tagId: song.albumPrimaryImageTag!,
-                id: song.albumId!,
-              ),
-            );
-          } else if (albumImageTag != null) {
-            artUri = Uri.parse(
-              imageService.imagePath(tagId: albumImageTag, id: album.id),
-            );
-          }
-
-          // If downloaded, use local file, otherwise stream from server*
-          final audioSource = AudioSource.uri(
-            audioSourceUri,
-            tag: MediaItem(
-              id: song.id,
-              album: song.albumName,
-              artist: song.albumArtist ?? album.albumArtist,
-              duration: Duration(
-                milliseconds: (song.runTimeTicks / 10000).ceil(),
-              ),
-              title: song.name,
-              extras: extras,
-              artUri: artUri,
-            ),
-          );
-
-          return audioSource;
-        }),
+      final resolved = await Future.wait(
+        songs.map((song) => _resolveSource(song, album)),
       );
 
+      final playableSongs = <ItemDTO>[];
+      final audioSources = <AudioSource>[];
+      for (final entry in resolved) {
+        if (entry == null) continue;
+        playableSongs.add(entry.song);
+        audioSources.add(entry.source);
+      }
+
+      if (audioSources.isEmpty) {
+        debugPrint('[Playback] nothing in this queue can be played offline');
+        state = state.copyWith(status: PlaybackStatus.error);
+        return;
+      }
+
       _playSessionId = DateTime.now().toIso8601String(); // Any unique ID
-      final startIndex = songs.indexWhere((s) => s.id == playSong.id);
+      final startIndex = playableSongs.indexWhere((s) => s.id == playSong.id);
+      final effectiveIndex = startIndex >= 0 ? startIndex : 0;
       final startPosition = initialPosition ?? Duration.zero;
-      await _audioPlayer.setAudioSources(
+
+      await _setAudioSources(
         audioSources,
-        initialIndex: startIndex >= 0 ? startIndex : 0,
+        initialIndex: effectiveIndex,
         initialPosition: startPosition,
-        preload: true,
       );
 
       state = state.copyWith(
-        songs: songs,
+        songs: playableSongs,
         album: album,
         status: autoPlay ? PlaybackStatus.playing : PlaybackStatus.paused,
         position: startPosition,
         totalDuration: _audioPlayer.duration,
-        currentMediaIndex: startIndex >= 0 ? startIndex : 0,
+        currentMediaIndex: effectiveIndex,
       );
 
       unawaited(
         _saveToStorage(
-          songId: playSong.id,
+          songId: playableSongs[effectiveIndex].id,
           positionMs: startPosition.inMilliseconds,
-          songs: songs,
+          songs: playableSongs,
           album: album,
         ),
       );
@@ -252,6 +192,132 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       } else {
         state = state.copyWith(status: PlaybackStatus.error);
       }
+    }
+  }
+
+  Future<({ItemDTO song, AudioSource source})?> _resolveSource(
+    ItemDTO song,
+    ItemDTO album,
+  ) async {
+    final isDownloaded = await _ref
+        .read(downloadManagerProvider.notifier)
+        .isSongDownloaded(song.id);
+    final downloadedPath = isDownloaded
+        ? await _ref
+              .read(downloadDatabaseProvider)
+              .getDownloadedSongPath(song.id)
+        : null;
+
+    if (downloadedPath == null && _ref.read(isOfflineProvider)) return null;
+
+    final mediaSource = song.mediaSources.firstOrNull;
+    final audioStream = mediaSource?.mediaStreams
+        .where((s) => s.type == 'Audio')
+        .firstOrNull;
+
+    // Resolve platform-correct direct-play/transcode params so codecs the
+    // player can't decode (notably ALAC on Android's ExoPlayer) transcode
+    // to a lossless FLAC stream instead of silently failing. See
+    // [AudioStreamProfile].
+    final streamProfile = AudioStreamProfile.forSource(
+      sourceContainer: mediaSource?.container,
+      sourceCodec: audioStream?.codec,
+    );
+
+    final audioSourceUri = (downloadedPath != null)
+        ? Uri.file(downloadedPath)
+        : Uri.parse(_ref.read(baseUrlProvider)!).replace(
+            path: 'Audio/${song.id}/universal',
+            queryParameters: {
+              'UserId': _ref.read(currentUserProvider)!.userId,
+              'api_key': _ref.read(currentUserProvider)!.token,
+              'DeviceId': deviceId,
+              'TranscodingProtocol': 'http',
+              'TranscodingContainer': streamProfile.transcodingContainer,
+              'AudioCodec': streamProfile.transcodingAudioCodec,
+              'Container': streamProfile.directPlayContainers,
+            },
+          );
+
+    final extras = <String, dynamic>{
+      if (audioStream?.codec != null) 'codec': audioStream!.codec,
+      if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
+      if (audioStream?.sampleRate != null)
+        'sampleRate': audioStream!.sampleRate,
+      if (song.albumArtists.isNotEmpty)
+        'artistId': song.albumArtists.first.id
+      else if (album.albumArtists.isNotEmpty)
+        'artistId': album.albumArtists.first.id,
+    };
+
+    return (
+      song: song,
+      source: AudioSource.uri(
+        audioSourceUri,
+        tag: MediaItem(
+          id: song.id,
+          album: song.albumName,
+          artist: song.albumArtist ?? album.albumArtist,
+          duration: Duration(milliseconds: (song.runTimeTicks / 10000).ceil()),
+          title: song.name,
+          extras: extras,
+          artUri: _artUri(song, album, isDownloaded: downloadedPath != null),
+        ),
+      ),
+    );
+  }
+
+  Uri? _artUri(ItemDTO song, ItemDTO album, {required bool isDownloaded}) {
+    final localCover =
+        DownloadPaths.coverFile(song.albumId) ??
+        DownloadPaths.coverFile(album.id);
+    if (isDownloaded && localCover != null) return localCover.uri;
+
+    final imageService = _ref.read(imageServiceProvider);
+    final songImageTag = song.imageTags['Primary'];
+    if (songImageTag != null) {
+      return Uri.parse(
+        imageService.imagePath(tagId: songImageTag, id: song.id),
+      );
+    }
+    if (song.albumId != null && song.albumPrimaryImageTag != null) {
+      return Uri.parse(
+        imageService.imagePath(
+          tagId: song.albumPrimaryImageTag!,
+          id: song.albumId!,
+        ),
+      );
+    }
+    final albumImageTag = album.imageTags['Primary'];
+    if (albumImageTag != null) {
+      return Uri.parse(
+        imageService.imagePath(tagId: albumImageTag, id: album.id),
+      );
+    }
+    return null;
+  }
+
+  Future<void> _setAudioSources(
+    List<AudioSource> sources, {
+    required int initialIndex,
+    required Duration initialPosition,
+  }) async {
+    try {
+      await _audioPlayer.setAudioSources(
+        sources,
+        initialIndex: initialIndex,
+        initialPosition: initialPosition,
+        preload: true,
+      );
+    } on Object catch (error) {
+      debugPrint('[Playback] retrying after failed load: $error');
+      await _audioPlayer.stop();
+      await _audioPlayer.setAudioSources(
+        sources,
+        initialIndex: initialIndex,
+        initialPosition: initialPosition,
+        preload: true,
+      );
     }
   }
 

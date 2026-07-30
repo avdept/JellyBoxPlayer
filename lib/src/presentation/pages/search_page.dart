@@ -11,6 +11,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -110,6 +111,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         SliverToBoxAdapter(
           child: _pageViewToggle(),
         ),
+        if (ref.watch(isOfflineProvider))
+          const SliverToBoxAdapter(
+            child: OfflineNotice(
+              message: "You're offline, so search needs a connection.",
+              showDownloadsLink: true,
+            ),
+          ),
         SliverToBoxAdapter(
           child: ValueListenableBuilder(
             valueListenable: _currentView,

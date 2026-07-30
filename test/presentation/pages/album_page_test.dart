@@ -7,9 +7,11 @@ import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/presentation/pages/album_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -22,6 +24,8 @@ class MockHttpResponse<T> extends Mock implements HttpResponse<T> {}
 
 class MockUser extends Mock implements User {}
 
+class MockDownloadDatabase extends Mock implements DownloadDatabase {}
+
 class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>>
     with Mock
     implements DownloadManagerNotifier {}
@@ -33,6 +37,7 @@ void main() {
   late HttpResponse<ItemsWrapper> mockSongsResponse;
   late User mockUser;
   late DownloadManagerNotifier mockDownloadManagerNotifier;
+  late DownloadDatabase mockDownloadDatabase;
 
   final faker = Faker.instance;
   final mockBaseUrl = faker.internet.url();
@@ -65,6 +70,22 @@ void main() {
       ),
     ),
   );
+  final mockDownloadedSongs = List.generate(
+    3,
+    (index) => DownloadedSongDTO.fromSong(
+      ItemDTO(
+        id: faker.datatype.uuid(),
+        name: faker.lorem.sentence(),
+        type: 'Song',
+        indexNumber: index + 1,
+        runTimeTicks: faker.datatype.number(min: 10000),
+        albumArtist: faker.name.fullName(),
+        albumId: mockAlbum.id,
+      ),
+      filePath: '/tmp/song$index.flac',
+      sizeInBytes: faker.datatype.number(min: 1000),
+    ),
+  );
   final mockUserId = faker.datatype.uuid();
   const keys = AlbumPageKeys(
     downloadButton: Key('downloadButton'),
@@ -75,6 +96,7 @@ void main() {
   Widget getWidgetUT({
     required ItemDTO album,
     bool isAlbumDownloaded = false,
+    bool isOffline = false,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(
@@ -85,7 +107,9 @@ void main() {
           downloadManagerProvider.overrideWith(
             () => mockDownloadManagerNotifier,
           ),
+          downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
           isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
+          isOfflineProvider.overrideWithValue(isOffline),
         ],
       ),
       home: AlbumPage(album: album, testKeys: keys),
@@ -113,6 +137,10 @@ void main() {
     mockSongsResponse = MockHttpResponse();
     mockUser = MockUser();
     mockDownloadManagerNotifier = MockDownloadManagerNotifier();
+    mockDownloadDatabase = MockDownloadDatabase();
+    when(
+      () => mockDownloadDatabase.getDownloadedSongs(any()),
+    ).thenAnswer((_) async => []);
     when(
       () => mockGetSongs(albumId: mockAlbum.id),
     ).thenAnswer((_) async => mockSongsResponse);
@@ -208,6 +236,47 @@ void main() {
         verify(
           () => mockDownloadManagerNotifier.deleteAlbum(mockAlbum.id),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      '- offline: lists downloaded songs without calling the server',
+      (widgetTester) async {
+        when(
+          () => mockDownloadDatabase.getDownloadedSongs(mockAlbum.id),
+        ).thenAnswer((_) async => mockDownloadedSongs);
+        await widgetTester.pumpWidget(
+          getWidgetUT(
+            album: mockAlbum,
+            isAlbumDownloaded: true,
+            isOffline: true,
+          ),
+        );
+        await widgetTester.pump(Duration.zero);
+
+        expect(
+          find.descendant(
+            of: find.byType(PlayerSongView),
+            matching: find.text(mockDownloadedSongs.first.name),
+          ),
+          findsOneWidget,
+        );
+        verifyNever(() => mockGetSongs(albumId: mockAlbum.id));
+      },
+    );
+
+    testWidgets(
+      '- offline: shows an offline notice when nothing is downloaded',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(
+          getWidgetUT(album: mockAlbum, isOffline: true),
+        );
+        await widgetTester.pump(Duration.zero);
+
+        expect(find.byType(OfflineNotice), findsOneWidget);
+        expect(find.byType(PlayerSongView), findsNothing);
+        expect(find.byKey(keys.downloadButton), findsNothing);
+        verifyNever(() => mockGetSongs(albumId: mockAlbum.id));
       },
     );
   });

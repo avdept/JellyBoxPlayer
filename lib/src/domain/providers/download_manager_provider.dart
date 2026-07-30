@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -50,6 +51,15 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
         // Add to database
         await _database.insertDownloadedSong(song, file: file);
 
+        final albumId = song.albumId;
+        if (albumId != null) {
+          await _downloadService.downloadAlbumCover(
+            albumId,
+            song.albumPrimaryImageTag ?? song.imageTags['Primary'],
+            serverUrl,
+          );
+        }
+
         // Refresh state
         ref.invalidateSelf();
       }
@@ -90,6 +100,11 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       // Add album to database
       if (files.isNotEmpty) {
         await _database.insertDownloadedAlbum(album, files: files);
+        await _downloadService.downloadAlbumCover(
+          album.id,
+          album.imageTags['Primary'],
+          serverUrl,
+        );
       }
 
       // Refresh state
@@ -143,6 +158,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
   Future<void> deleteAlbum(String albumId) async {
     try {
       await _database.deleteDownloadedAlbum(albumId);
+      await DownloadPaths.deleteAlbumDirectory(albumId);
 
       // Refresh state
       ref.invalidateSelf();

@@ -31,6 +31,29 @@ class DownloadsPage extends StatelessWidget {
     extra: {'album': album},
   );
 
+  Future<void> _onPlayPressed(
+    BuildContext context,
+    WidgetRef ref,
+    ItemDTO album,
+  ) async {
+    try {
+      final result = await ref
+          .read(setPlaybackProvider.notifier)
+          .playAlbum(album);
+      if (result == SetPlaybackResult.empty && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nothing to play in "${album.name}"')),
+        );
+      }
+    } on Object catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start playing "${album.name}"')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
@@ -78,63 +101,58 @@ class DownloadsPage extends StatelessWidget {
       contentPadding: EdgeInsets.only(
         left: device.isMobile ? 16 : 30,
         right: device.isMobile ? 16 : 30,
-        bottom: device.isMobile ? 16 : 24,
+        bottom: 30,
       ),
       slivers: [
-        SliverPadding(
-          padding: EdgeInsets.symmetric(
-            horizontal: device.isMobile ? 16 : 30,
-          ),
-          sliver: Consumer(
-            builder: (context, ref, child) {
-              return ref
-                  .watch(downloadedAlbumsProvider)
-                  .when(
-                    data: (albums) {
-                      if (albums.isEmpty) {
-                        return const SliverToBoxAdapter(
-                          child: Center(
-                            child: Text('No downloaded albums yet'),
-                          ),
-                        );
-                      }
-
-                      return SliverGrid.builder(
-                        gridDelegate: device.isDesktop
-                            ? const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 245,
-                                mainAxisSpacing: 24,
-                                crossAxisSpacing: 30,
-                                childAspectRatio: 245 / 297.3,
-                              )
-                            : SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 1,
-                                mainAxisSpacing: device.isMobile ? 12 : 24,
-                                mainAxisExtent: device.isMobile ? 48 : 70,
-                              ),
-                        itemBuilder: (context, index) => DownloadedAlbumView(
-                          album: albums[index],
-                          onTap: (album) => _onAlbumTap(context, album),
-                          onDelete: (album) => ref
-                              .read(downloadManagerProvider.notifier)
-                              .deleteAlbum(album.id),
-                        ),
-                        itemCount: albums.length,
-                      );
-                    },
-                    error: (error, stackTrace) {
-                      return SliverToBoxAdapter(
-                        child: Center(child: Text('Error: $error')),
-                      );
-                    },
-                    loading: () {
+        Consumer(
+          builder: (context, ref, child) {
+            return ref
+                .watch(downloadedAlbumsProvider)
+                .when(
+                  data: (albums) {
+                    if (albums.isEmpty) {
                       return const SliverToBoxAdapter(
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(
+                          child: Text('No downloaded albums yet'),
+                        ),
                       );
-                    },
-                  );
-            },
-          ),
+                    }
+
+                    return SliverGrid.builder(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: device.isTablet ? 360 : 200,
+                        mainAxisSpacing: device.isMobile ? 15 : 24,
+                        crossAxisSpacing: device.isMobile
+                            ? 8
+                            : (device.isTablet ? 56 : 28),
+                        childAspectRatio: device.isTablet
+                            ? 360 / 413
+                            : 175 / 215.7,
+                      ),
+                      itemBuilder: (context, index) => DownloadedAlbumView(
+                        album: albums[index],
+                        onTap: (album) => _onAlbumTap(context, album),
+                        onPlayPressed: (album) =>
+                            _onPlayPressed(context, ref, album),
+                        onDelete: (album) => ref
+                            .read(downloadManagerProvider.notifier)
+                            .deleteAlbum(album.id),
+                      ),
+                      itemCount: albums.length,
+                    );
+                  },
+                  error: (error, stackTrace) {
+                    return SliverToBoxAdapter(
+                      child: Center(child: Text('Error: $error')),
+                    );
+                  },
+                  loading: () {
+                    return const SliverToBoxAdapter(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                );
+          },
         ),
       ],
     );
