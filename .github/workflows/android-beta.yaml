@@ -12,22 +12,31 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    env:
+      PACKAGE_NAME: ${{ vars.PACKAGE_NAME }}
+      PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+      PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS }}
+      ANDROID_KEYSTORE_ENV_VAR: ${{ secrets.ANDROID_KEYSTORE_ENV_VAR }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Extract version from tag
         if: startsWith(github.ref, 'refs/tags/v')
-        id: version
         run: |
           TAG="${GITHUB_REF#refs/tags/v}"
-          VERSION="${TAG%+*}"
           BUILD_NUMBER="${TAG#*+}"
           if [ "$BUILD_NUMBER" = "$TAG" ]; then
             BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "BUILD_VERSION=${TAG%+*}" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -38,12 +47,21 @@ jobs:
         with:
           channel: stable
 
-      - name: Build APK
-        run: |
-          flutter pub get
-          flutter build apk --release \
-            --build-name=${{ steps.version.outputs.version || '1.0.0' }} \
-            --build-number=${{ steps.version.outputs.build_number || github.run_number }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+          working-directory: android
+
+      - name: Build signed artifacts and upload to Play
+        run: bundle exec fastlane android beta
+
+      - name: Archive app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
 
       - name: Upload APK to release
         if: startsWith(github.ref, 'refs/tags/v')

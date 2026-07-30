@@ -15,40 +15,69 @@
 
 default_platform(:android)
 
+UPLOAD_KEYSTORE = "upload_key.jks"
+AAB_PATH = "../../build/app/outputs/bundle/release/app-release.aab"
+
+# Rebuilds android/key.properties from CI secrets so the release signingConfig in
+# app/build.gradle picks up the upload key. Locally it leaves an existing
+# key.properties alone.
 def create_upload_key
-  upload_key = "upload_key.jks"
-  if !File.exist?(upload_key)
-      Dir.chdir "../" do
-        sh "printf '%s' \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" | base64 -d > #{upload_key}"
-        sh "echo \"storeFile=../#{upload_key}\" > key.properties"
-        sh "echo \"storePassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
-        sh "echo \"keyPassword=#{ENV["ANDROID_KEYSTORE_PASSWORD"]}\" >> key.properties"
-        sh "echo \"keyAlias=#{ENV["ANDROID_KEY_ALIAS"]}\" >> key.properties"
-      end
+  if ENV["ANDROID_KEYSTORE_ENV_VAR"].to_s.empty?
+    UI.user_error!("ANDROID_KEYSTORE_ENV_VAR is unset and android/key.properties does not exist") unless File.exist?("../key.properties")
+    UI.message("Signing with the existing android/key.properties")
+    return
+  end
+
+  Dir.chdir("../") do
+    sh("printf '%s' \"#{ENV['ANDROID_KEYSTORE_ENV_VAR']}\" | base64 -d > #{UPLOAD_KEYSTORE}") unless File.exist?(UPLOAD_KEYSTORE)
+
+    File.write("key.properties", <<~PROPERTIES)
+      storeFile=../#{UPLOAD_KEYSTORE}
+      storePassword=#{ENV['ANDROID_KEYSTORE_PASSWORD']}
+      keyPassword=#{ENV['ANDROID_KEYSTORE_PASSWORD']}
+      keyAlias=#{ENV['ANDROID_KEY_ALIAS']}
+    PROPERTIES
+  end
+end
+
+def version_args
+  args = []
+  args << "--build-name=#{ENV['BUILD_VERSION']}" unless ENV["BUILD_VERSION"].to_s.empty?
+  args << "--build-number=#{ENV['BUILD_NUMBER']}" unless ENV["BUILD_NUMBER"].to_s.empty?
+  args.join(" ")
+end
+
+def build_release_artifacts
+  create_upload_key
+
+  Dir.chdir("../../") do
+    sh("flutter pub get")
+    sh("flutter build appbundle --release #{version_args}")
+    sh("flutter build apk --release #{version_args}")
   end
 end
 
 platform :android do
-  desc "Build and upload Android app to Crashlytics Beta"
-
+  desc "Build a signed app bundle and APK, then ship the bundle to a Play track"
   lane :beta do
-    sh("flutter pub get")
-    create_upload_key
-    flutter_versioner(
-        pubspec_file_path: "../pubspec.yaml",
-        value: ENV["BUILD_NUMBER"],
-        version_component: "version_code"
-    )
-    if ENV["BUILD_VERSION"]
-      flutter_versioner(
-          pubspec_file_path: "../pubspec.yaml",
-          value: ENV["BUILD_VERSION"],
-          version_component: "version_name"
-      )
-    end
-    sh("flutter build apk --release")
+    build_release_artifacts
 
-    crashlytics
-    puts "Android build #{lane_context[SharedValues::BUILD_NUMBER]} was uploaded to Crashlytics Beta"
+    upload_to_play_store(
+      package_name: ENV["PACKAGE_NAME"] || "com.prodigytech.jellybox",
+      json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
+      aab: AAB_PATH,
+      track: ENV["PLAY_TRACK"] || "internal",
+      release_status: ENV["PLAY_RELEASE_STATUS"] || "draft",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build a signed app bundle and APK without uploading anywhere"
+  lane :build_only do
+    build_release_artifacts
   end
 end
