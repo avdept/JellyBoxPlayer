@@ -71,7 +71,11 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
 OutputDir={#AppOutputDir}
-OutputBaseFilename=jellybox-setup-{#MyAppVersion}
+; Deliberately version-less so the release asset keeps a stable name and
+; https://github.com/avdept/JellyBoxPlayer/releases/latest/download/windows-setup.exe
+; can be linked directly. The version still ships inside the installer via
+; AppVersion / VersionInfoVersion above.
+OutputBaseFilename=windows-setup
 SetupIconFile=..\runner\resources\app_icon.ico
 Compression=lzma2/max
 SolidCompression=yes

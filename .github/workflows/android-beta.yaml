@@ -2,6 +2,11 @@ name: Android Release
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_to_latest:
+        description: 'Attach the build to the latest existing release'
+        type: boolean
+        default: false
   push:
     tags:
       - 'v*'
@@ -63,6 +68,7 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
+      # Tag push: create (or update) the release for that tag.
       - name: Upload universal APK to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -71,3 +77,29 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Manual run with the checkbox ticked: attach to whatever release GitHub
+      # currently marks as "Latest". Uses `gh release upload` rather than the
+      # release action so only assets are touched — the existing release's
+      # title and notes are left exactly as they are.
+      - name: Attach to latest release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_latest
+        # This job defaults to the android/ directory; the APK path is
+        # workspace-relative, matching the release step above.
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # `|| true` because `set -e` would otherwise abort here when the repo
+          # has no published release, skipping the explanatory error below.
+          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)"
+          if [ -z "$TAG" ]; then
+            echo "::error::No published release found to attach to. Push a v* tag first, or publish a release manually."
+            exit 1
+          fi
+          echo "Attaching assets to existing release $TAG"
+          gh release upload "$TAG" \
+            "build/app/outputs/universal/jellybox-universal.apk" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "::notice::Uploaded jellybox-universal.apk to release $TAG"
