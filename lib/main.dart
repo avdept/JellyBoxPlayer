@@ -2,11 +2,13 @@ import 'dart:io' show Platform;
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
+import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -57,6 +59,19 @@ Future<void> main() async {
     );
   }
 
+  if (Platform.isIOS) {
+    final session = await AudioSession.instance;
+    await session.configure(
+      const AudioSessionConfiguration.music().copyWith(
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.longFormAudio,
+      ),
+    );
+  }
+
+  final container = ProviderContainer();
+  if (Platform.isIOS) CarPlayHandler.initialize(container);
+
   final prefs = await SharedPreferences.getInstance();
   final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
   final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
@@ -98,8 +113,9 @@ Future<void> main() async {
         ..tracesSampleRate = 1.0;
     },
     appRunner: () => runApp(
-      const ProviderScope(
-        child: App(screenFactory: ScreenFactory()),
+      UncontrolledProviderScope(
+        container: container,
+        child: const App(screenFactory: ScreenFactory()),
       ),
     ),
   );

@@ -62,6 +62,12 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     MediaKeyHandler.initialize(ref);
+    final auth = ref.read(authProvider);
+    _authState.value = auth.hasError ? false : auth.valueOrNull;
+    _selectedLibrary = ref.read(currentLibraryProvider).valueOrNull;
+    if (_selectedLibrary != null) {
+      unawaited(ref.read(playbackProvider.notifier).tryRestore());
+    }
     initRoutes();
     WidgetsBinding.instance.addObserver(this);
   }
