@@ -21,7 +21,7 @@ import 'package:plausible/plausible.dart';
 late String deviceId;
 
 Future<void> main() async {
-  if (Platform.isLinux) {
+  if (Platform.isLinux || Platform.isWindows) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
@@ -86,8 +86,8 @@ Future<void> main() async {
     );
   }
 
-  if (Platform.isLinux) {
-    JustAudioMediaKit.ensureInitialized(windows: false);
+  if (Platform.isLinux || Platform.isWindows) {
+    JustAudioMediaKit.ensureInitialized();
   }
 
   await SentryFlutter.init(
