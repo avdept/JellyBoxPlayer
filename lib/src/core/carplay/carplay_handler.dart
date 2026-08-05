@@ -1,0 +1,385 @@
+import 'dart:async' show unawaited;
+import 'dart:io' show Platform;
+
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/providers/search_provider.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:string_capitalize/string_capitalize.dart';
+
+class CarPlayHandler {
+  static const _channel = MethodChannel('com.prodigytech.jellybox/carplay');
+  static final _items = <String, ItemDTO>{};
+  static var _songs = <ItemDTO>[];
+  static String? _lastSetId;
+  static String? _lastSongId;
+  static bool? _lastPlaying;
+
+  static void initialize(ProviderContainer ref) {
+    if (!Platform.isIOS) return;
+
+    _channel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'getHome':
+          return _home(ref);
+        case 'getList':
+          return _list(ref, (call.arguments as Map).cast<String, dynamic>());
+        case 'getDownloads':
+          return {'items': await _downloads(ref)};
+        case 'search':
+          return _search(ref, (call.arguments as Map).cast<String, dynamic>());
+        case 'getQueue':
+          return _queue(ref);
+        case 'playQueueItem':
+          final index =
+              (call.arguments as Map).cast<String, dynamic>()['index'] as int?;
+          if (index != null) {
+            final player = ref.read(playerProvider);
+            await player.seek(Duration.zero, index: index);
+            unawaited(player.play());
+          }
+          return null;
+        case 'play':
+          await _play(ref, (call.arguments as Map).cast<String, dynamic>());
+          return null;
+        case 'setSort':
+          _setSort(ref, (call.arguments as Map).cast<String, dynamic>());
+          return null;
+        default:
+          throw MissingPluginException();
+      }
+    });
+
+    ref
+      ..listen(authProvider, (previous, next) => _notifyContentChanged())
+      ..listen(
+        currentLibraryProvider,
+        (previous, next) => _notifyContentChanged(),
+      )
+      ..listen(
+        carFilterProvider,
+        (previous, next) => _notifyContentChanged(),
+      )
+      ..listen(
+        searchProvider,
+        fireImmediately: true,
+        (previous, next) => _channel.invokeMethod('searchChanged', {
+          'query': next ?? '',
+        }).ignore(),
+      )
+      ..listen(
+        playbackProvider,
+        fireImmediately: true,
+        (previous, next) {
+          final index = next.currentMediaIndex;
+          _notifyPlaybackState(
+            setId: next.album?.id,
+            songId: index != null
+                ? next.songs.elementAtOrNull(index)?.id
+                : null,
+            playing: next.status.isPlaying,
+          );
+        },
+      );
+    _notifyContentChanged();
+  }
+
+  static void _notifyContentChanged() {
+    _channel.invokeMethod('contentChanged').ignore();
+  }
+
+  static void _notifyPlaybackState({
+    required String? setId,
+    required String? songId,
+    required bool playing,
+  }) {
+    if (setId == _lastSetId && songId == _lastSongId && playing == _lastPlaying) {
+      return;
+    }
+    _lastSetId = setId;
+    _lastSongId = songId;
+    _lastPlaying = playing;
+    _channel.invokeMethod('playbackState', {
+      'playing': playing,
+      'setId': ?setId,
+      'songId': ?songId,
+    }).ignore();
+  }
+
+  static Map<String, dynamic> _queue(ProviderContainer ref) {
+    final state = ref.read(playbackProvider);
+    final currentIndex = state.currentMediaIndex;
+    return {
+      'items': [
+        for (final (index, song) in state.songs.indexed)
+          {..._toMap(ref, song), 'index': index},
+      ],
+      'currentId': currentIndex != null
+          ? state.songs.elementAtOrNull(currentIndex)?.id
+          : null,
+    };
+  }
+
+  static Future<Map<String, dynamic>> _home(ProviderContainer ref) async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return {'recent': <Map<String, dynamic>>[]};
+
+    final api = ref.read(jellyfinApiProvider);
+    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
+    final recent = await _fetch(() async {
+      final resp = await api.getAlbums(
+        userId: user.userId,
+        libraryId: libraryId,
+        limit: '20',
+      );
+      return resp.data.items;
+    });
+
+    final shuffled = [...recent]..shuffle();
+    return {'recent': shuffled.map((e) => _toMap(ref, e)).toList()};
+  }
+
+  static Future<Map<String, dynamic>> _list(
+    ProviderContainer ref,
+    Map<String, dynamic> args,
+  ) async {
+    final user = ref.read(currentUserProvider);
+    final filter = ref.read(carFilterProvider);
+    final sort = {'field': filter.orderBy.name, 'desc': filter.desc};
+    if (user == null) {
+      return {'items': <Map<String, dynamic>>[], 'sort': sort};
+    }
+
+    final api = ref.read(jellyfinApiProvider);
+    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
+    final sortBy = filter.orderBy.name.capitalize();
+    final sortOrder = filter.desc ? 'Descending' : 'Ascending';
+    final type = args['type'] as String?;
+    final startIndex = (args['startIndex'] as int?) ?? 0;
+    final query = (args['query'] as String?)?.trim() ?? '';
+    final artistId = args['artistId'] as String?;
+    const pageSize = 100;
+
+    final items = await _fetch(() async {
+      if (query.isNotEmpty) {
+        final resp = await switch (type) {
+          'albums' => api.searchAlbums(
+            userId: user.userId,
+            libraryId: libraryId,
+            searchTerm: query,
+            startIndex: startIndex.toString(),
+          ),
+          'artists' => api.searchArtists(
+            userId: user.userId,
+            searchTerm: query,
+            startIndex: startIndex.toString(),
+          ),
+          'playlists' => api.searchPlaylists(
+            userId: user.userId,
+            libraryId: libraryId ?? '',
+            searchTerm: query,
+            startIndex: startIndex.toString(),
+          ),
+          'songs' => api.searchAlbums(
+            userId: user.userId,
+            libraryId: libraryId,
+            searchTerm: query,
+            type: 'Audio',
+            startIndex: startIndex.toString(),
+          ),
+          _ => throw ArgumentError('Unknown list type: $type'),
+        };
+        return resp.data.items;
+      }
+      final resp = await switch (type) {
+        'albums' => api.getAlbums(
+          userId: user.userId,
+          libraryId: artistId != null ? '' : libraryId,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
+          startIndex: startIndex.toString(),
+          artistIds: artistId != null ? [artistId] : const [],
+        ),
+        'artists' => api.getArtists(
+          userId: user.userId,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
+          startIndex: startIndex.toString(),
+        ),
+        'playlists' => api.getPlaylists(
+          userId: user.userId,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
+          startIndex: startIndex.toString(),
+        ),
+        'songs' => api.getAllSongs(
+          userId: user.userId,
+          libraryId: libraryId,
+          sortBy: filter.orderBy == EntityFilter.sortName ? 'Name' : sortBy,
+          sortOrder: sortOrder,
+          startIndex: startIndex.toString(),
+        ),
+        _ => throw ArgumentError('Unknown list type: $type'),
+      };
+      return resp.data.items;
+    });
+
+    if (type == 'songs') {
+      _songs = startIndex == 0 ? items : [..._songs, ...items];
+    }
+    return {
+      'items': items.map((e) => _toMap(ref, e)).toList(),
+      'sort': sort,
+      'hasMore': items.length >= pageSize,
+    };
+  }
+
+  static Future<Map<String, dynamic>> _search(
+    ProviderContainer ref,
+    Map<String, dynamic> args,
+  ) async {
+    final query = (args['query'] as String?)?.trim() ?? '';
+    final user = ref.read(currentUserProvider);
+    const empty = <Map<String, dynamic>>[];
+    if (query.isEmpty || user == null) {
+      return {'albums': empty, 'artists': empty, 'playlists': empty, 'songs': empty};
+    }
+
+    final api = ref.read(jellyfinApiProvider);
+    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
+    final results = await Future.wait([
+      _fetch(() async {
+        final resp = await api.searchAlbums(
+          userId: user.userId,
+          libraryId: libraryId,
+          searchTerm: query,
+        );
+        return resp.data.items;
+      }),
+      _fetch(() async {
+        final resp = await api.searchArtists(
+          userId: user.userId,
+          searchTerm: query,
+        );
+        return resp.data.items;
+      }),
+      _fetch(() async {
+        final resp = await api.searchPlaylists(
+          userId: user.userId,
+          libraryId: libraryId ?? '',
+          searchTerm: query,
+        );
+        return resp.data.items;
+      }),
+      _fetch(() async {
+        final resp = await api.searchAlbums(
+          userId: user.userId,
+          libraryId: libraryId,
+          searchTerm: query,
+          type: 'Audio',
+        );
+        return resp.data.items;
+      }),
+    ]);
+
+    _songs = results[3];
+    return {
+      'albums': results[0].map((e) => _toMap(ref, e)).toList(),
+      'artists': results[1].map((e) => _toMap(ref, e)).toList(),
+      'playlists': results[2].map((e) => _toMap(ref, e)).toList(),
+      'songs': results[3].map((e) => _toMap(ref, e)).toList(),
+    };
+  }
+
+  static void _setSort(ProviderContainer ref, Map<String, dynamic> args) {
+    final field = EntityFilter.values.asNameMap()[args['field']];
+    if (field == null) return;
+    final filter = ref.read(carFilterProvider);
+    final desc = filter.orderBy == field
+        ? !filter.desc
+        : field == EntityFilter.dateCreated;
+    ref.read(carFilterProvider.notifier).filter(field: field, desc: desc);
+  }
+
+  static Future<List<ItemDTO>> _fetch(
+    Future<List<ItemDTO>> Function() call,
+  ) async {
+    try {
+      return await call();
+    } on Object {
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> _downloads(ProviderContainer ref) async {
+    try {
+      final albums = await ref
+          .read(downloadManagerProvider.notifier)
+          .getDownloadedAlbums();
+      return albums.map((e) => _toMap(ref, e)).toList();
+    } on Object {
+      return [];
+    }
+  }
+
+  static Map<String, dynamic> _toMap(ProviderContainer ref, ItemDTO item) {
+    _items[item.id] = item;
+    final localCover = DownloadPaths.coverFile(item.id);
+    final primaryTag = item.imageTags['Primary'];
+    return {
+      'id': item.id,
+      'title': item.name,
+      'subtitle': item.albumArtist ?? '',
+      if (localCover != null)
+        'artworkUrl': localCover.uri.toString()
+      else if (primaryTag != null)
+        'artworkUrl': ref
+            .read(imageServiceProvider)
+            .imagePath(tagId: primaryTag, id: item.id),
+    };
+  }
+
+  static Future<void> _play(ProviderContainer ref, Map<String, dynamic> args) async {
+    final item = _items[args['id']];
+    if (item == null) return;
+    final playback = ref.read(setPlaybackProvider.notifier);
+    switch (args['type']) {
+      case 'playlist':
+        await playback.playPlaylist(item);
+      case 'artist':
+        await playback.playArtist(item);
+      case 'album':
+      case 'download':
+        await playback.playAlbum(item);
+      case 'song':
+        await _playSong(ref, item);
+    }
+  }
+
+  static Future<void> _playSong(ProviderContainer ref, ItemDTO song) async {
+    final syntheticAlbum = ItemDTO(
+      id: song.albumId ?? song.id,
+      name: song.albumName ?? '',
+      type: 'MusicAlbum',
+      albumArtist: song.albumArtist,
+      albumArtists: song.albumArtists,
+      imageTags: song.imageTags,
+    );
+    final queue = _songs.isEmpty ? [song] : _songs;
+    await ref
+        .read(playbackProvider.notifier)
+        .play(song, queue, syntheticAlbum);
+  }
+}
