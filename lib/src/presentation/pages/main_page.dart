@@ -150,6 +150,13 @@ class _MainPageState extends ConsumerState<MainPage> {
               ),
             ),
           ),
+          if (Platform.isWindows)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: WindowsTitleBar(),
+            ),
         ],
       ),
       bottomNavigationBar: Visibility(

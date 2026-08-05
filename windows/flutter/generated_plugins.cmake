@@ -7,8 +7,10 @@ list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   flutter_secure_storage_windows
   flutter_udid
+  media_kit_libs_windows_audio
   screen_retriever_windows
   sentry_flutter
+  sqlite3_flutter_libs
   url_launcher_windows
   window_manager
 )

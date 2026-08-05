@@ -28,3 +28,4 @@ export 'singer_view.dart';
 export 'song_row_view.dart';
 export 'song_view.dart';
 export 'swipeable_artwork.dart';
+export 'windows_title_bar.dart';

@@ -1,0 +1,201 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_to_latest:
+        description: 'Attach the build to the latest existing release'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      # windows-latest ships Inno Setup 6.x, but jellybox.iss needs 7's
+      # SetupArchitecture directive. Pinned for reproducible installers.
+      INNO_VERSION: '7.0.2'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            VERSION="${TAG%+*}"
+            BUILD_NUMBER="${TAG#*+}"
+            if [ "$BUILD_NUMBER" = "$TAG" ]; then
+              BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+            fi
+            echo "tag=v${TAG}" >> "$GITHUB_OUTPUT"
+          else
+            # Manual dispatch: fall back to the pubspec version.
+            VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Build Windows app
+        run: |
+          flutter pub get
+          flutter build windows --release `
+            --build-name=${{ steps.version.outputs.version }} `
+            --build-number=${{ steps.version.outputs.build_number }}
+
+      - name: Stage runtime files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $release = 'build\windows\x64\runner\Release'
+          # Guards against the runner silently producing a differently named
+          # binary (the executable is set by BINARY_NAME in windows/CMakeLists.txt).
+          if (-not (Test-Path "$release\jellybox.exe")) {
+            Get-ChildItem $release
+            throw "jellybox.exe not found in $release"
+          }
+
+          # Both the zip and the installer ship this staged copy. .lib/.exp are
+          # linker byproducts that the app never loads, so they are dropped.
+          $staging = Join-Path $env:RUNNER_TEMP 'jellybox-win-x64'
+          if (Test-Path $staging) { Remove-Item -LiteralPath $staging -Recurse -Force }
+          Copy-Item $release $staging -Recurse
+          $junk = @(Get-ChildItem $staging -Include '*.lib','*.exp' -Recurse)
+          foreach ($f in $junk) { Remove-Item -LiteralPath $f.FullName -Force }
+          Write-Host "Staged $(@(Get-ChildItem $staging -Recurse -File).Count) files, dropped $($junk.Count) linker byproducts"
+          "STAGING_DIR=$staging" >> $env:GITHUB_ENV
+
+      - name: Create portable archive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Entry names are written explicitly with '/' separators. Both
+          # Compress-Archive and ZipFile::CreateFromDirectory emit '\' on .NET
+          # Framework, which violates the ZIP spec and makes strict extractors
+          # (and anything non-Windows) treat the paths as flat filenames.
+          Add-Type -AssemblyName System.IO.Compression
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = Join-Path $PWD 'jellybox-windows-x64.zip'
+          if (Test-Path $zip) { Remove-Item -LiteralPath $zip -Force }
+          $root = (Resolve-Path $env:STAGING_DIR).Path.TrimEnd('\') + '\'
+          $archive = [System.IO.Compression.ZipFile]::Open($zip, 'Create')
+          try {
+            foreach ($file in Get-ChildItem -LiteralPath $env:STAGING_DIR -Recurse -File) {
+              $name = $file.FullName.Substring($root.Length).Replace('\', '/')
+              [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive, $file.FullName, $name,
+                [System.IO.Compression.CompressionLevel]::Optimal)
+            }
+          } finally {
+            $archive.Dispose()
+          }
+          Write-Host "Archive size: $([math]::Round((Get-Item $zip).Length/1MB,1)) MB"
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # jellybox.iss requires Inno Setup 7 (SetupArchitecture=x64), while the
+          # runner image ships 6.x — so ISCC is resolved against 7's install
+          # locations only, and 7 is installed from jrsoftware's own signed
+          # GitHub release if it isn't already there. Deliberately not `choco
+          # install innosetup`, which tracks whatever major version it packages.
+          function Resolve-Iscc {
+            @(
+              "$env:ProgramFiles\Inno Setup 7\ISCC.exe",
+              "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe",
+              "$env:LOCALAPPDATA\Programs\Inno Setup 7\ISCC.exe"
+            ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+
+          $iscc = Resolve-Iscc
+          if (-not $iscc) {
+            $ver = $env:INNO_VERSION
+            $url = "https://github.com/jrsoftware/issrc/releases/download/is-$($ver -replace '\.','_')/innosetup-$ver-x64.exe"
+            $dl = Join-Path $env:RUNNER_TEMP 'innosetup-x64.exe'
+            Write-Host "Inno Setup 7 not present; installing $ver from $url"
+            Invoke-WebRequest -Uri $url -OutFile $dl
+            Start-Process $dl -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -NoNewWindow
+            $iscc = Resolve-Iscc
+          }
+          if (-not $iscc) { throw 'Inno Setup 7 compiler (ISCC.exe) not found after install.' }
+          Write-Host "Using $iscc"
+
+          $out = Join-Path $PWD 'installer-out'
+          & $iscc `
+            "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+            "/DAppSourceDir=$env:STAGING_DIR" `
+            "/DAppOutputDir=$out" `
+            'windows\installer\jellybox.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC exited with $LASTEXITCODE" }
+
+          $setup = Get-ChildItem $out -Filter '*.exe' | Select-Object -First 1
+          if (-not $setup) { throw "No installer produced in $out" }
+          Write-Host "Installer: $($setup.Name) ($([math]::Round($setup.Length/1MB,1)) MB)"
+          # Recorded workspace-relative with '/' so the same value works in the
+          # later bash step and in the actions' path globs.
+          "INSTALLER_PATH=installer-out/$($setup.Name)" >> $env:GITHUB_ENV
+          "INSTALLER_NAME=$($setup.Name)" >> $env:GITHUB_ENV
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jellybox-windows-x64
+          path: |
+            jellybox-windows-x64.zip
+            ${{ env.INSTALLER_PATH }}
+
+      # Tag push: create (or update) the release for that tag.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
+          files: |
+            jellybox-windows-x64.zip
+            ${{ env.INSTALLER_PATH }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Manual run with the checkbox ticked: attach to whatever release GitHub
+      # currently marks as "Latest". Uses `gh release upload` rather than the
+      # release action so only assets are touched — the existing release's
+      # title and notes are left exactly as they are.
+      - name: Attach to latest release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_latest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # `|| true` because `set -e` would otherwise abort here when the repo
+          # has no published release, skipping the explanatory error below.
+          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)"
+          if [ -z "$TAG" ]; then
+            echo "::error::No published release found to attach to. Push a v* tag first, or publish a release manually."
+            exit 1
+          fi
+          echo "Attaching assets to existing release $TAG"
+          gh release upload "$TAG" \
+            "jellybox-windows-x64.zip" \
+            "$INSTALLER_PATH" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "::notice::Uploaded jellybox-windows-x64.zip and $INSTALLER_NAME to release $TAG"
