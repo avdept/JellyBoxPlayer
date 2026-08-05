@@ -90,7 +90,7 @@ jobs:
           # (and anything non-Windows) treat the paths as flat filenames.
           Add-Type -AssemblyName System.IO.Compression
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = Join-Path $PWD 'jellybox-windows-x64.zip'
+          $zip = Join-Path $PWD 'windows-portable.zip'
           if (Test-Path $zip) { Remove-Item -LiteralPath $zip -Force }
           $root = (Resolve-Path $env:STAGING_DIR).Path.TrimEnd('\') + '\'
           $archive = [System.IO.Compression.ZipFile]::Open($zip, 'Create')
@@ -145,21 +145,23 @@ jobs:
             'windows\installer\jellybox.iss'
           if ($LASTEXITCODE -ne 0) { throw "ISCC exited with $LASTEXITCODE" }
 
-          $setup = Get-ChildItem $out -Filter '*.exe' | Select-Object -First 1
-          if (-not $setup) { throw "No installer produced in $out" }
-          Write-Host "Installer: $($setup.Name) ($([math]::Round($setup.Length/1MB,1)) MB)"
-          # Recorded workspace-relative with '/' so the same value works in the
-          # later bash step and in the actions' path globs.
-          "INSTALLER_PATH=installer-out/$($setup.Name)" >> $env:GITHUB_ENV
-          "INSTALLER_NAME=$($setup.Name)" >> $env:GITHUB_ENV
+          # The name is fixed by OutputBaseFilename in jellybox.iss rather than
+          # discovered, so that renaming it there fails the build loudly instead
+          # of silently breaking the stable /releases/latest/download/ URL.
+          $setup = Join-Path $out 'windows-setup.exe'
+          if (-not (Test-Path $setup)) {
+            Get-ChildItem $out
+            throw 'Expected windows-setup.exe (check OutputBaseFilename in windows/installer/jellybox.iss)'
+          }
+          Write-Host "Installer: windows-setup.exe ($([math]::Round((Get-Item $setup).Length/1MB,1)) MB)"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: jellybox-windows-x64
           path: |
-            jellybox-windows-x64.zip
-            ${{ env.INSTALLER_PATH }}
+            windows-portable.zip
+            installer-out/windows-setup.exe
 
       # Tag push: create (or update) the release for that tag.
       - name: Publish release
@@ -169,8 +171,8 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.version }}
           files: |
-            jellybox-windows-x64.zip
-            ${{ env.INSTALLER_PATH }}
+            windows-portable.zip
+            installer-out/windows-setup.exe
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -195,7 +197,7 @@ jobs:
           fi
           echo "Attaching assets to existing release $TAG"
           gh release upload "$TAG" \
-            "jellybox-windows-x64.zip" \
-            "$INSTALLER_PATH" \
+            "windows-portable.zip" \
+            "installer-out/windows-setup.exe" \
             --repo "$GITHUB_REPOSITORY" --clobber
-          echo "::notice::Uploaded jellybox-windows-x64.zip and $INSTALLER_NAME to release $TAG"
+          echo "::notice::Uploaded windows-portable.zip and windows-setup.exe to release $TAG"
