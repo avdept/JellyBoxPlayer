@@ -1,6 +1,7 @@
 export 'adaptive_builder.dart';
 export 'audio_quality_badge.dart';
 export 'adaptive_dialog_action.dart';
+export 'album_card_metrics.dart';
 export 'album_view.dart';
 export 'bottom_player.dart';
 export 'clickable_widget.dart';

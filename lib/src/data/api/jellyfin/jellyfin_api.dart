@@ -81,6 +81,13 @@ abstract class JellyfinApi {
     @Query('Recursive') bool recursive = true,
   });
 
+  @GET('/Albums/{albumId}/Similar')
+  Future<HttpResponse<ItemsWrapper>> getSimilarAlbums({
+    @Path('albumId') required String albumId,
+    @Query('userId') required String userId,
+    @Query('Limit') String limit = '12',
+  });
+
   @GET('/MusicGenres')
   Future<HttpResponse<ItemsWrapper>> getGenres({
     @Query('userId') required String userId,
