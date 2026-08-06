@@ -217,7 +217,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         ),
         SizedBox(height: _isMobile ? 12 : 20),
         const PositionSlider(),
-        _positionLabels(),
+        PositionLabels(fontSize: _isMobile ? 12 : 13),
         SizedBox(height: _isMobile ? 8 : 12),
         AudioQualityBadge(
           codec: currentSong?.extras?['codec'] as String?,
@@ -416,6 +416,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             if (_isDesktop) _lyricsButton(),
                             if (_isDesktop && NativeRoutePicker.isSupported)
                               _outputRouteButton(size: 44),
+                            if (!_isMobile) _studioModeButton(),
                           ],
                         ),
                         leadingToTitle: 15,
@@ -463,44 +464,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             Image.asset(Images.album, fit: BoxFit.cover),
       ),
     );
-  }
-
-  Widget _positionLabels() => Consumer(
-    builder: (context, ref, _) {
-      final playback = ref.watch(playbackProvider);
-      final total = playback.totalDuration ?? Duration.zero;
-      final position = playback.position >= Duration.zero
-          ? playback.position
-          : Duration.zero;
-      final remaining = total - position;
-      final style = TextStyle(
-        fontSize: _isMobile ? 12 : 13,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-      );
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(_formatDuration(position), style: style),
-            Text('-${_formatDuration(remaining)}', style: style),
-          ],
-        ),
-      );
-    },
-  );
-
-  static String _formatDuration(Duration value) {
-    final duration = value < Duration.zero ? Duration.zero : value;
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
-    final seconds = duration.inSeconds % 60;
-    final ss = seconds.toString().padLeft(2, '0');
-    if (hours > 0) {
-      final mm = minutes.toString().padLeft(2, '0');
-      return '$hours:$mm:$ss';
-    }
-    return '${duration.inMinutes}:$ss';
   }
 
   Widget _moreButton(MediaItem? currentSong) => IconButton(
@@ -593,6 +556,16 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     onPressed: ref.read(playbackProvider.notifier).next,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_forward),
+  );
+
+  Widget _studioModeButton() => IconButton(
+    onPressed: () {
+      ref.read(lyricsVisibleProvider.notifier).state = false;
+      ref.read(studioModeVisibleProvider.notifier).state = true;
+    },
+    color: _theme.colorScheme.onPrimary,
+    tooltip: 'Studio mode',
+    icon: const Icon(Icons.fullscreen),
   );
 
   Widget _randomQueueButton() => StreamBuilder<bool?>(

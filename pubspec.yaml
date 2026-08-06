@@ -86,6 +86,9 @@ flutter:
     - assets/icons/
     - assets/images/
 
+  shaders:
+    - shaders/studio_aurora.frag
+
   fonts:
     - family: Gilroy
       fonts:

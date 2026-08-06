@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -26,7 +27,10 @@ class SettingsPage extends ConsumerWidget {
 
   /// Padding for the settings buttons so their hover/highlight state has
   /// breathing room (the global [TextButtonThemeData] uses zero padding).
-  static const _buttonPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+  static const _buttonPadding = EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 10,
+  );
 
   ButtonStyle get _buttonStyle => TextButton.styleFrom(
     padding: _buttonPadding,
@@ -47,7 +51,9 @@ class SettingsPage extends ConsumerWidget {
           context,
           projectId: _updatifyProjectId,
           borderRadius: BorderRadius.circular(8),
-          width: device.isDesktop ? MediaQuery.sizeOf(context).width / 2 : double.infinity,
+          width: device.isDesktop
+              ? MediaQuery.sizeOf(context).width / 2
+              : double.infinity,
           title: _changelogTitle,
         ),
       );
@@ -109,6 +115,21 @@ class SettingsPage extends ConsumerWidget {
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
                   _changelogButton(context, device),
+                  if (!device.isMobile) ...[
+                    _studioModeHeader(),
+                    if (supportsWindowFullscreen)
+                      _settingCheckbox(
+                        ref: ref,
+                        provider: studioModeFullscreenProvider,
+                        label:
+                            'Make player full screen when Studio Mode enabled',
+                      ),
+                    _settingCheckbox(
+                      ref: ref,
+                      provider: studioModeAnimationProvider,
+                      label: 'Enable Studio Mode animation',
+                    ),
+                  ],
                   if (!device.isDesktop) _logOutButton(ref),
                 ],
               ),
@@ -140,6 +161,40 @@ class SettingsPage extends ConsumerWidget {
       style: _buttonStyle,
       icon: const Icon(Icons.history),
       label: const Text('Changelog'),
+    );
+  }
+
+  Widget _studioModeHeader() => const Padding(
+    padding: EdgeInsets.only(left: 12, top: 20, bottom: 4),
+    child: Text(
+      'Studio Mode',
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        height: 1.2,
+      ),
+    ),
+  );
+
+  Widget _settingCheckbox({
+    required WidgetRef ref,
+    required StateNotifierProvider<BoolPrefNotifier, bool> provider,
+    required String label,
+  }) {
+    final enabled = ref.watch(provider);
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Checkbox(
+            value: enabled,
+            onChanged: (value) =>
+                ref.read(provider.notifier).enabled = value ?? false,
+          ),
+          Text(label),
+        ],
+      ),
     );
   }
 

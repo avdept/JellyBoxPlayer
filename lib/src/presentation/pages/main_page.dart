@@ -56,7 +56,7 @@ class _MainPageState extends ConsumerState<MainPage> {
     final currentIndex = widget.shell.currentIndex;
     final isOffline = ref.watch(isOfflineProvider);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       body: Stack(
         children: [
           Row(
@@ -177,6 +177,15 @@ class _MainPageState extends ConsumerState<MainPage> {
           ),
         ),
       ),
+    );
+
+    if (_device.isMobile) return scaffold;
+
+    return Stack(
+      children: [
+        scaffold,
+        const Positioned.fill(child: StudioMode()),
+      ],
     );
   }
 }
