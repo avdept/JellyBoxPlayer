@@ -4,7 +4,7 @@
 
 # JellyBox
 
-**A native music player for your Jellyfin server - on macOS, Windows, Linux, iOS and Android.**
+**The best native music player for your Jellyfin server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
 
 [![Build Status](https://github.com/avdept/JellyBoxPlayer/actions/workflows/tests.yaml/badge.svg)](https://github.com/avdept/JellyBoxPlayer/actions)
 [![Latest release](https://img.shields.io/github/v/release/avdept/JellyBoxPlayer)](https://github.com/avdept/JellyBoxPlayer/releases/latest)
