@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: "none"
-version: 2.0.0+25
+version: 2.1.0+25
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -32,6 +32,7 @@ dependencies:
   just_audio_background:
     path: ./packages/just_audio_background
   just_audio_media_kit: any
+  audio_session: any
   audio_service_mpris: ^0.1.0
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
   media_kit_libs_windows_audio: any # Required dependency of just_audio_media_kit for Windows support
@@ -59,7 +60,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.0
   sqlite3_flutter_libs: ^0.5.24 # Bundles sqlite3.dll for Windows release builds
   path: ^1.9.1
-  background_downloader: ^9.5.2
+  background_downloader: ^9.5.7
   updatify_flutter: ^1.4.1
   plausible: ^1.0.1
   connectivity_plus: ^7.3.1
