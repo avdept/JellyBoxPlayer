@@ -4,12 +4,14 @@
 
 # JellyBox
 
-**A native music player for your Jellyfin server — on macOS, Windows, Linux, iOS and Android.**
+**A native music player for your Jellyfin server - on macOS, Windows, Linux, iOS and Android.**
 
 [![Build Status](https://github.com/avdept/JellyBoxPlayer/actions/workflows/tests.yaml/badge.svg)](https://github.com/avdept/JellyBoxPlayer/actions)
 [![Latest release](https://img.shields.io/github/v/release/avdept/JellyBoxPlayer)](https://github.com/avdept/JellyBoxPlayer/releases/latest)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue)](./LICENSE)
 [![Stars](https://img.shields.io/github/stars/avdept/JellyBoxPlayer?style=flat)](https://github.com/avdept/JellyBoxPlayer/stargazers)
+[![Follow @_avdept](https://img.shields.io/badge/@__avdept-000000?logo=x&logoColor=white)](https://x.com/_avdept)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/avdept)
 
 [Download](#download) · [Features](#features) · [Screenshots](#screenshots) · [Development](#development)
 
@@ -17,7 +19,7 @@
 
 ---
 
-JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org). It focuses on doing one thing well: making your own music library feel like a modern streaming app — fast browsing, offline downloads, lyrics, and artwork-driven theming — with a UI built for each platform rather than a single stretched layout.
+JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads, lyrics, and artwork-driven theming - with a UI built for each platform rather than a single stretched layout.
 
 > [!IMPORTANT]
 > JellyBox is a client, not a server. You need access to a running Jellyfin server with a music library on it.
@@ -73,8 +75,8 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 ### Desktop
 
 <div align="center">
-  <img src="./docs/screenshots/studio-mode.png" width="90%" alt="Studio Mode — full-screen playback with an animated backdrop">
-  <p><b>Studio Mode</b> — full-screen playback with a shader backdrop tinted by the current artwork</p>
+  <img src="./docs/screenshots/studio-mode.png" width="90%" alt="Studio Mode - full-screen playback with an animated backdrop">
+  <p><b>Studio Mode</b> - full-screen playback with a shader backdrop tinted by the current artwork</p>
 </div>
 
 <table>
@@ -89,7 +91,7 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 </table>
 
 <details>
-<summary><b>More screenshots</b> — search, albums, artists, downloads</summary>
+<summary><b>More screenshots</b> - search, albums, artists, downloads</summary>
 <br>
 
 <table>
@@ -134,13 +136,13 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 
 ## Platform notes
 
-### macOS — media keys
+### macOS - media keys
 
 macOS does not let an app read media keys without permission. On first use JellyBox will point you at **System Settings → Privacy & Security → Accessibility**; enable **JellyBox** there. If it isn't in the list, add it with the **+** button.
 
 ### Windows
 
-The installer is unsigned, so SmartScreen will warn on first run — choose **More info → Run anyway**. The portable zip has no installer and can be run from anywhere.
+The installer is unsigned, so SmartScreen will warn on first run - choose **More info → Run anyway**. The portable zip has no installer and can be run from anywhere.
 
 ### Android
 
@@ -156,7 +158,7 @@ sudo apt-get install libmpv-dev mpv libsecret-1-dev libsqlite3-dev libjsoncpp-de
 
 ## Development
 
-**Prerequisites** — [Flutter](https://docs.flutter.dev/get-started/install) with Dart SDK 3.8 or newer, plus the toolchain for whichever platform you're targeting (Xcode, Android Studio, or the Linux packages above).
+**Prerequisites** - [Flutter](https://docs.flutter.dev/get-started/install) with Dart SDK 3.8 or newer, plus the toolchain for whichever platform you're targeting (Xcode, Android Studio, or the Linux packages above).
 
 ```bash
 git clone https://github.com/avdept/JellyBoxPlayer.git
@@ -167,28 +169,15 @@ dart run build_runner build --delete-conflicting-outputs   # freezed, json_seria
 flutter run                                                # then pick a target device
 ```
 
-Run the tests with `flutter test`, and the analyzer with `flutter analyze` — CI runs both on every push.
+Run the tests with `flutter test`, and the analyzer with `flutter analyze` - CI runs both on every push.
 
 Codegen is needed whenever you touch a model, DTO or API client; those `*.g.dart` and `*.freezed.dart` files are generated, not hand-edited.
 
 
 ## Contributing
 
-Bug reports, feature requests and pull requests are all welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for the workflow.
+Bug reports, feature requests and pull requests are all welcome - see [CONTRIBUTING.md](./CONTRIBUTING.md) for the workflow.
 
 ## License
 
 [GNU AGPL-3.0](./LICENSE) © ProdigyTech Inc.
-
-
----
-
-<div align="center">
-
-If JellyBox is useful to you, a star helps — or
-
-<a href="https://www.buymeacoffee.com/avdept" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
-
-[![Twitter](https://img.shields.io/badge/@__avdept-000000?style=flat&logo=x&logoColor=white)](https://x.com/_avdept)
-
-</div>
