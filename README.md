@@ -76,7 +76,7 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 
 <div align="center">
   <img src="./docs/screenshots/studio-mode.png" width="90%" alt="Studio Mode - full-screen playback with an animated backdrop">
-  <p><b>Studio Mode</b> - full-screen playback with a shader backdrop tinted by the current artwork</p>
+  <p><b>Studio Mode</b> - full-screen animated mode made for aesthetic</p>
 </div>
 
 <table>
