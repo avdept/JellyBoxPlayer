@@ -42,11 +42,12 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 - [x] Artist pages with biography and full discography
 - [x] Favourite tracks, synced back to your Jellyfin server
 - [x] Create playlists and add tracks to them from anywhere in the app
+- [ ] Home page - in development
 
 **Playback**
-- [x] Queue management with shuffle, repeat and a randomised "surprise me" queue
+- [x] Playback memory - app remembers your queue and playback position between restarts
 - [x] Time-synced lyrics overlay
-- [x] Smart previous — restarts the current track, then skips back
+- [x] Queue management with shuffle, repeat and a randomised "surprise me" queue
 - [x] Per-connection streaming profiles with automatic transcoding when a codec isn't supported natively
 - [x] Audio quality badge, so you always know whether you're getting the original file
 
@@ -65,8 +66,7 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 - [x] Lock screen and notification controls on iOS and Android
 - [x] In-app changelog, so you can see what landed in each release
 - [x] Apple CarPlay - currently in beta stage.
-
-- [ ] Something missing? [Request a feature](https://github.com/avdept/JellyBoxPlayer/issues/new)
+- [ ] Android auto - in development
 
 ## Screenshots
 
