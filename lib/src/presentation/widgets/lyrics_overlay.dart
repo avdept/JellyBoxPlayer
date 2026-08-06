@@ -18,12 +18,7 @@ class LyricsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
-    final song = ref.watch(
-      playbackProvider.select((state) {
-        final index = state.currentMediaIndex;
-        return index != null ? state.songs.elementAtOrNull(index) : null;
-      }),
-    );
+    final song = ref.watch(currentSongProvider);
 
     if (song == null || !song.hasLyrics) {
       return const _Message('No lyrics for this track');
@@ -59,12 +54,7 @@ class _LyricsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final song = ref.watch(
-      playbackProvider.select((state) {
-        final index = state.currentMediaIndex;
-        return index != null ? state.songs.elementAtOrNull(index) : null;
-      }),
-    );
+    final song = ref.watch(currentSongProvider);
 
     return ClipRect(
       child: BackdropFilter(

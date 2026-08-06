@@ -444,3 +444,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
   PlaybackNotifier.new,
 );
+
+final currentSongProvider = Provider<ItemDTO?>(
+  (ref) => ref.watch(
+    playbackProvider.select((state) {
+      final index = state.currentMediaIndex;
+      return index != null ? state.songs.elementAtOrNull(index) : null;
+    }),
+  ),
+);

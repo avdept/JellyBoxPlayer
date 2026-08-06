@@ -13,10 +13,12 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/widgets/playback_keyboard_shortcuts.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
+import 'package:window_manager/window_manager.dart';
 
 class MediaKeyHandler {
   static const MethodChannel _channel = MethodChannel('mediakeys_proxy');
@@ -74,6 +76,9 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
         const Duration(seconds: 2),
         () async {
           _resizeTimer = null;
+          if (supportsWindowFullscreen && await windowManager.isFullScreen()) {
+            return;
+          }
           ref.read(sharedPreferencesProvider).whenData((prefs) {
             if (mounted) WindowSizeStorage(prefs).saveWindowSize(context.size!);
           });
