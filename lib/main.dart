@@ -2,7 +2,6 @@ import 'dart:io' show Platform;
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
@@ -64,8 +63,7 @@ Future<void> main() async {
   // Window settings
   const minWindowSize = Size(1280, 800);
 
-  // Use window_manager package for MacOS & Windows
-  if (Platform.isMacOS || Platform.isWindows) {
+  if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     await windowManager.ensureInitialized();
 
     final windowOptions = WindowOptions(
@@ -103,19 +101,4 @@ Future<void> main() async {
       ),
     ),
   );
-
-  // Use bitsdojo_window for Linux
-  if (Platform.isLinux) {
-    final prefs = await SharedPreferences.getInstance();
-    final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
-    final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
-
-    doWhenWindowReady(() {
-      appWindow
-        ..size = initialWindowSize
-        ..minSize = minWindowSize
-        ..alignment = Alignment.center
-        ..show();
-    });
-  }
 }

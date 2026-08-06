@@ -8,7 +8,7 @@ import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 bool get supportsWindowFullscreen =>
-    !kIsWeb && (Platform.isMacOS || Platform.isWindows);
+    !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
 
 final studioModeVisibleProvider = StateProvider<bool>((ref) => false);
 

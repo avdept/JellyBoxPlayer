@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,7 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
+import 'package:window_manager/window_manager.dart';
 
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({
@@ -137,18 +138,7 @@ class _MainPageState extends ConsumerState<MainPage> {
           ),
           Visibility(
             visible: Platform.isLinux,
-            child: WindowTitleBarBox(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: MoveWindow(),
-                  ),
-                  MinimizeWindowButton(),
-                  MaximizeWindowButton(),
-                  CloseWindowButton(),
-                ],
-              ),
-            ),
+            child: const _WindowTitleBar(),
           ),
           if (Platform.isWindows)
             const Positioned(
@@ -187,5 +177,72 @@ class _MainPageState extends ConsumerState<MainPage> {
         const Positioned.fill(child: StudioMode()),
       ],
     );
+  }
+}
+
+class _WindowTitleBar extends StatefulWidget {
+  const _WindowTitleBar();
+
+  @override
+  State<_WindowTitleBar> createState() => _WindowTitleBarState();
+}
+
+class _WindowTitleBarState extends State<_WindowTitleBar>
+    with WindowListener {
+  bool _isMaximized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    unawaited(
+      windowManager.isMaximized().then((value) {
+        if (mounted) setState(() => _isMaximized = value);
+      }),
+    );
+  }
+
+  @override
+  void onWindowMaximize() => setState(() => _isMaximized = true);
+
+  @override
+  void onWindowUnmaximize() => setState(() => _isMaximized = false);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: kWindowCaptionHeight,
+      child: Row(
+        children: [
+          const Expanded(
+            child: DragToMoveArea(child: SizedBox.expand()),
+          ),
+          WindowCaptionButton.minimize(
+            brightness: Brightness.dark,
+            onPressed: windowManager.minimize,
+          ),
+          if (_isMaximized)
+            WindowCaptionButton.unmaximize(
+              brightness: Brightness.dark,
+              onPressed: windowManager.unmaximize,
+            )
+          else
+            WindowCaptionButton.maximize(
+              brightness: Brightness.dark,
+              onPressed: windowManager.maximize,
+            ),
+          WindowCaptionButton.close(
+            brightness: Brightness.dark,
+            onPressed: windowManager.close,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
   }
 }
