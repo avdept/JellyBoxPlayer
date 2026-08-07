@@ -6,7 +6,6 @@ import 'package:jplayer/main.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
 
-
 String getCurrentPlatformName() {
   if (Platform.isAndroid) {
     return 'Android';
@@ -52,7 +51,8 @@ InterceptorsWrapper interceptor = InterceptorsWrapper(
           handler.next(error.copyWith(error: NetworkException.cancel()));
           return;
         }
-        final err = error.response?.data as String?;
+        final data = error.response?.data;
+        final err = (data is String) ? data : null;
         handler.next(
           error.copyWith(
             error: NetworkException.badResponse(
