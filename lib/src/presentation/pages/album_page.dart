@@ -346,6 +346,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                               ),
                           itemCount: songs.length,
                         ),
+                      ..._suggestedAlbumsSlivers(),
                     ],
                   ),
                 ),
@@ -532,6 +533,68 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   Widget _playAlbumButton() => PlayButton(
     onPressed: () {},
   );
+
+  List<Widget> _suggestedAlbumsSlivers() {
+    final albums = ref
+        .watch(similarAlbumsProvider(widget.album.id))
+        .valueOrNull;
+    if (albums == null || albums.isEmpty) return const [];
+
+    final horizontalPadding = _device.isMobile ? 16.0 : 30.0;
+    final cardWidth = AlbumCardMetrics.width(_device);
+    final cardHeight = AlbumCardMetrics.height(
+      cardWidth,
+      isTablet: _device.isTablet,
+    );
+
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: horizontalPadding,
+            right: horizontalPadding,
+            top: 24,
+            bottom: 12,
+          ),
+          child: Text(
+            'You may also like',
+            style: TextStyle(
+              fontSize: _device.isMobile ? 20 : 24,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+      SliverToBoxAdapter(
+        child: SizedBox(
+          height: cardHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.only(
+              left: horizontalPadding,
+              right: horizontalPadding,
+              bottom: 16,
+            ),
+            itemBuilder: (context, index) => SizedBox(
+              width: cardWidth,
+              child: AlbumView(
+                album: albums[index],
+                onTap: (album) => context.pushNamed(
+                  Routes.album.name,
+                  extra: {'album': album},
+                ),
+                onPlayPressed: (album) =>
+                    ref.read(setPlaybackProvider.notifier).playAlbum(album),
+              ),
+            ),
+            separatorBuilder: (context, index) =>
+                SizedBox(width: AlbumCardMetrics.crossAxisSpacing(_device)),
+            itemCount: albums.length,
+          ),
+        ),
+      ),
+    ];
+  }
 
   Widget _songsPlaceholder() {
     if (_isLoadingSongs) {

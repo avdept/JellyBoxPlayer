@@ -35,6 +35,7 @@ void main() {
 
   late JellyfinApi mockJellyfinApi;
   late HttpResponse<ItemsWrapper> mockSongsResponse;
+  late HttpResponse<ItemsWrapper> mockSimilarAlbumsResponse;
   late User mockUser;
   late DownloadManagerNotifier mockDownloadManagerNotifier;
   late DownloadDatabase mockDownloadDatabase;
@@ -67,6 +68,18 @@ void main() {
         albumArtist: faker.name.fullName(),
         albumName: faker.lorem.sentence(),
         albumId: faker.datatype.uuid(),
+      ),
+    ),
+  );
+  final mockSimilarAlbums = ItemsWrapper(
+    items: List.generate(
+      3,
+      (index) => ItemDTO(
+        id: faker.datatype.uuid(),
+        name: 'Similar album $index',
+        type: 'MusicAlbum',
+        runTimeTicks: faker.datatype.number(min: 10000),
+        albumArtist: 'Similar artist $index',
       ),
     ),
   );
@@ -126,6 +139,37 @@ void main() {
     );
   }
 
+  Future<HttpResponse<ItemsWrapper>> mockGetSimilarAlbums({
+    String? albumId,
+  }) {
+    return mockJellyfinApi.getSimilarAlbums(
+      albumId: albumId ?? any(named: 'albumId'),
+      userId: mockUserId,
+      limit: any(named: 'limit'),
+    );
+  }
+
+  final suggestionsHeader = find.text('You may also like');
+
+  Future<void> scrollToSuggestions(WidgetTester tester) => tester
+      .scrollUntilVisible(
+        suggestionsHeader,
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+
+  Future<void> scrollToEnd(WidgetTester tester) async {
+    for (var i = 0; i < 6; i++) {
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+    }
+  }
+
   setUpAll(() {
     registerFallbackValue(mockAlbum);
     registerFallbackValue(mockSongs);
@@ -135,6 +179,7 @@ void main() {
   setUp(() {
     mockJellyfinApi = MockJellyfinApi();
     mockSongsResponse = MockHttpResponse();
+    mockSimilarAlbumsResponse = MockHttpResponse();
     mockUser = MockUser();
     mockDownloadManagerNotifier = MockDownloadManagerNotifier();
     mockDownloadDatabase = MockDownloadDatabase();
@@ -145,6 +190,12 @@ void main() {
       () => mockGetSongs(albumId: mockAlbum.id),
     ).thenAnswer((_) async => mockSongsResponse);
     when(() => mockSongsResponse.data).thenReturn(mockSongs);
+    when(
+      () => mockGetSimilarAlbums(albumId: mockAlbum.id),
+    ).thenAnswer((_) async => mockSimilarAlbumsResponse);
+    when(
+      () => mockSimilarAlbumsResponse.data,
+    ).thenReturn(const ItemsWrapper(items: []));
     when(() => mockUser.userId).thenReturn(mockUserId);
   });
 
@@ -277,6 +328,88 @@ void main() {
         expect(find.byType(PlayerSongView), findsNothing);
         expect(find.byKey(keys.downloadButton), findsNothing);
         verifyNever(() => mockGetSongs(albumId: mockAlbum.id));
+      },
+    );
+
+    testWidgets(
+      '- displays similar albums below the song list',
+      (widgetTester) async {
+        when(
+          () => mockSimilarAlbumsResponse.data,
+        ).thenReturn(mockSimilarAlbums);
+        await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
+        await widgetTester.pumpAndSettle();
+        await scrollToSuggestions(widgetTester);
+
+        expect(suggestionsHeader, findsOneWidget);
+        final firstSuggestion = mockSimilarAlbums.items.first;
+        expect(
+          find.descendant(
+            of: find.byType(AlbumView),
+            matching: find.text(firstSuggestion.name),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AlbumView),
+            matching: find.text(firstSuggestion.albumArtist!),
+          ),
+          findsOneWidget,
+        );
+        verify(() => mockGetSimilarAlbums(albumId: mockAlbum.id)).called(1);
+      },
+    );
+
+    testWidgets(
+      '- excludes the current album from the suggestions',
+      (widgetTester) async {
+        when(() => mockSimilarAlbumsResponse.data).thenReturn(
+          ItemsWrapper(items: [mockAlbum, ...mockSimilarAlbums.items]),
+        );
+        await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
+        await widgetTester.pumpAndSettle();
+        await scrollToSuggestions(widgetTester);
+
+        expect(
+          find.descendant(
+            of: find.byType(AlbumView),
+            matching: find.text(mockAlbum.name),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AlbumView),
+            matching: find.text(mockSimilarAlbums.items.first.name),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      '- hides the suggestions section when the server returns none',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
+        await widgetTester.pumpAndSettle();
+        await scrollToEnd(widgetTester);
+
+        expect(suggestionsHeader, findsNothing);
+        expect(find.byType(AlbumView), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '- offline: does not request similar albums',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(
+          getWidgetUT(album: mockAlbum, isOffline: true),
+        );
+        await widgetTester.pumpAndSettle();
+
+        expect(suggestionsHeader, findsNothing);
+        verifyNever(() => mockGetSimilarAlbums(albumId: mockAlbum.id));
       },
     );
   });

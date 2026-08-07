@@ -22,6 +22,8 @@ class AlbumView extends ConsumerStatefulWidget {
     super.key,
   });
 
+  static const coverTextSpacing = 6.0;
+
   final ItemDTO album;
   final bool showArtist;
   final void Function(ItemDTO)? onTap;
@@ -85,7 +87,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
         crossAxisAlignment: widget.alignTextStart
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        spacing: AlbumView.coverTextSpacing,
         children: [
           Flexible(
             child: AspectRatio(
@@ -142,10 +144,17 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                 widget.trailing!,
               ],
             )
-          else ...[
-            _titleText(isTablet: isTablet),
-            _subtitleWidget(isTablet: isTablet),
-          ],
+          else
+            Column(
+              crossAxisAlignment: widget.alignTextStart
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _titleText(isTablet: isTablet),
+                _subtitleWidget(isTablet: isTablet),
+              ],
+            ),
         ],
       ),
     );

@@ -363,16 +363,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
                       );
                     }
                     return SliverGrid.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: _device.isTablet ? 360 : 200,
-                        mainAxisSpacing: _device.isMobile ? 15 : 24,
-                        crossAxisSpacing: _device.isMobile
-                            ? 8
-                            : (_device.isTablet ? 56 : 28),
-                        childAspectRatio: _device.isTablet
-                            ? 360 / 413
-                            : 175 / 215.7,
-                      ),
+                      gridDelegate: AlbumCardMetrics.gridDelegate(_device),
                       itemBuilder: (context, index) {
                         final item = list.items[index];
                         return AlbumView(

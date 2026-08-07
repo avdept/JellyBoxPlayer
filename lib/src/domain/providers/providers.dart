@@ -16,4 +16,5 @@ export 'playback_provider.dart';
 export 'queue_provider.dart';
 export 'search_items_providers.dart';
 export 'set_playback_provider.dart';
+export 'similar_albums_provider.dart';
 export 'studio_mode_provider.dart';
