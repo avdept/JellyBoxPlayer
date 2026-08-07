@@ -65,6 +65,81 @@ void main() {
     });
   });
 
+  group('serverUrlCandidates', () {
+    test('- tries http then https when no scheme is given', () {
+      expect(serverUrlCandidates('jelly.local:8096'), [
+        'http://jelly.local:8096',
+        'https://jelly.local:8096',
+      ]);
+    });
+
+    test('- only tries what the user typed when a scheme is given', () {
+      expect(serverUrlCandidates('https://jelly.local'), [
+        'https://jelly.local',
+      ]);
+    });
+
+    test('- has no candidates for empty input', () {
+      expect(serverUrlCandidates('   '), isEmpty);
+    });
+  });
+
+  group('ServerProbeService.discover', () {
+    test('- resolves a scheme-less url over http when http answers', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        respondWith(jsonBody({'Id': 'a', 'Version': '10.9.11'}, 200)),
+      );
+
+      final result = await service.discover('jelly.local:8096');
+
+      expect(result, isNotNull);
+      expect(result!.serverUrl, 'http://jelly.local:8096');
+    });
+
+    test('- falls back to https when http does not answer', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.scheme == 'http') {
+          throw DioException.connectionError(
+            requestOptions: options,
+            reason: 'refused',
+          );
+        }
+        return jsonBody({'Id': 'a', 'Version': '10.9.11'}, 200);
+      });
+
+      final result = await service.discover('jelly.example.com');
+
+      expect(result, isNotNull);
+      expect(result!.serverUrl, 'https://jelly.example.com');
+    });
+
+    test('- returns null when neither scheme answers', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenThrow(
+        DioException.connectionError(
+          requestOptions: RequestOptions(path: '/System/Info/Public'),
+          reason: 'refused',
+        ),
+      );
+
+      expect(await service.discover('jelly.local'), isNull);
+    });
+
+    test('- does not guess a scheme the user already gave', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenThrow(
+        DioException.connectionError(
+          requestOptions: RequestOptions(path: '/System/Info/Public'),
+          reason: 'refused',
+        ),
+      );
+
+      expect(await service.discover('https://jelly.local'), isNull);
+      verify(() => mockAdapter.fetch(any(), any(), any())).called(1);
+    });
+  });
+
   group('ServerProbeService', () {
     test(
       '- returns the server info when the server is a Jellyfin server',

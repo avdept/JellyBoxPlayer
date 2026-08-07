@@ -4,14 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
-
-const _discoveredColor = Color(0xFF34C759);
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -27,8 +24,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
   final _passwordInputController = TextEditingController();
   final _serverUrlFocusNode = FocusNode();
 
-  PublicSystemInfoDTO? _discoveredServer;
-  String? _probedUrl;
+  ServerProbeResult? _discoveredServer;
+  String? _probedInput;
   int _probeGeneration = 0;
 
   @override
@@ -56,8 +53,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _onServerUrlChanged() {
-    if (_probedUrl == null) return;
-    if (normalizeServerUrl(_serverUrlInputController.text) == _probedUrl) return;
+    if (_probedInput == null) return;
+    if (_serverUrlInputController.text.trim() == _probedInput) return;
     _resetDiscoveredServer();
   }
 
@@ -67,25 +64,23 @@ class LoginPageState extends ConsumerState<LoginPage> {
       _resetDiscoveredServer();
       return;
     }
-
-    final serverUrl = normalizeServerUrl(rawUrl);
-    if (serverUrl == _probedUrl) return;
+    if (rawUrl == _probedInput) return;
 
     final generation = ++_probeGeneration;
-    _probedUrl = serverUrl;
+    _probedInput = rawUrl;
     if (_discoveredServer != null) {
       setState(() => _discoveredServer = null);
     }
 
-    final info = await ref.read(serverProbeServiceProvider).probe(serverUrl);
+    final result = await ref.read(serverProbeServiceProvider).discover(rawUrl);
     if (!mounted || generation != _probeGeneration) return;
 
-    setState(() => _discoveredServer = info);
+    setState(() => _discoveredServer = result);
   }
 
   void _resetDiscoveredServer() {
     _probeGeneration++;
-    _probedUrl = null;
+    _probedInput = null;
     if (_discoveredServer == null) return;
     setState(() => _discoveredServer = null);
   }
@@ -97,7 +92,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
     final credentials = UserCredentials(
       username: _emailInputController.text.trim(),
       pw: _passwordInputController.text.trim(),
-      serverUrl: rawServerUrl.isEmpty ? '' : normalizeServerUrl(rawServerUrl),
+      serverUrl: rawServerUrl.isEmpty
+          ? ''
+          : _discoveredServer?.serverUrl ?? normalizeServerUrl(rawServerUrl),
     );
     if (credentials.serverUrl.isEmpty || credentials.username.isEmpty) {
       setState(() {
@@ -106,10 +103,12 @@ class LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    if (!Uri.parse(credentials.serverUrl).isAbsolute) {
+    final serverUri = Uri.tryParse(credentials.serverUrl);
+    if (serverUri == null || !serverUri.isAbsolute || serverUri.host.isEmpty) {
       setState(() {
         error =
-            'Server URL is invalid. Should start with http/https and does not contain any path or query parameters';
+            'Server URL is invalid. Try something like 192.168.1.10:8096 or '
+            'jellyfin.example.com';
       });
       return;
     }
@@ -128,46 +127,44 @@ class LoginPageState extends ConsumerState<LoginPage> {
         minimum: const EdgeInsets.symmetric(vertical: 36, horizontal: 48),
         child: Center(
           child: LayoutBuilder(
-            builder:
-                (context, constraints) => SingleChildScrollView(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                      maxWidth: 440,
-                    ),
-                    child: IntrinsicHeight(
-                      child: KeyboardListener(
-                        focusNode: FocusNode(),
-                        onKeyEvent: (event) {
-                          if (event.logicalKey == LogicalKeyboardKey.enter) {
-                            signIn();
-                          }
-                        },
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(Images.mainLogo),
-                            const SizedBox(height: 63),
-                            _serverURLField(),
-                            const SizedBox(height: 8),
-                            _loginField(),
-                            const SizedBox(height: 8),
-                            _passwordField(),
-                            if (error != null) ...[
-                              const SizedBox(height: 12),
-                              _errorText(error!),
-                            ],
-                            const SizedBox(height: 63),
-                            _signInButton(),
-                          ],
-                        ),
-                      ),
+            builder: (context, constraints) => SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                  maxWidth: 440,
+                ),
+                child: IntrinsicHeight(
+                  child: KeyboardListener(
+                    focusNode: FocusNode(),
+                    onKeyEvent: (event) {
+                      if (event.logicalKey == LogicalKeyboardKey.enter) {
+                        signIn();
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(Images.mainLogo),
+                        const SizedBox(height: 63),
+                        _serverURLField(),
+                        const SizedBox(height: 8),
+                        _loginField(),
+                        const SizedBox(height: 8),
+                        _passwordField(),
+                        if (error != null) ...[
+                          const SizedBox(height: 12),
+                          _errorText(error!),
+                        ],
+                        const SizedBox(height: 63),
+                        _signInButton(),
+                      ],
                     ),
                   ),
                 ),
+              ),
+            ),
           ),
         ),
       ),
@@ -202,17 +199,21 @@ class LoginPageState extends ConsumerState<LoginPage> {
   );
 
   Widget? _serverUrlSuffixIcon() => (_discoveredServer != null)
-      ? const Icon(Icons.check_circle, color: _discoveredColor, size: 22)
+      ? Icon(
+          Icons.check_circle,
+          color: Theme.of(context).colorScheme.secondary,
+          size: 22,
+        )
       : null;
 
-  Widget _discoveredServerText(PublicSystemInfoDTO server) => Padding(
+  Widget _discoveredServerText(ServerProbeResult server) => Padding(
     padding: const EdgeInsets.only(top: 4),
     child: Text(
-      'Discovered: ${server.serverName ?? 'Jellyfin server'}',
-      style: const TextStyle(
+      'Discovered: ${server.info.serverName ?? 'Jellyfin server'}',
+      style: TextStyle(
         fontFamily: FontFamily.inter,
         fontSize: 12,
-        color: _discoveredColor,
+        color: Theme.of(context).colorScheme.secondary,
       ),
     ),
   );

@@ -40,6 +40,15 @@ void main() {
     home: const LoginPage(),
   );
 
+  ServerProbeResult discoveryResult(String serverUrl) => ServerProbeResult(
+    serverUrl: serverUrl,
+    info: const PublicSystemInfoDTO(
+      id: 'server-id',
+      serverName: 'Living Room',
+      version: '10.9.11',
+    ),
+  );
+
   Future<void> enterServerUrlAndUnfocus(
     WidgetTester widgetTester,
     String url,
@@ -62,7 +71,7 @@ void main() {
     mockProbeService = MockServerProbeService();
     when(mockAuthNotifier.build).thenAnswer((_) async => true);
     when(() => mockAuthNotifier.login(any())).thenAnswer((_) async => null);
-    when(() => mockProbeService.probe(any())).thenAnswer((_) async => null);
+    when(() => mockProbeService.discover(any())).thenAnswer((_) async => null);
   });
 
   group('LoginPage', () {
@@ -124,42 +133,83 @@ void main() {
     testWidgets(
       '- shows the discovered server when the url field loses focus',
       (widgetTester) async {
-        when(() => mockProbeService.probe(any())).thenAnswer(
-          (_) async => const PublicSystemInfoDTO(
-            id: 'server-id',
-            serverName: 'Living Room',
-            version: '10.9.11',
-          ),
+        when(() => mockProbeService.discover(any())).thenAnswer(
+          (_) async => discoveryResult('http://jelly.local'),
         );
 
         await widgetTester.pumpWidget(getWidgetUT());
         await widgetTester.pump(Duration.zero);
         await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
 
-        verify(() => mockProbeService.probe('http://jelly.local')).called(1);
+        verify(() => mockProbeService.discover('http://jelly.local')).called(1);
         expect(find.text('Discovered: Living Room'), findsOneWidget);
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
       },
     );
 
     testWidgets(
-      '- normalizes the url before probing it',
+      '- discovers a server entered without a scheme',
       (widgetTester) async {
-        when(() => mockProbeService.probe(any())).thenAnswer(
-          (_) async => const PublicSystemInfoDTO(
-            id: 'server-id',
-            serverName: 'Living Room',
-            version: '10.9.11',
-          ),
+        when(() => mockProbeService.discover(any())).thenAnswer(
+          (_) async => discoveryResult('http://jelly.local:8096'),
         );
 
         await widgetTester.pumpWidget(getWidgetUT());
         await widgetTester.pump(Duration.zero);
         await enterServerUrlAndUnfocus(widgetTester, 'jelly.local:8096');
 
-        verify(
-          () => mockProbeService.probe('http://jelly.local:8096'),
-        ).called(1);
+        verify(() => mockProbeService.discover('jelly.local:8096')).called(1);
+        expect(find.text('Discovered: Living Room'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '- signs in with the scheme discovery resolved',
+      (widgetTester) async {
+        when(() => mockProbeService.discover(any())).thenAnswer(
+          (_) async => discoveryResult('https://jelly.example.com'),
+        );
+
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await enterServerUrlAndUnfocus(widgetTester, 'jelly.example.com');
+        await widgetTester.enterText(
+          find.widgetWithText(LabeledTextField, 'Login'),
+          'alex',
+        );
+        final signInFinder = find.widgetWithText(ShadowedButton, 'Sign in');
+        await widgetTester.ensureVisible(signInFinder);
+        await widgetTester.pumpAndSettle();
+        await widgetTester.tap(signInFinder);
+        await widgetTester.pumpAndSettle();
+
+        final credentials =
+            verify(() => mockAuthNotifier.login(captureAny())).captured.single
+                as UserCredentials;
+        expect(credentials.serverUrl, 'https://jelly.example.com');
+      },
+    );
+
+    testWidgets(
+      '- falls back to http when discovery finds nothing',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await enterServerUrlAndUnfocus(widgetTester, 'jelly.local:8096');
+        await widgetTester.enterText(
+          find.widgetWithText(LabeledTextField, 'Login'),
+          'alex',
+        );
+        final signInFinder = find.widgetWithText(ShadowedButton, 'Sign in');
+        await widgetTester.ensureVisible(signInFinder);
+        await widgetTester.pumpAndSettle();
+        await widgetTester.tap(signInFinder);
+        await widgetTester.pumpAndSettle();
+
+        final credentials =
+            verify(() => mockAuthNotifier.login(captureAny())).captured.single
+                as UserCredentials;
+        expect(credentials.serverUrl, 'http://jelly.local:8096');
       },
     );
 
@@ -170,7 +220,7 @@ void main() {
         await widgetTester.pump(Duration.zero);
         await enterServerUrlAndUnfocus(widgetTester, 'http://nope.local');
 
-        verify(() => mockProbeService.probe('http://nope.local')).called(1);
+        verify(() => mockProbeService.discover('http://nope.local')).called(1);
         expect(find.textContaining('Discovered:'), findsNothing);
         expect(find.byIcon(Icons.check_circle), findsNothing);
       },
@@ -179,12 +229,8 @@ void main() {
     testWidgets(
       '- clears the discovered server when the url is edited',
       (widgetTester) async {
-        when(() => mockProbeService.probe(any())).thenAnswer(
-          (_) async => const PublicSystemInfoDTO(
-            id: 'server-id',
-            serverName: 'Living Room',
-            version: '10.9.11',
-          ),
+        when(() => mockProbeService.discover(any())).thenAnswer(
+          (_) async => discoveryResult('http://jelly.local'),
         );
 
         await widgetTester.pumpWidget(getWidgetUT());
