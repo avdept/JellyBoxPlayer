@@ -8,6 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/services/server_probe_service.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 
@@ -16,7 +18,8 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     _noAuthNetworkInterceptor = InterceptorsWrapper(
       onError: (error, handler) {
         final statusCode = error.response?.statusCode;
-        if (statusCode == 401) logout();
+        if (statusCode == 401 && !_authenticating && !_loggingOut) logout();
+        handler.next(error);
       },
     );
   }
@@ -25,6 +28,13 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   late Dio _client;
   late FlutterSecureStorage _storage;
   late JellyfinApi _api;
+
+  bool _authenticating = false;
+  bool _loggingOut = false;
+
+  static const serverUnreachableError =
+      'Server is not accessible. Check the server URL and your connection.';
+  static const invalidCredentialsError = 'Incorrect login or password';
 
   static const _serverUrlKey = 'serverUrl';
   static const _userIdKey = 'userId';
@@ -65,8 +75,9 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
   Future<String?> login(UserCredentials credentials) async {
     // state = const AsyncLoading<bool>();
-    final serverUrl = _normalizeUrl(credentials.serverUrl);
+    final serverUrl = normalizeServerUrl(credentials.serverUrl);
     _api = JellyfinApi(_client, baseUrl: serverUrl);
+    _authenticating = true;
     try {
       final response = await _api.signIn(credentials: credentials);
       print(response.data.sessionInfo); // TODO: remove after testing
@@ -85,29 +96,58 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       if (tokenValidated) _setAuthHeader(token);
       state = AsyncData(tokenValidated);
     } on DioException catch (e) {
-      return e.error?.toString();
+      return _loginErrorMessage(e);
       // state = AsyncError<bool>(e.error!, e.stackTrace);
+    } finally {
+      _authenticating = false;
     }
     return state.error?.toString();
   }
 
+  String _loginErrorMessage(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.badResponse:
+        final statusCode = e.response?.statusCode;
+        if (statusCode == 401 || statusCode == 403) {
+          return invalidCredentialsError;
+        }
+        return serverUnreachableError;
+
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.cancel:
+      case DioExceptionType.unknown:
+        return serverUnreachableError;
+    }
+  }
+
   Future<void> logout() async {
+    if (_loggingOut) return;
+    _loggingOut = true;
     state = const AsyncLoading();
     try {
       await Future.wait([
         ref.read(sharedPreferencesProvider).requireValue.clear(),
         _storage.deleteAll(),
-        _api.signOut(),
+        _signOutQuietly(),
       ]);
     } finally {
+      ref.invalidate(currentLibraryProvider);
       _removeAuthHeader();
       state = const AsyncData(false);
+      _loggingOut = false;
     }
   }
 
-  String _normalizeUrl(String url) {
-    if (RegExp('^https?').hasMatch(url)) return url;
-    return 'http://$url';
+  Future<void> _signOutQuietly() async {
+    try {
+      await _api.signOut();
+    } on Object {
+      return;
+    }
   }
 
   bool _validateAuthToken(String? token, String userId) {

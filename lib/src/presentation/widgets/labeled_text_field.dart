@@ -10,6 +10,8 @@ class LabeledTextField extends StatelessWidget {
     this.obscureText = false,
     this.textInputAction,
     this.autofocus = false,
+    this.focusNode,
+    this.suffixIcon,
     super.key,
   });
 
@@ -20,6 +22,8 @@ class LabeledTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final bool autofocus;
+  final FocusNode? focusNode;
+  final Widget? suffixIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +50,7 @@ class LabeledTextField extends StatelessWidget {
 
   Widget _textField() => TextField(
         controller: controller,
+        focusNode: focusNode,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         obscureText: obscureText,
@@ -57,6 +62,10 @@ class LabeledTextField extends StatelessWidget {
             borderSide: BorderSide.none,
             borderRadius: BorderRadius.circular(10),
           ),
+          suffixIcon: suffixIcon,
+          suffixIconConstraints: (suffixIcon != null)
+              ? const BoxConstraints(minWidth: 44)
+              : null,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
           hintText: placeholder,
           hintStyle: const TextStyle(

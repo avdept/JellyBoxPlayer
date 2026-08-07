@@ -12,6 +12,9 @@ abstract class JellyfinApi {
     String baseUrl,
   }) = _JellyfinApi;
 
+  @GET('/System/Info/Public')
+  Future<HttpResponse<PublicSystemInfoDTO>> getPublicSystemInfo();
+
   @POST('/Users/AuthenticateByName')
   Future<HttpResponse<SignInResultDTO>> signIn({
     @Body() required UserCredentials credentials,
