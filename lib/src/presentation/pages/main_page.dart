@@ -118,15 +118,17 @@ class _MainPageState extends ConsumerState<MainPage> {
                   children: [
                     if (isOffline) const OfflineBanner(),
                     Expanded(
-                      child: MediaQuery.removePadding(
-                        context: context,
-                        removeTop: isOffline,
-                        child: Stack(
-                          children: [
-                            widget.shell,
-                            if (_device.isDesktop)
-                              const Positioned.fill(child: LyricsOverlay()),
-                          ],
+                      child: Builder(
+                        builder: (context) => MediaQuery.removePadding(
+                          context: context,
+                          removeTop: isOffline,
+                          child: Stack(
+                            children: [
+                              widget.shell,
+                              if (_device.isDesktop)
+                                const Positioned.fill(child: LyricsOverlay()),
+                            ],
+                          ),
                         ),
                       ),
                     ),
