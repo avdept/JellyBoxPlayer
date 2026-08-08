@@ -1,7 +1,6 @@
-// ignore_for_file: lines_longer_than_80_chars
-
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
@@ -28,46 +27,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(this._ref) : super(PlaybackState.initial()) {
     _audioPlayer = _ref.watch(playerProvider)
       ..currentIndexStream.listen((index) {
-        final currentIndex = state.currentMediaIndex;
-        final nextIndex = index;
-        if (nextIndex != currentIndex) {
-          if (currentIndex != null) {
-            final currentSong = state.songs.elementAtOrNull(currentIndex);
-            if (currentSong != null) {
-              _report(
-                (api) => api.playbackStopped(
-                  values: PlaystateData(
-                    playSessionId: _playSessionId,
-                    itemId: currentSong.id,
-                    item: currentSong,
-                    mediaSourceId: state.album?.id,
-                  ),
-                ),
-              );
-            }
-          }
-          if (nextIndex != null) {
-            final nextSong = state.songs.elementAtOrNull(nextIndex);
-            if (nextSong != null) {
-              _report(
-                (api) => api.playbackStarted(
-                  values: PlaystateData(
-                    playSessionId: _playSessionId,
-                    itemId: nextSong.id,
-                    item: nextSong,
-                    mediaSourceId: state.album?.id,
-                  ),
-                ),
-              );
-              final album = state.album;
-              if (album != null) {
-                unawaited(_saveToStorage(songId: nextSong.id, positionMs: 0));
-              }
-            }
-          }
+        if (_preparingQueue || index == _reportedIndex) return;
+        _reportTrackChange(index);
+        final nextSong = index != null
+            ? state.songs.elementAtOrNull(index)
+            : null;
+        if (nextSong != null && state.album != null) {
+          unawaited(_saveToStorage(songId: nextSong.id, positionMs: 0));
         }
       })
       ..positionStream.listen((position) {
+        if (!_preparingQueue &&
+            _audioPlayer.currentIndex == _reportedIndex &&
+            position > Duration.zero) {
+          _reportedPositionMs = position.inMilliseconds;
+        }
         state = state.copyWith(
           position: position,
           totalDuration: _audioPlayer.duration,
@@ -96,6 +70,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       // Handle other player states as needed
       ..playerStateStream.listen((playerState) {
         if (playerState.processingState == ProcessingState.completed) {
+          _reportStopped();
+          _stopProgressReports();
           state = PlaybackState.initial();
         } else if (playerState.playing && !state.status.isPlaying) {
           state = state.copyWith(status: PlaybackStatus.playing);
@@ -110,17 +86,115 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       });
   }
 
+  static const _progressInterval = Duration(seconds: 10);
+
   final Ref _ref;
   late AudioPlayer _audioPlayer;
   var _playSessionId = '';
   DateTime? _lastPositionSave;
+  int? _reportedIndex;
+  var _reportedPositionMs = 0;
+  var _startReported = false;
+  var _preparingQueue = false;
+  Timer? _progressTimer;
+
+  ItemDTO? get _reportedSong {
+    final index = _reportedIndex;
+    return index != null ? state.songs.elementAtOrNull(index) : null;
+  }
+
+  PlaystateData _playstate(
+    ItemDTO song, {
+    required int positionMs,
+    bool? isPaused,
+  }) => PlaystateData(
+    playSessionId: _playSessionId,
+    itemId: song.id,
+    mediaSourceId: song.id,
+    positionTicks: positionMs * 10000,
+    isPaused: isPaused,
+    canSeek: true,
+    nowPlayingQueue: [
+      for (final queued in state.songs) QueueItemData(id: queued.id),
+    ],
+  );
+
+  void _reportStarted(ItemDTO song, {required int positionMs, bool? isPaused}) {
+    _startReported = true;
+    _report(
+      (api) => api.playbackStarted(
+        values: _playstate(song, positionMs: positionMs, isPaused: isPaused),
+      ),
+    );
+  }
+
+  void _reportStopped() {
+    if (!_startReported) return;
+    final song = _reportedSong;
+    if (song == null) return;
+    _startReported = false;
+    _report(
+      (api) => api.playbackStopped(
+        values: _playstate(song, positionMs: _reportedPositionMs),
+      ),
+    );
+  }
+
+  void _reportProgress() {
+    if (!_startReported) return;
+    final song = _reportedSong;
+    if (song == null) return;
+    _report(
+      (api) => api.playbackProgress(
+        values: _playstate(
+          song,
+          positionMs: _audioPlayer.position.inMilliseconds,
+          isPaused: !state.status.isPlaying,
+        ),
+      ),
+    );
+  }
+
+  void _reportTrackChange(int? index) {
+    _reportStopped();
+    _reportedIndex = index;
+    _reportedPositionMs = 0;
+    final song = _reportedSong;
+    if (song != null) {
+      _reportStarted(song, positionMs: 0, isPaused: false);
+      _startProgressReports();
+    } else {
+      _stopProgressReports();
+    }
+  }
+
+  void _startProgressReports() {
+    _progressTimer ??= Timer.periodic(
+      _progressInterval,
+      (_) => _reportProgress(),
+    );
+  }
+
+  void _stopProgressReports() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
+  }
 
   void _report(Future<void> Function(JellyfinApi api) call) {
     if (_ref.read(isOfflineProvider)) return;
+    unawaited(_runReport(call));
+  }
+
+  Future<void> _runReport(Future<void> Function(JellyfinApi api) call) async {
     try {
-      call(_ref.read(jellyfinApiProvider)).ignore();
+      await call(_ref.read(jellyfinApiProvider));
+    } on DioException catch (error) {
+      debugPrint(
+        '[Playback] report ${error.requestOptions.path} failed: '
+        '${error.response?.statusCode} ${error.response?.data}',
+      );
     } on Object catch (error) {
-      print('Playback report failed: $error');
+      debugPrint('[Playback] report failed: $error');
     }
   }
 
@@ -150,6 +224,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         return;
       }
 
+      _reportStopped();
+      _preparingQueue = true;
+      _reportedIndex = null;
+
       _playSessionId = DateTime.now().toIso8601String(); // Any unique ID
       final startIndex = playableSongs.indexWhere((s) => s.id == playSong.id);
       final effectiveIndex = startIndex >= 0 ? startIndex : 0;
@@ -170,6 +248,18 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         currentMediaIndex: effectiveIndex,
       );
 
+      _preparingQueue = false;
+      _reportedIndex = effectiveIndex;
+      _reportedPositionMs = startPosition.inMilliseconds;
+      if (autoPlay) {
+        _reportStarted(
+          playableSongs[effectiveIndex],
+          positionMs: startPosition.inMilliseconds,
+          isPaused: false,
+        );
+        _startProgressReports();
+      }
+
       unawaited(
         _saveToStorage(
           songId: playableSongs[effectiveIndex].id,
@@ -180,6 +270,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
       if (autoPlay) unawaited(_audioPlayer.play());
     } catch (e, st) {
+      _preparingQueue = false;
       print('Error in play(): type=${e.runtimeType}, message=$e\n$st');
       if (e.toString().indexOf('setPitch') > 0) {
         // This is hack to avoid playback state being error on ios*`
@@ -324,6 +415,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> seek(Duration position) async {
     await _audioPlayer.seek(position);
     state = state.copyWith(position: position);
+    _reportedPositionMs = position.inMilliseconds;
+    _reportProgress();
     final currentIndex = _audioPlayer.currentIndex;
     final currentSong = currentIndex != null
         ? state.songs.elementAtOrNull(currentIndex)
@@ -349,6 +442,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       status: PlaybackStatus.paused,
       position: _audioPlayer.position,
     );
+    _stopProgressReports();
+    _reportProgress();
   }
 
   Future<void> resume() async {
@@ -371,6 +466,18 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       status: PlaybackStatus.playing,
       position: _audioPlayer.position,
     );
+
+    final song = _reportedSong;
+    if (song != null && !_startReported) {
+      _reportStarted(
+        song,
+        positionMs: _audioPlayer.position.inMilliseconds,
+        isPaused: false,
+      );
+    } else {
+      _reportProgress();
+    }
+    _startProgressReports();
   }
 
   Future<void> next() async {
@@ -383,6 +490,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> stop() async {
     await _audioPlayer.stop();
+    _stopProgressReports();
+    _reportStopped();
     state = state.copyWith(
       status: PlaybackStatus.stopped,
       position: Duration.zero,
@@ -436,6 +545,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   @override
   void dispose() {
+    _stopProgressReports();
+    _reportStopped();
     _audioPlayer.dispose();
     super.dispose();
   }
