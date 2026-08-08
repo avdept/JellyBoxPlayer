@@ -219,6 +219,11 @@ abstract class JellyfinApi {
     @Body() required PlaystateData values,
   });
 
+  @POST('/Sessions/Playing/Progress')
+  Future<HttpResponse<void>> playbackProgress({
+    @Body() required PlaystateData values,
+  });
+
   @POST('/Sessions/Playing/Stopped')
   Future<HttpResponse<void>> playbackStopped({
     @Body() required PlaystateData values,
