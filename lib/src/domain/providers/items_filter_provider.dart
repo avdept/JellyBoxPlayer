@@ -22,3 +22,7 @@ class FilterNotifier extends StateNotifier<Filter> {
 final filterProvider = StateNotifierProvider<FilterNotifier, Filter>(
   (_) => FilterNotifier(),
 );
+
+final carFilterProvider = StateNotifierProvider<FilterNotifier, Filter>(
+  (_) => FilterNotifier(),
+);
