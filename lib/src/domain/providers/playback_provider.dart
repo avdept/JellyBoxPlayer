@@ -44,7 +44,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         }
         state = state.copyWith(
           position: position,
-          totalDuration: _audioPlayer.duration,
+          totalDuration: _durationFor(_audioPlayer.currentIndex),
           currentMediaIndex: _audioPlayer.currentIndex,
         );
 
@@ -90,7 +90,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   final Ref _ref;
   late AudioPlayer _audioPlayer;
-  var _playSessionId = '';
+  final _playSessionIds = <String, String>{};
   DateTime? _lastPositionSave;
   int? _reportedIndex;
   var _reportedPositionMs = 0;
@@ -103,12 +103,22 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     return index != null ? state.songs.elementAtOrNull(index) : null;
   }
 
+  Duration? _durationFor(int? index, {List<ItemDTO>? songs}) {
+    final song = index != null
+        ? (songs ?? state.songs).elementAtOrNull(index)
+        : null;
+    if (song != null && song.runTimeTicks > 0) {
+      return Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
+    }
+    return _audioPlayer.duration;
+  }
+
   PlaystateData _playstate(
     ItemDTO song, {
     required int positionMs,
     bool? isPaused,
   }) => PlaystateData(
-    playSessionId: _playSessionId,
+    playSessionId: _playSessionIds[song.id] ?? '',
     itemId: song.id,
     mediaSourceId: song.id,
     positionTicks: positionMs * 10000,
@@ -206,8 +216,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool autoPlay = true,
   }) async {
     try {
+      final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+      final sessionIds = {
+        for (final song in songs) song.id: '$deviceId-$stamp-${song.id}',
+      };
+
       final resolved = await Future.wait(
-        songs.map((song) => _resolveSource(song, album)),
+        songs.map((song) => _resolveSource(song, album, sessionIds[song.id]!)),
       );
 
       final playableSongs = <ItemDTO>[];
@@ -225,10 +240,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
 
       _reportStopped();
+      _playSessionIds
+        ..clear()
+        ..addAll(sessionIds);
       _preparingQueue = true;
       _reportedIndex = null;
 
-      _playSessionId = DateTime.now().toIso8601String(); // Any unique ID
       final startIndex = playableSongs.indexWhere((s) => s.id == playSong.id);
       final effectiveIndex = startIndex >= 0 ? startIndex : 0;
       final startPosition = initialPosition ?? Duration.zero;
@@ -244,7 +261,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         album: album,
         status: autoPlay ? PlaybackStatus.playing : PlaybackStatus.paused,
         position: startPosition,
-        totalDuration: _audioPlayer.duration,
+        totalDuration: _durationFor(effectiveIndex, songs: playableSongs),
         currentMediaIndex: effectiveIndex,
       );
 
@@ -278,7 +295,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         state = state.copyWith(
           status: PlaybackStatus.playing,
           position: Duration.zero,
-          totalDuration: _audioPlayer.duration,
+          totalDuration: _durationFor(_audioPlayer.currentIndex),
         );
       } else {
         state = state.copyWith(status: PlaybackStatus.error);
@@ -289,6 +306,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<({ItemDTO song, AudioSource source})?> _resolveSource(
     ItemDTO song,
     ItemDTO album,
+    String playSessionId,
   ) async {
     final isDownloaded = await _ref
         .read(downloadManagerProvider.notifier)
@@ -306,27 +324,34 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         .where((s) => s.type == 'Audio')
         .firstOrNull;
 
-    // Resolve platform-correct direct-play/transcode params so codecs the
-    // player can't decode (notably ALAC on Android's ExoPlayer) transcode
-    // to a lossless FLAC stream instead of silently failing. See
-    // [AudioStreamProfile].
     final streamProfile = AudioStreamProfile.forSource(
       sourceContainer: mediaSource?.container,
       sourceCodec: audioStream?.codec,
     );
 
+    final useHls = downloadedPath == null && streamProfile.requiresTranscode;
+
     final audioSourceUri = (downloadedPath != null)
         ? Uri.file(downloadedPath)
         : Uri.parse(_ref.read(baseUrlProvider)!).replace(
-            path: 'Audio/${song.id}/universal',
+            path: useHls
+                ? 'Audio/${song.id}/main.m3u8'
+                : 'Audio/${song.id}/universal',
             queryParameters: {
               'UserId': _ref.read(currentUserProvider)!.userId,
               'api_key': _ref.read(currentUserProvider)!.token,
               'DeviceId': deviceId,
-              'TranscodingProtocol': 'http',
-              'TranscodingContainer': streamProfile.transcodingContainer,
+              'PlaySessionId': playSessionId,
+              'MediaSourceId': song.id,
               'AudioCodec': streamProfile.transcodingAudioCodec,
-              'Container': streamProfile.directPlayContainers,
+              if (useHls) ...{
+                'SegmentContainer': streamProfile.hlsSegmentContainer,
+                'TranscodeReasons': 'AudioCodecNotSupported',
+              } else ...{
+                'TranscodingProtocol': 'http',
+                'TranscodingContainer': streamProfile.transcodingContainer,
+                'Container': streamProfile.directPlayContainers,
+              },
             },
           );
 
@@ -341,20 +366,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         'artistId': album.albumArtists.first.id,
     };
 
+    final tag = MediaItem(
+      id: song.id,
+      album: song.albumName,
+      artist: song.albumArtist ?? album.albumArtist,
+      duration: Duration(milliseconds: (song.runTimeTicks / 10000).ceil()),
+      title: song.name,
+      extras: extras,
+      artUri: _artUri(song, album, isDownloaded: downloadedPath != null),
+    );
+
     return (
       song: song,
-      source: AudioSource.uri(
-        audioSourceUri,
-        tag: MediaItem(
-          id: song.id,
-          album: song.albumName,
-          artist: song.albumArtist ?? album.albumArtist,
-          duration: Duration(milliseconds: (song.runTimeTicks / 10000).ceil()),
-          title: song.name,
-          extras: extras,
-          artUri: _artUri(song, album, isDownloaded: downloadedPath != null),
-        ),
-      ),
+      source: useHls
+          ? HlsAudioSource(audioSourceUri, tag: tag)
+          : AudioSource.uri(audioSourceUri, tag: tag),
     );
   }
 

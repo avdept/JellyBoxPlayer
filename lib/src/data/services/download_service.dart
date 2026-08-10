@@ -51,6 +51,8 @@ class DownloadService extends ChangeNotifier {
             'UserId': userId,
             'api_key': token,
             'DeviceId': deviceId,
+            'PlaySessionId': 'download-$deviceId-${song.id}',
+            'MediaSourceId': song.id,
             'TranscodingProtocol': 'http',
             'TranscodingContainer': profile.transcodingContainer,
             'AudioCodec': profile.transcodingAudioCodec,

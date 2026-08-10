@@ -25,6 +25,8 @@ class AudioStreamProfile {
     required this.transcodingContainer,
     required this.transcodingAudioCodec,
     required this.outputContainer,
+    required this.requiresTranscode,
+    required this.hlsSegmentContainer,
   });
 
   factory AudioStreamProfile.forSource({
@@ -58,6 +60,8 @@ class AudioStreamProfile {
       transcodingContainer: transcodingContainer,
       transcodingAudioCodec: transcodingAudioCodec,
       outputContainer: outputContainer,
+      requiresTranscode: !directPlays,
+      hlsSegmentContainer: isLossless ? 'mp4' : 'ts',
     );
   }
 
@@ -75,6 +79,14 @@ class AudioStreamProfile {
   /// when Jellyfin direct-plays, otherwise [transcodingContainer]. Use this as
   /// the file extension for downloads.
   final String outputContainer;
+
+  /// Whether Jellyfin has to transcode this source for the current platform.
+  /// When true, playback must go over HLS rather than the progressive endpoint.
+  final bool requiresTranscode;
+
+  /// Value for the HLS `SegmentContainer` query param. `mp4` (fMP4) is the only
+  /// segment container that can carry FLAC; `ts` covers the AAC target.
+  final String hlsSegmentContainer;
 }
 
 String? _normalizeContainer(String? container) {
