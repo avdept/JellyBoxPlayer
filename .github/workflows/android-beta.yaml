@@ -23,9 +23,6 @@ jobs:
     env:
       PACKAGE_NAME: ${{ vars.PACKAGE_NAME }}
       PLAY_TRACK: ${{ vars.PLAY_TRACK }}
-      PLAY_DOWNLOAD_ATTEMPTS: ${{ vars.PLAY_DOWNLOAD_ATTEMPTS }}
-      PLAY_DOWNLOAD_INTERVAL: ${{ vars.PLAY_DOWNLOAD_INTERVAL }}
-      PLAY_CERTIFICATE_SHA256_HASH: ${{ vars.PLAY_CERTIFICATE_SHA256_HASH }}
       ANDROID_KEYSTORE_ENV_VAR: ${{ secrets.ANDROID_KEYSTORE_ENV_VAR }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -58,7 +55,7 @@ jobs:
           bundler-cache: true
           working-directory: android
 
-      - name: Upload bundle to Play as draft and fetch signed universal APK
+      - name: Build universal APK and upload bundle to Play as draft
         run: bundle exec fastlane android beta
 
       - name: Archive app bundle
