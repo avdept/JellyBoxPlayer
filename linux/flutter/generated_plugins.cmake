@@ -8,7 +8,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   media_kit_libs_linux
   screen_retriever_linux
   sentry_flutter
-  sqlite3_flutter_libs
   url_launcher_linux
   window_manager
 )
