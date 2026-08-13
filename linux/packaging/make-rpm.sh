@@ -23,7 +23,7 @@ exec /opt/jellybox/jellybox "$@"
 EOF
 chmod 755 "$ROOT/usr/bin/jellybox"
 
-sed -e "s/@VERSION@/$VERSION/" -e 's#^Exec=jellybox#Exec=/usr/bin/jellybox#' \
+sed -e "s|@VERSION@|$VERSION|" -e 's#^Exec=jellybox#Exec=/usr/bin/jellybox#' \
   "$SCRIPT_DIR/jellybox.desktop" > "$ROOT/usr/share/applications/jellybox.desktop"
 
 cp "$SCRIPT_DIR/jellybox.png" "$ROOT/usr/share/icons/hicolor/256x256/apps/jellybox.png"

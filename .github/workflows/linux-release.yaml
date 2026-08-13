@@ -24,15 +24,22 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
-          VERSION="${TAG%+*}"
-          BUILD_NUMBER="${TAG#*+}"
-          if [ "$BUILD_NUMBER" = "$TAG" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            SOURCE="${GITHUB_REF#refs/tags/v}"
+          else
+            # Manual run not against a tag (e.g. dispatched from a branch to
+            # backfill Linux artifacts): fall back to pubspec.yaml so VERSION
+            # never ends up being a branch ref like "heads/linux-builds".
+            SOURCE="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')"
+          fi
+          VERSION="${SOURCE%+*}"
+          BUILD_NUMBER="${SOURCE#*+}"
+          if [ "$BUILD_NUMBER" = "$SOURCE" ]; then
             BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "tag=v${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - uses: subosito/flutter-action@v2
         with:

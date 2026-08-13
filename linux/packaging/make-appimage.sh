@@ -14,7 +14,7 @@ mkdir -p "$APPDIR"
 cp -a "$BUNDLE_DIR/." "$APPDIR/"
 
 install -m755 "$SCRIPT_DIR/AppRun" "$APPDIR/AppRun"
-sed "s/@VERSION@/$VERSION/" "$SCRIPT_DIR/jellybox.desktop" > "$APPDIR/jellybox.desktop"
+sed "s|@VERSION@|$VERSION|" "$SCRIPT_DIR/jellybox.desktop" > "$APPDIR/jellybox.desktop"
 install -m644 "$SCRIPT_DIR/jellybox.png" "$APPDIR/jellybox.png"
 ln -sf jellybox.png "$APPDIR/.DirIcon"
 
