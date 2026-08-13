@@ -2,6 +2,11 @@ name: Linux Release
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_to_latest:
+        description: 'Attach the build to the latest existing release'
+        type: boolean
+        default: false
   push:
     tags:
       - 'v*'
@@ -43,7 +48,9 @@ jobs:
             libsecret-1-dev libjsoncpp-dev \
             libsqlite3-dev \
             libcurl4-openssl-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+            patchelf rpm ruby ruby-dev rubygems build-essential
+          sudo gem install --no-document fpm
 
       - name: Build Linux bundle
         run: |
@@ -52,23 +59,85 @@ jobs:
             --build-name=${{ steps.version.outputs.version }} \
             --build-number=${{ steps.version.outputs.build_number }}
 
+      - name: Bundle shared libraries
+        run: ./linux/packaging/bundle-libs.sh build/linux/x64/release/bundle
+
       - name: Create archive
         run: |
           cd build/linux/x64/release/bundle
           tar czf "$GITHUB_WORKSPACE/jellybox-linux-x64.tar.gz" .
 
-      - name: Upload build artifact
+      - name: Build AppImage
+        run: |
+          ./linux/packaging/make-appimage.sh \
+            build/linux/x64/release/bundle \
+            "$GITHUB_WORKSPACE/jellybox-linux-x86_64.AppImage" \
+            "${{ steps.version.outputs.version }}"
+
+      - name: Build .deb package
+        run: |
+          ./linux/packaging/make-deb.sh \
+            build/linux/x64/release/bundle \
+            "$GITHUB_WORKSPACE/jellybox-linux-amd64.deb" \
+            "${{ steps.version.outputs.version }}" \
+            "${{ steps.version.outputs.build_number }}"
+
+      - name: Build .rpm package
+        run: |
+          ./linux/packaging/make-rpm.sh \
+            build/linux/x64/release/bundle \
+            "$GITHUB_WORKSPACE/jellybox-linux-x86_64.rpm" \
+            "${{ steps.version.outputs.version }}" \
+            "${{ steps.version.outputs.build_number }}"
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: jellybox-linux-x64
-          path: jellybox-linux-x64.tar.gz
+          path: |
+            jellybox-linux-x64.tar.gz
+            jellybox-linux-x86_64.AppImage
+            jellybox-linux-amd64.deb
+            jellybox-linux-x86_64.rpm
 
+      # Tag push: create (or update) the release for that tag.
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.version }}
-          files: jellybox-linux-x64.tar.gz
+          files: |
+            jellybox-linux-x64.tar.gz
+            jellybox-linux-x86_64.AppImage
+            jellybox-linux-amd64.deb
+            jellybox-linux-x86_64.rpm
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Manual run with the checkbox ticked: attach to whatever release GitHub
+      # currently marks as "Latest". Uses `gh release upload` rather than the
+      # release action so only assets are touched — the existing release's
+      # title and notes are left exactly as they are.
+      - name: Attach to latest release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # `|| true` because `set -e` would otherwise abort here when the repo
+          # has no published release, skipping the explanatory error below.
+          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)"
+          if [ -z "$TAG" ]; then
+            echo "::error::No published release found to attach to. Push a v* tag first, or publish a release manually."
+            exit 1
+          fi
+          echo "Attaching assets to existing release $TAG"
+          gh release upload "$TAG" \
+            jellybox-linux-x64.tar.gz \
+            jellybox-linux-x86_64.AppImage \
+            jellybox-linux-amd64.deb \
+            jellybox-linux-x86_64.rpm \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "::notice::Uploaded Linux artifacts to release $TAG"
