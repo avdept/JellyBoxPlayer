@@ -57,7 +57,6 @@ dependencies:
   path_provider: ^2.1.5
   sqflite: ^2.4.2
   sqflite_common_ffi: ^2.3.0
-  sqlite3_flutter_libs: ^0.5.24 # Bundles sqlite3.dll for Windows release builds
   path: ^1.9.1
   background_downloader: ^9.5.7
   updatify_flutter: ^1.4.1

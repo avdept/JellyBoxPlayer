@@ -90,9 +90,20 @@ Future<void> main() async {
       titleBarStyle: TitleBarStyle.hidden,
     );
 
+    final isWayland =
+        Platform.isLinux &&
+        (Platform.environment['XDG_SESSION_TYPE']?.toLowerCase() == 'wayland' ||
+            Platform.environment['WAYLAND_DISPLAY'] != null);
+
+    if (isWayland) {
+      await windowManager.setOpacity(0);
+      await windowManager.show();
+    }
+
     await windowManager.waitUntilReadyToShow(
       windowOptions,
       () async {
+        if (isWayland) await windowManager.setOpacity(1);
         await windowManager.show();
         await windowManager.focus();
       },
