@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=JellyBox
+Comment=Jellyfin client
+Exec=jellybox
+Icon=jellybox
+Categories=AudioVideo;Player;Network;
+Terminal=false
+X-AppImage-Version=@VERSION@
