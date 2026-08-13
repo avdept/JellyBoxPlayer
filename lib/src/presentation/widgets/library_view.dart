@@ -18,11 +18,14 @@ class LibraryView extends ConsumerWidget {
   String? imagePath(WidgetRef ref) {
     if (library.imageTags['Primary'] == null) return null;
 
-    return ref.read(imageServiceProvider).imagePath(tagId: library.imageTags['Primary']!, id: library.id);
+    return ref
+        .read(imageServiceProvider)
+        .imagePath(tagId: library.imageTags['Primary']!, id: library.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {
-    if (imagePath(ref) != null) return CachedNetworkImageProvider(imagePath(ref)!);
+    if (imagePath(ref) != null)
+      return CachedNetworkImageProvider(imagePath(ref)!);
 
     return const AssetImage(Images.librarySample);
   }

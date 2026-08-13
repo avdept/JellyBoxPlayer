@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/providers/providers.dart';

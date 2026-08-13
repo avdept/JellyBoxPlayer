@@ -25,16 +25,21 @@ abstract class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'Album') String? albumName,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
     @JsonKey(name: 'AlbumArtists') @Default([]) List<ArtistDTO> albumArtists,
-    @JsonKey(name: 'BackdropImageTags') @Default([]) List<String> backdropImageTags,
+    @JsonKey(name: 'BackdropImageTags')
+    @Default([])
+    List<String> backdropImageTags,
     @JsonKey(name: 'ImageTags') @Default({}) Map<String, String> imageTags,
     @JsonKey(name: 'HasLyrics') @Default(false) bool hasLyrics,
     @JsonKey(name: 'UserData') @Default(UserData()) UserData userData,
-    @JsonKey(name: 'MediaSources') @Default([]) List<MediaSourceDTO> mediaSources,
+    @JsonKey(name: 'MediaSources')
+    @Default([])
+    List<MediaSourceDTO> mediaSources,
   }) = _ItemDTO;
 
   const ItemDTO._();
 
-  factory ItemDTO.fromJson(Map<String, dynamic> json) => _$ItemDTOFromJson(json);
+  factory ItemDTO.fromJson(Map<String, dynamic> json) =>
+      _$ItemDTOFromJson(json);
 
   Duration get duration => Duration(seconds: runTimeTicks ~/ 10000000);
 }
@@ -101,7 +106,8 @@ abstract class DownloadedAlbumDTO extends _ItemDTO with _$DownloadedAlbumDTO {
 
   @override
   @TagsMapConverter()
-  @Default({}) @JsonKey(name: 'ImageTags')
+  @Default({})
+  @JsonKey(name: 'ImageTags')
   final Map<String, String> imageTags;
 
   @override
@@ -134,11 +140,11 @@ abstract class DownloadedSongDTO extends _ItemDTO with _$DownloadedSongDTO {
       _$DownloadedSongDTOFromJson(json);
 
   factory DownloadedSongDTO.fromSong(
-      ItemDTO song, {
-        DateTime? downloadDate,
-        required String filePath,
-        required int sizeInBytes,
-      }) {
+    ItemDTO song, {
+    DateTime? downloadDate,
+    required String filePath,
+    required int sizeInBytes,
+  }) {
     return _DownloadedSongDTO(
       id: song.id,
       runTimeTicks: song.runTimeTicks,
@@ -173,7 +179,7 @@ abstract class DownloadedSongDTO extends _ItemDTO with _$DownloadedSongDTO {
     required this.imageTags,
     DateTime? downloadDate,
   }) : downloadDate = downloadDate ?? DateTime.now(),
-        super(userData: userData);
+       super(userData: userData);
 
   @override
   @UserDataConverter()

@@ -57,7 +57,9 @@ class PlaybackStorage {
       final songs = (jsonDecode(songsJson) as List)
           .map((e) => ItemDTO.fromJson(e as Map<String, dynamic>))
           .toList();
-      final album = ItemDTO.fromJson(jsonDecode(albumJson) as Map<String, dynamic>);
+      final album = ItemDTO.fromJson(
+        jsonDecode(albumJson) as Map<String, dynamic>,
+      );
       return PlaybackSnapshot(
         songs: songs,
         album: album,

@@ -14,8 +14,7 @@ class WindowsTitleBar extends StatefulWidget {
   State<WindowsTitleBar> createState() => _WindowsTitleBarState();
 }
 
-class _WindowsTitleBarState extends State<WindowsTitleBar>
-    with WindowListener {
+class _WindowsTitleBarState extends State<WindowsTitleBar> with WindowListener {
   bool _isMaximized = false;
 
   @override

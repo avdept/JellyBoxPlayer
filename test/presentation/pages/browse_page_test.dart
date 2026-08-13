@@ -9,7 +9,8 @@ import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/item_list_providers.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
-import 'package:jplayer/src/presentation/pages/listen_page.dart';
+import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/presentation/pages/browse_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -124,7 +125,7 @@ void main() {
         currentUserProvider.overrideWith((_) => mockUser),
       ],
     ),
-    home: const ListenPage(),
+    home: const BrowsePage(),
   );
 
   setUp(() {
@@ -136,7 +137,7 @@ void main() {
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
   });
 
-  group('ListenPage', () {
+  group('BrowsePage', () {
     testWidgets(
       '- displays list of albums',
       (widgetTester) async {
@@ -164,6 +165,28 @@ void main() {
         expect(genreFinder, findsWidgets);
         expect(
           find.descendant(of: genreFinder, matching: find.text(genreUT.name)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      '- reveals a search field with clear button when search is tapped',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await widgetTester.tap(find.widgetWithIcon(IconButton, JPlayer.search));
+        await widgetTester.pumpAndSettle();
+        final searchFieldFinder = find.widgetWithIcon(
+          TextField,
+          JPlayer.search,
+        );
+        expect(searchFieldFinder, findsOneWidget);
+        expect(
+          find.descendant(
+            of: searchFieldFinder,
+            matching: find.widgetWithIcon(IconButton, JPlayer.close),
+          ),
           findsOneWidget,
         );
       },

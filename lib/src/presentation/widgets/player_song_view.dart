@@ -105,7 +105,8 @@ class PlayerSongView extends ConsumerWidget {
                     color: Colors.green,
                   );
                 }
-                if (!currentTask.isDownloadingNow) return const SizedBox.shrink();
+                if (!currentTask.isDownloadingNow)
+                  return const SizedBox.shrink();
                 return SizedBox.square(
                   dimension: 30,
                   child: ValueListenableBuilder<double?>(

@@ -8,7 +8,9 @@ part 'media_source_dto.g.dart';
 abstract class MediaSourceDTO with _$MediaSourceDTO {
   const factory MediaSourceDTO({
     @JsonKey(name: 'Container') String? container,
-    @JsonKey(name: 'MediaStreams') @Default([]) List<MediaStreamDTO> mediaStreams,
+    @JsonKey(name: 'MediaStreams')
+    @Default([])
+    List<MediaStreamDTO> mediaStreams,
   }) = _MediaSourceDTO;
 
   factory MediaSourceDTO.fromJson(Map<String, dynamic> json) =>

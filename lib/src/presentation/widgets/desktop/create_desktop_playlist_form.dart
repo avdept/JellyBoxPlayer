@@ -18,21 +18,25 @@ class CreateDesktopPlaylistForm extends ConsumerStatefulWidget {
   final VoidCallback? onCreated;
 
   @override
-  ConsumerState<CreateDesktopPlaylistForm> createState() => _CreatePlaylistBottomSheetState();
+  ConsumerState<CreateDesktopPlaylistForm> createState() =>
+      _CreatePlaylistBottomSheetState();
 }
 
-class _CreatePlaylistBottomSheetState extends ConsumerState<CreateDesktopPlaylistForm> {
+class _CreatePlaylistBottomSheetState
+    extends ConsumerState<CreateDesktopPlaylistForm> {
   final _inputController = TextEditingController(text: 'My new playlist');
   var _isPublicPlaylist = true;
 
   Future<void> _onCreatePressed() async {
-    await ref.read(jellyfinApiProvider).createPlaylist(
-      values: PlaylistData(
-        name: _inputController.text.trim(),
-        userId: ref.read(currentUserProvider)!.userId,
-        isPublic: _isPublicPlaylist,
-      ),
-    );
+    await ref
+        .read(jellyfinApiProvider)
+        .createPlaylist(
+          values: PlaylistData(
+            name: _inputController.text.trim(),
+            userId: ref.read(currentUserProvider)!.userId,
+            isPublic: _isPublicPlaylist,
+          ),
+        );
     widget.onCreated?.call();
     _onCloseBottomSheet();
   }

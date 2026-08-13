@@ -14,7 +14,8 @@ class RandomQueueButton extends ConsumerWidget {
       stream: ref.read(playerProvider).shuffleModeEnabledStream,
       builder: (context, snapshot) {
         return IconButton(
-          onPressed: () => ref.read(playerProvider).setShuffleModeEnabled(!snapshot.data!),
+          onPressed: () =>
+              ref.read(playerProvider).setShuffleModeEnabled(!snapshot.data!),
           icon: Icon(
             JPlayer.mix,
             color: theme.colorScheme.onPrimary,

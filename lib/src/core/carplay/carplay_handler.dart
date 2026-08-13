@@ -105,7 +105,9 @@ class CarPlayHandler {
     required String? songId,
     required bool playing,
   }) {
-    if (setId == _lastSetId && songId == _lastSongId && playing == _lastPlaying) {
+    if (setId == _lastSetId &&
+        songId == _lastSongId &&
+        playing == _lastPlaying) {
       return;
     }
     _lastSetId = setId;
@@ -254,7 +256,12 @@ class CarPlayHandler {
     final user = ref.read(currentUserProvider);
     const empty = <Map<String, dynamic>>[];
     if (query.isEmpty || user == null) {
-      return {'albums': empty, 'artists': empty, 'playlists': empty, 'songs': empty};
+      return {
+        'albums': empty,
+        'artists': empty,
+        'playlists': empty,
+        'songs': empty,
+      };
     }
 
     final api = ref.read(jellyfinApiProvider);
@@ -323,7 +330,9 @@ class CarPlayHandler {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> _downloads(ProviderContainer ref) async {
+  static Future<List<Map<String, dynamic>>> _downloads(
+    ProviderContainer ref,
+  ) async {
     try {
       final albums = await ref
           .read(downloadManagerProvider.notifier)
@@ -351,7 +360,10 @@ class CarPlayHandler {
     };
   }
 
-  static Future<void> _play(ProviderContainer ref, Map<String, dynamic> args) async {
+  static Future<void> _play(
+    ProviderContainer ref,
+    Map<String, dynamic> args,
+  ) async {
     final item = _items[args['id']];
     if (item == null) return;
     final playback = ref.read(setPlaybackProvider.notifier);
@@ -378,8 +390,6 @@ class CarPlayHandler {
       imageTags: song.imageTags,
     );
     final queue = _songs.isEmpty ? [song] : _songs;
-    await ref
-        .read(playbackProvider.notifier)
-        .play(song, queue, syntheticAlbum);
+    await ref.read(playbackProvider.notifier).play(song, queue, syntheticAlbum);
   }
 }

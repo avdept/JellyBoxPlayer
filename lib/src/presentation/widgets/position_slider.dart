@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
-
 class PositionSlider extends ConsumerStatefulWidget {
   const PositionSlider({super.key});
 
@@ -28,7 +27,9 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
         duration: playbackState.totalDuration ?? Duration.zero,
         // Workaround for a bug where negative positions are passed which triggers an assert that stops the debugger
         // Tracked in #79
-        position: playbackState.position >= Duration.zero ? playbackState.position : Duration.zero,
+        position: playbackState.position >= Duration.zero
+            ? playbackState.position
+            : Duration.zero,
         bufferedPosition: playbackState.cacheProgress,
         onChangeEnd: (value) => ref.read(playbackProvider.notifier).seek(value),
       ),
@@ -118,7 +119,10 @@ class SeekBarState extends State<SeekBar> {
           child: ExcludeSemantics(
             child: Slider(
               max: widget.duration.inMilliseconds.toDouble(),
-              value: min(widget.bufferedPosition.inMilliseconds.toDouble(), widget.duration.inMilliseconds.toDouble()),
+              value: min(
+                widget.bufferedPosition.inMilliseconds.toDouble(),
+                widget.duration.inMilliseconds.toDouble(),
+              ),
               onChanged: (value) {
                 setState(() {
                   _dragValue = value;
@@ -143,7 +147,10 @@ class SeekBarState extends State<SeekBar> {
           ),
           child: Slider(
             max: widget.duration.inMilliseconds.toDouble(),
-            value: min(_dragValue ?? widget.position.inMilliseconds.toDouble(), widget.duration.inMilliseconds.toDouble()),
+            value: min(
+              _dragValue ?? widget.position.inMilliseconds.toDouble(),
+              widget.duration.inMilliseconds.toDouble(),
+            ),
             onChanged: (value) {
               setState(() {
                 _dragValue = value;

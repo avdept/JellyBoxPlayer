@@ -73,10 +73,10 @@ void main() {
             builder: (context, state) => const LibraryPage(),
           ),
           GoRoute(
-            path: Routes.listen.path,
-            name: Routes.listen.name,
+            path: Routes.browse.path,
+            name: Routes.browse.name,
             builder: (context, state) =>
-                const Scaffold(body: Text('listen page')),
+                const Scaffold(body: Text('browse page')),
           ),
         ],
       ),
@@ -152,7 +152,7 @@ void main() {
         ).called(1);
         expect(find.byType(LibraryView), findsNothing);
         expect(find.text('Select Library'), findsNothing);
-        expect(find.text('listen page'), findsOneWidget);
+        expect(find.text('browse page'), findsOneWidget);
       },
     );
 
@@ -164,7 +164,7 @@ void main() {
 
         verifyNever(() => mockCurrentLibraryNotifier.setLibrary(any()));
         expect(find.text('Select Library'), findsOneWidget);
-        expect(find.text('listen page'), findsNothing);
+        expect(find.text('browse page'), findsNothing);
       },
     );
 

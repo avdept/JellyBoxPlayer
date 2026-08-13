@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -31,8 +32,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   late DeviceType _device;
 
   Set<(IconData, String)> get _menuItems => {
-    (JPlayer.play_circle_outlined, 'Listen'),
-    (JPlayer.search, 'Search'),
+    (JPlayer.play_circle_outlined, 'Browse'),
     (JPlayer.settings, 'Settings'),
     (JPlayer.download, 'Downloads'),
   };
@@ -84,7 +84,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                         ),
                       ),
                       UpdatifyTrigger(
-                        projectId: '0ebf56de-26b5-4107-bc87-1aa89b328924',
+                        projectId: updatifyProjectId,
                         borderRadius: BorderRadius.circular(8),
                         width: _device.isDesktop
                             ? MediaQuery.sizeOf(context).width / 2
@@ -189,8 +189,7 @@ class _WindowTitleBar extends StatefulWidget {
   State<_WindowTitleBar> createState() => _WindowTitleBarState();
 }
 
-class _WindowTitleBarState extends State<_WindowTitleBar>
-    with WindowListener {
+class _WindowTitleBarState extends State<_WindowTitleBar> with WindowListener {
   bool _isMaximized = false;
 
   @override

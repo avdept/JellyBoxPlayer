@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/presentation/pages/pages.dart';
 
@@ -75,12 +76,12 @@ class ScreenFactory {
     );
   }
 
-  Page<void> listenPage(
+  Page<void> browsePage(
     BuildContext context,
     GoRouterState router,
   ) {
     return const NoTransitionPage(
-      child: ListenPage(),
+      child: BrowsePage(),
     );
   }
 
@@ -126,12 +127,14 @@ class ScreenFactory {
     );
   }
 
-  Page<void> searchPage(
+  Page<void> searchResultsPage(
     BuildContext context,
     GoRouterState router,
   ) {
-    return const NoTransitionPage(
-      child: SearchPage(),
+    final params = router.extra! as Map<String, dynamic>;
+
+    return CupertinoPage(
+      child: SearchResultsPage(category: params['category'] as ItemList),
     );
   }
 
