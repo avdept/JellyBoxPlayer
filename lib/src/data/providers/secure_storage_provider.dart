@@ -8,8 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// cannot use the macOS Data Protection Keychain (which requires one). They use
 /// the legacy keychain instead, which needs neither a profile nor entitlements.
 /// The App Store build leaves this false and keeps the Data Protection Keychain.
-const bool _kDirectDownload =
-    bool.fromEnvironment('JELLYBOX_DIRECT_DOWNLOAD');
+const bool _kDirectDownload = bool.fromEnvironment('JELLYBOX_DIRECT_DOWNLOAD');
 
 const AppleOptions _kMacOsOptions = _kDirectDownload
     ? MacOsOptions(usesDataProtectionKeychain: false)

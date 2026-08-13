@@ -24,6 +24,8 @@ export 'player_song_view.dart';
 export 'position_labels.dart';
 export 'random_queue_button.dart';
 export 'scrollable_page_scaffold.dart';
+export 'search_results_sliver.dart';
+export 'search_songs_sliver.dart';
 export 'shadowed_button.dart';
 export 'simple_list_tile.dart';
 export 'singer_view.dart';

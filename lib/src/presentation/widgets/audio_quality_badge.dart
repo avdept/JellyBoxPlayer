@@ -20,8 +20,9 @@ class AudioQualityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bitrateLabel =
-        bitRate != null ? '${(bitRate! / 1000).round()}kbps' : null;
+    final bitrateLabel = bitRate != null
+        ? '${(bitRate! / 1000).round()}kbps'
+        : null;
     final freqLabel = sampleRate != null
         ? '${(sampleRate! / 1000.0).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}kHz'
         : null;

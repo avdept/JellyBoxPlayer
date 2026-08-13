@@ -118,9 +118,9 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: Routes.listen.path,
-                  name: Routes.listen.name,
-                  pageBuilder: widget.screenFactory.listenPage,
+                  path: Routes.browse.path,
+                  name: Routes.browse.name,
+                  pageBuilder: widget.screenFactory.browsePage,
                   routes: [
                     GoRoute(
                       path: Routes.album.path,
@@ -142,16 +142,12 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
                       name: Routes.genre.name,
                       pageBuilder: widget.screenFactory.genrePage,
                     ),
+                    GoRoute(
+                      path: Routes.searchResults.path,
+                      name: Routes.searchResults.name,
+                      pageBuilder: widget.screenFactory.searchResultsPage,
+                    ),
                   ],
-                ),
-              ],
-            ),
-            StatefulShellBranch(
-              routes: [
-                GoRoute(
-                  path: Routes.search.path,
-                  name: Routes.search.name,
-                  pageBuilder: widget.screenFactory.searchPage,
                 ),
               ],
             ),
@@ -194,7 +190,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
           if (initialRoute != '/' && initialRoute != loginRoute) {
             return initialRoute;
           } else if (_selectedLibrary != null) {
-            return Routes.listen.path;
+            return Routes.browse.path;
           } else {
             return Routes.library.path;
           }

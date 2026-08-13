@@ -41,38 +41,38 @@ class LabeledTextField extends StatelessWidget {
   }
 
   Widget _labelText(String value) => Text(
-        value,
-        style: const TextStyle(
-          fontFamily: FontFamily.inter,
-          fontSize: 12,
-        ),
-      );
+    value,
+    style: const TextStyle(
+      fontFamily: FontFamily.inter,
+      fontSize: 12,
+    ),
+  );
 
   Widget _textField() => TextField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        obscureText: obscureText,
-        style: const TextStyle(color: Colors.black87),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: const Color(0xFFEEEEEE),
-          border: OutlineInputBorder(
-            borderSide: BorderSide.none,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          suffixIcon: suffixIcon,
-          suffixIconConstraints: (suffixIcon != null)
-              ? const BoxConstraints(minWidth: 44)
-              : null,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          hintText: placeholder,
-          hintStyle: const TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-          ),
-        ),
-        autofocus: autofocus,
-      );
+    controller: controller,
+    focusNode: focusNode,
+    keyboardType: keyboardType,
+    textInputAction: textInputAction,
+    obscureText: obscureText,
+    style: const TextStyle(color: Colors.black87),
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: const Color(0xFFEEEEEE),
+      border: OutlineInputBorder(
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: (suffixIcon != null)
+          ? const BoxConstraints(minWidth: 44)
+          : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+      hintText: placeholder,
+      hintStyle: const TextStyle(
+        fontSize: 16,
+        color: Colors.black54,
+      ),
+    ),
+    autofocus: autofocus,
+  );
 }

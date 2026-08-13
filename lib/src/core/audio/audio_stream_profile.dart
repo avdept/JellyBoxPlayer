@@ -4,8 +4,22 @@ import 'dart:io' show Platform;
 /// lossless transcode target (FLAC) so lossless sources stay lossless, while
 /// lossy sources transcode to AAC without pointless size inflation.
 const _losslessCodecs = <String>{
-  'alac', 'flac', 'wav', 'wave', 'pcm', 'aiff', 'aif',
-  'ape', 'wavpack', 'wv', 'tta', 'tak', 'dsd', 'dsf', 'mlp', 'truehd',
+  'alac',
+  'flac',
+  'wav',
+  'wave',
+  'pcm',
+  'aiff',
+  'aif',
+  'ape',
+  'wavpack',
+  'wv',
+  'tta',
+  'tak',
+  'dsd',
+  'dsf',
+  'mlp',
+  'truehd',
 };
 
 /// Resolves the Jellyfin `/Audio/{id}/universal` parameters for the current

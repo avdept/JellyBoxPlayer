@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:jplayer/resources/resources.dart';
 
 abstract class Themes {
+  /// Dark background for the changelog dialog/sheet, so it doesn't inherit the
+  /// maroon [BottomSheetThemeData] panel color used elsewhere in the app.
+  static const changelogSurface = Color(0xFF1C1518);
+
   static final red = ThemeData(
     useMaterial3: true,
     visualDensity: VisualDensity.adaptivePlatformDensity,

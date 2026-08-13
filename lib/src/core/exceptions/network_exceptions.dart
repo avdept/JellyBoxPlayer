@@ -1,31 +1,30 @@
 import 'package:jplayer/src/core/enums/network_exceptions.dart';
 
-
 class NetworkException implements Exception {
   NetworkException.badResponse({this.statusCode, this.message})
-      : type = (statusCode != null)
-            ? NetworkExceptionType.badResponse
-            : NetworkExceptionType.other;
+    : type = (statusCode != null)
+          ? NetworkExceptionType.badResponse
+          : NetworkExceptionType.other;
 
   NetworkException.cancel()
-      : type = NetworkExceptionType.cancel,
-        statusCode = null,
-        message = null;
+    : type = NetworkExceptionType.cancel,
+      statusCode = null,
+      message = null;
 
   NetworkException.connection()
-      : type = NetworkExceptionType.connection,
-        statusCode = null,
-        message = null;
+    : type = NetworkExceptionType.connection,
+      statusCode = null,
+      message = null;
 
   NetworkException.timeout()
-      : type = NetworkExceptionType.timeout,
-        statusCode = null,
-        message = null;
+    : type = NetworkExceptionType.timeout,
+      statusCode = null,
+      message = null;
 
   NetworkException.unknown()
-      : type = NetworkExceptionType.other,
-        statusCode = null,
-        message = null;
+    : type = NetworkExceptionType.other,
+      statusCode = null,
+      message = null;
 
   final NetworkExceptionType type;
   final int? statusCode;

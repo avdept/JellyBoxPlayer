@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -14,12 +16,6 @@ import 'package:updatify_flutter/updatify_flutter.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
-
-  static const _updatifyProjectId = '0ebf56de-26b5-4107-bc87-1aa89b328924';
-
-  /// Dark background for the mobile changelog sheet, so it doesn't inherit the
-  /// maroon [BottomSheetThemeData] panel color used elsewhere in the app.
-  static const _changelogSheetColor = Color(0xFF1C1518);
 
   /// Title shown on the changelog dialog/sheet (defaults to
   /// "Your recent updates" in updatify_flutter).
@@ -49,7 +45,7 @@ class SettingsPage extends ConsumerWidget {
       unawaited(
         showUpdatifyDialog(
           context,
-          projectId: _updatifyProjectId,
+          projectId: updatifyProjectId,
           borderRadius: BorderRadius.circular(8),
           width: device.isDesktop
               ? MediaQuery.sizeOf(context).width / 2
@@ -61,8 +57,8 @@ class SettingsPage extends ConsumerWidget {
       unawaited(
         showUpdatifyBottomSheet(
           context,
-          projectId: _updatifyProjectId,
-          backgroundColor: _changelogSheetColor,
+          projectId: updatifyProjectId,
+          backgroundColor: Themes.changelogSurface,
           title: _changelogTitle,
         ),
       );

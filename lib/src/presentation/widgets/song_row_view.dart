@@ -114,8 +114,9 @@ class SongRowView extends ConsumerWidget {
           ),
           if (isDesktop)
             IconButton(
-              onPressed:
-                  onLikePressed != null ? () => onLikePressed!(song) : null,
+              onPressed: onLikePressed != null
+                  ? () => onLikePressed!(song)
+                  : null,
               icon: Icon(
                 CupertinoIcons.heart,
                 color: theme.colorScheme.onPrimary,

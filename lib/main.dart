@@ -1,8 +1,10 @@
 import 'dart:io' show Platform;
+import 'dart:math' show max;
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
@@ -73,10 +75,15 @@ Future<void> main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
-  final initialWindowSize = lastWindowSize ?? const Size(1440, 1000);
 
   // Window settings
-  const minWindowSize = Size(1280, 800);
+  const minWindowSize = kDebugMode ? Size(360, 600) : Size(1280, 800);
+
+  final savedOrDefaultSize = lastWindowSize ?? const Size(1440, 1000);
+  final initialWindowSize = Size(
+    max(savedOrDefaultSize.width, minWindowSize.width),
+    max(savedOrDefaultSize.height, minWindowSize.height),
+  );
 
   if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     await windowManager.ensureInitialized();

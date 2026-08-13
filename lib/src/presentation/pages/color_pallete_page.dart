@@ -147,7 +147,9 @@ class PaletteSwatches extends StatelessWidget {
         const Text('Palette generator:'),
         const SizedBox(height: 6),
         Wrap(
-          children: paletteGen.colors.map((color) => PaletteSwatch(color: color)).toList(growable: false),
+          children: paletteGen.colors
+              .map((color) => PaletteSwatch(color: color))
+              .toList(growable: false),
         ),
         const SizedBox(height: 30),
         Row(
@@ -167,7 +169,9 @@ class PaletteSwatches extends StatelessWidget {
                 colorPaletteColors.length,
                 (index) => PaletteSwatch(
                   label: 'titleText',
-                  color: colorPaletteColors.values.elementAt(index)?.titleTextColor,
+                  color: colorPaletteColors.values
+                      .elementAt(index)
+                      ?.titleTextColor,
                 ),
               ),
             ),
@@ -176,7 +180,9 @@ class PaletteSwatches extends StatelessWidget {
                 colorPaletteColors.length,
                 (index) => PaletteSwatch(
                   label: 'bodyText',
-                  color: colorPaletteColors.values.elementAt(index)?.bodyTextColor,
+                  color: colorPaletteColors.values
+                      .elementAt(index)
+                      ?.bodyTextColor,
                 ),
               ),
             ),
@@ -200,7 +206,9 @@ class PaletteSwatches extends StatelessWidget {
             children: List.generate(
               (colorSchemeColors.entries.length / columnLength).floor(),
               (i) {
-                final items = colorSchemeColors.entries.skip(i * columnLength).take(columnLength);
+                final items = colorSchemeColors.entries
+                    .skip(i * columnLength)
+                    .take(columnLength);
 
                 return Expanded(
                   child: Column(
@@ -251,7 +259,8 @@ class PaletteSwatch extends StatelessWidget {
     final hslColor = HSLColor.fromColor(color ?? Colors.transparent);
     final backgroundAsHsl = HSLColor.fromColor(_kBackgroundColor);
     final colorDistance = sqrt(
-      pow(hslColor.saturation - backgroundAsHsl.saturation, 2.0) + pow(hslColor.lightness - backgroundAsHsl.lightness, 2.0),
+      pow(hslColor.saturation - backgroundAsHsl.saturation, 2.0) +
+          pow(hslColor.lightness - backgroundAsHsl.lightness, 2.0),
     );
 
     Widget swatch = Padding(
@@ -268,7 +277,9 @@ class PaletteSwatch extends StatelessWidget {
                 color: color,
                 border: Border.all(
                   color: _kPlaceholderColor,
-                  style: colorDistance < 0.2 ? BorderStyle.solid : BorderStyle.none,
+                  style: colorDistance < 0.2
+                      ? BorderStyle.solid
+                      : BorderStyle.none,
                 ),
               ),
               width: 30,

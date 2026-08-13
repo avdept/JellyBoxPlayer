@@ -3,8 +3,8 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 class DeviceType {
   DeviceType.fromScreenSize(Size size, [ScreenBreakpoints? breakpoint])
-      : screenType = getDeviceType(size, breakpoint),
-        screenSize = size;
+    : screenType = getDeviceType(size, breakpoint),
+      screenSize = size;
 
   final DeviceScreenType screenType;
   final Size screenSize;

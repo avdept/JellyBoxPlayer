@@ -1,33 +1,62 @@
+import 'dart:async';
+
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/dto/item/item_dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:updatify_flutter/updatify_flutter.dart';
 
-class ListenPage extends ConsumerStatefulWidget {
-  const ListenPage({super.key});
+class BrowsePage extends ConsumerStatefulWidget {
+  const BrowsePage({super.key});
 
   @override
-  ConsumerState<ListenPage> createState() => _ListenPageState();
+  ConsumerState<BrowsePage> createState() => _BrowsePageState();
 }
 
-class _ListenPageState extends ConsumerState<ListenPage> {
+class _BrowsePageState extends ConsumerState<BrowsePage>
+    with SingleTickerProviderStateMixin {
+  static const _searchButtonWidth = 48.0;
+  static const _searchDismissScrollDistance = 64.0;
+  static const _searchFieldHeight = 42.0;
+  static const _iconRowHeight = 48.0;
+  static const _chipsRowHeight = 48.0;
+  static const _barRowsSpacing = 4.0;
+  static const _bellIconSize = 28.0;
   late final ValueNotifier<ItemList> _currentView;
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _filterOpened = ValueNotifier<bool>(false);
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _searchOpened = ValueNotifier<bool>(false);
+  final _searchQuery = ValueNotifier<String>('');
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  Timer? _searchDebounce;
+  double _scrolledSinceSearchOpened = 0;
+
+  late final AnimationController _searchAnimation = AnimationController(
+    duration: const Duration(milliseconds: 260),
+    vsync: this,
+  );
+  late final Animation<double> _searchExpansion = CurvedAnimation(
+    parent: _searchAnimation,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
 
   late ThemeData _theme;
   late DeviceType _device;
@@ -251,9 +280,72 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     }
   }
 
+  double get _navigationBarHeight => _device.isMobile
+      ? _iconRowHeight + _barRowsSpacing + _chipsRowHeight
+      : 100;
+
+  double get _searchTrailingWidth =>
+      _device.isMobile ? _searchButtonWidth + 40 : 40 + 12 + 40;
+
+  void _openSearch() {
+    _searchOpened.value = true;
+    _scrolledSinceSearchOpened = 0;
+    _searchAnimation.forward().then((_) {
+      if (mounted && _searchOpened.value) _searchFocusNode.requestFocus();
+    });
+  }
+
+  void _closeSearch() {
+    if (!_searchOpened.value) return;
+    _searchDebounce?.cancel();
+    _searchOpened.value = false;
+    _searchQuery.value = '';
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+    ref.read(searchProvider.notifier).state = null;
+    _searchAnimation.reverse();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchQuery.value = query.trim();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      ref.read(searchProvider.notifier).state = query.trim();
+    });
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification is! ScrollUpdateNotification ||
+        notification.metrics.axis != Axis.vertical ||
+        !_searchOpened.value ||
+        _searchController.text.isNotEmpty) {
+      return false;
+    }
+
+    final delta = notification.scrollDelta ?? 0;
+    if (delta == 0) return false;
+
+    if (delta.isNegative != _scrolledSinceSearchOpened.isNegative) {
+      _scrolledSinceSearchOpened = 0;
+    }
+    _scrolledSinceSearchOpened += delta;
+
+    if (_scrolledSinceSearchOpened.abs() >= _searchDismissScrollDistance) {
+      _closeSearch();
+    }
+    return false;
+  }
+
+  void _onSearchFocusChanged() {
+    if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
+      _closeSearch();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _searchFocusNode.addListener(_onSearchFocusChanged);
     _currentView = ValueNotifier(ItemList.values.first)
       ..addListener(() {
         final view = _currentView.value;
@@ -289,138 +381,147 @@ class _ListenPageState extends ConsumerState<ListenPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      body: ScrollablePageScaffold(
-        useGradientBackground: true,
-        navigationBar: PreferredSize(
-          preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: _device.isMobile ? 16 : 30,
-            ),
-            child: Row(
-              children: [
-                Expanded(child: _pageViewToggle()),
-                _addButton(),
-                _filterButton(),
-                const SizedBox(width: 12),
-                _libraryButton(),
-              ],
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _onScrollNotification,
+        child: ScrollablePageScaffold(
+          useGradientBackground: true,
+          navigationBar: PreferredSize(
+            preferredSize: Size.fromHeight(_navigationBarHeight),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: _device.isMobile ? 16 : 30,
+              ),
+              child: _navigationBarContent(),
             ),
           ),
-        ),
-        loadMoreData: () =>
-            ref.read(itemListProvider(_currentView.value).notifier).loadMore(),
-        contentPadding: EdgeInsets.only(
-          left: _device.isMobile ? 16 : 30,
-          right: _device.isMobile ? 16 : 30,
-          bottom: 30,
-        ),
-        slivers: [
-          ValueListenableBuilder(
-            valueListenable: _currentView,
-            builder: (context, value, child) => Consumer(
-              builder: (context, ref, child) {
-                final provider = ref.watch(itemListProvider(value));
-                return provider.when(
-                  data: (list) {
-                    if (value == ItemList.songs) {
-                      final currentSongId = ref.watch(
-                        playbackProvider.select((s) {
-                          final idx = s.currentMediaIndex;
-                          return idx != null
-                              ? s.songs.elementAtOrNull(idx)?.id
-                              : null;
-                        }),
-                      );
-                      return SliverList.builder(
-                        itemBuilder: (context, index) {
-                          final song = list.items[index];
-                          return SongRowView(
-                            song: song,
-                            isPlaying: currentSongId == song.id,
-                            onTap: (song) => _onSongTap(song, list.items),
-                            onLikePressed: _onLikePressed,
-                            onArtistTap: _onSongArtistTap,
-                            optionsBuilder: (context) => [
-                              PopupMenuItem(
-                                onTap: () => _onAddToPlaylistPressed(song),
-                                child: const Text('Add to playlist'),
-                              ),
-                              if (song.albumArtists.isNotEmpty)
-                                PopupMenuItem(
-                                  onTap: () => _onSongArtistTap(song),
-                                  child: const Text('Go to Artist'),
-                                ),
-                              if (song.albumId != null)
-                                PopupMenuItem(
-                                  onTap: () => _onSongGoToAlbum(song),
-                                  child: const Text('Go to Album'),
-                                ),
-                            ],
-                          );
-                        },
-                        itemCount: list.items.length,
-                      );
-                    }
-                    return SliverGrid.builder(
-                      gridDelegate: AlbumCardMetrics.gridDelegate(_device),
-                      itemBuilder: (context, index) {
-                        final item = list.items[index];
-                        return AlbumView(
-                          album: item,
-                          onTap: (item) => switch (value) {
-                            ItemList.albums => _onAlbumTap(item),
-                            ItemList.artists => _onArtistTap(item),
-                            ItemList.genres => _onGenreTap(item),
-                            ItemList.playlists => _onPlaylistTap(item),
-                            ItemList.songs => null,
-                          },
-                          onPlayPressed: (value == ItemList.songs)
-                              ? null
-                              : (item) => _onPlaySetPressed(item, value),
-                          optionsBuilder: switch (value) {
-                            ItemList.playlists => (context) => [
-                              PopupMenuItem(
-                                onTap: () => _onDeletePlaylist(item),
-                                child: const Text('Delete playlist'),
-                              ),
-                            ],
-                            _ => null,
-                          },
-                        );
-                      },
-                      itemCount: list.items.length,
-                    );
-                  },
-                  error: (error, stackTrace) => SliverToBoxAdapter(
-                    child: ref.watch(isOfflineProvider)
-                        ? OfflineNotice(
-                            message:
-                                "You're offline. Your library will be back "
-                                'once the server is reachable.',
-                            onRetry: () =>
-                                ref.invalidate(itemListProvider(value)),
-                            showDownloadsLink: true,
-                          )
-                        : Text(error.toString()),
-                  ),
-                  loading: () => const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                );
-              },
-            ),
+          loadMoreData: () => _searchQuery.value.isNotEmpty
+              ? Future<void>.value()
+              : ref
+                    .read(itemListProvider(_currentView.value).notifier)
+                    .loadMore(),
+          contentPadding: EdgeInsets.only(
+            left: _device.isMobile ? 16 : 30,
+            right: _device.isMobile ? 16 : 30,
+            bottom: 30,
           ),
-        ],
+          slivers: [
+            ValueListenableBuilder(
+              valueListenable: _searchQuery,
+              builder: (context, query, child) =>
+                  query.isEmpty ? _libraryList() : const SearchResultsSliver(),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _libraryList() => ValueListenableBuilder(
+    valueListenable: _currentView,
+    builder: (context, value, child) => Consumer(
+      builder: (context, ref, child) {
+        final provider = ref.watch(itemListProvider(value));
+        return provider.when(
+          data: (list) {
+            if (value == ItemList.songs) {
+              final currentSongId = ref.watch(
+                playbackProvider.select((s) {
+                  final idx = s.currentMediaIndex;
+                  return idx != null ? s.songs.elementAtOrNull(idx)?.id : null;
+                }),
+              );
+              return SliverList.builder(
+                itemBuilder: (context, index) {
+                  final song = list.items[index];
+                  return SongRowView(
+                    song: song,
+                    isPlaying: currentSongId == song.id,
+                    onTap: (song) => _onSongTap(song, list.items),
+                    onLikePressed: _onLikePressed,
+                    onArtistTap: _onSongArtistTap,
+                    optionsBuilder: (context) => [
+                      PopupMenuItem(
+                        onTap: () => _onAddToPlaylistPressed(song),
+                        child: const Text('Add to playlist'),
+                      ),
+                      if (song.albumArtists.isNotEmpty)
+                        PopupMenuItem(
+                          onTap: () => _onSongArtistTap(song),
+                          child: const Text('Go to Artist'),
+                        ),
+                      if (song.albumId != null)
+                        PopupMenuItem(
+                          onTap: () => _onSongGoToAlbum(song),
+                          child: const Text('Go to Album'),
+                        ),
+                    ],
+                  );
+                },
+                itemCount: list.items.length,
+              );
+            }
+            return SliverGrid.builder(
+              gridDelegate: AlbumCardMetrics.gridDelegate(_device),
+              itemBuilder: (context, index) {
+                final item = list.items[index];
+                return AlbumView(
+                  album: item,
+                  onTap: (item) => switch (value) {
+                    ItemList.albums => _onAlbumTap(item),
+                    ItemList.artists => _onArtistTap(item),
+                    ItemList.genres => _onGenreTap(item),
+                    ItemList.playlists => _onPlaylistTap(item),
+                    ItemList.songs => null,
+                  },
+                  onPlayPressed: (value == ItemList.songs)
+                      ? null
+                      : (item) => _onPlaySetPressed(item, value),
+                  optionsBuilder: switch (value) {
+                    ItemList.playlists => (context) => [
+                      PopupMenuItem(
+                        onTap: () => _onDeletePlaylist(item),
+                        child: const Text('Delete playlist'),
+                      ),
+                    ],
+                    _ => null,
+                  },
+                );
+              },
+              itemCount: list.items.length,
+            );
+          },
+          error: (error, stackTrace) => SliverToBoxAdapter(
+            child: ref.watch(isOfflineProvider)
+                ? OfflineNotice(
+                    message:
+                        "You're offline. Your library will be back "
+                        'once the server is reachable.',
+                    onRetry: () => ref.invalidate(itemListProvider(value)),
+                    showDownloadsLink: true,
+                  )
+                : Text(error.toString()),
+          ),
+          loading: () => const SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      },
+    ),
+  );
 
   @override
   void dispose() {
     _currentView.dispose();
     _appliedFilter.dispose();
     _filterOpened.dispose();
+    _searchDebounce?.cancel();
+    _searchAnimation.dispose();
+    _searchOpened.dispose();
+    _searchQuery.dispose();
+    _searchController.dispose();
+    _searchFocusNode
+      ..removeListener(_onSearchFocusChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -469,7 +570,7 @@ class _ListenPageState extends ConsumerState<ListenPage> {
     final current = ref.watch(currentLibraryProvider).valueOrNull;
     final libraries =
         ref.watch(librariesProvider).valueOrNull ?? const <ItemDTO>[];
-    final size = _device.isMobile ? 32.0 : 45.0;
+    final size = _device.isMobile ? 32.0 : 40.0;
 
     // The library restored from prefs carries no imageTags, so resolve the
     // full DTO from librariesProvider (by id) to show the real cover image.
@@ -631,6 +732,148 @@ class _ListenPageState extends ConsumerState<ListenPage> {
           },
         );
       },
+    ),
+  );
+
+  Widget _navigationBarContent() => LayoutBuilder(
+    builder: (context, constraints) {
+      final fullWidth = constraints.maxWidth;
+      final collapsedLeft =
+          fullWidth - _searchTrailingWidth - _searchButtonWidth;
+      final collapsedTop = _device.isMobile
+          ? (_iconRowHeight - _searchFieldHeight) / 2
+          : (_navigationBarHeight - _searchFieldHeight) / 2;
+      final expandedTop = (_navigationBarHeight - _searchFieldHeight) / 2;
+
+      return AnimatedBuilder(
+        animation: _searchExpansion,
+        builder: (context, child) {
+          final progress = _searchExpansion.value.clamp(0.0, 1.0);
+          return Stack(
+            children: [
+              if (progress < 1)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    ignoring: progress > 0,
+                    child: Opacity(
+                      opacity: 1 - progress,
+                      child: _device.isMobile
+                          ? _mobileBarRows()
+                          : _desktopBarRow(),
+                    ),
+                  ),
+                ),
+              if (progress > 0)
+                Positioned(
+                  left: collapsedLeft * (1 - progress),
+                  right: _searchTrailingWidth * (1 - progress),
+                  top: collapsedTop + (expandedTop - collapsedTop) * progress,
+                  height: _searchFieldHeight,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: progress < 1
+                        ? _collapsingSearchField()
+                        : _searchField(),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  Widget _desktopBarRow() => Row(
+    children: [
+      Expanded(child: _pageViewToggle()),
+      _addButton(),
+      _searchButton(),
+      _filterButton(),
+      const SizedBox(width: 12),
+      _libraryButton(),
+    ],
+  );
+
+  Widget _mobileBarRows() => Column(
+    children: [
+      SizedBox(
+        height: _iconRowHeight,
+        child: Row(
+          children: [
+            _libraryButton(),
+            const Spacer(),
+            _addButton(),
+            _searchButton(),
+            _filterButton(),
+            IconTheme.merge(
+              data: const IconThemeData(size: _bellIconSize),
+              child: UpdatifyTrigger(
+                projectId: updatifyProjectId,
+                popupType: UpdatifyPopupType.bottomSheet,
+                backgroundColor: Themes.changelogSurface,
+                borderRadius: BorderRadius.circular(8),
+                width: _device.isDesktop
+                    ? MediaQuery.sizeOf(context).width / 2
+                    : double.infinity,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: _barRowsSpacing),
+      SizedBox(
+        height: _chipsRowHeight,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: _pageViewToggle(),
+        ),
+      ),
+    ],
+  );
+
+  Widget _searchButton() => IconButton(
+    onPressed: _openSearch,
+    icon: const Icon(JPlayer.search),
+  );
+
+  Widget _collapsingSearchField() => Container(
+    height: 42,
+    alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    color: Colors.white.withOpacity(0.24),
+    child: const Icon(JPlayer.search),
+  );
+
+  Widget _searchField() => TextField(
+    controller: _searchController,
+    focusNode: _searchFocusNode,
+    onChanged: _onSearchChanged,
+    keyboardType: TextInputType.text,
+    textInputAction: TextInputAction.search,
+    style: const TextStyle(fontSize: 16, height: 1.2),
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.24),
+      isDense: true,
+      contentPadding: const EdgeInsets.all(9),
+      border: OutlineInputBorder(
+        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(40),
+      ),
+      prefixIcon: const Icon(JPlayer.search),
+      suffixIcon: IconButton(
+        onPressed: () {
+          if (_searchController.text.isEmpty) {
+            _closeSearch();
+          } else {
+            _searchController.clear();
+            _onSearchChanged('');
+          }
+        },
+        padding: EdgeInsets.zero,
+        icon: const Icon(JPlayer.close),
+      ),
+      hintText: 'Search',
     ),
   );
 

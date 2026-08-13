@@ -1,14 +1,14 @@
 enum Routes {
   login('/login'),
   library('/library'),
-  search('/search'),
   settings('/settings'),
   downloads('/downloads'),
-  listen('/listen'),
+  browse('/browse'),
   album('album'),
   artist('artist'),
   genre('genre'),
   palette('palette'),
+  searchResults('search-results'),
   playlist('playlist');
 
   const Routes(this.path);

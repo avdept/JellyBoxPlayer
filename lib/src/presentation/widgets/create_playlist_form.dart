@@ -17,21 +17,25 @@ class CreatePlaylistForm extends ConsumerStatefulWidget {
   final VoidCallback? onCreated;
 
   @override
-  ConsumerState<CreatePlaylistForm> createState() => _CreatePlaylistBottomSheetState();
+  ConsumerState<CreatePlaylistForm> createState() =>
+      _CreatePlaylistBottomSheetState();
 }
 
-class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> {
+class _CreatePlaylistBottomSheetState
+    extends ConsumerState<CreatePlaylistForm> {
   final _inputController = TextEditingController(text: 'My new playlist');
   var _isPublicPlaylist = true;
 
   Future<void> _onCreatePressed() async {
-    await ref.read(jellyfinApiProvider).createPlaylist(
-      values: PlaylistData(
-        name: _inputController.text.trim(),
-        userId: ref.read(currentUserProvider)!.userId,
-        isPublic: _isPublicPlaylist,
-      ),
-    );
+    await ref
+        .read(jellyfinApiProvider)
+        .createPlaylist(
+          values: PlaylistData(
+            name: _inputController.text.trim(),
+            userId: ref.read(currentUserProvider)!.userId,
+            isPublic: _isPublicPlaylist,
+          ),
+        );
     widget.onCreated?.call();
     _onCloseBottomSheet();
   }
@@ -57,7 +61,9 @@ class _CreatePlaylistBottomSheetState extends ConsumerState<CreatePlaylistForm> 
             controller: _inputController,
             style: const TextStyle(color: Colors.white, fontSize: 16),
             decoration: InputDecoration(
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(width: 2, color: Colors.grey[600]!)),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(width: 2, color: Colors.grey[600]!),
+              ),
               border: UnderlineInputBorder(
                 borderSide: BorderSide(width: 2, color: Colors.grey[700]!),
               ),
