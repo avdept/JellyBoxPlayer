@@ -7,17 +7,6 @@ import 'package:jplayer/src/domain/models/library_item/playback_user_data.dart';
 
 part 'library_item.freezed.dart';
 
-/// Backend-agnostic representation of a song, album, artist, playlist or
-/// genre. A single shared shape is used across kinds (rather than one class
-/// per kind) because the app renders and passes items polymorphically
-/// (shared list widgets, synthetic "album" items built from a song, etc).
-///
-/// `toJson`/`fromJson` are hand-written rather than generated: this class
-/// nests other freezed models (`ArtistRef`, `ImageRefs`, `PlaybackUserData`,
-/// `AudioSourceInfo`), and json_serializable's generated code only calls
-/// `.toJson()` on nested objects when paired with `explicitToJson: true`,
-/// which does not combine cleanly with freezed's own codegen for this class
-/// shape.
 @freezed
 abstract class LibraryItem with _$LibraryItem {
   const factory LibraryItem({

@@ -111,4 +111,81 @@ void main() {
       expect(await loginResult(), AuthNotifier.serverUnreachableError);
     });
   });
+
+  group('AuthNotifier.build', () {
+    test(
+      '- migrates a token stored under the pre-refactor key name so '
+      'upgrading does not force a re-login',
+      () async {
+        when(
+          () => mockStorage.read(key: 'serverUrl'),
+        ).thenAnswer((_) async => 'http://jelly.local');
+        when(
+          () => mockStorage.read(key: 'userId'),
+        ).thenAnswer((_) async => 'user-1');
+        when(
+          () => mockStorage.read(key: 'authToken'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockStorage.read(key: 'x-mediabrowser-token'),
+        ).thenAnswer((_) async => 'legacy-token');
+        when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+          (_) async => ResponseBody.fromString(
+            jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0}),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          ),
+        );
+
+        final container = createProviderContainer(
+          overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+        );
+        container.read(dioProvider).httpClientAdapter = mockAdapter;
+
+        final restored = await container.read(authProvider.future);
+
+        expect(restored, isTrue);
+        verify(
+          () => mockStorage.write(key: 'authToken', value: 'legacy-token'),
+        ).called(1);
+      },
+    );
+
+    test(
+      '- does not re-read the legacy key once a token exists under the '
+      'current one',
+      () async {
+        when(
+          () => mockStorage.read(key: 'serverUrl'),
+        ).thenAnswer((_) async => 'http://jelly.local');
+        when(
+          () => mockStorage.read(key: 'userId'),
+        ).thenAnswer((_) async => 'user-1');
+        when(
+          () => mockStorage.read(key: 'authToken'),
+        ).thenAnswer((_) async => 'current-token');
+        when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+          (_) async => ResponseBody.fromString(
+            jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0}),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          ),
+        );
+
+        final container = createProviderContainer(
+          overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+        );
+        container.read(dioProvider).httpClientAdapter = mockAdapter;
+
+        final restored = await container.read(authProvider.future);
+
+        expect(restored, isTrue);
+        verifyNever(() => mockStorage.read(key: 'x-mediabrowser-token'));
+      },
+    );
+  });
 }

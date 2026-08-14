@@ -83,9 +83,6 @@ ItemKind _kindFromType(String type) {
   }
 }
 
-/// Reverse of [ItemDTOMapping.toLibraryItem], used only to hand a
-/// [LibraryItem] to the local downloads database, which still stores rows
-/// in Jellyfin's wire shape (see `DownloadedSongDTO`/`DownloadedAlbumDTO`).
 extension LibraryItemToItemDTOMapping on LibraryItem {
   ItemDTO toItemDTO() => ItemDTO(
     id: id,

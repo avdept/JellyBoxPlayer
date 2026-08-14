@@ -8,9 +8,6 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/current_server_type_provider.dart';
 
-/// The backend-agnostic client provider. Dispatches on [ServerType] (set by
-/// `AuthNotifier` at login/session restore) so a second backend can be added
-/// as another case here without touching any of this provider's callers.
 final mediaServerClientProvider = Provider<MediaServerClient>((ref) {
   final user = ref.watch(currentUserProvider);
   final baseUrl = ref.watch(baseUrlProvider) ?? '';

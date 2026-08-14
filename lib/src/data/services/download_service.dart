@@ -27,8 +27,7 @@ class DownloadService extends ChangeNotifier {
     // so codecs the local player can't decode (e.g. ALAC on Android/ExoPlayer)
     // are fetched as a playable, still-lossless FLAC rather than the raw
     // original. The file extension must match the container that endpoint
-    // actually returns. `preferHls: false` keeps this a single progressive
-    // file rather than an HLS playlist, which downloads can't target.
+    // actually returns. See [AudioStreamProfile].
     final resolved = await client.resolveStreamSource(
       song,
       playSessionId: 'download-$deviceId-${song.id}',

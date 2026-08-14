@@ -1,6 +1,3 @@
-/// Backend-agnostic "now playing" report, translated by each
-/// `MediaServerClient` into whatever shape its server expects (Jellyfin's
-/// `/Sessions/Playing*` payload, a Subsonic scrobble submission, etc).
 class PlaybackReport {
   const PlaybackReport({
     required this.itemId,

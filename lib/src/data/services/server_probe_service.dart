@@ -17,10 +17,6 @@ List<String> serverUrlCandidates(String url) {
   return ['http://$trimmed', 'https://$trimmed'];
 }
 
-/// Which backend a server URL was identified as. Only [jellyfin] is
-/// detected today, but keeping this as an enum (rather than assuming
-/// Jellyfin everywhere) is what lets [ServerProbeService] grow a second
-/// probe path later without every caller needing to change shape again.
 enum ServerType { jellyfin }
 
 class ServerProbeResult {

@@ -9,13 +9,6 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
-/// Wraps `JellyfinApi` to implement the backend-agnostic `MediaServerClient`
-/// contract. Browsing/search/CRUD methods map Jellyfin's `ItemDTO`/
-/// `ItemsWrapper` wire format onto the backend-agnostic `LibraryItem`/
-/// `LibraryPage` domain model at the boundary (see `ItemDTOMapping`);
-/// stream/image URL building and playback-state reporting absorb logic that
-/// used to be duplicated across `playback_provider.dart`,
-/// `download_service.dart` and `image_service.dart`.
 class JellyfinClient implements MediaServerClient {
   JellyfinClient({
     required Dio dio,

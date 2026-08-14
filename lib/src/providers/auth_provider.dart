@@ -44,10 +44,9 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   static const _userIdKey = 'userId';
   static const _authTokenKey = 'authToken';
 
-  /// The HTTP header Jellyfin expects its access token under. Distinct from
-  /// [_authTokenKey] (the generic secure-storage key), since that header
-  /// name is Jellyfin protocol detail, not a storage concern.
   static const _jellyfinAuthHeader = 'x-mediabrowser-token';
+
+  static const _legacyAuthTokenKey = _jellyfinAuthHeader;
 
   @override
   FutureOr<bool?> build() async {
@@ -72,7 +71,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     ref.read(currentServerTypeProvider.notifier).state = serverType;
 
     final userId = await _storage.read(key: _userIdKey) ?? '';
-    final token = await _storage.read(key: _authTokenKey) ?? '';
+    final token = await _migrateAuthToken();
     final client = _clientFor(
       serverType,
       serverUrl: serverUrl,
@@ -223,6 +222,18 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
   ServerType _parseServerType(String? stored) =>
       ServerType.values.asNameMap()[stored] ?? ServerType.jellyfin;
+
+  /// TODO: Remove this migration after few releases, when all users would migrate to new token types
+  Future<String> _migrateAuthToken() async {
+    final token = await _storage.read(key: _authTokenKey);
+    if (token != null) return token;
+
+    final legacyToken = await _storage.read(key: _legacyAuthTokenKey);
+    if (legacyToken == null) return '';
+
+    await _storage.write(key: _authTokenKey, value: legacyToken);
+    return legacyToken;
+  }
 
   Future<bool> _validateSession(MediaServerClient client, String? token) async {
     if (token == null) return false;

@@ -4,21 +4,6 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
-/// A media server backend (Jellyfin, and eventually Navidrome/Subsonic).
-///
-/// Browsing/search/CRUD methods return the backend-agnostic
-/// `LibraryItem`/`LibraryPage` domain model; each implementation maps its own
-/// wire format onto it at the boundary (see `JellyfinClient`'s
-/// `ItemDTOMapping`).
-///
-/// Stream/image URL resolution and playback-state reporting are also fully
-/// backend-agnostic: those are exactly the places today's code used to
-/// hand-build Jellyfin REST paths in multiple places, and centralizing them
-/// here is what removes that duplication.
-///
-/// Login is intentionally NOT part of this interface: each backend has its
-/// own credential shape and auth flow (e.g. `JellyfinClient.signIn`), chosen
-/// by the caller once the server type has been probed.
 abstract class MediaServerClient {
   Future<LibraryPage> getAlbums({
     required String userId,
@@ -68,13 +53,11 @@ abstract class MediaServerClient {
     String sortOrder = 'Ascending',
   });
 
-  /// A single album's tracklist.
   Future<LibraryPage> getSongs({
     required String userId,
     required String albumId,
   });
 
-  /// The songs behind an artist or genre "play all" action.
   Future<LibraryPage> getSongsOfSet({
     required String userId,
     String? libraryId,
@@ -154,11 +137,6 @@ abstract class MediaServerClient {
 
   Future<LyricsDTO> getLyrics(String itemId);
 
-  /// Resolves a playable source for [song]. When [preferHls] is false, the
-  /// result is always a single-file progressive/direct stream (needed for
-  /// downloads, which can't target an HLS playlist); when true (the default,
-  /// used for live playback) a transcode-requiring source may come back as
-  /// HLS instead.
   Future<StreamSource> resolveStreamSource(
     LibraryItem song, {
     required String playSessionId,
@@ -178,7 +156,6 @@ abstract class MediaServerClient {
 
   Future<void> reportPlaybackStopped(PlaybackReport report);
 
-  /// A cheap authenticated call used to validate a restored session.
   Future<bool> validateSession();
 
   Future<void> signOut();
