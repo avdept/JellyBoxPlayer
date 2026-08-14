@@ -65,7 +65,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       })
       // Handle other player states as needed
       ..playerStateStream.listen((playerState) {
-        if (playerState.processingState == ProcessingState.completed) {
+        if (playerState.processingState == ProcessingState.completed &&
+            state.status.isPlaying) {
           _reportStopped();
           _stopProgressReports();
           state = PlaybackState.initial();
@@ -325,6 +326,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           .resolveStreamSource(song, playSessionId: playSessionId);
       audioSourceUri = resolved.uri;
       useHls = resolved.isHls;
+      debugPrint('[Playback] resolved stream url for ${song.id}: $audioSourceUri');
     }
 
     final audioSource = song.audioSources.firstOrNull;

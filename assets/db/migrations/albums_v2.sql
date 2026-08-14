@@ -1,0 +1,6 @@
+CREATE TABLE Albums (
+    Id TEXT PRIMARY KEY,
+    SizeInBytes INTEGER NOT NULL,
+    DownloadDate INTEGER NOT NULL,
+    Data TEXT NOT NULL
+)

@@ -1,7 +1,7 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/downloads_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -13,19 +13,21 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final faker = Faker.instance;
-  final mockAlbum = DownloadedAlbumDTO(
-    id: faker.datatype.uuid(),
-    name: faker.lorem.sentence(),
-    type: 'Album',
-    runTimeTicks: faker.datatype.number(),
+  final mockAlbum = DownloadedAlbum(
+    item: LibraryItem(
+      id: faker.datatype.uuid(),
+      name: faker.lorem.sentence(),
+      kind: ItemKind.album,
+    ),
     sizeInBytes: faker.datatype.number(),
+    downloadDate: DateTime.now(),
   );
   const keys = DownloadsPageKeys(
     counterText: Key('counterText'),
   );
 
   Widget getWidgetUT({
-    required List<DownloadedAlbumDTO> albums,
+    required List<DownloadedAlbum> albums,
   }) => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
@@ -46,7 +48,7 @@ void main() {
         expect(
           find.descendant(
             of: albumFinder,
-            matching: find.text(mockAlbum.name),
+            matching: find.text(mockAlbum.item.name),
           ),
           findsOneWidget,
         );

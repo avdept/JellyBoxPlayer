@@ -5,9 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
@@ -35,7 +33,7 @@ void main() {
   late DownloadService mockDownloadService;
   late DownloadDatabase mockDownloadDatabase;
   late MediaServerClient mockMediaServerClient;
-  late MockListener<AsyncValue<List<DownloadedSongDTO>>> mockListener;
+  late MockListener<AsyncValue<List<DownloadedSong>>> mockListener;
 
   final faker = Faker.instance;
   final mockDeviceId = faker.datatype.uuid();
@@ -71,8 +69,6 @@ void main() {
   setUpAll(() {
     registerFallbackValue(mockSong);
     registerFallbackValue(mockAlbum);
-    registerFallbackValue(mockSong.toItemDTO());
-    registerFallbackValue(mockAlbum.toItemDTO());
     registerFallbackValue(FakeFile());
   });
 
@@ -151,7 +147,7 @@ void main() {
         // Check if song is saved to database
         verify(
           () => mockDownloadDatabase.insertDownloadedSong(
-            mockSong.toItemDTO(),
+            mockSong,
             file: any(named: 'file'),
           ),
         ).called(1);
@@ -209,14 +205,14 @@ void main() {
         // Check if each song is saved to database
         verify(
           () => mockDownloadDatabase.insertDownloadedSong(
-            mockSong.toItemDTO(),
+            mockSong,
             file: any(named: 'file'),
           ),
         ).called(mockSongs.length);
         // Check if album is saved to database
         verify(
           () => mockDownloadDatabase.insertDownloadedAlbum(
-            mockAlbum.toItemDTO(),
+            mockAlbum,
             files: any(named: 'files'),
           ),
         ).called(1);
@@ -328,12 +324,14 @@ void main() {
       () async {
         final mockAlbums = List.generate(
           faker.datatype.number(min: 1, max: 3),
-          (i) => DownloadedAlbumDTO(
-            id: faker.datatype.uuid(),
-            name: faker.lorem.sentence(),
-            runTimeTicks: faker.datatype.number(),
-            type: 'Album',
+          (i) => DownloadedAlbum(
+            item: LibraryItem(
+              id: faker.datatype.uuid(),
+              name: faker.lorem.sentence(),
+              kind: ItemKind.album,
+            ),
             sizeInBytes: faker.datatype.number(),
+            downloadDate: DateTime.now(),
           ),
         );
         when(

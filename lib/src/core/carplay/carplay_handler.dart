@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -335,7 +334,7 @@ class CarPlayHandler {
       final albums = await ref
           .read(downloadManagerProvider.notifier)
           .getDownloadedAlbums();
-      return albums.map((e) => _toMap(ref, e.toLibraryItem())).toList();
+      return albums.map((e) => _toMap(ref, e.item)).toList();
     } on Object {
       return [];
     }

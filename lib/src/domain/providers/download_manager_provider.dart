@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
@@ -14,12 +12,12 @@ import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
-class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
+class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
   late DownloadService _downloadService;
   late DownloadDatabase _database;
 
   @override
-  FutureOr<List<DownloadedSongDTO>> build() async {
+  FutureOr<List<DownloadedSong>> build() async {
     _downloadService = ref.watch(downloadServiceProvider);
     _database = ref.watch(downloadDatabaseProvider);
     state = const AsyncValue.loading();
@@ -45,7 +43,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
         final file = File(task.destination);
 
         // Add to database
-        await _database.insertDownloadedSong(song.toItemDTO(), file: file);
+        await _database.insertDownloadedSong(song, file: file);
 
         final albumId = song.albumId;
         if (albumId != null) {
@@ -85,13 +83,13 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
         if (task.status.value == DownloadStatus.completed) {
           final file = File(task.destination);
           files.add(file);
-          await _database.insertDownloadedSong(song.toItemDTO(), file: file);
+          await _database.insertDownloadedSong(song, file: file);
         }
       }
 
       // Add album to database
       if (files.isNotEmpty) {
-        await _database.insertDownloadedAlbum(album.toItemDTO(), files: files);
+        await _database.insertDownloadedAlbum(album, files: files);
         await _downloadService.downloadAlbumCover(
           album.id,
           album.images.primary,
@@ -167,11 +165,11 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
   Future<bool> isAlbumDownloaded(String albumId) =>
       _database.isAlbumDownloaded(albumId);
 
-  Future<List<DownloadedAlbumDTO>> getDownloadedAlbums() =>
+  Future<List<DownloadedAlbum>> getDownloadedAlbums() =>
       _database.getDownloadedAlbums();
 }
 
 final downloadManagerProvider =
-    AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedSongDTO>>(
+    AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedSong>>(
       DownloadManagerNotifier.new,
     );

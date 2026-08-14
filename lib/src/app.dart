@@ -12,11 +12,13 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/widgets/playback_keyboard_shortcuts.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -59,6 +61,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   final _authState = ValueNotifier<bool?>(null);
   LibraryItem? _selectedLibrary;
   Timer? _resizeTimer;
+  var _playbackRestoreStarted = false;
 
   @override
   void initState() {
@@ -68,10 +71,35 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
     _authState.value = auth.hasError ? false : auth.valueOrNull;
     _selectedLibrary = ref.read(currentLibraryProvider).valueOrNull;
     if (_selectedLibrary != null) {
-      unawaited(ref.read(playbackProvider.notifier).tryRestore());
+      _maybeRestorePlayback();
     }
     initRoutes();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _maybeRestorePlayback() {
+    if (_playbackRestoreStarted) return;
+    _playbackRestoreStarted = true;
+    unawaited(_restorePlaybackWhenAuthReady());
+  }
+
+  Future<void> _restorePlaybackWhenAuthReady() async {
+    debugPrint('[Playback] waiting for auth before restoring playback...');
+    try {
+      final authed = await ref.read(authProvider.future);
+      debugPrint('[Playback] auth ready, authenticated=$authed');
+    } on Object catch (e) {
+      debugPrint('[Playback] auth future failed: $e');
+      return;
+    }
+    if (!mounted) return;
+    final user = ref.read(currentUserProvider);
+    final baseUrl = ref.read(baseUrlProvider);
+    debugPrint(
+      '[Playback] restoring with baseUrl=$baseUrl userId=${user?.userId} '
+      'tokenEmpty=${(user?.token ?? '').isEmpty}',
+    );
+    await ref.read(playbackProvider.notifier).tryRestore();
   }
 
   @override
@@ -215,7 +243,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
       ..listen(currentLibraryProvider, (previous, next) {
         _selectedLibrary = next.valueOrNull;
         if (next.valueOrNull != null) {
-          unawaited(ref.read(playbackProvider.notifier).tryRestore());
+          _maybeRestorePlayback();
         }
       });
 

@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -21,7 +20,7 @@ class MockMediaServerClient extends Mock implements MediaServerClient {}
 
 class MockUser extends Mock implements User {}
 
-class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>>
+class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>>
     with Mock
     implements DownloadManagerNotifier {}
 

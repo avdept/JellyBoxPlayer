@@ -7,8 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -129,7 +127,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   Future<void> _loadSongs() async {
-    var downloaded = const <DownloadedSongDTO>[];
+    var downloaded = const <DownloadedSong>[];
     try {
       downloaded = await ref
           .read(downloadDatabaseProvider)
@@ -142,7 +140,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     if (downloaded.isNotEmpty) {
       setState(() {
         songs = _sortedByIndex(
-          downloaded.map((s) => s.toLibraryItem()).toList(),
+          downloaded.map((s) => s.item).toList(),
         );
         _isLoadingSongs = false;
       });

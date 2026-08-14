@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -25,7 +24,7 @@ class MockUser extends Mock implements User {}
 
 class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
-class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>>
+class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>>
     with Mock
     implements DownloadManagerNotifier {}
 
@@ -79,18 +78,18 @@ void main() {
   );
   final mockDownloadedSongs = List.generate(
     3,
-    (index) => DownloadedSongDTO.fromSong(
-      ItemDTO(
+    (index) => DownloadedSong(
+      item: LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'Song',
+        kind: ItemKind.song,
         indexNumber: index + 1,
-        runTimeTicks: faker.datatype.number(min: 10000),
         albumArtist: faker.name.fullName(),
         albumId: mockAlbum.id,
       ),
       filePath: '/tmp/song$index.flac',
       sizeInBytes: faker.datatype.number(min: 1000),
+      downloadDate: DateTime.now(),
     ),
   );
   final mockUserId = faker.datatype.uuid();
@@ -300,7 +299,7 @@ void main() {
         expect(
           find.descendant(
             of: find.byType(PlayerSongView),
-            matching: find.text(mockDownloadedSongs.first.name),
+            matching: find.text(mockDownloadedSongs.first.item.name),
           ),
           findsOneWidget,
         );

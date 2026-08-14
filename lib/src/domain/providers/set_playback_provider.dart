@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -38,7 +37,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     final downloaded = await _ref
         .read(downloadDatabaseProvider)
         .getDownloadedSongs(albumId);
-    return _byIndexNumber(downloaded.map((s) => s.toLibraryItem()).toList());
+    return _byIndexNumber(downloaded.map((s) => s.item).toList());
   }
 
   List<LibraryItem> _byIndexNumber(List<LibraryItem> songs) =>
