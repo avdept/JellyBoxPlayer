@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
@@ -32,16 +32,16 @@ class PlayerSongView extends ConsumerWidget {
     super.key,
   });
 
-  final ItemDTO song;
+  final LibraryItem song;
   final bool isPlaying;
-  final void Function(ItemDTO)? onTap;
-  final void Function(ItemDTO)? onLikePressed;
+  final void Function(LibraryItem)? onTap;
+  final void Function(LibraryItem)? onLikePressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final int position;
   final PlayerSongViewKeys? testKeys;
 
   String get formattedDuration {
-    final duration = Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
+    final duration = song.duration;
     final negativeSign = duration.isNegative ? '-' : '';
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());

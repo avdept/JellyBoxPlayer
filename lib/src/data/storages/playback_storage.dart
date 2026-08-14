@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PlaybackSnapshot {
@@ -11,8 +11,8 @@ class PlaybackSnapshot {
     required this.positionMs,
   });
 
-  final List<ItemDTO> songs;
-  final ItemDTO album;
+  final List<LibraryItem> songs;
+  final LibraryItem album;
   final String songId;
   final int positionMs;
 }
@@ -24,8 +24,8 @@ class PlaybackStorage {
   static const _positionMsKey = 'pb_position_ms';
 
   Future<void> save({
-    required List<ItemDTO> songs,
-    required ItemDTO album,
+    required List<LibraryItem> songs,
+    required LibraryItem album,
     required String songId,
     required int positionMs,
   }) async {
@@ -55,9 +55,9 @@ class PlaybackStorage {
       if (songsJson == null || albumJson == null || songId == null) return null;
 
       final songs = (jsonDecode(songsJson) as List)
-          .map((e) => ItemDTO.fromJson(e as Map<String, dynamic>))
+          .map((e) => LibraryItem.fromJson(e as Map<String, dynamic>))
           .toList();
-      final album = ItemDTO.fromJson(
+      final album = LibraryItem.fromJson(
         jsonDecode(albumJson) as Map<String, dynamic>,
       );
       return PlaybackSnapshot(

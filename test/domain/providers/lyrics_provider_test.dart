@@ -1,17 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:retrofit/retrofit.dart';
 
 import '../../provider_container.dart';
 
-class MockJellyfinApi extends Mock implements JellyfinApi {}
+class MockMediaServerClient extends Mock implements MediaServerClient {}
 
 class FakePlaybackNotifier extends StateNotifier<PlaybackState>
     with Mock
@@ -21,10 +20,10 @@ class FakePlaybackNotifier extends StateNotifier<PlaybackState>
   void emit(PlaybackState value) => state = value;
 }
 
-ItemDTO _song(String id, {required bool hasLyrics}) =>
-    ItemDTO(id: id, name: id, type: 'Audio', hasLyrics: hasLyrics);
+LibraryItem _song(String id, {required bool hasLyrics}) =>
+    LibraryItem(id: id, name: id, kind: ItemKind.song, hasLyrics: hasLyrics);
 
-PlaybackState _playing(List<ItemDTO> songs, int index) => PlaybackState(
+PlaybackState _playing(List<LibraryItem> songs, int index) => PlaybackState(
   album: null,
   songs: songs,
   status: PlaybackStatus.playing,
@@ -44,7 +43,7 @@ DioException _failure(int? statusCode) {
 }
 
 void main() {
-  late MockJellyfinApi mockApi;
+  late MockMediaServerClient mockClient;
 
   final lyrics = LyricsDTO.fromJson({
     'Metadata': {'IsSynced': true},
@@ -57,33 +56,28 @@ void main() {
   ProviderContainer containerWith({PlaybackNotifier? playback}) =>
       createProviderContainer(
         overrides: [
-          jellyfinApiProvider.overrideWithValue(mockApi),
+          mediaServerClientProvider.overrideWithValue(mockClient),
           if (playback != null) playbackProvider.overrideWith((_) => playback),
         ],
       );
 
-  setUp(() => mockApi = MockJellyfinApi());
+  setUp(() => mockClient = MockMediaServerClient());
 
   group('lyricsProvider', () {
     test('- returns the lyrics the server sends back', () async {
-      when(() => mockApi.getLyrics(itemId: 'song-1')).thenAnswer(
-        (_) async => HttpResponse(
-          lyrics,
-          Response<dynamic>(requestOptions: RequestOptions(path: '')),
-        ),
-      );
+      when(
+        () => mockClient.getLyrics('song-1'),
+      ).thenAnswer((_) async => lyrics);
 
       await expectLater(
         containerWith().read(lyricsProvider('song-1').future),
         completion(lyrics),
       );
-      verify(() => mockApi.getLyrics(itemId: 'song-1')).called(1);
+      verify(() => mockClient.getLyrics('song-1')).called(1);
     });
 
     test('- returns null when the track has no lyrics (404)', () async {
-      when(
-        () => mockApi.getLyrics(itemId: 'song-1'),
-      ).thenThrow(_failure(404));
+      when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(404));
 
       await expectLater(
         containerWith().read(lyricsProvider('song-1').future),
@@ -92,9 +86,7 @@ void main() {
     });
 
     test('- returns null when the server predates the endpoint (400)', () async {
-      when(
-        () => mockApi.getLyrics(itemId: 'song-1'),
-      ).thenThrow(_failure(400));
+      when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(400));
 
       await expectLater(
         containerWith().read(lyricsProvider('song-1').future),
@@ -103,9 +95,7 @@ void main() {
     });
 
     test('- surfaces other failures', () async {
-      when(
-        () => mockApi.getLyrics(itemId: 'song-1'),
-      ).thenThrow(_failure(500));
+      when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(500));
 
       await expectLater(
         containerWith().read(lyricsProvider('song-1').future),

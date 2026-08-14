@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/presentation/pages/pages.dart';
 
 class ScreenFactory {
@@ -12,9 +12,9 @@ class ScreenFactory {
     GoRouterState router,
   ) {
     final params = router.extra! as Map<String, dynamic>;
-    final album = params['album'] is ItemDTO
-        ? params['album'] as ItemDTO
-        : ItemDTO.fromJson(params['album'] as Map<String, dynamic>);
+    final album = params['album'] is LibraryItem
+        ? params['album'] as LibraryItem
+        : LibraryItem.fromJson(params['album'] as Map<String, dynamic>);
 
     return CupertinoPage(
       child: AlbumPage(album: album),
@@ -26,9 +26,9 @@ class ScreenFactory {
     GoRouterState router,
   ) {
     final params = router.extra! as Map<String, dynamic>;
-    final artist = params['artist'] is ItemDTO
-        ? params['artist'] as ItemDTO
-        : ItemDTO.fromJson(params['artist'] as Map<String, dynamic>);
+    final artist = params['artist'] is LibraryItem
+        ? params['artist'] as LibraryItem
+        : LibraryItem.fromJson(params['artist'] as Map<String, dynamic>);
 
     return CupertinoPage(
       child: ArtistPage(artist: artist),
@@ -40,9 +40,9 @@ class ScreenFactory {
     GoRouterState router,
   ) {
     final params = router.extra! as Map<String, dynamic>;
-    final genre = params['genre'] is ItemDTO
-        ? params['genre'] as ItemDTO
-        : ItemDTO.fromJson(params['genre'] as Map<String, dynamic>);
+    final genre = params['genre'] is LibraryItem
+        ? params['genre'] as LibraryItem
+        : LibraryItem.fromJson(params['genre'] as Map<String, dynamic>);
 
     return CupertinoPage(
       child: GenreAlbumsPage(genre: genre),
@@ -118,9 +118,9 @@ class ScreenFactory {
     GoRouterState router,
   ) {
     final params = router.extra! as Map<String, dynamic>;
-    final playlist = params['playlist'] is ItemDTO
-        ? params['playlist'] as ItemDTO
-        : ItemDTO.fromJson(params['playlist'] as Map<String, dynamic>);
+    final playlist = params['playlist'] is LibraryItem
+        ? params['playlist'] as LibraryItem
+        : LibraryItem.fromJson(params['playlist'] as Map<String, dynamic>);
 
     return CupertinoPage(
       child: PlaylistPage(playlist: playlist),

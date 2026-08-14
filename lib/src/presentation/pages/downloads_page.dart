@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -28,7 +29,7 @@ class DownloadsPage extends StatelessWidget {
 
   void _onAlbumTap(BuildContext context, ItemDTO album) => context.pushNamed(
     Routes.album.name,
-    extra: {'album': album},
+    extra: {'album': album.toLibraryItem()},
   );
 
   Future<void> _onPlayPressed(
@@ -39,7 +40,7 @@ class DownloadsPage extends StatelessWidget {
     try {
       final result = await ref
           .read(setPlaybackProvider.notifier)
-          .playAlbum(album);
+          .playAlbum(album.toLibraryItem());
       if (result == SetPlaybackResult.empty && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Nothing to play in "${album.name}"')),

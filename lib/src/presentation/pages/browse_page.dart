@@ -8,7 +8,6 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -81,7 +80,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     EntityFilter.sortName: false,
   };
 
-  void _onAlbumTap(ItemDTO album) {
+  void _onAlbumTap(LibraryItem album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
       Routes.album.name,
@@ -89,17 +88,17 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     );
   }
 
-  void _onArtistTap(ItemDTO artist) => context.pushNamed(
+  void _onArtistTap(LibraryItem artist) => context.pushNamed(
     Routes.artist.name,
     extra: {'artist': artist},
   );
 
-  void _onGenreTap(ItemDTO genre) => context.pushNamed(
+  void _onGenreTap(LibraryItem genre) => context.pushNamed(
     Routes.genre.name,
     extra: {'genre': genre},
   );
 
-  void _onPlaylistTap(ItemDTO playlist) {
+  void _onPlaylistTap(LibraryItem playlist) {
     ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
     context.pushNamed(
       Routes.playlist.name,
@@ -107,23 +106,23 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     );
   }
 
-  Future<void> _onSongGoToAlbum(ItemDTO song) async {
+  Future<void> _onSongGoToAlbum(LibraryItem song) async {
     final albumId = song.albumId;
     if (albumId == null) return;
-    final item = await ref.read(jellyfinApiProvider).getItem(itemId: albumId);
+    final item = await ref.read(mediaServerClientProvider).getItem(albumId);
     if (!mounted) return;
-    _onAlbumTap(item.data);
+    _onAlbumTap(item);
   }
 
-  Future<void> _onSongArtistTap(ItemDTO song) async {
+  Future<void> _onSongArtistTap(LibraryItem song) async {
     final artistId = song.albumArtists.firstOrNull?.id;
     if (artistId == null) return;
-    final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+    final item = await ref.read(mediaServerClientProvider).getItem(artistId);
     if (!mounted) return;
-    context.pushNamed(Routes.artist.name, extra: {'artist': item.data});
+    context.pushNamed(Routes.artist.name, extra: {'artist': item});
   }
 
-  Future<void> _onPlaySetPressed(ItemDTO item, ItemList view) async {
+  Future<void> _onPlaySetPressed(LibraryItem item, ItemList view) async {
     final notifier = ref.read(setPlaybackProvider.notifier);
     try {
       final result = await switch (view) {
@@ -147,26 +146,23 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     }
   }
 
-  void _onSongTap(ItemDTO song, List<ItemDTO> allSongs) {
-    final syntheticAlbum = ItemDTO(
+  void _onSongTap(LibraryItem song, List<LibraryItem> allSongs) {
+    final syntheticAlbum = LibraryItem(
       id: song.albumId ?? song.id,
       name: song.albumName ?? '',
-      type: 'MusicAlbum',
+      kind: ItemKind.album,
       albumArtist: song.albumArtist,
       albumArtists: song.albumArtists,
-      imageTags: song.imageTags,
+      images: song.images,
     );
     ref.read(playbackProvider.notifier).play(song, allSongs, syntheticAlbum);
   }
 
-  Future<void> _onLikePressed(ItemDTO song) async {
-    final api = ref.read(jellyfinApiProvider);
+  Future<void> _onLikePressed(LibraryItem song) async {
     final isFavorite = song.userData.isFavorite;
-    final callback = isFavorite ? api.removeFavorite : api.saveFavorite;
-    await callback.call(
-      userId: ref.read(currentUserProvider)!.userId,
-      itemId: song.id,
-    );
+    await ref
+        .read(mediaServerClientProvider)
+        .setFavorite(song.id, favorite: !isFavorite);
     ref
         .read(itemListProvider(ItemList.songs).notifier)
         .updateItem(
@@ -176,19 +172,15 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         );
   }
 
-  Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
+  Future<void> _onAddToPlaylistPressed(LibraryItem song) async {
     final playlist = await showPlaylistPicker(
       context,
       isDesktop: _device.isDesktop,
     );
     if (playlist != null && mounted) {
       await ref
-          .read(jellyfinApiProvider)
-          .addPlaylistItems(
-            playlistId: playlist.id,
-            userId: ref.read(currentUserProvider)!.userId,
-            entryIds: song.id,
-          );
+          .read(mediaServerClientProvider)
+          .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Successfully added to playlist')),
@@ -242,7 +234,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     }
   }
 
-  Future<void> _onDeletePlaylist(ItemDTO playlist) async {
+  Future<void> _onDeletePlaylist(LibraryItem playlist) async {
     final shouldDelete = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog.adaptive(
@@ -274,8 +266,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     );
     if ((shouldDelete ?? false) && mounted) {
       await ref
-          .read(jellyfinApiProvider)
-          .deletePlaylist(playlistId: playlist.id);
+          .read(mediaServerClientProvider)
+          .deletePlaylist(playlist.id);
       ref.invalidate(playlistsProvider);
     }
   }
@@ -553,8 +545,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     ),
   );
 
-  Widget _libraryAvatar(ItemDTO? library, double size) {
-    final tag = library?.imageTags['Primary'];
+  Widget _libraryAvatar(LibraryItem? library, double size) {
+    final tag = library?.images.primary;
     final image = (tag != null)
         ? ref.read(imageServiceProvider).albumIP(tagId: tag, id: library!.id)
         : null;
@@ -569,18 +561,18 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   Widget _libraryButton() {
     final current = ref.watch(currentLibraryProvider).valueOrNull;
     final libraries =
-        ref.watch(librariesProvider).valueOrNull ?? const <ItemDTO>[];
+        ref.watch(librariesProvider).valueOrNull ?? const <LibraryItem>[];
     final size = _device.isMobile ? 32.0 : 40.0;
 
     // The library restored from prefs carries no imageTags, so resolve the
     // full DTO from librariesProvider (by id) to show the real cover image.
-    final selected = libraries.cast<ItemDTO?>().firstWhere(
+    final selected = libraries.cast<LibraryItem?>().firstWhere(
       (l) => l?.id == current?.id,
       orElse: () => null,
     );
 
     return DropdownButtonHideUnderline(
-      child: DropdownButton2<ItemDTO>(
+      child: DropdownButton2<LibraryItem>(
         customButton: _libraryAvatar(selected ?? current, size),
         buttonStyleData: const ButtonStyleData(
           overlayColor: WidgetStatePropertyAll(Colors.transparent),
@@ -593,7 +585,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         ),
         items: [
           for (final lib in libraries)
-            DropdownMenuItem<ItemDTO>(
+            DropdownMenuItem<LibraryItem>(
               value: lib,
               child: Row(
                 children: [

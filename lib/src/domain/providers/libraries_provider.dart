@@ -2,28 +2,28 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
-class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>> {
-  late JellyfinApi _api;
+class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>> {
+  late MediaServerClient _client;
 
   @override
-  FutureOr<List<ItemDTO>> build() async {
+  FutureOr<List<LibraryItem>> build() async {
     if (ref.watch(isOfflineProvider)) throw const OfflineException();
-    _api = ref.watch(jellyfinApiProvider);
+    _client = ref.watch(mediaServerClientProvider);
     state = const AsyncLoading();
     try {
-      final libraries = await _api.getLibraries(
+      final libraries = await _client.getLibraries(
         userId: ref.read(currentUserProvider)!.userId,
       );
       return List.unmodifiable(
-        libraries.data.items.where(
+        libraries.items.where(
           (element) =>
-              element.type == 'CollectionFolder' &&
+              element.kind == ItemKind.library &&
               element.collectionType == 'music',
         ),
       );
@@ -35,6 +35,6 @@ class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>> {
 }
 
 final librariesProvider =
-    AutoDisposeAsyncNotifierProvider<LibrariesNotifier, List<ItemDTO>>(
+    AutoDisposeAsyncNotifierProvider<LibrariesNotifier, List<LibraryItem>>(
       LibrariesNotifier.new,
     );

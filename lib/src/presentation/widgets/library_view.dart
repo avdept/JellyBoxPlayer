@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class LibraryView extends ConsumerWidget {
@@ -12,15 +12,15 @@ class LibraryView extends ConsumerWidget {
     super.key,
   });
 
-  final ItemDTO library;
+  final LibraryItem library;
   final VoidCallback? onTap;
 
   String? imagePath(WidgetRef ref) {
-    if (library.imageTags['Primary'] == null) return null;
+    if (library.images.primary == null) return null;
 
     return ref
         .read(imageServiceProvider)
-        .imagePath(tagId: library.imageTags['Primary']!, id: library.id);
+        .imagePath(tagId: library.images.primary!, id: library.id);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {

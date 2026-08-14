@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -12,13 +11,13 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class SearchItemsNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
-  late JellyfinApi _api;
+  late MediaServerClient _client;
   var _searchTerm = '';
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
     if (ref.watch(isOfflineProvider)) throw const OfflineException();
-    _api = ref.watch(jellyfinApiProvider);
+    _client = ref.watch(mediaServerClientProvider);
 
     final searchQuery = ref.watch(searchProvider)?.trim();
 
@@ -34,36 +33,36 @@ class SearchItemsNotifier
 
     switch (arg) {
       case ItemList.songs:
-        final resp = await _api.searchSongs(
+        final resp = await _client.searchSongs(
           userId: userId,
           libraryId: libraryId,
           searchTerm: _searchTerm,
         );
-        return ItemsPage(items: resp.data.items);
+        return ItemsPage(items: resp.items);
       case ItemList.artists:
-        final resp = await _api.searchArtists(
+        final resp = await _client.searchArtists(
           userId: userId,
           searchTerm: _searchTerm,
         );
-        return ItemsPage(items: resp.data.items);
+        return ItemsPage(items: resp.items);
       case ItemList.playlists:
-        final resp = await _api.searchPlaylists(
+        final resp = await _client.searchPlaylists(
           userId: userId,
           libraryId: libraryId ?? '',
           searchTerm: _searchTerm,
         );
-        return ItemsPage(items: resp.data.items);
+        return ItemsPage(items: resp.items);
       default:
-        final resp = await _api.searchAlbums(
+        final resp = await _client.searchAlbums(
           userId: userId,
           libraryId: libraryId,
           searchTerm: _searchTerm,
         );
-        return ItemsPage(items: resp.data.items);
+        return ItemsPage(items: resp.items);
     }
   }
 
-  void updateItem(ItemDTO updated) {
+  void updateItem(LibraryItem updated) {
     final current = state.valueOrNull;
     if (current == null) return;
     state = AsyncData(

@@ -6,22 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 class PlaylistPage extends ConsumerStatefulWidget {
   const PlaylistPage({required this.playlist, super.key});
-  final ItemDTO playlist;
+  final LibraryItem playlist;
 
   @override
   ConsumerState<PlaylistPage> createState() => _PlaylistPageState();
@@ -32,7 +30,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   final _titleOpacity = ValueNotifier<double>(0);
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
-  List<ItemDTO> songs = [];
+  List<LibraryItem> songs = [];
 
   late final ImageService _imageService;
 
@@ -63,16 +61,14 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   void initState() {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
-    _imageService = ImageService(
-      serverUrl: ref.read(baseUrlProvider.notifier).state!,
-    );
+    _imageService = ImageService(client: ref.read(mediaServerClientProvider));
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (mounted) {
         _currentSong.value = event.currentSource?.tag as MediaItem?;
         ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
           id: widget.playlist.id,
-          tagId: widget.playlist.imageTags['Primary'],
+          tagId: widget.playlist.images.primary,
         );
       }
     });
@@ -81,14 +77,14 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
 
   void _getSongs() {
     ref
-        .read(jellyfinApiProvider)
+        .read(mediaServerClientProvider)
         .getPlaylistSongs(
           userId: ref.read(currentUserProvider.notifier).state!.userId,
           playlistId: widget.playlist.id,
         )
         .then((value) {
           setState(() {
-            final items = [...value.data.items]
+            final items = [...value.items]
               ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
             songs = items;
           });
@@ -104,7 +100,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
 
   ImageProvider get albumCover => _imageService.albumIP(
     id: widget.playlist.id,
-    tagId: widget.playlist.imageTags['Primary'],
+    tagId: widget.playlist.images.primary,
   );
 
   @override
@@ -202,20 +198,17 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   .play(song, songs, widget.playlist),
                               position: index + 1,
                               onLikePressed: (song) async {
-                                final api = ref.read(jellyfinApiProvider);
-                                final callback = song.userData.isFavorite
-                                    ? api.removeFavorite
-                                    : api.saveFavorite;
-                                await callback.call(
-                                  userId: ref.read(currentUserProvider)!.userId,
-                                  itemId: song.id,
-                                );
+                                await ref
+                                    .read(mediaServerClientProvider)
+                                    .setFavorite(
+                                      song.id,
+                                      favorite: !song.userData.isFavorite,
+                                    );
                                 _getSongs();
                               },
                               optionsBuilder: (context) => [
                                 PopupMenuItem(
                                   onTap: () async {
-                                    final api = ref.read(jellyfinApiProvider);
                                     if (song.playlistItemId == null) {
                                       const snackBar = SnackBar(
                                         content: Text(
@@ -226,10 +219,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                         context,
                                       ).showSnackBar(snackBar);
                                     } else {
-                                      await api.removePlaylistItem(
-                                        playlistId: widget.playlist.id,
-                                        entryIds: song.playlistItemId!,
-                                      );
+                                      await ref
+                                          .read(mediaServerClientProvider)
+                                          .removePlaylistItem(
+                                            playlistId: widget.playlist.id,
+                                            entryId: song.playlistItemId!,
+                                          );
                                       const snackBar = SnackBar(
                                         content: Text(
                                           'Successfully removed item from playlist',
@@ -249,7 +244,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   PopupMenuItem(
                                     onTap: () async {
                                       final res = await ref
-                                          .read(jellyfinApiProvider)
+                                          .read(mediaServerClientProvider)
                                           .searchArtists(
                                             userId: ref
                                                 .read(currentUserProvider)!
@@ -262,7 +257,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                           Routes.artist.name,
                                           extra: {
                                             'playlist': widget.playlist,
-                                            'artist': res.data.items.first,
+                                            'artist': res.items.first,
                                           },
                                         );
                                       }
@@ -273,7 +268,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   PopupMenuItem(
                                     onTap: () async {
                                       final res = await ref
-                                          .read(jellyfinApiProvider)
+                                          .read(mediaServerClientProvider)
                                           .searchAlbums(
                                             userId: ref
                                                 .read(currentUserProvider)!
@@ -285,7 +280,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                           Routes.album.name,
                                           extra: {
                                             'playlist': widget.playlist,
-                                            'album': res.data.items.first,
+                                            'album': res.items.first,
                                           },
                                         );
                                       }

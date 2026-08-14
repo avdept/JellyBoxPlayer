@@ -5,13 +5,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/current_server_type_provider.dart';
 
 class AuthNotifier extends AsyncNotifier<bool?> {
   AuthNotifier() {
@@ -27,7 +31,6 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   late final Interceptor _noAuthNetworkInterceptor;
   late Dio _client;
   late FlutterSecureStorage _storage;
-  late JellyfinApi _api;
 
   bool _authenticating = false;
   bool _loggingOut = false;
@@ -37,8 +40,14 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   static const invalidCredentialsError = 'Incorrect login or password';
 
   static const _serverUrlKey = 'serverUrl';
+  static const _serverTypeKey = 'serverType';
   static const _userIdKey = 'userId';
-  static const _tokenKey = 'x-mediabrowser-token';
+  static const _authTokenKey = 'authToken';
+
+  /// The HTTP header Jellyfin expects its access token under. Distinct from
+  /// [_authTokenKey] (the generic secure-storage key), since that header
+  /// name is Jellyfin protocol detail, not a storage concern.
+  static const _jellyfinAuthHeader = 'x-mediabrowser-token';
 
   @override
   FutureOr<bool?> build() async {
@@ -57,10 +66,20 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     ref.read(baseUrlProvider.notifier).state = serverUrl;
     if (serverUrl == null) return false;
 
-    _api = JellyfinApi(_client, baseUrl: serverUrl);
+    final serverType = _parseServerType(
+      await _storage.read(key: _serverTypeKey),
+    );
+    ref.read(currentServerTypeProvider.notifier).state = serverType;
+
     final userId = await _storage.read(key: _userIdKey) ?? '';
-    final token = await _storage.read(key: _tokenKey) ?? '';
-    final tokenValidated = _validateAuthToken(token, userId);
+    final token = await _storage.read(key: _authTokenKey) ?? '';
+    final client = _clientFor(
+      serverType,
+      serverUrl: serverUrl,
+      userId: userId,
+      token: token,
+    );
+    final tokenValidated = await _validateSession(client, token);
 
     if (tokenValidated) {
       ref.read(currentUserProvider.notifier).state = User(
@@ -73,33 +92,58 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     return tokenValidated && serverUrl.isNotEmpty && userId.isNotEmpty;
   }
 
-  Future<String?> login(UserCredentials credentials) async {
-    // state = const AsyncLoading<bool>();
+  Future<String?> login(
+    UserCredentials credentials, {
+    ServerType serverType = ServerType.jellyfin,
+  }) async {
     final serverUrl = normalizeServerUrl(credentials.serverUrl);
-    _api = JellyfinApi(_client, baseUrl: serverUrl);
     _authenticating = true;
     try {
-      final response = await _api.signIn(credentials: credentials);
+      switch (serverType) {
+        case ServerType.jellyfin:
+          return await _loginJellyfin(serverUrl, credentials);
+      }
+    } finally {
+      _authenticating = false;
+    }
+  }
+
+  Future<String?> _loginJellyfin(
+    String serverUrl,
+    UserCredentials credentials,
+  ) async {
+    final api = JellyfinApi(_client, baseUrl: serverUrl);
+    try {
+      final response = await api.signIn(credentials: credentials);
       print(response.data.sessionInfo); // TODO: remove after testing
       final token = response.data.accessToken;
       final userId = response.data.user.id;
-      await _storage.write(key: _tokenKey, value: token);
+      await _storage.write(key: _authTokenKey, value: token);
       await _storage.write(key: _userIdKey, value: userId);
       await _storage.write(key: _serverUrlKey, value: serverUrl);
+      await _storage.write(
+        key: _serverTypeKey,
+        value: ServerType.jellyfin.name,
+      );
 
       ref.read(baseUrlProvider.notifier).state = serverUrl;
+      ref.read(currentServerTypeProvider.notifier).state =
+          ServerType.jellyfin;
       ref.read(currentUserProvider.notifier).state = User(
         userId: userId,
         token: token,
       );
-      final tokenValidated = _validateAuthToken(token, userId);
+      final client = _clientFor(
+        ServerType.jellyfin,
+        serverUrl: serverUrl,
+        userId: userId,
+        token: token,
+      );
+      final tokenValidated = await _validateSession(client, token);
       if (tokenValidated) _setAuthHeader(token);
       state = AsyncData(tokenValidated);
     } on DioException catch (e) {
       return _loginErrorMessage(e);
-      // state = AsyncError<bool>(e.error!, e.stackTrace);
-    } finally {
-      _authenticating = false;
     }
     return state.error?.toString();
   }
@@ -143,52 +187,70 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   }
 
   Future<void> _signOutQuietly() async {
+    final user = ref.read(currentUserProvider);
+    final serverUrl = ref.read(baseUrlProvider);
+    if (user == null || serverUrl == null) return;
     try {
-      await _api.signOut();
+      final client = _clientFor(
+        ref.read(currentServerTypeProvider) ?? ServerType.jellyfin,
+        serverUrl: serverUrl,
+        userId: user.userId,
+        token: user.token,
+      );
+      await client.signOut();
     } on Object {
       return;
     }
   }
 
-  bool _validateAuthToken(String? token, String userId) {
+  MediaServerClient _clientFor(
+    ServerType serverType, {
+    required String serverUrl,
+    required String userId,
+    required String token,
+  }) {
+    switch (serverType) {
+      case ServerType.jellyfin:
+        return JellyfinClient(
+          dio: _client,
+          baseUrl: serverUrl,
+          userId: userId,
+          token: token,
+          deviceId: deviceId,
+        );
+    }
+  }
+
+  ServerType _parseServerType(String? stored) =>
+      ServerType.values.asNameMap()[stored] ?? ServerType.jellyfin;
+
+  Future<bool> _validateSession(MediaServerClient client, String? token) async {
     if (token == null) return false;
-
-    // final tokenPayload = JwtDecoder.decode(token);
-    // final exp = tokenPayload['exp'] as int?;
-
-    // if (exp == null) return true;
-    var tokenValid = false;
     try {
       _setAuthHeader(token);
-      _api.getArtists(userId: userId);
-      tokenValid = true;
+      final valid = await client.validateSession();
       _removeAuthHeader();
+      return valid;
     } catch (e) {
       print('Error validating token: type=${e.runtimeType}, message=$e');
-      tokenValid = false;
+      return false;
     }
-
-    // final expirationTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
-    // final now = DateTime.now();
-
-    // return expirationTime.isAfter(now);
-    return tokenValid;
   }
 
   void _setAuthHeader(String token) {
-    _client.options.headers[_tokenKey] = token;
+    _client.options.headers[_jellyfinAuthHeader] = token;
 
     if (kDebugMode) _notifyDeveloper();
   }
 
   void _removeAuthHeader() {
-    _client.options.headers.remove(_tokenKey);
+    _client.options.headers.remove(_jellyfinAuthHeader);
 
     if (kDebugMode) _notifyDeveloper();
   }
 
   void _notifyDeveloper() => log(
-    _client.options.headers[_tokenKey].toString(),
+    _client.options.headers[_jellyfinAuthHeader].toString(),
     name: 'Auth',
   );
 }

@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
+import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
 class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
@@ -26,19 +26,15 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
     return _database.getDownloadedSongs();
   }
 
-  Future<void> downloadSong(ItemDTO song) async {
-    // Get server URL and token
-    final serverUrl = ref.read(baseUrlProvider)!;
-    final user = ref.read(currentUserProvider)!;
+  Future<void> downloadSong(LibraryItem song) async {
+    final client = ref.read(mediaServerClientProvider);
 
     try {
       // Start download
       final task = await _downloadService.downloadSong(
         song,
-        serverUrl,
-        user.token,
-        user.userId,
-        deviceId,
+        client,
+        deviceId: deviceId,
       );
 
       // Wait for download to complete
@@ -49,14 +45,14 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
         final file = File(task.destination);
 
         // Add to database
-        await _database.insertDownloadedSong(song, file: file);
+        await _database.insertDownloadedSong(song.toItemDTO(), file: file);
 
         final albumId = song.albumId;
         if (albumId != null) {
           await _downloadService.downloadAlbumCover(
             albumId,
-            song.albumPrimaryImageTag ?? song.imageTags['Primary'],
-            serverUrl,
+            song.images.albumPrimary ?? song.images.primary,
+            client,
           );
         }
 
@@ -71,10 +67,8 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
     }
   }
 
-  Future<void> downloadAlbum(ItemDTO album, List<ItemDTO> songs) async {
-    // Get server URL and token
-    final serverUrl = ref.read(baseUrlProvider)!;
-    final user = ref.read(currentUserProvider)!;
+  Future<void> downloadAlbum(LibraryItem album, List<LibraryItem> songs) async {
+    final client = ref.read(mediaServerClientProvider);
 
     try {
       final files = <File>[];
@@ -83,27 +77,25 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSongDTO>> {
       for (final song in songs) {
         final task = await _downloadService.downloadSong(
           song,
-          serverUrl,
-          user.token,
-          user.userId,
-          deviceId,
+          client,
+          deviceId: deviceId,
         );
         await _waitForDownloadCompletion(task);
 
         if (task.status.value == DownloadStatus.completed) {
           final file = File(task.destination);
           files.add(file);
-          await _database.insertDownloadedSong(song, file: file);
+          await _database.insertDownloadedSong(song.toItemDTO(), file: file);
         }
       }
 
       // Add album to database
       if (files.isNotEmpty) {
-        await _database.insertDownloadedAlbum(album, files: files);
+        await _database.insertDownloadedAlbum(album.toItemDTO(), files: files);
         await _downloadService.downloadAlbumCover(
           album.id,
-          album.imageTags['Primary'],
-          serverUrl,
+          album.images.primary,
+          client,
         );
       }
 

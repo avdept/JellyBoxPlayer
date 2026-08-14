@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 
@@ -81,7 +82,7 @@ class _LyricsPanel extends ConsumerWidget {
     );
   }
 
-  Widget _header(BuildContext context, WidgetRef ref, ItemDTO? song) => Padding(
+  Widget _header(BuildContext context, WidgetRef ref, LibraryItem? song) => Padding(
     padding: const EdgeInsets.fromLTRB(32, 16, 12, 8),
     child: Row(
       children: [

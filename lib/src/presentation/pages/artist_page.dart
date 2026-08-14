@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -15,7 +15,7 @@ import 'package:sliver_tools/sliver_tools.dart';
 
 class ArtistPage extends ConsumerStatefulWidget {
   const ArtistPage({required this.artist, super.key});
-  final ItemDTO artist;
+  final LibraryItem artist;
 
   @override
   ConsumerState<ArtistPage> createState() => _ArtistPageState();
@@ -25,8 +25,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   final _scrollController = ScrollController();
   final _titleOpacity = ValueNotifier<double>(0);
   final _titleKey = GlobalKey(debugLabel: 'title');
-  List<ItemDTO> _albums = [];
-  List<ItemDTO> _appearsOn = [];
+  List<LibraryItem> _albums = [];
+  List<LibraryItem> _appearsOn = [];
 
   late Size _screenSize;
   late ThemeData _theme;
@@ -61,31 +61,31 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
 
   Future<void> _getAppearsOn() async {
     final resp = await ref
-        .read(jellyfinApiProvider)
+        .read(mediaServerClientProvider)
         .getAlbums(
           userId: ref.read(currentUserProvider)!.userId,
           libraryId: '',
           contributingArtistIds: widget.artist.id,
         );
     setState(() {
-      _appearsOn = resp.data.items;
+      _appearsOn = resp.items;
     });
   }
 
   Future<void> _getAlbums() async {
     final resp = await ref
-        .read(jellyfinApiProvider)
+        .read(mediaServerClientProvider)
         .getAlbums(
           userId: ref.read(currentUserProvider)!.userId,
           libraryId: '',
           artistIds: [widget.artist.id],
         );
     setState(() {
-      _albums = resp.data.items;
+      _albums = resp.items;
     });
   }
 
-  Future<void> _onAlbumPlayPressed(ItemDTO album) => _playSet(
+  Future<void> _onAlbumPlayPressed(LibraryItem album) => _playSet(
     album,
     () => ref.read(setPlaybackProvider.notifier).playAlbum(album),
   );
@@ -96,7 +96,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   );
 
   Future<void> _playSet(
-    ItemDTO setItem,
+    LibraryItem setItem,
     Future<SetPlaybackResult> Function() play,
   ) async {
     try {
@@ -152,7 +152,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               alignment: Alignment.topCenter,
               clipBehavior: Clip.none,
               children: [
-                if (widget.artist.backdropImageTags.isNotEmpty)
+                if (widget.artist.images.backdrops.isNotEmpty)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -233,7 +233,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           alignment: Alignment.topCenter,
           clipBehavior: Clip.none,
           children: [
-            if (widget.artist.backdropImageTags.isNotEmpty)
+            if (widget.artist.images.backdrops.isNotEmpty)
               Positioned(
                 left: 0,
                 right: 0,
@@ -314,7 +314,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         image: ref
             .read(imageServiceProvider)
             .backdropIp(
-              tagId: widget.artist.backdropImageTags.firstOrNull,
+              tagId: widget.artist.images.backdrops.firstOrNull,
               id: widget.artist.id,
             ),
         fit: BoxFit.fitWidth,
@@ -336,7 +336,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     image: ref
         .read(imageServiceProvider)
         .albumIP(
-          tagId: widget.artist.imageTags['Primary'],
+          tagId: widget.artist.images.primary,
           id: widget.artist.id,
         ),
     width: 500,

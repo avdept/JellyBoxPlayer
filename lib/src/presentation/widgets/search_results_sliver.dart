@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
@@ -83,7 +83,7 @@ class SearchResultsSliver extends ConsumerWidget {
     required WidgetRef ref,
     required DeviceType device,
     required ItemList category,
-    required List<ItemDTO> items,
+    required List<LibraryItem> items,
   }) {
     if (items.isEmpty) return const [];
 
@@ -139,7 +139,7 @@ class SearchResultsSliver extends ConsumerWidget {
     WidgetRef ref,
     DeviceType device,
     ItemList category,
-    List<ItemDTO> items,
+    List<LibraryItem> items,
   ) {
     final cardWidth = AlbumCardMetrics.width(device);
     final spacing = AlbumCardMetrics.crossAxisSpacing(device);

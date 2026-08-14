@@ -2,7 +2,7 @@ import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
 import '../../app_wrapper.dart';
@@ -12,17 +12,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final faker = Faker.instance;
-  final mockAlbum = ItemDTO(
+  final mockAlbum = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    type: 'MusicAlbum',
-    runTimeTicks: faker.datatype.number(min: 10000),
+    kind: ItemKind.album,
     albumArtist: faker.name.fullName(),
   );
 
   Widget getWidgetUT({
-    Future<void> Function(ItemDTO)? onPlayPressed,
-    void Function(ItemDTO)? onTap,
+    Future<void> Function(LibraryItem)? onPlayPressed,
+    void Function(LibraryItem)? onTap,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(),
@@ -113,7 +112,7 @@ void main() {
     testWidgets(
       '- reports the album on play press without triggering onTap',
       (widgetTester) async {
-        final played = <ItemDTO>[];
+        final played = <LibraryItem>[];
         var tapCounter = 0;
         await widgetTester.pumpWidget(
           getWidgetUT(

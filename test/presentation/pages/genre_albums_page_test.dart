@@ -2,7 +2,6 @@ import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/genre_albums_provider.dart';
@@ -27,27 +26,25 @@ void main() {
   late User mockUser;
 
   final faker = Faker.instance;
-  final mockGenre = ItemDTO(
+  final mockGenre = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.word(),
-    type: 'MusicGenre',
-    runTimeTicks: faker.datatype.number(min: 10000),
+    kind: ItemKind.genre,
   );
   final mockAlbums = ItemsPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (_) => LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'MusicAlbum',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.album,
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
     ),
   );
 
-  Widget getWidgetUT({required ItemDTO genre}) => createTestApp(
+  Widget getWidgetUT({required LibraryItem genre}) => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
         genreAlbumsProvider.overrideWith(() => mockGenreAlbumsNotifier),

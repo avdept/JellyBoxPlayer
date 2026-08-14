@@ -7,8 +7,8 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
@@ -172,13 +172,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             final artistId =
                                 currentSong!.extras!['artistId'] as String;
                             final item = await ref
-                                .read(jellyfinApiProvider)
-                                .getItem(itemId: artistId);
+                                .read(mediaServerClientProvider)
+                                .getItem(artistId);
                             if (!context.mounted) return;
                             Navigator.of(context).pop();
                             context.goNamed(
                               Routes.artist.name,
-                              extra: {'artist': item.data},
+                              extra: {'artist': item},
                             );
                           }
                         : null,
@@ -375,12 +375,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                         currentSong!.extras!['artistId']
                                             as String;
                                     final item = await ref
-                                        .read(jellyfinApiProvider)
-                                        .getItem(itemId: artistId);
+                                        .read(mediaServerClientProvider)
+                                        .getItem(artistId);
                                     if (!context.mounted) return;
                                     context.goNamed(
                                       Routes.artist.name,
-                                      extra: {'artist': item.data},
+                                      extra: {'artist': item},
                                     );
                                   }
                                 : null,
@@ -512,17 +512,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     );
   }
 
-  Future<void> _addToPlaylist(ItemDTO song) async {
+  Future<void> _addToPlaylist(LibraryItem song) async {
     final playlist = await showPlaylistPicker(context, isDesktop: _isDesktop);
     if (playlist == null) return;
 
     await ref
-        .read(jellyfinApiProvider)
-        .addPlaylistItems(
-          playlistId: playlist.id,
-          userId: ref.read(currentUserProvider)!.userId,
-          entryIds: song.id,
-        );
+        .read(mediaServerClientProvider)
+        .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Successfully added item to playlist')),
@@ -530,11 +526,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   Future<void> _goToArtist(BuildContext sheetContext, String artistId) async {
-    final item = await ref.read(jellyfinApiProvider).getItem(itemId: artistId);
+    final item = await ref.read(mediaServerClientProvider).getItem(artistId);
     if (sheetContext.mounted) Navigator.of(sheetContext).pop();
     if (!mounted) return;
     Navigator.of(context).pop();
-    context.goNamed(Routes.artist.name, extra: {'artist': item.data});
+    context.goNamed(Routes.artist.name, extra: {'artist': item});
   }
 
   Widget _playPauseButton() => PlayPauseButton(

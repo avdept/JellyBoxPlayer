@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -15,14 +14,14 @@ import 'package:string_capitalize/string_capitalize.dart';
 
 class ItemListNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
-  late JellyfinApi _api;
+  late MediaServerClient _api;
   late Filter _filterState;
   String? _libraryId;
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
     if (ref.watch(isOfflineProvider)) throw const OfflineException();
-    _api = ref.watch(jellyfinApiProvider);
+    _api = ref.watch(mediaServerClientProvider);
     _filterState = ref.watch(filterProvider);
     _libraryId = ref.watch(currentLibraryProvider).valueOrNull?.id;
     return _fetchItems(startPage: const ItemsPage());
@@ -72,12 +71,12 @@ class ItemListNotifier
       ),
     };
     return startPage.copyWith(
-      items: [...startPage.items, ...resp.data.items],
+      items: [...startPage.items, ...resp.items],
       currentPage: startPage.currentPage + 1,
     );
   }
 
-  void updateItem(ItemDTO updated) {
+  void updateItem(LibraryItem updated) {
     final current = state.valueOrNull;
     if (current == null) return;
     state = AsyncData(

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlaybackState {
 
- ItemDTO? get album; List<ItemDTO> get songs; PlaybackStatus get status; Duration get position; Duration get cacheProgress; Duration? get totalDuration; int? get currentMediaIndex;
+ LibraryItem? get album; List<LibraryItem> get songs; PlaybackStatus get status; Duration get position; Duration get cacheProgress; Duration? get totalDuration; int? get currentMediaIndex;
 /// Create a copy of PlaybackState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,11 +45,11 @@ abstract mixin class $PlaybackStateCopyWith<$Res>  {
   factory $PlaybackStateCopyWith(PlaybackState value, $Res Function(PlaybackState) _then) = _$PlaybackStateCopyWithImpl;
 @useResult
 $Res call({
- ItemDTO? album, List<ItemDTO> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex
+ LibraryItem? album, List<LibraryItem> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex
 });
 
 
-$ItemDTOCopyWith<$Res>? get album;
+$LibraryItemCopyWith<$Res>? get album;
 
 }
 /// @nodoc
@@ -65,8 +65,8 @@ class _$PlaybackStateCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') @override $Res call({Object? album = freezed,Object? songs = null,Object? status = null,Object? position = null,Object? cacheProgress = null,Object? totalDuration = freezed,Object? currentMediaIndex = freezed,}) {
   return _then(_self.copyWith(
 album: freezed == album ? _self.album : album // ignore: cast_nullable_to_non_nullable
-as ItemDTO?,songs: null == songs ? _self.songs : songs // ignore: cast_nullable_to_non_nullable
-as List<ItemDTO>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as LibraryItem?,songs: null == songs ? _self.songs : songs // ignore: cast_nullable_to_non_nullable
+as List<LibraryItem>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as PlaybackStatus,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as Duration,cacheProgress: null == cacheProgress ? _self.cacheProgress : cacheProgress // ignore: cast_nullable_to_non_nullable
 as Duration,totalDuration: freezed == totalDuration ? _self.totalDuration : totalDuration // ignore: cast_nullable_to_non_nullable
@@ -78,12 +78,12 @@ as int?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ItemDTOCopyWith<$Res>? get album {
+$LibraryItemCopyWith<$Res>? get album {
     if (_self.album == null) {
     return null;
   }
 
-  return $ItemDTOCopyWith<$Res>(_self.album!, (value) {
+  return $LibraryItemCopyWith<$Res>(_self.album!, (value) {
     return _then(_self.copyWith(album: value));
   });
 }
@@ -168,7 +168,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ItemDTO? album,  List<ItemDTO> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlaybackState() when $default != null:
 return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex);case _:
@@ -189,7 +189,7 @@ return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheP
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ItemDTO? album,  List<ItemDTO> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex)  $default,) {final _that = this;
 switch (_that) {
 case _PlaybackState():
 return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex);case _:
@@ -209,7 +209,7 @@ return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheP
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ItemDTO? album,  List<ItemDTO> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex)?  $default,) {final _that = this;
 switch (_that) {
 case _PlaybackState() when $default != null:
 return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex);case _:
@@ -224,12 +224,12 @@ return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheP
 
 
 class _PlaybackState implements PlaybackState {
-  const _PlaybackState({required this.album, required final  List<ItemDTO> songs, required this.status, required this.position, required this.cacheProgress, this.totalDuration, this.currentMediaIndex}): _songs = songs;
+  const _PlaybackState({required this.album, required final  List<LibraryItem> songs, required this.status, required this.position, required this.cacheProgress, this.totalDuration, this.currentMediaIndex}): _songs = songs;
   
 
-@override final  ItemDTO? album;
- final  List<ItemDTO> _songs;
-@override List<ItemDTO> get songs {
+@override final  LibraryItem? album;
+ final  List<LibraryItem> _songs;
+@override List<LibraryItem> get songs {
   if (_songs is EqualUnmodifiableListView) return _songs;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_songs);
@@ -271,11 +271,11 @@ abstract mixin class _$PlaybackStateCopyWith<$Res> implements $PlaybackStateCopy
   factory _$PlaybackStateCopyWith(_PlaybackState value, $Res Function(_PlaybackState) _then) = __$PlaybackStateCopyWithImpl;
 @override @useResult
 $Res call({
- ItemDTO? album, List<ItemDTO> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex
+ LibraryItem? album, List<LibraryItem> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex
 });
 
 
-@override $ItemDTOCopyWith<$Res>? get album;
+@override $LibraryItemCopyWith<$Res>? get album;
 
 }
 /// @nodoc
@@ -291,8 +291,8 @@ class __$PlaybackStateCopyWithImpl<$Res>
 @override @pragma('vm:prefer-inline') $Res call({Object? album = freezed,Object? songs = null,Object? status = null,Object? position = null,Object? cacheProgress = null,Object? totalDuration = freezed,Object? currentMediaIndex = freezed,}) {
   return _then(_PlaybackState(
 album: freezed == album ? _self.album : album // ignore: cast_nullable_to_non_nullable
-as ItemDTO?,songs: null == songs ? _self._songs : songs // ignore: cast_nullable_to_non_nullable
-as List<ItemDTO>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as LibraryItem?,songs: null == songs ? _self._songs : songs // ignore: cast_nullable_to_non_nullable
+as List<LibraryItem>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as PlaybackStatus,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
 as Duration,cacheProgress: null == cacheProgress ? _self.cacheProgress : cacheProgress // ignore: cast_nullable_to_non_nullable
 as Duration,totalDuration: freezed == totalDuration ? _self.totalDuration : totalDuration // ignore: cast_nullable_to_non_nullable
@@ -305,12 +305,12 @@ as int?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ItemDTOCopyWith<$Res>? get album {
+$LibraryItemCopyWith<$Res>? get album {
     if (_self.album == null) {
     return null;
   }
 
-  return $ItemDTOCopyWith<$Res>(_self.album!, (value) {
+  return $LibraryItemCopyWith<$Res>(_self.album!, (value) {
     return _then(_self.copyWith(album: value));
   });
 }

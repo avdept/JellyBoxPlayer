@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ItemsPage {
 
- List<ItemDTO> get items; int get currentPage; int get totalPerPage;
+ List<LibraryItem> get items; int get currentPage; int get totalPerPage;
 /// Create a copy of ItemsPage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,7 +45,7 @@ abstract mixin class $ItemsPageCopyWith<$Res>  {
   factory $ItemsPageCopyWith(ItemsPage value, $Res Function(ItemsPage) _then) = _$ItemsPageCopyWithImpl;
 @useResult
 $Res call({
- List<ItemDTO> items, int currentPage, int totalPerPage
+ List<LibraryItem> items, int currentPage, int totalPerPage
 });
 
 
@@ -65,7 +65,7 @@ class _$ItemsPageCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? currentPage = null,Object? totalPerPage = null,}) {
   return _then(_self.copyWith(
 items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
-as List<ItemDTO>,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
+as List<LibraryItem>,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,totalPerPage: null == totalPerPage ? _self.totalPerPage : totalPerPage // ignore: cast_nullable_to_non_nullable
 as int,
   ));
@@ -152,7 +152,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ItemDTO> items,  int currentPage,  int totalPerPage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<LibraryItem> items,  int currentPage,  int totalPerPage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ItemsPage() when $default != null:
 return $default(_that.items,_that.currentPage,_that.totalPerPage);case _:
@@ -173,7 +173,7 @@ return $default(_that.items,_that.currentPage,_that.totalPerPage);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ItemDTO> items,  int currentPage,  int totalPerPage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<LibraryItem> items,  int currentPage,  int totalPerPage)  $default,) {final _that = this;
 switch (_that) {
 case _ItemsPage():
 return $default(_that.items,_that.currentPage,_that.totalPerPage);case _:
@@ -193,7 +193,7 @@ return $default(_that.items,_that.currentPage,_that.totalPerPage);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ItemDTO> items,  int currentPage,  int totalPerPage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<LibraryItem> items,  int currentPage,  int totalPerPage)?  $default,) {final _that = this;
 switch (_that) {
 case _ItemsPage() when $default != null:
 return $default(_that.items,_that.currentPage,_that.totalPerPage);case _:
@@ -208,11 +208,11 @@ return $default(_that.items,_that.currentPage,_that.totalPerPage);case _:
 
 
 class _ItemsPage implements ItemsPage {
-  const _ItemsPage({final  List<ItemDTO> items = const [], this.currentPage = 0, this.totalPerPage = 100}): _items = items;
+  const _ItemsPage({final  List<LibraryItem> items = const [], this.currentPage = 0, this.totalPerPage = 100}): _items = items;
   
 
- final  List<ItemDTO> _items;
-@override@JsonKey() List<ItemDTO> get items {
+ final  List<LibraryItem> _items;
+@override@JsonKey() List<LibraryItem> get items {
   if (_items is EqualUnmodifiableListView) return _items;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_items);
@@ -251,7 +251,7 @@ abstract mixin class _$ItemsPageCopyWith<$Res> implements $ItemsPageCopyWith<$Re
   factory _$ItemsPageCopyWith(_ItemsPage value, $Res Function(_ItemsPage) _then) = __$ItemsPageCopyWithImpl;
 @override @useResult
 $Res call({
- List<ItemDTO> items, int currentPage, int totalPerPage
+ List<LibraryItem> items, int currentPage, int totalPerPage
 });
 
 
@@ -271,7 +271,7 @@ class __$ItemsPageCopyWithImpl<$Res>
 @override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? currentPage = null,Object? totalPerPage = null,}) {
   return _then(_ItemsPage(
 items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
-as List<ItemDTO>,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
+as List<LibraryItem>,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,totalPerPage: null == totalPerPage ? _self.totalPerPage : totalPerPage // ignore: cast_nullable_to_non_nullable
 as int,
   ));

@@ -39,10 +39,10 @@ PlaybackState _stateAt(Duration position, {bool hasLyrics = true}) =>
     PlaybackState(
       album: null,
       songs: [
-        ItemDTO(
+        LibraryItem(
           id: _songId,
           name: 'Roads',
-          type: 'Audio',
+          kind: ItemKind.song,
           hasLyrics: hasLyrics,
         ),
       ],

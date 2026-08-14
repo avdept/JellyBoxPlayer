@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -12,7 +12,7 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 class GenreAlbumsPage extends ConsumerStatefulWidget {
   const GenreAlbumsPage({required this.genre, super.key});
 
-  final ItemDTO genre;
+  final LibraryItem genre;
 
   @override
   ConsumerState<GenreAlbumsPage> createState() => _GenreAlbumsPageState();
@@ -22,7 +22,7 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  void _onAlbumTap(ItemDTO album) {
+  void _onAlbumTap(LibraryItem album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
       Routes.album.name,

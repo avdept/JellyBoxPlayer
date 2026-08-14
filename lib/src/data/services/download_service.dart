@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart' as bd;
 import 'package:flutter/foundation.dart';
-import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -17,12 +16,10 @@ class DownloadService extends ChangeNotifier {
   Future<String> getDownloadDirectory() => DownloadPaths.init();
 
   Future<DownloadTask> downloadSong(
-    ItemDTO song,
-    String serverUrl,
-    String token,
-    String userId,
-    String deviceId,
-  ) async {
+    LibraryItem song,
+    MediaServerClient client, {
+    required String deviceId,
+  }) async {
     final dir = await getApplicationDocumentsDirectory();
     final albumSubdir = song.albumId ?? 'unknown';
 
@@ -30,41 +27,22 @@ class DownloadService extends ChangeNotifier {
     // so codecs the local player can't decode (e.g. ALAC on Android/ExoPlayer)
     // are fetched as a playable, still-lossless FLAC rather than the raw
     // original. The file extension must match the container that endpoint
-    // actually returns. See [AudioStreamProfile].
-    final mediaSource = song.mediaSources.firstOrNull;
-    final audioStream = mediaSource?.mediaStreams
-        .where((s) => s.type == 'Audio')
-        .firstOrNull;
-    final profile = AudioStreamProfile.forSource(
-      sourceContainer: mediaSource?.container,
-      sourceCodec: audioStream?.codec,
+    // actually returns. `preferHls: false` keeps this a single progressive
+    // file rather than an HLS playlist, which downloads can't target.
+    final resolved = await client.resolveStreamSource(
+      song,
+      playSessionId: 'download-$deviceId-${song.id}',
+      preferHls: false,
     );
 
     final fileName =
-        '${song.name.replaceAll('/', '_')}.${profile.outputContainer}';
+        '${song.name.replaceAll('/', '_')}.${resolved.outputContainer}';
     final destination = '${dir.path}/music/$albumSubdir/$fileName';
-
-    final url = Uri.parse(serverUrl)
-        .replace(
-          path: 'Audio/${song.id}/universal',
-          queryParameters: {
-            'UserId': userId,
-            'api_key': token,
-            'DeviceId': deviceId,
-            'PlaySessionId': 'download-$deviceId-${song.id}',
-            'MediaSourceId': song.id,
-            'TranscodingProtocol': 'http',
-            'TranscodingContainer': profile.transcodingContainer,
-            'AudioCodec': profile.transcodingAudioCodec,
-            'Container': profile.directPlayContainers,
-          },
-        )
-        .toString();
 
     final task = DownloadTask(
       id: song.id,
       name: song.name,
-      url: url,
+      url: resolved.uri.toString(),
       destination: destination,
     );
 
@@ -142,7 +120,7 @@ class DownloadService extends ChangeNotifier {
   Future<File?> downloadAlbumCover(
     String albumId,
     String? imageTag,
-    String serverUrl,
+    MediaServerClient mediaServerClient,
   ) async {
     if (imageTag == null) return null;
     await DownloadPaths.init();
@@ -152,19 +130,13 @@ class DownloadService extends ChangeNotifier {
     final file = File(path);
     if (file.existsSync() && file.lengthSync() > 0) return file;
 
-    final uri = Uri.parse(serverUrl).replace(
-      path: 'Items/$albumId/Images/Primary',
-      queryParameters: {
-        'fillHeight': '420',
-        'fillWidth': '420',
-        'quality': '96',
-        'tag': imageTag,
-      },
+    final uri = Uri.parse(
+      mediaServerClient.imageUrl(id: albumId, tagId: imageTag),
     );
 
-    final client = HttpClient();
+    final httpClient = HttpClient();
     try {
-      final response = await (await client.getUrl(uri)).close();
+      final response = await (await httpClient.getUrl(uri)).close();
       if (response.statusCode != HttpStatus.ok) {
         await response.drain<void>();
         return null;
@@ -177,7 +149,7 @@ class DownloadService extends ChangeNotifier {
       if (file.existsSync()) await file.delete();
       return null;
     } finally {
-      client.close(force: true);
+      httpClient.close(force: true);
     }
   }
 

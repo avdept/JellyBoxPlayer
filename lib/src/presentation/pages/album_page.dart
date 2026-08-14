@@ -7,13 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
@@ -39,7 +40,7 @@ class AlbumPage extends ConsumerStatefulWidget {
     @visibleForTesting this.testKeys,
     super.key,
   });
-  final ItemDTO album;
+  final LibraryItem album;
   final AlbumPageKeys? testKeys;
 
   @override
@@ -51,7 +52,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   final _scrollController = ScrollController();
   final _titleOpacity = ValueNotifier<double>(0);
   final _currentSong = ValueNotifier<MediaItem?>(null);
-  List<ItemDTO> songs = [];
+  List<LibraryItem> songs = [];
   var _isLoading = false;
   var _isLoadingSongs = true;
   var _loadFailed = false;
@@ -61,7 +62,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  Future<void> _onAddToPlaylistPressed(ItemDTO song) async {
+  Future<void> _onAddToPlaylistPressed(LibraryItem song) async {
     if (ref.read(isOfflineProvider)) {
       _showOfflineSnackBar();
       return;
@@ -72,12 +73,8 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     );
     if (playlist != null) {
       await ref
-          .read(jellyfinApiProvider)
-          .addPlaylistItems(
-            playlistId: playlist.id,
-            userId: ref.read(currentUserProvider)!.userId,
-            entryIds: song.id,
-          );
+          .read(mediaServerClientProvider)
+          .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
       unawaited(_getSongs());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,16 +114,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   @override
   void initState() {
     super.initState();
-    _imageService = ImageService(
-      serverUrl: ref.read(baseUrlProvider.notifier).state!,
-    );
+    _imageService = ImageService(client: ref.read(mediaServerClientProvider));
     unawaited(_loadSongs());
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (mounted) {
         _currentSong.value = event.currentSource?.tag as MediaItem?;
         ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
           id: widget.album.id,
-          tagId: widget.album.imageTags['Primary'],
+          tagId: widget.album.images.primary,
         );
       }
     });
@@ -146,7 +141,9 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
     if (downloaded.isNotEmpty) {
       setState(() {
-        songs = _sortedByIndex(downloaded);
+        songs = _sortedByIndex(
+          downloaded.map((s) => s.toLibraryItem()).toList(),
+        );
         _isLoadingSongs = false;
       });
     }
@@ -167,14 +164,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
     try {
       final response = await ref
-          .read(jellyfinApiProvider)
+          .read(mediaServerClientProvider)
           .getSongs(
             userId: ref.read(currentUserProvider)!.userId,
             albumId: widget.album.id,
           );
       if (!mounted) return;
       setState(() {
-        songs = _sortedByIndex(response.data.items);
+        songs = _sortedByIndex(response.items);
         _isLoadingSongs = false;
         _loadFailed = false;
       });
@@ -189,7 +186,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     }
   }
 
-  List<ItemDTO> _sortedByIndex(List<ItemDTO> items) =>
+  List<LibraryItem> _sortedByIndex(List<LibraryItem> items) =>
       [...items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
 
   Future<void> _retryLoad() async {
@@ -210,7 +207,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
   ImageProvider get albumCover => _imageService.albumIP(
     id: widget.album.id,
-    tagId: widget.album.imageTags['Primary'],
+    tagId: widget.album.images.primary,
   );
 
   @override
@@ -317,17 +314,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                                         _showOfflineSnackBar();
                                         return;
                                       }
-                                      final api = ref.read(jellyfinApiProvider);
-                                      final callback = song.userData.isFavorite
-                                          ? api.removeFavorite
-                                          : api.saveFavorite;
                                       try {
-                                        await callback.call(
-                                          userId: ref
-                                              .read(currentUserProvider)!
-                                              .userId,
-                                          itemId: song.id,
-                                        );
+                                        await ref
+                                            .read(mediaServerClientProvider)
+                                            .setFavorite(
+                                              song.id,
+                                              favorite:
+                                                  !song.userData.isFavorite,
+                                            );
                                       } on Object {
                                         _showOfflineSnackBar();
                                         return;
@@ -454,12 +448,12 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     return ClickableWidget(
                       onPressed: () async {
                         final item = await ref
-                            .read(jellyfinApiProvider)
-                            .getItem(itemId: a.id);
+                            .read(mediaServerClientProvider)
+                            .getItem(a.id);
                         if (!mounted) return;
                         await context.pushNamed(
                           Routes.artist.name,
-                          extra: {'artist': item.data},
+                          extra: {'artist': item},
                         );
                       },
                       textStyle: const TextStyle(

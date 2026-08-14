@@ -112,7 +112,12 @@ class LoginPageState extends ConsumerState<LoginPage> {
       });
       return;
     }
-    final resp = await ref.read(authProvider.notifier).login(credentials);
+    final resp = await ref
+        .read(authProvider.notifier)
+        .login(
+          credentials,
+          serverType: _discoveredServer?.serverType ?? ServerType.jellyfin,
+        );
     if (resp != null && mounted) {
       setState(() {
         error = resp;

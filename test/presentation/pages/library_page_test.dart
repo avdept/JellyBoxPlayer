@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/presentation/pages/library_page.dart';
@@ -17,7 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>>
+class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>>
     with Mock
     implements LibrariesNotifier {}
 
@@ -25,11 +25,11 @@ class MockAuthNotifier extends AsyncNotifier<bool?>
     with Mock
     implements AuthNotifier {}
 
-class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?>
+class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?>
     with Mock
     implements CurrentLibraryNotifier {}
 
-class FakeItemDTO extends Fake implements ItemDTO {}
+class FakeLibraryItem extends Fake implements LibraryItem {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,11 +40,11 @@ void main() {
 
   final faker = Faker.instance;
 
-  ItemDTO buildLibrary() => ItemDTO(
+  LibraryItem buildLibrary() => LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
     path: faker.internet.url(),
-    type: 'CollectionFolder',
+    kind: ItemKind.library,
     collectionType: 'music',
   );
 
@@ -85,7 +85,7 @@ void main() {
 
   setUpAll(() {
     deviceId = faker.datatype.uuid();
-    registerFallbackValue(FakeItemDTO());
+    registerFallbackValue(FakeLibraryItem());
   });
 
   setUp(() {

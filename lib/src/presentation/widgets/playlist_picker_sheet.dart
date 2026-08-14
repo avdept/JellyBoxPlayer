@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 
 class PlaylistPickerSheet extends ConsumerWidget {
@@ -48,7 +48,7 @@ class PlaylistPickerSheet extends ConsumerWidget {
               const SizedBox(height: 10),
               Form(
                 key: formKey,
-                child: DropdownButtonFormField<ItemDTO>(
+                child: DropdownButtonFormField<LibraryItem>(
                   onSaved: (value) => Navigator.of(context).pop(value),
                   hint: const Text(
                     'Select a playlist',
@@ -96,12 +96,12 @@ class PlaylistPickerSheet extends ConsumerWidget {
   }
 }
 
-Future<ItemDTO?> showPlaylistPicker(
+Future<LibraryItem?> showPlaylistPicker(
   BuildContext context, {
   required bool isDesktop,
 }) {
   if (isDesktop) {
-    return showAdaptiveDialog<ItemDTO>(
+    return showAdaptiveDialog<LibraryItem>(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -109,7 +109,7 @@ Future<ItemDTO?> showPlaylistPicker(
       ),
     );
   }
-  return showModalBottomSheet<ItemDTO>(
+  return showModalBottomSheet<LibraryItem>(
     backgroundColor: Colors.grey[800],
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(10)),

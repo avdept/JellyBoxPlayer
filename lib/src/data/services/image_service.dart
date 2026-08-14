@@ -2,10 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/stream_source.dart';
 
 class ImageService {
-  ImageService({required this.serverUrl});
-  final String serverUrl;
+  ImageService({required this.client});
+  final MediaServerClient client;
 
   static Uri resize(Uri uri, int size) {
     if (uri.queryParameters.isEmpty) return uri;
@@ -18,13 +20,10 @@ class ImageService {
     );
   }
 
-  String imagePath({required String tagId, required String id}) {
-    return '$serverUrl/Items/$id/Images/Primary?fillHeight=420&fillWidth=420&quality=96&tag=$tagId';
-  }
+  String imagePath({required String tagId, required String id}) =>
+      client.imageUrl(id: id, tagId: tagId);
 
-  String imagePathById({required String id}) {
-    return '$serverUrl/Items/$id/Images/Primary?fillHeight=420&fillWidth=420&quality=96';
-  }
+  String imagePathById({required String id}) => client.imageUrl(id: id);
 
   ImageProvider albumIP({required String? tagId, required String id}) {
     final downloaded = DownloadPaths.coverFile(id);
@@ -32,20 +31,14 @@ class ImageService {
 
     if (tagId == null) return const AssetImage(Images.album);
 
-    return CachedNetworkImageProvider(
-      '$serverUrl/Items/$id/Images/Primary?fillHeight=420&fillWidth=420&quality=96&tag=$tagId',
-    );
+    return CachedNetworkImageProvider(client.imageUrl(id: id, tagId: tagId));
   }
 
   ImageProvider backdropIp({required String? tagId, required String id}) {
     if (tagId == null) return const AssetImage(Images.album);
 
     return CachedNetworkImageProvider(
-      '$serverUrl/Items/$id/Images/Backdrop?fillHeight=420&fillWidth=420&quality=96&tag=$tagId',
+      client.imageUrl(id: id, tagId: tagId, kind: ImageKind.backdrop),
     );
-  }
-
-  String _backdropPath({required String tagId, required String id}) {
-    return '$serverUrl/Items/$id/Images/Backdrop?fillHeight=420&fillWidth=420&quality=96&tag=$tagId';
   }
 }

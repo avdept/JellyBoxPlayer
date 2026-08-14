@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -109,7 +110,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
         getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.tablet;
 
     return AlbumView(
-      album: widget.album,
+      album: widget.album.toLibraryItem(),
       onTap: (widget.onTap != null)
           ? (_) => widget.onTap!.call(widget.album)
           : null,

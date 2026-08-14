@@ -11,10 +11,9 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 final lyricsProvider = FutureProviderFamily<LyricsDTO?, String>(
   (ref, itemId) async {
     if (ref.watch(isOfflineProvider)) return null;
-    final api = ref.watch(jellyfinApiProvider);
+    final client = ref.watch(mediaServerClientProvider);
     try {
-      final response = await api.getLyrics(itemId: itemId);
-      return response.data;
+      return await client.getLyrics(itemId);
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       if (status == 404 || status == 400) return null;

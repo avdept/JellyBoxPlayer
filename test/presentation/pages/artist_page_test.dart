@@ -1,65 +1,58 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/presentation/pages/artist_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:retrofit/retrofit.dart';
 
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockJellyfinApi extends Mock implements JellyfinApi {}
-
-class MockHttpResponse<T> extends Mock implements HttpResponse<T> {}
+class MockMediaServerClient extends Mock implements MediaServerClient {}
 
 class MockUser extends Mock implements User {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late JellyfinApi mockJellyfinApi;
-  late HttpResponse<ItemsWrapper> mockAlbumsResponse;
-  late HttpResponse<ItemsWrapper> mockAppearsOnResponse;
+  late MediaServerClient mockMediaServerClient;
   late User mockUser;
 
   final faker = Faker.instance;
   final mockBaseUrl = faker.internet.url();
-  final mockArtist = ItemDTO(
+  final mockArtist = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.name.fullName(),
-    type: 'Artist',
-    runTimeTicks: faker.datatype.number(min: 10000),
+    kind: ItemKind.artist,
     albumArtist: faker.name.fullName(),
-    imageTags: {'Primary': faker.datatype.uuid()},
+    images: ImageRefs(primary: faker.datatype.uuid()),
   );
-  final mockAlbums = ItemsWrapper(
+  final mockAlbums = LibraryPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (_) => LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'Album',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.album,
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
     ),
     totalRecordCount: faker.datatype.number(),
   );
-  final mockAppearsOn = ItemsWrapper(
+  final mockAppearsOn = LibraryPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (_) => LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'Album',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.album,
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -68,10 +61,10 @@ void main() {
   );
   final mockUserId = faker.datatype.uuid();
 
-  Widget getWidgetUT({required ItemDTO artist}) => createTestApp(
+  Widget getWidgetUT({required LibraryItem artist}) => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
-        jellyfinApiProvider.overrideWith((_) => mockJellyfinApi),
+        mediaServerClientProvider.overrideWith((_) => mockMediaServerClient),
         baseUrlProvider.overrideWith((_) => mockBaseUrl),
         currentUserProvider.overrideWith((_) => mockUser),
       ],
@@ -79,14 +72,13 @@ void main() {
     home: ArtistPage(artist: artist),
   );
 
-  Future<HttpResponse<ItemsWrapper>> mockGetAlbums({
+  Future<LibraryPage> mockGetAlbums({
     String? contributingArtistIds,
     List<String>? artistIds,
   }) {
-    return mockJellyfinApi.getAlbums(
+    return mockMediaServerClient.getAlbums(
       userId: mockUserId,
       libraryId: any(named: 'libraryId'),
-      type: any(named: 'type'),
       startIndex: any(named: 'startIndex'),
       limit: any(named: 'limit'),
       sortBy: any(named: 'sortBy'),
@@ -94,23 +86,30 @@ void main() {
           contributingArtistIds ?? any(named: 'contributingArtistIds'),
       sortOrder: any(named: 'sortOrder'),
       artistIds: artistIds ?? any(named: 'artistIds'),
-      recursive: any(named: 'recursive'),
     );
   }
 
+  setUpAll(() {
+    registerFallbackValue(ImageKind.primary);
+  });
+
   setUp(() {
-    mockJellyfinApi = MockJellyfinApi();
-    mockAlbumsResponse = MockHttpResponse();
-    mockAppearsOnResponse = MockHttpResponse();
+    mockMediaServerClient = MockMediaServerClient();
     mockUser = MockUser();
     when(
+      () => mockMediaServerClient.imageUrl(
+        id: any(named: 'id'),
+        tagId: any(named: 'tagId'),
+        kind: any(named: 'kind'),
+        size: any(named: 'size'),
+      ),
+    ).thenReturn('https://example.com/image.jpg');
+    when(
       () => mockGetAlbums(artistIds: [mockArtist.id]),
-    ).thenAnswer((_) async => mockAlbumsResponse);
-    when(() => mockAlbumsResponse.data).thenReturn(mockAlbums);
+    ).thenAnswer((_) async => mockAlbums);
     when(
       () => mockGetAlbums(contributingArtistIds: mockArtist.id),
-    ).thenAnswer((_) async => mockAppearsOnResponse);
-    when(() => mockAppearsOnResponse.data).thenReturn(mockAppearsOn);
+    ).thenAnswer((_) async => mockAppearsOn);
     when(() => mockUser.userId).thenReturn(mockUserId);
   });
 
@@ -134,8 +133,8 @@ void main() {
       '- displays list of albums',
       (widgetTester) async {
         when(
-          () => mockAppearsOnResponse.data,
-        ).thenReturn(mockAppearsOn.copyWith(items: const []));
+          () => mockGetAlbums(contributingArtistIds: mockArtist.id),
+        ).thenAnswer((_) async => mockAppearsOn.copyWith(items: const []));
         await widgetTester.pumpWidget(getWidgetUT(artist: mockArtist));
         await widgetTester.pump(Duration.zero);
         final albumUT = mockAlbums.items.first;
@@ -154,8 +153,8 @@ void main() {
       '- displays list of appears on',
       (widgetTester) async {
         when(
-          () => mockAlbumsResponse.data,
-        ).thenReturn(mockAlbums.copyWith(items: const []));
+          () => mockGetAlbums(artistIds: [mockArtist.id]),
+        ).thenAnswer((_) async => mockAlbums.copyWith(items: const []));
         await widgetTester.pumpWidget(getWidgetUT(artist: mockArtist));
         await widgetTester.pump(Duration.zero);
         final albumUT = mockAppearsOn.items.first;

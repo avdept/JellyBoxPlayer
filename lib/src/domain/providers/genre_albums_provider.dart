@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
-import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -11,13 +11,13 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class GenreAlbumsNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, String> {
-  late JellyfinApi _api;
+  late MediaServerClient _client;
   String? _libraryId;
 
   @override
   FutureOr<ItemsPage> build(String arg) async {
     if (ref.watch(isOfflineProvider)) throw const OfflineException();
-    _api = ref.watch(jellyfinApiProvider);
+    _client = ref.watch(mediaServerClientProvider);
     _libraryId = ref.watch(currentLibraryProvider).valueOrNull?.id;
     return _fetchItems(startPage: const ItemsPage());
   }
@@ -26,7 +26,7 @@ class GenreAlbumsNotifier
     int startIndex = 0,
     ItemsPage startPage = const ItemsPage(),
   }) async {
-    final resp = await _api.getAlbums(
+    final resp = await _client.getAlbums(
       userId: ref.read(currentUserProvider)!.userId,
       libraryId: _libraryId,
       genreIds: [arg],
@@ -35,7 +35,7 @@ class GenreAlbumsNotifier
       startIndex: startIndex.toString(),
     );
     return startPage.copyWith(
-      items: [...startPage.items, ...resp.data.items],
+      items: [...startPage.items, ...resp.items],
       currentPage: startPage.currentPage + 1,
     );
   }

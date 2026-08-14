@@ -17,10 +17,21 @@ List<String> serverUrlCandidates(String url) {
   return ['http://$trimmed', 'https://$trimmed'];
 }
 
+/// Which backend a server URL was identified as. Only [jellyfin] is
+/// detected today, but keeping this as an enum (rather than assuming
+/// Jellyfin everywhere) is what lets [ServerProbeService] grow a second
+/// probe path later without every caller needing to change shape again.
+enum ServerType { jellyfin }
+
 class ServerProbeResult {
-  const ServerProbeResult({required this.serverUrl, required this.info});
+  const ServerProbeResult({
+    required this.serverUrl,
+    required this.serverType,
+    required this.info,
+  });
 
   final String serverUrl;
+  final ServerType serverType;
   final PublicSystemInfoDTO info;
 }
 
@@ -42,7 +53,11 @@ class ServerProbeService {
     for (final candidate in serverUrlCandidates(url)) {
       final info = await probe(candidate);
       if (info != null) {
-        return ServerProbeResult(serverUrl: candidate, info: info);
+        return ServerProbeResult(
+          serverUrl: candidate,
+          serverType: ServerType.jellyfin,
+          info: info,
+        );
       }
     }
     return null;

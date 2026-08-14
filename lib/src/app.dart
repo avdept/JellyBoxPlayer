@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -57,7 +57,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   late final GoRouter _router;
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   final _authState = ValueNotifier<bool?>(null);
-  ItemDTO? _selectedLibrary;
+  LibraryItem? _selectedLibrary;
   Timer? _resizeTimer;
 
   @override
