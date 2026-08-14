@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# Copies every shared library the release bundle needs (direct links plus
-# dlopen()'d libs like libmpv/libsqlite3) into bundle/lib, so the resulting
-# AppImage/deb/rpm don't depend on the target distro having them installed.
-#
-# Left dynamic on purpose: the libc/loader ABI and anything that talks
-# directly to the GPU driver stack. Bundling those breaks portability
-# instead of improving it.
 set -euo pipefail
 
 BUNDLE_DIR="${1:?usage: bundle-libs.sh <bundle-dir>}"
@@ -14,7 +7,7 @@ BIN="$BUNDLE_DIR/jellybox"
 
 mkdir -p "$LIB_DIR"
 
-EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libvulkan.*|libnvidia.*|libva.*|libvdpau.*|libwayland-egl.*)$'
+EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libvulkan.*|libnvidia.*|libva.*|libvdpau.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
 
 # Emits "<soname>\t<resolved-path>" for each non-excluded dependency of $1.
 resolve_deps() {
