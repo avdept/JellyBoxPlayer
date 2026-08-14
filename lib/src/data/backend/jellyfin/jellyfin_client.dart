@@ -360,11 +360,7 @@ class JellyfinClient implements MediaServerClient {
       },
     );
 
-    // ignore: avoid_print
-    print(
-      '[Playback] resolveStreamSource baseUrl=$_baseUrl userId=$userId '
-      'tokenLength=${token.length} uri=$uri',
-    );
+
 
     return StreamSource(
       uri: uri,

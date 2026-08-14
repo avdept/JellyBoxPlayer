@@ -84,21 +84,14 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   }
 
   Future<void> _restorePlaybackWhenAuthReady() async {
-    debugPrint('[Playback] waiting for auth before restoring playback...');
     try {
       final authed = await ref.read(authProvider.future);
-      debugPrint('[Playback] auth ready, authenticated=$authed');
     } on Object catch (e) {
-      debugPrint('[Playback] auth future failed: $e');
       return;
     }
     if (!mounted) return;
     final user = ref.read(currentUserProvider);
     final baseUrl = ref.read(baseUrlProvider);
-    debugPrint(
-      '[Playback] restoring with baseUrl=$baseUrl userId=${user?.userId} '
-      'tokenEmpty=${(user?.token ?? '').isEmpty}',
-    );
     await ref.read(playbackProvider.notifier).tryRestore();
   }
 

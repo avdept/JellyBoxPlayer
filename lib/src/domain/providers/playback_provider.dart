@@ -326,7 +326,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           .resolveStreamSource(song, playSessionId: playSessionId);
       audioSourceUri = resolved.uri;
       useHls = resolved.isHls;
-      debugPrint('[Playback] resolved stream url for ${song.id}: $audioSourceUri');
     }
 
     final audioSource = song.audioSources.firstOrNull;
