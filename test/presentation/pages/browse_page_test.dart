@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -22,11 +21,11 @@ class MockItemListNotifier
     with Mock
     implements ItemListNotifier {}
 
-class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<ItemDTO?>
+class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?>
     with Mock
     implements CurrentLibraryNotifier {}
 
-class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<ItemDTO>>
+class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>>
     with Mock
     implements LibrariesNotifier {}
 
@@ -43,11 +42,10 @@ void main() {
   final mockAlbums = ItemsPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (_) => LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'Album',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.album,
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -56,11 +54,10 @@ void main() {
   final mockArtists = ItemsPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (_) => LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'Artist',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.artist,
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -69,11 +66,10 @@ void main() {
   final mockPlaylists = ItemsPage(
     items: List.generate(
       5,
-      (_) => ItemDTO(
+      (_) => LibraryItem(
         id: faker.datatype.uuid(),
         name: faker.lorem.sentence(),
-        type: 'Playlist',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.playlist,
         productionYear: faker.date.past(DateTime.now()).year,
         albumArtist: faker.name.fullName(),
       ),
@@ -82,19 +78,18 @@ void main() {
   final mockGenres = ItemsPage(
     items: List.generate(
       5,
-      (index) => ItemDTO(
+      (index) => LibraryItem(
         id: faker.datatype.uuid(),
         name: '${faker.lorem.word()} $index',
-        type: 'MusicGenre',
-        runTimeTicks: faker.datatype.number(min: 10000),
+        kind: ItemKind.genre,
       ),
     ),
   );
-  final mockLibrary = ItemDTO(
+  final mockLibrary = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
     path: faker.internet.url(),
-    type: 'CollectionFolder',
+    kind: ItemKind.library,
     collectionType: 'music',
   );
 

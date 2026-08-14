@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
 import '../../app_wrapper.dart';
@@ -13,12 +13,14 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final faker = Faker.instance;
-  final mockAlbum = DownloadedAlbumDTO(
-    id: faker.datatype.uuid(),
-    name: faker.lorem.sentence(),
-    type: 'Album',
-    runTimeTicks: faker.datatype.number(),
+  final mockAlbum = DownloadedAlbum(
+    item: LibraryItem(
+      id: faker.datatype.uuid(),
+      name: faker.lorem.sentence(),
+      kind: ItemKind.album,
+    ),
     sizeInBytes: faker.datatype.number(),
+    downloadDate: DateTime.now(),
   );
   const keys = DownloadedAlbumViewKeys(
     deleteButton: Key('deleteButton'),
@@ -26,8 +28,8 @@ void main() {
   );
 
   Widget getWidgetUT({
-    required DownloadedAlbumDTO album,
-    FutureOr<void> Function(DownloadedAlbumDTO)? onDelete,
+    required DownloadedAlbum album,
+    FutureOr<void> Function(DownloadedAlbum)? onDelete,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(),
@@ -51,7 +53,7 @@ void main() {
       (widgetTester) async {
         await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
         await widgetTester.pump(Duration.zero);
-        expect(find.text(mockAlbum.name), findsOneWidget);
+        expect(find.text(mockAlbum.item.name), findsOneWidget);
       },
     );
 
@@ -63,7 +65,7 @@ void main() {
           getWidgetUT(
             album: mockAlbum,
             onDelete: (album) {
-              if (album.id == mockAlbum.id) deleteCounter++;
+              if (album.item.id == mockAlbum.item.id) deleteCounter++;
             },
           ),
         );

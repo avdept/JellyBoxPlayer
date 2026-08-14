@@ -4,19 +4,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
-import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/params/params.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
@@ -69,7 +65,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       })
       // Handle other player states as needed
       ..playerStateStream.listen((playerState) {
-        if (playerState.processingState == ProcessingState.completed) {
+        if (playerState.processingState == ProcessingState.completed &&
+            state.status.isPlaying) {
           _reportStopped();
           _stopProgressReports();
           state = PlaybackState.initial();
@@ -98,42 +95,40 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _preparingQueue = false;
   Timer? _progressTimer;
 
-  ItemDTO? get _reportedSong {
+  LibraryItem? get _reportedSong {
     final index = _reportedIndex;
     return index != null ? state.songs.elementAtOrNull(index) : null;
   }
 
-  Duration? _durationFor(int? index, {List<ItemDTO>? songs}) {
+  Duration? _durationFor(int? index, {List<LibraryItem>? songs}) {
     final song = index != null
         ? (songs ?? state.songs).elementAtOrNull(index)
         : null;
-    if (song != null && song.runTimeTicks > 0) {
-      return Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
+    if (song != null && song.duration > Duration.zero) {
+      return song.duration;
     }
     return _audioPlayer.duration;
   }
 
-  PlaystateData _playstate(
-    ItemDTO song, {
+  PlaybackReport _playbackReport(
+    LibraryItem song, {
     required int positionMs,
     bool? isPaused,
-  }) => PlaystateData(
-    playSessionId: _playSessionIds[song.id] ?? '',
+  }) => PlaybackReport(
     itemId: song.id,
+    playSessionId: _playSessionIds[song.id] ?? '',
     mediaSourceId: song.id,
-    positionTicks: positionMs * 10000,
+    position: Duration(milliseconds: positionMs),
     isPaused: isPaused,
     canSeek: true,
-    nowPlayingQueue: [
-      for (final queued in state.songs) QueueItemData(id: queued.id),
-    ],
+    queueItemIds: [for (final queued in state.songs) queued.id],
   );
 
-  void _reportStarted(ItemDTO song, {required int positionMs, bool? isPaused}) {
+  void _reportStarted(LibraryItem song, {required int positionMs, bool? isPaused}) {
     _startReported = true;
     _report(
-      (api) => api.playbackStarted(
-        values: _playstate(song, positionMs: positionMs, isPaused: isPaused),
+      (client) => client.reportPlaybackStarted(
+        _playbackReport(song, positionMs: positionMs, isPaused: isPaused),
       ),
     );
   }
@@ -144,8 +139,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (song == null) return;
     _startReported = false;
     _report(
-      (api) => api.playbackStopped(
-        values: _playstate(song, positionMs: _reportedPositionMs),
+      (client) => client.reportPlaybackStopped(
+        _playbackReport(song, positionMs: _reportedPositionMs),
       ),
     );
   }
@@ -155,8 +150,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final song = _reportedSong;
     if (song == null) return;
     _report(
-      (api) => api.playbackProgress(
-        values: _playstate(
+      (client) => client.reportPlaybackProgress(
+        _playbackReport(
           song,
           positionMs: _audioPlayer.position.inMilliseconds,
           isPaused: !state.status.isPlaying,
@@ -190,14 +185,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _progressTimer = null;
   }
 
-  void _report(Future<void> Function(JellyfinApi api) call) {
+  void _report(Future<void> Function(MediaServerClient client) call) {
     if (_ref.read(isOfflineProvider)) return;
     unawaited(_runReport(call));
   }
 
-  Future<void> _runReport(Future<void> Function(JellyfinApi api) call) async {
+  Future<void> _runReport(
+    Future<void> Function(MediaServerClient client) call,
+  ) async {
     try {
-      await call(_ref.read(jellyfinApiProvider));
+      await call(_ref.read(mediaServerClientProvider));
     } on DioException catch (error) {
       debugPrint(
         '[Playback] report ${error.requestOptions.path} failed: '
@@ -209,9 +206,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> play(
-    ItemDTO playSong,
-    List<ItemDTO> songs,
-    ItemDTO album, {
+    LibraryItem playSong,
+    List<LibraryItem> songs,
+    LibraryItem album, {
     Duration? initialPosition,
     bool autoPlay = true,
   }) async {
@@ -225,7 +222,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         songs.map((song) => _resolveSource(song, album, sessionIds[song.id]!)),
       );
 
-      final playableSongs = <ItemDTO>[];
+      final playableSongs = <LibraryItem>[];
       final audioSources = <AudioSource>[];
       for (final entry in resolved) {
         if (entry == null) continue;
@@ -303,9 +300,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
-  Future<({ItemDTO song, AudioSource source})?> _resolveSource(
-    ItemDTO song,
-    ItemDTO album,
+  Future<({LibraryItem song, AudioSource source})?> _resolveSource(
+    LibraryItem song,
+    LibraryItem album,
     String playSessionId,
   ) async {
     final isDownloaded = await _ref
@@ -319,47 +316,25 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     if (downloadedPath == null && _ref.read(isOfflineProvider)) return null;
 
-    final mediaSource = song.mediaSources.firstOrNull;
-    final audioStream = mediaSource?.mediaStreams
-        .where((s) => s.type == 'Audio')
-        .firstOrNull;
+    final Uri audioSourceUri;
+    var useHls = false;
+    if (downloadedPath != null) {
+      audioSourceUri = Uri.file(downloadedPath);
+    } else {
+      final resolved = await _ref
+          .read(mediaServerClientProvider)
+          .resolveStreamSource(song, playSessionId: playSessionId);
+      audioSourceUri = resolved.uri;
+      useHls = resolved.isHls;
+    }
 
-    final streamProfile = AudioStreamProfile.forSource(
-      sourceContainer: mediaSource?.container,
-      sourceCodec: audioStream?.codec,
-    );
-
-    final useHls = downloadedPath == null && streamProfile.requiresTranscode;
-
-    final audioSourceUri = (downloadedPath != null)
-        ? Uri.file(downloadedPath)
-        : Uri.parse(_ref.read(baseUrlProvider)!).replace(
-            path: useHls
-                ? 'Audio/${song.id}/main.m3u8'
-                : 'Audio/${song.id}/universal',
-            queryParameters: {
-              'UserId': _ref.read(currentUserProvider)!.userId,
-              'api_key': _ref.read(currentUserProvider)!.token,
-              'DeviceId': deviceId,
-              'PlaySessionId': playSessionId,
-              'MediaSourceId': song.id,
-              'AudioCodec': streamProfile.transcodingAudioCodec,
-              if (useHls) ...{
-                'SegmentContainer': streamProfile.hlsSegmentContainer,
-                'TranscodeReasons': 'AudioCodecNotSupported',
-              } else ...{
-                'TranscodingProtocol': 'http',
-                'TranscodingContainer': streamProfile.transcodingContainer,
-                'Container': streamProfile.directPlayContainers,
-              },
-            },
-          );
+    final audioSource = song.audioSources.firstOrNull;
 
     final extras = <String, dynamic>{
-      if (audioStream?.codec != null) 'codec': audioStream!.codec,
-      if (audioStream?.bitRate != null) 'bitRate': audioStream!.bitRate,
-      if (audioStream?.sampleRate != null)
-        'sampleRate': audioStream!.sampleRate,
+      if (audioSource?.codec != null) 'codec': audioSource!.codec,
+      if (audioSource?.bitRate != null) 'bitRate': audioSource!.bitRate,
+      if (audioSource?.sampleRate != null)
+        'sampleRate': audioSource!.sampleRate,
       if (song.albumArtists.isNotEmpty)
         'artistId': song.albumArtists.first.id
       else if (album.albumArtists.isNotEmpty)
@@ -370,7 +345,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       id: song.id,
       album: song.albumName,
       artist: song.albumArtist ?? album.albumArtist,
-      duration: Duration(milliseconds: (song.runTimeTicks / 10000).ceil()),
+      duration: song.duration,
       title: song.name,
       extras: extras,
       artUri: _artUri(song, album, isDownloaded: downloadedPath != null),
@@ -384,28 +359,28 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     );
   }
 
-  Uri? _artUri(ItemDTO song, ItemDTO album, {required bool isDownloaded}) {
+  Uri? _artUri(LibraryItem song, LibraryItem album, {required bool isDownloaded}) {
     final localCover =
         DownloadPaths.coverFile(song.albumId) ??
         DownloadPaths.coverFile(album.id);
     if (isDownloaded && localCover != null) return localCover.uri;
 
     final imageService = _ref.read(imageServiceProvider);
-    final songImageTag = song.imageTags['Primary'];
+    final songImageTag = song.images.primary;
     if (songImageTag != null) {
       return Uri.parse(
         imageService.imagePath(tagId: songImageTag, id: song.id),
       );
     }
-    if (song.albumId != null && song.albumPrimaryImageTag != null) {
+    if (song.albumId != null && song.images.albumPrimary != null) {
       return Uri.parse(
         imageService.imagePath(
-          tagId: song.albumPrimaryImageTag!,
+          tagId: song.images.albumPrimary!,
           id: song.albumId!,
         ),
       );
     }
-    final albumImageTag = album.imageTags['Primary'];
+    final albumImageTag = album.images.primary;
     if (albumImageTag != null) {
       return Uri.parse(
         imageService.imagePath(tagId: albumImageTag, id: album.id),
@@ -532,8 +507,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> _saveToStorage({
     required String songId,
     required int positionMs,
-    List<ItemDTO>? songs,
-    ItemDTO? album,
+    List<LibraryItem>? songs,
+    LibraryItem? album,
   }) async {
     final effectiveSongs = songs ?? state.songs;
     final effectiveAlbum = album ?? state.album;
@@ -582,7 +557,7 @@ final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
   PlaybackNotifier.new,
 );
 
-final currentSongProvider = Provider<ItemDTO?>(
+final currentSongProvider = Provider<LibraryItem?>(
   (ref) => ref.watch(
     playbackProvider.select((state) {
       final index = state.currentMediaIndex;

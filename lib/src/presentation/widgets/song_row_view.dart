@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -19,15 +19,15 @@ class SongRowView extends ConsumerWidget {
     super.key,
   });
 
-  final ItemDTO song;
+  final LibraryItem song;
   final bool isPlaying;
-  final void Function(ItemDTO)? onTap;
-  final void Function(ItemDTO)? onLikePressed;
-  final void Function(ItemDTO)? onArtistTap;
+  final void Function(LibraryItem)? onTap;
+  final void Function(LibraryItem)? onLikePressed;
+  final void Function(LibraryItem)? onArtistTap;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
 
   String get formattedDuration {
-    final duration = Duration(milliseconds: (song.runTimeTicks / 10000).ceil());
+    final duration = song.duration;
     final negativeSign = duration.isNegative ? '-' : '';
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
@@ -36,7 +36,7 @@ class SongRowView extends ConsumerWidget {
   }
 
   ImageProvider _coverImage(WidgetRef ref) {
-    final tag = song.imageTags['Primary'];
+    final tag = song.images.primary;
     if (tag != null) {
       return ref.read(imageServiceProvider).albumIP(tagId: tag, id: song.id);
     }

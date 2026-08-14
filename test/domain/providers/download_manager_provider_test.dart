@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
-import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,7 +22,7 @@ class MockDownloadService extends Mock implements DownloadService {}
 
 class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
-class MockUser extends Mock implements User {}
+class MockMediaServerClient extends Mock implements MediaServerClient {}
 
 class FakeFile extends Fake implements File {}
 
@@ -32,31 +32,26 @@ void main() {
   late ProviderContainer providerContainer;
   late DownloadService mockDownloadService;
   late DownloadDatabase mockDownloadDatabase;
-  late User mockUser;
-  late MockListener<AsyncValue<List<DownloadedSongDTO>>> mockListener;
+  late MediaServerClient mockMediaServerClient;
+  late MockListener<AsyncValue<List<DownloadedSong>>> mockListener;
 
   final faker = Faker.instance;
-  final mockBaseUrl = faker.internet.url();
-  final mockUserId = faker.datatype.uuid();
-  final mockToken = faker.datatype.string();
   final mockDeviceId = faker.datatype.uuid();
-  final mockSong = ItemDTO(
+  final mockSong = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    runTimeTicks: faker.datatype.number(),
-    userData: UserData(
-      playbackPositionTicks: faker.datatype.number(),
+    userData: PlaybackUserData(
+      position: Duration(milliseconds: faker.datatype.number()),
       playCount: faker.datatype.number(),
       isFavorite: faker.datatype.boolean(),
       played: faker.datatype.boolean(),
     ),
-    type: 'Song',
+    kind: ItemKind.song,
   );
-  final mockAlbum = ItemDTO(
+  final mockAlbum = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    runTimeTicks: faker.datatype.number(),
-    type: 'Album',
+    kind: ItemKind.album,
   );
 
   DownloadTask createDownloadTask({
@@ -80,18 +75,15 @@ void main() {
   setUp(() {
     mockDownloadService = MockDownloadService();
     mockDownloadDatabase = MockDownloadDatabase();
-    mockUser = MockUser();
+    mockMediaServerClient = MockMediaServerClient();
     mockListener = MockListener();
     providerContainer = createProviderContainer(
       overrides: [
         downloadServiceProvider.overrideWith((_) => mockDownloadService),
         downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
-        baseUrlProvider.overrideWith((_) => mockBaseUrl),
-        currentUserProvider.overrideWith((_) => mockUser),
+        mediaServerClientProvider.overrideWith((_) => mockMediaServerClient),
       ],
     );
-    when(() => mockUser.userId).thenReturn(mockUserId);
-    when(() => mockUser.token).thenReturn(mockToken);
     // downloadSong reads the deviceId global (set in main() at app startup,
     // which doesn't run under tests), so seed it here.
     deviceId = mockDeviceId;
@@ -121,10 +113,8 @@ void main() {
         when(
           () => mockDownloadService.downloadSong(
             any(),
-            any(),
-            any(),
-            any(),
-            any(),
+            mockMediaServerClient,
+            deviceId: any(named: 'deviceId'),
           ),
         ).thenAnswer((_) async => mockTask);
         when(
@@ -150,10 +140,8 @@ void main() {
         verify(
           () => mockDownloadService.downloadSong(
             mockSong,
-            mockBaseUrl,
-            mockToken,
-            mockUserId,
-            mockDeviceId,
+            mockMediaServerClient,
+            deviceId: mockDeviceId,
           ),
         ).called(1);
         // Check if song is saved to database
@@ -176,10 +164,8 @@ void main() {
         when(
           () => mockDownloadService.downloadSong(
             any(),
-            any(),
-            any(),
-            any(),
-            any(),
+            mockMediaServerClient,
+            deviceId: any(named: 'deviceId'),
           ),
         ).thenAnswer(
           (_) async => createDownloadTask(status: DownloadStatus.completed),
@@ -212,10 +198,8 @@ void main() {
         verify(
           () => mockDownloadService.downloadSong(
             mockSong,
-            mockBaseUrl,
-            mockToken,
-            mockUserId,
-            mockDeviceId,
+            mockMediaServerClient,
+            deviceId: mockDeviceId,
           ),
         ).called(mockSongs.length);
         // Check if each song is saved to database
@@ -340,12 +324,14 @@ void main() {
       () async {
         final mockAlbums = List.generate(
           faker.datatype.number(min: 1, max: 3),
-          (i) => DownloadedAlbumDTO(
-            id: faker.datatype.uuid(),
-            name: faker.lorem.sentence(),
-            runTimeTicks: faker.datatype.number(),
-            type: 'Album',
+          (i) => DownloadedAlbum(
+            item: LibraryItem(
+              id: faker.datatype.uuid(),
+              name: faker.lorem.sentence(),
+              kind: ItemKind.album,
+            ),
             sizeInBytes: faker.datatype.number(),
+            downloadDate: DateTime.now(),
           ),
         );
         when(

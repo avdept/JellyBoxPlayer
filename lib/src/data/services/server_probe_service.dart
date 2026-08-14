@@ -17,10 +17,17 @@ List<String> serverUrlCandidates(String url) {
   return ['http://$trimmed', 'https://$trimmed'];
 }
 
+enum ServerType { jellyfin }
+
 class ServerProbeResult {
-  const ServerProbeResult({required this.serverUrl, required this.info});
+  const ServerProbeResult({
+    required this.serverUrl,
+    required this.serverType,
+    required this.info,
+  });
 
   final String serverUrl;
+  final ServerType serverType;
   final PublicSystemInfoDTO info;
 }
 
@@ -42,7 +49,11 @@ class ServerProbeService {
     for (final candidate in serverUrlCandidates(url)) {
       final info = await probe(candidate);
       if (info != null) {
-        return ServerProbeResult(serverUrl: candidate, info: info);
+        return ServerProbeResult(
+          serverUrl: candidate,
+          serverType: ServerType.jellyfin,
+          info: info,
+        );
       }
     }
     return null;

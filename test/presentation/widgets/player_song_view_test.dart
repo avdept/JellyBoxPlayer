@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -22,17 +21,16 @@ void main() {
   late DownloadService mockDownloadService;
 
   final faker = Faker.instance;
-  final mockSong = ItemDTO(
+  final mockSong = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    runTimeTicks: faker.datatype.number(min: 10000),
-    userData: UserData(
-      playbackPositionTicks: faker.datatype.number(min: 1000),
+    userData: PlaybackUserData(
+      position: Duration(milliseconds: faker.datatype.number(min: 1000)),
       playCount: faker.datatype.number(),
       isFavorite: faker.datatype.boolean(),
       played: faker.datatype.boolean(),
     ),
-    type: 'Song',
+    kind: ItemKind.song,
     albumArtist: faker.name.fullName(),
     albumName: faker.lorem.sentence(),
     albumId: faker.datatype.uuid(),
@@ -43,7 +41,7 @@ void main() {
   );
 
   Widget getWidgetUT({
-    required ItemDTO song,
+    required LibraryItem song,
     required int position,
     bool isPlaying = false,
     bool isDownloaded = false,

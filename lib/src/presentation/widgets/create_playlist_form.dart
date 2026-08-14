@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/params/params.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
 class CreatePlaylistForm extends ConsumerStatefulWidget {
@@ -28,9 +28,9 @@ class _CreatePlaylistBottomSheetState
 
   Future<void> _onCreatePressed() async {
     await ref
-        .read(jellyfinApiProvider)
+        .read(mediaServerClientProvider)
         .createPlaylist(
-          values: PlaylistData(
+          PlaylistData(
             name: _inputController.text.trim(),
             userId: ref.read(currentUserProvider)!.userId,
             isPublic: _isPublicPlaylist,

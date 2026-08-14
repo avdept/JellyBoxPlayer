@@ -42,6 +42,7 @@ void main() {
 
   ServerProbeResult discoveryResult(String serverUrl) => ServerProbeResult(
     serverUrl: serverUrl,
+    serverType: ServerType.jellyfin,
     info: const PublicSystemInfoDTO(
       id: 'server-id',
       serverName: 'Living Room',

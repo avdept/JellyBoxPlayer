@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 
 const searchCategories = [
@@ -27,7 +27,7 @@ void openSearchResult(
   BuildContext context,
   WidgetRef ref,
   ItemList category,
-  ItemDTO item,
+  LibraryItem item,
 ) {
   switch (category) {
     case ItemList.albums:

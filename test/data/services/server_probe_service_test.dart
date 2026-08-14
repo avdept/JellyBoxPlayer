@@ -94,6 +94,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.serverUrl, 'http://jelly.local:8096');
+      expect(result.serverType, ServerType.jellyfin);
     });
 
     test('- falls back to https when http does not answer', () async {

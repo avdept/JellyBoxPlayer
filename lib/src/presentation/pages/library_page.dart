@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -27,12 +27,12 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   bool _autoSelected = false;
 
-  Future<void> _onLibraryTap(ItemDTO lib) async {
+  Future<void> _onLibraryTap(LibraryItem lib) async {
     await ref.read(currentLibraryProvider.notifier).setLibrary(lib);
     if (mounted) context.goNamed(Routes.browse.name);
   }
 
-  void _autoSelectSingleLibrary(ItemDTO lib) {
+  void _autoSelectSingleLibrary(LibraryItem lib) {
     if (_autoSelected) return;
     _autoSelected = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {

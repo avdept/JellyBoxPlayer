@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -26,29 +26,32 @@ class DownloadsPage extends StatelessWidget {
 
   final DownloadsPageKeys? testKeys;
 
-  void _onAlbumTap(BuildContext context, ItemDTO album) => context.pushNamed(
-    Routes.album.name,
-    extra: {'album': album},
-  );
+  void _onAlbumTap(BuildContext context, DownloadedAlbum album) =>
+      context.pushNamed(
+        Routes.album.name,
+        extra: {'album': album.item},
+      );
 
   Future<void> _onPlayPressed(
     BuildContext context,
     WidgetRef ref,
-    ItemDTO album,
+    DownloadedAlbum album,
   ) async {
     try {
       final result = await ref
           .read(setPlaybackProvider.notifier)
-          .playAlbum(album);
+          .playAlbum(album.item);
       if (result == SetPlaybackResult.empty && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nothing to play in "${album.name}"')),
+          SnackBar(content: Text('Nothing to play in "${album.item.name}"')),
         );
       }
     } on Object catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start playing "${album.name}"')),
+          SnackBar(
+            content: Text('Could not start playing "${album.item.name}"'),
+          ),
         );
       }
     }
@@ -136,7 +139,7 @@ class DownloadsPage extends StatelessWidget {
                             _onPlayPressed(context, ref, album),
                         onDelete: (album) => ref
                             .read(downloadManagerProvider.notifier)
-                            .deleteAlbum(album.id),
+                            .deleteAlbum(album.item.id),
                       ),
                       itemCount: albums.length,
                     );

@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
-import 'package:jplayer/src/data/providers/jellyfin_api_provider.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
@@ -15,14 +15,13 @@ import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:string_capitalize/string_capitalize.dart';
 
 class CarPlayHandler {
   static const _channel = MethodChannel('com.prodigytech.jellybox/carplay');
-  static final _items = <String, ItemDTO>{};
-  static var _songs = <ItemDTO>[];
+  static final _items = <String, LibraryItem>{};
+  static var _songs = <LibraryItem>[];
   static String? _lastSetId;
   static String? _lastSongId;
   static bool? _lastPlaying;
@@ -138,15 +137,15 @@ class CarPlayHandler {
     final user = ref.read(currentUserProvider);
     if (user == null) return {'recent': <Map<String, dynamic>>[]};
 
-    final api = ref.read(jellyfinApiProvider);
+    final client = ref.read(mediaServerClientProvider);
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
     final recent = await _fetch(() async {
-      final resp = await api.getAlbums(
+      final resp = await client.getAlbums(
         userId: user.userId,
         libraryId: libraryId,
         limit: '20',
       );
-      return resp.data.items;
+      return resp.items;
     });
 
     final shuffled = [...recent]..shuffle();
@@ -164,7 +163,7 @@ class CarPlayHandler {
       return {'items': <Map<String, dynamic>>[], 'sort': sort};
     }
 
-    final api = ref.read(jellyfinApiProvider);
+    final client = ref.read(mediaServerClientProvider);
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
     final sortBy = filter.orderBy.name.capitalize();
     final sortOrder = filter.desc ? 'Descending' : 'Ascending';
@@ -177,36 +176,35 @@ class CarPlayHandler {
     final items = await _fetch(() async {
       if (query.isNotEmpty) {
         final resp = await switch (type) {
-          'albums' => api.searchAlbums(
+          'albums' => client.searchAlbums(
             userId: user.userId,
             libraryId: libraryId,
             searchTerm: query,
             startIndex: startIndex.toString(),
           ),
-          'artists' => api.searchArtists(
+          'artists' => client.searchArtists(
             userId: user.userId,
             searchTerm: query,
             startIndex: startIndex.toString(),
           ),
-          'playlists' => api.searchPlaylists(
+          'playlists' => client.searchPlaylists(
             userId: user.userId,
             libraryId: libraryId ?? '',
             searchTerm: query,
             startIndex: startIndex.toString(),
           ),
-          'songs' => api.searchAlbums(
+          'songs' => client.searchSongs(
             userId: user.userId,
             libraryId: libraryId,
             searchTerm: query,
-            type: 'Audio',
             startIndex: startIndex.toString(),
           ),
           _ => throw ArgumentError('Unknown list type: $type'),
         };
-        return resp.data.items;
+        return resp.items;
       }
       final resp = await switch (type) {
-        'albums' => api.getAlbums(
+        'albums' => client.getAlbums(
           userId: user.userId,
           libraryId: artistId != null ? '' : libraryId,
           sortBy: sortBy,
@@ -214,19 +212,19 @@ class CarPlayHandler {
           startIndex: startIndex.toString(),
           artistIds: artistId != null ? [artistId] : const [],
         ),
-        'artists' => api.getArtists(
+        'artists' => client.getArtists(
           userId: user.userId,
           sortBy: sortBy,
           sortOrder: sortOrder,
           startIndex: startIndex.toString(),
         ),
-        'playlists' => api.getPlaylists(
+        'playlists' => client.getPlaylists(
           userId: user.userId,
           sortBy: sortBy,
           sortOrder: sortOrder,
           startIndex: startIndex.toString(),
         ),
-        'songs' => api.getAllSongs(
+        'songs' => client.getAllSongs(
           userId: user.userId,
           libraryId: libraryId,
           sortBy: filter.orderBy == EntityFilter.sortName ? 'Name' : sortBy,
@@ -235,7 +233,7 @@ class CarPlayHandler {
         ),
         _ => throw ArgumentError('Unknown list type: $type'),
       };
-      return resp.data.items;
+      return resp.items;
     });
 
     if (type == 'songs') {
@@ -264,40 +262,39 @@ class CarPlayHandler {
       };
     }
 
-    final api = ref.read(jellyfinApiProvider);
+    final client = ref.read(mediaServerClientProvider);
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
     final results = await Future.wait([
       _fetch(() async {
-        final resp = await api.searchAlbums(
+        final resp = await client.searchAlbums(
           userId: user.userId,
           libraryId: libraryId,
           searchTerm: query,
         );
-        return resp.data.items;
+        return resp.items;
       }),
       _fetch(() async {
-        final resp = await api.searchArtists(
+        final resp = await client.searchArtists(
           userId: user.userId,
           searchTerm: query,
         );
-        return resp.data.items;
+        return resp.items;
       }),
       _fetch(() async {
-        final resp = await api.searchPlaylists(
+        final resp = await client.searchPlaylists(
           userId: user.userId,
           libraryId: libraryId ?? '',
           searchTerm: query,
         );
-        return resp.data.items;
+        return resp.items;
       }),
       _fetch(() async {
-        final resp = await api.searchAlbums(
+        final resp = await client.searchSongs(
           userId: user.userId,
           libraryId: libraryId,
           searchTerm: query,
-          type: 'Audio',
         );
-        return resp.data.items;
+        return resp.items;
       }),
     ]);
 
@@ -320,8 +317,8 @@ class CarPlayHandler {
     ref.read(carFilterProvider.notifier).filter(field: field, desc: desc);
   }
 
-  static Future<List<ItemDTO>> _fetch(
-    Future<List<ItemDTO>> Function() call,
+  static Future<List<LibraryItem>> _fetch(
+    Future<List<LibraryItem>> Function() call,
   ) async {
     try {
       return await call();
@@ -337,16 +334,16 @@ class CarPlayHandler {
       final albums = await ref
           .read(downloadManagerProvider.notifier)
           .getDownloadedAlbums();
-      return albums.map((e) => _toMap(ref, e)).toList();
+      return albums.map((e) => _toMap(ref, e.item)).toList();
     } on Object {
       return [];
     }
   }
 
-  static Map<String, dynamic> _toMap(ProviderContainer ref, ItemDTO item) {
+  static Map<String, dynamic> _toMap(ProviderContainer ref, LibraryItem item) {
     _items[item.id] = item;
     final localCover = DownloadPaths.coverFile(item.id);
-    final primaryTag = item.imageTags['Primary'];
+    final primaryTag = item.images.primary;
     return {
       'id': item.id,
       'title': item.name,
@@ -355,8 +352,8 @@ class CarPlayHandler {
         'artworkUrl': localCover.uri.toString()
       else if (primaryTag != null)
         'artworkUrl': ref
-            .read(imageServiceProvider)
-            .imagePath(tagId: primaryTag, id: item.id),
+            .read(mediaServerClientProvider)
+            .imageUrl(id: item.id, tagId: primaryTag),
     };
   }
 
@@ -380,14 +377,14 @@ class CarPlayHandler {
     }
   }
 
-  static Future<void> _playSong(ProviderContainer ref, ItemDTO song) async {
-    final syntheticAlbum = ItemDTO(
+  static Future<void> _playSong(ProviderContainer ref, LibraryItem song) async {
+    final syntheticAlbum = LibraryItem(
       id: song.albumId ?? song.id,
       name: song.albumName ?? '',
-      type: 'MusicAlbum',
+      kind: ItemKind.album,
       albumArtist: song.albumArtist,
       albumArtists: song.albumArtists,
-      imageTags: song.imageTags,
+      images: song.images,
     );
     final queue = _songs.isEmpty ? [song] : _songs;
     await ref.read(playbackProvider.notifier).play(song, queue, syntheticAlbum);

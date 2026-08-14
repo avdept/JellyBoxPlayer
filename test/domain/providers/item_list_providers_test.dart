@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
-import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/item_list_providers.dart';
@@ -11,15 +11,15 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../provider_container.dart';
 
-class MockJellyfinApi extends Mock implements JellyfinApi {}
+class MockMediaServerClient extends Mock implements MediaServerClient {}
 
 void main() {
-  late MockJellyfinApi mockApi;
+  late MockMediaServerClient mockApi;
 
   ProviderContainer containerWith({required bool isOffline}) =>
       createProviderContainer(
         overrides: [
-          jellyfinApiProvider.overrideWithValue(mockApi),
+          mediaServerClientProvider.overrideWithValue(mockApi),
           currentUserProvider.overrideWith(
             (_) => const User(userId: 'user-1', token: 'token'),
           ),
@@ -27,7 +27,7 @@ void main() {
         ],
       );
 
-  setUp(() => mockApi = MockJellyfinApi());
+  setUp(() => mockApi = MockMediaServerClient());
 
   group('itemListProvider', () {
     test('- fails fast offline instead of waiting out the request', () async {

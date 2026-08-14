@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
-import 'package:jplayer/src/data/dto/item/item_dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -24,10 +24,10 @@ class AlbumView extends ConsumerStatefulWidget {
 
   static const coverTextSpacing = 6.0;
 
-  final ItemDTO album;
+  final LibraryItem album;
   final bool showArtist;
-  final void Function(ItemDTO)? onTap;
-  final Future<void> Function(ItemDTO)? onPlayPressed;
+  final void Function(LibraryItem)? onTap;
+  final Future<void> Function(LibraryItem)? onPlayPressed;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
@@ -50,7 +50,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
     final downloadedCover = DownloadPaths.coverFile(widget.album.id);
     if (downloadedCover != null) return FileImage(downloadedCover);
 
-    final tag = widget.album.imageTags['Primary'];
+    final tag = widget.album.images.primary;
     if (tag == null) return const AssetImage(Images.album);
 
     return CachedNetworkImageProvider(

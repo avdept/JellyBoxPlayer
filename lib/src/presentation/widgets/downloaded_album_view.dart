@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -29,10 +29,10 @@ class DownloadedAlbumView extends ConsumerStatefulWidget {
     super.key,
   });
 
-  final DownloadedAlbumDTO album;
-  final void Function(DownloadedAlbumDTO)? onTap;
-  final FutureOr<void> Function(DownloadedAlbumDTO)? onDelete;
-  final Future<void> Function(DownloadedAlbumDTO)? onPlayPressed;
+  final DownloadedAlbum album;
+  final void Function(DownloadedAlbum)? onTap;
+  final FutureOr<void> Function(DownloadedAlbum)? onDelete;
+  final Future<void> Function(DownloadedAlbum)? onPlayPressed;
   final DownloadedAlbumViewKeys? testKeys;
 
   @override
@@ -53,7 +53,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
             text: 'Delete ',
             children: [
               TextSpan(
-                text: '"${widget.album.name}"',
+                text: '"${widget.album.item.name}"',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
@@ -99,7 +99,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
 
   String get _subtitle {
     final size = _formatSize(widget.album.sizeInBytes);
-    final artist = widget.album.albumArtist;
+    final artist = widget.album.item.albumArtist;
     return (artist == null || artist.isEmpty) ? size : '$artist • $size';
   }
 
@@ -109,7 +109,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
         getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.tablet;
 
     return AlbumView(
-      album: widget.album,
+      album: widget.album.item,
       onTap: (widget.onTap != null)
           ? (_) => widget.onTap!.call(widget.album)
           : null,

@@ -2,42 +2,41 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
-class CurrentPlaylistNotifier extends StateNotifier<ItemDTO?> {
+class CurrentPlaylistNotifier extends StateNotifier<LibraryItem?> {
   CurrentPlaylistNotifier(this._ref) : super(null) {
     final keepAliveLink = _ref.keepAlive();
     _ref.onDispose(keepAliveLink.close);
 
-    _api = _ref.watch(jellyfinApiProvider);
+    _client = _ref.watch(mediaServerClientProvider);
   }
 
   final Ref _ref;
-  late JellyfinApi _api;
+  late MediaServerClient _client;
 
-  void setPlaylist(ItemDTO playlist) {
+  void setPlaylist(LibraryItem playlist) {
     state = playlist;
   }
 
   // TODO: should be moved to a separate provider
-  Future<ItemsWrapper> fetchSongs(String playlistId) async {
+  Future<LibraryPage> fetchSongs(String playlistId) async {
     try {
-      final songs = await _api.getSongs(
+      return await _client.getSongs(
         userId: _ref.read(currentUserProvider)!.userId,
         albumId: playlistId,
       );
-      return songs.data;
     } on DioException catch (e) {
       log(e.message ?? 'Error while fetching Songs');
     }
-    return const ItemsWrapper(items: []);
+    return const LibraryPage(items: []);
   }
 }
 
-final AutoDisposeStateNotifierProvider<CurrentPlaylistNotifier, ItemDTO?>
+final AutoDisposeStateNotifierProvider<CurrentPlaylistNotifier, LibraryItem?>
 currentPlaylistProvider = StateNotifierProvider.autoDispose(
   CurrentPlaylistNotifier.new,
 );

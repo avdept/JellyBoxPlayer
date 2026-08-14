@@ -1,4 +1,12 @@
 export 'download_task/download_task.dart';
 export 'filter/filter.dart';
 export 'items_page/items_page.dart';
+export 'library_item/artist_ref.dart';
+export 'library_item/audio_source_info.dart';
+export 'library_item/downloaded_item.dart';
+export 'library_item/image_refs.dart';
+export 'library_item/item_kind.dart';
+export 'library_item/library_item.dart';
+export 'library_item/library_page.dart';
+export 'library_item/playback_user_data.dart';
 export 'playback_state/playback_state.dart';
