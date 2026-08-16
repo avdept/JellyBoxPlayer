@@ -123,6 +123,22 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     COMPONENT Runtime)
 endforeach(bundled_library)
 
+# Copy the native assets provided by the build hooks of all packages. This is
+# how package:sqlite3 (via sqflite_common_ffi) ships its libsqlite3.so: the
+# hook downloads it at build time and the AOT snapshot dlopen()s it by bare
+# name. Without this, the bundle has no libsqlite3.so and the app only works
+# on machines that happen to have the libsqlite3 *dev* package installed
+# (which is what provides the unversioned /usr/lib/libsqlite3.so symlink).
+#
+# Flutter's CmakeNativeAssetsMigration normally injects this automatically,
+# but it only patches linux/flutter/CMakeLists.txt; this project predates the
+# template move and keeps its install() rules here, so the migration silently
+# finds no anchor and does nothing. Keep this block.
+set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")
+install(DIRECTORY "${NATIVE_ASSETS_DIR}"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
+
 install(CODE "execute_process(COMMAND chmod +x \"${INSTALL_BUNDLE_LIB_DIR}/crashpad_handler\")")
 
 # Fully re-copy the assets directory on each build to avoid having stale files
