@@ -7,6 +7,16 @@ BIN="$BUNDLE_DIR/jellybox"
 
 mkdir -p "$LIB_DIR"
 
+# Fail the build rather than shipping a bundle that only starts on machines
+# with libsqlite3-dev installed. See the NATIVE_ASSETS_DIR block in
+# linux/CMakeLists.txt for why this can go missing.
+if [ ! -f "$LIB_DIR/libsqlite3.so" ]; then
+  echo "error: $LIB_DIR/libsqlite3.so is missing." >&2
+  echo "       The package:sqlite3 native asset was not installed into the bundle;" >&2
+  echo "       check the NATIVE_ASSETS_DIR install() rule in linux/CMakeLists.txt." >&2
+  exit 1
+fi
+
 EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libvulkan.*|libnvidia.*|libva.*|libvdpau.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
 
 # Emits "<soname>\t<resolved-path>" for each non-excluded dependency of $1.
@@ -31,7 +41,13 @@ for f in "$BIN" "$LIB_DIR"/*; do
 done
 
 # Seed libs that are dlopen()'d at runtime and never show up in `ldd`.
-for soname in libmpv.so.2 libmpv.so.1 libsqlite3.so.0; do
+#
+# Note: libsqlite3 is deliberately NOT seeded from the host. package:sqlite3
+# ships it as a native asset that CMake installs into lib/ as the unversioned
+# `libsqlite3.so` — the exact name the AOT snapshot dlopen()s. Pulling the
+# host's libsqlite3.so.0 in here would land under the wrong name and shadow
+# nothing, while masking a missing native asset during local testing.
+for soname in libmpv.so.2 libmpv.so.1; do
   # awk's early `exit` closes the pipe before ldconfig finishes writing,
   # which SIGPIPEs ldconfig; with pipefail that would abort the script.
   path="$( (ldconfig -p 2>/dev/null | awk -v n="$soname" '$1==n {print $NF; exit}') || true)"
