@@ -15,6 +15,8 @@ abstract class MediaServerClient {
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
     List<String> genreIds = const [],
+    List<String> filters = const [],
+    List<String> ids = const [],
   });
 
   Future<LibraryPage> getArtists({
@@ -23,6 +25,7 @@ abstract class MediaServerClient {
     String limit = '100',
     String sortBy = 'SortName',
     String sortOrder = 'Descending',
+    List<String> filters = const [],
   });
 
   Future<LibraryPage> getGenres({
@@ -51,6 +54,7 @@ abstract class MediaServerClient {
     String limit = '100',
     String sortBy = 'SortName',
     String sortOrder = 'Ascending',
+    List<String> filters = const [],
   });
 
   Future<LibraryPage> getSongs({

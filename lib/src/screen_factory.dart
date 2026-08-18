@@ -85,6 +85,33 @@ class ScreenFactory {
     );
   }
 
+  Page<void> favouritesPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: FavouritesPage(),
+    );
+  }
+
+  Page<void> favouriteSongsPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: FavouriteSongsPage(),
+    );
+  }
+
+  Page<void> homePage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const NoTransitionPage(
+      child: HomePage(),
+    );
+  }
+
   Page<void> loginPage(
     BuildContext context,
     GoRouterState router,

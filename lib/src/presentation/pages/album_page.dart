@@ -54,6 +54,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   var _isLoading = false;
   var _isLoadingSongs = true;
   var _loadFailed = false;
+  late bool _isFavorite;
 
   late final ImageService _imageService;
 
@@ -112,6 +113,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   @override
   void initState() {
     super.initState();
+    _isFavorite = widget.album.userData.isFavorite;
     _imageService = ImageService(client: ref.read(mediaServerClientProvider));
     unawaited(_loadSongs());
     ref.read(playerProvider).sequenceStateStream.listen((event) {
@@ -299,7 +301,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                                 valueListenable: _currentSong,
                                 builder: (context, item, other) {
                                   final song = songs[index];
-                                  return PlayerSongView(
+                                  return SongRowView(
                                     song: song,
                                     isPlaying:
                                         item != null && song.id == item.id,
@@ -307,31 +309,22 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                                         .read(playbackProvider.notifier)
                                         .play(song, songs, widget.album),
                                     position: index + 1,
-                                    onLikePressed: (song) async {
-                                      if (ref.read(isOfflineProvider)) {
-                                        _showOfflineSnackBar();
-                                        return;
-                                      }
-                                      try {
-                                        await ref
-                                            .read(mediaServerClientProvider)
-                                            .setFavorite(
-                                              song.id,
-                                              favorite:
-                                                  !song.userData.isFavorite,
-                                            );
-                                      } on Object {
-                                        _showOfflineSnackBar();
-                                        return;
-                                      }
-                                      unawaited(_getSongs());
-                                    },
+                                    showDownloadState: true,
+                                    edgePadding: _device.isMobile ? 16 : 30,
+                                    onLikePressed: _onSongLikePressed,
                                     optionsBuilder: (context) => [
                                       PopupMenuItem(
                                         onTap: () =>
                                             _onAddToPlaylistPressed(song),
                                         child: const Text('Add to playlist'),
                                       ),
+                                      if (!_device.isDesktop)
+                                        PopupMenuItem(
+                                          onTap: () => _onSongLikePressed(song),
+                                          child: Text(
+                                            favouriteMenuLabel(song),
+                                          ),
+                                        ),
                                     ],
                                   );
                                 },
@@ -400,6 +393,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 _downloadAlbumButton(),
+                _likeAlbumButton(),
                 const RandomQueueButton(),
                 SizedBox.square(
                   dimension: _device.isMobile ? 38 : 48,
@@ -450,7 +444,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             .getItem(a.id);
                         if (!mounted) return;
                         await context.pushNamed(
-                          Routes.artist.name,
+                          branchAwareName(context, Routes.artist),
                           extra: {'artist': item},
                         );
                       },
@@ -487,7 +481,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         ),
         SizedBox(width: _device.isDesktop ? 35 : 32),
         if (_device.isDesktop)
-          _downloadAlbumButton()
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _downloadAlbumButton(),
+              _likeAlbumButton(),
+            ],
+          )
         // StreamBuilder<PlayerState>(
         //   stream: ref.read(playerProvider).playerStateStream,
         //   builder: (context, snapshot) {
@@ -511,6 +511,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _downloadAlbumButton(),
+              _likeAlbumButton(),
               const RandomQueueButton(),
               SizedBox.square(
                 dimension: _device.isMobile ? 40 : 48,
@@ -572,7 +573,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               child: AlbumView(
                 album: albums[index],
                 onTap: (album) => context.pushNamed(
-                  Routes.album.name,
+                  branchAwareName(context, Routes.album),
                   extra: {'album': album},
                 ),
                 onPlayPressed: (album) =>
@@ -610,6 +611,55 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       onRetry: _retryLoad,
     );
   }
+
+  Future<void> _onSongLikePressed(LibraryItem song) async {
+    if (ref.read(isOfflineProvider)) {
+      _showOfflineSnackBar();
+      return;
+    }
+    try {
+      await ref
+          .read(mediaServerClientProvider)
+          .setFavorite(song.id, favorite: !song.userData.isFavorite);
+    } on Object {
+      _showOfflineSnackBar();
+      return;
+    }
+    ref.invalidate(favouriteSongsProvider);
+    unawaited(_getSongs());
+  }
+
+  Future<void> _onLikeAlbumPressed() async {
+    if (ref.read(isOfflineProvider)) {
+      _showOfflineSnackBar();
+      return;
+    }
+    final next = !_isFavorite;
+    setState(() => _isFavorite = next);
+    try {
+      await ref
+          .read(mediaServerClientProvider)
+          .setFavorite(widget.album.id, favorite: next);
+    } on Object {
+      if (mounted) setState(() => _isFavorite = !next);
+      _showOfflineSnackBar();
+      return;
+    }
+    ref.invalidate(favouriteAlbumsProvider);
+  }
+
+  Widget _likeAlbumButton() => IconButton(
+    onPressed: _onLikeAlbumPressed,
+    icon: Icon(
+      CupertinoIcons.heart,
+      color: _theme.colorScheme.onPrimary,
+    ),
+    selectedIcon: Icon(
+      CupertinoIcons.heart_fill,
+      color: _theme.colorScheme.primary,
+    ),
+    isSelected: _isFavorite,
+  );
 
   Widget _downloadAlbumButton() => Consumer(
     builder: (context, ref, child) {

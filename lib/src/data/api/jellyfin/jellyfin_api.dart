@@ -49,6 +49,7 @@ abstract class JellyfinApi {
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Ascending',
+    @Query('Filters') List<String> filters = const [],
     @Query('Recursive') bool recursive = true,
     @Query('Fields') List<String> fields = const ['MediaSources'],
   });
@@ -81,6 +82,8 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('GenreIds') List<String> genreIds = const [],
+    @Query('Filters') List<String> filters = const [],
+    @Query('Ids') List<String> ids = const [],
     @Query('Recursive') bool recursive = true,
   });
 
@@ -206,6 +209,7 @@ abstract class JellyfinApi {
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
+    @Query('Filters') List<String> filters = const [],
   });
 
   @GET('/Artists')

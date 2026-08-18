@@ -19,6 +19,7 @@ class AlbumView extends ConsumerStatefulWidget {
     this.subtitle,
     this.trailing,
     this.alignTextStart = false,
+    this.coverOverride,
     super.key,
   });
 
@@ -36,6 +37,8 @@ class AlbumView extends ConsumerStatefulWidget {
 
   final Widget? trailing;
   final bool alignTextStart;
+
+  final Widget? coverOverride;
 
   @override
   ConsumerState<AlbumView> createState() => _AlbumViewState();
@@ -95,14 +98,15 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(
-                        image: _libraryImage,
+                  widget.coverOverride ??
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          image: DecorationImage(
+                            image: _libraryImage,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                   if (widget.optionsBuilder != null)
                     Positioned(
                       top: 0,

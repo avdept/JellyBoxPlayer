@@ -5,19 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
-import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:updatify_flutter/updatify_flutter.dart';
 
 class BrowsePage extends ConsumerStatefulWidget {
   const BrowsePage({super.key});
@@ -27,14 +23,14 @@ class BrowsePage extends ConsumerStatefulWidget {
 }
 
 class _BrowsePageState extends ConsumerState<BrowsePage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _searchButtonWidth = 48.0;
   static const _searchDismissScrollDistance = 64.0;
   static const _searchFieldHeight = 42.0;
   static const _iconRowHeight = 48.0;
   static const _chipsRowHeight = 48.0;
   static const _barRowsSpacing = 4.0;
-  static const _bellIconSize = 28.0;
+  static const _iconSlotWidth = 44.0;
   late final ValueNotifier<ItemList> _currentView;
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
@@ -51,6 +47,12 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     duration: const Duration(milliseconds: 260),
     vsync: this,
   );
+  late final AnimationController _iconsReveal = AnimationController(
+    duration: const Duration(milliseconds: 460),
+    vsync: this,
+  );
+  bool _wasVisible = false;
+
   late final Animation<double> _searchExpansion = CurvedAnimation(
     parent: _searchAnimation,
     curve: Curves.easeOutCubic,
@@ -265,9 +267,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       ),
     );
     if ((shouldDelete ?? false) && mounted) {
-      await ref
-          .read(mediaServerClientProvider)
-          .deletePlaylist(playlist.id);
+      await ref.read(mediaServerClientProvider).deletePlaylist(playlist.id);
       ref.invalidate(playlistsProvider);
     }
   }
@@ -367,6 +367,32 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     super.didChangeDependencies();
     _theme = Theme.of(context);
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
+
+    final isVisible = TickerMode.of(context);
+    if (isVisible && !_wasVisible) _iconsReveal.forward(from: 0);
+    _wasVisible = isVisible;
+  }
+
+  Widget _revealFromBell({required int slotsFromBell, required Widget child}) {
+    final interval = Interval(
+      0.12 * (slotsFromBell - 1),
+      0.7 + 0.1 * (slotsFromBell - 1),
+      curve: Curves.easeOutCubic,
+    );
+    return AnimatedBuilder(
+      animation: _iconsReveal,
+      builder: (context, child) {
+        final t = interval.transform(_iconsReveal.value);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(slotsFromBell * _iconSlotWidth * (1 - t), 0),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
   }
 
   @override
@@ -436,6 +462,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                         onTap: () => _onAddToPlaylistPressed(song),
                         child: const Text('Add to playlist'),
                       ),
+                      if (!_device.isDesktop)
+                        PopupMenuItem(
+                          onTap: () => _onLikePressed(song),
+                          child: Text(favouriteMenuLabel(song)),
+                        ),
                       if (song.albumArtists.isNotEmpty)
                         PopupMenuItem(
                           onTap: () => _onSongArtistTap(song),
@@ -508,6 +539,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     _filterOpened.dispose();
     _searchDebounce?.cancel();
     _searchAnimation.dispose();
+    _iconsReveal.dispose();
     _searchOpened.dispose();
     _searchQuery.dispose();
     _searchController.dispose();
@@ -544,79 +576,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       ),
     ),
   );
-
-  Widget _libraryAvatar(LibraryItem? library, double size) {
-    final tag = library?.images.primary;
-    final image = (tag != null)
-        ? ref.read(imageServiceProvider).albumIP(tagId: tag, id: library!.id)
-        : null;
-    return CircleAvatar(
-      radius: size / 2,
-      backgroundColor: _theme.colorScheme.surface,
-      backgroundImage: image,
-      child: image == null ? Icon(Icons.library_music, size: size / 2) : null,
-    );
-  }
-
-  Widget _libraryButton() {
-    final current = ref.watch(currentLibraryProvider).valueOrNull;
-    final libraries =
-        ref.watch(librariesProvider).valueOrNull ?? const <LibraryItem>[];
-    final size = _device.isMobile ? 32.0 : 40.0;
-
-    // The library restored from prefs carries no imageTags, so resolve the
-    // full DTO from librariesProvider (by id) to show the real cover image.
-    final selected = libraries.cast<LibraryItem?>().firstWhere(
-      (l) => l?.id == current?.id,
-      orElse: () => null,
-    );
-
-    return DropdownButtonHideUnderline(
-      child: DropdownButton2<LibraryItem>(
-        customButton: _libraryAvatar(selected ?? current, size),
-        buttonStyleData: const ButtonStyleData(
-          overlayColor: WidgetStatePropertyAll(Colors.transparent),
-        ),
-        dropdownStyleData: DropdownStyleData(
-          width: 220,
-          padding: const EdgeInsets.all(8),
-          offset: const Offset(0, -8),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
-        ),
-        items: [
-          for (final lib in libraries)
-            DropdownMenuItem<LibraryItem>(
-              value: lib,
-              child: Row(
-                children: [
-                  _libraryAvatar(lib, 28),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      lib.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.2,
-                        color: (lib.id == current?.id)
-                            ? _theme.colorScheme.primary
-                            : _theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-        value: selected,
-        onChanged: (lib) {
-          if (lib != null) {
-            ref.read(currentLibraryProvider.notifier).setLibrary(lib);
-          }
-        },
-      ),
-    );
-  }
 
   String _filterLabel(EntityFilter filter) {
     return _filtersLabels[filter] ?? '???';
@@ -669,7 +628,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                 child: ValueListenableBuilder(
                   valueListenable: _filterOpened,
                   builder: (context, isOpened, child) => Icon(
-                    JPlayer.sliders,
+                    Icons.sort,
                     color: isOpened
                         ? _theme.colorScheme.primary
                         : _theme.iconTheme.color,
@@ -782,7 +741,9 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       _searchButton(),
       _filterButton(),
       const SizedBox(width: 12),
-      _libraryButton(),
+      LibrarySelectorButton(size: _device.isMobile ? 32 : 40),
+      const SizedBox(width: 12),
+      UpdatifyBell(isDesktop: _device.isDesktop),
     ],
   );
 
@@ -792,23 +753,16 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         height: _iconRowHeight,
         child: Row(
           children: [
-            _libraryButton(),
-            const Spacer(),
-            _addButton(),
-            _searchButton(),
-            _filterButton(),
-            IconTheme.merge(
-              data: const IconThemeData(size: _bellIconSize),
-              child: UpdatifyTrigger(
-                projectId: updatifyProjectId,
-                popupType: UpdatifyPopupType.bottomSheet,
-                backgroundColor: Themes.changelogSurface,
-                borderRadius: BorderRadius.circular(8),
-                width: _device.isDesktop
-                    ? MediaQuery.sizeOf(context).width / 2
-                    : double.infinity,
-              ),
+            LibrarySelectorButton(
+              size: _device.isMobile ? 32 : 40,
+              showName: true,
+              maxNameWidth: _device.isMobile ? 110 : 180,
             ),
+            const Spacer(),
+            _revealFromBell(slotsFromBell: 3, child: _addButton()),
+            _revealFromBell(slotsFromBell: 2, child: _searchButton()),
+            _revealFromBell(slotsFromBell: 1, child: _filterButton()),
+            UpdatifyBell(isDesktop: _device.isDesktop),
           ],
         ),
       ),

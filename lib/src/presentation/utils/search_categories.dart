@@ -32,15 +32,30 @@ void openSearchResult(
   switch (category) {
     case ItemList.albums:
       ref.read(currentAlbumProvider.notifier).setAlbum(item);
-      context.pushNamed(Routes.album.name, extra: {'album': item});
+      context.pushNamed(
+        branchAwareName(context, Routes.album),
+        extra: {'album': item},
+      );
     case ItemList.artists:
-      context.pushNamed(Routes.artist.name, extra: {'artist': item});
+      context.pushNamed(
+        branchAwareName(context, Routes.artist),
+        extra: {'artist': item},
+      );
     case ItemList.playlists:
       ref.read(currentPlaylistProvider.notifier).setPlaylist(item);
-      context.pushNamed(Routes.playlist.name, extra: {'playlist': item});
+      context.pushNamed(
+        branchAwareName(context, Routes.playlist),
+        extra: {'playlist': item},
+      );
     case ItemList.genres:
-      context.pushNamed(Routes.genre.name, extra: {'genre': item});
+      context.pushNamed(
+        branchAwareName(context, Routes.genre),
+        extra: {'genre': item},
+      );
     case ItemList.songs:
       break;
   }
 }
+
+String favouriteMenuLabel(LibraryItem song) =>
+    song.userData.isFavorite ? 'Remove from favourites' : 'Add to favourites';
