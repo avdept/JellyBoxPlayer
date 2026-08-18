@@ -14,8 +14,7 @@ class AlbumCardMetrics {
   static double crossAxisSpacing(DeviceType device) =>
       device.isMobile ? 8 : (device.isTablet ? 56 : 28);
 
-  static double carouselWidth(DeviceType device) =>
-      device.isMobile ? 132 : (device.isTablet ? 220 : 160);
+  static double carouselWidth(DeviceType device) => width(device);
 
   static double carouselSpacing(DeviceType device) => device.isMobile ? 12 : 20;
 

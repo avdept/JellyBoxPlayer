@@ -379,15 +379,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             _albumDetails(
               duration: widget.album.duration,
               soundsCount: songs.length,
-              albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
               year: widget.album.productionYear,
-              divider: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Offstage(
-                  offstage: _device.isMobile,
-                  child: const Icon(Icons.circle, size: 4),
-                ),
-              ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -462,17 +454,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                   _albumDetails(
                     duration: widget.album.duration,
                     soundsCount: songs.length,
-                    albumArtist: songs.isNotEmpty
-                        ? songs.first.albumArtist
-                        : '',
                     year: widget.album.productionYear,
-                    divider: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Offstage(
-                        offstage: _device.isMobile,
-                        child: const Icon(Icons.circle, size: 4),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -738,12 +720,19 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     },
   );
 
+  Widget _detailsDot() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: Icon(
+      Icons.circle,
+      size: 4,
+      color: _theme.colorScheme.onPrimary.withValues(alpha: 0.6),
+    ),
+  );
+
   Widget _albumDetails({
     required Duration duration,
     required int soundsCount,
     int? year,
-    String? albumArtist,
-    Widget divider = const SizedBox.shrink(),
   }) {
     final durationInSeconds = duration.inSeconds;
     final hours = durationInSeconds ~/ Duration.secondsPerHour;
@@ -759,6 +748,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
         height: 1.2,
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Padding(
             padding: EdgeInsets.only(right: 6),
@@ -771,14 +761,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               seconds.toString().padLeft(2, '0'),
             ].join(':'),
           ),
-          divider,
+          _detailsDot(),
           const Padding(
             padding: EdgeInsets.only(right: 6),
             child: Icon(JPlayer.music, size: 14),
           ),
-          Text('$soundsCount songs'),
+          Text('$soundsCount'),
           if (year != null) ...[
-            divider,
+            _detailsDot(),
             Text(
               year.toString(),
               style: const TextStyle(fontWeight: FontWeight.normal),
