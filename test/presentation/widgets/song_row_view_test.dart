@@ -35,7 +35,7 @@ void main() {
     albumName: faker.lorem.sentence(),
     albumId: faker.datatype.uuid(),
   );
-  const keys = PlayerSongViewKeys(
+  const keys = SongRowViewKeys(
     downloadedIcon: Key('downloadedIcon'),
     downloadProgressIndicator: Key('downloadProgressIndicator'),
   );
@@ -54,7 +54,8 @@ void main() {
         ],
       ),
       home: Center(
-        child: PlayerSongView(
+        child: SongRowView(
+          showDownloadState: true,
           song: song,
           position: position,
           isPlaying: isPlaying,
@@ -87,7 +88,7 @@ void main() {
     mockDownloadService = MockDownloadService();
   });
 
-  group('PlayerSongView', () {
+  group('SongRowView', () {
     testWidgets(
       '- displays song details',
       (widgetTester) async {

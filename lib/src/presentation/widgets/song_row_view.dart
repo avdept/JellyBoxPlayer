@@ -1,12 +1,24 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+class SongRowViewKeys {
+  const SongRowViewKeys({
+    required this.downloadedIcon,
+    required this.downloadProgressIndicator,
+  });
+
+  final Key downloadedIcon;
+  final Key downloadProgressIndicator;
+}
 
 class SongRowView extends ConsumerWidget {
   const SongRowView({
@@ -16,6 +28,10 @@ class SongRowView extends ConsumerWidget {
     this.onLikePressed,
     this.onArtistTap,
     this.optionsBuilder,
+    this.position,
+    this.showDownloadState = false,
+    this.edgePadding,
+    this.testKeys,
     super.key,
   });
 
@@ -25,6 +41,14 @@ class SongRowView extends ConsumerWidget {
   final void Function(LibraryItem)? onLikePressed;
   final void Function(LibraryItem)? onArtistTap;
   final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
+
+  final int? position;
+
+  final bool showDownloadState;
+
+  final double? edgePadding;
+
+  final SongRowViewKeys? testKeys;
 
   String get formattedDuration {
     final duration = song.duration;
@@ -51,6 +75,13 @@ class SongRowView extends ConsumerWidget {
     final isTablet = deviceType == DeviceScreenType.tablet;
     final isDesktop = deviceType == DeviceScreenType.desktop;
     final imageSize = isMobile ? 46.0 : 56.0;
+    final horizontal = edgePadding ?? 0;
+    final isDownloaded = showDownloadState
+        ? ref.watch(isSongDownloadedProvider(song)).valueOrNull
+        : null;
+    final currentTask = showDownloadState
+        ? ref.watch(downloadServiceProvider).getTask(song.id)
+        : null;
 
     return SimpleListTile(
       onTap: onTap != null ? () => onTap!(song) : null,
@@ -58,20 +89,25 @@ class SongRowView extends ConsumerWidget {
           ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
           : Colors.transparent,
       padding: EdgeInsets.fromLTRB(
-        0,
+        horizontal,
         8,
-        optionsBuilder != null ? 4 : 0,
+        optionsBuilder != null ? 4 : horizontal,
         8,
       ),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Image(
-          image: _coverImage(ref),
-          width: imageSize,
-          height: imageSize,
-          fit: BoxFit.cover,
-        ),
-      ),
+      leading: position != null
+          ? Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Text('$position'),
+            )
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image(
+                image: _coverImage(ref),
+                width: imageSize,
+                height: imageSize,
+                fit: BoxFit.cover,
+              ),
+            ),
       leadingToTitle: isMobile ? 12 : 16,
       title: Text(
         song.name,
@@ -112,6 +148,42 @@ class SongRowView extends ConsumerWidget {
               color: theme.colorScheme.onPrimary.withOpacity(0.6),
             ),
           ),
+          if (currentTask != null)
+            ValueListenableBuilder<DownloadStatus>(
+              valueListenable: currentTask.status,
+              builder: (context, status, _) {
+                if (isDownloaded ?? false) {
+                  return Icon(
+                    Icons.check_circle,
+                    key: testKeys?.downloadedIcon,
+                    color: Colors.green,
+                  );
+                }
+                if (!currentTask.isDownloadingNow) {
+                  return const SizedBox.shrink();
+                }
+                return SizedBox.square(
+                  dimension: 30,
+                  child: ValueListenableBuilder<double?>(
+                    valueListenable: currentTask.progress,
+                    builder: (context, progress, _) =>
+                        CircularProgressIndicator(
+                          key: testKeys?.downloadProgressIndicator,
+                          value: progress,
+                          color: const Color(0xFF0066FF),
+                          backgroundColor: theme.colorScheme.onPrimary,
+                          strokeWidth: 2,
+                        ),
+                  ),
+                );
+              },
+            )
+          else if (isDownloaded ?? false)
+            Icon(
+              Icons.check_circle,
+              key: testKeys?.downloadedIcon,
+              color: Colors.green,
+            ),
           if (isDesktop)
             IconButton(
               onPressed: onLikePressed != null

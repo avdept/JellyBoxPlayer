@@ -6,13 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:updatify_flutter/updatify_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 class MainPage extends ConsumerStatefulWidget {
@@ -32,6 +30,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   late DeviceType _device;
 
   Set<(IconData, String)> get _menuItems => {
+    (Icons.home_outlined, 'Home'),
     (JPlayer.play_circle_outlined, 'Browse'),
     (JPlayer.settings, 'Settings'),
     (JPlayer.download, 'Downloads'),
@@ -73,24 +72,12 @@ class _MainPageState extends ConsumerState<MainPage> {
                   unselectedItemColor: _theme.colorScheme.onPrimary,
                   selectedFontSize: 16,
                   unselectedFontSize: 16,
-                  leading: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'JellyBox',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      UpdatifyTrigger(
-                        projectId: updatifyProjectId,
-                        borderRadius: BorderRadius.circular(8),
-                        width: _device.isDesktop
-                            ? MediaQuery.sizeOf(context).width / 2
-                            : double.infinity,
-                      ),
-                    ],
+                  leading: const Text(
+                    'JellyBox',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   trailing: TextButton.icon(
                     onPressed: ref.read(authProvider.notifier).logout,

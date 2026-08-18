@@ -207,7 +207,7 @@ void main() {
         await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
         await widgetTester.pump(Duration.zero);
         final songUT = mockSongs.items.first;
-        final songFinder = find.byType(PlayerSongView);
+        final songFinder = find.byType(SongRowView);
         expect(songFinder, findsWidgets);
         expect(
           find.descendant(
@@ -298,7 +298,7 @@ void main() {
 
         expect(
           find.descendant(
-            of: find.byType(PlayerSongView),
+            of: find.byType(SongRowView),
             matching: find.text(mockDownloadedSongs.first.item.name),
           ),
           findsOneWidget,
@@ -316,7 +316,7 @@ void main() {
         await widgetTester.pump(Duration.zero);
 
         expect(find.byType(OfflineNotice), findsOneWidget);
-        expect(find.byType(PlayerSongView), findsNothing);
+        expect(find.byType(SongRowView), findsNothing);
         expect(find.byKey(keys.downloadButton), findsNothing);
         verifyNever(() => mockGetSongs(albumId: mockAlbum.id));
       },

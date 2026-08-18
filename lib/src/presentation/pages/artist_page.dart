@@ -397,7 +397,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               showArtist: false,
               album: _albums[index],
               onTap: (album) => context.pushNamed(
-                Routes.album.name,
+                branchAwareName(context, Routes.album),
                 extra: {
                   'album': album,
                   'artist': widget.artist,
@@ -438,7 +438,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             showArtist: false,
             album: _appearsOn[index],
             onTap: (album) => context.pushNamed(
-              Routes.album.name,
+              branchAwareName(context, Routes.album),
               extra: {
                 'album': album,
                 'artist': widget.artist,

@@ -190,13 +190,15 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                           valueListenable: _currentSong,
                           builder: (context, item, other) {
                             final song = songs[index];
-                            return PlayerSongView(
+                            return SongRowView(
                               song: song,
                               isPlaying: item != null && song.id == item.id,
                               onTap: (song) => ref
                                   .read(playbackProvider.notifier)
                                   .play(song, songs, widget.playlist),
                               position: index + 1,
+                              showDownloadState: true,
+                              edgePadding: _device.isMobile ? 16 : 30,
                               onLikePressed: (song) async {
                                 await ref
                                     .read(mediaServerClientProvider)
@@ -254,7 +256,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                           );
                                       if (context.mounted) {
                                         await context.pushNamed(
-                                          Routes.artist.name,
+                                          branchAwareName(
+                                            context,
+                                            Routes.artist,
+                                          ),
                                           extra: {
                                             'playlist': widget.playlist,
                                             'artist': res.items.first,
@@ -277,7 +282,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                           );
                                       if (context.mounted) {
                                         await context.pushNamed(
-                                          Routes.album.name,
+                                          branchAwareName(
+                                            context,
+                                            Routes.album,
+                                          ),
                                           extra: {
                                             'playlist': widget.playlist,
                                             'album': res.items.first,

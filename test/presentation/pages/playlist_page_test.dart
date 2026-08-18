@@ -120,7 +120,7 @@ void main() {
         await widgetTester.pumpWidget(getWidgetUT(playlist: mockPlaylist));
         await widgetTester.pump(Duration.zero);
         final songUT = mockSongs.items.first;
-        final songFinder = find.byType(PlayerSongView);
+        final songFinder = find.byType(SongRowView);
         expect(songFinder, findsWidgets);
         expect(
           find.descendant(

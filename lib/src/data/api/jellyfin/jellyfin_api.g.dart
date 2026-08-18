@@ -171,6 +171,7 @@ class _JellyfinApi implements JellyfinApi {
     String limit = '100',
     String sortBy = 'SortName',
     String sortOrder = 'Ascending',
+    List<String> filters = const [],
     bool recursive = true,
     List<String> fields = const ['MediaSources'],
   }) async {
@@ -182,6 +183,7 @@ class _JellyfinApi implements JellyfinApi {
       r'Limit': limit,
       r'SortBy': sortBy,
       r'SortOrder': sortOrder,
+      r'Filters': filters,
       r'Recursive': recursive,
       r'Fields': fields,
     };
@@ -274,6 +276,8 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
     List<String> genreIds = const [],
+    List<String> filters = const [],
+    List<String> ids = const [],
     bool recursive = true,
   }) async {
     final _extra = <String, dynamic>{};
@@ -287,6 +291,8 @@ class _JellyfinApi implements JellyfinApi {
       r'SortOrder': sortOrder,
       r'AlbumArtistIds': artistIds,
       r'GenreIds': genreIds,
+      r'Filters': filters,
+      r'Ids': ids,
       r'Recursive': recursive,
     };
     queryParameters.removeWhere((k, v) => v == null);
@@ -786,6 +792,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortBy = 'SortName',
     String sortOrder = 'Descending',
     bool recursive = true,
+    List<String> filters = const [],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -798,6 +805,7 @@ class _JellyfinApi implements JellyfinApi {
       r'SortBy': sortBy,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
+      r'Filters': filters,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;

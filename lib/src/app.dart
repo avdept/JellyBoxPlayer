@@ -139,6 +139,49 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
             StatefulShellBranch(
               routes: [
                 GoRoute(
+                  path: Routes.home.path,
+                  name: Routes.home.name,
+                  pageBuilder: widget.screenFactory.homePage,
+                  routes: [
+                    GoRoute(
+                      path: Routes.homeAlbum.path,
+                      name: Routes.homeAlbum.name,
+                      pageBuilder: widget.screenFactory.albumPage,
+                    ),
+                    GoRoute(
+                      path: Routes.homeArtist.path,
+                      name: Routes.homeArtist.name,
+                      pageBuilder: widget.screenFactory.artistPage,
+                    ),
+                    GoRoute(
+                      path: Routes.homePlaylist.path,
+                      name: Routes.homePlaylist.name,
+                      pageBuilder: widget.screenFactory.playlistPage,
+                    ),
+                    GoRoute(
+                      path: Routes.homeGenre.path,
+                      name: Routes.homeGenre.name,
+                      pageBuilder: widget.screenFactory.genrePage,
+                    ),
+                    GoRoute(
+                      path: Routes.homeFavourites.path,
+                      name: Routes.homeFavourites.name,
+                      pageBuilder: widget.screenFactory.favouritesPage,
+                      routes: [
+                        GoRoute(
+                          path: Routes.homeFavouriteSongs.path,
+                          name: Routes.homeFavouriteSongs.name,
+                          pageBuilder: widget.screenFactory.favouriteSongsPage,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
                   path: Routes.browse.path,
                   name: Routes.browse.name,
                   pageBuilder: widget.screenFactory.browsePage,
@@ -211,7 +254,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
           if (initialRoute != '/' && initialRoute != loginRoute) {
             return initialRoute;
           } else if (_selectedLibrary != null) {
-            return Routes.browse.path;
+            return Routes.home.path;
           } else {
             return Routes.library.path;
           }

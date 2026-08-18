@@ -5,7 +5,7 @@ import 'package:jplayer/src/presentation/widgets/album_view.dart';
 class AlbumCardMetrics {
   const AlbumCardMetrics._();
 
-  static double maxWidth(DeviceType device) => device.isTablet ? 360 : 200;
+  static double maxWidth(DeviceType device) => carouselWidth(device);
 
   static double width(DeviceType device) => device.isTablet ? 360 : 175;
 
@@ -14,6 +14,16 @@ class AlbumCardMetrics {
   static double crossAxisSpacing(DeviceType device) =>
       device.isMobile ? 8 : (device.isTablet ? 56 : 28);
 
+  static double carouselWidth(DeviceType device) =>
+      device.isMobile ? 132 : (device.isTablet ? 220 : 160);
+
+  static double carouselSpacing(DeviceType device) => device.isMobile ? 12 : 20;
+
+  static double carouselHeight(DeviceType device) {
+    final cardWidth = carouselWidth(device);
+    return height(cardWidth, isTablet: device.isTablet);
+  }
+
   static double height(double width, {required bool isTablet}) =>
       width +
       AlbumView.coverTextSpacing +
@@ -21,9 +31,9 @@ class AlbumCardMetrics {
       (isTablet ? 22 : 14) * 1.2;
 
   static SliverGridDelegate gridDelegate(DeviceType device) {
-    final cardWidth = width(device);
+    final cardWidth = maxWidth(device);
     return SliverGridDelegateWithMaxCrossAxisExtent(
-      maxCrossAxisExtent: maxWidth(device),
+      maxCrossAxisExtent: cardWidth,
       mainAxisSpacing: mainAxisSpacing(device),
       crossAxisSpacing: crossAxisSpacing(device),
       childAspectRatio:

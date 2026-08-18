@@ -36,6 +36,8 @@ class JellyfinClient implements MediaServerClient {
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
     List<String> genreIds = const [],
+    List<String> filters = const [],
+    List<String> ids = const [],
   }) async {
     final response = await _api.getAlbums(
       userId: userId,
@@ -47,6 +49,8 @@ class JellyfinClient implements MediaServerClient {
       sortOrder: sortOrder,
       artistIds: artistIds,
       genreIds: genreIds,
+      filters: filters,
+      ids: ids,
     );
     return response.data.toLibraryPage();
   }
@@ -58,6 +62,7 @@ class JellyfinClient implements MediaServerClient {
     String limit = '100',
     String sortBy = 'SortName',
     String sortOrder = 'Descending',
+    List<String> filters = const [],
   }) async {
     final response = await _api.getArtists(
       userId: userId,
@@ -65,6 +70,7 @@ class JellyfinClient implements MediaServerClient {
       limit: limit,
       sortBy: sortBy,
       sortOrder: sortOrder,
+      filters: filters,
     );
     return response.data.toLibraryPage();
   }
@@ -119,6 +125,7 @@ class JellyfinClient implements MediaServerClient {
     String limit = '100',
     String sortBy = 'SortName',
     String sortOrder = 'Ascending',
+    List<String> filters = const [],
   }) async {
     final response = await _api.getAllSongs(
       userId: userId,
@@ -127,6 +134,7 @@ class JellyfinClient implements MediaServerClient {
       limit: limit,
       sortBy: sortBy,
       sortOrder: sortOrder,
+      filters: filters,
     );
     return response.data.toLibraryPage();
   }

@@ -77,6 +77,22 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     },
   );
 
+  Future<SetPlaybackResult> playFavouriteSongs(LibraryItem placeholder) =>
+      _play(
+        setItem: placeholder,
+        fetchSongs: () async {
+          final resp = await _ref
+              .read(mediaServerClientProvider)
+              .getAllSongs(
+                userId: _userId,
+                libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+                filters: const ['IsFavorite'],
+                limit: '500',
+              );
+          return resp.items;
+        },
+      );
+
   Future<SetPlaybackResult> _play({
     required LibraryItem setItem,
     required Future<List<LibraryItem>> Function() fetchSongs,
