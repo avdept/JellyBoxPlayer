@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: "none"
-version: 2.1.0+25
+version: 2.2.0+25
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -59,7 +59,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.0
   path: ^1.9.1
   background_downloader: ^9.5.7
-  updatify_flutter: ^1.4.1
+  updatify_flutter: ^1.6.0
   plausible: ^1.0.1
   connectivity_plus: ^7.3.1
 
