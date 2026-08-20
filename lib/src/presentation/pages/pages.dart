@@ -1,14 +1,15 @@
 export 'album_page.dart';
 export 'artist_page.dart';
+export 'browse_page.dart';
 export 'color_pallete_page.dart';
 export 'downloads_page.dart';
 export 'favourite_songs_page.dart';
 export 'favourites_page.dart';
+export 'generated_playlist_page.dart';
 export 'genre_albums_page.dart';
 export 'home_page.dart';
 export 'initial_page.dart';
 export 'library_page.dart';
-export 'browse_page.dart';
 export 'login_page.dart';
 export 'main_page.dart';
 export 'playlist_page.dart';

@@ -24,6 +24,7 @@ abstract class LibraryItem with _$LibraryItem {
     String? albumName,
     String? albumArtist,
     @Default([]) List<ArtistRef> albumArtists,
+    @Default([]) List<String> genres,
     @Default(ImageRefs()) ImageRefs images,
     @Default(false) bool hasLyrics,
     @Default(PlaybackUserData()) PlaybackUserData userData,
@@ -48,6 +49,7 @@ abstract class LibraryItem with _$LibraryItem {
     albumArtists: (json['albumArtists'] as List<dynamic>? ?? [])
         .map((e) => ArtistRef.fromJson(e as Map<String, dynamic>))
         .toList(),
+    genres: (json['genres'] as List<dynamic>? ?? []).cast<String>(),
     images: json['images'] != null
         ? ImageRefs.fromJson(json['images'] as Map<String, dynamic>)
         : const ImageRefs(),
@@ -77,6 +79,7 @@ extension LibraryItemJson on LibraryItem {
     'albumName': albumName,
     'albumArtist': albumArtist,
     'albumArtists': albumArtists.map((artist) => artist.toJson()).toList(),
+    'genres': genres,
     'images': images.toJson(),
     'hasLyrics': hasLyrics,
     'userData': userData.toJson(),

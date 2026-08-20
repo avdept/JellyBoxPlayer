@@ -60,6 +60,7 @@ abstract class JellyfinApi {
     @Query('ParentId') String? libraryId,
     @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('GenreIds') List<String> genreIds = const [],
+    @Query('Filters') List<String> filters = const [],
     @Query('IncludeItemTypes') String type = 'Audio',
     @Query('SortBy')
     String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',

@@ -1,4 +1,4 @@
-import 'dart:async' show Timer, unawaited;
+import 'dart:async' show Timer, scheduleMicrotask, unawaited;
 import 'dart:io' show Platform;
 
 import 'package:flutter/cupertino.dart';
@@ -11,6 +11,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -61,6 +62,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   final _authState = ValueNotifier<bool?>(null);
   LibraryItem? _selectedLibrary;
   Timer? _resizeTimer;
+  AppLifecycleListener? _lifecycleListener;
   var _playbackRestoreStarted = false;
 
   @override
@@ -75,6 +77,20 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
     }
     initRoutes();
     WidgetsBinding.instance.addObserver(this);
+    _watchDayRollover();
+  }
+
+  void _checkDayRollover() {
+    scheduleMicrotask(() {
+      if (!mounted) return;
+      ref.read(currentDayProvider.notifier).check();
+    });
+  }
+
+  void _watchDayRollover() {
+    _checkDayRollover();
+    _lifecycleListener = AppLifecycleListener(onResume: _checkDayRollover);
+    _router.routerDelegate.addListener(_checkDayRollover);
   }
 
   void _maybeRestorePlayback() {
@@ -162,6 +178,11 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
                       path: Routes.homeGenre.path,
                       name: Routes.homeGenre.name,
                       pageBuilder: widget.screenFactory.genrePage,
+                    ),
+                    GoRoute(
+                      path: Routes.homeGeneratedPlaylist.path,
+                      name: Routes.homeGeneratedPlaylist.name,
+                      pageBuilder: widget.screenFactory.generatedPlaylistPage,
                     ),
                     GoRoute(
                       path: Routes.homeFavourites.path,
@@ -312,6 +333,8 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _router.routerDelegate.removeListener(_checkDayRollover);
+    _lifecycleListener?.dispose();
     _resizeTimer?.cancel();
     _authState.dispose();
     super.dispose();

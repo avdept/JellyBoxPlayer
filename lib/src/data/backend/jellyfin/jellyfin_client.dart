@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
 import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
@@ -126,6 +127,7 @@ class JellyfinClient implements MediaServerClient {
     String sortBy = 'SortName',
     String sortOrder = 'Ascending',
     List<String> filters = const [],
+    List<String> fields = const ['MediaSources'],
   }) async {
     final response = await _api.getAllSongs(
       userId: userId,
@@ -135,6 +137,7 @@ class JellyfinClient implements MediaServerClient {
       sortBy: sortBy,
       sortOrder: sortOrder,
       filters: filters,
+      fields: fields,
     );
     return response.data.toLibraryPage();
   }
@@ -154,20 +157,24 @@ class JellyfinClient implements MediaServerClient {
     String? libraryId,
     List<String> artistIds = const [],
     List<String> genreIds = const [],
+    List<String> filters = const [],
     String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
     String sortOrder = 'Ascending',
     String startIndex = '0',
     String limit = '300',
+    List<String> fields = const ['MediaSources'],
   }) async {
     final response = await _api.getSongsOfSet(
       userId: userId,
       libraryId: libraryId,
       artistIds: artistIds,
       genreIds: genreIds,
+      filters: filters,
       sortBy: sortBy,
       sortOrder: sortOrder,
       startIndex: startIndex,
       limit: limit,
+      fields: fields,
     );
     return response.data.toLibraryPage();
   }
@@ -197,6 +204,30 @@ class JellyfinClient implements MediaServerClient {
     );
     return response.data.toLibraryPage();
   }
+
+  @override
+  Future<List<GeneratedPlaylist>> generateTodaysPlaylists({
+    required String userId,
+    String? libraryId,
+    bool includeDiscovery = false,
+  }) => generateJellyfinTodaysPlaylists(
+    this,
+    userId: userId,
+    libraryId: libraryId,
+    includeDiscovery: includeDiscovery,
+  );
+
+  @override
+  Future<List<LibraryItem>> getGeneratedPlaylistSongs({
+    required String userId,
+    required String playlistId,
+    String? libraryId,
+  }) => fetchJellyfinGeneratedPlaylistSongs(
+    this,
+    userId: userId,
+    playlistId: playlistId,
+    libraryId: libraryId,
+  );
 
   @override
   Future<LibraryPage> getLibraries({required String userId}) async {
@@ -349,7 +380,9 @@ class JellyfinClient implements MediaServerClient {
     final useHls = preferHls && profile.requiresTranscode;
 
     final uri = Uri.parse(_baseUrl).replace(
-      path: useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
+      path: useHls
+          ? 'Audio/${song.id}/main.m3u8'
+          : 'Audio/${song.id}/universal',
       queryParameters: {
         'UserId': userId,
         'api_key': token,
@@ -367,8 +400,6 @@ class JellyfinClient implements MediaServerClient {
         },
       },
     );
-
-
 
     return StreamSource(
       uri: uri,

@@ -29,6 +29,7 @@ void main() {
     required AsyncValue<List<LibraryItem>> items,
     void Function(LibraryItem)? onItemTap,
     VoidCallback? onRetry,
+    Widget? trailing,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(),
@@ -39,6 +40,7 @@ void main() {
           device: DeviceType.fromScreenSize(const Size(390, 844)),
           onItemTap: onItemTap ?? (_) {},
           onRetry: onRetry,
+          trailing: trailing,
         ),
       ),
     );
@@ -58,6 +60,40 @@ void main() {
       expect(find.byType(AlbumView), findsNWidgets(3));
       expect(find.text(albums.first.name), findsOneWidget);
     });
+
+    testWidgets('- shows a trailing action beside the title', (
+      widgetTester,
+    ) async {
+      await widgetTester.pumpWidget(
+        getWidgetUT(
+          items: AsyncData(createAlbums(2)),
+          trailing: const Icon(Icons.refresh),
+        ),
+      );
+      await widgetTester.pump(Duration.zero);
+
+      expect(find.text(title), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+    });
+
+    testWidgets(
+      '- keeps a trailing action reachable when the section is empty',
+      (
+        widgetTester,
+      ) async {
+        await widgetTester.pumpWidget(
+          getWidgetUT(
+            items: const AsyncData(<LibraryItem>[]),
+            trailing: const Icon(Icons.refresh),
+          ),
+        );
+        await widgetTester.pump(Duration.zero);
+
+        expect(find.text(title), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
+        expect(find.byType(AlbumView), findsNothing);
+      },
+    );
 
     testWidgets('- renders nothing at all when the section has no items', (
       widgetTester,

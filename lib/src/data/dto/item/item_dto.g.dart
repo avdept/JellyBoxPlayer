@@ -26,6 +26,9 @@ _ItemDTO _$ItemDTOFromJson(Map<String, dynamic> json) => _ItemDTO(
           ?.map((e) => ArtistDTO.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  genres:
+      (json['Genres'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const [],
   backdropImageTags:
       (json['BackdropImageTags'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -63,6 +66,7 @@ Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
   'Album': instance.albumName,
   'AlbumArtist': instance.albumArtist,
   'AlbumArtists': instance.albumArtists,
+  'Genres': instance.genres,
   'BackdropImageTags': instance.backdropImageTags,
   'ImageTags': instance.imageTags,
   'HasLyrics': instance.hasLyrics,

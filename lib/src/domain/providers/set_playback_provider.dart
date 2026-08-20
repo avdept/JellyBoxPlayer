@@ -5,6 +5,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 enum SetPlaybackResult {
@@ -66,6 +67,16 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       return resp.items;
     },
   );
+
+  Future<SetPlaybackResult> playGeneratedPlaylist(LibraryItem playlist) =>
+      _play(
+        setItem: playlist,
+        fetchSongs: () => loadGeneratedPlaylistSongs(
+          _ref,
+          playlistId: playlist.id,
+          isOffline: _ref.read(isOfflineProvider),
+        ),
+      );
 
   Future<SetPlaybackResult> playPlaylist(LibraryItem playlist) => _play(
     setItem: playlist,

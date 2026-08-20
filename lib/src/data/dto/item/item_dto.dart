@@ -24,6 +24,7 @@ abstract class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'Album') String? albumName,
     @JsonKey(name: 'AlbumArtist') String? albumArtist,
     @JsonKey(name: 'AlbumArtists') @Default([]) List<ArtistDTO> albumArtists,
+    @JsonKey(name: 'Genres') @Default([]) List<String> genres,
     @JsonKey(name: 'BackdropImageTags')
     @Default([])
     List<String> backdropImageTags,

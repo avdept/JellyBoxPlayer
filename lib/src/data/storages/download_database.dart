@@ -14,11 +14,11 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   ]) : _db = db;
 
-  static const _schemaVersion = 2;
+  static const _schemaVersion = 3;
 
   Database? _db;
 
-  Future<Database> get _database async {
+  Future<Database> get database async {
     _db ??= await _initDB('downloads.db');
     return _db!;
   }
@@ -34,13 +34,28 @@ class DownloadDatabase {
   }
 
   Future<void> _createDB(Database db) async {
-    final sqlFiles = {DbMigrations.downloadsV2, DbMigrations.albumsV2};
+    final sqlFiles = {
+      DbMigrations.downloadsV2,
+      DbMigrations.albumsV2,
+      DbMigrations.generatedPlaylists,
+      DbMigrations.generatedPlaylistItems,
+    };
     final queries = await Future.wait(sqlFiles.map(rootBundle.loadString));
     await Future.wait(queries.map(db.execute));
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) await _migrateToV2(db);
+    if (oldVersion < 3) await _migrateToV3(db);
+  }
+
+  Future<void> _migrateToV3(Database db) async {
+    final createV3 = {
+      DbMigrations.generatedPlaylists,
+      DbMigrations.generatedPlaylistItems,
+    };
+    final queries = await Future.wait(createV3.map(rootBundle.loadString));
+    await Future.wait(queries.map(db.execute));
   }
 
   Future<void> _migrateToV2(Database db) async {
@@ -83,7 +98,7 @@ class DownloadDatabase {
     LibraryItem song, {
     required File file,
   }) async {
-    final db = await _database;
+    final db = await database;
     return db.insert('Downloads', {
       'Id': song.id,
       'AlbumId': song.albumId,
@@ -98,7 +113,7 @@ class DownloadDatabase {
     LibraryItem album, {
     required List<File> files,
   }) async {
-    final db = await _database;
+    final db = await database;
     return db.insert('Albums', {
       'Id': album.id,
       'SizeInBytes': files.map((e) => e.lengthSync()).sum,
@@ -110,7 +125,7 @@ class DownloadDatabase {
   Future<List<DownloadedSong>> getDownloadedSongs([
     String? albumId,
   ]) async {
-    final db = await _database;
+    final db = await database;
     final results = (albumId == null)
         ? await db.query('Downloads')
         : await db.query(
@@ -122,13 +137,13 @@ class DownloadDatabase {
   }
 
   Future<List<DownloadedAlbum>> getDownloadedAlbums() async {
-    final db = await _database;
+    final db = await database;
     final results = await db.query('Albums');
     return results.map(_downloadedAlbumFromRow).toList();
   }
 
   Future<int> deleteDownloadedSong(String id) async {
-    final db = await _database;
+    final db = await database;
     final filePath = await getDownloadedSongPath(id);
 
     if (filePath != null) {
@@ -145,7 +160,7 @@ class DownloadDatabase {
   }
 
   Future<void> deleteDownloadedAlbum(String albumId) async {
-    final db = await _database;
+    final db = await database;
     final songs = await getDownloadedSongs(albumId);
     final files = songs.map((song) => File(song.filePath));
 
@@ -173,7 +188,7 @@ class DownloadDatabase {
   }
 
   Future<bool> isSongDownloaded(String id) async {
-    final db = await _database;
+    final db = await database;
     final count = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM Downloads WHERE Id = ?', [id]),
     );
@@ -181,7 +196,7 @@ class DownloadDatabase {
   }
 
   Future<bool> isAlbumDownloaded(String albumId) async {
-    final db = await _database;
+    final db = await database;
     final count = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM Albums WHERE Id = ?', [albumId]),
     );
@@ -189,7 +204,7 @@ class DownloadDatabase {
   }
 
   Future<String?> getDownloadedSongPath(String id) async {
-    final db = await _database;
+    final db = await database;
     final results = await db.query(
       'Downloads',
       columns: ['FilePath'],
