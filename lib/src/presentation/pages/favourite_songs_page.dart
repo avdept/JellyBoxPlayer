@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/scrollable_page_scaffold.dart';
+import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -118,10 +119,11 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
               ),
             ],
             loading: () => [
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator()),
+              SliverToBoxAdapter(
+                child: SongRowsShimmer(
+                  device: _device,
+                  count: 8,
+                  edgePadding: _horizontalPadding,
                 ),
               ),
             ],

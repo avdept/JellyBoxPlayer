@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class PlaylistPickerSheet extends ConsumerWidget {
   const PlaylistPickerSheet({required this.isDesktop, super.key});
@@ -15,85 +16,98 @@ class PlaylistPickerSheet extends ConsumerWidget {
     final formKey = GlobalKey<FormState>();
 
     if (data.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _shell(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: TextLinesShimmer(
+            count: 2,
+            lineHeight: 28,
+            alignment: CrossAxisAlignment.stretch,
+          ),
+        ),
+      );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(isDesktop ? 6 : 0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: SizedBox(
-          width: isDesktop ? 380 : double.infinity,
-          child: Flex(
-            mainAxisSize: MainAxisSize.min,
-            direction: Axis.vertical,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return _shell(
+      child: Flex(
+        mainAxisSize: MainAxisSize.min,
+        direction: Axis.vertical,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  const Text(
-                    'Add to playlist',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+              const Text(
+                'Add to playlist',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
-              Form(
-                key: formKey,
-                child: DropdownButtonFormField<LibraryItem>(
-                  onSaved: (value) => Navigator.of(context).pop(value),
-                  hint: const Text(
-                    'Select a playlist',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  onChanged: (_) {},
-                  items: data.value?.items
-                      .map(
-                        (p) => DropdownMenuItem(
-                          value: p,
-                          child: Text(p.name),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 36),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          formKey.currentState!.save();
-                        }
-                      },
-                      child: const Text('Add to playlist'),
-                    ),
-                  ],
-                ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 10),
+          Form(
+            key: formKey,
+            child: DropdownButtonFormField<LibraryItem>(
+              onSaved: (value) => Navigator.of(context).pop(value),
+              hint: const Text(
+                'Select a playlist',
+                style: TextStyle(fontSize: 14),
+              ),
+              onChanged: (_) {},
+              items: data.value?.items
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p.name),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 36),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      formKey.currentState!.save();
+                    }
+                  },
+                  child: const Text('Add to playlist'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _shell({required Widget child}) => Container(
+    decoration: BoxDecoration(
+      color: Colors.grey[900],
+      borderRadius: BorderRadius.circular(isDesktop ? 6 : 0),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: SizedBox(
+        width: isDesktop ? 380 : double.infinity,
+        child: child,
+      ),
+    ),
+  );
 }
 
 Future<LibraryItem?> showPlaylistPicker(

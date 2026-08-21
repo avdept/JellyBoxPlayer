@@ -425,8 +425,16 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           slivers: [
             ValueListenableBuilder(
               valueListenable: _searchQuery,
-              builder: (context, query, child) =>
-                  query.isEmpty ? _libraryList() : const SearchResultsSliver(),
+              builder: (context, query, child) {
+                if (query.isEmpty) return _libraryList();
+
+                return Consumer(
+                  builder: (context, ref, child) => SearchResultsSliver(
+                    isPending:
+                        query != (ref.watch(searchProvider)?.trim() ?? ''),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -524,9 +532,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                   )
                 : Text(error.toString()),
           ),
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
-          ),
+          loading: () => value == ItemList.songs
+              ? SliverToBoxAdapter(
+                  child: SongRowsShimmer(device: _device, count: 8),
+                )
+              : AlbumCardsGridShimmer(device: _device),
         );
       },
     ),

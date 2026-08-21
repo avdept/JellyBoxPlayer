@@ -29,6 +29,7 @@ export 'scrollable_page_scaffold.dart';
 export 'search_results_sliver.dart';
 export 'search_songs_sliver.dart';
 export 'shadowed_button.dart';
+export 'shimmer.dart';
 export 'simple_list_tile.dart';
 export 'singer_view.dart';
 export 'song_list_sliver.dart';

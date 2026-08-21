@@ -11,10 +11,13 @@ import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/search_songs_sliver.dart';
+import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class SearchResultsSliver extends ConsumerWidget {
-  const SearchResultsSliver({super.key});
+  const SearchResultsSliver({this.isPending = false, super.key});
+
+  final bool isPending;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,20 +36,17 @@ class SearchResultsSliver extends ConsumerWidget {
       for (final category in searchCategories)
         category: ref.watch(searchItemsProvider(category)),
     };
-
-    if (sections.values.every((section) => section.isLoading)) {
-      return const SliverToBoxAdapter(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
-    }
-
-    final isEmpty = sections.values.every(
-      (section) => section.valueOrNull?.items.isEmpty ?? true,
+    final hasItems = sections.values.any(
+      (section) => section.valueOrNull?.items.isNotEmpty ?? false,
     );
-    if (isEmpty) {
+
+    if (!hasItems) {
+      final isSearching =
+          isPending || sections.values.any((section) => section.isLoading);
+      if (isSearching) {
+        return SliverToBoxAdapter(child: SectionsShimmer(device: device));
+      }
+
       final hasError = sections.values.any((section) => section.hasError);
       return SliverToBoxAdapter(
         child: Padding(

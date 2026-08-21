@@ -26,6 +26,14 @@ class DownloadsPage extends StatelessWidget {
 
   final DownloadsPageKeys? testKeys;
 
+  SliverGridDelegate _gridDelegate(DeviceType device) =>
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: device.isTablet ? 360 : 200,
+        mainAxisSpacing: device.isMobile ? 15 : 24,
+        crossAxisSpacing: device.isMobile ? 8 : (device.isTablet ? 56 : 28),
+        childAspectRatio: device.isTablet ? 360 / 413 : 175 / 215.7,
+      );
+
   void _onAlbumTap(BuildContext context, DownloadedAlbum album) =>
       context.pushNamed(
         Routes.album.name,
@@ -122,16 +130,7 @@ class DownloadsPage extends StatelessWidget {
                     }
 
                     return SliverGrid.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: device.isTablet ? 360 : 200,
-                        mainAxisSpacing: device.isMobile ? 15 : 24,
-                        crossAxisSpacing: device.isMobile
-                            ? 8
-                            : (device.isTablet ? 56 : 28),
-                        childAspectRatio: device.isTablet
-                            ? 360 / 413
-                            : 175 / 215.7,
-                      ),
+                      gridDelegate: _gridDelegate(device),
                       itemBuilder: (context, index) => DownloadedAlbumView(
                         album: albums[index],
                         onTap: (album) => _onAlbumTap(context, album),
@@ -149,11 +148,10 @@ class DownloadsPage extends StatelessWidget {
                       child: Center(child: Text('Error: $error')),
                     );
                   },
-                  loading: () {
-                    return const SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  },
+                  loading: () => AlbumCardsGridShimmer(
+                    device: device,
+                    gridDelegate: _gridDelegate(device),
+                  ),
                 );
           },
         ),

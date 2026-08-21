@@ -5,6 +5,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
+import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class ItemCarousel extends StatelessWidget {
   const ItemCarousel({
@@ -146,7 +147,7 @@ class ItemCarousel extends StatelessWidget {
     ),
   );
 
-  Widget _loading() => _CarouselSkeleton(
+  Widget _loading() => AlbumCardsRowShimmer(
     device: device,
     horizontalPadding: horizontalPadding,
   );
@@ -172,92 +173,4 @@ class ItemCarousel extends StatelessWidget {
           ],
         ),
       );
-}
-
-class _CarouselSkeleton extends StatefulWidget {
-  const _CarouselSkeleton({
-    required this.device,
-    required this.horizontalPadding,
-  });
-
-  final DeviceType device;
-  final double horizontalPadding;
-
-  @override
-  State<_CarouselSkeleton> createState() => _CarouselSkeletonState();
-}
-
-class _CarouselSkeletonState extends State<_CarouselSkeleton>
-    with SingleTickerProviderStateMixin {
-  static const _placeholderCount = 5;
-
-  late final AnimationController _controller = AnimationController(
-    duration: const Duration(milliseconds: 1200),
-    vsync: this,
-  )..repeat(reverse: true);
-
-  late final Animation<double> _pulse = Tween<double>(
-    begin: 0.6,
-    end: 1,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cardWidth = AlbumCardMetrics.carouselWidth(widget.device);
-    final base = theme.colorScheme.onPrimary.withValues(alpha: 0.16);
-
-    return SizedBox(
-      height: AlbumCardMetrics.carouselHeight(widget.device),
-      child: FadeTransition(
-        opacity: _pulse,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
-          itemCount: _placeholderCount,
-          separatorBuilder: (context, index) => SizedBox(
-            width: AlbumCardMetrics.carouselSpacing(widget.device),
-          ),
-          itemBuilder: (context, index) => SizedBox(
-            width: cardWidth,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: AlbumView.coverTextSpacing,
-              children: [
-                Flexible(
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: base,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                _bar(base, widget.device.isTablet ? 24 : 16, cardWidth * 0.8),
-                _bar(base, widget.device.isTablet ? 22 : 14, cardWidth * 0.55),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _bar(Color color, double fontSize, double width) => Container(
-    height: fontSize * 1.1,
-    width: width,
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(4),
-    ),
-  );
 }

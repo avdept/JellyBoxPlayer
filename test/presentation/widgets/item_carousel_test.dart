@@ -134,10 +134,11 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(ItemCarousel),
-          matching: find.byType(FadeTransition),
+          matching: find.byType(AlbumCardsRowShimmer),
         ),
         findsOneWidget,
       );
+      expect(find.byType(AlbumCardShimmer), findsWidgets);
     });
 
     testWidgets('- offers a retry when the section failed to load', (
