@@ -124,9 +124,11 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
                         )
                       : Text(error.toString()),
                 ),
-                loading: () => const SliverToBoxAdapter(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+                loading: () => widget.category == ItemList.songs
+                    ? SliverToBoxAdapter(
+                        child: SongRowsShimmer(device: _device, count: 8),
+                      )
+                    : AlbumCardsGridShimmer(device: _device),
               );
             },
           ),

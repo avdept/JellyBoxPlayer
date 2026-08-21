@@ -573,9 +573,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
   Widget _songsPlaceholder() {
     if (_isLoadingSongs) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: CircularProgressIndicator()),
+      return SongRowsShimmer(
+        device: _device,
+        count: 6,
+        edgePadding: _device.isMobile ? 16 : 30,
       );
     }
 

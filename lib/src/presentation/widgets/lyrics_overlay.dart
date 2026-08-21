@@ -7,6 +7,7 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class LyricsView extends ConsumerWidget {
   const LyricsView({
@@ -82,52 +83,53 @@ class _LyricsPanel extends ConsumerWidget {
     );
   }
 
-  Widget _header(BuildContext context, WidgetRef ref, LibraryItem? song) => Padding(
-    padding: const EdgeInsets.fromLTRB(32, 16, 12, 8),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                song?.name ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                ),
-              ),
-              if (song?.albumArtist != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  song!.albumArtist!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 15,
-                    height: 1.2,
+  Widget _header(BuildContext context, WidgetRef ref, LibraryItem? song) =>
+      Padding(
+        padding: const EdgeInsets.fromLTRB(32, 16, 12, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    song?.name ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
                   ),
-                ),
-              ],
-            ],
-          ),
+                  if (song?.albumArtist != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      song!.albumArtist!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 15,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () =>
+                  ref.read(lyricsVisibleProvider.notifier).state = false,
+              color: Colors.white,
+              tooltip: 'Close lyrics',
+              icon: const Icon(Icons.close),
+            ),
+          ],
         ),
-        IconButton(
-          onPressed: () =>
-              ref.read(lyricsVisibleProvider.notifier).state = false,
-          color: Colors.white,
-          tooltip: 'Close lyrics',
-          icon: const Icon(Icons.close),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _LyricsBody extends ConsumerStatefulWidget {
@@ -197,8 +199,9 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
     final lyrics = ref.watch(lyricsProvider(widget.songId));
 
     return lyrics.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Center(child: TextLinesShimmer(count: 7)),
       ),
       error: (_, _) => const _Message("Couldn't load lyrics"),
       data: (lyrics) {

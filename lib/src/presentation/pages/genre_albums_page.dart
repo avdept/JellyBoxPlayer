@@ -22,6 +22,14 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
+  SliverGridDelegate get _gridDelegate =>
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+        mainAxisSpacing: _device.isMobile ? 15 : 24,
+        crossAxisSpacing: _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
+        childAspectRatio: _device.isTablet ? 360 / 413 : 175 / 215.7,
+      );
+
   void _onAlbumTap(LibraryItem album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
@@ -84,16 +92,7 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
               final provider = ref.watch(genreAlbumsProvider(widget.genre.id));
               return provider.when(
                 data: (list) => SliverGrid.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: _device.isTablet ? 360 : 200,
-                    mainAxisSpacing: _device.isMobile ? 15 : 24,
-                    crossAxisSpacing: _device.isMobile
-                        ? 8
-                        : (_device.isTablet ? 56 : 28),
-                    childAspectRatio: _device.isTablet
-                        ? 360 / 413
-                        : 175 / 215.7,
-                  ),
+                  gridDelegate: _gridDelegate,
                   itemBuilder: (context, index) {
                     final item = list.items[index];
                     return AlbumView(
@@ -115,8 +114,9 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
                         )
                       : Text(error.toString()),
                 ),
-                loading: () => const SliverToBoxAdapter(
-                  child: Center(child: CircularProgressIndicator()),
+                loading: () => AlbumCardsGridShimmer(
+                  device: _device,
+                  gridDelegate: _gridDelegate,
                 ),
               );
             },

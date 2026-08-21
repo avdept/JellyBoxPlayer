@@ -10,6 +10,7 @@ import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/scrollable_page_scaffold.dart';
+import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -99,11 +100,8 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
             albums.isEmpty &&
             artists.isEmpty &&
             songs.isEmpty)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
-            ),
+          SliverToBoxAdapter(
+            child: SectionsShimmer(device: _device, cardRows: 2),
           )
         else if (albums.isEmpty && artists.isEmpty && songs.isEmpty)
           SliverToBoxAdapter(

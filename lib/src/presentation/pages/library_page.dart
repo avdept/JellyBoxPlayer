@@ -113,19 +113,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     horizontal: _device.isMobile ? 16 : 30,
                   ),
                   sliver: SliverGrid.builder(
-                    gridDelegate: (_device.isDesktop || _device.isTablet)
-                        ? SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: _device.isTablet ? 370 : 358,
-                            mainAxisSpacing: _device.isMobile ? 13 : 34,
-                            crossAxisSpacing: _device.isDesktop
-                                ? 24
-                                : (_device.isMobile ? 16 : 34),
-                            childAspectRatio: 370 / 255,
-                          )
-                        : const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 1,
-                            mainAxisExtent: 250,
-                          ),
+                    gridDelegate: _gridDelegate,
                     itemBuilder: (context, index) => LibraryView(
                       library: libraries[index],
                       onTap: () => _onLibraryTap(libraries[index]),
@@ -172,9 +160,35 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     ),
   );
 
-  Widget _loadingScaffold() => const Scaffold(
-    body: Center(
-      child: CircularProgressIndicator.adaptive(),
+  SliverGridDelegate get _gridDelegate =>
+      (_device.isDesktop || _device.isTablet)
+      ? SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: _device.isTablet ? 370 : 358,
+          mainAxisSpacing: _device.isMobile ? 13 : 34,
+          crossAxisSpacing: _device.isDesktop
+              ? 24
+              : (_device.isMobile ? 16 : 34),
+          childAspectRatio: 370 / 255,
+        )
+      : const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 1,
+          mainAxisExtent: 250,
+        );
+
+  Widget _loadingScaffold() => Scaffold(
+    body: SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: _device.isMobile ? 16 : 30,
+          vertical: 24,
+        ),
+        child: GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: _gridDelegate,
+          itemCount: 4,
+          itemBuilder: (context, index) => const ShimmerBox(radius: 12),
+        ),
+      ),
     ),
   );
 
