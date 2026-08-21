@@ -49,6 +49,20 @@ class ScreenFactory {
     );
   }
 
+  Page<void> generatedPlaylistPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final params = router.extra! as Map<String, dynamic>;
+    final playlist = params['playlist'] is LibraryItem
+        ? params['playlist'] as LibraryItem
+        : LibraryItem.fromJson(params['playlist'] as Map<String, dynamic>);
+
+    return CupertinoPage(
+      child: GeneratedPlaylistPage(playlist: playlist),
+    );
+  }
+
   Page<void> downloadsPage(
     BuildContext context,
     GoRouterState router,

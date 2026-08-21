@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +10,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/dev_tools_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -89,6 +93,42 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  void _onGeneratedPlaylistTap(LibraryItem playlist) => context.pushNamed(
+    Routes.homeGeneratedPlaylist.name,
+    extra: {'playlist': playlist},
+  );
+
+  Future<void> _onPlayGeneratedPlaylist(LibraryItem playlist) => _play(
+    playlist,
+    () =>
+        ref.read(setPlaybackProvider.notifier).playGeneratedPlaylist(playlist),
+  );
+
+  Widget? _generatedPlaylistCover(LibraryItem playlist) {
+    final playlists = ref.watch(todaysPlaylistsProvider).valueOrNull;
+    final songs = playlists
+        ?.firstWhereOrNull((candidate) => candidate.item.id == playlist.id)
+        ?.coverSongs;
+    if (songs == null || songs.isEmpty) return null;
+
+    final imageService = ref.read(imageServiceProvider);
+    return CoverMosaic(
+      images: [
+        for (final song in songs)
+          imageService.albumIP(tagId: song.images.primary, id: song.id),
+      ],
+    );
+  }
+
+  Widget _regenerateButton() => IconButton(
+    onPressed: () =>
+        unawaited(ref.read(todaysPlaylistsProvider.notifier).regenerate()),
+    icon: const Icon(Icons.refresh),
+    iconSize: 20,
+    tooltip: 'Rebuild mixes (debug)',
+    color: Theme.of(context).colorScheme.onPrimary,
+  );
+
   void _onFavouritesTap() =>
       context.pushNamed(branchAwareName(context, Routes.favourites));
 
@@ -98,7 +138,8 @@ class _HomePageState extends ConsumerState<HomePage> {
       ..invalidate(recentlyPlayedAlbumsProvider)
       ..invalidate(frequentlyPlayedAlbumsProvider)
       ..invalidate(recentlyAddedAlbumsProvider)
-      ..invalidate(recentlyUpdatedPlaylistsProvider);
+      ..invalidate(recentlyUpdatedPlaylistsProvider)
+      ..invalidate(todaysPlaylistsProvider);
   }
 
   @override
@@ -150,6 +191,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
             ),
           ),
+          if (!ref.watch(generatedPlaylistsDisabledProvider))
+            SliverToBoxAdapter(
+              child: ItemCarousel(
+                title: 'Made for you',
+                items: ref.watch(todaysPlaylistItemsProvider),
+                device: _device,
+                horizontalPadding: _horizontalPadding,
+                onItemTap: _onGeneratedPlaylistTap,
+                onPlayPressed: _onPlayGeneratedPlaylist,
+                coverBuilder: _generatedPlaylistCover,
+                onRetry: () => ref.invalidate(todaysPlaylistsProvider),
+                trailing: ref.watch(devToolsEnabledProvider)
+                    ? _regenerateButton()
+                    : null,
+              ),
+            ),
           SliverToBoxAdapter(
             child: ItemCarousel(
               title: 'Recently added',

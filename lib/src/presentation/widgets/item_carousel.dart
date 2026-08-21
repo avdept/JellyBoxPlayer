@@ -16,6 +16,7 @@ class ItemCarousel extends StatelessWidget {
     this.optionsBuilder,
     this.onRetry,
     this.onTitleTap,
+    this.trailing,
     this.coverBuilder,
     this.horizontalPadding = 0,
     super.key,
@@ -30,6 +31,7 @@ class ItemCarousel extends StatelessWidget {
   optionsBuilder;
   final VoidCallback? onRetry;
   final VoidCallback? onTitleTap;
+  final Widget? trailing;
   final Widget? Function(LibraryItem)? coverBuilder;
   final double horizontalPadding;
 
@@ -37,7 +39,11 @@ class ItemCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final content = items.when(
-      data: (list) => list.isEmpty ? null : _list(list),
+      data: (list) => switch (list) {
+        [] when trailing == null => null,
+        [] => _message(theme, 'Nothing here yet.'),
+        _ => _list(list),
+      },
       error: (error, stackTrace) => _message(
         theme,
         'Could not load this section.',
@@ -67,6 +73,21 @@ class ItemCarousel extends StatelessWidget {
   }
 
   Widget _header(ThemeData theme) {
+    final label = _title(theme);
+    final action = trailing;
+    if (action == null) return label;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Align(alignment: Alignment.centerLeft, child: label),
+        ),
+        action,
+      ],
+    );
+  }
+
+  Widget _title(ThemeData theme) {
     final text = Text(
       title,
       style: TextStyle(

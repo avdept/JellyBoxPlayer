@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/generated_playlists_setting_provider.dart';
 import 'package:jplayer/src/domain/providers/home_sections_provider.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
+import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
+import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/presentation/pages/home_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/dev_tools_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
@@ -23,11 +27,29 @@ class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>>
     with Mock
     implements LibrariesNotifier {}
 
+class DisabledSettingNotifier extends BoolPrefNotifier {
+  DisabledSettingNotifier() : super(null, key: 'test', defaultValue: true);
+}
+
+class FakeTodaysPlaylistsNotifier extends TodaysPlaylistsNotifier {
+  FakeTodaysPlaylistsNotifier(this.playlists);
+
+  final List<GeneratedPlaylist> playlists;
+  int regenerateCount = 0;
+
+  @override
+  Future<List<GeneratedPlaylist>> build() async => playlists;
+
+  @override
+  Future<void> regenerate() async => regenerateCount++;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
   late LibrariesNotifier mockLibrariesNotifier;
+  late FakeTodaysPlaylistsNotifier fakeTodaysPlaylists;
 
   final faker = Faker.instance;
 
@@ -38,6 +60,18 @@ void main() {
       name: faker.lorem.sentence(),
       kind: kind,
       albumArtist: faker.name.fullName(),
+    ),
+  );
+
+  List<GeneratedPlaylist> createGenerated(int count) => List.generate(
+    count,
+    (index) => GeneratedPlaylist(
+      item: LibraryItem(
+        id: 'generated-$index',
+        name: '${faker.lorem.word()} mix',
+        kind: ItemKind.playlist,
+      ),
+      coverSongs: const [],
     ),
   );
 
@@ -54,12 +88,20 @@ void main() {
     List<LibraryItem>? recentlyAdded,
     List<LibraryItem>? playlists,
     List<LibraryItem>? frequentlyPlayed,
+    List<GeneratedPlaylist>? generated,
     bool isOffline = false,
+    bool devTools = false,
+    bool generatedDisabled = false,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(
         overrides: [
           isOfflineProvider.overrideWith((_) => isOffline),
+          devToolsEnabledProvider.overrideWith((_) => devTools),
+          if (generatedDisabled)
+            generatedPlaylistsDisabledProvider.overrideWith(
+              (_) => DisabledSettingNotifier(),
+            ),
           favouriteSongsProvider.overrideWith((_) async => const LibraryPage()),
           favouriteAlbumsProvider.overrideWith(
             (_) async => favourites ?? createItems(3, ItemKind.album),
@@ -76,6 +118,11 @@ void main() {
           frequentlyPlayedAlbumsProvider.overrideWith(
             (_) async => frequentlyPlayed ?? createItems(3, ItemKind.album),
           ),
+          todaysPlaylistsProvider.overrideWith(() {
+            return fakeTodaysPlaylists = FakeTodaysPlaylistsNotifier(
+              generated ?? createGenerated(3),
+            );
+          }),
           currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
           librariesProvider.overrideWith(() => mockLibrariesNotifier),
         ],
@@ -91,7 +138,10 @@ void main() {
     List<LibraryItem>? recentlyAdded,
     List<LibraryItem>? playlists,
     List<LibraryItem>? frequentlyPlayed,
+    List<GeneratedPlaylist>? generated,
     bool isOffline = false,
+    bool devTools = false,
+    bool generatedDisabled = false,
   }) async {
     widgetTester.view.physicalSize = const Size(390, 2000);
     widgetTester.view.devicePixelRatio = 1;
@@ -104,7 +154,10 @@ void main() {
         recentlyAdded: recentlyAdded,
         playlists: playlists,
         frequentlyPlayed: frequentlyPlayed,
+        generated: generated,
         isOffline: isOffline,
+        devTools: devTools,
+        generatedDisabled: generatedDisabled,
       ),
     );
     await widgetTester.pump(Duration.zero);
@@ -124,11 +177,12 @@ void main() {
       await pumpHome(widgetTester);
 
       expect(find.text('Recently played'), findsOneWidget);
+      expect(find.text('Made for you'), findsOneWidget);
       expect(find.text('Recently added'), findsOneWidget);
       expect(find.text('Favourites'), findsOneWidget);
       expect(find.text('Playlists'), findsOneWidget);
       expect(find.text('Frequently played'), findsOneWidget);
-      expect(find.byType(ItemCarousel), findsNWidgets(5));
+      expect(find.byType(ItemCarousel), findsNWidgets(6));
     });
 
     testWidgets('- orders the sections with frequently played last', (
@@ -138,6 +192,7 @@ void main() {
 
       final titles = [
         'Recently played',
+        'Made for you',
         'Recently added',
         'Favourites',
         'Playlists',
@@ -174,9 +229,11 @@ void main() {
           recentlyAdded: const [],
           playlists: const [],
           frequentlyPlayed: const [],
+          generated: const [],
         );
 
         expect(find.text('Recently played'), findsNothing);
+        expect(find.text('Made for you'), findsNothing);
         expect(find.text('Recently added'), findsNothing);
         expect(find.text('Frequently played'), findsNothing);
         expect(find.text('Favourites'), findsNothing);
@@ -225,6 +282,53 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('- rebuilds the mixes from the debug action', (
+      widgetTester,
+    ) async {
+      await pumpHome(widgetTester, devTools: true);
+
+      final button = find.descendant(
+        of: find.widgetWithText(ItemCarousel, 'Made for you'),
+        matching: find.byIcon(Icons.refresh),
+      );
+      expect(button, findsOneWidget);
+      expect(fakeTodaysPlaylists.regenerateCount, 0);
+
+      await widgetTester.tap(button);
+      await widgetTester.pump();
+
+      expect(fakeTodaysPlaylists.regenerateCount, 1);
+    });
+
+    testWidgets('- keeps the debug action reachable when no mix qualified', (
+      widgetTester,
+    ) async {
+      await pumpHome(widgetTester, generated: const [], devTools: true);
+
+      expect(find.text('Made for you'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ItemCarousel, 'Made for you'),
+          matching: find.byIcon(Icons.refresh),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('- drops the shelf entirely when the setting disables it', (
+      widgetTester,
+    ) async {
+      await pumpHome(
+        widgetTester,
+        devTools: true,
+        generatedDisabled: true,
+      );
+
+      expect(find.text('Made for you'), findsNothing);
+      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.text('Recently played'), findsOneWidget);
     });
 
     testWidgets('- keeps the library selector in the top bar', (

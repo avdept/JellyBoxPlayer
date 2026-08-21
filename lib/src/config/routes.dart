@@ -19,6 +19,7 @@ enum Routes {
   homeAlbum('album'),
   homeArtist('artist'),
   homeGenre('genre'),
+  homeGeneratedPlaylist('generated-playlist'),
   homePlaylist('playlist'),
   homeFavourites('favourites'),
   homeFavouriteSongs('favourite-songs');

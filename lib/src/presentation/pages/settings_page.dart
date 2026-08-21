@@ -111,6 +111,11 @@ class SettingsPage extends ConsumerWidget {
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
                   _changelogButton(context, device),
+                  _settingCheckbox(
+                    ref: ref,
+                    provider: generatedPlaylistsDisabledProvider,
+                    label: 'Disable auto-generated playlists',
+                  ),
                   if (!device.isMobile) ...[
                     _studioModeHeader(),
                     if (supportsWindowFullscreen)

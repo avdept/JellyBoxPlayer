@@ -1,5 +1,6 @@
 export 'download_task/download_task.dart';
 export 'filter/filter.dart';
+export 'generated_playlist/generated_playlist.dart';
 export 'items_page/items_page.dart';
 export 'library_item/artist_ref.dart';
 export 'library_item/audio_source_info.dart';
