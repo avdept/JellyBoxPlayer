@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:updatify_flutter/updatify_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 class MainPage extends ConsumerStatefulWidget {
@@ -45,10 +48,34 @@ class _MainPageState extends ConsumerState<MainPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => unawaited(_maybeShowUpdates()),
+    );
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _theme = Theme.of(context);
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
+  }
+
+  Future<void> _maybeShowUpdates() async {
+    if (!mounted) return;
+    final isDesktop = _device.isDesktop;
+    await maybeShowUpdatifyPopup(
+      context,
+      projectId: updatifyProjectId,
+      popupType: isDesktop
+          ? UpdatifyPopupType.modal
+          : UpdatifyPopupType.bottomSheet,
+      backgroundColor: Themes.changelogSurface,
+      title: changelogTitle,
+      borderRadius: BorderRadius.circular(8),
+      width: isDesktop ? MediaQuery.sizeOf(context).width / 2 : null,
+    );
   }
 
   @override

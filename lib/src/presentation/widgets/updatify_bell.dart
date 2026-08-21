@@ -29,8 +29,11 @@ class UpdatifyBell extends StatelessWidget {
         ),
         child: UpdatifyTrigger(
           projectId: updatifyProjectId,
-          popupType: UpdatifyPopupType.bottomSheet,
+          popupType: isDesktop
+              ? UpdatifyPopupType.modal
+              : UpdatifyPopupType.bottomSheet,
           backgroundColor: Themes.changelogSurface,
+          title: changelogTitle,
           borderRadius: BorderRadius.circular(8),
           width: isDesktop
               ? MediaQuery.sizeOf(context).width / 2
