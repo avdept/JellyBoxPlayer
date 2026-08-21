@@ -1549,10 +1549,10 @@ packages:
     dependency: "direct main"
     description:
       name: updatify_flutter
-      sha256: c5bab258881c9c029c5b4331273becae18694d3c690c0c563dd7262b0bea1ffb
+      sha256: cf5d15d1a0d626eefde8c9fb7b52f8b59e74db2a41c1adc7a7762344a072d47e
       url: "https://pub.dev"
     source: hosted
-    version: "1.6.0"
+    version: "1.7.0"
   uri:
     dependency: transitive
     description:

@@ -17,10 +17,6 @@ import 'package:updatify_flutter/updatify_flutter.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
-  /// Title shown on the changelog dialog/sheet (defaults to
-  /// "Your recent updates" in updatify_flutter).
-  static const _changelogTitle = "What's new";
-
   /// Padding for the settings buttons so their hover/highlight state has
   /// breathing room (the global [TextButtonThemeData] uses zero padding).
   static const _buttonPadding = EdgeInsets.symmetric(
@@ -46,11 +42,10 @@ class SettingsPage extends ConsumerWidget {
         showUpdatifyDialog(
           context,
           projectId: updatifyProjectId,
+          backgroundColor: Themes.changelogSurface,
           borderRadius: BorderRadius.circular(8),
-          width: device.isDesktop
-              ? MediaQuery.sizeOf(context).width / 2
-              : double.infinity,
-          title: _changelogTitle,
+          width: MediaQuery.sizeOf(context).width / 2,
+          title: changelogTitle,
         ),
       );
     } else {
@@ -59,7 +54,8 @@ class SettingsPage extends ConsumerWidget {
           context,
           projectId: updatifyProjectId,
           backgroundColor: Themes.changelogSurface,
-          title: _changelogTitle,
+          borderRadius: BorderRadius.circular(8),
+          title: changelogTitle,
         ),
       );
     }
