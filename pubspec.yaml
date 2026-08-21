@@ -59,7 +59,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.0
   path: ^1.9.1
   background_downloader: ^9.5.7
-  updatify_flutter: ^1.7.0
+  updatify_flutter: ^1.7.1
   plausible: ^1.0.1
   connectivity_plus: ^7.3.1
 
