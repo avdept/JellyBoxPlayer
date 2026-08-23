@@ -12,6 +12,8 @@ abstract class PublicSystemInfoDTO with _$PublicSystemInfoDTO {
     @JsonKey(name: 'ProductName') String? productName,
     @JsonKey(name: 'OperatingSystem') String? operatingSystem,
     @JsonKey(name: 'LocalAddress') String? localAddress,
+    @JsonKey(name: 'LocalAddresses') List<String>? localAddresses,
+    @JsonKey(name: 'RemoteAddresses') List<String>? remoteAddresses,
     @JsonKey(name: 'StartupWizardCompleted') bool? startupWizardCompleted,
   }) = _PublicSystemInfoDTO;
 

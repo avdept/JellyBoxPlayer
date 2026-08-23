@@ -40,9 +40,12 @@ void main() {
     home: const LoginPage(),
   );
 
-  ServerProbeResult discoveryResult(String serverUrl) => ServerProbeResult(
+  ServerProbeResult discoveryResult(
+    String serverUrl, {
+    ServerType serverType = ServerType.jellyfin,
+  }) => ServerProbeResult(
     serverUrl: serverUrl,
-    serverType: ServerType.jellyfin,
+    serverType: serverType,
     info: const PublicSystemInfoDTO(
       id: 'server-id',
       serverName: 'Living Room',
@@ -143,8 +146,27 @@ void main() {
         await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
 
         verify(() => mockProbeService.discover('http://jelly.local')).called(1);
-        expect(find.text('Discovered: Living Room'), findsOneWidget);
+        expect(find.text('Discovered: Jellyfin server'), findsOneWidget);
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '- names Emby when an Emby server is discovered',
+      (widgetTester) async {
+        when(() => mockProbeService.discover(any())).thenAnswer(
+          (_) async => discoveryResult(
+            'http://emby.local:8096',
+            serverType: ServerType.emby,
+          ),
+        );
+
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await enterServerUrlAndUnfocus(widgetTester, 'http://emby.local:8096');
+
+        expect(find.text('Discovered: Emby server'), findsOneWidget);
+        expect(find.text('Discovered: Jellyfin server'), findsNothing);
       },
     );
 
@@ -160,7 +182,7 @@ void main() {
         await enterServerUrlAndUnfocus(widgetTester, 'jelly.local:8096');
 
         verify(() => mockProbeService.discover('jelly.local:8096')).called(1);
-        expect(find.text('Discovered: Living Room'), findsOneWidget);
+        expect(find.text('Discovered: Jellyfin server'), findsOneWidget);
       },
     );
 
@@ -237,7 +259,7 @@ void main() {
         await widgetTester.pumpWidget(getWidgetUT());
         await widgetTester.pump(Duration.zero);
         await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
-        expect(find.text('Discovered: Living Room'), findsOneWidget);
+        expect(find.text('Discovered: Jellyfin server'), findsOneWidget);
 
         await widgetTester.enterText(
           find.widgetWithText(LabeledTextField, 'Server URL'),
@@ -245,7 +267,7 @@ void main() {
         );
         await widgetTester.pumpAndSettle();
 
-        expect(find.text('Discovered: Living Room'), findsNothing);
+        expect(find.text('Discovered: Jellyfin server'), findsNothing);
         expect(find.byIcon(Icons.check_circle), findsNothing);
       },
     );
@@ -320,6 +342,8 @@ void main() {
           find.widgetWithText(LabeledTextField, 'Login'),
           'alex',
         );
+        await widgetTester.ensureVisible(signInFinder);
+        await widgetTester.pumpAndSettle();
         await widgetTester.tap(signInFinder);
         await widgetTester.pumpAndSettle();
 

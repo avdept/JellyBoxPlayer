@@ -8,6 +8,7 @@ part of 'audio_source_info.dart';
 
 _AudioSourceInfo _$AudioSourceInfoFromJson(Map<String, dynamic> json) =>
     _AudioSourceInfo(
+      id: json['id'] as String?,
       container: json['container'] as String?,
       codec: json['codec'] as String?,
       bitRate: (json['bitRate'] as num?)?.toInt(),
@@ -19,6 +20,7 @@ _AudioSourceInfo _$AudioSourceInfoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$AudioSourceInfoToJson(_AudioSourceInfo instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'container': instance.container,
       'codec': instance.codec,
       'bitRate': instance.bitRate,

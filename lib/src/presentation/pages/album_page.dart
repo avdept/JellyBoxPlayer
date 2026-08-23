@@ -120,7 +120,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       if (mounted) {
         _currentSong.value = event.currentSource?.tag as MediaItem?;
         ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
-          id: widget.album.id,
+          id: widget.album.primaryImageId,
           tagId: widget.album.images.primary,
         );
       }
@@ -206,7 +206,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   ImageProvider get albumCover => _imageService.albumIP(
-    id: widget.album.id,
+    id: widget.album.primaryImageId,
     tagId: widget.album.images.primary,
   );
 

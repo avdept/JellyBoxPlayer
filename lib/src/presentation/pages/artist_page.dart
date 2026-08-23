@@ -337,7 +337,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         .read(imageServiceProvider)
         .albumIP(
           tagId: widget.artist.images.primary,
-          id: widget.artist.id,
+          id: widget.artist.primaryImageId,
         ),
     width: 500,
   );

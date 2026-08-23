@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
+import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -379,16 +379,14 @@ class JellyfinClient implements MediaServerClient {
 
     final useHls = preferHls && profile.requiresTranscode;
 
-    final uri = Uri.parse(_baseUrl).replace(
-      path: useHls
-          ? 'Audio/${song.id}/main.m3u8'
-          : 'Audio/${song.id}/universal',
-      queryParameters: {
+    final uri = _resolve(
+      useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
+      {
         'UserId': userId,
         'api_key': token,
         'DeviceId': deviceId,
         'PlaySessionId': playSessionId,
-        'MediaSourceId': song.id,
+        'MediaSourceId': audioSource?.id ?? song.id,
         'AudioCodec': profile.transcodingAudioCodec,
         if (useHls) ...{
           'SegmentContainer': profile.hlsSegmentContainer,
@@ -416,16 +414,21 @@ class JellyfinClient implements MediaServerClient {
     int size = 420,
   }) {
     final imageType = kind == ImageKind.primary ? 'Primary' : 'Backdrop';
-    final uri = Uri.parse(_baseUrl).replace(
-      path: 'Items/$id/Images/$imageType',
-      queryParameters: {
-        'fillHeight': '$size',
-        'fillWidth': '$size',
-        'quality': '96',
-        if (tagId != null) 'tag': tagId,
-      },
+    return _resolve('Items/$id/Images/$imageType', {
+      'fillHeight': '$size',
+      'fillWidth': '$size',
+      'quality': '96',
+      if (tagId != null) 'tag': tagId,
+    }).toString();
+  }
+
+  Uri _resolve(String path, Map<String, String> queryParameters) {
+    final base = Uri.parse(_baseUrl);
+    final prefix = base.path.replaceAll(RegExp(r'/+$'), '');
+    return base.replace(
+      path: '$prefix/$path',
+      queryParameters: queryParameters,
     );
-    return uri.toString();
   }
 
   @override

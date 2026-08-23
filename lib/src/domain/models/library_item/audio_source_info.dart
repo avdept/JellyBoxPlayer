@@ -6,6 +6,7 @@ part 'audio_source_info.g.dart';
 @freezed
 abstract class AudioSourceInfo with _$AudioSourceInfo {
   const factory AudioSourceInfo({
+    String? id,
     String? container,
     String? codec,
     int? bitRate,

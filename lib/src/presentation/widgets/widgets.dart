@@ -14,6 +14,7 @@ export 'gradient_background.dart';
 export 'gradient_panel_decoration.dart';
 export 'labeled_text_field.dart';
 export 'library_selector_button.dart';
+export 'login_logo.dart';
 export 'library_view.dart';
 export 'lyrics_overlay.dart';
 export 'item_carousel.dart';

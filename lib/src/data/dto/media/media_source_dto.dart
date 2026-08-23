@@ -7,6 +7,7 @@ part 'media_source_dto.g.dart';
 @freezed
 abstract class MediaSourceDTO with _$MediaSourceDTO {
   const factory MediaSourceDTO({
+    @JsonKey(name: 'Id') String? id,
     @JsonKey(name: 'Container') String? container,
     @JsonKey(name: 'MediaStreams')
     @Default([])

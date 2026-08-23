@@ -9,13 +9,22 @@ class ImageService {
   ImageService({required this.client});
   final MediaServerClient client;
 
+  static const _sizeParams = {
+    'fillwidth',
+    'fillheight',
+    'maxwidth',
+    'maxheight',
+  };
+
   static Uri resize(Uri uri, int size) {
-    if (uri.queryParameters.isEmpty) return uri;
+    final params = uri.queryParameters;
+    if (params.isEmpty) return uri;
     return uri.replace(
       queryParameters: {
-        ...uri.queryParameters,
-        'fillWidth': '$size',
-        'fillHeight': '$size',
+        for (final entry in params.entries)
+          entry.key: _sizeParams.contains(entry.key.toLowerCase())
+              ? '$size'
+              : entry.value,
       },
     );
   }

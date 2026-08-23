@@ -17,7 +17,44 @@ List<String> serverUrlCandidates(String url) {
   return ['http://$trimmed', 'https://$trimmed'];
 }
 
-enum ServerType { jellyfin }
+enum ServerType {
+  jellyfin,
+  emby;
+
+  String get label => switch (this) {
+    ServerType.jellyfin => 'Jellyfin',
+    ServerType.emby => 'Emby',
+  };
+}
+
+const embyPathPrefix = '/emby';
+
+String _withoutTrailingSlash(String url) => url.replaceAll(RegExp(r'/+$'), '');
+
+List<String> serverPathCandidates(String serverUrl) {
+  final trimmed = _withoutTrailingSlash(serverUrl);
+  if (trimmed.toLowerCase().endsWith(embyPathPrefix)) return [trimmed];
+  return [trimmed, '$trimmed$embyPathPrefix'];
+}
+
+ServerType? serverTypeFromProductName(String? productName) {
+  final product = productName?.toLowerCase() ?? '';
+  if (product.contains('jellyfin')) return ServerType.jellyfin;
+  if (product.contains('emby')) return ServerType.emby;
+  return null;
+}
+
+ServerType serverTypeOf(
+  PublicSystemInfoDTO info, {
+  required String serverUrl,
+}) {
+  final named = serverTypeFromProductName(info.productName);
+  if (named != null) return named;
+  if (serverUrl.toLowerCase().endsWith(embyPathPrefix)) return ServerType.emby;
+  final reportsAddressLists =
+      info.localAddresses != null || info.remoteAddresses != null;
+  return reportsAddressLists ? ServerType.emby : ServerType.jellyfin;
+}
 
 class ServerProbeResult {
   const ServerProbeResult({
@@ -47,16 +84,42 @@ class ServerProbeService {
 
   Future<ServerProbeResult?> discover(String url) async {
     for (final candidate in serverUrlCandidates(url)) {
-      final info = await probe(candidate);
-      if (info != null) {
+      for (final serverUrl in serverPathCandidates(candidate)) {
+        final info = await probe(serverUrl);
+        if (info == null) continue;
         return ServerProbeResult(
-          serverUrl: candidate,
-          serverType: ServerType.jellyfin,
+          serverUrl: serverUrl,
+          serverType: await resolveServerType(info, serverUrl: serverUrl),
           info: info,
         );
       }
     }
     return null;
+  }
+
+  Future<ServerType> resolveServerType(
+    PublicSystemInfoDTO info, {
+    required String serverUrl,
+  }) async {
+    final fromInfo = serverTypeFromProductName(info.productName);
+    if (fromInfo != null) return fromInfo;
+
+    final fromPing = serverTypeFromProductName(await ping(serverUrl));
+    if (fromPing != null) return fromPing;
+
+    return serverTypeOf(info, serverUrl: serverUrl);
+  }
+
+  Future<String?> ping(String serverUrl) async {
+    try {
+      final response = await _client.get<String>(
+        '$serverUrl/System/Ping',
+        options: Options(responseType: ResponseType.plain),
+      );
+      return response.data;
+    } on Object {
+      return null;
+    }
   }
 
   Future<PublicSystemInfoDTO?> probe(String serverUrl) async {

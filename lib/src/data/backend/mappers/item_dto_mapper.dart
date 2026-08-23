@@ -47,6 +47,7 @@ AudioSourceInfo _toAudioSourceInfo(MediaSourceDTO source) {
       .where((stream) => stream.type == 'Audio')
       .firstOrNull;
   return AudioSourceInfo(
+    id: source.id,
     container: source.container,
     codec: audioStream?.codec,
     bitRate: audioStream?.bitRate,

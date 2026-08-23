@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MediaStreamDTO {
 
-@JsonKey(name: 'Type') String? get type;@JsonKey(name: 'Codec') String? get codec;@JsonKey(name: 'BitRate') int? get bitRate;@JsonKey(name: 'SampleRate') int? get sampleRate;@JsonKey(name: 'BitDepth') int? get bitDepth;@JsonKey(name: 'Channels') int? get channels;@JsonKey(name: 'ChannelLayout') String? get channelLayout;
+@JsonKey(name: 'Index') int? get index;@JsonKey(name: 'Type') String? get type;@JsonKey(name: 'Codec') String? get codec;@JsonKey(name: 'BitRate') int? get bitRate;@JsonKey(name: 'SampleRate') int? get sampleRate;@JsonKey(name: 'BitDepth') int? get bitDepth;@JsonKey(name: 'Channels') int? get channels;@JsonKey(name: 'ChannelLayout') String? get channelLayout;
 /// Create a copy of MediaStreamDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MediaStreamDTOCopyWith<MediaStreamDTO> get copyWith => _$MediaStreamDTOCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MediaStreamDTO&&(identical(other.type, type) || other.type == type)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MediaStreamDTO&&(identical(other.index, index) || other.index == index)&&(identical(other.type, type) || other.type == type)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
+int get hashCode => Object.hash(runtimeType,index,type,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
 
 @override
 String toString() {
-  return 'MediaStreamDTO(type: $type, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
+  return 'MediaStreamDTO(index: $index, type: $type, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MediaStreamDTOCopyWith<$Res>  {
   factory $MediaStreamDTOCopyWith(MediaStreamDTO value, $Res Function(MediaStreamDTO) _then) = _$MediaStreamDTOCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'Type') String? type,@JsonKey(name: 'Codec') String? codec,@JsonKey(name: 'BitRate') int? bitRate,@JsonKey(name: 'SampleRate') int? sampleRate,@JsonKey(name: 'BitDepth') int? bitDepth,@JsonKey(name: 'Channels') int? channels,@JsonKey(name: 'ChannelLayout') String? channelLayout
+@JsonKey(name: 'Index') int? index,@JsonKey(name: 'Type') String? type,@JsonKey(name: 'Codec') String? codec,@JsonKey(name: 'BitRate') int? bitRate,@JsonKey(name: 'SampleRate') int? sampleRate,@JsonKey(name: 'BitDepth') int? bitDepth,@JsonKey(name: 'Channels') int? channels,@JsonKey(name: 'ChannelLayout') String? channelLayout
 });
 
 
@@ -65,9 +65,10 @@ class _$MediaStreamDTOCopyWithImpl<$Res>
 
 /// Create a copy of MediaStreamDTO
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? index = freezed,Object? type = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
   return _then(_self.copyWith(
-type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+index: freezed == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+as int?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String?,codec: freezed == codec ? _self.codec : codec // ignore: cast_nullable_to_non_nullable
 as String?,bitRate: freezed == bitRate ? _self.bitRate : bitRate // ignore: cast_nullable_to_non_nullable
 as int?,sampleRate: freezed == sampleRate ? _self.sampleRate : sampleRate // ignore: cast_nullable_to_non_nullable
@@ -159,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Type')  String? type, @JsonKey(name: 'Codec')  String? codec, @JsonKey(name: 'BitRate')  int? bitRate, @JsonKey(name: 'SampleRate')  int? sampleRate, @JsonKey(name: 'BitDepth')  int? bitDepth, @JsonKey(name: 'Channels')  int? channels, @JsonKey(name: 'ChannelLayout')  String? channelLayout)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Index')  int? index, @JsonKey(name: 'Type')  String? type, @JsonKey(name: 'Codec')  String? codec, @JsonKey(name: 'BitRate')  int? bitRate, @JsonKey(name: 'SampleRate')  int? sampleRate, @JsonKey(name: 'BitDepth')  int? bitDepth, @JsonKey(name: 'Channels')  int? channels, @JsonKey(name: 'ChannelLayout')  String? channelLayout)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MediaStreamDTO() when $default != null:
-return $default(_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
+return $default(_that.index,_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
   return orElse();
 
 }
@@ -180,10 +181,10 @@ return $default(_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitD
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Type')  String? type, @JsonKey(name: 'Codec')  String? codec, @JsonKey(name: 'BitRate')  int? bitRate, @JsonKey(name: 'SampleRate')  int? sampleRate, @JsonKey(name: 'BitDepth')  int? bitDepth, @JsonKey(name: 'Channels')  int? channels, @JsonKey(name: 'ChannelLayout')  String? channelLayout)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Index')  int? index, @JsonKey(name: 'Type')  String? type, @JsonKey(name: 'Codec')  String? codec, @JsonKey(name: 'BitRate')  int? bitRate, @JsonKey(name: 'SampleRate')  int? sampleRate, @JsonKey(name: 'BitDepth')  int? bitDepth, @JsonKey(name: 'Channels')  int? channels, @JsonKey(name: 'ChannelLayout')  String? channelLayout)  $default,) {final _that = this;
 switch (_that) {
 case _MediaStreamDTO():
-return $default(_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
+return $default(_that.index,_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +201,10 @@ return $default(_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitD
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Type')  String? type, @JsonKey(name: 'Codec')  String? codec, @JsonKey(name: 'BitRate')  int? bitRate, @JsonKey(name: 'SampleRate')  int? sampleRate, @JsonKey(name: 'BitDepth')  int? bitDepth, @JsonKey(name: 'Channels')  int? channels, @JsonKey(name: 'ChannelLayout')  String? channelLayout)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Index')  int? index, @JsonKey(name: 'Type')  String? type, @JsonKey(name: 'Codec')  String? codec, @JsonKey(name: 'BitRate')  int? bitRate, @JsonKey(name: 'SampleRate')  int? sampleRate, @JsonKey(name: 'BitDepth')  int? bitDepth, @JsonKey(name: 'Channels')  int? channels, @JsonKey(name: 'ChannelLayout')  String? channelLayout)?  $default,) {final _that = this;
 switch (_that) {
 case _MediaStreamDTO() when $default != null:
-return $default(_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
+return $default(_that.index,_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
   return null;
 
 }
@@ -215,9 +216,10 @@ return $default(_that.type,_that.codec,_that.bitRate,_that.sampleRate,_that.bitD
 @JsonSerializable()
 
 class _MediaStreamDTO implements MediaStreamDTO {
-  const _MediaStreamDTO({@JsonKey(name: 'Type') this.type, @JsonKey(name: 'Codec') this.codec, @JsonKey(name: 'BitRate') this.bitRate, @JsonKey(name: 'SampleRate') this.sampleRate, @JsonKey(name: 'BitDepth') this.bitDepth, @JsonKey(name: 'Channels') this.channels, @JsonKey(name: 'ChannelLayout') this.channelLayout});
+  const _MediaStreamDTO({@JsonKey(name: 'Index') this.index, @JsonKey(name: 'Type') this.type, @JsonKey(name: 'Codec') this.codec, @JsonKey(name: 'BitRate') this.bitRate, @JsonKey(name: 'SampleRate') this.sampleRate, @JsonKey(name: 'BitDepth') this.bitDepth, @JsonKey(name: 'Channels') this.channels, @JsonKey(name: 'ChannelLayout') this.channelLayout});
   factory _MediaStreamDTO.fromJson(Map<String, dynamic> json) => _$MediaStreamDTOFromJson(json);
 
+@override@JsonKey(name: 'Index') final  int? index;
 @override@JsonKey(name: 'Type') final  String? type;
 @override@JsonKey(name: 'Codec') final  String? codec;
 @override@JsonKey(name: 'BitRate') final  int? bitRate;
@@ -239,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MediaStreamDTO&&(identical(other.type, type) || other.type == type)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MediaStreamDTO&&(identical(other.index, index) || other.index == index)&&(identical(other.type, type) || other.type == type)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
+int get hashCode => Object.hash(runtimeType,index,type,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
 
 @override
 String toString() {
-  return 'MediaStreamDTO(type: $type, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
+  return 'MediaStreamDTO(index: $index, type: $type, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
 }
 
 
@@ -259,7 +261,7 @@ abstract mixin class _$MediaStreamDTOCopyWith<$Res> implements $MediaStreamDTOCo
   factory _$MediaStreamDTOCopyWith(_MediaStreamDTO value, $Res Function(_MediaStreamDTO) _then) = __$MediaStreamDTOCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'Type') String? type,@JsonKey(name: 'Codec') String? codec,@JsonKey(name: 'BitRate') int? bitRate,@JsonKey(name: 'SampleRate') int? sampleRate,@JsonKey(name: 'BitDepth') int? bitDepth,@JsonKey(name: 'Channels') int? channels,@JsonKey(name: 'ChannelLayout') String? channelLayout
+@JsonKey(name: 'Index') int? index,@JsonKey(name: 'Type') String? type,@JsonKey(name: 'Codec') String? codec,@JsonKey(name: 'BitRate') int? bitRate,@JsonKey(name: 'SampleRate') int? sampleRate,@JsonKey(name: 'BitDepth') int? bitDepth,@JsonKey(name: 'Channels') int? channels,@JsonKey(name: 'ChannelLayout') String? channelLayout
 });
 
 
@@ -276,9 +278,10 @@ class __$MediaStreamDTOCopyWithImpl<$Res>
 
 /// Create a copy of MediaStreamDTO
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? index = freezed,Object? type = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
   return _then(_MediaStreamDTO(
-type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+index: freezed == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+as int?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String?,codec: freezed == codec ? _self.codec : codec // ignore: cast_nullable_to_non_nullable
 as String?,bitRate: freezed == bitRate ? _self.bitRate : bitRate // ignore: cast_nullable_to_non_nullable
 as int?,sampleRate: freezed == sampleRate ? _self.sampleRate : sampleRate // ignore: cast_nullable_to_non_nullable

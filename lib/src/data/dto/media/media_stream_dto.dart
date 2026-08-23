@@ -6,6 +6,7 @@ part 'media_stream_dto.g.dart';
 @freezed
 abstract class MediaStreamDTO with _$MediaStreamDTO {
   const factory MediaStreamDTO({
+    @JsonKey(name: 'Index') int? index,
     @JsonKey(name: 'Type') String? type,
     @JsonKey(name: 'Codec') String? codec,
     @JsonKey(name: 'BitRate') int? bitRate,

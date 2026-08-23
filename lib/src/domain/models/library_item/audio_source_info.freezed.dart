@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AudioSourceInfo {
 
- String? get container; String? get codec; int? get bitRate; int? get sampleRate; int? get bitDepth; int? get channels; String? get channelLayout;
+ String? get id; String? get container; String? get codec; int? get bitRate; int? get sampleRate; int? get bitDepth; int? get channels; String? get channelLayout;
 /// Create a copy of AudioSourceInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AudioSourceInfoCopyWith<AudioSourceInfo> get copyWith => _$AudioSourceInfoCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioSourceInfo&&(identical(other.container, container) || other.container == container)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioSourceInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.container, container) || other.container == container)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,container,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
+int get hashCode => Object.hash(runtimeType,id,container,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
 
 @override
 String toString() {
-  return 'AudioSourceInfo(container: $container, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
+  return 'AudioSourceInfo(id: $id, container: $container, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AudioSourceInfoCopyWith<$Res>  {
   factory $AudioSourceInfoCopyWith(AudioSourceInfo value, $Res Function(AudioSourceInfo) _then) = _$AudioSourceInfoCopyWithImpl;
 @useResult
 $Res call({
- String? container, String? codec, int? bitRate, int? sampleRate, int? bitDepth, int? channels, String? channelLayout
+ String? id, String? container, String? codec, int? bitRate, int? sampleRate, int? bitDepth, int? channels, String? channelLayout
 });
 
 
@@ -65,9 +65,10 @@ class _$AudioSourceInfoCopyWithImpl<$Res>
 
 /// Create a copy of AudioSourceInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? container = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? container = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
   return _then(_self.copyWith(
-container: freezed == container ? _self.container : container // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,container: freezed == container ? _self.container : container // ignore: cast_nullable_to_non_nullable
 as String?,codec: freezed == codec ? _self.codec : codec // ignore: cast_nullable_to_non_nullable
 as String?,bitRate: freezed == bitRate ? _self.bitRate : bitRate // ignore: cast_nullable_to_non_nullable
 as int?,sampleRate: freezed == sampleRate ? _self.sampleRate : sampleRate // ignore: cast_nullable_to_non_nullable
@@ -159,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? container,  String? codec,  int? bitRate,  int? sampleRate,  int? bitDepth,  int? channels,  String? channelLayout)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  String? container,  String? codec,  int? bitRate,  int? sampleRate,  int? bitDepth,  int? channels,  String? channelLayout)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioSourceInfo() when $default != null:
-return $default(_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
+return $default(_that.id,_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
   return orElse();
 
 }
@@ -180,10 +181,10 @@ return $default(_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? container,  String? codec,  int? bitRate,  int? sampleRate,  int? bitDepth,  int? channels,  String? channelLayout)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  String? container,  String? codec,  int? bitRate,  int? sampleRate,  int? bitDepth,  int? channels,  String? channelLayout)  $default,) {final _that = this;
 switch (_that) {
 case _AudioSourceInfo():
-return $default(_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
+return $default(_that.id,_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +201,10 @@ return $default(_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? container,  String? codec,  int? bitRate,  int? sampleRate,  int? bitDepth,  int? channels,  String? channelLayout)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  String? container,  String? codec,  int? bitRate,  int? sampleRate,  int? bitDepth,  int? channels,  String? channelLayout)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioSourceInfo() when $default != null:
-return $default(_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
+return $default(_that.id,_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that.bitDepth,_that.channels,_that.channelLayout);case _:
   return null;
 
 }
@@ -215,9 +216,10 @@ return $default(_that.container,_that.codec,_that.bitRate,_that.sampleRate,_that
 @JsonSerializable()
 
 class _AudioSourceInfo implements AudioSourceInfo {
-  const _AudioSourceInfo({this.container, this.codec, this.bitRate, this.sampleRate, this.bitDepth, this.channels, this.channelLayout});
+  const _AudioSourceInfo({this.id, this.container, this.codec, this.bitRate, this.sampleRate, this.bitDepth, this.channels, this.channelLayout});
   factory _AudioSourceInfo.fromJson(Map<String, dynamic> json) => _$AudioSourceInfoFromJson(json);
 
+@override final  String? id;
 @override final  String? container;
 @override final  String? codec;
 @override final  int? bitRate;
@@ -239,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioSourceInfo&&(identical(other.container, container) || other.container == container)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioSourceInfo&&(identical(other.id, id) || other.id == id)&&(identical(other.container, container) || other.container == container)&&(identical(other.codec, codec) || other.codec == codec)&&(identical(other.bitRate, bitRate) || other.bitRate == bitRate)&&(identical(other.sampleRate, sampleRate) || other.sampleRate == sampleRate)&&(identical(other.bitDepth, bitDepth) || other.bitDepth == bitDepth)&&(identical(other.channels, channels) || other.channels == channels)&&(identical(other.channelLayout, channelLayout) || other.channelLayout == channelLayout));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,container,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
+int get hashCode => Object.hash(runtimeType,id,container,codec,bitRate,sampleRate,bitDepth,channels,channelLayout);
 
 @override
 String toString() {
-  return 'AudioSourceInfo(container: $container, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
+  return 'AudioSourceInfo(id: $id, container: $container, codec: $codec, bitRate: $bitRate, sampleRate: $sampleRate, bitDepth: $bitDepth, channels: $channels, channelLayout: $channelLayout)';
 }
 
 
@@ -259,7 +261,7 @@ abstract mixin class _$AudioSourceInfoCopyWith<$Res> implements $AudioSourceInfo
   factory _$AudioSourceInfoCopyWith(_AudioSourceInfo value, $Res Function(_AudioSourceInfo) _then) = __$AudioSourceInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String? container, String? codec, int? bitRate, int? sampleRate, int? bitDepth, int? channels, String? channelLayout
+ String? id, String? container, String? codec, int? bitRate, int? sampleRate, int? bitDepth, int? channels, String? channelLayout
 });
 
 
@@ -276,9 +278,10 @@ class __$AudioSourceInfoCopyWithImpl<$Res>
 
 /// Create a copy of AudioSourceInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? container = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? container = freezed,Object? codec = freezed,Object? bitRate = freezed,Object? sampleRate = freezed,Object? bitDepth = freezed,Object? channels = freezed,Object? channelLayout = freezed,}) {
   return _then(_AudioSourceInfo(
-container: freezed == container ? _self.container : container // ignore: cast_nullable_to_non_nullable
+id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,container: freezed == container ? _self.container : container // ignore: cast_nullable_to_non_nullable
 as String?,codec: freezed == codec ? _self.codec : codec // ignore: cast_nullable_to_non_nullable
 as String?,bitRate: freezed == bitRate ? _self.bitRate : bitRate // ignore: cast_nullable_to_non_nullable
 as int?,sampleRate: freezed == sampleRate ? _self.sampleRate : sampleRate // ignore: cast_nullable_to_non_nullable

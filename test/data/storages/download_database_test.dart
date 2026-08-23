@@ -100,6 +100,78 @@ void main() {
     ),
   );
 
+  group('DownloadDatabase (server scoping)', () {
+    test('- hides another server\'s downloads', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final song = buildSong();
+
+      await jellyfin.insertDownloadedSong(song, file: songFile);
+
+      expect(await jellyfin.getDownloadedSongs(), hasLength(1));
+      expect(await emby.getDownloadedSongs(), isEmpty);
+      expect(await emby.isSongDownloaded(song.id), isFalse);
+      expect(await emby.getDownloadedSongPath(song.id), isNull);
+    });
+
+    test('- hides another server\'s albums', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final album = buildAlbum();
+
+      await jellyfin.insertDownloadedAlbum(album, files: [songFile]);
+
+      expect(await jellyfin.getDownloadedAlbums(), hasLength(1));
+      expect(await emby.getDownloadedAlbums(), isEmpty);
+      expect(await emby.isAlbumDownloaded(album.id), isFalse);
+    });
+
+    test('- does not delete another server\'s rows', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final song = buildSong();
+
+      await jellyfin.insertDownloadedSong(song, file: songFile);
+      await emby.deleteDownloadedSong(song.id);
+
+      expect(await jellyfin.getDownloadedSongs(), hasLength(1));
+    });
+
+    test('- adopts rows written before scoping existed', () async {
+      final legacy = DownloadDatabase();
+      final song = buildSong();
+      final album = buildAlbum();
+
+      await legacy.insertDownloadedSong(song, file: songFile);
+      await legacy.insertDownloadedAlbum(album, files: [songFile]);
+
+      final scoped = DownloadDatabase(serverId: 'server-a');
+      expect(await scoped.getDownloadedSongs(), isEmpty);
+
+      await scoped.adoptLegacyDownloads();
+
+      expect(await scoped.getDownloadedSongs(), hasLength(1));
+      expect(await scoped.getDownloadedAlbums(), hasLength(1));
+      expect(
+        await DownloadDatabase(serverId: 'server-b').getDownloadedSongs(),
+        isEmpty,
+      );
+    });
+
+    test('- adoption is a no-op without a server id', () async {
+      final legacy = DownloadDatabase();
+      await legacy.insertDownloadedSong(buildSong(), file: songFile);
+
+      await legacy.adoptLegacyDownloads();
+
+      expect(await legacy.getDownloadedSongs(), hasLength(1));
+      expect(
+        await DownloadDatabase(serverId: 'server-a').getDownloadedSongs(),
+        isEmpty,
+      );
+    });
+  });
+
   group('DownloadDatabase (fresh install)', () {
     test('- inserts and reads back a downloaded song', () async {
       final db = DownloadDatabase();
