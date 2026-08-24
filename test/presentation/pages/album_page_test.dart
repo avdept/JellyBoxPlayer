@@ -171,13 +171,12 @@ void main() {
     mockDownloadManagerNotifier = MockDownloadManagerNotifier();
     mockDownloadDatabase = MockDownloadDatabase();
     when(
-      () => mockMediaServerClient.imageUrl(
-        id: any(named: 'id'),
-        tagId: any(named: 'tagId'),
+      () => mockMediaServerClient.imageUri(
+        any(),
         kind: any(named: 'kind'),
         size: any(named: 'size'),
       ),
-    ).thenReturn('https://example.com/image.jpg');
+    ).thenReturn(Uri.parse('https://example.com/image.jpg'));
     when(
       () => mockDownloadDatabase.getDownloadedSongs(any()),
     ).thenAnswer((_) async => []);

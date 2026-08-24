@@ -12,6 +12,12 @@ abstract class ImageRefs with _$ImageRefs {
     @Default([]) List<String> backdrops,
   }) = _ImageRefs;
 
+  const ImageRefs._();
+
   factory ImageRefs.fromJson(Map<String, dynamic> json) =>
       _$ImageRefsFromJson(json);
+
+  bool get hasCover => primary != null || albumPrimary != null;
+
+  bool get hasBackdrop => backdrops.isNotEmpty;
 }

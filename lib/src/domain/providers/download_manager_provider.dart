@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
+import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
@@ -49,8 +50,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
         if (albumId != null) {
           await _downloadService.downloadAlbumCover(
             albumId,
-            song.images.albumPrimary ?? song.images.primary,
-            client,
+            client.imageUri(song, kind: ImageKind.album),
           );
         }
 
@@ -92,8 +92,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
         await _database.insertDownloadedAlbum(album, files: files);
         await _downloadService.downloadAlbumCover(
           album.id,
-          album.images.primary,
-          client,
+          client.imageUri(album),
         );
       }
 

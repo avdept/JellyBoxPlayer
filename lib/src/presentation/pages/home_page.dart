@@ -86,10 +86,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final imageService = ref.read(imageServiceProvider);
     return CoverMosaic(
-      images: [
-        for (final song in covers)
-          imageService.albumIP(tagId: song.images.primary, id: song.primaryImageId),
-      ],
+      images: [for (final song in covers) imageService.itemImage(song)],
     );
   }
 
@@ -113,10 +110,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final imageService = ref.read(imageServiceProvider);
     return CoverMosaic(
-      images: [
-        for (final song in songs)
-          imageService.albumIP(tagId: song.images.primary, id: song.primaryImageId),
-      ],
+      images: [for (final song in songs) imageService.itemImage(song)],
     );
   }
 

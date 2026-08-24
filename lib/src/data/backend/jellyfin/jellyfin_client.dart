@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
 import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -19,6 +20,9 @@ class JellyfinClient implements MediaServerClient {
     required this.deviceId,
   }) : _api = JellyfinApi(dio, baseUrl: baseUrl),
        _baseUrl = baseUrl;
+
+  static const _defaultImageSize = 420;
+  static const _sizeParams = {'fillHeight', 'fillWidth'};
 
   final JellyfinApi _api;
   final String _baseUrl;
@@ -407,19 +411,34 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  String imageUrl({
-    required String id,
-    String? tagId,
+  Uri? imageUri(
+    LibraryItem item, {
     ImageKind kind = ImageKind.primary,
-    int size = 420,
+    int? size,
   }) {
-    final imageType = kind == ImageKind.primary ? 'Primary' : 'Backdrop';
-    return _resolve('Items/$id/Images/$imageType', {
-      'fillHeight': '$size',
-      'fillWidth': '$size',
+    final ref = ItemImageRef.resolve(item, kind);
+    if (ref == null) return null;
+
+    final imageType = kind == ImageKind.backdrop ? 'Backdrop' : 'Primary';
+    final pixels = size ?? _defaultImageSize;
+    return _resolve('Items/${ref.id}/Images/$imageType', {
+      'fillHeight': '$pixels',
+      'fillWidth': '$pixels',
       'quality': '96',
-      if (tagId != null) 'tag': tagId,
-    }).toString();
+      'tag': ref.tag,
+    });
+  }
+
+  @override
+  Uri resizedImageUri(Uri uri, int size) {
+    final params = uri.queryParameters;
+    if (params.isEmpty) return uri;
+    return uri.replace(
+      queryParameters: {
+        for (final entry in params.entries)
+          entry.key: _sizeParams.contains(entry.key) ? '$size' : entry.value,
+      },
+    );
   }
 
   Uri _resolve(String path, Map<String, String> queryParameters) {

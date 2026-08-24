@@ -106,9 +106,29 @@ void main() {
     });
   });
 
-  group('imageUrl', () {
+  LibraryItem imageItem({
+    String id = 'album-1',
+    String? primary,
+    String? primaryItemId,
+    String? albumId,
+    String? albumPrimary,
+    List<String> backdrops = const [],
+  }) => LibraryItem(
+    id: id,
+    name: 'Dummy',
+    kind: ItemKind.album,
+    albumId: albumId,
+    images: ImageRefs(
+      primary: primary,
+      primaryItemId: primaryItemId,
+      albumPrimary: albumPrimary,
+      backdrops: backdrops,
+    ),
+  );
+
+  group('imageUri', () {
     test('- builds a primary image URL with a tag', () {
-      final uri = Uri.parse(client.imageUrl(id: 'album-1', tagId: 'tag-1'));
+      final uri = client.imageUri(imageItem(primary: 'tag-1'))!;
 
       expect(uri.path, '/Items/album-1/Images/Primary');
       expect(uri.queryParameters['Tag'], 'tag-1');
@@ -116,32 +136,76 @@ void main() {
       expect(uri.queryParameters['MaxHeight'], '420');
     });
 
-    test('- omits the tag query param when none is given', () {
-      final uri = Uri.parse(client.imageUrl(id: 'album-1'));
+    test('- points at the item emby resolved the image from', () {
+      final uri = client.imageUri(
+        imageItem(id: 'song-1', primary: 'tag-1', primaryItemId: 'album-1'),
+      )!;
 
-      expect(uri.queryParameters.containsKey('Tag'), isFalse);
+      expect(uri.path, '/Items/album-1/Images/Primary');
+    });
+
+    test('- falls back to the album image for a song without its own', () {
+      final uri = client.imageUri(
+        imageItem(id: 'song-1', albumId: 'album-1', albumPrimary: 'tag-1'),
+      )!;
+
+      expect(uri.path, '/Items/album-1/Images/Primary');
+      expect(uri.queryParameters['Tag'], 'tag-1');
+    });
+
+    test('- returns null when the item has no image reference', () {
+      expect(client.imageUri(imageItem()), isNull);
     });
 
     test('- builds a backdrop image URL at a custom size', () {
-      final uri = Uri.parse(
-        client.imageUrl(
-          id: 'album-1',
-          tagId: 'tag-1',
-          kind: ImageKind.backdrop,
-          size: 800,
-        ),
-      );
+      final uri = client.imageUri(
+        imageItem(backdrops: const ['tag-1']),
+        kind: ImageKind.backdrop,
+        size: 800,
+      )!;
 
       expect(uri.path, '/Items/album-1/Images/Backdrop');
       expect(uri.queryParameters['MaxHeight'], '800');
     });
 
     test('- keeps the /emby path prefix of the server url', () {
-      final uri = Uri.parse(
-        clientAt('http://emby.local:8096/emby').imageUrl(id: 'album-1'),
-      );
+      final uri = clientAt(
+        'http://emby.local:8096/emby',
+      ).imageUri(imageItem(primary: 'tag-1'))!;
 
       expect(uri.path, '/emby/Items/album-1/Images/Primary');
+    });
+  });
+
+  group('resizedImageUri', () {
+    test('- rewrites the max params and leaves the rest alone', () {
+      final uri = client.resizedImageUri(
+        Uri.parse(
+          'http://emby.local/Items/11/Images/Primary'
+          '?MaxWidth=420&MaxHeight=420&Quality=96&Tag=t1',
+        ),
+        1024,
+      );
+
+      expect(uri.queryParameters['MaxWidth'], '1024');
+      expect(uri.queryParameters['MaxHeight'], '1024');
+      expect(uri.queryParameters['Quality'], '96');
+      expect(uri.queryParameters['Tag'], 't1');
+    });
+
+    test('- does not add size params to a url that has none', () {
+      final uri = client.resizedImageUri(
+        Uri.parse('http://emby.local/Items/11/Images/Primary?Tag=t1'),
+        1024,
+      );
+
+      expect(uri.queryParameters.keys, ['Tag']);
+    });
+
+    test('- leaves a url without a query untouched', () {
+      final original = Uri.parse('http://emby.local/Items/11/Images/Primary');
+
+      expect(client.resizedImageUri(original, 1024), original);
     });
   });
 

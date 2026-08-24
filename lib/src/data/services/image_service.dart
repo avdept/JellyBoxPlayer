@@ -1,53 +1,65 @@
+import 'dart:io' show File;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 
 class ImageService {
-  ImageService({required this.client});
-  final MediaServerClient client;
+  ImageService({required MediaServerClient Function() client})
+    : _client = client;
 
-  static const _sizeParams = {
-    'fillwidth',
-    'fillheight',
-    'maxwidth',
-    'maxheight',
-  };
+  final MediaServerClient Function() _client;
 
-  static Uri resize(Uri uri, int size) {
-    final params = uri.queryParameters;
-    if (params.isEmpty) return uri;
-    return uri.replace(
-      queryParameters: {
-        for (final entry in params.entries)
-          entry.key: _sizeParams.contains(entry.key.toLowerCase())
-              ? '$size'
-              : entry.value,
-      },
-    );
+  Uri? itemUri(
+    LibraryItem item, {
+    ImageKind kind = ImageKind.primary,
+    int? size,
+  }) {
+    if (kind == ImageKind.backdrop) {
+      if (!item.images.hasBackdrop) return null;
+      return _client().imageUri(item, kind: kind, size: size);
+    }
+
+    final downloaded = DownloadPaths.coverFile(item.albumId ?? item.id);
+    if (downloaded != null) return downloaded.uri;
+    if (!item.images.hasCover) return null;
+
+    return _client().imageUri(item, kind: kind, size: size);
   }
 
-  String imagePath({required String tagId, required String id}) =>
-      client.imageUrl(id: id, tagId: tagId);
+  ImageProvider? itemImageOrNull(
+    LibraryItem item, {
+    ImageKind kind = ImageKind.primary,
+    int? size,
+  }) => _imageOf(itemUri(item, kind: kind, size: size));
 
-  String imagePathById({required String id}) => client.imageUrl(id: id);
+  ImageProvider itemImage(
+    LibraryItem item, {
+    ImageKind kind = ImageKind.primary,
+    int? size,
+    String fallback = Images.album,
+  }) => itemImageOrNull(item, kind: kind, size: size) ?? AssetImage(fallback);
 
-  ImageProvider albumIP({required String? tagId, required String id}) {
-    final downloaded = DownloadPaths.coverFile(id);
-    if (downloaded != null) return FileImage(downloaded);
-
-    if (tagId == null) return const AssetImage(Images.album);
-
-    return CachedNetworkImageProvider(client.imageUrl(id: id, tagId: tagId));
+  ImageProvider? artworkImageOrNull(Uri? uri, {int? size}) {
+    if (uri == null || uri.isScheme('file') || size == null) {
+      return _imageOf(uri);
+    }
+    return _imageOf(_client().resizedImageUri(uri, size));
   }
 
-  ImageProvider backdropIp({required String? tagId, required String id}) {
-    if (tagId == null) return const AssetImage(Images.album);
+  ImageProvider artworkImage(
+    Uri? uri, {
+    int? size,
+    String fallback = Images.album,
+  }) => artworkImageOrNull(uri, size: size) ?? AssetImage(fallback);
 
-    return CachedNetworkImageProvider(
-      client.imageUrl(id: id, tagId: tagId, kind: ImageKind.backdrop),
-    );
+  ImageProvider? _imageOf(Uri? uri) {
+    if (uri == null) return null;
+    if (uri.isScheme('file')) return FileImage(File.fromUri(uri));
+    return CachedNetworkImageProvider(uri.toString());
   }
 }

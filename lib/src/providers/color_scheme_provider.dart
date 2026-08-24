@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/presentation/utils/artwork_image.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -30,7 +30,7 @@ final artworkSchemeProvider = FutureProvider<ColorScheme?>((ref) async {
   final artUri = ref.watch(currentArtUriProvider).valueOrNull;
   if (artUri == null) return null;
   return ColorScheme.fromImageProvider(
-    provider: artworkImage(artUri),
+    provider: ref.read(imageServiceProvider).artworkImage(artUri),
     brightness: Brightness.dark,
   );
 });

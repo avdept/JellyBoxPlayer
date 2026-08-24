@@ -33,6 +33,29 @@ void main() {
     ],
   }).toLibraryItem();
 
+  LibraryItem imageSong({
+    String? primary,
+    String? albumId,
+    String? albumPrimary,
+  }) => LibraryItem(
+    id: 'song-1',
+    name: 'Roads',
+    kind: ItemKind.song,
+    albumId: albumId,
+    images: ImageRefs(primary: primary, albumPrimary: albumPrimary),
+  );
+
+  LibraryItem albumWith({
+    required String id,
+    String? primary,
+    List<String> backdrops = const [],
+  }) => LibraryItem(
+    id: id,
+    name: 'Dummy',
+    kind: ItemKind.album,
+    images: ImageRefs(primary: primary, backdrops: backdrops),
+  );
+
   group('resolveStreamSource', () {
     test('- returns a direct-play universal URL for a supported container', () async {
       final source = await client.resolveStreamSource(
@@ -86,35 +109,71 @@ void main() {
     );
   });
 
-  group('imageUrl', () {
-    test('- builds a primary image URL with a tag', () {
-      final url = client.imageUrl(id: 'album-1', tagId: 'tag-1');
-      final uri = Uri.parse(url);
+  group('imageUri', () {
+    test('- builds a primary image URL from the item own tag', () {
+      final uri = client.imageUri(albumWith(id: 'album-1', primary: 'tag-1'));
 
-      expect(uri.path, '/Items/album-1/Images/Primary');
+      expect(uri!.path, '/Items/album-1/Images/Primary');
       expect(uri.queryParameters['tag'], 'tag-1');
       expect(uri.queryParameters['fillHeight'], '420');
       expect(uri.queryParameters['fillWidth'], '420');
     });
 
-    test('- omits the tag query param when none is given', () {
-      final url = client.imageUrl(id: 'album-1');
-      final uri = Uri.parse(url);
+    test('- falls back to the album image for a song without its own', () {
+      final uri = client.imageUri(
+        imageSong(albumId: 'album-1', albumPrimary: 'tag-1'),
+      );
 
-      expect(uri.queryParameters.containsKey('tag'), isFalse);
+      expect(uri!.path, '/Items/album-1/Images/Primary');
+      expect(uri.queryParameters['tag'], 'tag-1');
+    });
+
+    test('- prefers the album image when the album kind is asked for', () {
+      final uri = client.imageUri(
+        imageSong(primary: 'own', albumId: 'album-1', albumPrimary: 'tag-1'),
+        kind: ImageKind.album,
+      );
+
+      expect(uri!.path, '/Items/album-1/Images/Primary');
+      expect(uri.queryParameters['tag'], 'tag-1');
+    });
+
+    test('- returns null when the item has no image reference', () {
+      expect(client.imageUri(imageSong()), isNull);
     });
 
     test('- builds a backdrop image URL at a custom size', () {
-      final url = client.imageUrl(
-        id: 'album-1',
-        tagId: 'tag-1',
+      final uri = client.imageUri(
+        albumWith(id: 'album-1', backdrops: const ['tag-1']),
         kind: ImageKind.backdrop,
         size: 800,
       );
-      final uri = Uri.parse(url);
 
-      expect(uri.path, '/Items/album-1/Images/Backdrop');
+      expect(uri!.path, '/Items/album-1/Images/Backdrop');
       expect(uri.queryParameters['fillHeight'], '800');
+    });
+  });
+
+  group('resizedImageUri', () {
+    test('- rewrites the fill params and leaves the rest alone', () {
+      final uri = client.resizedImageUri(
+        Uri.parse(
+          'http://jelly.local/Items/a/Images/Primary'
+          '?fillWidth=420&fillHeight=420&quality=96&tag=t1',
+        ),
+        1024,
+      );
+
+      expect(uri.queryParameters['fillWidth'], '1024');
+      expect(uri.queryParameters['fillHeight'], '1024');
+      expect(uri.queryParameters['quality'], '96');
+      expect(uri.queryParameters['tag'], 't1');
+    });
+
+    test('- leaves a url without size params untouched', () {
+      final original = Uri.parse('http://jelly.local/Items/a/Images/Primary');
+
+      expect(client.resizedImageUri(original, 1024), original);
     });
   });
 }

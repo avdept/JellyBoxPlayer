@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
-import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -348,7 +347,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       duration: song.duration,
       title: song.name,
       extras: extras,
-      artUri: _artUri(song, album, isDownloaded: downloadedPath != null),
+      artUri: _artUri(song, album),
     );
 
     return (
@@ -359,34 +358,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     );
   }
 
-  Uri? _artUri(LibraryItem song, LibraryItem album, {required bool isDownloaded}) {
-    final localCover =
-        DownloadPaths.coverFile(song.albumId) ??
-        DownloadPaths.coverFile(album.id);
-    if (isDownloaded && localCover != null) return localCover.uri;
-
+  Uri? _artUri(LibraryItem song, LibraryItem album) {
     final imageService = _ref.read(imageServiceProvider);
-    final songImageTag = song.images.primary;
-    if (songImageTag != null) {
-      return Uri.parse(
-        imageService.imagePath(tagId: songImageTag, id: song.primaryImageId),
-      );
-    }
-    if (song.albumId != null && song.images.albumPrimary != null) {
-      return Uri.parse(
-        imageService.imagePath(
-          tagId: song.images.albumPrimary!,
-          id: song.albumId!,
-        ),
-      );
-    }
-    final albumImageTag = album.images.primary;
-    if (albumImageTag != null) {
-      return Uri.parse(
-        imageService.imagePath(tagId: albumImageTag, id: album.primaryImageId),
-      );
-    }
-    return null;
+    return imageService.itemUri(song) ?? imageService.itemUri(album);
   }
 
   Future<void> _setAudioSources(
