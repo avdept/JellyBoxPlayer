@@ -14,6 +14,12 @@ _PublicSystemInfoDTO _$PublicSystemInfoDTOFromJson(Map<String, dynamic> json) =>
       productName: json['ProductName'] as String?,
       operatingSystem: json['OperatingSystem'] as String?,
       localAddress: json['LocalAddress'] as String?,
+      localAddresses: (json['LocalAddresses'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      remoteAddresses: (json['RemoteAddresses'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       startupWizardCompleted: json['StartupWizardCompleted'] as bool?,
     );
 
@@ -26,5 +32,7 @@ Map<String, dynamic> _$PublicSystemInfoDTOToJson(
   'ProductName': instance.productName,
   'OperatingSystem': instance.operatingSystem,
   'LocalAddress': instance.localAddress,
+  'LocalAddresses': instance.localAddresses,
+  'RemoteAddresses': instance.remoteAddresses,
   'StartupWizardCompleted': instance.startupWizardCompleted,
 };

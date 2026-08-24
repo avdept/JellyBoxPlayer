@@ -73,6 +73,12 @@ void main() {
             builder: (context, state) => const LibraryPage(),
           ),
           GoRoute(
+            path: Routes.home.path,
+            name: Routes.home.name,
+            builder: (context, state) =>
+                const Scaffold(body: Text('home page')),
+          ),
+          GoRoute(
             path: Routes.browse.path,
             name: Routes.browse.name,
             builder: (context, state) =>
@@ -152,7 +158,25 @@ void main() {
         ).called(1);
         expect(find.byType(LibraryView), findsNothing);
         expect(find.text('Select Library'), findsNothing);
-        expect(find.text('browse page'), findsOneWidget);
+        expect(find.text('home page'), findsOneWidget);
+        expect(find.text('browse page'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '- opens the home page after the user picks a library',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(getRoutedWidgetUT());
+        await widgetTester.pumpAndSettle();
+
+        await widgetTester.tap(find.text(mockLibraries.first.name));
+        await widgetTester.pumpAndSettle();
+
+        verify(
+          () => mockCurrentLibraryNotifier.setLibrary(mockLibraries.first),
+        ).called(1);
+        expect(find.text('home page'), findsOneWidget);
+        expect(find.text('browse page'), findsNothing);
       },
     );
 
@@ -164,6 +188,7 @@ void main() {
 
         verifyNever(() => mockCurrentLibraryNotifier.setLibrary(any()));
         expect(find.text('Select Library'), findsOneWidget);
+        expect(find.text('home page'), findsNothing);
         expect(find.text('browse page'), findsNothing);
       },
     );

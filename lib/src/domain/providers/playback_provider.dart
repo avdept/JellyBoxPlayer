@@ -117,7 +117,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }) => PlaybackReport(
     itemId: song.id,
     playSessionId: _playSessionIds[song.id] ?? '',
-    mediaSourceId: song.id,
+    mediaSourceId: song.audioSources.firstOrNull?.id ?? song.id,
     position: Duration(milliseconds: positionMs),
     isPaused: isPaused,
     canSeek: true,
@@ -369,7 +369,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final songImageTag = song.images.primary;
     if (songImageTag != null) {
       return Uri.parse(
-        imageService.imagePath(tagId: songImageTag, id: song.id),
+        imageService.imagePath(tagId: songImageTag, id: song.primaryImageId),
       );
     }
     if (song.albumId != null && song.images.albumPrimary != null) {
@@ -383,7 +383,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final albumImageTag = album.images.primary;
     if (albumImageTag != null) {
       return Uri.parse(
-        imageService.imagePath(tagId: albumImageTag, id: album.id),
+        imageService.imagePath(tagId: albumImageTag, id: album.primaryImageId),
       );
     }
     return null;
@@ -498,6 +498,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       position: Duration.zero,
       totalDuration: Duration.zero,
     );
+  }
+
+  Future<void> clear() async {
+    await stop();
+    state = PlaybackState.initial();
   }
 
   void toggleRepeat() {

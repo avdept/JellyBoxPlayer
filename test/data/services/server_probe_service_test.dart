@@ -137,7 +137,183 @@ void main() {
       );
 
       expect(await service.discover('https://jelly.local'), isNull);
-      verify(() => mockAdapter.fetch(any(), any(), any())).called(1);
+
+      final requested =
+          verify(
+            () => mockAdapter.fetch(captureAny(), any(), any()),
+          ).captured.cast<RequestOptions>().map(
+            (options) => options.uri.toString(),
+          );
+      expect(requested, [
+        'https://jelly.local/System/Info/Public',
+        'https://jelly.local/emby/System/Info/Public',
+      ]);
+    });
+
+    test('- identifies Emby from the /System/Ping product name', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.path.endsWith('/System/Ping')) {
+          return ResponseBody.fromString(
+            'Emby Server',
+            200,
+            headers: {
+              Headers.contentTypeHeader: ['text/plain'],
+            },
+          );
+        }
+        return jsonBody({'Id': 'a', 'Version': '4.9.5.0'}, 200);
+      });
+
+      final result = await service.discover('localhost:8096');
+
+      expect(result!.serverType, ServerType.emby);
+    });
+
+    test('- identifies Jellyfin from the /System/Ping product name '
+        'when the public info omits one', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.path.endsWith('/System/Ping')) {
+          return ResponseBody.fromString(
+            'Jellyfin Server',
+            200,
+            headers: {
+              Headers.contentTypeHeader: ['text/plain'],
+            },
+          );
+        }
+        return jsonBody({'Id': 'a', 'Version': '10.9.11'}, 200);
+      });
+
+      final result = await service.discover('localhost:8096');
+
+      expect(result!.serverType, ServerType.jellyfin);
+    });
+
+    test(
+      '- does not ping when the public info already names the product',
+      () async {
+        when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+          respondWith(
+            jsonBody({
+              'Id': 'a',
+              'Version': '10.9.11',
+              'ProductName': 'Jellyfin Server',
+            }, 200),
+          ),
+        );
+
+        await service.discover('localhost:8096');
+
+        final requested = verify(
+          () => mockAdapter.fetch(captureAny(), any(), any()),
+        ).captured.cast<RequestOptions>();
+        expect(
+          requested.where((o) => o.uri.path.endsWith('/System/Ping')),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      '- falls back to the address lists when nothing names the product',
+      () async {
+        when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+          respondWith(
+            jsonBody({
+              'LocalAddresses': <String>[],
+              'RemoteAddresses': <String>[],
+              'ServerName': '7dc78385bff0',
+              'Version': '4.9.5.0',
+              'Id': '25f50aa1ce3145439e758a520898bb26',
+            }, 200),
+          ),
+        );
+
+        final result = await service.discover('localhost:8096');
+
+        expect(result!.serverUrl, 'http://localhost:8096');
+        expect(result.serverType, ServerType.emby);
+      },
+    );
+
+    test('- detects Emby from the public info product name', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        respondWith(
+          jsonBody({
+            'Id': 'a',
+            'Version': '4.8.10.0',
+            'ProductName': 'Emby Server',
+          }, 200),
+        ),
+      );
+
+      final result = await service.discover('http://emby.local:8096');
+
+      expect(result!.serverUrl, 'http://emby.local:8096');
+      expect(result.serverType, ServerType.emby);
+    });
+
+    test('- falls back to the /emby path prefix when the root '
+        'does not answer', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (!options.uri.path.startsWith('/emby')) {
+          return jsonBody({'error': 'nope'}, 404);
+        }
+        return jsonBody({'Id': 'a', 'Version': '4.8.10.0'}, 200);
+      });
+
+      final result = await service.discover('http://emby.local:8096');
+
+      expect(result!.serverUrl, 'http://emby.local:8096/emby');
+      expect(result.serverType, ServerType.emby);
+    });
+
+    test('- keeps a jellyfin server found at the root', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        respondWith(
+          jsonBody({
+            'Id': 'a',
+            'Version': '10.9.11',
+            'ProductName': 'Jellyfin Server',
+          }, 200),
+        ),
+      );
+
+      final result = await service.discover('http://jelly.local:8096');
+
+      expect(result!.serverUrl, 'http://jelly.local:8096');
+      expect(result.serverType, ServerType.jellyfin);
+    });
+  });
+
+  group('serverPathCandidates', () {
+    test('- tries the root then the /emby prefix', () {
+      expect(serverPathCandidates('http://media.local:8096'), [
+        'http://media.local:8096',
+        'http://media.local:8096/emby',
+      ]);
+    });
+
+    test('- does not append /emby twice', () {
+      expect(serverPathCandidates('http://media.local:8096/emby'), [
+        'http://media.local:8096/emby',
+      ]);
+    });
+
+    test('- drops a trailing slash', () {
+      expect(serverPathCandidates('http://media.local:8096/'), [
+        'http://media.local:8096',
+        'http://media.local:8096/emby',
+      ]);
     });
   });
 

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ImageRefs {
 
- String? get primary; String? get albumPrimary; List<String> get backdrops;
+ String? get primary; String? get primaryItemId; String? get albumPrimary; List<String> get backdrops;
 /// Create a copy of ImageRefs
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ImageRefsCopyWith<ImageRefs> get copyWith => _$ImageRefsCopyWithImpl<ImageRefs>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageRefs&&(identical(other.primary, primary) || other.primary == primary)&&(identical(other.albumPrimary, albumPrimary) || other.albumPrimary == albumPrimary)&&const DeepCollectionEquality().equals(other.backdrops, backdrops));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageRefs&&(identical(other.primary, primary) || other.primary == primary)&&(identical(other.primaryItemId, primaryItemId) || other.primaryItemId == primaryItemId)&&(identical(other.albumPrimary, albumPrimary) || other.albumPrimary == albumPrimary)&&const DeepCollectionEquality().equals(other.backdrops, backdrops));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,primary,albumPrimary,const DeepCollectionEquality().hash(backdrops));
+int get hashCode => Object.hash(runtimeType,primary,primaryItemId,albumPrimary,const DeepCollectionEquality().hash(backdrops));
 
 @override
 String toString() {
-  return 'ImageRefs(primary: $primary, albumPrimary: $albumPrimary, backdrops: $backdrops)';
+  return 'ImageRefs(primary: $primary, primaryItemId: $primaryItemId, albumPrimary: $albumPrimary, backdrops: $backdrops)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ImageRefsCopyWith<$Res>  {
   factory $ImageRefsCopyWith(ImageRefs value, $Res Function(ImageRefs) _then) = _$ImageRefsCopyWithImpl;
 @useResult
 $Res call({
- String? primary, String? albumPrimary, List<String> backdrops
+ String? primary, String? primaryItemId, String? albumPrimary, List<String> backdrops
 });
 
 
@@ -65,9 +65,10 @@ class _$ImageRefsCopyWithImpl<$Res>
 
 /// Create a copy of ImageRefs
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? primary = freezed,Object? albumPrimary = freezed,Object? backdrops = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? primary = freezed,Object? primaryItemId = freezed,Object? albumPrimary = freezed,Object? backdrops = null,}) {
   return _then(_self.copyWith(
 primary: freezed == primary ? _self.primary : primary // ignore: cast_nullable_to_non_nullable
+as String?,primaryItemId: freezed == primaryItemId ? _self.primaryItemId : primaryItemId // ignore: cast_nullable_to_non_nullable
 as String?,albumPrimary: freezed == albumPrimary ? _self.albumPrimary : albumPrimary // ignore: cast_nullable_to_non_nullable
 as String?,backdrops: null == backdrops ? _self.backdrops : backdrops // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -155,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? primary,  String? albumPrimary,  List<String> backdrops)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? primary,  String? primaryItemId,  String? albumPrimary,  List<String> backdrops)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ImageRefs() when $default != null:
-return $default(_that.primary,_that.albumPrimary,_that.backdrops);case _:
+return $default(_that.primary,_that.primaryItemId,_that.albumPrimary,_that.backdrops);case _:
   return orElse();
 
 }
@@ -176,10 +177,10 @@ return $default(_that.primary,_that.albumPrimary,_that.backdrops);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? primary,  String? albumPrimary,  List<String> backdrops)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? primary,  String? primaryItemId,  String? albumPrimary,  List<String> backdrops)  $default,) {final _that = this;
 switch (_that) {
 case _ImageRefs():
-return $default(_that.primary,_that.albumPrimary,_that.backdrops);case _:
+return $default(_that.primary,_that.primaryItemId,_that.albumPrimary,_that.backdrops);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +197,10 @@ return $default(_that.primary,_that.albumPrimary,_that.backdrops);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? primary,  String? albumPrimary,  List<String> backdrops)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? primary,  String? primaryItemId,  String? albumPrimary,  List<String> backdrops)?  $default,) {final _that = this;
 switch (_that) {
 case _ImageRefs() when $default != null:
-return $default(_that.primary,_that.albumPrimary,_that.backdrops);case _:
+return $default(_that.primary,_that.primaryItemId,_that.albumPrimary,_that.backdrops);case _:
   return null;
 
 }
@@ -211,10 +212,11 @@ return $default(_that.primary,_that.albumPrimary,_that.backdrops);case _:
 @JsonSerializable()
 
 class _ImageRefs implements ImageRefs {
-  const _ImageRefs({this.primary, this.albumPrimary, final  List<String> backdrops = const []}): _backdrops = backdrops;
+  const _ImageRefs({this.primary, this.primaryItemId, this.albumPrimary, final  List<String> backdrops = const []}): _backdrops = backdrops;
   factory _ImageRefs.fromJson(Map<String, dynamic> json) => _$ImageRefsFromJson(json);
 
 @override final  String? primary;
+@override final  String? primaryItemId;
 @override final  String? albumPrimary;
  final  List<String> _backdrops;
 @override@JsonKey() List<String> get backdrops {
@@ -237,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageRefs&&(identical(other.primary, primary) || other.primary == primary)&&(identical(other.albumPrimary, albumPrimary) || other.albumPrimary == albumPrimary)&&const DeepCollectionEquality().equals(other._backdrops, _backdrops));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageRefs&&(identical(other.primary, primary) || other.primary == primary)&&(identical(other.primaryItemId, primaryItemId) || other.primaryItemId == primaryItemId)&&(identical(other.albumPrimary, albumPrimary) || other.albumPrimary == albumPrimary)&&const DeepCollectionEquality().equals(other._backdrops, _backdrops));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,primary,albumPrimary,const DeepCollectionEquality().hash(_backdrops));
+int get hashCode => Object.hash(runtimeType,primary,primaryItemId,albumPrimary,const DeepCollectionEquality().hash(_backdrops));
 
 @override
 String toString() {
-  return 'ImageRefs(primary: $primary, albumPrimary: $albumPrimary, backdrops: $backdrops)';
+  return 'ImageRefs(primary: $primary, primaryItemId: $primaryItemId, albumPrimary: $albumPrimary, backdrops: $backdrops)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$ImageRefsCopyWith<$Res> implements $ImageRefsCopyWith<$Re
   factory _$ImageRefsCopyWith(_ImageRefs value, $Res Function(_ImageRefs) _then) = __$ImageRefsCopyWithImpl;
 @override @useResult
 $Res call({
- String? primary, String? albumPrimary, List<String> backdrops
+ String? primary, String? primaryItemId, String? albumPrimary, List<String> backdrops
 });
 
 
@@ -274,9 +276,10 @@ class __$ImageRefsCopyWithImpl<$Res>
 
 /// Create a copy of ImageRefs
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? primary = freezed,Object? albumPrimary = freezed,Object? backdrops = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? primary = freezed,Object? primaryItemId = freezed,Object? albumPrimary = freezed,Object? backdrops = null,}) {
   return _then(_ImageRefs(
 primary: freezed == primary ? _self.primary : primary // ignore: cast_nullable_to_non_nullable
+as String?,primaryItemId: freezed == primaryItemId ? _self.primaryItemId : primaryItemId // ignore: cast_nullable_to_non_nullable
 as String?,albumPrimary: freezed == albumPrimary ? _self.albumPrimary : albumPrimary // ignore: cast_nullable_to_non_nullable
 as String?,backdrops: null == backdrops ? _self._backdrops : backdrops // ignore: cast_nullable_to_non_nullable
 as List<String>,

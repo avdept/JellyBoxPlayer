@@ -39,6 +39,8 @@ _ItemDTO _$ItemDTOFromJson(Map<String, dynamic> json) => _ItemDTO(
         (k, e) => MapEntry(k, e as String),
       ) ??
       const {},
+  primaryImageTag: json['PrimaryImageTag'] as String?,
+  primaryImageItemId: json['PrimaryImageItemId'] as String?,
   hasLyrics: json['HasLyrics'] as bool? ?? false,
   userData: json['UserData'] == null
       ? const UserData()
@@ -69,6 +71,8 @@ Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
   'Genres': instance.genres,
   'BackdropImageTags': instance.backdropImageTags,
   'ImageTags': instance.imageTags,
+  'PrimaryImageTag': instance.primaryImageTag,
+  'PrimaryImageItemId': instance.primaryImageItemId,
   'HasLyrics': instance.hasLyrics,
   'UserData': instance.userData,
   'MediaSources': instance.mediaSources,

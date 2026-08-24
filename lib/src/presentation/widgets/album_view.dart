@@ -57,7 +57,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
     if (tag == null) return const AssetImage(Images.album);
 
     return CachedNetworkImageProvider(
-      ref.read(imageServiceProvider).imagePath(tagId: tag, id: widget.album.id),
+      ref.read(imageServiceProvider).imagePath(tagId: tag, id: widget.album.primaryImageId),
     );
   }
 

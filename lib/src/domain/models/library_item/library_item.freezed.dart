@@ -241,8 +241,8 @@ return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,
 /// @nodoc
 
 
-class _LibraryItem implements LibraryItem {
-  const _LibraryItem({required this.id, required this.name, required this.kind, this.indexNumber = 0, this.duration = Duration.zero, this.path, this.collectionType, this.playlistItemId, this.overview, this.productionYear, this.albumId, this.albumName, this.albumArtist, final  List<ArtistRef> albumArtists = const [], final  List<String> genres = const [], this.images = const ImageRefs(), this.hasLyrics = false, this.userData = const PlaybackUserData(), final  List<AudioSourceInfo> audioSources = const []}): _albumArtists = albumArtists,_genres = genres,_audioSources = audioSources;
+class _LibraryItem extends LibraryItem {
+  const _LibraryItem({required this.id, required this.name, required this.kind, this.indexNumber = 0, this.duration = Duration.zero, this.path, this.collectionType, this.playlistItemId, this.overview, this.productionYear, this.albumId, this.albumName, this.albumArtist, final  List<ArtistRef> albumArtists = const [], final  List<String> genres = const [], this.images = const ImageRefs(), this.hasLyrics = false, this.userData = const PlaybackUserData(), final  List<AudioSourceInfo> audioSources = const []}): _albumArtists = albumArtists,_genres = genres,_audioSources = audioSources,super._();
   
 
 @override final  String id;

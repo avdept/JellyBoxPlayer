@@ -29,7 +29,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   Future<void> _onLibraryTap(LibraryItem lib) async {
     await ref.read(currentLibraryProvider.notifier).setLibrary(lib);
-    if (mounted) context.goNamed(Routes.browse.name);
+    if (mounted) context.goNamed(Routes.home.name);
   }
 
   void _autoSelectSingleLibrary(LibraryItem lib) {

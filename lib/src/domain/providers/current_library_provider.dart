@@ -26,7 +26,7 @@ class CurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?> {
       kind: ItemKind.library,
     );
 
-    if (library.id.isEmpty || (library.path?.isEmpty ?? true)) return null;
+    if (library.id.isEmpty) return null;
 
     return library;
   }

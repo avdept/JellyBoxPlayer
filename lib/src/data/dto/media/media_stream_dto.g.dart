@@ -8,6 +8,7 @@ part of 'media_stream_dto.dart';
 
 _MediaStreamDTO _$MediaStreamDTOFromJson(Map<String, dynamic> json) =>
     _MediaStreamDTO(
+      index: (json['Index'] as num?)?.toInt(),
       type: json['Type'] as String?,
       codec: json['Codec'] as String?,
       bitRate: (json['BitRate'] as num?)?.toInt(),
@@ -19,6 +20,7 @@ _MediaStreamDTO _$MediaStreamDTOFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$MediaStreamDTOToJson(_MediaStreamDTO instance) =>
     <String, dynamic>{
+      'Index': instance.index,
       'Type': instance.type,
       'Codec': instance.codec,
       'BitRate': instance.bitRate,

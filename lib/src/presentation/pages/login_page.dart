@@ -151,7 +151,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(Images.mainLogo),
+                        LoginLogo(
+                          serverType: _discoveredServer?.serverType,
+                        ),
                         const SizedBox(height: 63),
                         _serverURLField(),
                         const SizedBox(height: 8),
@@ -214,7 +216,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   Widget _discoveredServerText(ServerProbeResult server) => Padding(
     padding: const EdgeInsets.only(top: 4),
     child: Text(
-      'Discovered: ${server.info.serverName ?? 'Jellyfin server'}',
+      'Discovered: ${server.serverType.label} server',
       style: TextStyle(
         fontFamily: FontFamily.inter,
         fontSize: 12,

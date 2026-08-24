@@ -25,7 +25,7 @@ class LibrarySelectorButton extends ConsumerWidget {
   ) {
     final tag = library?.images.primary;
     final image = (tag != null)
-        ? ref.read(imageServiceProvider).albumIP(tagId: tag, id: library!.id)
+        ? ref.read(imageServiceProvider).albumIP(tagId: tag, id: library!.primaryImageId)
         : null;
     return CircleAvatar(
       radius: size / 2,

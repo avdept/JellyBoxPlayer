@@ -7,6 +7,7 @@ part 'image_refs.g.dart';
 abstract class ImageRefs with _$ImageRefs {
   const factory ImageRefs({
     String? primary,
+    String? primaryItemId,
     String? albumPrimary,
     @Default([]) List<String> backdrops,
   }) = _ImageRefs;

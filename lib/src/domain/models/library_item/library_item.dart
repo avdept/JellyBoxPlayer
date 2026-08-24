@@ -31,6 +31,10 @@ abstract class LibraryItem with _$LibraryItem {
     @Default([]) List<AudioSourceInfo> audioSources,
   }) = _LibraryItem;
 
+  const LibraryItem._();
+
+  String get primaryImageId => images.primaryItemId ?? id;
+
   // ignore: prefer_constructors_over_static_methods
   static LibraryItem fromJson(Map<String, dynamic> json) => LibraryItem(
     id: json['id'] as String,

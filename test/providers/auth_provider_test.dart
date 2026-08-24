@@ -2,12 +2,16 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/params/params.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../provider_container.dart';
@@ -16,11 +20,14 @@ class MockHttpClientAdapter extends Mock implements HttpClientAdapter {}
 
 class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
+class MockServerProbeService extends Mock implements ServerProbeService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockHttpClientAdapter mockAdapter;
   late MockSecureStorage mockStorage;
+  late MockServerProbeService mockProbe;
 
   const credentials = UserCredentials(
     username: 'alex',
@@ -58,6 +65,13 @@ void main() {
   setUp(() {
     mockAdapter = MockHttpClientAdapter();
     mockStorage = MockSecureStorage();
+    mockProbe = MockServerProbeService();
+    when(() => mockProbe.probe(any())).thenAnswer(
+      (_) async => const PublicSystemInfoDTO(
+        id: 'server-id-from-probe',
+        version: '10.9.11',
+      ),
+    );
     when(
       () => mockStorage.read(key: any(named: 'key')),
     ).thenAnswer((_) async => null);
@@ -187,5 +201,70 @@ void main() {
         verifyNever(() => mockStorage.read(key: 'x-mediabrowser-token'));
       },
     );
+  });
+
+  group('AuthNotifier server id backfill', () {
+    Future<ProviderContainer> restoreSession({String? storedServerId}) async {
+      when(
+        () => mockStorage.read(key: any(named: 'key')),
+      ).thenAnswer((invocation) async {
+        return switch (invocation.namedArguments[const Symbol('key')]) {
+          'serverUrl' => 'http://jelly.local',
+          'userId' => 'user-1',
+          'authToken' => 'token-1',
+          'serverId' => storedServerId,
+          _ => null,
+        };
+      });
+      respondWithStatus(200);
+
+      final container = createProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(mockStorage),
+          serverProbeServiceProvider.overrideWithValue(mockProbe),
+        ],
+      );
+      container.read(dioProvider).httpClientAdapter = mockAdapter;
+      await container.read(authProvider.future);
+      return container;
+    }
+
+    test('- fetches the server id when none was stored yet', () async {
+      final container = await restoreSession();
+
+      verify(() => mockProbe.probe('http://jelly.local')).called(1);
+      verify(
+        () => mockStorage.write(key: 'serverId', value: 'server-id-from-probe'),
+      ).called(1);
+      expect(container.read(currentServerIdProvider), 'server-id-from-probe');
+    });
+
+    test('- never fetches again once the id is stored', () async {
+      final container = await restoreSession(storedServerId: 'stored-id');
+
+      verifyNever(() => mockProbe.probe(any()));
+      verifyNever(
+        () => mockStorage.write(
+          key: 'serverId',
+          value: any(named: 'value'),
+        ),
+      );
+      expect(container.read(currentServerIdProvider), 'stored-id');
+    });
+
+    test('- leaves the id unset when the server cannot be reached', () async {
+      when(() => mockProbe.probe(any())).thenAnswer((_) async => null);
+
+      final container = await restoreSession();
+
+      verify(() => mockProbe.probe('http://jelly.local')).called(1);
+      verifyNever(
+        () => mockStorage.write(
+          key: 'serverId',
+          value: any(named: 'value'),
+        ),
+      );
+      expect(container.read(currentServerIdProvider), isNull);
+    });
   });
 }

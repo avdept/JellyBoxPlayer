@@ -62,7 +62,7 @@ class SongRowView extends ConsumerWidget {
   ImageProvider _coverImage(WidgetRef ref) {
     final tag = song.images.primary;
     if (tag != null) {
-      return ref.read(imageServiceProvider).albumIP(tagId: tag, id: song.id);
+      return ref.read(imageServiceProvider).albumIP(tagId: tag, id: song.primaryImageId);
     }
     return const AssetImage(Images.album);
   }

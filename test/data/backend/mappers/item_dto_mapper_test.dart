@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/data/backend/jellyfin/mappers/item_dto_mapper.dart';
+import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
@@ -56,7 +56,9 @@ void main() {
       expect(item.albumId, 'album-1');
       expect(item.albumName, 'Dummy');
       expect(item.albumArtist, 'Portishead');
-      expect(item.albumArtists, [const ArtistRef(id: 'artist-1', name: 'Portishead')]);
+      expect(item.albumArtists, [
+        const ArtistRef(id: 'artist-1', name: 'Portishead'),
+      ]);
       expect(item.images.primary, 'song-tag');
       expect(item.images.albumPrimary, 'album-tag');
       expect(item.images.backdrops, ['backdrop-1', 'backdrop-2']);
@@ -76,10 +78,11 @@ void main() {
     });
 
     test('- maps each Jellyfin item type to the matching ItemKind', () {
-      ItemKind kindOf(String type) =>
-          ItemDTO.fromJson({'Id': 'x', 'Name': 'x', 'Type': type})
-              .toLibraryItem()
-              .kind;
+      ItemKind kindOf(String type) => ItemDTO.fromJson({
+        'Id': 'x',
+        'Name': 'x',
+        'Type': type,
+      }).toLibraryItem().kind;
 
       expect(kindOf('Audio'), ItemKind.song);
       expect(kindOf('MusicAlbum'), ItemKind.album);
@@ -131,6 +134,37 @@ void main() {
       final restored = LibraryItem.fromJson(item.toJson());
 
       expect(restored, item);
+    });
+  });
+
+  group('primary image', () {
+    test('- ignores the Emby pointer fields', () {
+      final album = ItemDTO.fromJson({
+        'Id': '73',
+        'Name': 'Raised on Whipped Cream',
+        'Type': 'MusicAlbum',
+        'ImageTags': <String, String>{},
+        'PrimaryImageTag': 'emby-only',
+        'PrimaryImageItemId': '52',
+      }).toLibraryItem();
+
+      expect(album.images.primary, isNull);
+      expect(album.images.primaryItemId, isNull);
+      expect(album.primaryImageId, '73');
+    });
+  });
+
+  group('play count', () {
+    test('- does not invent a play count from the played flag', () {
+      final song = ItemDTO.fromJson({
+        'Id': '11',
+        'Name': 'Android of the Sandstorm',
+        'Type': 'Audio',
+        'UserData': {'Played': true, 'PlayCount': 0},
+      }).toLibraryItem();
+
+      expect(song.userData.played, isTrue);
+      expect(song.userData.playCount, 0);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/data/backend/emby/emby_client.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -11,10 +12,20 @@ import 'package:jplayer/src/providers/current_server_type_provider.dart';
 final mediaServerClientProvider = Provider<MediaServerClient>((ref) {
   final user = ref.watch(currentUserProvider);
   final baseUrl = ref.watch(baseUrlProvider) ?? '';
-  final serverType = ref.watch(currentServerTypeProvider) ?? ServerType.jellyfin;
+  final serverType =
+      ref.watch(currentServerTypeProvider) ?? ServerType.jellyfin;
   switch (serverType) {
     case ServerType.jellyfin:
       return JellyfinClient(
+        dio: ref.watch(dioProvider),
+        baseUrl: baseUrl,
+        userId: user?.userId ?? '',
+        token: user?.token ?? '',
+        deviceId: deviceId,
+      );
+
+    case ServerType.emby:
+      return EmbyClient(
         dio: ref.watch(dioProvider),
         baseUrl: baseUrl,
         userId: user?.userId ?? '',

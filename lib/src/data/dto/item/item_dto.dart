@@ -29,6 +29,8 @@ abstract class ItemDTO with _$ItemDTO {
     @Default([])
     List<String> backdropImageTags,
     @JsonKey(name: 'ImageTags') @Default({}) Map<String, String> imageTags,
+    @JsonKey(name: 'PrimaryImageTag') String? primaryImageTag,
+    @JsonKey(name: 'PrimaryImageItemId') String? primaryImageItemId,
     @JsonKey(name: 'HasLyrics') @Default(false) bool hasLyrics,
     @JsonKey(name: 'UserData') @Default(UserData()) UserData userData,
     @JsonKey(name: 'MediaSources')

@@ -20,7 +20,7 @@ class LibraryView extends ConsumerWidget {
 
     return ref
         .read(imageServiceProvider)
-        .imagePath(tagId: library.images.primary!, id: library.id);
+        .imagePath(tagId: library.images.primary!, id: library.primaryImageId);
   }
 
   ImageProvider libraryImage(WidgetRef ref) {
