@@ -83,7 +83,7 @@ final AutoDisposeProvider<List<LibraryItem>> likedSongsCoversProvider =
       final seenAlbums = <String>{};
       final picks = <LibraryItem>[];
       for (final song in page.items) {
-        if (song.coverImageTag == null) continue;
+        if (song.images.primary == null) continue;
         if (!seenAlbums.add(song.albumId ?? song.id)) continue;
         picks.add(song);
         if (picks.length == 4) break;

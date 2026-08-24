@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -314,7 +313,10 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       image: DecorationImage(
         image: ref
             .read(imageServiceProvider)
-            .itemImage(widget.artist, kind: ImageKind.backdrop),
+            .backdropIp(
+              tagId: widget.artist.images.backdrops.firstOrNull,
+              id: widget.artist.id,
+            ),
         fit: BoxFit.fitWidth,
       ),
     ),
@@ -331,7 +333,12 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   );
 
   Widget _mainImage() => Image(
-    image: ref.read(imageServiceProvider).itemImage(widget.artist),
+    image: ref
+        .read(imageServiceProvider)
+        .albumIP(
+          tagId: widget.artist.images.primary,
+          id: widget.artist.primaryImageId,
+        ),
     width: 500,
   );
 

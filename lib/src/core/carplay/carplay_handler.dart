@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
@@ -14,7 +15,6 @@ import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:string_capitalize/string_capitalize.dart';
 
@@ -342,12 +342,18 @@ class CarPlayHandler {
 
   static Map<String, dynamic> _toMap(ProviderContainer ref, LibraryItem item) {
     _items[item.id] = item;
-    final artUri = ref.read(imageServiceProvider).itemUri(item);
+    final localCover = DownloadPaths.coverFile(item.id);
+    final primaryTag = item.images.primary;
     return {
       'id': item.id,
       'title': item.name,
       'subtitle': item.albumArtist ?? '',
-      if (artUri != null) 'artworkUrl': artUri.toString(),
+      if (localCover != null)
+        'artworkUrl': localCover.uri.toString()
+      else if (primaryTag != null)
+        'artworkUrl': ref
+            .read(mediaServerClientProvider)
+            .imageUrl(id: item.id, tagId: primaryTag),
     };
   }
 

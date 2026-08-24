@@ -9,7 +9,6 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -62,13 +61,14 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   void initState() {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
-    _imageService = ref.read(imageServiceProvider);
+    _imageService = ImageService(client: ref.read(mediaServerClientProvider));
     _getSongs();
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (mounted) {
         _currentSong.value = event.currentSource?.tag as MediaItem?;
-        ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
-          widget.playlist,
+        ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
+          id: widget.playlist.primaryImageId,
+          tagId: widget.playlist.images.primary,
         );
       }
     });
@@ -98,7 +98,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
-  ImageProvider get albumCover => _imageService.itemImage(widget.playlist);
+  ImageProvider get albumCover => _imageService.albumIP(
+    id: widget.playlist.primaryImageId,
+    tagId: widget.playlist.images.primary,
+  );
 
   @override
   Widget build(BuildContext context) {
