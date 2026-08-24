@@ -37,7 +37,7 @@ List<LibraryItem> pickCoverSongs(List<LibraryItem> pool) {
   final picks = <LibraryItem>[];
   final seenAlbums = <String>{};
   for (final song in pool) {
-    if (song.images.primary == null && song.images.albumPrimary == null) {
+    if (song.coverImageTag == null) {
       continue;
     }
     if (!seenAlbums.add(song.albumId ?? song.id)) continue;
