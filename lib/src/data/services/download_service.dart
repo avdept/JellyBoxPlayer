@@ -116,22 +116,14 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
-  Future<File?> downloadAlbumCover(
-    String albumId,
-    String? imageTag,
-    MediaServerClient mediaServerClient,
-  ) async {
-    if (imageTag == null) return null;
+  Future<File?> downloadAlbumCover(String albumId, Uri? uri) async {
+    if (uri == null) return null;
     await DownloadPaths.init();
     final path = DownloadPaths.coverPath(albumId);
     if (path == null) return null;
 
     final file = File(path);
     if (file.existsSync() && file.lengthSync() > 0) return file;
-
-    final uri = Uri.parse(
-      mediaServerClient.imageUrl(id: albumId, tagId: imageTag),
-    );
 
     final httpClient = HttpClient();
     try {

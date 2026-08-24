@@ -162,12 +162,13 @@ abstract class MediaServerClient {
     bool preferHls = true,
   });
 
-  String imageUrl({
-    required String id,
-    String? tagId,
+  Uri? imageUri(
+    LibraryItem item, {
     ImageKind kind = ImageKind.primary,
-    int size = 420,
+    int? size,
   });
+
+  Uri resizedImageUri(Uri uri, int size);
 
   Future<void> reportPlaybackStarted(PlaybackReport report);
 

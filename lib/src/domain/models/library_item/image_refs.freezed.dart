@@ -211,8 +211,8 @@ return $default(_that.primary,_that.primaryItemId,_that.albumPrimary,_that.backd
 /// @nodoc
 @JsonSerializable()
 
-class _ImageRefs implements ImageRefs {
-  const _ImageRefs({this.primary, this.primaryItemId, this.albumPrimary, final  List<String> backdrops = const []}): _backdrops = backdrops;
+class _ImageRefs extends ImageRefs {
+  const _ImageRefs({this.primary, this.primaryItemId, this.albumPrimary, final  List<String> backdrops = const []}): _backdrops = backdrops,super._();
   factory _ImageRefs.fromJson(Map<String, dynamic> json) => _$ImageRefsFromJson(json);
 
 @override final  String? primary;

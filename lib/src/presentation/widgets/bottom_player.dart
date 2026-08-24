@@ -7,13 +7,13 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
-import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
@@ -310,7 +310,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       builder: (context, snapshot) {
         final isEmpty = snapshot.data?.sequence.isEmpty ?? true;
         final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
-        final image = artworkImage(currentSong?.artUri);
+        final image = ref
+            .read(imageServiceProvider)
+            .artworkImage(currentSong?.artUri);
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _imageProvider.value = image,
         );
@@ -458,7 +460,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     return SizedBox.expand(
       key: ValueKey(currentSong?.id),
       child: Image(
-        image: artworkImage(currentSong?.artUri),
+        image: ref.read(imageServiceProvider).artworkImage(currentSong?.artUri),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) =>
             Image.asset(Images.album, fit: BoxFit.cover),

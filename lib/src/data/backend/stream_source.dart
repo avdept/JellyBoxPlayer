@@ -10,4 +10,4 @@ class StreamSource {
   final String outputContainer;
 }
 
-enum ImageKind { primary, backdrop }
+enum ImageKind { primary, album, backdrop }

@@ -9,6 +9,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -114,14 +115,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   void initState() {
     super.initState();
     _isFavorite = widget.album.userData.isFavorite;
-    _imageService = ImageService(client: ref.read(mediaServerClientProvider));
+    _imageService = ref.read(imageServiceProvider);
     unawaited(_loadSongs());
     ref.read(playerProvider).sequenceStateStream.listen((event) {
       if (mounted) {
         _currentSong.value = event.currentSource?.tag as MediaItem?;
-        ref.read(imageSchemeProvider.notifier).state = _imageService.albumIP(
-          id: widget.album.primaryImageId,
-          tagId: widget.album.images.primary,
+        ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
+          widget.album,
         );
       }
     });
@@ -205,10 +205,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
-  ImageProvider get albumCover => _imageService.albumIP(
-    id: widget.album.primaryImageId,
-    tagId: widget.album.images.primary,
-  );
+  ImageProvider get albumCover => _imageService.itemImage(widget.album);
 
   @override
   Widget build(BuildContext context) {
