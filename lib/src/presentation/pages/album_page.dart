@@ -506,8 +506,32 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   );
 
   Widget _playAlbumButton() => PlayButton(
-    onPressed: () {},
+    isLoading: ref.watch(setPlaybackProvider) == widget.album.id,
+    onPressed: _onPlayAlbumPressed,
   );
+
+  Future<void> _onPlayAlbumPressed() async {
+    try {
+      final result = await ref
+          .read(setPlaybackProvider.notifier)
+          .playAlbum(widget.album);
+      if (result == SetPlaybackResult.empty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Nothing to play in "${widget.album.name}"'),
+          ),
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not start playing "${widget.album.name}"'),
+          ),
+        );
+      }
+    }
+  }
 
   List<Widget> _suggestedAlbumsSlivers() {
     final albums = ref
