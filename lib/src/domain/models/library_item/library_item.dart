@@ -35,6 +35,22 @@ abstract class LibraryItem with _$LibraryItem {
 
   String get primaryImageId => images.primaryItemId ?? id;
 
+  String? get coverImageTag {
+    final primary = images.primary;
+    if (primary != null) return primary;
+    return (albumId != null) ? images.albumPrimary : null;
+  }
+
+  String get coverImageId {
+    final album = albumId;
+    if (images.primary == null &&
+        album != null &&
+        images.albumPrimary != null) {
+      return album;
+    }
+    return primaryImageId;
+  }
+
   // ignore: prefer_constructors_over_static_methods
   static LibraryItem fromJson(Map<String, dynamic> json) => LibraryItem(
     id: json['id'] as String,
