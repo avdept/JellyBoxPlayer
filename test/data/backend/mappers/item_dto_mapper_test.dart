@@ -153,4 +153,18 @@ void main() {
       expect(album.primaryImageId, '73');
     });
   });
+
+  group('play count', () {
+    test('- does not invent a play count from the played flag', () {
+      final song = ItemDTO.fromJson({
+        'Id': '11',
+        'Name': 'Android of the Sandstorm',
+        'Type': 'Audio',
+        'UserData': {'Played': true, 'PlayCount': 0},
+      }).toLibraryItem();
+
+      expect(song.userData.played, isTrue);
+      expect(song.userData.playCount, 0);
+    });
+  });
 }

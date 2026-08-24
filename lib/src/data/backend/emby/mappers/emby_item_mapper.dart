@@ -20,8 +20,14 @@ extension EmbyItemMapping on ItemDTO {
     return item.copyWith(
       hasLyrics: hasLyricStream,
       images: _embyImages(item.images),
+      userData: _embyUserData(item.userData),
     );
   }
+
+  PlaybackUserData _embyUserData(PlaybackUserData mapped) =>
+      mapped.played && mapped.playCount == 0
+      ? mapped.copyWith(playCount: 1)
+      : mapped;
 
   ImageRefs _embyImages(ImageRefs mapped) {
     if (mapped.primary != null || primaryImageTag == null) return mapped;

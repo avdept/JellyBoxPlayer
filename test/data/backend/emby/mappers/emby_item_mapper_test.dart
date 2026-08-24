@@ -104,4 +104,33 @@ void main() {
       expect(album.primaryImageId, '73');
     });
   });
+
+  group('play count', () {
+    LibraryItem songWith(Map<String, Object?> userData) => ItemDTO.fromJson({
+      'Id': '11',
+      'Name': 'Android of the Sandstorm',
+      'Type': 'Audio',
+      'UserData': userData,
+    }).toEmbyLibraryItem();
+
+    test('- counts a played song as one play, since Emby list responses '
+        'always report PlayCount 0', () {
+      final song = songWith({'Played': true, 'PlayCount': 0});
+
+      expect(song.userData.played, isTrue);
+      expect(song.userData.playCount, 1);
+    });
+
+    test('- keeps a real count when Emby does report one', () {
+      final song = songWith({'Played': true, 'PlayCount': 3});
+
+      expect(song.userData.playCount, 3);
+    });
+
+    test('- leaves an unplayed song at zero', () {
+      final song = songWith({'Played': false, 'PlayCount': 0});
+
+      expect(song.userData.playCount, 0);
+    });
+  });
 }
