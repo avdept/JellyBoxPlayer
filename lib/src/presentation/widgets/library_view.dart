@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
@@ -14,9 +15,20 @@ class LibraryView extends ConsumerWidget {
   final LibraryItem library;
   final VoidCallback? onTap;
 
-  ImageProvider libraryImage(WidgetRef ref) => ref
-      .read(imageServiceProvider)
-      .itemImage(library, fallback: Images.librarySample);
+  String? imagePath(WidgetRef ref) {
+    if (library.images.primary == null) return null;
+
+    return ref
+        .read(imageServiceProvider)
+        .imagePath(tagId: library.images.primary!, id: library.primaryImageId);
+  }
+
+  ImageProvider libraryImage(WidgetRef ref) {
+    if (imagePath(ref) != null)
+      return CachedNetworkImageProvider(imagePath(ref)!);
+
+    return const AssetImage(Images.librarySample);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

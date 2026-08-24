@@ -1,5 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -46,8 +49,17 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
   var _isPlayHovered = false;
   var _isPlayLoading = false;
 
-  ImageProvider get _libraryImage =>
-      ref.read(imageServiceProvider).itemImage(widget.album);
+  ImageProvider get _libraryImage {
+    final downloadedCover = DownloadPaths.coverFile(widget.album.id);
+    if (downloadedCover != null) return FileImage(downloadedCover);
+
+    final tag = widget.album.images.primary;
+    if (tag == null) return const AssetImage(Images.album);
+
+    return CachedNetworkImageProvider(
+      ref.read(imageServiceProvider).imagePath(tagId: tag, id: widget.album.primaryImageId),
+    );
+  }
 
   String get _subtitleText =>
       widget.subtitle ??

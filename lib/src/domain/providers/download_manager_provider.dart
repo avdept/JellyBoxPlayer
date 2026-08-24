@@ -11,7 +11,6 @@ import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
   late DownloadService _downloadService;
@@ -50,12 +49,8 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
         if (albumId != null) {
           await _downloadService.downloadAlbumCover(
             albumId,
-            ref
-                .read(imageServiceProvider)
-                .remoteImageUri(
-                  id: albumId,
-                  tagId: song.images.albumPrimary ?? song.images.primary,
-                ),
+            song.images.albumPrimary ?? song.images.primary,
+            client,
           );
         }
 
@@ -97,9 +92,8 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
         await _database.insertDownloadedAlbum(album, files: files);
         await _downloadService.downloadAlbumCover(
           album.id,
-          ref
-              .read(imageServiceProvider)
-              .remoteImageUri(id: album.id, tagId: album.images.primary),
+          album.images.primary,
+          client,
         );
       }
 

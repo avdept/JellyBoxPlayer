@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -58,8 +59,13 @@ class SongRowView extends ConsumerWidget {
     return '$negativeSign${duration.inHours > 0 ? '${twoDigits(duration.inHours)}:' : ''}$twoDigitMinutes:$twoDigitSeconds';
   }
 
-  ImageProvider _coverImage(WidgetRef ref) =>
-      ref.read(imageServiceProvider).itemImage(song);
+  ImageProvider _coverImage(WidgetRef ref) {
+    final tag = song.images.primary;
+    if (tag != null) {
+      return ref.read(imageServiceProvider).albumIP(tagId: tag, id: song.primaryImageId);
+    }
+    return const AssetImage(Images.album);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

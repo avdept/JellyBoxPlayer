@@ -10,8 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
@@ -131,8 +131,8 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   void _prepareArtwork(MediaItem? song) {
     final id = song?.id;
     _pendingSongId = id;
-    final cover = ImageService.uriImage(song?.artUri, size: 1024);
-    final background = ImageService.uriImage(song?.artUri);
+    final cover = artworkImage(song?.artUri, size: 1024);
+    final background = artworkImage(song?.artUri);
     unawaited(() async {
       await precacheImage(cover, context);
       ui.FragmentShader? shader;
