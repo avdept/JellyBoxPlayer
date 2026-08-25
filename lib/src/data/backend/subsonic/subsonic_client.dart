@@ -496,6 +496,28 @@ class SubsonicClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getItemsByIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+
+    final songs = await Future.wait([for (final id in ids) _songOrNull(id)]);
+    return [
+      for (final song in songs)
+        if (song != null) song,
+    ];
+  }
+
+  Future<LibraryItem?> _songOrNull(String id) async {
+    try {
+      return (await _api.getSong(
+        id,
+      )).toLibraryItem(lyricsAvailable: capabilities.lyrics);
+    } on DioException catch (e) {
+      if (MediaServerException.fromDio(e).isNotFound) return null;
+      rethrow;
+    }
+  }
+
+  @override
   Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async =>
       switch (kind) {
         ItemKind.song => (await _api.getSong(
@@ -668,6 +690,8 @@ class SubsonicClient implements MediaServerClient {
     LibraryItem song, {
     required String playSessionId,
     required StreamTargetProfile target,
+    bool forceTranscode = false,
+    Duration? startPosition,
   }) async {
     final audioSource = song.audioSources.firstOrNull;
     final profile = AudioStreamProfile.forSource(
@@ -676,7 +700,7 @@ class SubsonicClient implements MediaServerClient {
       sourceCodec: audioSource?.codec,
     );
 
-    if (!profile.requiresTranscode) {
+    if (!forceTranscode && !profile.requiresTranscode) {
       final container = profile.outputContainer;
       return StreamSource(
         uri: _api.streamUri(song.id, format: directPlayFormat),
