@@ -10,9 +10,12 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/generated_playlists_setting_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
+import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
@@ -22,6 +25,8 @@ class CarPlayHandler {
   static const _channel = MethodChannel('com.prodigytech.jellybox/carplay');
   static final _items = <String, LibraryItem>{};
   static var _songs = <LibraryItem>[];
+  static ProviderSubscription<AsyncValue<List<GeneratedPlaylist>>>? _mixesSub;
+  static ProviderSubscription<AsyncValue<LibraryPage>>? _likedSongsSub;
   static String? _lastSetId;
   static String? _lastSongId;
   static bool? _lastPlaying;
@@ -135,7 +140,9 @@ class CarPlayHandler {
 
   static Future<Map<String, dynamic>> _home(ProviderContainer ref) async {
     final user = ref.read(currentUserProvider);
-    if (user == null) return {'recent': <Map<String, dynamic>>[]};
+    if (user == null) {
+      return {'recent': <Map<String, dynamic>>[], 'mixes': _mixes(ref)};
+    }
 
     final client = ref.read(mediaServerClientProvider);
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
@@ -149,7 +156,10 @@ class CarPlayHandler {
     });
 
     final shuffled = [...recent]..shuffle();
-    return {'recent': shuffled.map((e) => _toMap(ref, e)).toList()};
+    return {
+      'recent': shuffled.map((e) => _toMap(ref, e)).toList(),
+      'mixes': _mixes(ref),
+    };
   }
 
   static Future<Map<String, dynamic>> _list(
@@ -168,6 +178,9 @@ class CarPlayHandler {
     final sortBy = filter.orderBy.name.capitalize();
     final sortOrder = filter.desc ? 'Descending' : 'Ascending';
     final type = args['type'] as String?;
+    if (type == 'mixes') {
+      return {'items': _mixes(ref), 'sort': sort, 'hasMore': false};
+    }
     final startIndex = (args['startIndex'] as int?) ?? 0;
     final query = (args['query'] as String?)?.trim() ?? '';
     final artistId = args['artistId'] as String?;
@@ -340,6 +353,57 @@ class CarPlayHandler {
     }
   }
 
+  static List<Map<String, dynamic>> _mixes(ProviderContainer ref) {
+    final entries = <Map<String, dynamic>>[];
+    if (ref.read(generatedPlaylistsDisabledProvider)) {
+      _mixesSub?.close();
+      _mixesSub = null;
+    } else {
+      _mixesSub ??= ref.listen(
+        todaysPlaylistsProvider,
+        (previous, next) => _notifyContentChanged(),
+      );
+      final playlists = ref.read(todaysPlaylistsProvider).valueOrNull;
+      for (final playlist in playlists ?? const <GeneratedPlaylist>[]) {
+        entries.add(_setMap(ref, playlist.item, playlist.coverSongs));
+      }
+    }
+
+    final liked = _likedSongs(ref);
+    if (liked != null) entries.add(liked);
+    return entries;
+  }
+
+  static Map<String, dynamic>? _likedSongs(ProviderContainer ref) {
+    _likedSongsSub ??= ref.listen(
+      favouriteSongsProvider,
+      (previous, next) => _notifyContentChanged(),
+    );
+    final page = ref.read(favouriteSongsProvider).valueOrNull;
+    if (page == null || page.items.isEmpty) return null;
+    return _setMap(ref, likedSongsPlaylist, ref.read(likedSongsCoversProvider));
+  }
+
+  static Map<String, dynamic> _setMap(
+    ProviderContainer ref,
+    LibraryItem item,
+    List<LibraryItem> covers,
+  ) {
+    _items[item.id] = item;
+    final imageService = ref.read(imageServiceProvider);
+    var artUri = imageService.itemUri(item);
+    for (final song in covers) {
+      if (artUri != null) break;
+      artUri = imageService.itemUri(song);
+    }
+    return {
+      'id': item.id,
+      'title': item.name,
+      'subtitle': '',
+      if (artUri != null) 'artworkUrl': artUri.toString(),
+    };
+  }
+
   static Map<String, dynamic> _toMap(ProviderContainer ref, LibraryItem item) {
     _items[item.id] = item;
     final artUri = ref.read(imageServiceProvider).itemUri(item);
@@ -361,6 +425,12 @@ class CarPlayHandler {
     switch (args['type']) {
       case 'playlist':
         await playback.playPlaylist(item);
+      case 'mix':
+        if (item.id == likedSongsPlaylistId) {
+          await playback.playFavouriteSongs(item);
+        } else {
+          await playback.playGeneratedPlaylist(item);
+        }
       case 'artist':
         await playback.playArtist(item);
       case 'album':

@@ -162,7 +162,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       guard let self, let data else { return }
 
       let recentEntries = data["recent"] as? [[String: Any]] ?? []
+      let mixEntries = data["mixes"] as? [[String: Any]] ?? []
       var sections = [CPListSection(items: [self.makeBrowseRow()])]
+      if !mixEntries.isEmpty {
+        sections.append(
+          CPListSection(items: [self.makeMixRow(entries: mixEntries)])
+        )
+      }
       if !recentEntries.isEmpty {
         sections.append(
           CPListSection(items: [self.makeRecentRow(entries: recentEntries)])
@@ -357,6 +363,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     case "albums": return "album"
     case "artists": return "artist"
     case "playlists": return "playlist"
+    case "mixes": return "mix"
     case "songs": return "song"
     default: return type
     }
@@ -564,6 +571,44 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         )
       )
     }
+  }
+
+  private func makeMixRow(entries: [[String: Any]]) -> CPListImageRowItem {
+    let row: CPListImageRowItem
+    if #available(iOS 26.0, *) {
+      let visible = mixEntries(entries, limit: cardsPerLine())
+      row = CPListImageRowItem(
+        text: "Made for You",
+        gridElements: gridElements(for: visible, padTo: cardsPerLine()),
+        allowsMultipleLines: false
+      )
+      row.listImageRowHandler = { [weak self] _, index, completion in
+        guard index < visible.count else {
+          completion()
+          return
+        }
+        self?.selectItem(playType: "mix", entry: visible[index])
+        completion()
+      }
+    } else {
+      row = makeCoverRow(
+        entries: mixEntries(entries, limit: 8),
+        playType: "mix",
+        text: "Made for You"
+      )
+    }
+    row.handler = { [weak self] _, completion in
+      self?.pushBrowseList(type: "mixes", title: "Made for You")
+      completion()
+    }
+    return row
+  }
+
+  private func mixEntries(_ entries: [[String: Any]], limit: Int) -> [[String: Any]] {
+    guard entries.count > limit, limit > 1, let last = entries.last else {
+      return Array(entries.prefix(limit))
+    }
+    return Array(entries.prefix(limit - 1)) + [last]
   }
 
   private func makeRecentRow(entries: [[String: Any]]) -> CPListImageRowItem {
@@ -808,6 +853,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       return
     }
     guard let url = URL(string: urlString) else { return }
+    if url.isFileURL {
+      guard let image = UIImage(contentsOfFile: url.path) else { return }
+      artworkCache[urlString] = image
+      completion(image)
+      return
+    }
     URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
       guard let data, let image = UIImage(data: data) else { return }
       DispatchQueue.main.async {
