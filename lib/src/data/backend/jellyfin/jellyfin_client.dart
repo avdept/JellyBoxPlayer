@@ -240,6 +240,26 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getItemsByIds({
+    required String userId,
+    required List<String> ids,
+  }) async {
+    if (ids.isEmpty) return const [];
+
+    final response = await _api.getItemsByIds(
+      userId: userId,
+      ids: ids.join(','),
+    );
+    final items = response.data.items.map((item) => item.toLibraryItem());
+    final byId = {for (final item in items) item.id: item};
+
+    return [
+      for (final id in ids)
+        if (byId[id] case final item?) item,
+    ];
+  }
+
+  @override
   Future<LibraryItem> getItem(String itemId) async {
     final response = await _api.getItem(itemId: itemId);
     return response.data.toLibraryItem();
@@ -373,6 +393,8 @@ class JellyfinClient implements MediaServerClient {
     LibraryItem song, {
     required String playSessionId,
     bool preferHls = true,
+    bool forceTranscode = false,
+    Duration? startPosition,
   }) async {
     final audioSource = song.audioSources.firstOrNull;
 
@@ -381,7 +403,7 @@ class JellyfinClient implements MediaServerClient {
       sourceCodec: audioSource?.codec,
     );
 
-    final useHls = preferHls && profile.requiresTranscode;
+    final useHls = preferHls && (forceTranscode || profile.requiresTranscode);
 
     final uri = _resolve(
       useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
@@ -395,6 +417,8 @@ class JellyfinClient implements MediaServerClient {
         if (useHls) ...{
           'SegmentContainer': profile.hlsSegmentContainer,
           'TranscodeReasons': 'AudioCodecNotSupported',
+          if (startPosition != null)
+            'StartTimeTicks': '${startPosition.inMicroseconds * 10}',
         } else ...{
           'TranscodingProtocol': 'http',
           'TranscodingContainer': profile.transcodingContainer,

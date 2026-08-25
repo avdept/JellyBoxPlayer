@@ -163,6 +163,38 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
+  Future<HttpResponse<ItemsWrapper>> getItemsByIds({
+    required String userId,
+    required String ids,
+    List<String> fields = const ['MediaSources'],
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'Ids': ids, r'Fields': fields};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Users/${userId}/Items',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ItemsWrapper _value;
+    try {
+      _value = ItemsWrapper.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<ItemsWrapper>> getAllSongs({
     required String userId,
     String? libraryId,

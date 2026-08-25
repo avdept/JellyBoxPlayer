@@ -41,6 +41,13 @@ abstract class JellyfinApi {
   });
 
   @GET('/Users/{userId}/Items')
+  Future<HttpResponse<ItemsWrapper>> getItemsByIds({
+    @Path('userId') required String userId,
+    @Query('Ids') required String ids,
+    @Query('Fields') List<String> fields = const ['MediaSources'],
+  });
+
+  @GET('/Users/{userId}/Items')
   Future<HttpResponse<ItemsWrapper>> getAllSongs({
     @Path('userId') required String userId,
     @Query('ParentId') String? libraryId,

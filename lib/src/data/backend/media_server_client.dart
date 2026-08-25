@@ -103,6 +103,11 @@ abstract class MediaServerClient {
 
   Future<LibraryItem> getItem(String itemId);
 
+  Future<List<LibraryItem>> getItemsByIds({
+    required String userId,
+    required List<String> ids,
+  });
+
   Future<LibraryPage> searchAlbums({
     required String userId,
     required String searchTerm,
@@ -160,6 +165,8 @@ abstract class MediaServerClient {
     LibraryItem song, {
     required String playSessionId,
     bool preferHls = true,
+    bool forceTranscode = false,
+    Duration? startPosition,
   });
 
   Uri? imageUri(

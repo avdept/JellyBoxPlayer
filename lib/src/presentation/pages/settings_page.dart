@@ -8,6 +8,10 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/data/conductor/conductor_models.dart';
+import 'package:jplayer/src/domain/providers/conductor_provider.dart';
+import 'package:jplayer/src/presentation/pages/handoff_bench_page.dart';
+import 'package:jplayer/src/presentation/widgets/conductor_devices_sheet.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -106,6 +110,10 @@ class SettingsPage extends ConsumerWidget {
                 children: [
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
+                  if (kDebugMode) _handoffBenchButton(context, ref),
+                  _conductorHeader(),
+                  _conductorUrlField(ref),
+                  _conductorStatus(context, ref),
                   _changelogButton(context, device),
                   _settingCheckbox(
                     ref: ref,
@@ -190,6 +198,84 @@ class SettingsPage extends ConsumerWidget {
                 ref.read(provider.notifier).enabled = value ?? false,
           ),
           Text(label),
+        ],
+      ),
+    );
+  }
+
+  Widget _handoffBenchButton(BuildContext context, WidgetRef ref) =>
+      TextButton.icon(
+        onPressed: () {
+          final album = ref.read(playbackProvider).album;
+          if (album == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Play an album first — the bench hands off its queue.',
+                ),
+              ),
+            );
+            return;
+          }
+          unawaited(Navigator.of(context).push(HandoffBenchPage.route(album)));
+        },
+        style: _buttonStyle,
+        icon: const Icon(Icons.timer_outlined),
+        label: const Text('Handoff bench'),
+      );
+
+  Widget _conductorHeader() => const Padding(
+    padding: EdgeInsets.only(left: 12, top: 20, bottom: 4),
+    child: Text(
+      'Continuity',
+      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, height: 1.2),
+    ),
+  );
+
+  Widget _conductorUrlField(WidgetRef ref) => Padding(
+    padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
+    child: SizedBox(
+      width: 320,
+      child: TextFormField(
+        initialValue: ref.read(conductorUrlProvider),
+        decoration: const InputDecoration(
+          labelText: 'Conductor address',
+          hintText: '192.168.1.10:4010',
+          helperText: 'Leave empty to turn continuity off',
+        ),
+        onFieldSubmitted: (value) =>
+            ref.read(conductorUrlProvider.notifier).url = value,
+      ),
+    ),
+  );
+
+  Widget _conductorStatus(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(conductorProvider);
+    final label = switch (state.status) {
+      ConductorStatus.off => 'Off',
+      ConductorStatus.connecting => 'Connecting...',
+      ConductorStatus.reconnecting => 'Reconnecting...',
+      ConductorStatus.error => state.error ?? 'Connection problem',
+      ConductorStatus.listening => 'Connected — playing elsewhere',
+      ConductorStatus.rendering => 'Connected — playing here',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label · ${state.devices.length} device'
+            '${state.devices.length == 1 ? '' : 's'}',
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: () => unawaited(ConductorDevicesSheet.show(context)),
+            style: _buttonStyle,
+            icon: const Icon(Icons.devices),
+            label: const Text('Play on...'),
+          ),
         ],
       ),
     );

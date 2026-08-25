@@ -62,6 +62,7 @@ dependencies:
   updatify_flutter: ^1.7.1
   plausible: ^1.0.1
   connectivity_plus: ^7.3.1
+  web_socket_channel: ^3.0.3
 
 dev_dependencies:
   flutter_test:
