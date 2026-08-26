@@ -354,7 +354,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       song: song,
       source: useHls
           ? HlsAudioSource(audioSourceUri, tag: tag)
-          : AudioSource.uri(audioSourceUri, tag: tag),
+          : ProgressiveAudioSource(
+              audioSourceUri,
+              tag: tag,
+              options: const ProgressiveAudioSourceOptions(
+                darwinAssetOptions: DarwinAssetOptions(
+                  preferPreciseDurationAndTiming: true,
+                ),
+              ),
+            ),
     );
   }
 
