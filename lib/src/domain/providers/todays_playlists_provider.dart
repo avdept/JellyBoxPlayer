@@ -7,7 +7,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/generated_playlists_setting_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 Future<List<LibraryItem>> loadGeneratedPlaylistSongs(
@@ -53,7 +53,9 @@ class TodaysPlaylistsNotifier
     extends AutoDisposeAsyncNotifier<List<GeneratedPlaylist>> {
   @override
   FutureOr<List<GeneratedPlaylist>> build() async {
-    if (ref.watch(generatedPlaylistsDisabledProvider)) return const [];
+    if (ref.watch(settingProvider(AppSetting.generatedPlaylistsDisabled))) {
+      return const [];
+    }
 
     final userId = ref.watch(currentUserProvider)?.userId;
     if (userId == null) return const [];

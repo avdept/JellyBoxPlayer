@@ -39,6 +39,39 @@ class _MainPageState extends ConsumerState<MainPage> {
     (JPlayer.download, 'Downloads'),
   };
 
+  Widget _collapseButton(bool collapsed) {
+    return IconButton(
+      onPressed: () => ref
+          .read(appSettingsProvider.notifier)
+          .toggle(AppSetting.sidebarCollapsed),
+      icon: const Icon(Icons.menu),
+      color: _theme.colorScheme.onPrimary,
+      tooltip: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+    );
+  }
+
+  Widget _logoutButton(bool collapsed) {
+    final button = TextButton(
+      onPressed: ref.read(authProvider.notifier).logout,
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(JPlayer.log_out),
+          Flexible(
+            child: CollapsibleLabel(
+              child: Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Text('Log out'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return collapsed ? Tooltip(message: 'Log out', child: button) : button;
+  }
+
   void _navigateToItem(int index) {
     ref.read(lyricsVisibleProvider.notifier).state = false;
     widget.shell.goBranch(
@@ -82,6 +115,9 @@ class _MainPageState extends ConsumerState<MainPage> {
   Widget build(BuildContext context) {
     final currentIndex = widget.shell.currentIndex;
     final isOffline = ref.watch(isOfflineProvider);
+    final sidebarCollapsed = ref.watch(
+      settingProvider(AppSetting.sidebarCollapsed),
+    );
 
     final scaffold = Scaffold(
       body: Stack(
@@ -95,22 +131,31 @@ class _MainPageState extends ConsumerState<MainPage> {
                     vertical: 30,
                     horizontal: 20,
                   ),
+                  collapsed: sidebarCollapsed,
                   selectedItemColor: _theme.colorScheme.primary,
                   unselectedItemColor: _theme.colorScheme.onPrimary,
                   selectedFontSize: 16,
                   unselectedFontSize: 16,
-                  leading: const Text(
-                    'JellyBox',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  leading: Row(
+                    children: [
+                      const CollapsibleLabel(
+                        alignment: Alignment.centerLeft,
+                        slide: 0,
+                        child: Text(
+                          'JellyBox',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      _collapseButton(sidebarCollapsed),
+                    ],
                   ),
-                  trailing: TextButton.icon(
-                    onPressed: ref.read(authProvider.notifier).logout,
-                    icon: const Icon(JPlayer.log_out),
-                    label: const Text('Log out'),
-                  ),
+                  trailing: _logoutButton(sidebarCollapsed),
                   selectedIndex: currentIndex,
                   onDestinationSelected: _navigateToItem,
                   destinations: List.generate(

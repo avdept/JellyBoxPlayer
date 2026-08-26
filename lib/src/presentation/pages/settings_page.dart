@@ -26,7 +26,6 @@ class SettingsPage extends ConsumerWidget {
 
   ButtonStyle get _buttonStyle => TextButton.styleFrom(
     padding: _buttonPadding,
-    // Match the 8px corner radius used by the sidebar navigation rail items.
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
   );
 
@@ -109,7 +108,7 @@ class SettingsPage extends ConsumerWidget {
                   _changelogButton(context, device),
                   _settingCheckbox(
                     ref: ref,
-                    provider: generatedPlaylistsDisabledProvider,
+                    setting: AppSetting.generatedPlaylistsDisabled,
                     label: 'Disable auto-generated playlists',
                   ),
                   if (!device.isMobile) ...[
@@ -117,13 +116,13 @@ class SettingsPage extends ConsumerWidget {
                     if (supportsWindowFullscreen)
                       _settingCheckbox(
                         ref: ref,
-                        provider: studioModeFullscreenProvider,
+                        setting: AppSetting.studioModeFullscreen,
                         label:
                             'Make player full screen when Studio Mode enabled',
                       ),
                     _settingCheckbox(
                       ref: ref,
-                      provider: studioModeAnimationProvider,
+                      setting: AppSetting.studioModeAnimation,
                       label: 'Enable Studio Mode animation',
                     ),
                   ],
@@ -175,10 +174,10 @@ class SettingsPage extends ConsumerWidget {
 
   Widget _settingCheckbox({
     required WidgetRef ref,
-    required StateNotifierProvider<BoolPrefNotifier, bool> provider,
+    required AppSetting setting,
     required String label,
   }) {
-    final enabled = ref.watch(provider);
+    final enabled = ref.watch(settingProvider(setting));
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Row(
@@ -186,8 +185,9 @@ class SettingsPage extends ConsumerWidget {
         children: [
           Checkbox(
             value: enabled,
-            onChanged: (value) =>
-                ref.read(provider.notifier).enabled = value ?? false,
+            onChanged: (value) => ref
+                .read(appSettingsProvider.notifier)
+                .setEnabled(setting, value: value ?? false),
           ),
           Text(label),
         ],

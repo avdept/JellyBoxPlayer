@@ -25,6 +25,7 @@ export 'playlist_picker_sheet.dart';
 export 'play_pause_button.dart';
 export 'playback_keyboard_shortcuts.dart';
 export 'position_labels.dart';
+export 'rail_collapse_animation.dart';
 export 'random_queue_button.dart';
 export 'scrollable_page_scaffold.dart';
 export 'search_results_sliver.dart';

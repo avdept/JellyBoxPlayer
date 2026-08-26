@@ -5,10 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
-import 'package:jplayer/src/domain/providers/generated_playlists_setting_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/home_sections_provider.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
-import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/presentation/pages/home_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -26,10 +25,6 @@ class MockCurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?>
 class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>>
     with Mock
     implements LibrariesNotifier {}
-
-class DisabledSettingNotifier extends BoolPrefNotifier {
-  DisabledSettingNotifier() : super(null, key: 'test', defaultValue: true);
-}
 
 class FakeTodaysPlaylistsNotifier extends TodaysPlaylistsNotifier {
   FakeTodaysPlaylistsNotifier(this.playlists);
@@ -99,9 +94,9 @@ void main() {
           isOfflineProvider.overrideWith((_) => isOffline),
           devToolsEnabledProvider.overrideWith((_) => devTools),
           if (generatedDisabled)
-            generatedPlaylistsDisabledProvider.overrideWith(
-              (_) => DisabledSettingNotifier(),
-            ),
+            settingProvider(
+              AppSetting.generatedPlaylistsDisabled,
+            ).overrideWithValue(true),
           favouriteSongsProvider.overrideWith((_) async => const LibraryPage()),
           favouriteAlbumsProvider.overrideWith(
             (_) async => favourites ?? createItems(3, ItemKind.album),

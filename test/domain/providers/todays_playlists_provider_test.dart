@@ -10,8 +10,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/generated_playlists_setting_provider.dart';
-import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,10 +18,6 @@ import 'package:path/path.dart' hide equals;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class MockMediaServerClient extends Mock implements MediaServerClient {}
-
-class DisabledSettingNotifier extends BoolPrefNotifier {
-  DisabledSettingNotifier() : super(null, key: 'test', defaultValue: true);
-}
 
 class FixedDayNotifier extends CurrentDayNotifier {
   FixedDayNotifier(this.day);
@@ -106,9 +101,9 @@ void main() {
         currentLibraryProvider.overrideWith(() => libraryNotifier),
         isOfflineProvider.overrideWith((ref) => false),
         if (disabled)
-          generatedPlaylistsDisabledProvider.overrideWith(
-            (ref) => DisabledSettingNotifier(),
-          ),
+          settingProvider(
+            AppSetting.generatedPlaylistsDisabled,
+          ).overrideWithValue(true),
       ],
     );
   }
