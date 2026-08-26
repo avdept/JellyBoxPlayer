@@ -15,9 +15,14 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # Resolved once and shared by every build leg so the matrix can't disagree
+  # with itself about the version it is stamping.
+  version:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,9 +46,46 @@ jobs:
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
 
+  build:
+    needs: version
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # `arch` is the Flutter build output directory (build/linux/<arch>);
+          # the rest are the per-packager spellings of the same machine.
+          - runner: ubuntu-24.04
+            arch: x64
+            appimage_arch: x86_64
+            deb_arch: amd64
+            rpm_arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            appimage_arch: aarch64
+            deb_arch: arm64
+            rpm_arch: aarch64
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
+        if: matrix.arch == 'x64'
         with:
           channel: stable
+
+      # flutter-action installs from releases_linux.json, which only ever
+      # contains x64 archives — there is no Linux arm64 Flutter SDK tarball to
+      # download. The engine *does* publish linux-arm64 artifacts, so on arm we
+      # clone the SDK at the stable tag and let precache fetch them.
+      - name: Install Flutter SDK (arm64)
+        if: matrix.arch == 'arm64'
+        run: |
+          git clone --depth 1 --branch stable \
+            https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
 
       - name: Install Linux dependencies
         run: |
@@ -61,64 +103,80 @@ jobs:
 
       - name: Build Linux bundle
         run: |
+          flutter --version
+          flutter precache --linux
           flutter pub get
           flutter build linux --release \
-            --build-name=${{ steps.version.outputs.version }} \
-            --build-number=${{ steps.version.outputs.build_number }}
+            --build-name=${{ needs.version.outputs.version }} \
+            --build-number=${{ needs.version.outputs.build_number }}
 
       - name: Bundle shared libraries
-        run: ./linux/packaging/bundle-libs.sh build/linux/x64/release/bundle
+        run: ./linux/packaging/bundle-libs.sh build/linux/${{ matrix.arch }}/release/bundle
 
       - name: Create archive
         run: |
-          cd build/linux/x64/release/bundle
-          tar czf "$GITHUB_WORKSPACE/jellybox-linux-x64.tar.gz" .
+          cd build/linux/${{ matrix.arch }}/release/bundle
+          tar czf "$GITHUB_WORKSPACE/jellybox-linux-${{ matrix.arch }}.tar.gz" .
 
       - name: Build AppImage
         run: |
           ./linux/packaging/make-appimage.sh \
-            build/linux/x64/release/bundle \
-            "$GITHUB_WORKSPACE/jellybox-linux-x86_64.AppImage" \
-            "${{ steps.version.outputs.version }}"
+            build/linux/${{ matrix.arch }}/release/bundle \
+            "$GITHUB_WORKSPACE/jellybox-linux-${{ matrix.appimage_arch }}.AppImage" \
+            "${{ needs.version.outputs.version }}"
 
       - name: Build .deb package
         run: |
           ./linux/packaging/make-deb.sh \
-            build/linux/x64/release/bundle \
-            "$GITHUB_WORKSPACE/jellybox-linux-amd64.deb" \
-            "${{ steps.version.outputs.version }}" \
-            "${{ steps.version.outputs.build_number }}"
+            build/linux/${{ matrix.arch }}/release/bundle \
+            "$GITHUB_WORKSPACE/jellybox-linux-${{ matrix.deb_arch }}.deb" \
+            "${{ needs.version.outputs.version }}" \
+            "${{ needs.version.outputs.build_number }}"
 
       - name: Build .rpm package
         run: |
           ./linux/packaging/make-rpm.sh \
-            build/linux/x64/release/bundle \
-            "$GITHUB_WORKSPACE/jellybox-linux-x86_64.rpm" \
-            "${{ steps.version.outputs.version }}" \
-            "${{ steps.version.outputs.build_number }}"
+            build/linux/${{ matrix.arch }}/release/bundle \
+            "$GITHUB_WORKSPACE/jellybox-linux-${{ matrix.rpm_arch }}.rpm" \
+            "${{ needs.version.outputs.version }}" \
+            "${{ needs.version.outputs.build_number }}"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: jellybox-linux-x64
+          name: jellybox-linux-${{ matrix.arch }}
           path: |
-            jellybox-linux-x64.tar.gz
-            jellybox-linux-x86_64.AppImage
-            jellybox-linux-amd64.deb
-            jellybox-linux-x86_64.rpm
+            jellybox-linux-${{ matrix.arch }}.tar.gz
+            jellybox-linux-${{ matrix.appimage_arch }}.AppImage
+            jellybox-linux-${{ matrix.deb_arch }}.deb
+            jellybox-linux-${{ matrix.rpm_arch }}.rpm
+
+  # Publishing is its own job so the two build legs never race to create or
+  # overwrite the same release.
+  release:
+    needs: [version, build]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish_to_latest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: jellybox-linux-*
+          merge-multiple: true
+          path: dist
+
+      - name: List artifacts
+        run: ls -lh dist
 
       # Tag push: create (or update) the release for that tag.
       - name: Upload to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Release ${{ steps.version.outputs.version }}
-          files: |
-            jellybox-linux-x64.tar.gz
-            jellybox-linux-x86_64.AppImage
-            jellybox-linux-amd64.deb
-            jellybox-linux-x86_64.rpm
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Release ${{ needs.version.outputs.version }}
+          files: dist/*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -141,10 +199,5 @@ jobs:
             exit 1
           fi
           echo "Attaching assets to existing release $TAG"
-          gh release upload "$TAG" \
-            jellybox-linux-x64.tar.gz \
-            jellybox-linux-x86_64.AppImage \
-            jellybox-linux-amd64.deb \
-            jellybox-linux-x86_64.rpm \
-            --repo "$GITHUB_REPOSITORY" --clobber
+          gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
           echo "::notice::Uploaded Linux artifacts to release $TAG"
