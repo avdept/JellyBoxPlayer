@@ -18,9 +18,16 @@ sed "s|@VERSION@|$VERSION|" "$SCRIPT_DIR/jellybox.desktop" > "$APPDIR/jellybox.d
 install -m644 "$SCRIPT_DIR/jellybox.png" "$APPDIR/jellybox.png"
 ln -sf jellybox.png "$APPDIR/.DirIcon"
 
+# appimagetool is itself an AppImage, so it has to match the host arch.
+case "$(uname -m)" in
+  x86_64)  TOOL_ARCH=x86_64 ;;
+  aarch64) TOOL_ARCH=aarch64 ;;
+  *) echo "error: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+
 APPIMAGETOOL="$WORK/appimagetool.AppImage"
 curl -fsSL -o "$APPIMAGETOOL" \
-  https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+  "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${TOOL_ARCH}.AppImage"
 chmod +x "$APPIMAGETOOL"
 
 # --appimage-extract-and-run avoids needing FUSE, which CI runners lack.

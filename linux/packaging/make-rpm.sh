@@ -6,6 +6,12 @@ OUT="${2:?}"
 VERSION="${3:?}"
 ITERATION="${4:?}"
 
+case "$(uname -m)" in
+  x86_64)  ARCH=x86_64 ;;
+  aarch64) ARCH=aarch64 ;;
+  *) echo "error: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -33,7 +39,7 @@ fpm -s dir -t rpm \
   -n jellybox \
   -v "$VERSION" \
   --iteration "$ITERATION" \
-  --architecture x86_64 \
+  --architecture "$ARCH" \
   --license AGPL-3.0 \
   --maintainer "Alex Sinelnikov" \
   --url "https://github.com/avdept/JellyBoxPlayer" \
