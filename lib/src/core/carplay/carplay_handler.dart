@@ -7,11 +7,11 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
-import 'package:jplayer/src/domain/providers/generated_playlists_setting_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -355,7 +355,7 @@ class CarPlayHandler {
 
   static List<Map<String, dynamic>> _mixes(ProviderContainer ref) {
     final entries = <Map<String, dynamic>>[];
-    if (ref.read(generatedPlaylistsDisabledProvider)) {
+    if (ref.read(settingProvider(AppSetting.generatedPlaylistsDisabled))) {
       _mixesSub?.close();
       _mixesSub = null;
     } else {
