@@ -93,7 +93,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     final playing = ref.read(playbackProvider).status == PlaybackStatus.playing;
     _isPlaying.value = playing;
     _backgroundSpeed = playing ? _playingSpeed : _pausedSpeed;
-    if (ref.read(studioModeAnimationProvider)) {
+    if (ref.read(settingProvider(AppSetting.studioModeAnimation))) {
       _phaseWatch.start();
       _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
     }
@@ -112,7 +112,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
 
   Future<void> _enterWindowFullscreen() async {
     if (!supportsWindowFullscreen) return;
-    if (!ref.read(studioModeFullscreenProvider)) return;
+    if (!ref.read(settingProvider(AppSetting.studioModeFullscreen))) return;
     if (await windowManager.isFullScreen()) return;
     _didEnterWindowFullscreen = true;
     await windowManager.setFullScreen(true);

@@ -185,7 +185,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
             ),
           ),
-          if (!ref.watch(generatedPlaylistsDisabledProvider))
+          if (!ref.watch(settingProvider(AppSetting.generatedPlaylistsDisabled)))
             SliverToBoxAdapter(
               child: ItemCarousel(
                 title: 'Made for you',
