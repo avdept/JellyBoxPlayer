@@ -492,12 +492,16 @@ class EmbyClient implements MediaServerClient {
   );
 
   @override
-  Future<bool> validateSession() async {
+  Future<SessionStatus> validateSession() async {
     try {
-      await _api.getArtists(userId: userId);
-      return true;
+      await _api.getArtists(userId: userId, limit: '1');
+      return SessionStatus.valid;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode == 401 || statusCode == 403) return SessionStatus.invalid;
+      return SessionStatus.unreachable;
     } on Object {
-      return false;
+      return SessionStatus.unreachable;
     }
   }
 

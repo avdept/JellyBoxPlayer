@@ -4,6 +4,8 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
+enum SessionStatus { valid, invalid, unreachable }
+
 abstract class MediaServerClient {
   Future<LibraryPage> getAlbums({
     required String userId,
@@ -176,7 +178,7 @@ abstract class MediaServerClient {
 
   Future<void> reportPlaybackStopped(PlaybackReport report);
 
-  Future<bool> validateSession();
+  Future<SessionStatus> validateSession();
 
   Future<void> signOut();
 }
