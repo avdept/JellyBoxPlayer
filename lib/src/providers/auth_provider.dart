@@ -44,6 +44,8 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       'Server is not accessible. Check the server URL and your connection.';
   static const invalidCredentialsError = 'Incorrect login or password';
 
+  static const _sessionValidationTimeout = Duration(seconds: 6);
+
   static const _serverUrlKey = 'serverUrl';
   static const _serverTypeKey = 'serverType';
   static const _serverIdKey = 'serverId';
@@ -87,18 +89,19 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       userId: userId,
       token: token,
     );
-    final tokenValidated = await _validateSession(client, token, serverType);
+    final status = await _validateSession(client, token, serverType);
+    final sessionUsable = status != SessionStatus.invalid;
 
-    if (tokenValidated) {
+    if (sessionUsable) {
       ref.read(currentUserProvider.notifier).state = User(
         userId: userId,
         token: token,
       );
       _setAuthHeader(serverType, token);
-      await _adoptLegacyDownloads();
+      if (status == SessionStatus.valid) await _adoptLegacyDownloads();
     }
 
-    return tokenValidated && serverUrl.isNotEmpty && userId.isNotEmpty;
+    return sessionUsable && serverUrl.isNotEmpty && userId.isNotEmpty;
   }
 
   Future<String?> login(
@@ -143,12 +146,13 @@ class AuthNotifier extends AsyncNotifier<bool?> {
         userId: userId,
         token: token,
       );
-      final tokenValidated = await _validateSession(client, token, serverType);
-      if (tokenValidated) {
+      final status = await _validateSession(client, token, serverType);
+      final sessionUsable = status != SessionStatus.invalid;
+      if (sessionUsable) {
         _setAuthHeader(serverType, token);
         await _adoptLegacyDownloads();
       }
-      state = AsyncData(tokenValidated);
+      state = AsyncData(sessionUsable);
     } on DioException catch (e) {
       return _loginErrorMessage(e);
     }
@@ -315,20 +319,23 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     return legacyToken;
   }
 
-  Future<bool> _validateSession(
+  Future<SessionStatus> _validateSession(
     MediaServerClient client,
     String? token,
     ServerType serverType,
   ) async {
-    if (token == null) return false;
+    if (token == null || token.isEmpty) return SessionStatus.invalid;
     try {
       _setAuthHeader(serverType, token);
-      final valid = await client.validateSession();
+      return await client.validateSession().timeout(
+        _sessionValidationTimeout,
+        onTimeout: () => SessionStatus.unreachable,
+      );
+    } on Object catch (e) {
+      log('Session validation failed: $e', name: 'Auth');
+      return SessionStatus.unreachable;
+    } finally {
       _removeAuthHeader();
-      return valid;
-    } catch (e) {
-      print('Error validating token: type=${e.runtimeType}, message=$e');
-      return false;
     }
   }
 
