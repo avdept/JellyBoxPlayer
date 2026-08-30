@@ -1,35 +1,14 @@
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/main.dart';
-import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
-
-String getCurrentPlatformName() {
-  if (Platform.isAndroid) {
-    return 'Android';
-  } else if (Platform.isIOS) {
-    return 'iOS';
-  } else if (Platform.isWindows) {
-    return 'Windows';
-  } else if (Platform.isMacOS) {
-    return 'macOS';
-  } else if (Platform.isLinux) {
-    return 'Linux';
-  } else {
-    return 'Unknown';
-  }
-}
 
 final dioProvider = Provider<Dio>(
   (ref) => Dio(
     BaseOptions(
       connectTimeout: const Duration(seconds: 15),
-      headers: {
-        'X-Emby-Authorization':
-            'MediaBrowser Client="JellyBox Player", Device="${getCurrentPlatformName()}", DeviceId="$deviceId", Version="$version"',
-      },
       contentType: 'application/json',
     ),
   )..interceptors.add(interceptor),

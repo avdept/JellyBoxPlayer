@@ -7,10 +7,14 @@ import 'package:flutter/painting.dart' show PaintingBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/data/api/api.dart';
+import 'package:jplayer/src/data/backend/emby/emby_auth_headers.dart';
 import 'package:jplayer/src/data/backend/emby/emby_client.dart';
+import 'package:jplayer/src/data/backend/jellyfin/jellyfin_auth_headers.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/server_auth_headers.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -52,10 +56,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   static const _userIdKey = 'userId';
   static const _authTokenKey = 'authToken';
 
-  static const _jellyfinAuthHeader = 'x-mediabrowser-token';
-  static const _embyAuthHeader = 'x-emby-token';
-
-  static const _legacyAuthTokenKey = _jellyfinAuthHeader;
+  static const _legacyAuthTokenKey = 'x-mediabrowser-token';
 
   @override
   FutureOr<bool?> build() async {
@@ -123,6 +124,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     UserCredentials credentials,
   ) async {
     try {
+      _setAuthHeader(serverType);
       final result = await _authenticate(serverType, serverUrl, credentials);
       final token = result.accessToken;
       final userId = result.user.id;
@@ -339,30 +341,48 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     }
   }
 
-  void _setAuthHeader(ServerType serverType, String token) {
+  void _setAuthHeader(ServerType serverType, [String? token]) {
     _removeAuthHeader();
-    _client.options.headers[_authHeaderOf(serverType)] = token;
+    _client.options.headers.addAll(
+      _authHeadersOf(serverType).build(token: token),
+    );
 
     if (kDebugMode) _notifyDeveloper();
   }
 
   void _removeAuthHeader() {
-    _client.options.headers
-      ..remove(_jellyfinAuthHeader)
-      ..remove(_embyAuthHeader);
+    for (final serverType in ServerType.values) {
+      _authHeadersOf(serverType).managedKeys.forEach(
+        _client.options.headers.remove,
+      );
+    }
 
     if (kDebugMode) _notifyDeveloper();
   }
 
-  String _authHeaderOf(ServerType serverType) => switch (serverType) {
-    ServerType.jellyfin => _jellyfinAuthHeader,
-    ServerType.emby => _embyAuthHeader,
-  };
+  ServerAuthHeaders _authHeadersOf(ServerType serverType) {
+    final deviceName = getCurrentPlatformName();
+    return switch (serverType) {
+      ServerType.jellyfin => JellyfinAuthHeaders(
+        deviceId: deviceId,
+        deviceName: deviceName,
+        version: version,
+      ),
+      ServerType.emby => EmbyAuthHeaders(
+        deviceId: deviceId,
+        deviceName: deviceName,
+        version: version,
+      ),
+    };
+  }
 
   void _notifyDeveloper() => log(
-    (_client.options.headers[_jellyfinAuthHeader] ??
-            _client.options.headers[_embyAuthHeader])
-        .toString(),
+    {
+      for (final serverType in ServerType.values)
+        for (final key in _authHeadersOf(serverType).managedKeys)
+          if (_client.options.headers.containsKey(key))
+            key: _client.options.headers[key],
+    }.toString(),
     name: 'Auth',
   );
 }

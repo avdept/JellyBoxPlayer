@@ -67,7 +67,7 @@ void main() {
       expect(source.outputContainer, 'mp3');
       expect(source.uri.path, '/Audio/song-1/universal');
       expect(source.uri.queryParameters['UserId'], 'user-1');
-      expect(source.uri.queryParameters['api_key'], 'token-1');
+      expect(source.uri.queryParameters['ApiKey'], 'token-1');
       expect(source.uri.queryParameters['DeviceId'], 'device-1');
       expect(source.uri.queryParameters['PlaySessionId'], 'session-1');
       expect(source.uri.queryParameters['MediaSourceId'], 'song-1');

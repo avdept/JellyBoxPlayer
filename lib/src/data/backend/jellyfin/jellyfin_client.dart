@@ -387,7 +387,7 @@ class JellyfinClient implements MediaServerClient {
       useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
       {
         'UserId': userId,
-        'api_key': token,
+        'ApiKey': token,
         'DeviceId': deviceId,
         'PlaySessionId': playSessionId,
         'MediaSourceId': audioSource?.id ?? song.id,
