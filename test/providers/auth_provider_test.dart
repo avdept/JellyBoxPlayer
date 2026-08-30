@@ -126,6 +126,98 @@ void main() {
     });
   });
 
+  group('AuthNotifier authorization headers', () {
+    final requests = <RequestOptions>[];
+
+    void respondToSignIn() {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        requests.add(options);
+        final body = options.path.contains('AuthenticateByName')
+            ? jsonEncode({
+                'User': {'Id': 'user-1', 'Name': 'alex'},
+                'SessionInfo': {
+                  'Id': 'session-1',
+                  'PlayState': <String, dynamic>{},
+                },
+                'AccessToken': 'token-1',
+                'ServerId': 'server-1',
+              })
+            : jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0});
+        return ResponseBody.fromString(
+          body,
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+    }
+
+    Future<Dio> signIn(ServerType serverType) async {
+      final container = createProviderContainer(
+        overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+      );
+      final dio = container.read(dioProvider)..httpClientAdapter = mockAdapter;
+      await container.read(authProvider.future);
+      await container
+          .read(authProvider.notifier)
+          .login(credentials, serverType: serverType);
+      return dio;
+    }
+
+    Map<String, dynamic> signInHeaders() => requests
+        .firstWhere((request) => request.path.contains('AuthenticateByName'))
+        .headers;
+
+    setUp(() {
+      requests.clear();
+      respondToSignIn();
+    });
+
+    test(
+      '- identifies the client to Jellyfin through the Authorization header, '
+      'which is the only form Jellyfin 12 still parses',
+      () async {
+        final dio = await signIn(ServerType.jellyfin);
+
+        final sent = signInHeaders()['authorization'] as String;
+        expect(sent, startsWith('MediaBrowser '));
+        expect(sent, contains('Client="JellyBox Player"'));
+        expect(sent, contains('DeviceId="test-device"'));
+        expect(sent, isNot(contains('Token=')));
+        expect(signInHeaders().containsKey('x-emby-authorization'), isFalse);
+
+        expect(
+          dio.options.headers['authorization'],
+          contains('Token="token-1"'),
+        );
+        expect(
+          dio.options.headers.containsKey('x-mediabrowser-token'),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      '- keeps identifying the client to Emby through X-Emby-Authorization',
+      () async {
+        final dio = await signIn(ServerType.emby);
+
+        final sent = signInHeaders()['x-emby-authorization'] as String;
+        expect(sent, startsWith('MediaBrowser '));
+        expect(sent, contains('Client="JellyBox Player"'));
+        expect(sent, contains('DeviceId="test-device"'));
+        expect(signInHeaders().containsKey('authorization'), isFalse);
+
+        expect(dio.options.headers['x-emby-token'], 'token-1');
+        expect(dio.options.headers.containsKey('authorization'), isFalse);
+      },
+    );
+  });
+
   group('AuthNotifier.build', () {
     test(
       '- migrates a token stored under the pre-refactor key name so '
