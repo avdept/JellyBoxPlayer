@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,16 +10,18 @@ enum AppSetting {
   sidebarCollapsed('sidebar_collapsed'),
   studioModeFullscreen('studio_mode_fullscreen'),
   studioModeAnimation('studio_mode_animation', defaultValue: true),
-  generatedPlaylistsDisabled('disable_generated_playlists');
+  generatedPlaylistsDisabled('disable_generated_playlists'),
+  defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
+  defaultStartPage('default_start_page', defaultValue: 'home');
 
   const AppSetting(this.key, {this.defaultValue = false});
 
   final String key;
-  final bool defaultValue;
+  final Object defaultValue;
 }
 
 final appSettingsProvider =
-    StateNotifierProvider<AppSettingsNotifier, Map<AppSetting, bool>>(
+    StateNotifierProvider<AppSettingsNotifier, Map<AppSetting, Object>>(
       (ref) => AppSettingsNotifier(
         ref.watch(sharedPreferencesProvider).valueOrNull,
       ),
@@ -27,17 +30,45 @@ final appSettingsProvider =
 final ProviderFamily<bool, AppSetting> settingProvider =
     Provider.family<bool, AppSetting>(
       (ref, setting) =>
-          ref.watch(appSettingsProvider)[setting] ?? setting.defaultValue,
+          _asBool(ref.watch(appSettingsProvider)[setting], setting),
     );
 
-class AppSettingsNotifier extends StateNotifier<Map<AppSetting, bool>> {
+final defaultBrowseTabProvider = Provider<ItemList>(
+  (ref) =>
+      ItemList.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.defaultBrowseTab],
+        AppSetting.defaultBrowseTab,
+      )] ??
+      ItemList.albums,
+);
+
+final defaultStartPageProvider = Provider<StartPage>(
+  (ref) =>
+      StartPage.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.defaultStartPage],
+        AppSetting.defaultStartPage,
+      )] ??
+      StartPage.home,
+);
+
+bool _asBool(Object? value, AppSetting setting) {
+  final resolved = value ?? setting.defaultValue;
+  return resolved is bool && resolved;
+}
+
+String _asString(Object? value, AppSetting setting) {
+  final resolved = value ?? setting.defaultValue;
+  return resolved is String ? resolved : '';
+}
+
+class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
   AppSettingsNotifier(this._prefs) : super(_read(_prefs));
 
   static const _storageKey = 'app_settings';
 
   final SharedPreferences? _prefs;
 
-  static Map<AppSetting, bool> _read(SharedPreferences? prefs) {
+  static Map<AppSetting, Object> _read(SharedPreferences? prefs) {
     if (prefs == null) return const {};
     final stored = prefs.getString(_storageKey);
     final decoded = stored != null
@@ -48,14 +79,26 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, bool>> {
       for (final setting in AppSetting.values)
         if (decoded[setting.key] case final bool value)
           setting: value
+        else if (decoded[setting.key] case final String value)
+          setting: value
         else if (prefs.getBool(setting.key) case final bool legacy)
           setting: legacy,
     };
   }
 
-  bool isEnabled(AppSetting setting) => state[setting] ?? setting.defaultValue;
+  bool isEnabled(AppSetting setting) => _asBool(state[setting], setting);
 
-  void setEnabled(AppSetting setting, {required bool value}) {
+  String valueOf(AppSetting setting) => _asString(state[setting], setting);
+
+  void setEnabled(AppSetting setting, {required bool value}) =>
+      _store(setting, value);
+
+  void setValue(AppSetting setting, String value) => _store(setting, value);
+
+  void toggle(AppSetting setting) =>
+      setEnabled(setting, value: !isEnabled(setting));
+
+  void _store(AppSetting setting, Object value) {
     state = {...state, setting: value};
     final prefs = _prefs;
     if (prefs == null) return;
@@ -68,7 +111,4 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, bool>> {
       ),
     );
   }
-
-  void toggle(AppSetting setting) =>
-      setEnabled(setting, value: !isEnabled(setting));
 }

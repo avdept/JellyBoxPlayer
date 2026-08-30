@@ -8,9 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -275,7 +277,10 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
           if (initialRoute != '/' && initialRoute != loginRoute) {
             return initialRoute;
           } else if (_selectedLibrary != null) {
-            return Routes.home.path;
+            return switch (ref.read(defaultStartPageProvider)) {
+              StartPage.home => Routes.home.path,
+              StartPage.browse => Routes.browse.path,
+            };
           } else {
             return Routes.library.path;
           }
