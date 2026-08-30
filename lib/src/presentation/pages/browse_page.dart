@@ -338,7 +338,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   void initState() {
     super.initState();
     _searchFocusNode.addListener(_onSearchFocusChanged);
-    _currentView = ValueNotifier(ItemList.values.first)
+    final initialView = ref.read(defaultBrowseTabProvider);
+    _currentView = ValueNotifier(initialView)
       ..addListener(() {
         final view = _currentView.value;
         ref
@@ -348,6 +349,20 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
               desc: view.defaultSortDescending,
             );
       });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final filter = ref.read(filterProvider);
+      if (filter.orderBy == initialView.defaultSortField &&
+          filter.desc == initialView.defaultSortDescending) {
+        return;
+      }
+      ref
+          .read(filterProvider.notifier)
+          .filter(
+            field: initialView.defaultSortField,
+            desc: initialView.defaultSortDescending,
+          );
+    });
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
     };
@@ -397,6 +412,10 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      defaultBrowseTabProvider,
+      (previous, next) => _currentView.value = next,
+    );
     return Scaffold(
       key: _scaffoldKey,
       body: NotificationListener<ScrollNotification>(
