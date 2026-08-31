@@ -40,36 +40,33 @@ class _MainPageState extends ConsumerState<MainPage> {
   };
 
   Widget _collapseButton(bool collapsed) {
-    return IconButton(
-      onPressed: () => ref
-          .read(appSettingsProvider.notifier)
-          .toggle(AppSetting.sidebarCollapsed),
-      icon: const Icon(Icons.menu),
-      color: _theme.colorScheme.onPrimary,
-      tooltip: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+    return RailTooltip(
+      message: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      child: IconButton(
+        onPressed: () => ref
+            .read(appSettingsProvider.notifier)
+            .toggle(AppSetting.sidebarCollapsed),
+        icon: const Icon(Icons.menu),
+        color: _theme.colorScheme.onPrimary,
+      ),
     );
   }
 
   Widget _logoutButton(bool collapsed) {
-    final button = TextButton(
+    final button = RailItemButton(
       onPressed: ref.read(authProvider.notifier).logout,
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(JPlayer.log_out),
-          Flexible(
-            child: CollapsibleLabel(
-              child: Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Text('Log out'),
-              ),
-            ),
-          ),
-        ],
-      ),
+      icon: const Icon(JPlayer.log_out),
+      label: const Text('Log out'),
+      foregroundColor: _theme.colorScheme.onPrimary,
+      fontSize: 16,
+      horizontalPadding: 30,
     );
 
-    return collapsed ? Tooltip(message: 'Log out', child: button) : button;
+    return RailTooltip(
+      message: 'Log out',
+      enabled: collapsed,
+      child: button,
+    );
   }
 
   void _navigateToItem(int index) {
