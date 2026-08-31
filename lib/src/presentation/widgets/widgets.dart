@@ -40,4 +40,5 @@ export 'song_row_view.dart';
 export 'studio_mode.dart';
 export 'swipeable_artwork.dart';
 export 'updatify_bell.dart';
+export 'volume_control.dart';
 export 'windows_title_bar.dart';

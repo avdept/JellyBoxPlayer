@@ -12,7 +12,8 @@ enum AppSetting {
   studioModeAnimation('studio_mode_animation', defaultValue: true),
   generatedPlaylistsDisabled('disable_generated_playlists'),
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
-  defaultStartPage('default_start_page', defaultValue: 'home');
+  defaultStartPage('default_start_page', defaultValue: 'home'),
+  playerVolume('player_volume', defaultValue: 1.0);
 
   const AppSetting(this.key, {this.defaultValue = false});
 
@@ -61,6 +62,11 @@ String _asString(Object? value, AppSetting setting) {
   return resolved is String ? resolved : '';
 }
 
+double _asDouble(Object? value, AppSetting setting) {
+  final resolved = value ?? setting.defaultValue;
+  return resolved is num ? resolved.toDouble() : 0;
+}
+
 class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
   AppSettingsNotifier(this._prefs) : super(_read(_prefs));
 
@@ -81,6 +87,8 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
           setting: value
         else if (decoded[setting.key] case final String value)
           setting: value
+        else if (decoded[setting.key] case final num value)
+          setting: value.toDouble()
         else if (prefs.getBool(setting.key) case final bool legacy)
           setting: legacy,
     };
@@ -90,10 +98,14 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
 
   String valueOf(AppSetting setting) => _asString(state[setting], setting);
 
+  double numberOf(AppSetting setting) => _asDouble(state[setting], setting);
+
   void setEnabled(AppSetting setting, {required bool value}) =>
       _store(setting, value);
 
   void setValue(AppSetting setting, String value) => _store(setting, value);
+
+  void setNumber(AppSetting setting, double value) => _store(setting, value);
 
   void toggle(AppSetting setting) =>
       setEnabled(setting, value: !isEnabled(setting));

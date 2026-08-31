@@ -416,6 +416,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
                             if (_isDesktop) _lyricsButton(),
+                            if (_isDesktop) const VolumeControl(size: 44),
                             if (_isDesktop && NativeRoutePicker.isSupported)
                               _outputRouteButton(size: 44),
                             if (!_isMobile) _studioModeButton(),
