@@ -4,6 +4,7 @@ export 'current_day_provider.dart';
 export 'current_library_provider.dart';
 export 'current_playlist_provider.dart';
 export 'current_user_provider.dart';
+export 'discovered_servers_provider.dart';
 export 'download_manager_provider.dart';
 export 'downloaded_albums_provider.dart';
 export 'favourites_provider.dart';

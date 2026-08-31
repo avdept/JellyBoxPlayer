@@ -6,5 +6,7 @@
 	<string>development</string>
 	<key>com.apple.developer.carplay-audio</key>
 	<true/>
+	<key>com.apple.developer.networking.multicast</key>
+	<true/>
 </dict>
 </plist>

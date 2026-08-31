@@ -182,6 +182,9 @@ void main() {
             files: any(named: 'files'),
           ),
         ).thenAnswer((_) async => faker.datatype.number());
+        when(
+          () => mockDownloadService.downloadAlbumCover(any(), any()),
+        ).thenAnswer((_) async => FakeFile());
         providerContainer.listen(
           downloadManagerProvider,
           mockListener.call,

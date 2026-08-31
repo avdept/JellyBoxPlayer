@@ -7,6 +7,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
+import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 
@@ -24,15 +25,23 @@ class LoginPageState extends ConsumerState<LoginPage> {
   final _passwordInputController = TextEditingController();
   final _serverUrlFocusNode = FocusNode();
 
-  ServerProbeResult? _discoveredServer;
+  String? _resolvedServerUrl;
+  ServerType? _resolvedServerType;
   String? _probedInput;
   int _probeGeneration = 0;
+
+  ServerUrlFieldMode _mode = ServerUrlFieldMode.discovering;
+  DiscoveredServer? _selectedServer;
+  bool _manualEntry = false;
 
   @override
   void initState() {
     super.initState();
     _serverUrlFocusNode.addListener(_onServerUrlFocusChange);
     _serverUrlInputController.addListener(_onServerUrlChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(ref.read(serverDiscoveryProvider.notifier).scan());
+    });
   }
 
   @override
@@ -53,9 +62,62 @@ class LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _onServerUrlChanged() {
+    final text = _serverUrlInputController.text.trim();
+    if (!_manualEntry && text.isNotEmpty) _startManualEntry();
     if (_probedInput == null) return;
-    if (_serverUrlInputController.text.trim() == _probedInput) return;
+    if (text == _probedInput) return;
     _resetDiscoveredServer();
+  }
+
+  void _startManualEntry() {
+    ref.read(serverDiscoveryProvider.notifier).cancel();
+    _manualEntry = true;
+    setState(() {
+      _mode = ServerUrlFieldMode.manual;
+      _selectedServer = null;
+    });
+  }
+
+  void _onDiscoveryChanged(ServerDiscoveryState discovery) {
+    if (_manualEntry) return;
+    if (discovery.servers.isNotEmpty) {
+      if (_selectedServer == null) _selectServer(discovery.servers.first);
+      return;
+    }
+    if (discovery.finished && _mode == ServerUrlFieldMode.discovering) {
+      setState(() => _mode = ServerUrlFieldMode.manual);
+    }
+  }
+
+  void _selectServer(DiscoveredServer server) {
+    setState(() {
+      error = null;
+      _selectedServer = server;
+      _mode = ServerUrlFieldMode.selected;
+      _resolvedServerUrl = server.serverUrl;
+      _resolvedServerType = server.serverType;
+    });
+  }
+
+  void _editSelectedServer() {
+    final server = _selectedServer;
+    ref.read(serverDiscoveryProvider.notifier).cancel();
+    _manualEntry = true;
+    _probedInput = server?.serverUrl;
+    if (server != null) _serverUrlInputController.text = server.serverUrl;
+    setState(() {
+      _selectedServer = null;
+      _mode = ServerUrlFieldMode.manual;
+    });
+    _serverUrlFocusNode.requestFocus();
+  }
+
+  String get _effectiveServerUrl {
+    final server = _selectedServer;
+    if (server != null) return server.serverUrl;
+    final raw = _serverUrlInputController.text.trim();
+    if (raw.isEmpty) return '';
+    return _resolvedServerUrl ?? normalizeServerUrl(raw);
   }
 
   Future<void> _probeServer() async {
@@ -68,33 +130,39 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
     final generation = ++_probeGeneration;
     _probedInput = rawUrl;
-    if (_discoveredServer != null) {
-      setState(() => _discoveredServer = null);
+    if (_resolvedServerType != null) {
+      setState(() {
+        _resolvedServerUrl = null;
+        _resolvedServerType = null;
+      });
     }
 
     final result = await ref.read(serverProbeServiceProvider).discover(rawUrl);
     if (!mounted || generation != _probeGeneration) return;
 
-    setState(() => _discoveredServer = result);
+    setState(() {
+      _resolvedServerUrl = result?.serverUrl;
+      _resolvedServerType = result?.serverType;
+    });
   }
 
   void _resetDiscoveredServer() {
     _probeGeneration++;
     _probedInput = null;
-    if (_discoveredServer == null) return;
-    setState(() => _discoveredServer = null);
+    if (_resolvedServerType == null) return;
+    setState(() {
+      _resolvedServerUrl = null;
+      _resolvedServerType = null;
+    });
   }
 
   Future<void> signIn() async {
     if (error != null) setState(() => error = null);
 
-    final rawServerUrl = _serverUrlInputController.text.trim();
     final credentials = UserCredentials(
       username: _emailInputController.text.trim(),
       pw: _passwordInputController.text.trim(),
-      serverUrl: rawServerUrl.isEmpty
-          ? ''
-          : _discoveredServer?.serverUrl ?? normalizeServerUrl(rawServerUrl),
+      serverUrl: _effectiveServerUrl,
     );
     if (credentials.serverUrl.isEmpty || credentials.username.isEmpty) {
       setState(() {
@@ -116,7 +184,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         .read(authProvider.notifier)
         .login(
           credentials,
-          serverType: _discoveredServer?.serverType ?? ServerType.jellyfin,
+          serverType: _resolvedServerType ?? ServerType.jellyfin,
         );
     if (resp != null && mounted) {
       setState(() {
@@ -127,6 +195,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(serverDiscoveryProvider, (_, next) => _onDiscoveryChanged(next));
     return Scaffold(
       body: SafeArea(
         minimum: const EdgeInsets.symmetric(vertical: 36, horizontal: 48),
@@ -152,7 +221,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         LoginLogo(
-                          serverType: _discoveredServer?.serverType,
+                          serverType: _resolvedServerType,
                         ),
                         const SizedBox(height: 63),
                         _serverURLField(),
@@ -193,19 +262,23 @@ class LoginPageState extends ConsumerState<LoginPage> {
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      LabeledTextField(
-        label: 'Server URL',
-        keyboardType: TextInputType.url,
+      ServerUrlField(
+        mode: _mode,
         controller: _serverUrlInputController,
         focusNode: _serverUrlFocusNode,
-        textInputAction: TextInputAction.next,
+        servers: ref.watch(serverDiscoveryProvider).servers,
+        scanning: ref.watch(serverDiscoveryProvider).scanning,
+        selected: _selectedServer,
+        onEdit: _editSelectedServer,
+        onSelect: _selectServer,
         suffixIcon: _serverUrlSuffixIcon(),
       ),
-      if (_discoveredServer != null) _discoveredServerText(_discoveredServer!),
+      if (_mode != ServerUrlFieldMode.selected && _resolvedServerType != null)
+        _discoveredServerText(_resolvedServerType!),
     ],
   );
 
-  Widget? _serverUrlSuffixIcon() => (_discoveredServer != null)
+  Widget? _serverUrlSuffixIcon() => (_resolvedServerType != null)
       ? Icon(
           Icons.check_circle,
           color: Theme.of(context).colorScheme.secondary,
@@ -213,10 +286,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
         )
       : null;
 
-  Widget _discoveredServerText(ServerProbeResult server) => Padding(
+  Widget _discoveredServerText(ServerType serverType) => Padding(
     padding: const EdgeInsets.only(top: 4),
     child: Text(
-      'Discovered: ${server.serverType.label} server',
+      'Discovered: ${serverType.label} server',
       style: TextStyle(
         fontFamily: FontFamily.inter,
         fontSize: 12,
