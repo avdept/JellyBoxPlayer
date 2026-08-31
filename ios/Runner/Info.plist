@@ -70,6 +70,8 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>JellyBox looks for Jellyfin and Emby servers on your local network so you can sign in without typing an address.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
