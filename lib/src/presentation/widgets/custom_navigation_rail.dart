@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:jplayer/src/presentation/widgets/rail_collapse_animation.dart';
+import 'package:jplayer/src/presentation/widgets/rail_tooltip.dart';
 
 class CustomNavigationRail extends StatefulWidget {
   const CustomNavigationRail({
@@ -10,7 +11,7 @@ class CustomNavigationRail extends StatefulWidget {
     required this.selectedIndex,
     this.onDestinationSelected,
     this.width = 240,
-    this.collapsedWidth = 60,
+    this.collapsedWidth = 76,
     this.collapsed = false,
     this.elevation,
     this.backgroundColor,
@@ -91,7 +92,6 @@ class _CustomNavigationRailState extends State<CustomNavigationRail>
     final theme = NavigationRailTheme.of(context);
     final progress = _controller.value.clamp(0.0, 1.0);
     final t = railWidthCurve.transform(progress);
-    final alignT = railAlignCurve.transform(progress);
     final destinations = widget.destinations;
     final leading = widget.leading;
     final trailing = widget.trailing;
@@ -129,16 +129,9 @@ class _CustomNavigationRailState extends State<CustomNavigationRail>
                   SizedBox(height: widget.leadingGap),
                 ],
                 for (var index = 0; index < destinations.length; index++)
-                  _itemView(index, alignT),
+                  _itemView(index),
                 const Spacer(),
-                if (trailing != null)
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: sideInset),
-                    child: Align(
-                      alignment: _rowAlignment(alignT),
-                      child: trailing,
-                    ),
-                  ),
+                ?trailing,
               ],
             ),
           ),
@@ -152,57 +145,99 @@ class _CustomNavigationRailState extends State<CustomNavigationRail>
     return (padding?.horizontal ?? 0) / 2;
   }
 
-  Alignment _rowAlignment(double t) =>
-      Alignment.lerp(Alignment.center, Alignment.centerLeft, t)!;
-
-  Widget _itemView(int index, double alignT) {
+  Widget _itemView(int index) {
     final destination = widget.destinations[index];
     final selected = index == widget.selectedIndex;
-    final button = TextButton(
+    final button = RailItemButton(
       onPressed: () => widget.onDestinationSelected?.call(index),
+      icon: selected ? destination.selectedIcon : destination.icon,
+      label: destination.label,
+      foregroundColor: selected
+          ? widget.selectedItemColor
+          : widget.unselectedItemColor,
+      backgroundColor: selected ? destination.indicatorColor : null,
+      fontSize: selected ? widget.selectedFontSize : widget.unselectedFontSize,
+      height: widget.itemHeight,
+      horizontalPadding: widget.padding.left + _horizontalPadding(destination),
+    );
+
+    final label = destination.label;
+    final message = label is Text ? label.data : null;
+
+    return message != null
+        ? RailTooltip(
+            message: message,
+            enabled: widget.collapsed,
+            child: button,
+          )
+        : button;
+  }
+}
+
+class RailItemButton extends StatelessWidget {
+  const RailItemButton({
+    required this.icon,
+    required this.label,
+    this.onPressed,
+    this.foregroundColor,
+    this.backgroundColor,
+    this.fontSize,
+    this.height = 48,
+    this.horizontalPadding = 0,
+    this.labelGap = 16,
+    this.iconSize = 24,
+    super.key,
+  });
+
+  final Widget icon;
+  final Widget label;
+  final VoidCallback? onPressed;
+  final Color? foregroundColor;
+  final Color? backgroundColor;
+  final double? fontSize;
+  final double height;
+  final double horizontalPadding;
+  final double labelGap;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final alignT = RailCollapseAnimation.progressOf(context, railAlignCurve);
+
+    return TextButton(
+      onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: selected
-            ? widget.selectedItemColor
-            : widget.unselectedItemColor,
-        backgroundColor: selected ? destination.indicatorColor : null,
+        foregroundColor: foregroundColor,
+        backgroundColor: backgroundColor,
         shape: const RoundedRectangleBorder(),
         splashFactory: NoSplash.splashFactory,
         padding: EdgeInsets.symmetric(
-          horizontal: lerpDouble(
-            0,
-            widget.padding.left + _horizontalPadding(destination),
-            alignT,
-          )!,
+          horizontal: lerpDouble(0, horizontalPadding, alignT)!,
         ),
+        iconSize: iconSize,
         minimumSize: const Size.fromHeight(40),
-        fixedSize: Size.fromHeight(widget.itemHeight),
-        alignment: _rowAlignment(alignT),
-        textStyle: TextStyle(
-          fontSize: selected
-              ? widget.selectedFontSize
-              : widget.unselectedFontSize,
+        fixedSize: Size.fromHeight(height),
+        alignment: Alignment.lerp(
+          Alignment.center,
+          Alignment.centerLeft,
+          alignT,
         ),
+        textStyle: TextStyle(fontSize: fontSize),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (selected) destination.selectedIcon else destination.icon,
+          icon,
           Flexible(
             child: CollapsibleLabel(
               child: Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: destination.label,
+                padding: EdgeInsets.only(left: labelGap),
+                child: label,
               ),
             ),
           ),
         ],
       ),
     );
-
-    final label = destination.label;
-
-    return widget.collapsed && label is Text && label.data != null
-        ? Tooltip(message: label.data, child: button)
-        : button;
   }
 }
