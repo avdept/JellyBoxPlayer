@@ -76,6 +76,7 @@ class SongRowView extends ConsumerWidget {
     final currentTask = showDownloadState
         ? ref.watch(downloadServiceProvider).getTask(song.id)
         : null;
+    final quality = song.audioSources.firstOrNull;
 
     return SimpleListTile(
       onTap: onTap != null ? () => onTap!(song) : null,
@@ -115,20 +116,33 @@ class SongRowView extends ConsumerWidget {
       ),
       subtitle: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
-          ClickableWidget(
-            onPressed: (onArtistTap != null && song.albumArtists.isNotEmpty)
-                ? () => onArtistTap!(song)
-                : null,
-            textStyle: TextStyle(
-              fontSize: isTablet ? 16 : 12,
-              fontWeight: FontWeight.w400,
-              height: 1.2,
-              color: theme.colorScheme.onPrimary.withOpacity(0.6),
-              overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: ClickableWidget(
+              onPressed: (onArtistTap != null && song.albumArtists.isNotEmpty)
+                  ? () => onArtistTap!(song)
+                  : null,
+              textStyle: TextStyle(
+                fontSize: isTablet ? 16 : 12,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+                color: theme.colorScheme.onPrimary.withOpacity(0.6),
+                overflow: TextOverflow.ellipsis,
+              ),
+              child: Text(song.albumArtist ?? '', maxLines: 1),
             ),
-            child: Text(song.albumArtist ?? '', maxLines: 1),
           ),
+          if (quality != null) ...[
+            const SizedBox(width: 6),
+            AudioQualityBadge(
+              codec: quality.codec,
+              bitRate: quality.bitRate,
+              fontSize: isTablet ? 11 : 9,
+              textColor: theme.colorScheme.onPrimary.withOpacity(0.7),
+            ),
+          ],
         ],
       ),
       trailing: Wrap(
