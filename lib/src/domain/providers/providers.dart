@@ -24,4 +24,5 @@ export 'set_playback_provider.dart';
 export 'similar_albums_provider.dart';
 export 'studio_mode_provider.dart';
 export 'todays_playlists_provider.dart';
+export 'upnp_renderers_provider.dart';
 export 'volume_provider.dart';

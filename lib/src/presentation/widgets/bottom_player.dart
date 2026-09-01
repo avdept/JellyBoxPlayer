@@ -251,6 +251,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               _randomQueueButton(),
               _repeatTrackButton(),
               if (NativeRoutePicker.isSupported) _outputRouteButton(),
+              _playbackTargetButton(),
               _lyricsButton(),
               _downloadTrackButton(),
               _likeTrackButton(),
@@ -419,6 +420,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             if (_isDesktop) const VolumeControl(size: 44),
                             if (_isDesktop && NativeRoutePicker.isSupported)
                               _outputRouteButton(size: 44),
+                            if (_isDesktop) _playbackTargetButton(size: 44),
                             if (!_isMobile) _studioModeButton(),
                           ],
                         ),
@@ -607,6 +609,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         isSelected: snapshot.data == LoopMode.all,
       );
     },
+  );
+
+  Widget _playbackTargetButton({double? size}) => PlaybackTargetButton(
+    size: size,
+    color: _theme.colorScheme.onPrimary,
+    activeColor: _theme.colorScheme.primary,
   );
 
   Widget _outputRouteButton({double? size}) => RoutePickerButton(

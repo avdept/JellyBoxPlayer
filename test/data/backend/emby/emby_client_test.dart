@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/backend/emby/emby_client.dart';
 import 'package:jplayer/src/data/backend/emby/mappers/emby_item_mapper.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -53,6 +54,7 @@ void main() {
         final source = await client.resolveStreamSource(
           songWith(container: 'mp3', codec: 'mp3'),
           playSessionId: 'session-1',
+          target: StreamTargetProfile.localPlayer(isAndroid: false),
         );
 
         expect(source.isHls, isFalse);
@@ -74,6 +76,7 @@ void main() {
       final source = await client.resolveStreamSource(
         songWith(container: 'ogg', codec: 'vorbis'),
         playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(isAndroid: false),
       );
 
       expect(source.isHls, isTrue);
@@ -87,6 +90,7 @@ void main() {
       final source = await client.resolveStreamSource(
         songWith(container: 'mp3', codec: 'mp3', mediaSourceId: null),
         playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(isAndroid: false),
       );
 
       expect(source.uri.queryParameters['MediaSourceId'], 'song-1');
@@ -99,6 +103,7 @@ void main() {
           ).resolveStreamSource(
             songWith(container: 'mp3', codec: 'mp3'),
             playSessionId: 'session-1',
+            target: StreamTargetProfile.localPlayer(isAndroid: false),
           );
 
       expect(source.uri.path, '/emby/Audio/song-1/universal');

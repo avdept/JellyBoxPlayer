@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -92,7 +92,7 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
     if (index == widget.sequenceState.currentIndex) return;
 
     _hapticTick();
-    await ref.read(playerProvider).seek(Duration.zero, index: index);
+    await ref.read(playbackProvider.notifier).skipTo(index);
   }
 
   void _hapticTick() {

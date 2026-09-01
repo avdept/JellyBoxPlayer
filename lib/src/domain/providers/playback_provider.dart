@@ -4,89 +4,35 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
-import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/playback_target.dart';
+import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 
 class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(this._ref) : super(PlaybackState.initial()) {
-    _audioPlayer = _ref.watch(playerProvider)
-      ..currentIndexStream.listen((index) {
-        if (_preparingQueue || index == _reportedIndex) return;
-        _reportTrackChange(index);
-        final nextSong = index != null
-            ? state.songs.elementAtOrNull(index)
-            : null;
-        if (nextSong != null && state.album != null) {
-          unawaited(_saveToStorage(songId: nextSong.id, positionMs: 0));
-        }
-      })
-      ..positionStream.listen((position) {
-        if (!_preparingQueue &&
-            _audioPlayer.currentIndex == _reportedIndex &&
-            position > Duration.zero) {
-          _reportedPositionMs = position.inMilliseconds;
-        }
-        state = state.copyWith(
-          position: position,
-          totalDuration: _durationFor(_audioPlayer.currentIndex),
-          currentMediaIndex: _audioPlayer.currentIndex,
-        );
-
-        final now = DateTime.now();
-        if (state.status.isPlaying &&
-            (_lastPositionSave == null ||
-                now.difference(_lastPositionSave!).inSeconds >= 5)) {
-          _lastPositionSave = now;
-          final currentIndex = _audioPlayer.currentIndex;
-          final currentSong = currentIndex != null
-              ? state.songs.elementAtOrNull(currentIndex)
-              : null;
-          if (currentSong != null) {
-            unawaited(
-              _saveToStorage(
-                songId: currentSong.id,
-                positionMs: position.inMilliseconds,
-              ),
-            );
-          }
-        }
-      })
-      // Handle other player states as needed
-      ..playerStateStream.listen((playerState) {
-        if (playerState.processingState == ProcessingState.completed &&
-            state.status.isPlaying) {
-          _reportStopped();
-          _stopProgressReports();
-          state = PlaybackState.initial();
-        } else if (playerState.playing && !state.status.isPlaying) {
-          state = state.copyWith(status: PlaybackStatus.playing);
-        } else if (!playerState.playing &&
-            state.status.isPlaying &&
-            playerState.processingState == ProcessingState.ready) {
-          state = state.copyWith(
-            status: PlaybackStatus.paused,
-            position: _audioPlayer.position,
-          );
-        }
-      });
+    _target = _ref.read(playbackTargetProvider);
+    _listenToTarget();
+    _ref.listen<PlaybackTarget>(playbackTargetProvider, (previous, next) {
+      if (previous == null || previous.id == next.id) return;
+      unawaited(_handoff(from: previous, to: next));
+    });
   }
 
   static const _progressInterval = Duration(seconds: 10);
 
   final Ref _ref;
-  late AudioPlayer _audioPlayer;
   final _playSessionIds = <String, String>{};
+  late PlaybackTarget _target;
+  StreamSubscription<TargetPlaybackState>? _targetSubscription;
+  TargetPlaybackState _targetState = TargetPlaybackState.idle;
   DateTime? _lastPositionSave;
   int? _reportedIndex;
   var _reportedPositionMs = 0;
@@ -94,9 +40,111 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _preparingQueue = false;
   Timer? _progressTimer;
 
+  PlaybackTarget get target => _target;
+
   LibraryItem? get _reportedSong {
     final index = _reportedIndex;
     return index != null ? state.songs.elementAtOrNull(index) : null;
+  }
+
+  void _listenToTarget() {
+    _targetSubscription = _target.stateStream.listen(_onTargetState);
+  }
+
+  void _onTargetState(TargetPlaybackState targetState) {
+    _targetState = targetState;
+    final index = targetState.currentIndex;
+
+    if (!_preparingQueue && index != _reportedIndex) {
+      _reportTrackChange(index);
+      final nextSong = index != null
+          ? state.songs.elementAtOrNull(index)
+          : null;
+      if (nextSong != null && state.album != null) {
+        unawaited(_saveToStorage(songId: nextSong.id, positionMs: 0));
+      }
+    }
+
+    if (!_preparingQueue &&
+        index == _reportedIndex &&
+        targetState.position > Duration.zero) {
+      _reportedPositionMs = targetState.position.inMilliseconds;
+    }
+
+    state = state.copyWith(
+      position: targetState.position,
+      totalDuration: _durationFor(index),
+      currentMediaIndex: index,
+    );
+
+    final now = DateTime.now();
+    if (state.status.isPlaying &&
+        (_lastPositionSave == null ||
+            now.difference(_lastPositionSave!).inSeconds >= 5)) {
+      _lastPositionSave = now;
+      final currentSong = index != null
+          ? state.songs.elementAtOrNull(index)
+          : null;
+      if (currentSong != null) {
+        unawaited(
+          _saveToStorage(
+            songId: currentSong.id,
+            positionMs: targetState.position.inMilliseconds,
+          ),
+        );
+      }
+    }
+
+    if (targetState.completed && state.status.isPlaying) {
+      _reportStopped();
+      _stopProgressReports();
+      state = PlaybackState.initial();
+    } else if (targetState.status.isPlaying && !state.status.isPlaying) {
+      state = state.copyWith(status: PlaybackStatus.playing);
+    } else if (targetState.status.isPaused && state.status.isPlaying) {
+      state = state.copyWith(
+        status: PlaybackStatus.paused,
+        position: targetState.position,
+      );
+    }
+  }
+
+  Future<void> _handoff({
+    required PlaybackTarget from,
+    required PlaybackTarget to,
+  }) async {
+    final songs = state.songs;
+    final album = state.album;
+    final wasPlaying = state.status.isPlaying;
+    final index = state.currentMediaIndex ?? 0;
+    final position = state.position;
+
+    await _targetSubscription?.cancel();
+    _targetSubscription = null;
+
+    _reportStopped();
+    _stopProgressReports();
+    try {
+      await from.stop();
+    } on Object catch (error) {
+      debugPrint('[Playback] stopping ${from.name} failed: $error');
+    }
+    if (from.kind != PlaybackTargetKind.local) await from.dispose();
+
+    _target = to;
+    _targetState = TargetPlaybackState.idle;
+    _listenToTarget();
+
+    if (songs.isEmpty || album == null) return;
+
+    final startSong = songs.elementAtOrNull(index) ?? songs.first;
+    await play(
+      startSong,
+      songs,
+      album,
+      initialPosition: position,
+      autoPlay: wasPlaying,
+    );
   }
 
   Duration? _durationFor(int? index, {List<LibraryItem>? songs}) {
@@ -106,7 +154,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (song != null && song.duration > Duration.zero) {
       return song.duration;
     }
-    return _audioPlayer.duration;
+    return _targetState.duration;
   }
 
   PlaybackReport _playbackReport(
@@ -119,11 +167,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     mediaSourceId: song.audioSources.firstOrNull?.id ?? song.id,
     position: Duration(milliseconds: positionMs),
     isPaused: isPaused,
-    canSeek: true,
+    canSeek: _targetState.canSeek,
     queueItemIds: [for (final queued in state.songs) queued.id],
   );
 
-  void _reportStarted(LibraryItem song, {required int positionMs, bool? isPaused}) {
+  void _reportStarted(
+    LibraryItem song, {
+    required int positionMs,
+    bool? isPaused,
+  }) {
     _startReported = true;
     _report(
       (client) => client.reportPlaybackStarted(
@@ -152,7 +204,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       (client) => client.reportPlaybackProgress(
         _playbackReport(
           song,
-          positionMs: _audioPlayer.position.inMilliseconds,
+          positionMs: _targetState.position.inMilliseconds,
           isPaused: !state.status.isPlaying,
         ),
       ),
@@ -218,19 +270,22 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       };
 
       final resolved = await Future.wait(
-        songs.map((song) => _resolveSource(song, album, sessionIds[song.id]!)),
+        songs.map((song) => _resolveTrack(song, album, sessionIds[song.id]!)),
       );
 
       final playableSongs = <LibraryItem>[];
-      final audioSources = <AudioSource>[];
+      final tracks = <TargetTrack>[];
       for (final entry in resolved) {
         if (entry == null) continue;
         playableSongs.add(entry.song);
-        audioSources.add(entry.source);
+        tracks.add(entry.track);
       }
 
-      if (audioSources.isEmpty) {
-        debugPrint('[Playback] nothing in this queue can be played offline');
+      if (tracks.isEmpty) {
+        debugPrint(
+          '[Playback] nothing in this queue can be played on '
+          '${_target.name}',
+        );
         state = state.copyWith(status: PlaybackStatus.error);
         return;
       }
@@ -246,10 +301,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       final effectiveIndex = startIndex >= 0 ? startIndex : 0;
       final startPosition = initialPosition ?? Duration.zero;
 
-      await _setAudioSources(
-        audioSources,
+      await _target.load(
+        tracks,
         initialIndex: effectiveIndex,
         initialPosition: startPosition,
+        autoPlay: autoPlay,
       );
 
       state = state.copyWith(
@@ -281,17 +337,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           album: album,
         ),
       );
-      if (autoPlay) unawaited(_audioPlayer.play());
     } catch (e, st) {
       _preparingQueue = false;
-      print('Error in play(): type=${e.runtimeType}, message=$e\n$st');
+      debugPrint('Error in play(): type=${e.runtimeType}, message=$e\n$st');
       if (e.toString().indexOf('setPitch') > 0) {
         // This is hack to avoid playback state being error on ios*`
 
         state = state.copyWith(
           status: PlaybackStatus.playing,
           position: Duration.zero,
-          totalDuration: _durationFor(_audioPlayer.currentIndex),
+          totalDuration: _durationFor(_targetState.currentIndex),
         );
       } else {
         state = state.copyWith(status: PlaybackStatus.error);
@@ -299,7 +354,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
-  Future<({LibraryItem song, AudioSource source})?> _resolveSource(
+  Future<({LibraryItem song, TargetTrack track})?> _resolveTrack(
     LibraryItem song,
     LibraryItem album,
     String playSessionId,
@@ -307,7 +362,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final isDownloaded = await _ref
         .read(downloadManagerProvider.notifier)
         .isSongDownloaded(song.id);
-    final downloadedPath = isDownloaded
+    final downloadedPath = isDownloaded && _target.supportsLocalFiles
         ? await _ref
               .read(downloadDatabaseProvider)
               .getDownloadedSongPath(song.id)
@@ -315,16 +370,22 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     if (downloadedPath == null && _ref.read(isOfflineProvider)) return null;
 
-    final Uri audioSourceUri;
-    var useHls = false;
+    final Uri uri;
+    var isHls = false;
+    var mimeType = 'application/octet-stream';
     if (downloadedPath != null) {
-      audioSourceUri = Uri.file(downloadedPath);
+      uri = Uri.file(downloadedPath);
     } else {
       final resolved = await _ref
           .read(mediaServerClientProvider)
-          .resolveStreamSource(song, playSessionId: playSessionId);
-      audioSourceUri = resolved.uri;
-      useHls = resolved.isHls;
+          .resolveStreamSource(
+            song,
+            playSessionId: playSessionId,
+            target: _target.streamProfile,
+          );
+      uri = resolved.uri;
+      isHls = resolved.isHls;
+      mimeType = resolved.mimeType;
     }
 
     final audioSource = song.audioSources.firstOrNull;
@@ -340,29 +401,20 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         'artistId': album.albumArtists.first.id,
     };
 
-    final tag = MediaItem(
-      id: song.id,
-      album: song.albumName,
-      artist: song.albumArtist ?? album.albumArtist,
-      duration: song.duration,
-      title: song.name,
-      extras: extras,
-      artUri: _artUri(song, album),
-    );
-
     return (
       song: song,
-      source: useHls
-          ? HlsAudioSource(audioSourceUri, tag: tag)
-          : ProgressiveAudioSource(
-              audioSourceUri,
-              tag: tag,
-              options: const ProgressiveAudioSourceOptions(
-                darwinAssetOptions: DarwinAssetOptions(
-                  preferPreciseDurationAndTiming: true,
-                ),
-              ),
-            ),
+      track: TargetTrack(
+        itemId: song.id,
+        uri: uri,
+        mimeType: mimeType,
+        isHls: isHls,
+        title: song.name,
+        duration: song.duration,
+        artist: song.albumArtist ?? album.albumArtist,
+        album: song.albumName,
+        artUri: _artUri(song, album),
+        extras: extras,
+      ),
     );
   }
 
@@ -371,36 +423,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     return imageService.itemUri(song) ?? imageService.itemUri(album);
   }
 
-  Future<void> _setAudioSources(
-    List<AudioSource> sources, {
-    required int initialIndex,
-    required Duration initialPosition,
-  }) async {
-    try {
-      await _audioPlayer.setAudioSources(
-        sources,
-        initialIndex: initialIndex,
-        initialPosition: initialPosition,
-        preload: true,
-      );
-    } on Object catch (error) {
-      debugPrint('[Playback] retrying after failed load: $error');
-      await _audioPlayer.stop();
-      await _audioPlayer.setAudioSources(
-        sources,
-        initialIndex: initialIndex,
-        initialPosition: initialPosition,
-        preload: true,
-      );
-    }
-  }
-
   Future<void> seek(Duration position) async {
-    await _audioPlayer.seek(position);
+    await _target.seek(position);
     state = state.copyWith(position: position);
     _reportedPositionMs = position.inMilliseconds;
     _reportProgress();
-    final currentIndex = _audioPlayer.currentIndex;
+    final currentIndex = _targetState.currentIndex;
     final currentSong = currentIndex != null
         ? state.songs.elementAtOrNull(currentIndex)
         : null;
@@ -420,10 +448,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   };
 
   Future<void> pause() async {
-    await _audioPlayer.pause();
+    await _target.pause();
     state = state.copyWith(
       status: PlaybackStatus.paused,
-      position: _audioPlayer.position,
+      position: _targetState.position,
     );
     _stopProgressReports();
     _reportProgress();
@@ -444,17 +472,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       return;
     }
 
-    unawaited(_audioPlayer.play());
+    unawaited(_target.play());
     state = state.copyWith(
       status: PlaybackStatus.playing,
-      position: _audioPlayer.position,
+      position: _targetState.position,
     );
 
     final song = _reportedSong;
     if (song != null && !_startReported) {
       _reportStarted(
         song,
-        positionMs: _audioPlayer.position.inMilliseconds,
+        positionMs: _targetState.position.inMilliseconds,
         isPaused: false,
       );
     } else {
@@ -464,15 +492,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> next() async {
-    await _audioPlayer.seekToNext();
-    if (!_audioPlayer.playing) await _audioPlayer.play();
-    // await play(_ref.read(audioQueueProvider.notifier).nextSong, _ref.read(audioQueueProvider).songs, _ref.read(audioQueueProvider).album!);
+    await _target.seekToNext();
+    if (!_targetState.status.isPlaying) await _target.play();
   }
 
-  Future<void> prev() => _audioPlayer.smartSeekToPrevious();
+  Future<void> prev() => _target.seekToPrevious();
+
+  Future<void> skipTo(int index, {bool autoPlay = false}) async {
+    await _target.skipTo(index);
+    if (autoPlay && !_targetState.status.isPlaying) await _target.play();
+  }
 
   Future<void> stop() async {
-    await _audioPlayer.stop();
+    await _target.stop();
     _stopProgressReports();
     _reportStopped();
     state = state.copyWith(
@@ -535,7 +567,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   void dispose() {
     _stopProgressReports();
     _reportStopped();
-    _audioPlayer.dispose();
+    unawaited(_targetSubscription?.cancel());
     super.dispose();
   }
 }

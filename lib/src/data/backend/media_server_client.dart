@@ -1,3 +1,4 @@
+import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -161,7 +162,7 @@ abstract class MediaServerClient {
   Future<StreamSource> resolveStreamSource(
     LibraryItem song, {
     required String playSessionId,
-    bool preferHls = true,
+    required StreamTargetProfile target,
   });
 
   Uri? imageUri(
