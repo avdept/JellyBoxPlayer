@@ -4,7 +4,10 @@
 
 # JellyBox
 
-**The best native music player for your Jellyfin server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
+**The best native music player for your Jellyfin or Emby server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
+
+[![Works with Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?logo=jellyfin&logoColor=white)](https://jellyfin.org)
+[![Works with Emby](https://img.shields.io/badge/Emby-52B54B?logo=emby&logoColor=white)](https://emby.media)
 
 [![Build Status](https://github.com/avdept/JellyBoxPlayer/actions/workflows/tests.yaml/badge.svg)](https://github.com/avdept/JellyBoxPlayer/actions)
 [![Latest release](https://img.shields.io/github/v/release/avdept/JellyBoxPlayer)](https://github.com/avdept/JellyBoxPlayer/releases/latest)
@@ -19,10 +22,10 @@
 
 ---
 
-JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads, lyrics, and artwork-driven theming - with a UI built for each platform rather than a single stretched layout.
+JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org) and [Emby](https://emby.media). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads, lyrics, and artwork-driven theming - with a UI built for each platform rather than a single stretched layout.
 
 > [!IMPORTANT]
-> JellyBox is a client, not a server. You need access to a running Jellyfin server with a music library on it.
+> JellyBox is a client, not a server. You need access to a running Jellyfin or Emby server with a music library on it.
 
 ## Download
 
@@ -31,7 +34,7 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 | **iOS / iPadOS / macOS**  | App Store | [![App Store](https://img.shields.io/badge/App_Store-0D96F6?logo=apple&logoColor=white)](https://apps.apple.com/us/app/jellybox-player/id6469732117) |
 | **macOS** | `.dmg` (signed & notarized) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Windows** | Installer `.exe` or portable `.zip` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
-| **Linux** | `.tar.gz` bundle (x64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
+| **Linux** | `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android** | `.apk` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 
 Google Play distribution is on the way, need to wait 2 weeks during closed beta period.
@@ -39,11 +42,14 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 ## Features
 
 **Library & browsing**
+- [x] Connect to Jellyfin or Emby servers, and switch between them without signing out
 - [x] Browse albums, artists, genres, playlists and songs across multiple music libraries
 - [x] Search everything at once, or filter to playlists, albums, artists or songs
 - [x] Artist pages with biography and full discography
-- [x] Favourite tracks, synced back to your Jellyfin server
+- [x] Favourite tracks, synced back to your server
 - [x] Create playlists and add tracks to them from anywhere in the app
+- [x] Genre mixes on the home page, built from the genres you actually play - see
+  [Normalizing your music genres](./docs/normalizing-genres.md) if your genre tags are messy
 - [ ] Home page - in development
 
 **Playback**
