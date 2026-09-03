@@ -102,6 +102,42 @@ void main() {
     });
   });
 
+  group('device naming', () {
+    test('- prefers the Sonos room name over the friendly name', () {
+      final device = UpnpDevice.parse('''
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType>
+    <friendlyName>192.168.1.51 - Sonos Play:5 Media Renderer</friendlyName>
+    <roomName>Office</roomName>
+    <modelName>Sonos Play:5</modelName>
+    <UDN>uuid:RINCON_1</UDN>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
+        <controlURL>/MediaRenderer/AVTransport/Control</controlURL>
+      </service>
+    </serviceList>
+  </device>
+</root>''', location: Uri.parse('http://192.168.1.51:1400/xml/device.xml'))!;
+
+      expect(device.roomName, 'Office');
+      expect(device.displayName, 'Office');
+      expect(device.host, '192.168.1.51');
+    });
+
+    test('- falls back to the friendly name without a room name', () {
+      final device = UpnpDevice.parse(
+        fixture('samsung_dmr_description.xml'),
+        location: location,
+      )!;
+
+      expect(device.roomName, isNull);
+      expect(device.displayName, '[TV1476] ROOM 7005');
+      expect(device.host, '172.20.2.138');
+    });
+  });
+
   group('parseScpdActions', () {
     test('- lists the actions the Samsung AVTransport really implements', () {
       final actions = parseScpdActions(fixture('samsung_avtransport_scpd.xml'));
@@ -131,9 +167,10 @@ void main() {
 
   group('parseSinkMimeTypes', () {
     test('- keeps only audio types from a real sink list', () {
-      final sink = RegExp(r'<Sink>(.*?)</Sink>', dotAll: true)
-          .firstMatch(fixture('samsung_get_protocol_info.xml'))!
-          .group(1);
+      final sink = RegExp(
+        r'<Sink>(.*?)</Sink>',
+        dotAll: true,
+      ).firstMatch(fixture('samsung_get_protocol_info.xml'))!.group(1);
 
       final mimeTypes = parseSinkMimeTypes(sink);
 

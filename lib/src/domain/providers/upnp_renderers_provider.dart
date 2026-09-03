@@ -31,7 +31,7 @@ class UpnpRenderersNotifier extends StateNotifier<UpnpDiscoveryState> {
     void finish() {
       if (done.isCompleted) return;
       if (mounted) {
-        state = UpnpDiscoveryState(renderers: found.values.toList());
+        state = UpnpDiscoveryState(renderers: _sorted(found.values));
       }
       done.complete();
     }
@@ -43,7 +43,7 @@ class UpnpRenderersNotifier extends StateNotifier<UpnpDiscoveryState> {
             found[renderer.id] = renderer;
             if (!mounted) return;
             state = UpnpDiscoveryState(
-              renderers: found.values.toList(),
+              renderers: _sorted(found.values),
               scanning: true,
             );
           },
@@ -54,6 +54,12 @@ class UpnpRenderersNotifier extends StateNotifier<UpnpDiscoveryState> {
 
     await done.future;
   }
+
+  List<UpnpRenderer> _sorted(Iterable<UpnpRenderer> renderers) =>
+      renderers.toList()..sort((a, b) {
+        final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        return byName != 0 ? byName : a.host.compareTo(b.host);
+      });
 
   @override
   void dispose() {

@@ -36,17 +36,24 @@ class _FakeTarget implements PlaybackTarget {
 }
 
 void main() {
-  UpnpRenderer rendererNamed(String name, {String? model, String? type}) {
+  UpnpRenderer rendererNamed(
+    String name, {
+    String? model,
+    String? type,
+    String host = '10.0.0.9',
+    String? roomName,
+  }) {
     final soap = UpnpSoapClient(dio: Dio());
-    final control = Uri.parse('http://10.0.0.9:9197/ctl');
+    final control = Uri.parse('http://$host:9197/ctl');
     return UpnpRenderer(
       device: UpnpDevice(
-        udn: 'uuid:$name',
+        udn: 'uuid:$name-$host',
         friendlyName: name,
         deviceType: type ?? 'urn:schemas-upnp-org:device:MediaRenderer:1',
-        location: Uri.parse('http://10.0.0.9:9197/desc.xml'),
+        location: Uri.parse('http://$host:9197/desc.xml'),
         services: const [],
         modelName: model,
+        roomName: roomName,
       ),
       avTransport: AvTransport(soap: soap, controlUrl: control),
       sinkMimeTypes: const {'audio/mpeg'},
@@ -91,7 +98,7 @@ void main() {
     expect(find.text('Play on'), findsOneWidget);
     expect(find.text('This device'), findsOneWidget);
     expect(find.text('[TV1476] ROOM 7005'), findsOneWidget);
-    expect(find.text('HG55BU800EUXEN'), findsOneWidget);
+    expect(find.text('10.0.0.9 · HG55BU800EUXEN'), findsOneWidget);
     expect(find.text('Kitchen'), findsOneWidget);
     expect(find.text('No DLNA devices found on this network.'), findsNothing);
   });
@@ -178,6 +185,30 @@ void main() {
     expect(target.kind, PlaybackTargetKind.upnp);
     expect(target.id, renderer.id);
     expect(target.name, 'Kitchen');
+  });
+
+  testWidgets('- tells three identical speakers apart by address', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      renderers: [
+        rendererNamed('Sonos Play:5', model: 'Play:5', host: '10.0.0.11'),
+        rendererNamed('Sonos Play:5', model: 'Play:5', host: '10.0.0.12'),
+        rendererNamed(
+          'Sonos Play:5',
+          model: 'Play:5',
+          host: '10.0.0.13',
+          roomName: 'Office',
+        ),
+      ],
+    );
+
+    expect(find.text('Office'), findsOneWidget);
+    expect(find.text('Sonos Play:5'), findsNWidgets(2));
+    expect(find.text('10.0.0.11 · Play:5'), findsOneWidget);
+    expect(find.text('10.0.0.12 · Play:5'), findsOneWidget);
+    expect(find.text('10.0.0.13 · Play:5'), findsOneWidget);
   });
 
   testWidgets('- says so when nothing was found', (tester) async {

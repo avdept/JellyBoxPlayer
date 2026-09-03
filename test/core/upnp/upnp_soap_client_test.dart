@@ -64,20 +64,22 @@ void main() {
   });
 
   group('invoke', () {
-    test('- sends a SOAPACTION header and an envelope with the arguments',
-        () async {
-      respondWith(fixture('samsung_get_transport_info.xml'));
+    test(
+      '- sends a SOAPACTION header and an envelope with the arguments',
+      () async {
+        respondWith(fixture('samsung_get_transport_info.xml'));
 
-      await transport.transportInfo();
+        await transport.transportInfo();
 
-      final request = capturedRequest();
-      expect(
-        request.headers['SOAPACTION'],
-        '"urn:schemas-upnp-org:service:AVTransport:1#GetTransportInfo"',
-      );
-      expect(request.contentType, 'text/xml; charset="utf-8"');
-      expect(request.data as String, contains('<InstanceID>0</InstanceID>'));
-    });
+        final request = capturedRequest();
+        expect(
+          request.headers['SOAPACTION'],
+          '"urn:schemas-upnp-org:service:AVTransport:1#GetTransportInfo"',
+        );
+        expect(request.contentType, 'text/xml; charset="utf-8"');
+        expect(request.data as String, contains('<InstanceID>0</InstanceID>'));
+      },
+    );
 
     test('- throws a fault carrying the UPnP error code', () async {
       respondWith('''
@@ -130,12 +132,14 @@ void main() {
       expect(info.trackUri, isNull);
     });
 
-    test('- treats an empty GetCurrentTransportActions as no actions',
-        () async {
-      respondWith(fixture('samsung_get_transport_actions.xml'));
+    test(
+      '- treats an empty GetCurrentTransportActions as no actions',
+      () async {
+        respondWith(fixture('samsung_get_transport_actions.xml'));
 
-      expect(await transport.currentTransportActions(), isEmpty);
-    });
+        expect(await transport.currentTransportActions(), isEmpty);
+      },
+    );
 
     test('- escapes the DIDL metadata inside the envelope', () async {
       respondWith('''
@@ -146,7 +150,9 @@ void main() {
       final metadata = buildDidlLite(
         itemId: 'song-1',
         title: 'Sour Times & Roads',
-        uri: Uri.parse('http://jelly.local:8096/Audio/x/universal?ApiKey=t&a=1'),
+        uri: Uri.parse(
+          'http://jelly.local:8096/Audio/x/universal?ApiKey=t&a=1',
+        ),
         mimeType: 'audio/flac',
         duration: const Duration(minutes: 4, seconds: 21),
         artist: 'Portishead',
@@ -217,7 +223,7 @@ void main() {
   });
 
   group('RenderingControl', () {
-    test('- reads the real GetVolume response as a fraction', () async {
+    test('- reads the real GetVolume response', () async {
       respondWith(fixture('samsung_get_volume.xml'));
 
       final control = RenderingControl(
@@ -227,10 +233,10 @@ void main() {
         ),
       );
 
-      expect(await control.volume(), 0.05);
+      expect(await control.volume(), 5);
     });
 
-    test('- scales a fraction to the 0-100 device range', () async {
+    test('- sends the volume value it is given', () async {
       respondWith('''
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>
 <u:SetVolumeResponse xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1"/>
@@ -240,7 +246,7 @@ void main() {
         soap: soap,
         controlUrl: Uri.parse('http://device/rc'),
       );
-      await control.setVolume(0.37);
+      await control.setVolume(37);
 
       final envelope = capturedRequest().data as String;
       expect(envelope, contains('<DesiredVolume>37</DesiredVolume>'));
@@ -256,7 +262,10 @@ void main() {
         '2:03:04',
       );
       expect(formatUpnpDuration(const Duration(seconds: -5)), '0:00:00');
-      expect(parseUpnpDuration('0:01:23'), const Duration(minutes: 1, seconds: 23));
+      expect(
+        parseUpnpDuration('0:01:23'),
+        const Duration(minutes: 1, seconds: 23),
+      );
       expect(
         parseUpnpDuration('00:01:23.500'),
         const Duration(minutes: 1, seconds: 23, milliseconds: 500),

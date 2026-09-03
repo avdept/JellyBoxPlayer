@@ -19,15 +19,13 @@ class RenderingControl {
     arguments: {'InstanceID': '0', 'Channel': 'Master', ...arguments},
   );
 
-  Future<double?> volume() async {
+  Future<int?> volume() async {
     final result = await _invoke('GetVolume');
-    final value = int.tryParse(result['CurrentVolume'] ?? '');
-    return value == null ? null : (value / 100).clamp(0.0, 1.0);
+    return int.tryParse(result['CurrentVolume'] ?? '');
   }
 
-  Future<void> setVolume(double level) => _invoke('SetVolume', {
-    'DesiredVolume': '${(level.clamp(0.0, 1.0) * 100).round()}',
-  });
+  Future<void> setVolume(int value) =>
+      _invoke('SetVolume', {'DesiredVolume': '$value'});
 
   Future<void> setMute({required bool muted}) =>
       _invoke('SetMute', {'DesiredMute': muted ? '1' : '0'});

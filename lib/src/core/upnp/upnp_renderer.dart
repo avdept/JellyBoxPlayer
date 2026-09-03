@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/connection_manager.dart';
 import 'package:jplayer/src/core/upnp/rendering_control.dart';
 import 'package:jplayer/src/core/upnp/ssdp_discovery.dart';
 import 'package:jplayer/src/core/upnp/upnp_device.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
+import 'package:upnp_quirks/upnp_quirks.dart';
 
 class UpnpRenderer {
   const UpnpRenderer({
@@ -15,29 +16,43 @@ class UpnpRenderer {
     required this.avTransport,
     this.renderingControl,
     this.sinkMimeTypes = const <String>{},
+    this.fingerprint = const DeviceFingerprint(),
+    this.quirks = DeviceQuirks.defaults,
   });
 
   final UpnpDevice device;
   final AvTransport avTransport;
   final RenderingControl? renderingControl;
   final Set<String> sinkMimeTypes;
+  final DeviceFingerprint fingerprint;
+  final DeviceQuirks quirks;
+
+  Set<String> get playableMimeTypes => quirks.playableMimeTypes(sinkMimeTypes);
 
   String get id => device.udn;
 
-  String get name => device.friendlyName;
+  String get name => device.displayName;
 
   String? get model => device.modelName;
+
+  String get host => device.host;
 }
 
 class UpnpControlPoint {
-  UpnpControlPoint({Dio? dio, SsdpDiscovery? discovery, UpnpSoapClient? soap})
-    : _dio = dio ?? Dio(),
-      _discovery = discovery ?? SsdpDiscovery(),
-      _soap = soap ?? UpnpSoapClient(dio: dio);
+  UpnpControlPoint({
+    Dio? dio,
+    SsdpDiscovery? discovery,
+    UpnpSoapClient? soap,
+    Diagnostics diagnostics = const Diagnostics(),
+  }) : _dio = dio ?? Dio(),
+       _discovery = discovery ?? SsdpDiscovery(),
+       _soap = soap ?? UpnpSoapClient(dio: dio),
+       _diagnostics = diagnostics;
 
   final Dio _dio;
   final SsdpDiscovery _discovery;
   final UpnpSoapClient _soap;
+  final Diagnostics _diagnostics;
 
   Stream<UpnpRenderer> discoverRenderers({
     Duration timeout = const Duration(seconds: 4),
@@ -100,6 +115,31 @@ class UpnpControlPoint {
     final actions = await _fetchActions(transportService.scpdUrl);
     final renderingService = device.serviceOfType('RenderingControl');
     final connectionService = device.serviceOfType('ConnectionManager');
+    final sinkMimeTypes = connectionService == null
+        ? const <String>{}
+        : await _fetchSinkMimeTypes(connectionService.controlUrl);
+
+    final fingerprint = DeviceFingerprint(
+      manufacturer: device.manufacturer,
+      modelName: device.modelName,
+      modelNumber: device.modelNumber,
+      deviceType: device.deviceType,
+      friendlyName: device.friendlyName,
+      actions: actions,
+      sinkMimeTypes: sinkMimeTypes,
+    );
+    final quirks = quirksFor(fingerprint);
+
+    _diagnostics.trail(
+      'renderer described',
+      category: 'upnp',
+      data: {
+        ...fingerprint.toJson(),
+        'host': device.host,
+        'quirks': quirks.toJson(),
+        'rules': rulesFor(fingerprint).map((rule) => rule.name).toList(),
+      },
+    );
 
     return UpnpRenderer(
       device: device,
@@ -114,9 +154,9 @@ class UpnpControlPoint {
               soap: _soap,
               controlUrl: renderingService.controlUrl,
             ),
-      sinkMimeTypes: connectionService == null
-          ? const {}
-          : await _fetchSinkMimeTypes(connectionService.controlUrl),
+      sinkMimeTypes: sinkMimeTypes,
+      fingerprint: fingerprint,
+      quirks: quirks,
     );
   }
 
@@ -133,7 +173,11 @@ class UpnpControlPoint {
       if (body == null) return null;
       return UpnpDevice.parse(body, location: location);
     } on Object catch (error) {
-      debugPrint('[UPnP] description $location failed: $error');
+      _diagnostics.trail(
+        'device description failed',
+        category: 'upnp',
+        data: {'location': '$location', 'error': '$error'},
+      );
       return null;
     }
   }
@@ -151,7 +195,11 @@ class UpnpControlPoint {
       final body = response.data;
       return body == null ? const {} : parseScpdActions(body);
     } on Object catch (error) {
-      debugPrint('[UPnP] scpd $scpdUrl failed: $error');
+      _diagnostics.trail(
+        'service description failed',
+        category: 'upnp',
+        data: {'scpd': '$scpdUrl', 'error': '$error'},
+      );
       return const {};
     }
   }
@@ -163,7 +211,11 @@ class UpnpControlPoint {
         controlUrl: controlUrl,
       ).sinkMimeTypes();
     } on Object catch (error) {
-      debugPrint('[UPnP] GetProtocolInfo $controlUrl failed: $error');
+      _diagnostics.trail(
+        'GetProtocolInfo failed',
+        category: 'upnp',
+        data: {'control': '$controlUrl', 'error': '$error'},
+      );
       return const {};
     }
   }

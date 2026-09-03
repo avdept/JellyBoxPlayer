@@ -29,6 +29,8 @@ class UpnpDevice {
     required this.services,
     this.manufacturer,
     this.modelName,
+    this.modelNumber,
+    this.roomName,
   });
 
   static UpnpDevice? parse(String xml, {required Uri location}) {
@@ -75,6 +77,8 @@ class UpnpDevice {
       services: services,
       manufacturer: _text(device, 'manufacturer'),
       modelName: _text(device, 'modelName'),
+      modelNumber: _text(device, 'modelNumber'),
+      roomName: _text(device, 'roomName'),
     );
   }
 
@@ -85,6 +89,12 @@ class UpnpDevice {
   final List<UpnpService> services;
   final String? manufacturer;
   final String? modelName;
+  final String? modelNumber;
+  final String? roomName;
+
+  String get host => location.host;
+
+  String get displayName => _tidyName(roomName ?? friendlyName, host);
 
   bool get isMediaRenderer => serviceOfType('AVTransport') != null;
 
@@ -108,6 +118,33 @@ Set<String> parseScpdActions(String xml) {
             ?.innerText
             .trim(),
   }..removeWhere((name) => name.isEmpty);
+}
+
+final _addressPrefix = RegExp(
+  r'^\s*(\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:]+\])(:\d+)?\s*[-:|]*\s*',
+);
+
+final _ownHostLeftovers = RegExp(r'^(:\d+)?[\s\-:|]*');
+
+final _rendererSuffix = RegExp(
+  r'\s*[(\[]?\s*(media|upnp|av|dlna)?\s*(renderer|dmr)\s*[)\]]?\s*$',
+  caseSensitive: false,
+);
+
+String _tidyName(String name, String host) {
+  var tidy = name.trim();
+
+  if (host.isNotEmpty && tidy.toLowerCase().startsWith(host.toLowerCase())) {
+    tidy = tidy.substring(host.length).replaceFirst(_ownHostLeftovers, '');
+  }
+
+  tidy = tidy
+      .replaceFirst(_addressPrefix, '')
+      .replaceFirst(_rendererSuffix, '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  return tidy.isEmpty ? name.trim() : tidy;
 }
 
 Uri? _resolve(Uri base, String? path) {

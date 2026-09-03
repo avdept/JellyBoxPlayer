@@ -98,10 +98,11 @@ class AvTransport {
 
   Future<void> stopTransport() => _invoke('Stop');
 
-  Future<void> seek(Duration position) => _invoke('Seek', {
-    'Unit': 'REL_TIME',
-    'Target': formatUpnpDuration(position),
-  });
+  Future<void> seek(Duration position, {String unit = 'REL_TIME'}) =>
+      _invoke('Seek', {
+        'Unit': unit,
+        'Target': formatUpnpDuration(position),
+      });
 
   Future<AvTransportInfo> transportInfo() async {
     final result = await _invoke('GetTransportInfo');

@@ -223,7 +223,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 _TargetTile(
                   icon: rendererIcon(renderer),
                   title: renderer.name,
-                  subtitle: renderer.model,
+                  subtitle: [
+                    renderer.host,
+                    ?renderer.model,
+                  ].join(' · '),
                   selected: active.id == renderer.id,
                   onTap: () => _selectRenderer(renderer),
                 ),
