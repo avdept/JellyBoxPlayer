@@ -107,15 +107,26 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
   Future<String?> login(
     UserCredentials credentials, {
-    ServerType serverType = ServerType.jellyfin,
+    ServerType? serverType,
   }) async {
     final serverUrl = normalizeServerUrl(credentials.serverUrl);
     _authenticating = true;
     try {
-      return await _signIn(serverType, serverUrl, credentials);
+      final resolved = serverType ?? await _detectServerType(serverUrl);
+      return await _signIn(resolved, serverUrl, credentials);
     } finally {
       _authenticating = false;
     }
+  }
+
+  Future<ServerType> _detectServerType(String serverUrl) async {
+    final probe = ref.read(serverProbeServiceProvider);
+    final info = await probe.probe(serverUrl);
+    if (info != null) {
+      return probe.resolveServerType(info, serverUrl: serverUrl);
+    }
+    return serverTypeFromProductName(await probe.ping(serverUrl)) ??
+        ServerType.jellyfin;
   }
 
   Future<String?> _signIn(

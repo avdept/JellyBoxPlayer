@@ -13,6 +13,7 @@ enum AppSetting {
   generatedPlaylistsDisabled('disable_generated_playlists'),
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),
+  browseLayout('browse_layout', defaultValue: 'cards'),
   playerVolume('player_volume', defaultValue: 1.0);
 
   const AppSetting(this.key, {this.defaultValue = false});
@@ -41,6 +42,15 @@ final defaultBrowseTabProvider = Provider<ItemList>(
         AppSetting.defaultBrowseTab,
       )] ??
       ItemList.albums,
+);
+
+final browseLayoutProvider = Provider<BrowseLayout>(
+  (ref) =>
+      BrowseLayout.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.browseLayout],
+        AppSetting.browseLayout,
+      )] ??
+      BrowseLayout.cards,
 );
 
 final defaultStartPageProvider = Provider<StartPage>(

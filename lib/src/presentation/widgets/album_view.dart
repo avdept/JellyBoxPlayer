@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -43,7 +44,6 @@ class AlbumView extends ConsumerStatefulWidget {
 
 class _AlbumViewState extends ConsumerState<AlbumView> {
   var _isHovered = false;
-  var _isPlayHovered = false;
   var _isPlayLoading = false;
 
   ImageProvider get _libraryImage =>
@@ -151,15 +151,15 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
       ),
     );
 
-    if (widget.onPlayPressed == null) return card;
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() {
-        _isHovered = false;
-        _isPlayHovered = false;
-      }),
-      child: card,
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.04 : 1,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        child: card,
+      ),
     );
   }
 
@@ -194,38 +194,10 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
       child: AnimatedOpacity(
         opacity: isVisible ? 1 : 0,
         duration: const Duration(milliseconds: 150),
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _isPlayHovered = true),
-          onExit: (_) => setState(() => _isPlayHovered = false),
-          child: AnimatedScale(
-            scale: _isPlayHovered ? 1.15 : 1,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOut,
-            child: SizedBox.square(
-              dimension: size,
-              child: MaterialButton(
-                onPressed: _isPlayLoading ? null : _onPlayPressed,
-                color: const Color(0xFF0066FF),
-                disabledColor: const Color(0xFF0066FF),
-                shape: const CircleBorder(),
-                padding: EdgeInsets.zero,
-                elevation: _isPlayHovered ? 8 : 4,
-                child: _isPlayLoading
-                    ? SizedBox.square(
-                        dimension: size * 0.4,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Icon(
-                        Icons.play_arrow_outlined,
-                        size: size * 0.65,
-                        color: Colors.white,
-                      ),
-              ),
-            ),
-          ),
+        child: CirclePlayButton(
+          size: size,
+          isLoading: _isPlayLoading,
+          onPressed: _onPlayPressed,
         ),
       ),
     );
