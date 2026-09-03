@@ -148,6 +148,21 @@ void main() {
       expect(json['sinkMimeTypes'], ['audio/mpeg']);
     });
 
+    test('- redacts the fields a user chose, keeping what a rule needs', () {
+      final json = fingerprint(
+        manufacturer: 'Sonos, Inc.',
+        modelName: 'Play:5',
+        friendlyName: "Alex's Bedroom",
+      ).redacted().toJson();
+
+      expect(json.containsKey('friendlyName'), isFalse);
+      expect(json['manufacturer'], 'Sonos, Inc.');
+      expect(json['modelName'], 'Play:5');
+      expect(json['deviceType'], contains('MediaRenderer'));
+      expect(json['actions'], contains('SetAVTransportURI'));
+      expect(json['sinkMimeTypes'], ['audio/mpeg']);
+    });
+
     test('- searches over every field it has', () {
       expect(
         fingerprint(friendlyName: 'Kitchen Play:5').searchable,

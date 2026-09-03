@@ -5,20 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 class SwipeableArtwork extends ConsumerStatefulWidget {
   const SwipeableArtwork({
-    required this.sequenceState,
+    required this.queue,
+    required this.currentIndex,
     required this.artworkBuilder,
+    this.order,
     this.borderRadius = 12,
     this.horizontalPadding = 30,
     this.scale = 1,
     super.key,
   });
 
-  final SequenceState sequenceState;
+  final List<MediaItem> queue;
+  final int? currentIndex;
+  final List<int>? order;
   final Widget Function(MediaItem? item) artworkBuilder;
   final double borderRadius;
   final double horizontalPadding;
@@ -33,16 +36,13 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
   late int _page;
 
   List<int> get _order {
-    final state = widget.sequenceState;
-    if (state.shuffleModeEnabled &&
-        state.shuffleIndices.length == state.sequence.length) {
-      return state.shuffleIndices;
-    }
-    return List.generate(state.sequence.length, (index) => index);
+    final order = widget.order;
+    if (order != null && order.length == widget.queue.length) return order;
+    return List.generate(widget.queue.length, (index) => index);
   }
 
   int get _currentPage {
-    final currentIndex = widget.sequenceState.currentIndex;
+    final currentIndex = widget.currentIndex;
     if (currentIndex == null) return 0;
     final page = _order.indexOf(currentIndex);
     return page < 0 ? 0 : page;
@@ -89,7 +89,7 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
     final order = _order;
     if (page < 0 || page >= order.length) return;
     final index = order[page];
-    if (index == widget.sequenceState.currentIndex) return;
+    if (index == widget.currentIndex) return;
 
     _hapticTick();
     await ref.read(playbackProvider.notifier).skipTo(index);
@@ -110,7 +110,6 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
 
   @override
   Widget build(BuildContext context) {
-    final sequence = widget.sequenceState.sequence;
     final order = _order;
 
     return LayoutBuilder(
@@ -133,7 +132,7 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
               itemCount: order.length,
               itemBuilder: (context, page) {
                 final index = order[page];
-                final item = sequence.elementAtOrNull(index)?.tag as MediaItem?;
+                final item = widget.queue.elementAtOrNull(index);
                 return Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: widget.horizontalPadding,

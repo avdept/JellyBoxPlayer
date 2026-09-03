@@ -603,7 +603,10 @@ void main() {
         when(transport.transportInfo).thenThrow(Exception('device gone'));
         await pump(8);
 
-        expect(trails.where((entry) => entry.contains('poll of')), isNotEmpty);
+        expect(
+          trails.where((entry) => entry.contains('poll failed')),
+          isNotEmpty,
+        );
         expect(
           captured.where((entry) => entry.startsWith('upnp.poll')),
           hasLength(1),

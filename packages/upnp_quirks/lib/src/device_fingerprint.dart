@@ -25,6 +25,15 @@ class DeviceFingerprint {
     deviceType,
   ].whereType<String>().join(' ').toLowerCase();
 
+  DeviceFingerprint redacted() => DeviceFingerprint(
+    manufacturer: manufacturer,
+    modelName: modelName,
+    modelNumber: modelNumber,
+    deviceType: deviceType,
+    actions: actions,
+    sinkMimeTypes: sinkMimeTypes,
+  );
+
   Map<String, Object?> toJson() => {
     if (manufacturer != null) 'manufacturer': manufacturer,
     if (modelName != null) 'modelName': modelName,

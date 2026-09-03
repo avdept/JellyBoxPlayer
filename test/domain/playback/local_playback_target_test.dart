@@ -59,8 +59,9 @@ void main() {
     ).thenAnswer((_) async => null);
     when(player.play).thenAnswer((_) async {});
     when(player.stop).thenAnswer((_) async {});
-    when(() => player.seek(any(), index: any(named: 'index')))
-        .thenAnswer((_) async {});
+    when(
+      () => player.seek(any(), index: any(named: 'index')),
+    ).thenAnswer((_) async {});
     when(() => player.setVolume(any())).thenAnswer((_) async {});
     reportPlayer(playing: false, processingState: ProcessingState.idle);
 

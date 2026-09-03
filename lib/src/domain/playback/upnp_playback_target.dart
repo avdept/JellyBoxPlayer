@@ -152,7 +152,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       return value == null ? null : _quirks.volumeFromWire(value);
     } on Object catch (error) {
       diagnostics.trail(
-        'GetVolume on $name failed',
+        'GetVolume failed',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -295,7 +295,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     } on Object catch (error, stackTrace) {
       _failures++;
       diagnostics.trail(
-        'poll of $name failed ($_failures)',
+        'poll failed ($_failures)',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -401,13 +401,11 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   };
 
   Map<String, Object?> get _quirkInfo => {
-    ...renderer.fingerprint.toJson(),
+    ...renderer.fingerprint.redacted().toJson(),
     'quirks': _quirks.toJson(),
   };
 
   Map<String, Object?> get _deviceInfo => {
-    'name': renderer.name,
-    'host': renderer.host,
     'supportsNextUri': _transport.supportsNextUri,
     'supportsSeek': _transport.supportsSeek,
     ..._quirkInfo,

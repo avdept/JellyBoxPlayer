@@ -6,10 +6,13 @@ import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/upnp_device.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
+import 'package:upnp_quirks/upnp_quirks.dart';
+import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/playback_target_picker.dart';
+import 'package:jplayer/src/providers/diagnostics_provider.dart';
 
 class _FakeRenderersNotifier extends UpnpRenderersNotifier {
   _FakeRenderersNotifier(List<UpnpRenderer> renderers)
@@ -19,6 +22,20 @@ class _FakeRenderersNotifier extends UpnpRenderersNotifier {
 
   @override
   Future<void> refresh({Duration timeout = const Duration(seconds: 4)}) async {}
+}
+
+class _RecordingDiagnostics extends Diagnostics {
+  const _RecordingDiagnostics(this.reports);
+
+  final List<({String message, Map<String, Object?> data})> reports;
+
+  @override
+  Future<void> report(
+    String message, {
+    Map<String, Object?> data = const {},
+  }) async {
+    reports.add((message: message, data: data));
+  }
 }
 
 class _FakeTarget implements PlaybackTarget {
@@ -42,6 +59,7 @@ void main() {
     String? type,
     String host = '10.0.0.9',
     String? roomName,
+    String? manufacturer,
   }) {
     final soap = UpnpSoapClient(dio: Dio());
     final control = Uri.parse('http://$host:9197/ctl');
@@ -54,9 +72,18 @@ void main() {
         services: const [],
         modelName: model,
         roomName: roomName,
+        manufacturer: manufacturer,
       ),
       avTransport: AvTransport(soap: soap, controlUrl: control),
       sinkMimeTypes: const {'audio/mpeg'},
+      fingerprint: DeviceFingerprint(
+        manufacturer: manufacturer,
+        modelName: model,
+        deviceType: type ?? 'urn:schemas-upnp-org:device:MediaRenderer:1',
+        friendlyName: name,
+        actions: const {'Play', 'Stop', 'SetAVTransportURI'},
+        sinkMimeTypes: const {'audio/mpeg'},
+      ),
     );
   }
 
@@ -209,6 +236,134 @@ void main() {
     expect(find.text('10.0.0.11 · Play:5'), findsOneWidget);
     expect(find.text('10.0.0.12 · Play:5'), findsOneWidget);
     expect(find.text('10.0.0.13 · Play:5'), findsOneWidget);
+  });
+
+  group('sharing the device list', () {
+    late List<({String message, Map<String, Object?> data})> reports;
+
+    Future<void> pumpSharablePicker(WidgetTester tester) async {
+      reports = [];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            upnpRenderersProvider.overrideWith(
+              (ref) => _FakeRenderersNotifier([
+                rendererNamed(
+                  "Alex's Bedroom",
+                  model: 'Play:5',
+                  host: '10.0.0.11',
+                  manufacturer: 'Sonos, Inc.',
+                ),
+              ]),
+            ),
+            diagnosticsProvider.overrideWithValue(
+              _RecordingDiagnostics(reports),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('- offers an upload button once devices are found', (
+      tester,
+    ) async {
+      await pumpSharablePicker(tester);
+
+      final button = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.upload),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(button.onPressed, isNotNull);
+    });
+
+    testWidgets('- shows the upload button disabled with nothing to share', (
+      tester,
+    ) async {
+      await pumpPicker(tester, renderers: const []);
+
+      expect(find.byIcon(Icons.upload), findsOneWidget);
+      final button = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.upload),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('- sends nothing until the user confirms', (tester) async {
+      await pumpSharablePicker(tester);
+
+      await tester.tap(find.byIcon(Icons.upload));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share what JellyBox found?'), findsOneWidget);
+      expect(reports, isEmpty);
+
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      expect(reports, isEmpty);
+    });
+
+    testWidgets('- reports every device under one message on confirm', (
+      tester,
+    ) async {
+      await pumpSharablePicker(tester);
+
+      await tester.tap(find.byIcon(Icons.upload));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+
+      expect(reports, hasLength(1));
+      expect(reports.single.message, 'upnp device report');
+
+      final devices = (reports.single.data['devices']! as List)
+          .cast<Map<String, Object?>>();
+      expect(devices, hasLength(1));
+      expect(devices.single['manufacturer'], 'Sonos, Inc.');
+      expect(devices.single['modelName'], 'Play:5');
+      expect(devices.single['friendlyName'], "Alex's Bedroom");
+      expect(devices.single['host'], '10.0.0.11');
+      expect(devices.single['actions'], contains('SetAVTransportURI'));
+      expect(devices.single['sinkMimeTypes'], ['audio/mpeg']);
+      expect(devices.single['quirks'], isA<Map<String, Object?>>());
+    });
+
+    testWidgets('- asks plainly, without listing the devices', (tester) async {
+      await pumpSharablePicker(tester);
+
+      await tester.tap(find.byIcon(Icons.upload));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share what JellyBox found?'), findsOneWidget);
+      expect(find.textContaining('stays private'), findsOneWidget);
+      expect(
+        find.textContaining('support for different manufacturers'),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.textContaining('Sonos'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.textContaining('transport actions'),
+        ),
+        findsNothing,
+      );
+    });
   });
 
   testWidgets('- says so when nothing was found', (tester) async {

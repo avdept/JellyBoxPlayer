@@ -9,7 +9,10 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
+import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/anchored_dropdown.dart';
+import 'package:jplayer/src/providers/diagnostics_provider.dart';
+import 'package:upnp_quirks/upnp_quirks.dart';
 
 const _menuWidth = 320.0;
 const _menuMaxHeight = 360.0;
@@ -165,6 +168,24 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     widget.onDone();
   }
 
+  Future<void> _shareDevices(List<UpnpRenderer> renderers) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final diagnostics = ref.read(diagnosticsProvider);
+    final payload = deviceReportPayload(renderers);
+
+    widget.onDone();
+    final confirmed = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => _ShareDevicesDialog(count: renderers.length),
+    );
+    if (confirmed != true) return;
+
+    await diagnostics.report(upnpDeviceReportMessage, data: payload);
+    messenger?.showSnackBar(
+      const SnackBar(content: Text('Device list sent. Thank you!')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -210,6 +231,15 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                         onPressed: () =>
                             ref.read(upnpRenderersProvider.notifier).refresh(),
                       ),
+                    IconButton(
+                      tooltip: 'Share this device list with the developer',
+                      iconSize: 18,
+                      icon: const Icon(Icons.upload),
+                      onPressed:
+                          discovery.scanning || discovery.renderers.isEmpty
+                          ? null
+                          : () => _shareDevices(discovery.renderers),
+                    ),
                   ],
                 ),
               ),
@@ -314,4 +344,50 @@ class _TargetTile extends StatelessWidget {
       onTap: onTap,
     );
   }
+}
+
+const upnpDeviceReportMessage = 'upnp device report';
+
+Map<String, Object?> deviceReportPayload(List<UpnpRenderer> renderers) => {
+  'devices': [
+    for (final renderer in renderers)
+      {
+        ...renderer.fingerprint.toJson(),
+        'name': renderer.name,
+        'host': renderer.host,
+        'quirks': renderer.quirks.toJson(),
+        'rules': rulesFor(renderer.fingerprint).map((r) => r.name).toList(),
+      },
+  ],
+};
+
+class _ShareDevicesDialog extends StatelessWidget {
+  const _ShareDevicesDialog({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog.adaptive(
+    title: const Text('Share what JellyBox found?'),
+    content: Text(
+      count == 1
+          ? 'Send the details of the DLNA device on your network? It stays '
+                'private and is only used to build proper support for '
+                'different manufacturers.'
+          : 'Send the details of the $count DLNA devices on your network? It '
+                'stays private and is only used to build proper support for '
+                'different manufacturers.',
+    ),
+    actions: [
+      AdaptiveDialogAction(
+        onPressed: () => Navigator.pop(context, false),
+        child: const Text('Not now'),
+      ),
+      AdaptiveDialogAction(
+        onPressed: () => Navigator.pop(context, true),
+        isDefaultAction: true,
+        child: const Text('Share'),
+      ),
+    ],
+  );
 }

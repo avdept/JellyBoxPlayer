@@ -20,14 +20,29 @@ class Diagnostics {
     await Sentry.captureException(
       error,
       stackTrace: stackTrace,
-      withScope: (scope) {
-        scope
-          ..level = level
-          ..setTag('operation', operation);
+      withScope: (scope) async {
+        scope.level = level;
+        await scope.setTag('operation', operation);
         for (final tag in tags.entries) {
-          scope.setTag(tag.key, tag.value);
+          await scope.setTag(tag.key, tag.value);
         }
-        if (extra.isNotEmpty) scope.setContexts(operation, extra);
+        if (extra.isNotEmpty) await scope.setContexts(operation, extra);
+      },
+    );
+  }
+
+  Future<void> report(
+    String message, {
+    Map<String, Object?> data = const {},
+  }) async {
+    debugPrint('[report] $message $data');
+    if (!Sentry.isEnabled) return;
+
+    await Sentry.captureMessage(
+      message,
+      withScope: (scope) async {
+        await scope.setTag('operation', 'user-report');
+        if (data.isNotEmpty) await scope.setContexts('report', data);
       },
     );
   }

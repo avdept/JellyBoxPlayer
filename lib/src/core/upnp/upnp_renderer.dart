@@ -134,8 +134,7 @@ class UpnpControlPoint {
       'renderer described',
       category: 'upnp',
       data: {
-        ...fingerprint.toJson(),
-        'host': device.host,
+        ...fingerprint.redacted().toJson(),
         'quirks': quirks.toJson(),
         'rules': rulesFor(fingerprint).map((rule) => rule.name).toList(),
       },
@@ -176,7 +175,7 @@ class UpnpControlPoint {
       _diagnostics.trail(
         'device description failed',
         category: 'upnp',
-        data: {'location': '$location', 'error': '$error'},
+        data: {'error': '$error'},
       );
       return null;
     }
@@ -198,7 +197,7 @@ class UpnpControlPoint {
       _diagnostics.trail(
         'service description failed',
         category: 'upnp',
-        data: {'scpd': '$scpdUrl', 'error': '$error'},
+        data: {'error': '$error'},
       );
       return const {};
     }
@@ -214,7 +213,7 @@ class UpnpControlPoint {
       _diagnostics.trail(
         'GetProtocolInfo failed',
         category: 'upnp',
-        data: {'control': '$controlUrl', 'error': '$error'},
+        data: {'error': '$error'},
       );
       return const {};
     }

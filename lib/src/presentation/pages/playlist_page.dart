@@ -9,13 +9,13 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
+import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 class PlaylistPage extends ConsumerStatefulWidget {
@@ -64,13 +64,13 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     _currentSong = ValueNotifier<MediaItem?>(null);
     _imageService = ref.read(imageServiceProvider);
     _getSongs();
-    ref.read(playerProvider).sequenceStateStream.listen((event) {
-      if (mounted) {
-        _currentSong.value = event.currentSource?.tag as MediaItem?;
-        ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
-          widget.playlist,
-        );
-      }
+    _currentSong.value = ref.read(nowPlayingProvider);
+    ref.listenManual<MediaItem?>(nowPlayingProvider, (_, song) {
+      if (!mounted) return;
+      _currentSong.value = song;
+      ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
+        widget.playlist,
+      );
     });
     _scrollController.addListener(_onScroll);
   }

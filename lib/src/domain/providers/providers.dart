@@ -16,6 +16,7 @@ export 'item_list_providers.dart';
 export 'items_filter_provider.dart';
 export 'libraries_provider.dart';
 export 'lyrics_provider.dart';
+export 'now_playing_provider.dart';
 export 'output_route_provider.dart';
 export 'playback_provider.dart';
 export 'queue_provider.dart';
