@@ -128,7 +128,9 @@ void main() {
     mockDiscoveryService = MockServerDiscoveryService();
     announcesServers(const []);
     when(mockAuthNotifier.build).thenAnswer((_) async => true);
-    when(() => mockAuthNotifier.login(any())).thenAnswer((_) async => null);
+    when(
+      () => mockAuthNotifier.login(any(), serverType: any(named: 'serverType')),
+    ).thenAnswer((_) async => null);
     when(() => mockProbeService.discover(any())).thenAnswer((_) async => null);
   });
 
@@ -184,7 +186,12 @@ void main() {
         await widgetTester.pumpAndSettle();
         await widgetTester.tap(signInFinder);
         await widgetTester.pumpAndSettle();
-        verify(() => mockAuthNotifier.login(credentials)).called(1);
+        verify(
+          () => mockAuthNotifier.login(
+            credentials,
+            serverType: any(named: 'serverType'),
+          ),
+        ).called(1);
       },
     );
 
@@ -261,7 +268,12 @@ void main() {
         await widgetTester.pumpAndSettle();
 
         final credentials =
-            verify(() => mockAuthNotifier.login(captureAny())).captured.single
+            verify(
+                  () => mockAuthNotifier.login(
+                    captureAny(),
+                    serverType: any(named: 'serverType'),
+                  ),
+                ).captured.single
                 as UserCredentials;
         expect(credentials.serverUrl, 'https://jelly.example.com');
       },
@@ -284,7 +296,12 @@ void main() {
         await widgetTester.pumpAndSettle();
 
         final credentials =
-            verify(() => mockAuthNotifier.login(captureAny())).captured.single
+            verify(
+                  () => mockAuthNotifier.login(
+                    captureAny(),
+                    serverType: any(named: 'serverType'),
+                  ),
+                ).captured.single
                 as UserCredentials;
         expect(credentials.serverUrl, 'http://jelly.local:8096');
       },
@@ -620,7 +637,12 @@ void main() {
     testWidgets(
       '- shows the error returned by the login attempt',
       (widgetTester) async {
-        when(() => mockAuthNotifier.login(any())).thenAnswer(
+        when(
+          () => mockAuthNotifier.login(
+            any(),
+            serverType: any(named: 'serverType'),
+          ),
+        ).thenAnswer(
           (_) async => AuthNotifier.invalidCredentialsError,
         );
 
@@ -659,14 +681,24 @@ void main() {
         await widgetTester.pumpAndSettle();
 
         expect(find.text('Server URL and login are required'), findsOneWidget);
-        verifyNever(() => mockAuthNotifier.login(any()));
+        verifyNever(
+          () => mockAuthNotifier.login(
+            any(),
+            serverType: any(named: 'serverType'),
+          ),
+        );
       },
     );
 
     testWidgets(
       '- clears a previous error on the next attempt',
       (widgetTester) async {
-        when(() => mockAuthNotifier.login(any())).thenAnswer(
+        when(
+          () => mockAuthNotifier.login(
+            any(),
+            serverType: any(named: 'serverType'),
+          ),
+        ).thenAnswer(
           (_) async => AuthNotifier.serverUnreachableError,
         );
 

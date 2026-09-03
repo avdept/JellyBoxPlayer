@@ -184,7 +184,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         .read(authProvider.notifier)
         .login(
           credentials,
-          serverType: _resolvedServerType ?? ServerType.jellyfin,
+          serverType: _resolvedServerType,
         );
     if (resp != null && mounted) {
       setState(() {

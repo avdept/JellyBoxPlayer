@@ -59,6 +59,7 @@ void main() {
   setUpAll(() {
     deviceId = 'test-device';
     registerFallbackValue(RequestOptions(path: '/'));
+    registerFallbackValue(const PublicSystemInfoDTO());
     registerFallbackValue(const Stream<Uint8List>.empty());
   });
 
@@ -358,5 +359,109 @@ void main() {
       );
       expect(container.read(currentServerIdProvider), isNull);
     });
+  });
+
+  group('AuthNotifier.login server type', () {
+    void respondWithSuccessfulLogin() {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        final body = options.uri.path.endsWith('/Users/AuthenticateByName')
+            ? {
+                'User': {'Id': 'user-1', 'Name': 'alex'},
+                'SessionInfo': {'Id': 'session-1', 'PlayState': {}},
+                'AccessToken': 'token-1',
+                'ServerId': 'server-1',
+              }
+            : {'Items': <Object>[], 'TotalRecordCount': 0};
+        return ResponseBody.fromString(
+          jsonEncode(body),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+    }
+
+    Future<void> loginWith({ServerType? serverType}) async {
+      final container = createProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(mockStorage),
+          serverProbeServiceProvider.overrideWithValue(mockProbe),
+        ],
+      );
+      container.read(dioProvider).httpClientAdapter = mockAdapter;
+      await container.read(authProvider.future);
+      await container
+          .read(authProvider.notifier)
+          .login(credentials, serverType: serverType);
+    }
+
+    test(
+      '- identifies the server itself when the caller has no hint',
+      () async {
+        when(() => mockProbe.probe(any())).thenAnswer((_) async => null);
+        when(
+          () => mockProbe.ping(any()),
+        ).thenAnswer((_) async => 'Emby Server');
+        respondWithSuccessfulLogin();
+
+        await loginWith();
+
+        verify(() => mockProbe.ping('http://jelly.local')).called(1);
+        verify(
+          () => mockStorage.write(key: 'serverType', value: 'emby'),
+        ).called(1);
+      },
+    );
+
+    test('- uses the public info product name when there is one', () async {
+      when(() => mockProbe.probe(any())).thenAnswer(
+        (_) async => const PublicSystemInfoDTO(id: 'a', version: '4.9.5.0'),
+      );
+      when(
+        () => mockProbe.resolveServerType(
+          any(),
+          serverUrl: any(named: 'serverUrl'),
+        ),
+      ).thenAnswer((_) async => ServerType.emby);
+      respondWithSuccessfulLogin();
+
+      await loginWith();
+
+      verifyNever(() => mockProbe.ping(any()));
+      verify(
+        () => mockStorage.write(key: 'serverType', value: 'emby'),
+      ).called(1);
+    });
+
+    test('- trusts a caller hint without probing at all', () async {
+      respondWithSuccessfulLogin();
+
+      await loginWith(serverType: ServerType.emby);
+
+      verifyNever(() => mockProbe.probe(any()));
+      verifyNever(() => mockProbe.ping(any()));
+      verify(
+        () => mockStorage.write(key: 'serverType', value: 'emby'),
+      ).called(1);
+    });
+
+    test(
+      '- falls back to Jellyfin when the server cannot be identified',
+      () async {
+        when(() => mockProbe.probe(any())).thenAnswer((_) async => null);
+        when(() => mockProbe.ping(any())).thenAnswer((_) async => null);
+        respondWithSuccessfulLogin();
+
+        await loginWith();
+
+        verify(
+          () => mockStorage.write(key: 'serverType', value: 'jellyfin'),
+        ).called(1);
+      },
+    );
   });
 }

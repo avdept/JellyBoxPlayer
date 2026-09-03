@@ -1,8 +1,8 @@
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/app_dropdown.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class LibrarySelectorButton extends ConsumerWidget {
@@ -76,50 +76,21 @@ class LibrarySelectorButton extends ConsumerWidget {
       orElse: () => null,
     );
 
-    return DropdownButtonHideUnderline(
-      child: DropdownButton2<LibraryItem>(
-        customButton: _customButton(ref, theme, selected ?? current),
-        buttonStyleData: const ButtonStyleData(
-          overlayColor: WidgetStatePropertyAll(Colors.transparent),
-        ),
-        dropdownStyleData: DropdownStyleData(
-          width: 220,
-          padding: const EdgeInsets.all(8),
-          offset: const Offset(0, -8),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
-        ),
-        items: [
-          for (final lib in libraries)
-            DropdownMenuItem<LibraryItem>(
-              value: lib,
-              child: Row(
-                children: [
-                  _avatar(ref, theme, lib, 28),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      lib.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.2,
-                        color: (lib.id == current?.id)
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-        value: selected,
-        onChanged: (lib) {
-          if (lib != null) {
-            ref.read(currentLibraryProvider.notifier).setLibrary(lib);
-          }
-        },
-      ),
+    return AppDropdown<LibraryItem>(
+      width: 220,
+      value: selected,
+      buttonBuilder: (isOpened) =>
+          _customButton(ref, theme, selected ?? current),
+      onChanged: (lib) =>
+          ref.read(currentLibraryProvider.notifier).setLibrary(lib),
+      entries: [
+        for (final lib in libraries)
+          AppDropdownEntry(
+            value: lib,
+            label: lib.name,
+            leadingBuilder: (color) => _avatar(ref, theme, lib, 28),
+          ),
+      ],
     );
   }
 }

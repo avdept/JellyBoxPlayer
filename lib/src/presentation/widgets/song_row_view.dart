@@ -80,6 +80,7 @@ class SongRowView extends ConsumerWidget {
 
     return SimpleListTile(
       onTap: onTap != null ? () => onTap!(song) : null,
+      hoverColor: theme.colorScheme.onPrimary.withOpacity(0.06),
       backgroundColor: isPlaying
           ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
           : Colors.transparent,

@@ -1,0 +1,1 @@
+enum BrowseLayout { cards, rows }

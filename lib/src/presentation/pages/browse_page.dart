@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,7 +33,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   late final ValueNotifier<ItemList> _currentView;
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
-  final _filterOpened = ValueNotifier<bool>(false);
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchOpened = ValueNotifier<bool>(false);
   final _searchQuery = ValueNotifier<String>('');
@@ -510,6 +508,40 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                 itemCount: list.items.length,
               );
             }
+            void onItemTap(LibraryItem item) => switch (value) {
+              ItemList.albums => _onAlbumTap(item),
+              ItemList.artists => _onArtistTap(item),
+              ItemList.genres => _onGenreTap(item),
+              ItemList.playlists => _onPlaylistTap(item),
+              ItemList.songs => null,
+            };
+            List<PopupMenuEntry<void>> Function(BuildContext)? optionsFor(
+              LibraryItem item,
+            ) => switch (value) {
+              ItemList.playlists => (context) => [
+                PopupMenuItem(
+                  onTap: () => _onDeletePlaylist(item),
+                  child: const Text('Delete playlist'),
+                ),
+              ],
+              _ => null,
+            };
+
+            if (ref.watch(browseLayoutProvider) == BrowseLayout.rows) {
+              return SliverList.builder(
+                itemBuilder: (context, index) {
+                  final item = list.items[index];
+                  return ItemRowView(
+                    item: item,
+                    onTap: onItemTap,
+                    onPlayPressed: (item) => _onPlaySetPressed(item, value),
+                    optionsBuilder: optionsFor(item),
+                  );
+                },
+                itemCount: list.items.length,
+              );
+            }
+
             return SliverGrid.builder(
               gridDelegate: AlbumCardMetrics.gridDelegate(_device),
               itemBuilder: (context, index) {
@@ -551,7 +583,9 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                   )
                 : Text(error.toString()),
           ),
-          loading: () => value == ItemList.songs
+          loading: () =>
+              (value == ItemList.songs ||
+                  ref.watch(browseLayoutProvider) == BrowseLayout.rows)
               ? SliverToBoxAdapter(
                   child: SongRowsShimmer(device: _device, count: 8),
                 )
@@ -565,7 +599,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   void dispose() {
     _currentView.dispose();
     _appliedFilter.dispose();
-    _filterOpened.dispose();
     _searchDebounce?.cancel();
     _searchAnimation.dispose();
     _iconsReveal.dispose();
@@ -644,76 +677,76 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     }
   }
 
-  Widget _filterButton() => DropdownButtonHideUnderline(
-    child: ValueListenableBuilder(
-      valueListenable: _currentView,
-      builder: (context, view, widget) {
-        return Consumer(
-          builder: (context, ref, child) {
-            final filter = ref.watch(filterProvider);
-            return DropdownButton2<EntityFilter>(
-              customButton: Padding(
-                padding: const EdgeInsets.all(8),
-                child: ValueListenableBuilder(
-                  valueListenable: _filterOpened,
-                  builder: (context, isOpened, child) => Icon(
-                    Icons.sort,
-                    color: isOpened
-                        ? _theme.colorScheme.primary
-                        : _theme.iconTheme.color,
-                  ),
+  Widget _filterButton() => ValueListenableBuilder(
+    valueListenable: _currentView,
+    builder: (context, view, child) => Consumer(
+      builder: (context, ref, child) {
+        final filter = ref.watch(filterProvider);
+        return AppDropdown<EntityFilter>(
+          icon: Icons.sort,
+          value: filter.orderBy,
+          onChanged: _applyProviderFilter,
+          entries: [
+            for (final value in getFilterItems())
+              AppDropdownEntry(
+                value: value,
+                label: _filterLabel(value),
+                trailingBuilder: (color) => Icon(
+                  filter.desc ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: color,
                 ),
               ),
-              buttonStyleData: const ButtonStyleData(
-                overlayColor: WidgetStatePropertyAll(Colors.transparent),
-              ),
-              dropdownStyleData: DropdownStyleData(
-                width: 150,
-                padding: const EdgeInsets.all(8),
-                offset: const Offset(0, -8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              items: [
-                for (final value in getFilterItems())
-                  DropdownMenuItem(
-                    value: value,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _filterLabel(value),
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.2,
-                              color: (filter.orderBy == value)
-                                  ? _theme.colorScheme.primary
-                                  : _theme.colorScheme.onPrimary,
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          filter.desc
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
-                          color: (filter.orderBy == value)
-                              ? _theme.colorScheme.primary
-                              : _theme.colorScheme.onPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-              value: filter.orderBy,
-              onChanged: _applyProviderFilter,
-              onMenuStateChange: (value) => _filterOpened.value = value,
-            );
-          },
+          ],
         );
       },
     ),
   );
+
+  Widget _layoutButton() => ValueListenableBuilder(
+    valueListenable: _currentView,
+    builder: (context, currentView, child) => AnimatedSwitcher(
+      duration: const Duration(milliseconds: 100),
+      transitionBuilder: (child, animation) => ScaleTransition(
+        scale: animation,
+        child: child,
+      ),
+      child: currentView == ItemList.songs
+          ? const SizedBox.shrink()
+          : _layoutDropdown(),
+    ),
+  );
+
+  Widget _layoutDropdown() => Consumer(
+    builder: (context, ref, child) {
+      final layout = ref.watch(browseLayoutProvider);
+      return AppDropdown<BrowseLayout>(
+        icon: _layoutIcon(layout),
+        value: layout,
+        onChanged: (value) => ref
+            .read(appSettingsProvider.notifier)
+            .setValue(AppSetting.browseLayout, value.name),
+        entries: [
+          for (final value in BrowseLayout.values)
+            AppDropdownEntry(
+              value: value,
+              label: _layoutLabel(value),
+              leadingBuilder: (color) =>
+                  Icon(_layoutIcon(value), size: 18, color: color),
+            ),
+        ],
+      );
+    },
+  );
+
+  IconData _layoutIcon(BrowseLayout layout) => switch (layout) {
+    BrowseLayout.cards => Icons.grid_view,
+    BrowseLayout.rows => Icons.view_list,
+  };
+
+  String _layoutLabel(BrowseLayout layout) => switch (layout) {
+    BrowseLayout.cards => 'Cards',
+    BrowseLayout.rows => 'Rows',
+  };
 
   Widget _navigationBarContent() => LayoutBuilder(
     builder: (context, constraints) {
@@ -768,6 +801,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       Expanded(child: _pageViewToggle()),
       _addButton(),
       _searchButton(),
+      _layoutButton(),
       _filterButton(),
       const SizedBox(width: 12),
       LibrarySelectorButton(size: _device.isMobile ? 32 : 40),
@@ -788,8 +822,9 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
               maxNameWidth: _device.isMobile ? 110 : 180,
             ),
             const Spacer(),
-            _revealFromBell(slotsFromBell: 3, child: _addButton()),
-            _revealFromBell(slotsFromBell: 2, child: _searchButton()),
+            _revealFromBell(slotsFromBell: 4, child: _addButton()),
+            _revealFromBell(slotsFromBell: 3, child: _searchButton()),
+            _revealFromBell(slotsFromBell: 2, child: _layoutButton()),
             _revealFromBell(slotsFromBell: 1, child: _filterButton()),
             UpdatifyBell(isDesktop: _device.isDesktop),
           ],

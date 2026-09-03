@@ -50,10 +50,21 @@ void main() {
 
   double playButtonScale(WidgetTester tester) => tester
       .widget<AnimatedScale>(
-        find.ancestor(
-          of: find.byType(MaterialButton),
+        find.descendant(
+          of: find.byType(CirclePlayButton),
           matching: find.byType(AnimatedScale),
         ),
+      )
+      .scale;
+
+  double cardScale(WidgetTester tester) => tester
+      .widget<AnimatedScale>(
+        find
+            .descendant(
+              of: find.byType(AlbumView),
+              matching: find.byType(AnimatedScale),
+            )
+            .first,
       )
       .scale;
 
@@ -130,5 +141,29 @@ void main() {
         expect(tapCounter, 0);
       },
     );
+  });
+
+  group('AlbumView hover zoom', () {
+    testWidgets('- zooms the card slightly while hovered', (tester) async {
+      await tester.pumpWidget(getWidgetUT(onPlayPressed: (_) async {}));
+      expect(cardScale(tester), 1.0);
+
+      final gesture = await hoverOverCard(tester);
+      expect(cardScale(tester), greaterThan(1.0));
+      expect(cardScale(tester), lessThan(1.1));
+
+      await gesture.moveTo(const Offset(-100, -100));
+      await tester.pumpAndSettle();
+      expect(cardScale(tester), 1.0);
+    });
+
+    testWidgets('- zooms even without a play handler', (tester) async {
+      await tester.pumpWidget(getWidgetUT());
+      expect(cardScale(tester), 1.0);
+
+      await hoverOverCard(tester);
+
+      expect(cardScale(tester), greaterThan(1.0));
+    });
   });
 }
