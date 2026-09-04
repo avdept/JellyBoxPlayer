@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
+import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
@@ -372,16 +373,17 @@ class JellyfinClient implements MediaServerClient {
   Future<StreamSource> resolveStreamSource(
     LibraryItem song, {
     required String playSessionId,
-    bool preferHls = true,
+    required StreamTargetProfile target,
   }) async {
     final audioSource = song.audioSources.firstOrNull;
 
     final profile = AudioStreamProfile.forSource(
+      target: target,
       sourceContainer: audioSource?.container,
       sourceCodec: audioSource?.codec,
     );
 
-    final useHls = preferHls && profile.requiresTranscode;
+    final useHls = profile.useHls;
 
     final uri = _resolve(
       useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
@@ -407,6 +409,7 @@ class JellyfinClient implements MediaServerClient {
       uri: uri,
       isHls: useHls,
       outputContainer: profile.outputContainer,
+      mimeType: profile.outputMimeType,
     );
   }
 

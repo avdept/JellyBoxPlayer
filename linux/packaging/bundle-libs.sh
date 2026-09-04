@@ -17,7 +17,7 @@ if [ ! -f "$LIB_DIR/libsqlite3.so" ]; then
   exit 1
 fi
 
-EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libvulkan.*|libnvidia.*|libva.*|libvdpau.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
+EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libnvidia.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
 
 # Emits "<soname>\t<resolved-path>" for each non-excluded dependency of $1.
 resolve_deps() {
@@ -94,5 +94,19 @@ for f in "$LIB_DIR"/*; do
   patchelf --force-rpath --set-rpath '$ORIGIN' "$f" 2>/dev/null || true
 done
 patchelf --force-rpath --set-rpath '$ORIGIN/lib' "$BIN"
+
+missing=0
+for f in "$BIN" "$LIB_DIR"/*; do
+  [ -f "$f" ] || continue
+  while read -r dep; do
+    [ -z "$dep" ] && continue
+    [ -e "$LIB_DIR/$dep" ] && continue
+    [[ "$dep" =~ $EXCLUDE_RE ]] && continue
+    echo "error: $(basename "$f") needs $dep, which is neither bundled nor host-provided" >&2
+    missing=1
+  done < <(readelf -d "$f" 2>/dev/null \
+    | awk -F'[][]' '/NEEDED/ {print $2}')
+done
+[ "$missing" -eq 0 ] || exit 1
 
 echo "Bundled $(find "$LIB_DIR" -maxdepth 1 -type f | wc -l) libraries into $LIB_DIR"
