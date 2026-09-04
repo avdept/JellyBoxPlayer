@@ -39,10 +39,6 @@ cp "$SCRIPT_DIR/jellybox.png" "$ROOT/usr/share/icons/hicolor/256x256/apps/jellyb
 # /usr/share/mime, and the icon themes GTK falls back through. librsvg2-common
 # is what registers the SVG pixbuf loader -- without it a KDE session running
 # a Breeze (SVG-only) icon theme cannot rasterize a single icon.
-#
-# The EGL/gbm/drm/wayland libs are the ones bundle-libs.sh leaves to the host
-# because they are tied to the machine's GPU driver; libmpv has them as hard
-# DT_NEEDED entries, so a host missing any of them fails to dlopen libmpv.
 fpm -s dir -t deb \
   -C "$ROOT" \
   -n jellybox \

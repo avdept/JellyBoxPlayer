@@ -17,18 +17,6 @@ if [ ! -f "$LIB_DIR/libsqlite3.so" ]; then
   exit 1
 fi
 
-# Left to the host: the C runtime, and anything wired to the machine's own GPU
-# driver. Shipping our copy of libEGL/libgbm/libdrm/libwayland would make them
-# disagree with the host's DRI driver and kill rendering outright.
-#
-# libva/libvdpau/libvulkan are deliberately NOT excluded even though they look
-# like GPU libraries: they are dispatch loaders that find the actual driver at
-# runtime (LIBVA_DRIVERS_PATH, /usr/share/vulkan), so a bundled copy still
-# drives the host's driver. They must be bundled because libmpv has them as
-# hard DT_NEEDED entries -- an arm64 desktop install typically has no VA-API,
-# VDPAU or Vulkan packages at all, and every one of them missing turns into a
-# failed dlopen("libmpv.so.2"), which media_kit reports as the misleading
-# "Cannot find libmpv at the usual places".
 EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libnvidia.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
 
 # Emits "<soname>\t<resolved-path>" for each non-excluded dependency of $1.
@@ -107,10 +95,6 @@ for f in "$LIB_DIR"/*; do
 done
 patchelf --force-rpath --set-rpath '$ORIGIN/lib' "$BIN"
 
-# Every DT_NEEDED entry in the bundle must now resolve to either a sibling in
-# lib/ or a deliberately excluded host library. Anything else is a library that
-# was present on the build machine, never got copied, and would only surface as
-# a dlopen/startup failure on a user's machine.
 missing=0
 for f in "$BIN" "$LIB_DIR"/*; do
   [ -f "$f" ] || continue
