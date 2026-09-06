@@ -1,0 +1,11 @@
+name: upnp_quirks
+description: Private per-manufacturer UPnP renderer behaviour for JellyBox. Not for publication.
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+dev_dependencies:
+  test: ^1.27.0
+  very_good_analysis: ^10.1.0

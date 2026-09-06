@@ -60,14 +60,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                 valueListenable: _dynamicColors,
                 builder: (context, colorScheme, child) => Theme(
                   data: Theme.of(context).copyWith(colorScheme: colorScheme),
-                  child: StreamBuilder<SequenceState?>(
-                    stream: ref.read(playerProvider).sequenceStateStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.data?.sequence.isEmpty ?? true) {
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      if (!ref.watch(hasQueueProvider)) {
                         return const SizedBox.shrink();
                       }
-                      final currentSong =
-                          snapshot.data?.currentSource?.tag as MediaItem?;
+                      final currentSong = ref.watch(nowPlayingProvider);
                       return Column(
                         mainAxisSize: MainAxisSize.max,
                         children: [
@@ -91,13 +89,29 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 key: const ValueKey('artwork'),
                                 valueListenable: _isPlaying,
                                 builder: (context, isPlaying, child) =>
-                                    SwipeableArtwork(
-                                      sequenceState: snapshot.data!,
-                                      borderRadius: _isMobile ? 12 : 16,
-                                      artworkBuilder: _artwork,
-                                      horizontalPadding:
-                                          _sheetHorizontalPadding,
-                                      scale: isPlaying ? 1 : 0.82,
+                                    StreamBuilder<SequenceState?>(
+                                      stream: ref
+                                          .read(playerProvider)
+                                          .sequenceStateStream,
+                                      builder: (context, sequence) =>
+                                          SwipeableArtwork(
+                                            queue: ref.watch(
+                                              nowPlayingQueueProvider,
+                                            ),
+                                            currentIndex: ref.watch(
+                                              playbackProvider.select(
+                                                (s) => s.currentMediaIndex,
+                                              ),
+                                            ),
+                                            order: _shuffleOrder(
+                                              sequence.data,
+                                            ),
+                                            borderRadius: _isMobile ? 12 : 16,
+                                            artworkBuilder: _artwork,
+                                            horizontalPadding:
+                                                _sheetHorizontalPadding,
+                                            scale: isPlaying ? 1 : 0.82,
+                                          ),
                                     ),
                               ),
                             ),
@@ -251,6 +265,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               _randomQueueButton(),
               _repeatTrackButton(),
               if (NativeRoutePicker.isSupported) _outputRouteButton(),
+              _playbackTargetButton(),
               _lyricsButton(),
               _downloadTrackButton(),
               _likeTrackButton(),
@@ -305,11 +320,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         if (mounted) _isPlaying.value = isPlaying;
       });
     }
-    return StreamBuilder<SequenceState?>(
-      stream: ref.read(playerProvider).sequenceStateStream,
-      builder: (context, snapshot) {
-        final isEmpty = snapshot.data?.sequence.isEmpty ?? true;
-        final currentSong = snapshot.data?.currentSource?.tag as MediaItem?;
+    return Consumer(
+      builder: (context, ref, _) {
+        final isEmpty = !ref.watch(hasQueueProvider);
+        final currentSong = ref.watch(nowPlayingProvider);
         final image = ref
             .read(imageServiceProvider)
             .artworkImage(currentSong?.artUri);
@@ -419,6 +433,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             if (_isDesktop) const VolumeControl(size: 44),
                             if (_isDesktop && NativeRoutePicker.isSupported)
                               _outputRouteButton(size: 44),
+                            if (_isDesktop) _playbackTargetButton(size: 44),
                             if (!_isMobile) _studioModeButton(),
                           ],
                         ),
@@ -607,6 +622,18 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         isSelected: snapshot.data == LoopMode.all,
       );
     },
+  );
+
+  List<int>? _shuffleOrder(SequenceState? state) {
+    if (state == null || !state.shuffleModeEnabled) return null;
+    if (state.shuffleIndices.length != state.sequence.length) return null;
+    return state.shuffleIndices;
+  }
+
+  Widget _playbackTargetButton({double? size}) => PlaybackTargetButton(
+    size: size,
+    color: _theme.colorScheme.onPrimary,
+    activeColor: _theme.colorScheme.primary,
   );
 
   Widget _outputRouteButton({double? size}) => RoutePickerButton(

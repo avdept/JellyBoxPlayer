@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart' as bd;
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -31,7 +32,7 @@ class DownloadService extends ChangeNotifier {
     final resolved = await client.resolveStreamSource(
       song,
       playSessionId: 'download-$deviceId-${song.id}',
-      preferHls: false,
+      target: StreamTargetProfile.download(),
     );
 
     final fileName =

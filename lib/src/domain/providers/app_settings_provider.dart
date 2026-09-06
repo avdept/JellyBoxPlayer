@@ -14,7 +14,8 @@ enum AppSetting {
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
-  playerVolume('player_volume', defaultValue: 1.0);
+  playerVolume('player_volume', defaultValue: 1.0),
+  rendererVolumes('renderer_volumes', defaultValue: <String, double>{});
 
   const AppSetting(this.key, {this.defaultValue = false});
 
@@ -99,12 +100,36 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
           setting: value
         else if (decoded[setting.key] case final num value)
           setting: value.toDouble()
+        else if (decoded[setting.key] case final Map<String, dynamic> value)
+          setting: value
         else if (prefs.getBool(setting.key) case final bool legacy)
           setting: legacy,
     };
   }
 
   bool isEnabled(AppSetting setting) => _asBool(state[setting], setting);
+
+  double? rendererVolume(String deviceId) {
+    final level = _rendererVolumes()[deviceId];
+    return level == null ? null : level.clamp(0.0, 1.0);
+  }
+
+  void setRendererVolume(String deviceId, double level) => _store(
+    AppSetting.rendererVolumes,
+    {..._rendererVolumes(), deviceId: level.clamp(0.0, 1.0)},
+  );
+
+  Map<String, double> _rendererVolumes() {
+    if (state[AppSetting.rendererVolumes]
+        case final Map<Object?, Object?> raw) {
+      return {
+        for (final entry in raw.entries)
+          if (entry.key case final String key)
+            if (entry.value case final num level) key: level.toDouble(),
+      };
+    }
+    return const {};
+  }
 
   String valueOf(AppSetting setting) => _asString(state[setting], setting);
 

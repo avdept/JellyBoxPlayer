@@ -1,0 +1,37 @@
+name: Private UPnP quirks
+description: >
+  Point upnp_quirks at the private rule table when a deploy key is available.
+  Without one the build uses the in-repo stub, so forks and public clones still
+  build.
+
+inputs:
+  deploy-key:
+    description: Read-only SSH deploy key for the private upnp_quirks repository
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Enable the private rule table
+      if: ${{ inputs.deploy-key != '' }}
+      shell: bash
+      env:
+        DEPLOY_KEY: ${{ inputs.deploy-key }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$HOME/.ssh"
+        key_file="$HOME/.ssh/upnp_quirks_ci"
+        printf '%s\n' "$DEPLOY_KEY" > "$key_file"
+        chmod 600 "$key_file"
+        ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+        echo "GIT_SSH_COMMAND=ssh -i $key_file -o IdentitiesOnly=yes" >> "$GITHUB_ENV"
+        cp "$GITHUB_WORKSPACE/pubspec_overrides.yaml.example" \
+           "$GITHUB_WORKSPACE/pubspec_overrides.yaml"
+        echo "upnp_quirks: private rule table"
+
+    - name: Fall back to the stub
+      if: ${{ inputs.deploy-key == '' }}
+      shell: bash
+      run: |
+        echo "upnp_quirks: in-repo stub, no rule table"

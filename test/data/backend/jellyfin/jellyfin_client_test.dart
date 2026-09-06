@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
 import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -57,32 +58,42 @@ void main() {
   );
 
   group('resolveStreamSource', () {
-    test('- returns a direct-play universal URL for a supported container', () async {
-      final source = await client.resolveStreamSource(
-        songWith(container: 'mp3', codec: 'mp3'),
-        playSessionId: 'session-1',
-      );
+    test(
+      '- returns a direct-play universal URL for a supported container',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'mp3', codec: 'mp3'),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.localPlayer(isAndroid: false),
+        );
 
-      expect(source.isHls, isFalse);
-      expect(source.outputContainer, 'mp3');
-      expect(source.uri.path, '/Audio/song-1/universal');
-      expect(source.uri.queryParameters['UserId'], 'user-1');
-      expect(source.uri.queryParameters['ApiKey'], 'token-1');
-      expect(source.uri.queryParameters['DeviceId'], 'device-1');
-      expect(source.uri.queryParameters['PlaySessionId'], 'session-1');
-      expect(source.uri.queryParameters['MediaSourceId'], 'song-1');
-      expect(source.uri.queryParameters['TranscodingProtocol'], 'http');
-      expect(source.uri.queryParameters.containsKey('SegmentContainer'), isFalse);
-    });
+        expect(source.isHls, isFalse);
+        expect(source.outputContainer, 'mp3');
+        expect(source.mimeType, 'audio/mpeg');
+        expect(source.uri.path, '/Audio/song-1/universal');
+        expect(source.uri.queryParameters['UserId'], 'user-1');
+        expect(source.uri.queryParameters['ApiKey'], 'token-1');
+        expect(source.uri.queryParameters['DeviceId'], 'device-1');
+        expect(source.uri.queryParameters['PlaySessionId'], 'session-1');
+        expect(source.uri.queryParameters['MediaSourceId'], 'song-1');
+        expect(source.uri.queryParameters['TranscodingProtocol'], 'http');
+        expect(
+          source.uri.queryParameters.containsKey('SegmentContainer'),
+          isFalse,
+        );
+      },
+    );
 
     test('- transcodes an unsupported container to HLS', () async {
       final source = await client.resolveStreamSource(
         songWith(container: 'ogg', codec: 'vorbis'),
         playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(isAndroid: false),
       );
 
       expect(source.isHls, isTrue);
       expect(source.outputContainer, 'm4a');
+      expect(source.mimeType, 'application/vnd.apple.mpegurl');
       expect(source.uri.path, '/Audio/song-1/main.m3u8');
       expect(source.uri.queryParameters['AudioCodec'], 'aac');
       expect(source.uri.queryParameters['SegmentContainer'], 'ts');
@@ -99,12 +110,81 @@ void main() {
         final source = await client.resolveStreamSource(
           songWith(container: 'ogg', codec: 'vorbis'),
           playSessionId: 'session-1',
-          preferHls: false,
+          target: StreamTargetProfile.download(isAndroid: false),
         );
 
         expect(source.isHls, isFalse);
         expect(source.uri.path, '/Audio/song-1/universal');
         expect(source.uri.queryParameters['TranscodingContainer'], 'm4a');
+      },
+    );
+    test(
+      '- routes ALAC on Android through a lossless HLS transcode',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'm4a', codec: 'alac'),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.localPlayer(isAndroid: true),
+        );
+
+        expect(source.isHls, isTrue);
+        expect(source.outputContainer, 'flac');
+        expect(source.uri.path, '/Audio/song-1/main.m3u8');
+        expect(source.uri.queryParameters['AudioCodec'], 'flac');
+        expect(source.uri.queryParameters['SegmentContainer'], 'mp4');
+      },
+    );
+
+    test('- downloads ALAC on Android as progressive FLAC', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'm4a', codec: 'alac'),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.download(isAndroid: true),
+      );
+
+      expect(source.isHls, isFalse);
+      expect(source.outputContainer, 'flac');
+      expect(source.mimeType, 'audio/flac');
+      expect(source.uri.path, '/Audio/song-1/universal');
+      expect(source.uri.queryParameters['AudioCodec'], 'flac');
+      expect(source.uri.queryParameters['TranscodingContainer'], 'flac');
+      expect(
+        source.uri.queryParameters['Container'],
+        'mp3,aac,m4a|aac,m4b|aac,flac,wav',
+      );
+    });
+
+    test('- direct-plays the same ALAC file off Android', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'm4a', codec: 'alac'),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(isAndroid: false),
+      );
+
+      expect(source.isHls, isFalse);
+      expect(source.outputContainer, 'm4a');
+      expect(source.uri.queryParameters['Container'], contains('m4a|alac'));
+    });
+
+    test(
+      '- asks for a progressive mp3 transcode for an mp3-only renderer',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'flac', codec: 'flac'),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.renderer(
+            sinkMimeTypes: const {'audio/mpeg'},
+          ),
+        );
+
+        expect(source.isHls, isFalse);
+        expect(source.outputContainer, 'mp3');
+        expect(source.mimeType, 'audio/mpeg');
+        expect(source.uri.path, '/Audio/song-1/universal');
+        expect(source.uri.queryParameters['AudioCodec'], 'mp3');
+        expect(source.uri.queryParameters['TranscodingContainer'], 'mp3');
+        expect(source.uri.queryParameters['Container'], 'mp3');
+        expect(source.uri.queryParameters['ApiKey'], 'token-1');
       },
     );
   });

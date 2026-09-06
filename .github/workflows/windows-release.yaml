@@ -51,6 +51,11 @@ jobs:
         with:
           channel: stable
 
+      - name: Private UPnP quirks
+        uses: ./.github/actions/private-quirks
+        with:
+          deploy-key: ${{ secrets.UPNP_QUIRKS_DEPLOY_KEY }}
+
       - name: Build Windows app
         run: |
           flutter pub get

@@ -16,7 +16,6 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 @visibleForTesting
@@ -117,13 +116,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     _isFavorite = widget.album.userData.isFavorite;
     _imageService = ref.read(imageServiceProvider);
     unawaited(_loadSongs());
-    ref.read(playerProvider).sequenceStateStream.listen((event) {
-      if (mounted) {
-        _currentSong.value = event.currentSource?.tag as MediaItem?;
-        ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
-          widget.album,
-        );
-      }
+    _currentSong.value = ref.read(nowPlayingProvider);
+    ref.listenManual<MediaItem?>(nowPlayingProvider, (_, song) {
+      if (!mounted) return;
+      _currentSong.value = song;
+      ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
+        widget.album,
+      );
     });
     _scrollController.addListener(_onScroll);
   }

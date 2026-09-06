@@ -16,8 +16,6 @@ import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -73,7 +71,6 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   final _backgroundPhase = ValueNotifier<double>(0);
   final _phaseWatch = Stopwatch();
   Timer? _phaseTimer;
-  StreamSubscription<SequenceState?>? _sequenceSubscription;
   MediaItem? _currentSong;
   String? _displayedSongId;
   String? _pendingSongId;
@@ -97,10 +94,8 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       _phaseWatch.start();
       _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
     }
-    _sequenceSubscription = ref
-        .read(playerProvider)
-        .sequenceStateStream
-        .listen(_onSequenceState);
+    ref.listenManual(nowPlayingProvider, (_, song) => _onNowPlaying(song));
+    _currentSong = ref.read(nowPlayingProvider);
     ref.listenManual(
       playbackProvider.select(
         (state) => state.status == PlaybackStatus.playing,
@@ -118,9 +113,8 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     await windowManager.setFullScreen(true);
   }
 
-  void _onSequenceState(SequenceState? state) {
+  void _onNowPlaying(MediaItem? song) {
     if (!mounted) return;
-    final song = state?.currentSource?.tag as MediaItem?;
     if (song?.id != _currentSong?.id) {
       setState(() => _currentSong = song);
     }
@@ -470,7 +464,6 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     }
     _hideTimer?.cancel();
     _phaseTimer?.cancel();
-    unawaited(_sequenceSubscription?.cancel());
     _backgroundPhase.dispose();
     _auroraShader?.dispose();
     _blurredArt?.dispose();

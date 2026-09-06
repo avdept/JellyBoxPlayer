@@ -34,9 +34,27 @@ sed -e "s|@VERSION@|$VERSION|" -e 's#^Exec=jellybox#Exec=/usr/bin/jellybox#' \
 
 cp "$SCRIPT_DIR/jellybox.png" "$ROOT/usr/share/icons/hicolor/256x256/apps/jellybox.png"
 
+# The bundle carries libmpv and libsqlite3 itself, but the GTK stack reaches
+# for runtime data that lives outside any .so: gdk-pixbuf loader modules,
+# /usr/share/mime, and the icon themes GTK falls back through. librsvg2-common
+# is what registers the SVG pixbuf loader -- without it a KDE session running
+# a Breeze (SVG-only) icon theme cannot rasterize a single icon.
 fpm -s dir -t deb \
   -C "$ROOT" \
   -n jellybox \
+  -d 'libgtk-3-0t64 | libgtk-3-0' \
+  -d 'libgdk-pixbuf-2.0-0 | libgdk-pixbuf2.0-0' \
+  -d librsvg2-common \
+  -d libegl1 \
+  -d libgbm1 \
+  -d libdrm2 \
+  -d libwayland-client0 \
+  -d libwayland-cursor0 \
+  -d libwayland-egl1 \
+  -d shared-mime-info \
+  -d hicolor-icon-theme \
+  -d adwaita-icon-theme \
+  -d 'libsecret-1-0' \
   -v "$VERSION" \
   --iteration "$ITERATION" \
   --architecture "$ARCH" \

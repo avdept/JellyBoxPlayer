@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0" xmlns:pnpx="http://schemas.microsoft.com/windows/pnpx/2005/11" xmlns:df="http://schemas.microsoft.com/windows/2008/09/devicefoundation" xmlns:sec="http://www.sec.co.kr/dlna">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType>
+    <pnpx:X_compatibleId>MS_DigitalMediaDeviceClass_DMR_V001</pnpx:X_compatibleId>
+    <df:X_deviceCategory>Display.TV.LCD Multimedia.DMR</df:X_deviceCategory>
+    <dlna:X_DLNADOC xmlns:dlna="urn:schemas-dlna-org:device-1-0">DMR-1.50</dlna:X_DLNADOC>
+    <friendlyName>[TV1476] ROOM 7005</friendlyName>
+    <manufacturer>Samsung Electronics</manufacturer>
+    <manufacturerURL>http://www.samsung.com/sec</manufacturerURL>
+    <modelDescription>Samsung TV DMR</modelDescription>
+    <modelName>HG55BU800EUXEN</modelName>
+    <modelNumber>AllShare1.0</modelNumber>
+    <modelURL>http://www.samsung.com/sec</modelURL>
+    <serialNumber>0E6Q3SBY302393K</serialNumber>
+    <UDN>uuid:69ce01d4-b126-4a93-b879-d59d4cee99c4</UDN>
+    <iconList>
+      <icon>
+        <mimetype>image/jpeg</mimetype>
+        <width>48</width>
+        <height>48</height>
+        <depth>24</depth>
+        <url>/icon_SML.jpg</url>
+      </icon>
+      <icon>
+        <mimetype>image/jpeg</mimetype>
+        <width>120</width>
+        <height>120</height>
+        <depth>24</depth>
+        <url>/icon_LRG.jpg</url>
+      </icon>
+      <icon>
+        <mimetype>image/png</mimetype>
+        <width>48</width>
+        <height>48</height>
+        <depth>24</depth>
+        <url>/icon_SML.png</url>
+      </icon>
+      <icon>
+        <mimetype>image/png</mimetype>
+        <width>120</width>
+        <height>120</height>
+        <depth>24</depth>
+        <url>/icon_LRG.png</url>
+      </icon>
+    </iconList>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>
+        <controlURL>/upnp/control/RenderingControl1</controlURL>
+        <eventSubURL>/upnp/event/RenderingControl1</eventSubURL>
+        <SCPDURL>/RenderingControl_1.xml</SCPDURL>
+      </service>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
+        <controlURL>/upnp/control/ConnectionManager1</controlURL>
+        <eventSubURL>/upnp/event/ConnectionManager1</eventSubURL>
+        <SCPDURL>/ConnectionManager_1.xml</SCPDURL>
+      </service>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>
+        <controlURL>/upnp/control/AVTransport1</controlURL>
+        <eventSubURL>/upnp/event/AVTransport1</eventSubURL>
+        <SCPDURL>/AVTransport_1.xml</SCPDURL>
+      </service>
+    </serviceList>
+    <sec:ProductCap>Tizen,Y2022,WebURIPlayable,NavigateInPause,ScreenMirroringP2PMAC=f6:dd:06:d9:63:e0,UHD_SCREEN,SerialNumber=0E6Q3SBY302393K,vdProductType=TV,OCF=0</sec:ProductCap>
+    <pnpx:X_hardwareId>VEN_0105&amp;DEV_VD0001</pnpx:X_hardwareId>
+  </device>
+</root>

@@ -60,8 +60,11 @@ dependencies:
   path: ^1.9.1
   background_downloader: ^9.5.7
   updatify_flutter: ^1.7.1
+  upnp_quirks:
+    path: ./packages/upnp_quirks
   plausible: ^1.0.1
   connectivity_plus: ^7.3.1
+  xml: ^6.6.1
 
 dev_dependencies:
   flutter_test:

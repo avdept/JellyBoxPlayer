@@ -1,0 +1,5 @@
+dependency_overrides:
+  upnp_quirks:
+    git:
+      url: git@github.com:avdept/upnp_quirks.git
+      ref: main

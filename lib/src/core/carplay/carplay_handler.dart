@@ -1,4 +1,3 @@
-import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
@@ -18,7 +17,6 @@ import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:string_capitalize/string_capitalize.dart';
 
 class CarPlayHandler {
@@ -50,9 +48,9 @@ class CarPlayHandler {
           final index =
               (call.arguments as Map).cast<String, dynamic>()['index'] as int?;
           if (index != null) {
-            final player = ref.read(playerProvider);
-            await player.seek(Duration.zero, index: index);
-            unawaited(player.play());
+            await ref
+                .read(playbackProvider.notifier)
+                .skipTo(index, autoPlay: true);
           }
           return null;
         case 'play':

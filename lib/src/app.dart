@@ -12,6 +12,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -61,6 +62,7 @@ class App extends ConsumerStatefulWidget {
 class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   late final GoRouter _router;
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final _authState = ValueNotifier<bool?>(null);
   LibraryItem? _selectedLibrary;
   Timer? _resizeTimer;
@@ -307,9 +309,20 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
         if (next.valueOrNull != null) {
           _maybeRestorePlayback();
         }
+      })
+      ..listen(castFailureProvider, (previous, next) {
+        if (next == null) return;
+        _scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(next.message),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+        ref.read(castFailureProvider.notifier).clear();
       });
 
     return MaterialApp.router(
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       theme: Themes.red,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

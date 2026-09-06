@@ -49,3 +49,6 @@ app.*.map.json
 /*/fastlane/.env
 /*/fastlane/report.xml
 /*/fastlane/keys/**
+
+# Local dependency overrides (private upnp_quirks table, see pubspec_overrides.yaml.example)
+pubspec_overrides.yaml

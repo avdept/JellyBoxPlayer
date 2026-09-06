@@ -4,6 +4,19 @@ jobs:
   drive:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: subosito/flutter-action@v1
-    - run: flutter test
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Check the tree builds without the private quirks table
+        run: ./tool/check_public_pubspec.sh
+
+      - run: flutter test
+
+      - name: upnp_quirks package tests
+        working-directory: packages/upnp_quirks
+        run: |
+          dart pub get
+          dart test
