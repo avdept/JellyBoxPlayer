@@ -48,6 +48,86 @@ void main() {
     });
   });
 
+  group('detectQueue', () {
+    DeviceFingerprint device({
+      Set<String> actions = const {},
+      Set<String> services = const {},
+    }) => DeviceFingerprint(actions: actions, services: services);
+
+    test('- finds no queue on a plain AVTransport:1 renderer', () {
+      expect(
+        detectQueue(
+          device(actions: {'Play', 'Stop', 'SetAVTransportURI', 'Seek'}),
+        ),
+        DeviceQueueKind.none,
+      );
+    });
+
+    test('- finds no queue when only next-track prefetch exists', () {
+      expect(
+        detectQueue(device(actions: {'Play', 'SetNextAVTransportURI'})),
+        DeviceQueueKind.none,
+      );
+    });
+
+    test('- recognises the standard AVTransport:3 playlist', () {
+      expect(
+        detectQueue(device(actions: {'Play', 'SetStaticPlaylist'})),
+        DeviceQueueKind.avTransport3,
+      );
+    });
+
+    test('- recognises an OpenHome playlist service', () {
+      expect(
+        detectQueue(
+          device(services: {'urn:av-openhome-org:service:Playlist:1'}),
+        ),
+        DeviceQueueKind.openHome,
+      );
+    });
+
+    test('- recognises the Sonos queue extensions', () {
+      expect(
+        detectQueue(device(actions: {'AddURIToQueue'})),
+        DeviceQueueKind.sonos,
+      );
+      expect(
+        detectQueue(device(actions: {'AddMultipleURIsToQueue'})),
+        DeviceQueueKind.sonos,
+      );
+    });
+
+    test('- recognises the LinkPlay PlayQueue service', () {
+      expect(
+        detectQueue(
+          device(services: {'urn:schemas-wiimu-com:service:PlayQueue:1'}),
+        ),
+        DeviceQueueKind.linkPlay,
+      );
+    });
+
+    test('- prefers the standard when a device offers several', () {
+      expect(
+        detectQueue(
+          device(
+            actions: {'SetStaticPlaylist', 'AddURIToQueue'},
+            services: {'urn:schemas-wiimu-com:service:PlayQueue:1'},
+          ),
+        ),
+        DeviceQueueKind.avTransport3,
+      );
+    });
+
+    test('- reports whether a kind holds a queue at all', () {
+      expect(DeviceQueueKind.none.holdsQueue, isFalse);
+      for (final kind in DeviceQueueKind.values.where(
+        (k) => k != DeviceQueueKind.none,
+      )) {
+        expect(kind.holdsQueue, isTrue, reason: kind.name);
+      }
+    });
+  });
+
   group('rules', () {
     test('- every rule records the evidence behind it', () {
       for (final rule in quirkRules) {

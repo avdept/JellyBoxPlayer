@@ -3,6 +3,7 @@ import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/rendering_control.dart';
+import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
 import 'package:jplayer/src/core/upnp/upnp_device.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
@@ -43,10 +44,14 @@ class _RecordingDiagnostics extends Diagnostics {
 
 class MockRenderingControl extends Mock implements RenderingControl {}
 
+class MockDeviceQueue extends Mock implements DeviceQueue {}
+
 void main() {
   late MockAvTransport transport;
   late MockRenderingControl control;
   late UpnpPlaybackTarget target;
+  late List<String> captured;
+  late List<String> trails;
 
   const pollInterval = Duration(milliseconds: 5);
 
@@ -90,8 +95,43 @@ void main() {
   Future<void> pump([int ticks = 3]) =>
       Future<void>.delayed(pollInterval * ticks);
 
-  late List<String> captured;
-  late List<String> trails;
+  Future<void> start(
+    List<TargetTrack> tracks, {
+    int index = 0,
+    Duration at = Duration.zero,
+    bool autoPlay = true,
+  }) => target.load(
+    tracks,
+    initialIndex: index,
+    initialPosition: at,
+    autoPlay: autoPlay,
+  );
+
+  Future<void> useTarget(UpnpPlaybackTarget Function() build) async {
+    await target.dispose();
+    target = build();
+  }
+
+  void expectStarted(int number, {int times = 1}) => verify(
+    () => transport.setUri(track(number).uri, metadata: any(named: 'metadata')),
+  ).called(times);
+
+  void expectNeverStarted(int number) => verifyNever(
+    () => transport.setUri(track(number).uri, metadata: any(named: 'metadata')),
+  );
+
+  void expectPrefetched(int number) => verify(
+    () => transport.setNextUri(
+      track(number).uri,
+      metadata: any(named: 'metadata'),
+    ),
+  ).called(1);
+
+  Iterable<String> capturedFor(String operation) =>
+      captured.where((entry) => entry.startsWith('upnp.$operation'));
+
+  UpnpSoapFault refused(String action, [String code = '701']) =>
+      UpnpSoapFault(action: action, statusCode: 500, errorCode: code);
 
   UpnpPlaybackTarget quirkyTargetWith({
     required DeviceQuirks quirks,
@@ -159,6 +199,7 @@ void main() {
   }
 
   setUpAll(() {
+    registerFallbackValue(<QueuedTrack>[]);
     registerFallbackValue(Uri.parse('http://example.org'));
     registerFallbackValue(Duration.zero);
     registerFallbackValue(0);
@@ -214,12 +255,7 @@ void main() {
   group('load', () {
     test('- sets the URI with DIDL metadata, plays, and queues the next '
         'track', () async {
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)]);
 
       final metadata =
           verify(
@@ -233,41 +269,53 @@ void main() {
       expect(metadata, contains('audio/flac'));
       expect(metadata, contains('DLNA.ORG_OP=01'));
       verify(transport.play).called(1);
-      verify(
-        () => transport.setNextUri(
-          track(2).uri,
-          metadata: any(named: 'metadata'),
-        ),
-      ).called(1);
+      expectPrefetched(2);
     });
 
-    test('- seeks to the handoff position after starting', () async {
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: const Duration(seconds: 42),
-        autoPlay: true,
-      );
+    test('- seeks to the handoff position once the device plays', () async {
+      await start([track(1)], at: const Duration(seconds: 42));
+
+      verifyNever(() => transport.seek(any(), unit: any(named: 'unit')));
+
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
 
       verify(
         () => transport.seek(const Duration(seconds: 42), unit: 'REL_TIME'),
       ).called(1);
+
+      await target.pollNow();
+      verifyNever(() => transport.seek(any(), unit: any(named: 'unit')));
+    });
+
+    test('- keeps playing when the device refuses the resume seek', () async {
+      when(() => transport.seek(any(), unit: any(named: 'unit'))).thenThrow(
+        const UpnpSoapFault(
+          action: 'Seek',
+          statusCode: 500,
+          errorCode: '710',
+          description: 'Seek mode not supported',
+        ),
+      );
+
+      await start([track(1)], at: const Duration(seconds: 42));
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+
+      expect(target.state.status, isNot(PlaybackStatus.error));
+      expect(captured, isEmpty);
+      expect(trails, contains('resume seek refused'));
     });
 
     test(
       '- does not queue a next track on a device without the action',
       () async {
-        await target.dispose();
-        target = targetWith(
-          actions: const {'Play', 'Stop', 'SetAVTransportURI'},
+        await useTarget(
+          () =>
+              targetWith(actions: const {'Play', 'Stop', 'SetAVTransportURI'}),
         );
 
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
 
         verifyNever(
           () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
@@ -279,12 +327,7 @@ void main() {
 
   group('polling', () {
     test('- mirrors the device transport state', () async {
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1)]);
       deviceReports(
         AvTransportState.pausedPlayback,
         position: const Duration(seconds: 30),
@@ -299,20 +342,12 @@ void main() {
     test(
       '- advances to the next track once the device stops after playing',
       () async {
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
         await pump();
         deviceReports(AvTransportState.stopped);
         await pump();
 
-        verify(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        ).called(1);
+        expectStarted(2);
         expect(target.state.currentIndex, 1);
       },
     );
@@ -321,36 +356,21 @@ void main() {
       '- does not advance while the device has not started playing yet',
       () async {
         deviceReports(AvTransportState.noMediaPresent);
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
         await pump(5);
 
-        verifyNever(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        );
+        expectNeverStarted(2);
       },
     );
 
     test('- does not advance after an explicit stop', () async {
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)]);
       await pump();
       await target.stop();
       deviceReports(AvTransportState.stopped);
       await pump(5);
 
-      verifyNever(
-        () => transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-      );
+      expectNeverStarted(2);
       expect(target.state.status, PlaybackStatus.stopped);
     });
 
@@ -360,12 +380,7 @@ void main() {
           .take(1)
           .toList();
 
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1)]);
       await pump();
       deviceReports(AvTransportState.stopped);
 
@@ -375,12 +390,7 @@ void main() {
     });
 
     test('- adopts a track the device moved to on its own', () async {
-      await target.load(
-        [track(1), track(2), track(3)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2), track(3)]);
       deviceReports(
         AvTransportState.playing,
         trackUri: '${track(2).uri}',
@@ -389,78 +399,35 @@ void main() {
       await pump();
 
       expect(target.state.currentIndex, 1);
-      verify(
-        () => transport.setNextUri(
-          track(3).uri,
-          metadata: any(named: 'metadata'),
-        ),
-      ).called(1);
-      verifyNever(
-        () => transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-      );
+      expectPrefetched(3);
+      expectNeverStarted(2);
     });
 
     test(
-      '- keeps playing when the device refuses a queued next track',
+      '- keeps playing and reports when a queued next track is refused',
       () async {
         when(
           () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
         ).thenThrow(Exception('718 queue conflict'));
 
-        await target.load(
-          [track(1), track(2), track(3)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2), track(3)]);
         await pump();
         deviceReports(AvTransportState.stopped);
         await pump(6);
 
-        verify(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        ).called(1);
+        expectStarted(2);
         expect(target.state.currentIndex, 1);
         expect(target.state.status, isNot(PlaybackStatus.error));
-      },
-    );
-
-    test(
-      '- stops retrying the next-track push once it has been refused',
-      () async {
-        when(
-          () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
-        ).thenThrow(Exception('718 queue conflict'));
-
-        await target.load(
-          [track(1), track(2), track(3)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
-        await pump();
-        deviceReports(AvTransportState.stopped);
-        await pump(6);
-
-        verify(
-          () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
-        ).called(1);
+        expect(capturedFor('setNextUri'), isNotEmpty);
       },
     );
 
     test(
       '- waits out one idle poll before advancing a queued next track',
       () async {
-        await target.dispose();
-        target = targetWith(interval: const Duration(hours: 1));
+        await useTarget(() => targetWith(interval: const Duration(hours: 1)));
 
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
 
         deviceReports(AvTransportState.playing);
         await target.pollNow();
@@ -468,55 +435,37 @@ void main() {
         deviceReports(AvTransportState.stopped);
         await target.pollNow();
 
-        verifyNever(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        );
+        expectNeverStarted(2);
 
         await target.pollNow();
 
-        verify(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        ).called(1);
+        expectStarted(2);
       },
     );
 
     test(
-      '- advances immediately when nothing was queued on the device',
+      '- advances on the first idle poll when the device cannot prefetch',
       () async {
-        await target.dispose();
-        target = targetWith(
-          interval: const Duration(hours: 1),
-          actions: const {'Play', 'Stop', 'SetAVTransportURI'},
+        await useTarget(
+          () => targetWith(
+            interval: const Duration(hours: 1),
+            actions: const {'Play', 'Stop', 'SetAVTransportURI'},
+          ),
         );
 
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
 
         deviceReports(AvTransportState.playing);
         await target.pollNow();
         deviceReports(AvTransportState.stopped);
         await target.pollNow();
 
-        verify(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        ).called(1);
+        expectStarted(2);
       },
     );
 
     test('- adopts a device URI that comes back re-encoded', () async {
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)]);
       deviceReports(
         AvTransportState.playing,
         trackUri: 'http://jelly.local:8096/Audio/song-2/universal?ApiKey=other',
@@ -527,14 +476,9 @@ void main() {
     });
 
     test(
-      '- surfaces an error and gives up when the next track is rejected',
+      '- surfaces and reports an error when the next track is rejected',
       () async {
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
         await pump();
         when(
           () =>
@@ -544,22 +488,15 @@ void main() {
         await pump(6);
 
         expect(target.state.status, PlaybackStatus.error);
-        verify(
-          () =>
-              transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-        ).called(1);
+        expectStarted(2);
+        expect(capturedFor('setUri'), hasLength(1));
       },
     );
 
     test(
       '- ignores a poll that lands after the transport was stopped',
       () async {
-        await target.load(
-          [track(1), track(2)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1), track(2)]);
         await pump();
 
         await target.stop();
@@ -570,77 +507,21 @@ void main() {
       },
     );
 
-    test('- reports a refused next track to diagnostics once', () async {
-      when(
-        () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
-      ).thenThrow(Exception('718 queue conflict'));
-
-      await target.load(
-        [track(1), track(2), track(3)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
-      await pump();
-      deviceReports(AvTransportState.stopped);
-      await pump(6);
+    test('- breadcrumbs poll failures, then reports and gives up', () async {
+      await start([track(1)]);
+      when(transport.transportInfo).thenThrow(Exception('device gone'));
+      await pump(8);
 
       expect(
-        captured.where((entry) => entry.startsWith('upnp.setNextUri')),
-        hasLength(1),
+        trails.where((entry) => entry.contains('poll failed')),
+        isNotEmpty,
       );
-    });
-
-    test(
-      '- breadcrumbs each poll failure and reports once it gives up',
-      () async {
-        await target.load(
-          [track(1)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
-        when(transport.transportInfo).thenThrow(Exception('device gone'));
-        await pump(8);
-
-        expect(
-          trails.where((entry) => entry.contains('poll failed')),
-          isNotEmpty,
-        );
-        expect(
-          captured.where((entry) => entry.startsWith('upnp.poll')),
-          hasLength(1),
-        );
-      },
-    );
-
-    test('- reports a rejected track that stops playback', () async {
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
-      await pump();
-      when(
-        () => transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-      ).thenThrow(Exception('800 invalid uri'));
-      deviceReports(AvTransportState.stopped);
-      await pump(6);
-
-      expect(
-        captured.where((entry) => entry.startsWith('upnp.setUri')),
-        hasLength(1),
-      );
+      expect(capturedFor('poll'), hasLength(1));
+      expect(target.state.status, PlaybackStatus.error);
     });
 
     test('- gives up and reports an error after repeated failures', () async {
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1)]);
       when(transport.transportInfo).thenThrow(Exception('device gone'));
       await pump(8);
 
@@ -650,17 +531,13 @@ void main() {
 
   group('manufacturer quirks', () {
     test('- never prefetches when a rule turns it off', () async {
-      await target.dispose();
-      target = quirkyTargetWith(
-        quirks: const DeviceQuirks(queueNextTrack: false),
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(queueNextTrack: false),
+        ),
       );
 
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)]);
       await pump();
 
       verifyNever(
@@ -670,77 +547,52 @@ void main() {
     });
 
     test('- still advances the queue without prefetching', () async {
-      await target.dispose();
-      target = quirkyTargetWith(
-        quirks: const DeviceQuirks(queueNextTrack: false),
-        interval: const Duration(hours: 1),
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(queueNextTrack: false),
+          interval: const Duration(hours: 1),
+        ),
       );
 
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)]);
 
       deviceReports(AvTransportState.playing);
       await target.pollNow();
       deviceReports(AvTransportState.stopped);
       await target.pollNow();
 
-      verify(
-        () => transport.setUri(track(2).uri, metadata: any(named: 'metadata')),
-      ).called(1);
+      expectStarted(2);
       expect(target.state.currentIndex, 1);
     });
 
     test('- keeps prefetching on the defaults', () async {
-      await target.dispose();
-      target = quirkyTargetWith(quirks: DeviceQuirks.defaults);
+      await useTarget(() => quirkyTargetWith(quirks: DeviceQuirks.defaults));
 
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)]);
 
-      verify(
-        () => transport.setNextUri(
-          track(2).uri,
-          metadata: any(named: 'metadata'),
-        ),
-      ).called(1);
+      expectPrefetched(2);
     });
 
     test('- sends no DIDL metadata when a rule turns it off', () async {
-      await target.dispose();
-      target = quirkyTargetWith(
-        quirks: const DeviceQuirks(sendTrackMetadata: false),
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(sendTrackMetadata: false),
+        ),
       );
 
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1)]);
 
       verify(() => transport.setUri(track(1).uri, metadata: '')).called(1);
     });
 
     test('- stops the transport first when a rule asks for it', () async {
-      await target.dispose();
-      target = quirkyTargetWith(
-        quirks: const DeviceQuirks(stopBeforeSetUri: true),
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(stopBeforeSetUri: true),
+        ),
       );
 
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1)]);
 
       verifyInOrder([
         transport.stopTransport,
@@ -749,17 +601,13 @@ void main() {
     });
 
     test('- seeks in the unit the rule names', () async {
-      await target.dispose();
-      target = quirkyTargetWith(
-        quirks: const DeviceQuirks(seekUnit: SeekUnit.absoluteTime),
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(seekUnit: SeekUnit.absoluteTime),
+        ),
       );
 
-      await target.load(
-        [track(1)],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1)]);
       await target.seek(const Duration(seconds: 30));
 
       verify(
@@ -768,8 +616,9 @@ void main() {
     });
 
     test('- scales volume into a coarse device range', () async {
-      await target.dispose();
-      target = quirkyTargetWith(quirks: const DeviceQuirks(volumeRange: 15));
+      await useTarget(
+        () => quirkyTargetWith(quirks: const DeviceQuirks(volumeRange: 15)),
+      );
 
       await target.setVolume(0.5);
 
@@ -777,12 +626,183 @@ void main() {
     });
 
     test('- drops mime types the rule says the device cannot play', () async {
-      await target.dispose();
-      target = quirkyTargetWith(
-        quirks: const DeviceQuirks(unsupportedMimeTypes: {'audio/mpeg'}),
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(unsupportedMimeTypes: {'audio/mpeg'}),
+        ),
       );
 
       expect(target.streamProfile.directPlayContainers, 'mp3');
+    });
+  });
+
+  group('a device that holds the queue', () {
+    late MockDeviceQueue deviceQueue;
+
+    UpnpPlaybackTarget queueDrivenTarget({
+      Duration interval = const Duration(hours: 1),
+    }) {
+      when(() => transport.supportsNextUri).thenReturn(false);
+      when(() => transport.supportsSeek).thenReturn(true);
+      when(() => transport.supportsPause).thenReturn(true);
+      return UpnpPlaybackTarget(
+        UpnpRenderer(
+          device: device,
+          avTransport: transport,
+          renderingControl: control,
+          sinkMimeTypes: const {'audio/mpeg'},
+          queueDriver: deviceQueue,
+        ),
+        pollInterval: interval,
+        diagnostics: _RecordingDiagnostics(captured, trails),
+      );
+    }
+
+    setUp(() {
+      deviceQueue = MockDeviceQueue();
+      when(
+        () => deviceQueue.load(
+          any(),
+          startIndex: any(named: 'startIndex'),
+          autoPlay: any(named: 'autoPlay'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => deviceQueue.skipTo(any())).thenAnswer((_) async {});
+    });
+
+    test('- hands the whole queue over instead of one track', () async {
+      await useTarget(() => queueDrivenTarget());
+
+      await start([track(1), track(2), track(3)], index: 1);
+
+      final handed =
+          verify(
+                () => deviceQueue.load(
+                  captureAny(),
+                  startIndex: 1,
+                  autoPlay: true,
+                ),
+              ).captured.single
+              as List<QueuedTrack>;
+      expect(handed.map((t) => t.title), ['Track 1', 'Track 2', 'Track 3']);
+      verifyNever(
+        () => transport.setUri(any(), metadata: any(named: 'metadata')),
+      );
+      verifyNever(
+        () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
+      );
+    });
+
+    test('- never pushes a next track to a queue-driven device', () async {
+      await useTarget(() => queueDrivenTarget());
+
+      await start([track(1), track(2)]);
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+
+      verifyNever(
+        () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
+      );
+    });
+
+    test('- leaves advancing to the device when it goes idle', () async {
+      await useTarget(() => queueDrivenTarget());
+
+      await start([track(1), track(2)]);
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+      deviceReports(AvTransportState.stopped);
+      await target.pollNow();
+      await target.pollNow();
+      await target.pollNow();
+
+      verifyNever(
+        () => transport.setUri(any(), metadata: any(named: 'metadata')),
+      );
+      verifyNever(() => deviceQueue.skipTo(any()));
+    });
+
+    test('- skips by telling the device which index to play', () async {
+      await useTarget(() => queueDrivenTarget());
+
+      await start([track(1), track(2), track(3)]);
+      await target.seekToNext();
+
+      verify(() => deviceQueue.skipTo(1)).called(1);
+      expect(target.state.currentIndex, 1);
+    });
+
+    test('- surfaces an error when the hand-over is refused', () async {
+      await useTarget(() => queueDrivenTarget());
+      when(
+        () => deviceQueue.load(
+          any(),
+          startIndex: any(named: 'startIndex'),
+          autoPlay: any(named: 'autoPlay'),
+        ),
+      ).thenThrow(Exception('ParseXmltoPlayList error'));
+
+      await start([track(1)]);
+
+      expect(target.state.status, PlaybackStatus.error);
+      expect(
+        captured.where((entry) => entry.startsWith('upnp.queue.load')),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('a device that refuses a command', () {
+    test('- reports a refused Pause instead of claiming it paused', () async {
+      await start([track(1)]);
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+      when(transport.pause).thenThrow(refused('Pause'));
+
+      await expectLater(target.pause(), completes);
+
+      expect(capturedFor('pause'), hasLength(1));
+      expect(target.state.status, isNot(PlaybackStatus.paused));
+    });
+
+    test('- re-reads the device state after a refusal', () async {
+      await start([track(1)]);
+      when(transport.pause).thenThrow(refused('Pause'));
+      deviceReports(
+        AvTransportState.playing,
+        position: const Duration(seconds: 12),
+      );
+
+      await target.pause();
+      await pump();
+
+      expect(target.state.status, PlaybackStatus.playing);
+      expect(target.state.position, const Duration(seconds: 12));
+    });
+
+    test('- survives a refused play, seek and volume too', () async {
+      when(transport.play).thenThrow(Exception('701'));
+      when(
+        () => transport.seek(any(), unit: any(named: 'unit')),
+      ).thenThrow(Exception('710'));
+      when(() => control.setVolume(any())).thenThrow(Exception('402'));
+
+      await expectLater(target.play(), completes);
+      await expectLater(target.seek(const Duration(seconds: 5)), completes);
+      await expectLater(target.setVolume(0.3), completes);
+
+      expect(
+        capturedFor('play'),
+        hasLength(1),
+      );
+      expect(
+        capturedFor('seek'),
+        hasLength(1),
+      );
+      expect(
+        capturedFor('setVolume'),
+        hasLength(1),
+      );
     });
   });
 
@@ -790,11 +810,10 @@ void main() {
     test(
       '- restarts the current track when previous is pressed late',
       () async {
-        await target.load(
+        await start(
           [track(1), track(2)],
-          initialIndex: 1,
-          initialPosition: const Duration(seconds: 30),
-          autoPlay: true,
+          index: 1,
+          at: const Duration(seconds: 30),
         );
         deviceReports(
           AvTransportState.playing,
@@ -812,29 +831,17 @@ void main() {
     );
 
     test('- steps back a track when previous is pressed early', () async {
-      await target.load(
-        [track(1), track(2)],
-        initialIndex: 1,
-        initialPosition: Duration.zero,
-        autoPlay: true,
-      );
+      await start([track(1), track(2)], index: 1);
 
       await target.seekToPrevious();
 
-      verify(
-        () => transport.setUri(track(1).uri, metadata: any(named: 'metadata')),
-      ).called(1);
+      expectStarted(1);
     });
 
     test(
       '- stops at the end of the queue instead of skipping past it',
       () async {
-        await target.load(
-          [track(1)],
-          initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: true,
-        );
+        await start([track(1)]);
 
         await target.seekToNext();
 
@@ -843,8 +850,9 @@ void main() {
     );
 
     test('- falls back to stop when the device cannot pause', () async {
-      await target.dispose();
-      target = targetWith(actions: const {'Play', 'Stop', 'SetAVTransportURI'});
+      await useTarget(
+        () => targetWith(actions: const {'Play', 'Stop', 'SetAVTransportURI'}),
+      );
 
       await target.pause();
 
@@ -853,8 +861,9 @@ void main() {
     });
 
     test('- ignores seeks on a device that cannot seek', () async {
-      await target.dispose();
-      target = targetWith(actions: const {'Play', 'Stop', 'SetAVTransportURI'});
+      await useTarget(
+        () => targetWith(actions: const {'Play', 'Stop', 'SetAVTransportURI'}),
+      );
 
       await target.seek(const Duration(seconds: 10));
 
@@ -865,6 +874,130 @@ void main() {
       await target.setVolume(0.25);
 
       verify(() => control.setVolume(25)).called(1);
+    });
+  });
+
+  group('a device that refuses to start', () {
+    test('- reports a 701 on play instead of retrying it', () async {
+      when(transport.play).thenThrow(
+        const UpnpSoapFault(
+          action: 'Play',
+          statusCode: 500,
+          errorCode: '701',
+          description: 'Transition not available',
+        ),
+      );
+      deviceReports(AvTransportState.stopped);
+      target = targetWith();
+
+      await start([track(1)]);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      verify(transport.play).called(1);
+      expect(target.state.status, PlaybackStatus.error);
+      expect(captured.single, startsWith('upnp.setUri:'));
+    });
+  });
+
+  group('a device that never starts', () {
+    test('- gives up when the renderer stays in TRANSITIONING', () async {
+      await useTarget(
+        () => UpnpPlaybackTarget(
+          UpnpRenderer(
+            device: device,
+            avTransport: transport,
+            renderingControl: control,
+            sinkMimeTypes: const {'audio/mpeg'},
+          ),
+          pollInterval: pollInterval,
+          startTimeout: const Duration(milliseconds: 30),
+          diagnostics: _RecordingDiagnostics(captured, trails),
+        ),
+      );
+      when(() => transport.supportsNextUri).thenReturn(false);
+      when(() => transport.supportsSeek).thenReturn(true);
+      deviceReports(AvTransportState.transitioning);
+
+      await start([track(1)]);
+
+      await target.pollNow();
+      expect(target.state.status, PlaybackStatus.buffering);
+
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await target.pollNow();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(target.state.status, PlaybackStatus.error);
+      expect(
+        captured.single,
+        startsWith('upnp.stalled:Bad state: renderer never left TRANSITIONING'),
+      );
+    });
+
+    test('- clears the stall clock once the device starts', () async {
+      target = targetWith();
+      deviceReports(AvTransportState.transitioning);
+      await start([track(1)]);
+      await target.pollNow();
+
+      deviceReports(
+        AvTransportState.playing,
+        position: const Duration(seconds: 2),
+      );
+      await target.pollNow();
+
+      expect(target.state.status, PlaybackStatus.playing);
+      expect(target.state.position, const Duration(seconds: 2));
+    });
+  });
+
+  group('metadata for a transcoded stream', () {
+    test('- declares CI=1 and drops the byte-seek claim', () async {
+      target = targetWith();
+      deviceReports(AvTransportState.stopped);
+
+      await start([
+        TargetTrack(
+          itemId: 'song-9',
+          uri: Uri.parse('http://jelly.local:8096/Audio/song-9/universal'),
+          mimeType: 'audio/mpeg',
+          isHls: false,
+          title: 'Transcoded',
+          duration: const Duration(minutes: 3),
+          transcoded: true,
+        ),
+      ]);
+
+      final metadata =
+          verify(
+                () => transport.setUri(
+                  any(),
+                  metadata: captureAny(named: 'metadata'),
+                ),
+              ).captured.single
+              as String;
+
+      expect(metadata, contains('DLNA.ORG_OP=00'));
+      expect(metadata, contains('DLNA.ORG_CI=1'));
+    });
+
+    test('- keeps byte-seek for a direct-played stream', () async {
+      target = targetWith();
+      deviceReports(AvTransportState.stopped);
+
+      await start([track(1)]);
+
+      final metadata =
+          verify(
+                () => transport.setUri(
+                  any(),
+                  metadata: captureAny(named: 'metadata'),
+                ),
+              ).captured.single
+              as String;
+
+      expect(metadata, contains('DLNA.ORG_OP=01'));
+      expect(metadata, contains('DLNA.ORG_CI=0'));
     });
   });
 }

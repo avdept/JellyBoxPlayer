@@ -9,7 +9,9 @@ import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/core/upnp/renderer_uri.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
+import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/queue_provider.dart';
@@ -38,6 +40,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _reportedPositionMs = 0;
   var _startReported = false;
   var _preparingQueue = false;
+  var _fallingBack = false;
   Timer? _progressTimer;
 
   PlaybackTarget get target => _target;
@@ -45,6 +48,18 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   LibraryItem? get _reportedSong {
     final index = _reportedIndex;
     return index != null ? state.songs.elementAtOrNull(index) : null;
+  }
+
+  void _onTargetFailure() {
+    if (_target.kind == PlaybackTargetKind.local) {
+      if (state.status == PlaybackStatus.error) return;
+      state = state.copyWith(status: PlaybackStatus.error);
+      return;
+    }
+    if (_fallingBack) return;
+    _fallingBack = true;
+    _ref.read(castFailureProvider.notifier).report(_target.name);
+    _ref.read(playbackTargetProvider.notifier).useLocal();
   }
 
   void _listenToTarget() {
@@ -95,6 +110,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
     }
 
+    if (targetState.status == PlaybackStatus.error) {
+      _onTargetFailure();
+      return;
+    }
+
     if (targetState.completed && state.status.isPlaying) {
       _reportStopped();
       _stopProgressReports();
@@ -133,6 +153,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     _target = to;
     _targetState = TargetPlaybackState.idle;
+    _fallingBack = false;
     _listenToTarget();
 
     if (songs.isEmpty || album == null) return;
@@ -370,8 +391,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     if (downloadedPath == null && _ref.read(isOfflineProvider)) return null;
 
-    final Uri uri;
+    Uri uri;
     var isHls = false;
+    var transcoded = false;
     var mimeType = 'application/octet-stream';
     if (downloadedPath != null) {
       uri = Uri.file(downloadedPath);
@@ -386,6 +408,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       uri = resolved.uri;
       isHls = resolved.isHls;
       mimeType = resolved.mimeType;
+      transcoded = resolved.requiresTranscode;
+    }
+
+    var artUri = _artUri(song, album);
+    if (_target.kind == PlaybackTargetKind.upnp) {
+      uri = await rendererUriResolver.resolve(uri);
+      if (artUri != null) artUri = await rendererUriResolver.resolve(artUri);
     }
 
     final audioSource = song.audioSources.firstOrNull;
@@ -412,7 +441,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         duration: song.duration,
         artist: song.albumArtist ?? album.albumArtist,
         album: song.albumName,
-        artUri: _artUri(song, album),
+        artUri: artUri,
+        transcoded: transcoded,
         extras: extras,
       ),
     );

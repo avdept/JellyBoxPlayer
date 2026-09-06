@@ -422,6 +422,7 @@ class EmbyClient implements MediaServerClient {
       isHls: useHls,
       outputContainer: profile.outputContainer,
       mimeType: profile.outputMimeType,
+      requiresTranscode: profile.requiresTranscode,
     );
   }
 

@@ -7,6 +7,7 @@ class DeviceFingerprint {
     this.friendlyName,
     this.actions = const {},
     this.sinkMimeTypes = const {},
+    this.services = const {},
   });
 
   final String? manufacturer;
@@ -16,6 +17,7 @@ class DeviceFingerprint {
   final String? friendlyName;
   final Set<String> actions;
   final Set<String> sinkMimeTypes;
+  final Set<String> services;
 
   String get searchable => [
     manufacturer,
@@ -32,6 +34,7 @@ class DeviceFingerprint {
     deviceType: deviceType,
     actions: actions,
     sinkMimeTypes: sinkMimeTypes,
+    services: services,
   );
 
   Map<String, Object?> toJson() => {
@@ -42,5 +45,6 @@ class DeviceFingerprint {
     if (friendlyName != null) 'friendlyName': friendlyName,
     'actions': actions.toList()..sort(),
     'sinkMimeTypes': sinkMimeTypes.toList()..sort(),
+    'services': services.toList()..sort(),
   };
 }
