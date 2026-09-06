@@ -103,7 +103,7 @@ void main() {
   });
 
   group('device naming', () {
-    test('- prefers the Sonos room name over the friendly name', () {
+    test('- reads the room name and host out of the description', () {
       final device = UpnpDevice.parse('''
 <root xmlns="urn:schemas-upnp-org:device-1-0">
   <device>
@@ -122,18 +122,16 @@ void main() {
 </root>''', location: Uri.parse('http://192.168.1.51:1400/xml/device.xml'))!;
 
       expect(device.roomName, 'Office');
-      expect(device.displayName, 'Office');
       expect(device.host, '192.168.1.51');
     });
 
-    test('- falls back to the friendly name without a room name', () {
+    test('- leaves the room name null when there is none', () {
       final device = UpnpDevice.parse(
         fixture('samsung_dmr_description.xml'),
         location: location,
       )!;
 
       expect(device.roomName, isNull);
-      expect(device.displayName, '[TV1476] ROOM 7005');
       expect(device.host, '172.20.2.138');
     });
   });

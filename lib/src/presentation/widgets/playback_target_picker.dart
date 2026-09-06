@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
+import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
@@ -191,6 +192,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final theme = Theme.of(context);
     final active = ref.watch(playbackTargetProvider);
     final discovery = ref.watch(upnpRenderersProvider);
+    final host = ref.watch(controlPointHostProvider);
     final width = math.min(_menuWidth, MediaQuery.sizeOf(context).width - 24);
 
     return Material(
@@ -250,16 +252,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 onTap: _selectLocal,
               ),
               for (final renderer in discovery.renderers)
-                _TargetTile(
-                  icon: rendererIcon(renderer),
-                  title: renderer.name,
-                  subtitle: [
-                    renderer.host,
-                    ?renderer.model,
-                  ].join(' · '),
-                  selected: active.id == renderer.id,
-                  onTap: () => _selectRenderer(renderer),
-                ),
+                _rendererTile(renderer, active: active, host: host),
               if (discovery.renderers.isEmpty && !discovery.scanning)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -272,6 +265,25 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _rendererTile(
+    UpnpRenderer renderer, {
+    required PlaybackTarget active,
+    required ControlPointHost host,
+  }) {
+    final blocked = castingBlockedReason(
+      deviceHoldsQueue: renderer.holdsQueue,
+      host: host,
+    );
+
+    return _TargetTile(
+      icon: rendererIcon(renderer),
+      title: renderer.name,
+      subtitle: blocked ?? [renderer.host, ?renderer.model].join(' · '),
+      selected: active.id == renderer.id,
+      onTap: blocked == null ? () => _selectRenderer(renderer) : null,
     );
   }
 
@@ -319,15 +331,19 @@ class _TargetTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tint = selected ? theme.colorScheme.primary : null;
+    final disabled = onTap == null;
+    final tint = disabled
+        ? theme.disabledColor
+        : (selected ? theme.colorScheme.primary : null);
 
     return ListTile(
       dense: true,
+      enabled: !disabled,
       leading: Icon(icon, color: tint, size: 20),
       title: Text(title, style: TextStyle(color: tint)),
       subtitle: subtitle == null
@@ -350,16 +366,32 @@ const upnpDeviceReportMessage = 'upnp device report';
 
 Map<String, Object?> deviceReportPayload(List<UpnpRenderer> renderers) => {
   'devices': [
-    for (final renderer in renderers)
-      {
-        ...renderer.fingerprint.toJson(),
-        'name': renderer.name,
-        'host': renderer.host,
-        'quirks': renderer.quirks.toJson(),
-        'rules': rulesFor(renderer.fingerprint).map((r) => r.name).toList(),
-      },
+    for (final renderer in renderers) _reportEntry(renderer),
   ],
 };
+
+Map<String, Object?> _reportEntry(UpnpRenderer renderer) {
+  final fingerprint = renderer.fingerprint;
+  return {
+    'manufacturer': fingerprint.manufacturer,
+    'modelName': fingerprint.modelName,
+    'modelNumber': fingerprint.modelNumber,
+    'deviceType': fingerprint.deviceType,
+    'hasFriendlyName': fingerprint.friendlyName != null,
+    'hasRoomName': renderer.device.roomName != null,
+    'services': {
+      for (final service in fingerprint.services) service: true,
+    },
+    'actions': {for (final action in fingerprint.actions) action: true},
+    'sinkMimeTypes': {
+      for (final mimeType in fingerprint.sinkMimeTypes) mimeType: true,
+    },
+    'queue': renderer.queueKind.name,
+    'queueDriven': renderer.holdsQueue,
+    'quirks': renderer.quirks.toJson(),
+    'rules': rulesFor(fingerprint).map((rule) => rule.name).toList(),
+  };
+}
 
 class _ShareDevicesDialog extends StatelessWidget {
   const _ShareDevicesDialog({required this.count});

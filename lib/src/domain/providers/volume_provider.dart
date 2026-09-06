@@ -6,6 +6,7 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 
 const _fallbackLevel = 0.5;
+const _rendererStartLevel = 0.1;
 
 class VolumeState {
   const VolumeState({required this.level, this.muted = false});
@@ -38,7 +39,7 @@ class VolumeNotifier extends StateNotifier<VolumeState> {
     if (_target.kind == PlaybackTargetKind.local) {
       unawaited(_target.setVolume(state.effectiveLevel));
     } else {
-      unawaited(_adoptTargetVolume());
+      unawaited(_startRendererVolume());
     }
   }
 
@@ -47,19 +48,25 @@ class VolumeNotifier extends StateNotifier<VolumeState> {
 
   late double _lastAudibleLevel;
 
-  Future<void> _adoptTargetVolume() async {
-    final level = await _target.currentVolume();
-    if (level == null || !mounted) return;
-    _lastAudibleLevel = level > 0 ? level : _fallbackLevel;
-    state = VolumeState(level: level);
+  Future<void> _startRendererVolume() async {
+    final level = _settings.rendererVolume(_target.id) ?? _rendererStartLevel;
+    if (mounted) {
+      _lastAudibleLevel = level > 0 ? level : _fallbackLevel;
+      state = VolumeState(level: level);
+    }
+    await _target.setVolume(level);
   }
 
   Future<void> setLevel(double value, {bool persist = true}) {
     final level = value.clamp(0.0, 1.0);
     if (level > 0) _lastAudibleLevel = level;
     state = VolumeState(level: level);
-    if (persist && _target.kind == PlaybackTargetKind.local) {
-      _settings.setNumber(AppSetting.playerVolume, level);
+    if (persist) {
+      if (_target.kind == PlaybackTargetKind.local) {
+        _settings.setNumber(AppSetting.playerVolume, level);
+      } else {
+        _settings.setRendererVolume(_target.id, level);
+      }
     }
     return _target.setVolume(level);
   }

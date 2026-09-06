@@ -14,6 +14,7 @@ class TargetTrack {
     this.artist,
     this.album,
     this.artUri,
+    this.transcoded = false,
     this.extras = const <String, dynamic>{},
   });
 
@@ -26,6 +27,7 @@ class TargetTrack {
   final String? artist;
   final String? album;
   final Uri? artUri;
+  final bool transcoded;
   final Map<String, dynamic> extras;
 
   bool get isLocalFile => uri.isScheme('file');

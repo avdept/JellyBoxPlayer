@@ -8,6 +8,7 @@ import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
 import 'package:upnp_quirks/upnp_quirks.dart';
 import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
+import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
@@ -38,6 +39,24 @@ class _RecordingDiagnostics extends Diagnostics {
   }
 }
 
+class _FakeQueue implements DeviceQueue {
+  @override
+  Future<void> load(
+    List<QueuedTrack> tracks, {
+    required int startIndex,
+    required bool autoPlay,
+  }) async {}
+
+  @override
+  Future<void> skipTo(int index) async {}
+
+  @override
+  Future<int?> currentIndex() async => 0;
+
+  @override
+  Future<void> clear() async {}
+}
+
 class _FakeTarget implements PlaybackTarget {
   _FakeTarget(this.id, this.name, this.kind);
 
@@ -60,6 +79,7 @@ void main() {
     String host = '10.0.0.9',
     String? roomName,
     String? manufacturer,
+    bool hasQueue = true,
   }) {
     final soap = UpnpSoapClient(dio: Dio());
     final control = Uri.parse('http://$host:9197/ctl');
@@ -76,12 +96,18 @@ void main() {
       ),
       avTransport: AvTransport(soap: soap, controlUrl: control),
       sinkMimeTypes: const {'audio/mpeg'},
+      queueDriver: hasQueue ? _FakeQueue() : null,
       fingerprint: DeviceFingerprint(
         manufacturer: manufacturer,
         modelName: model,
         deviceType: type ?? 'urn:schemas-upnp-org:device:MediaRenderer:1',
         friendlyName: name,
-        actions: const {'Play', 'Stop', 'SetAVTransportURI'},
+        actions: {
+          'Play',
+          'Stop',
+          'SetAVTransportURI',
+          if (hasQueue) 'AddURIToQueue',
+        },
         sinkMimeTypes: const {'audio/mpeg'},
       ),
     );
@@ -91,6 +117,7 @@ void main() {
     WidgetTester tester, {
     required List<UpnpRenderer> renderers,
     PlaybackTarget? activeTarget,
+    ControlPointHost host = ControlPointHost.sustained,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -102,6 +129,7 @@ void main() {
             playbackTargetProvider.overrideWith(
               (ref) => PlaybackTargetNotifier(activeTarget),
             ),
+          controlPointHostProvider.overrideWithValue(host),
         ],
         child: MaterialApp(
           home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
@@ -330,10 +358,18 @@ void main() {
       expect(devices, hasLength(1));
       expect(devices.single['manufacturer'], 'Sonos, Inc.');
       expect(devices.single['modelName'], 'Play:5');
-      expect(devices.single['friendlyName'], "Alex's Bedroom");
-      expect(devices.single['host'], '10.0.0.11');
-      expect(devices.single['actions'], contains('SetAVTransportURI'));
-      expect(devices.single['sinkMimeTypes'], ['audio/mpeg']);
+      expect(devices.single['hasFriendlyName'], isTrue);
+      expect(devices.single.containsKey('friendlyName'), isFalse);
+      expect(devices.single.containsKey('host'), isFalse);
+      expect(
+        devices.single['actions'],
+        containsPair('SetAVTransportURI', true),
+      );
+      expect(
+        devices.single['sinkMimeTypes'],
+        containsPair('audio/mpeg', true),
+      );
+      expect(devices.single['queue'], 'sonos');
       expect(devices.single['quirks'], isA<Map<String, Object?>>());
     });
 
@@ -366,6 +402,59 @@ void main() {
     });
   });
 
+  testWidgets('- greys out a queueless renderer on a phone', (tester) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed('Kitchen', model: 'Sonos One'),
+        rendererNamed('Lounge TV', model: 'QE85', hasQueue: false),
+      ],
+    );
+
+    final playable = tester.widget<ListTile>(
+      find.ancestor(of: find.text('Kitchen'), matching: find.byType(ListTile)),
+    );
+    final greyed = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Lounge TV'),
+        matching: find.byType(ListTile),
+      ),
+    );
+
+    expect(playable.enabled, isTrue);
+    expect(greyed.enabled, isFalse);
+    expect(greyed.onTap, isNull);
+    expect(
+      find.text('Needs a speaker that holds its own queue'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('- keeps a queueless renderer usable on a desktop', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      renderers: [rendererNamed('Lounge TV', model: 'QE85', hasQueue: false)],
+    );
+
+    final tile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Lounge TV'),
+        matching: find.byType(ListTile),
+      ),
+    );
+
+    expect(tile.enabled, isTrue);
+    expect(tile.onTap, isNotNull);
+    expect(find.text('10.0.0.9 · QE85'), findsOneWidget);
+    expect(
+      find.text('Needs a speaker that holds its own queue'),
+      findsNothing,
+    );
+  });
+
   testWidgets('- says so when nothing was found', (tester) async {
     await pumpPicker(tester, renderers: const []);
 
@@ -373,25 +462,34 @@ void main() {
   });
 
   group('PlaybackTargetButton', () {
-    Future<void> pumpButton(
-      WidgetTester tester, {
-      double? size,
-      double iconThemeSize = 26,
+    Future<void> pumpBody(
+      WidgetTester tester,
+      Widget body, {
+      List<UpnpRenderer> renderers = const [],
+      ThemeData? theme,
     }) => tester.pumpWidget(
       ProviderScope(
         overrides: [
           upnpRenderersProvider.overrideWith(
-            (ref) => _FakeRenderersNotifier(const []),
+            (ref) => _FakeRenderersNotifier(renderers),
           ),
         ],
         child: MaterialApp(
-          home: Scaffold(
-            body: IconTheme.merge(
-              data: IconThemeData(size: iconThemeSize),
-              child: PlaybackTargetButton(size: size),
-            ),
-          ),
+          theme: theme,
+          home: Scaffold(body: body),
         ),
+      ),
+    );
+
+    Future<void> pumpButton(
+      WidgetTester tester, {
+      double? size,
+      double iconThemeSize = 26,
+    }) => pumpBody(
+      tester,
+      IconTheme.merge(
+        data: IconThemeData(size: iconThemeSize),
+        child: PlaybackTargetButton(size: size),
       ),
     );
 
@@ -445,23 +543,13 @@ void main() {
     });
 
     testWidgets('- opens the menu above the button', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            upnpRenderersProvider.overrideWith(
-              (ref) => _FakeRenderersNotifier(const []),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: PlaybackTargetButton(size: 44),
-                ),
-              ),
-            ),
+      await pumpBody(
+        tester,
+        Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: PlaybackTargetButton(size: 44),
           ),
         ),
       );
@@ -480,18 +568,10 @@ void main() {
     });
 
     testWidgets('- closes when the target is picked', (tester) async {
-      final renderer = rendererNamed('Kitchen', model: 'Sonos One');
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            upnpRenderersProvider.overrideWith(
-              (ref) => _FakeRenderersNotifier([renderer]),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(body: Center(child: PlaybackTargetButton())),
-          ),
-        ),
+      await pumpBody(
+        tester,
+        Center(child: PlaybackTargetButton()),
+        renderers: [rendererNamed('Kitchen', model: 'Sonos One')],
       );
 
       await tester.tap(find.byType(IconButton));
@@ -503,21 +583,11 @@ void main() {
     });
 
     testWidgets('- closes on a tap outside', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            upnpRenderersProvider.overrideWith(
-              (ref) => _FakeRenderersNotifier(const []),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: Align(
-                alignment: Alignment.bottomCenter,
-                child: PlaybackTargetButton(),
-              ),
-            ),
-          ),
+      await pumpBody(
+        tester,
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: PlaybackTargetButton(),
         ),
       );
 
@@ -536,31 +606,21 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            upnpRenderersProvider.overrideWith(
-              (ref) => _FakeRenderersNotifier(const []),
+      await pumpBody(
+        tester,
+        Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                const Icon(Icons.shuffle),
+                const Icon(Icons.repeat),
+                PlaybackTargetButton(),
+                const Icon(Icons.favorite),
+              ],
             ),
           ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      const Icon(Icons.shuffle),
-                      const Icon(Icons.repeat),
-                      PlaybackTargetButton(),
-                      const Icon(Icons.favorite),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       );
 
@@ -578,26 +638,16 @@ void main() {
     testWidgets('- tints the icon and badge with the colours it is given', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            upnpRenderersProvider.overrideWith(
-              (ref) => _FakeRenderersNotifier(const []),
-            ),
-          ],
-          child: MaterialApp(
-            theme: ThemeData(
-              colorScheme: const ColorScheme.dark(
-                primary: Colors.blue,
-                onPrimary: Colors.blue,
-              ),
-            ),
-            home: const Scaffold(
-              body: PlaybackTargetButton(
-                color: Colors.white,
-                activeColor: Colors.amber,
-              ),
-            ),
+      await pumpBody(
+        tester,
+        const PlaybackTargetButton(
+          color: Colors.white,
+          activeColor: Colors.amber,
+        ),
+        theme: ThemeData(
+          colorScheme: const ColorScheme.dark(
+            primary: Colors.blue,
+            onPrimary: Colors.blue,
           ),
         ),
       );

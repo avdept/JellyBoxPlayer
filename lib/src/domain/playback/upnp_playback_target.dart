@@ -14,6 +14,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   UpnpPlaybackTarget(
     this.renderer, {
     Duration? pollInterval,
+    this.startTimeout = const Duration(seconds: 20),
     this.diagnostics = const Diagnostics(),
   }) : pollInterval = pollInterval ?? renderer.quirks.pollInterval;
 
@@ -21,6 +22,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   static const _failureLimit = 3;
 
   final UpnpRenderer renderer;
+  final Duration startTimeout;
   final Duration pollInterval;
   final Diagnostics diagnostics;
 
@@ -35,17 +37,22 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   var _stopRequested = false;
   var _failures = 0;
   var _idlePolls = 0;
+  DateTime? _waitingSince;
+  Duration? _pendingSeek;
+  var _gaveUpWaiting = false;
   var _pollGeneration = 0;
   var _disposed = false;
-  var _nextUriUsable = true;
-  Uri? _nextUriSet;
 
   AvTransport get _transport => renderer.avTransport;
+
+  DeviceQueue? get _deviceQueue => renderer.queueDriver;
 
   DeviceQuirks get _quirks => renderer.quirks;
 
   bool get _canQueueNextTrack =>
-      _quirks.queueNextTrack && _transport.supportsNextUri && _nextUriUsable;
+      _deviceQueue == null &&
+      _quirks.queueNextTrack &&
+      _transport.supportsNextUri;
 
   @override
   String get id => renderer.id;
@@ -80,13 +87,84 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       ..clear()
       ..addAll(tracks);
     _index = initialIndex.clamp(0, tracks.length - 1);
-    await _startTrack(_index, position: initialPosition, autoPlay: autoPlay);
+
+    final queue = _deviceQueue;
+    if (queue == null) {
+      await _startTrack(_index, position: initialPosition, autoPlay: autoPlay);
+      return;
+    }
+    await _handOverQueue(
+      queue,
+      initialPosition: initialPosition,
+      autoPlay: autoPlay,
+    );
   }
+
+  Future<void> _handOverQueue(
+    DeviceQueue queue, {
+    required Duration initialPosition,
+    required bool autoPlay,
+  }) async {
+    _sawPlaying = false;
+    _stopRequested = false;
+    _idlePolls = 0;
+    _gaveUpWaiting = false;
+    _pollGeneration++;
+    _emit(
+      status: autoPlay ? PlaybackStatus.buffering : PlaybackStatus.paused,
+      position: initialPosition,
+      currentIndex: _index,
+      duration: _currentTrack?.duration,
+    );
+
+    try {
+      await _run(
+        () => queue.load(
+          [for (final track in _tracks) _queuedTrack(track)],
+          startIndex: _index,
+          autoPlay: autoPlay,
+        ),
+      );
+      _pendingSeek =
+          autoPlay && initialPosition > Duration.zero && _transport.supportsSeek
+          ? initialPosition
+          : null;
+    } on Object catch (error, stackTrace) {
+      unawaited(
+        diagnostics.capture(
+          error,
+          stackTrace: stackTrace,
+          operation: 'upnp.queue.load',
+          tags: _deviceTags,
+          extra: {
+            ..._deviceInfo,
+            'tracks': _tracks.length,
+            ..._streamInfo(_currentTrack),
+          },
+        ),
+      );
+      _emit(status: PlaybackStatus.error);
+      return;
+    }
+
+    if (autoPlay) _startPolling();
+  }
+
+  QueuedTrack _queuedTrack(TargetTrack track) => QueuedTrack(
+    uri: track.uri,
+    mimeType: track.mimeType,
+    title: track.title,
+    duration: track.duration,
+    artist: track.artist,
+    album: track.album,
+  );
 
   @override
   Future<void> play() async {
     _stopRequested = false;
-    await _run(_transport.play);
+    _gaveUpWaiting = false;
+    final ok = await _command('play', () => _transport.play());
+    if (!ok) return;
     _emit(status: PlaybackStatus.playing);
     _startPolling();
   }
@@ -94,7 +172,8 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   @override
   Future<void> pause() async {
     if (!_transport.supportsPause) return stop();
-    await _run(_transport.pause);
+    final ok = await _command('pause', () => _transport.pause());
+    if (!ok) return;
     _emit(status: PlaybackStatus.paused);
   }
 
@@ -102,30 +181,104 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   Future<void> stop() async {
     _stopRequested = true;
     _stopPolling();
-    await _run(_transport.stopTransport);
+    await _command('stop', () => _transport.stopTransport());
     _emit(status: PlaybackStatus.stopped, position: Duration.zero);
   }
 
   @override
   Future<void> seek(Duration position) async {
     if (!_transport.supportsSeek) return;
-    await _run(
+    final ok = await _command(
+      'seek',
       () => _transport.seek(position, unit: _quirks.seekUnit.wireName),
     );
+    if (!ok) return;
     _emit(position: position);
+  }
+
+  Future<bool> _command(String name, Future<void> Function() action) async {
+    try {
+      await _run(action);
+      return true;
+    } on Object catch (error, stackTrace) {
+      unawaited(
+        _reportFault(error, stackTrace, 'upnp.$name', {
+          'state': _state.status.name,
+        }),
+      );
+      unawaited(_resync());
+      return false;
+    }
+  }
+
+  Map<String, Object?> _streamInfo(TargetTrack? track) => {
+    'mimeType': track?.mimeType ?? 'unknown',
+    'transcoded': track?.transcoded ?? false,
+    'isHls': track?.isHls ?? false,
+    'streamHost': track == null
+        ? 'none'
+        : '${track.uri.scheme}://${track.uri.host}:${track.uri.port}',
+  };
+
+  Future<void> _reportFault(
+    Object error,
+    StackTrace stackTrace,
+    String operation,
+    Map<String, Object?> extra,
+  ) {
+    diagnostics.trail('cast failed', category: 'upnp', data: extra);
+    return diagnostics.capture(
+      error,
+      stackTrace: stackTrace,
+      operation: operation,
+      tags: _deviceTags,
+      extra: {..._deviceInfo, ...extra},
+    );
+  }
+
+  Future<void> _resync() async {
+    if (_disposed) return;
+    try {
+      final info = await _run(_transport.transportInfo);
+      final position = await _run(_transport.positionInfo);
+      _emit(
+        status: _statusOf(info.state),
+        position: position.position,
+        duration: position.trackDuration ?? _currentTrack?.duration,
+      );
+    } on Object {
+      return;
+    }
   }
 
   @override
   Future<void> skipTo(int index) async {
     if (index < 0 || index >= _tracks.length) return;
-    await _startTrack(index, autoPlay: true);
+
+    final queue = _deviceQueue;
+    if (queue == null) {
+      await _startTrack(index, autoPlay: true);
+      return;
+    }
+
+    _index = index;
+    _sawPlaying = false;
+    _idlePolls = 0;
+    _gaveUpWaiting = false;
+    _emit(
+      status: PlaybackStatus.buffering,
+      currentIndex: index,
+      duration: _currentTrack?.duration,
+    );
+    final ok = await _command('queue.skipTo', () => queue.skipTo(index));
+    if (!ok) return;
+    _startPolling();
   }
 
   @override
   Future<void> seekToNext() async {
     if (_index + 1 >= _tracks.length) return stop();
-    final started = await _startTrack(_index + 1, autoPlay: true);
-    if (!started) _stopPolling();
+    await skipTo(_index + 1);
   }
 
   @override
@@ -133,14 +286,17 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     if (_state.position > _restartThreshold || _index == 0) {
       return seek(Duration.zero);
     }
-    await _startTrack(_index - 1, autoPlay: true);
+    await skipTo(_index - 1);
   }
 
   @override
   Future<void> setVolume(double level) async {
     final control = renderer.renderingControl;
     if (control == null) return;
-    await _run(() => control.setVolume(_quirks.volumeToWire(level).round()));
+    await _command(
+      'setVolume',
+      () => control.setVolume(_quirks.volumeToWire(level).round()),
+    );
   }
 
   @override
@@ -179,7 +335,8 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     _sawPlaying = false;
     _stopRequested = false;
     _idlePolls = 0;
-    _nextUriSet = null;
+    _gaveUpWaiting = false;
+    _pendingSeek = null;
     _pollGeneration++;
 
     _emit(
@@ -195,20 +352,12 @@ class UpnpPlaybackTarget implements PlaybackTarget {
         () => _transport.setUri(track.uri, metadata: _metadataFor(track)),
       );
       if (autoPlay) await _run(_transport.play);
-      if (position > Duration.zero && _transport.supportsSeek) {
-        await _run(
-          () => _transport.seek(position, unit: _quirks.seekUnit.wireName),
-        );
-      }
+      _pendingSeek = position > Duration.zero && _transport.supportsSeek
+          ? position
+          : null;
     } on Object catch (error, stackTrace) {
       unawaited(
-        diagnostics.capture(
-          error,
-          stackTrace: stackTrace,
-          operation: 'upnp.setUri',
-          tags: _deviceTags,
-          extra: {..._deviceInfo, 'mimeType': track.mimeType},
-        ),
+        _reportFault(error, stackTrace, 'upnp.setUri', _streamInfo(track)),
       );
       _emit(status: PlaybackStatus.error);
       return false;
@@ -230,33 +379,20 @@ class UpnpPlaybackTarget implements PlaybackTarget {
           artist: track.artist,
           album: track.album,
           artUri: track.artUri,
-          seekable: _transport.supportsSeek,
+          seekable: _transport.supportsSeek && !track.transcoded,
+          transcoded: track.transcoded,
         );
 
   Future<void> _pushNextUri() async {
     if (!_canQueueNextTrack) return;
     final next = _tracks.elementAtOrNull(_index + 1);
-    if (next == null) {
-      if (_nextUriSet == null) return;
-      _nextUriSet = null;
-      await _tryNextUri(() => _transport.setNextUri(null));
-      return;
-    }
-    if (_nextUriSet == next.uri) return;
-    if (await _tryNextUri(
-      () => _transport.setNextUri(next.uri, metadata: _metadataFor(next)),
-    )) {
-      _nextUriSet = next.uri;
-    }
-  }
+    if (next == null) return;
 
-  Future<bool> _tryNextUri(Future<void> Function() action) async {
     try {
-      await _run(action);
-      return true;
+      await _run(
+        () => _transport.setNextUri(next.uri, metadata: _metadataFor(next)),
+      );
     } on Object catch (error, stackTrace) {
-      _nextUriUsable = false;
-      _nextUriSet = null;
       unawaited(
         diagnostics.capture(
           error,
@@ -266,8 +402,58 @@ class UpnpPlaybackTarget implements PlaybackTarget {
           extra: _deviceInfo,
         ),
       );
+    }
+  }
+
+  Future<void> _applyPendingSeek() async {
+    final position = _pendingSeek;
+    if (position == null) return;
+    _pendingSeek = null;
+    try {
+      await _run(
+        () => _transport.seek(position, unit: _quirks.seekUnit.wireName),
+      );
+    } on Object catch (error) {
+      diagnostics.trail(
+        'resume seek refused',
+        category: 'upnp',
+        data: {'error': '$error'},
+      );
+    }
+  }
+
+  bool _stalled(AvTransportState state) {
+    if (_gaveUpWaiting) return true;
+    if (state != AvTransportState.transitioning) {
+      _waitingSince = null;
       return false;
     }
+
+    final since = _waitingSince ??= DateTime.now();
+    if (DateTime.now().difference(since) < startTimeout) return false;
+
+    _stopPolling();
+    _waitingSince = null;
+    _gaveUpWaiting = true;
+    _emit(status: PlaybackStatus.error);
+    diagnostics.trail(
+      'cast failed: never left TRANSITIONING',
+      category: 'upnp',
+      data: _streamInfo(_currentTrack),
+    );
+    unawaited(
+      diagnostics.capture(
+        StateError('renderer never left TRANSITIONING'),
+        operation: 'upnp.stalled',
+        tags: _deviceTags,
+        extra: {
+          ..._deviceInfo,
+          'waitedSeconds': startTimeout.inSeconds,
+          ..._streamInfo(_currentTrack),
+        },
+      ),
+    );
+    return true;
   }
 
   void _startPolling() {
@@ -319,6 +505,8 @@ class UpnpPlaybackTarget implements PlaybackTarget {
 
     final playedThrough = _adoptTrackFromDevice(positionInfo.trackUri);
     if (info.state.isPlaying) _sawPlaying = true;
+    if (_stalled(info.state)) return;
+    if (info.state.isPlaying) await _applyPendingSeek();
 
     _emit(
       status: _statusOf(info.state),
@@ -343,14 +531,19 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   }
 
   Future<void> _advanceIfEnded(AvTransportState state) async {
+    if (_deviceQueue != null) {
+      _idlePolls = 0;
+      return;
+    }
     if (!state.isIdle || !_sawPlaying || _stopRequested) {
       _idlePolls = 0;
       return;
     }
 
     _idlePolls++;
-    final betweenTracks = _nextUriSet != null;
-    if (betweenTracks && _idlePolls < _quirks.idlePollsBeforeAdvance) return;
+    if (_canQueueNextTrack && _idlePolls < _quirks.idlePollsBeforeAdvance) {
+      return;
+    }
 
     await _advanceAfterEnd();
   }
@@ -400,15 +593,9 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     'upnp.model': renderer.model ?? 'unknown',
   };
 
-  Map<String, Object?> get _quirkInfo => {
+  Map<String, Object?> get _deviceInfo => {
     ...renderer.fingerprint.redacted().toJson(),
     'quirks': _quirks.toJson(),
-  };
-
-  Map<String, Object?> get _deviceInfo => {
-    'supportsNextUri': _transport.supportsNextUri,
-    'supportsSeek': _transport.supportsSeek,
-    ..._quirkInfo,
   };
 
   PlaybackStatus _statusOf(AvTransportState state) => switch (state) {

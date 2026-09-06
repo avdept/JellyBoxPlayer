@@ -102,6 +102,48 @@ class UpnpDevice {
       services.firstWhereOrNull((service) => service.shortType == shortType);
 }
 
+Set<String> parseScpdAllowedValues(String xml, String stateVariable) {
+  final XmlDocument document;
+  try {
+    document = XmlDocument.parse(xml);
+  } on XmlException {
+    return const {};
+  }
+
+  for (final variable in document.descendantElements) {
+    if (variable.localName != 'stateVariable') continue;
+    if (_text(variable, 'name') != stateVariable) continue;
+    return {
+      for (final value in variable.descendantElements)
+        if (value.localName == 'allowedValue') value.innerText.trim(),
+    }..removeWhere((value) => value.isEmpty);
+  }
+  return const {};
+}
+
+({int? min, int? max})? parseScpdRange(String xml, String stateVariable) {
+  final XmlDocument document;
+  try {
+    document = XmlDocument.parse(xml);
+  } on XmlException {
+    return null;
+  }
+
+  for (final variable in document.descendantElements) {
+    if (variable.localName != 'stateVariable') continue;
+    if (_text(variable, 'name') != stateVariable) continue;
+    final range = variable.descendantElements.firstWhereOrNull(
+      (child) => child.localName == 'allowedValueRange',
+    );
+    if (range == null) return null;
+    return (
+      min: int.tryParse(_text(range, 'minimum') ?? ''),
+      max: int.tryParse(_text(range, 'maximum') ?? ''),
+    );
+  }
+  return null;
+}
+
 Set<String> parseScpdActions(String xml) {
   final XmlDocument document;
   try {

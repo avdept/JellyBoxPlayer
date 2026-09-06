@@ -1,3 +1,5 @@
+import 'package:upnp_quirks/src/device_queue.dart';
+
 enum SeekUnit {
   relativeTime('REL_TIME'),
   absoluteTime('ABS_TIME');
@@ -17,6 +19,7 @@ class DeviceQuirks {
     this.pollInterval = const Duration(seconds: 1),
     this.idlePollsBeforeAdvance = 2,
     this.unsupportedMimeTypes = const {},
+    this.queueOverride,
     this.note,
   });
 
@@ -28,6 +31,7 @@ class DeviceQuirks {
   final Duration pollInterval;
   final int idlePollsBeforeAdvance;
   final Set<String> unsupportedMimeTypes;
+  final DeviceQueueKind? queueOverride;
   final String? note;
 
   static const defaults = DeviceQuirks();
@@ -41,6 +45,7 @@ class DeviceQuirks {
     Duration? pollInterval,
     int? idlePollsBeforeAdvance,
     Set<String>? unsupportedMimeTypes,
+    DeviceQueueKind? queueOverride,
     String? note,
   }) => DeviceQuirks(
     queueNextTrack: queueNextTrack ?? this.queueNextTrack,
@@ -52,6 +57,7 @@ class DeviceQuirks {
     idlePollsBeforeAdvance:
         idlePollsBeforeAdvance ?? this.idlePollsBeforeAdvance,
     unsupportedMimeTypes: unsupportedMimeTypes ?? this.unsupportedMimeTypes,
+    queueOverride: queueOverride ?? this.queueOverride,
     note: note ?? this.note,
   );
 
@@ -75,6 +81,7 @@ class DeviceQuirks {
     'idlePollsBeforeAdvance': idlePollsBeforeAdvance,
     if (unsupportedMimeTypes.isNotEmpty)
       'unsupportedMimeTypes': unsupportedMimeTypes.toList()..sort(),
+    if (queueOverride != null) 'queueOverride': queueOverride!.name,
     if (note != null) 'note': note,
   };
 }

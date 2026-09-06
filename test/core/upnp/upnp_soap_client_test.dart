@@ -104,6 +104,67 @@ void main() {
       );
     });
 
+    test('- retries once when the connection drops, then succeeds', () async {
+      var attempts = 0;
+      when(() => adapter.fetch(any(), any(), any())).thenAnswer((_) async {
+        attempts++;
+        if (attempts == 1) {
+          throw const HttpException(
+            'Connection closed before full header was received',
+          );
+        }
+        return ResponseBody.fromString(
+          fixture('samsung_get_transport_info.xml'),
+          200,
+          headers: {
+            Headers.contentTypeHeader: ['text/xml; charset="utf-8"'],
+          },
+        );
+      });
+
+      final info = await transport.transportInfo();
+
+      expect(attempts, 2);
+      expect(info.state, AvTransportState.noMediaPresent);
+    });
+
+    test('- gives up after one retry and names the action', () async {
+      when(() => adapter.fetch(any(), any(), any())).thenThrow(
+        const HttpException('Connection closed before full header'),
+      );
+
+      await expectLater(
+        transport.transportInfo(),
+        throwsA(
+          isA<UpnpTransportFault>()
+              .having((f) => f.action, 'action', 'GetTransportInfo')
+              .having((f) => f.controlUrl, 'controlUrl', controlUrl),
+        ),
+      );
+    });
+
+    test('- does not retry a SOAP fault', () async {
+      var attempts = 0;
+      when(() => adapter.fetch(any(), any(), any())).thenAnswer((_) async {
+        attempts++;
+        return ResponseBody.fromString(
+          '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">'
+          '<s:Body><s:Fault><detail><UPnPError '
+          'xmlns="urn:schemas-upnp-org:control-1-0"><errorCode>701'
+          '</errorCode><errorDescription>Transition not available'
+          '</errorDescription></UPnPError></detail></s:Fault></s:Body>'
+          '</s:Envelope>',
+          500,
+          headers: {
+            Headers.contentTypeHeader: ['text/xml; charset="utf-8"'],
+          },
+        );
+      });
+
+      await expectLater(transport.play(), throwsA(isA<UpnpSoapFault>()));
+      expect(attempts, 1);
+    });
+
     test('- throws when the body is not the expected response', () async {
       respondWith('<html><body>go away</body></html>');
 
