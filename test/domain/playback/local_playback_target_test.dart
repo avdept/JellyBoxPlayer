@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/playback/local_playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
@@ -20,6 +21,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(<AudioSource>[]);
     registerFallbackValue(Duration.zero);
+    registerFallbackValue(QueueShuffleOrder());
   });
 
   void reportPlayer({
@@ -55,6 +57,7 @@ void main() {
         initialIndex: any(named: 'initialIndex'),
         initialPosition: any(named: 'initialPosition'),
         preload: any(named: 'preload'),
+        shuffleOrder: any(named: 'shuffleOrder'),
       ),
     ).thenAnswer((_) async => null);
     when(player.play).thenAnswer((_) async {});
@@ -178,6 +181,7 @@ void main() {
                   initialIndex: 0,
                   initialPosition: const Duration(seconds: 12),
                   preload: true,
+                  shuffleOrder: any(named: 'shuffleOrder'),
                 ),
               ).captured.single
               as List<AudioSource>;
@@ -201,6 +205,7 @@ void main() {
                   initialIndex: any(named: 'initialIndex'),
                   initialPosition: any(named: 'initialPosition'),
                   preload: any(named: 'preload'),
+                  shuffleOrder: any(named: 'shuffleOrder'),
                 ),
               ).captured.single
               as List<AudioSource>;
@@ -217,6 +222,7 @@ void main() {
           initialIndex: any(named: 'initialIndex'),
           initialPosition: any(named: 'initialPosition'),
           preload: any(named: 'preload'),
+          shuffleOrder: any(named: 'shuffleOrder'),
         ),
       ).thenAnswer((_) async {
         attempts++;

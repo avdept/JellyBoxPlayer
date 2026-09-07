@@ -11,9 +11,15 @@ import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 
 class NowPlayingQueueView extends ConsumerStatefulWidget {
-  const NowPlayingQueueView({this.padding = EdgeInsets.zero, super.key});
+  const NowPlayingQueueView({
+    this.padding = EdgeInsets.zero,
+    this.isActive = true,
+    super.key,
+  });
 
   final EdgeInsets padding;
+
+  final bool isActive;
 
   @override
   ConsumerState<NowPlayingQueueView> createState() =>
@@ -27,7 +33,15 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _revealCurrentSong());
+    if (widget.isActive) _revealCurrentSongOnNextFrame();
+  }
+
+  @override
+  void didUpdateWidget(NowPlayingQueueView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _revealCurrentSongOnNextFrame();
+    }
   }
 
   @override
@@ -47,15 +61,23 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
     super.dispose();
   }
 
+  void _revealCurrentSongOnNextFrame() =>
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revealCurrentSong());
+
   void _revealCurrentSong() {
     if (!mounted || !_scrollController.hasClients) return;
-    final index = ref.read(playbackProvider).currentMediaIndex ?? 0;
-    _scrollController.jumpTo(
-      (index * _itemExtent).clamp(
-        0.0,
-        _scrollController.position.maxScrollExtent,
-      ),
+    final currentIndex = ref.read(playbackProvider).currentMediaIndex ?? 0;
+    final order = _order(
+      ref.read(playerProvider).sequenceState,
+      ref.read(playbackProvider).songs.length,
     );
+    final position = order.indexOf(currentIndex);
+    final scroll = _scrollController.position;
+    final centered =
+        (position < 0 ? 0 : position) * _itemExtent -
+        (scroll.viewportDimension - _itemExtent) / 2;
+
+    _scrollController.jumpTo(centered.clamp(0.0, scroll.maxScrollExtent));
   }
 
   Future<void> _toggleFavourite(LibraryItem song) async {

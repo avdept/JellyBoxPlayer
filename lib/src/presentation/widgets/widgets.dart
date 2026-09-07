@@ -46,6 +46,7 @@ export 'sidebar_overlay.dart';
 export 'simple_list_tile.dart';
 export 'singer_view.dart';
 export 'song_download_menu_item.dart';
+export 'song_queue_menu_items.dart';
 export 'song_list_sliver.dart';
 export 'song_row_view.dart';
 export 'studio_mode.dart';

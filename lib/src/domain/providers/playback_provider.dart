@@ -39,6 +39,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _reportedPositionMs = 0;
   var _startReported = false;
   var _preparingQueue = false;
+  var _queueEditsInFlight = 0;
   var _fallingBack = false;
   Timer? _progressTimer;
 
@@ -67,7 +68,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _onTargetState(TargetPlaybackState targetState) {
     _targetState = targetState;
-    final index = targetState.currentIndex;
+    // TODO: Come up with some better idea, this is shit and smells like shit
+    // This is hack which I have no idea how to do right currently. Basically it fixes issue when currenply playing song would point to wrong object right after reorder.
+    final index = _queueEditsInFlight > 0
+        ? state.currentMediaIndex
+        : targetState.currentIndex;
 
     if (!_preparingQueue && index != _reportedIndex) {
       _reportTrackChange(index);
@@ -179,6 +184,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       initialPosition: position,
       autoPlay: wasPlaying,
     );
+  }
+
+  Future<void> _editQueue(Future<void> Function() edit) async {
+    _queueEditsInFlight++;
+    try {
+      await edit();
+    } finally {
+      _queueEditsInFlight--;
+    }
   }
 
   Duration? _durationFor(int? index, {List<LibraryItem>? songs}) {
@@ -567,7 +581,43 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           : null,
     );
 
-    await _target.move(from, to);
+    await _editQueue(() => _target.move(from, to));
+  }
+
+  Future<bool> playNext(LibraryItem song) => _enqueue(song, playNext: true);
+
+  Future<bool> addToQueue(LibraryItem song) => _enqueue(song, playNext: false);
+
+  Future<bool> _enqueue(LibraryItem song, {required bool playNext}) async {
+    final album = state.album ?? song;
+
+    if (state.songs.isEmpty) {
+      await play(song, [song], album, autoPlay: false);
+      return state.songs.isNotEmpty;
+    }
+
+    final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+    final sessionId = '$deviceId-$stamp-${song.id}';
+    final resolved = await _resolveTrack(song, album, sessionId);
+    if (resolved == null) return false;
+
+    final current = state.currentMediaIndex;
+    final index = playNext
+        ? ((current ?? -1) + 1).clamp(0, state.songs.length)
+        : state.songs.length;
+
+    _playSessionIds[song.id] = sessionId;
+    state = state.copyWith(
+      songs: [...state.songs]..insert(index, resolved.song),
+      currentMediaIndex: current != null && index <= current
+          ? current + 1
+          : current,
+    );
+
+    await _editQueue(
+      () => _target.insert(index, resolved.track, playNext: playNext),
+    );
+    return true;
   }
 
   Future<void> removeFromQueue(int index) async {
@@ -598,7 +648,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       ),
     );
 
-    await _target.remove(index);
+    await _editQueue(() => _target.remove(index));
   }
 
   int? _removedIndex(int? index, int removed, int length) {

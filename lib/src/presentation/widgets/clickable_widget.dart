@@ -22,6 +22,13 @@ class _ClickableWidgetState extends State<ClickableWidget> {
 
   late DeviceType _device;
 
+  bool get _isInteractive => widget.onPressed != null;
+
+  void _setActive(bool value) {
+    if (!_isInteractive && value) return;
+    _isActive.value = value;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -47,8 +54,8 @@ class _ClickableWidgetState extends State<ClickableWidget> {
         cursor: (widget.onPressed != null)
             ? WidgetStateMouseCursor.clickable
             : MouseCursor.defer,
-        onHover: (_) => _isActive.value = true,
-        onExit: (_) => _isActive.value = false,
+        onHover: (_) => _setActive(true),
+        onExit: (_) => _setActive(false),
         child: GestureDetector(
           onTap: widget.onPressed,
           child: child,
@@ -57,9 +64,9 @@ class _ClickableWidgetState extends State<ClickableWidget> {
     } else {
       return GestureDetector(
         onTap: widget.onPressed,
-        onTapDown: (_) => _isActive.value = true,
-        onTapUp: (_) => _isActive.value = false,
-        onTapCancel: () => _isActive.value = false,
+        onTapDown: (_) => _setActive(true),
+        onTapUp: (_) => _setActive(false),
+        onTapCancel: () => _setActive(false),
         child: child,
       );
     }

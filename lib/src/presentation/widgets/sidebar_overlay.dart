@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 class SidebarOverlay extends StatelessWidget {
@@ -31,65 +33,74 @@ class SidebarOverlay extends StatelessWidget {
 
     return IgnorePointer(
       ignoring: !isShown,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: onClose,
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedOpacity(
-                opacity: isShown ? 1 : 0,
-                duration: duration,
-                child: const ColoredBox(color: Colors.black54),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: isShown ? 1 : 0, end: isShown ? 1 : 0),
+        duration: duration,
+        curve: Curves.easeOutCubic,
+        builder: (context, value, panel) => Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: onClose,
+                behavior: HitTestBehavior.opaque,
+                child: Opacity(
+                  opacity: value,
+                  child: const ColoredBox(color: Colors.black54),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: 0,
-            bottom: 0,
-            right: 0,
-            width: width,
-            child: AnimatedSlide(
-              offset: isShown ? Offset.zero : const Offset(1, 0),
-              duration: duration,
-              curve: Curves.easeOutCubic,
-              child: Material(
-                color: panelColor,
-                surfaceTintColor: Colors.transparent,
-                elevation: 12,
-                child: SafeArea(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 12, 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                title ?? '',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                ),
+            Positioned(
+              top: 0,
+              bottom: 0,
+              right: -width * (1 - value),
+              width: width,
+              child: Visibility(
+                visible: value > 0,
+                maintainState: true,
+                child: panel!,
+              ),
+            ),
+          ],
+        ),
+        child: Material(
+          color: panelColor,
+          surfaceTintColor: Colors.transparent,
+          elevation: 12,
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 12, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title ?? '',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            IconButton(
-                              onPressed: onClose,
-                              color: theme.colorScheme.onPrimary,
-                              tooltip: 'Close',
-                              icon: const Icon(Icons.close),
-                            ),
-                          ],
-                        ),
+                          ),
+                          IconButton(
+                            onPressed: onClose,
+                            color: theme.colorScheme.onPrimary,
+                            tooltip: 'Close',
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
                       ),
-                      Expanded(child: child),
-                    ],
-                  ),
+                    ),
+                    Expanded(child: child),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

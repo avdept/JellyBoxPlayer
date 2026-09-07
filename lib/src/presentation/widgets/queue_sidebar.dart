@@ -19,7 +19,7 @@ class QueueSidebar extends ConsumerWidget {
       backgroundColor: ref.watch(artworkSchemeProvider).valueOrNull?.surface,
       onClose: () =>
           ref.read(queueSidebarVisibleProvider.notifier).state = false,
-      child: const NowPlayingQueueView(),
+      child: NowPlayingQueueView(isActive: isShown),
     );
   }
 }
