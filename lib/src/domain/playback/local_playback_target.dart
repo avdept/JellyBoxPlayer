@@ -117,6 +117,9 @@ class LocalPlaybackTarget implements PlaybackTarget {
   Future<void> move(int from, int to) => _player.moveAudioSource(from, to);
 
   @override
+  Future<void> remove(int index) => _player.removeAudioSourceAt(index);
+
+  @override
   Future<void> seekToNext() => _player.seekToNext();
 
   @override

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/song_download_menu_item.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -55,6 +58,35 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
     );
   }
 
+  Future<void> _toggleFavourite(LibraryItem song) async {
+    final favorite = !song.userData.isFavorite;
+    if (ref.read(isOfflineProvider)) {
+      _showOfflineNotice();
+      return;
+    }
+    try {
+      await ref
+          .read(mediaServerClientProvider)
+          .setFavorite(song.id, favorite: favorite);
+    } on Object {
+      _showOfflineNotice();
+      return;
+    }
+    ref.invalidate(favouriteSongsProvider);
+    ref
+        .read(playbackProvider.notifier)
+        .updateSong(
+          song.copyWith(userData: song.userData.copyWith(isFavorite: favorite)),
+        );
+  }
+
+  void _showOfflineNotice() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('This action needs a connection')),
+    );
+  }
+
   List<Key> _itemKeys(List<int> order, List<LibraryItem> songs) {
     final seen = <String, int>{};
     return [
@@ -87,6 +119,9 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
         final isShuffled = snapshot.data?.shuffleModeEnabled ?? false;
         final order = _order(snapshot.data, songs.length);
         final keys = _itemKeys(order, songs);
+        final isDesktop = DeviceType.fromScreenSize(
+          MediaQuery.sizeOf(context),
+        ).isDesktop;
         return ReorderableListView.builder(
           scrollController: _scrollController,
           padding: widget.padding,
@@ -99,31 +134,103 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
           itemBuilder: (context, position) {
             final index = order[position];
             final song = songs[index];
-            return SongRowView(
+            return _QueueRow(
               key: keys[position],
               song: song,
+              position: position,
               isPlaying: index == currentIndex,
-              secondaryTextColor: Colors.white,
-              edgePadding: 16,
-              onTap: (_) => ref
+              isDesktop: isDesktop,
+              isDraggable: !isShuffled,
+              onTap: () => ref
                   .read(playbackProvider.notifier)
                   .skipTo(index, autoPlay: true),
-              trailing: isShuffled
-                  ? null
-                  : ReorderableDragStartListener(
-                      index: position,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Icon(
-                          Icons.drag_handle,
-                          color: Colors.white.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
+              onLikePressed: () => _toggleFavourite(song),
+              onRemove: () =>
+                  ref.read(playbackProvider.notifier).removeFromQueue(index),
             );
           },
         );
       },
     );
   }
+}
+
+class _QueueRow extends ConsumerStatefulWidget {
+  const _QueueRow({
+    required this.song,
+    required this.position,
+    required this.isPlaying,
+    required this.isDesktop,
+    required this.isDraggable,
+    required this.onTap,
+    required this.onLikePressed,
+    required this.onRemove,
+    super.key,
+  });
+
+  final LibraryItem song;
+  final int position;
+  final bool isPlaying;
+  final bool isDesktop;
+  final bool isDraggable;
+  final VoidCallback onTap;
+  final VoidCallback onLikePressed;
+  final Future<void> Function() onRemove;
+
+  @override
+  ConsumerState<_QueueRow> createState() => _QueueRowState();
+}
+
+class _QueueRowState extends ConsumerState<_QueueRow> {
+  var _isHovered = false;
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) return;
+    setState(() => _isHovered = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final row = SongRowView(
+      song: widget.song,
+      isPlaying: widget.isPlaying,
+      secondaryTextColor: Colors.white,
+      edgePadding: 16,
+      onTap: (_) => widget.onTap(),
+      onLikePressed: (_) => widget.onLikePressed(),
+      trailing: _optionsButton(),
+    );
+
+    return MouseRegion(
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: switch ((widget.isDraggable, widget.isDesktop)) {
+        (false, _) => row,
+        (true, true) => ReorderableDragStartListener(
+          index: widget.position,
+          child: row,
+        ),
+        (true, false) => ReorderableDelayedDragStartListener(
+          index: widget.position,
+          child: row,
+        ),
+      },
+    );
+  }
+
+  Widget _optionsButton() => AnimatedOpacity(
+    opacity: (_isHovered || !widget.isDesktop) ? 1 : 0,
+    duration: const Duration(milliseconds: 120),
+    child: PopupMenuButton<void>(
+      icon: const Icon(Icons.more_vert),
+      tooltip: 'More',
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          onTap: () => widget.onRemove().ignore(),
+          child: const Text('Remove from queue'),
+        ),
+        songDownloadMenuItem(ref, widget.song),
+      ],
+    ),
+  );
 }

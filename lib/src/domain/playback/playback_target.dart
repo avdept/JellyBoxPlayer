@@ -106,6 +106,8 @@ abstract class PlaybackTarget {
 
   Future<void> move(int from, int to);
 
+  Future<void> remove(int index);
+
   Future<void> seekToNext();
 
   Future<void> seekToPrevious();

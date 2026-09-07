@@ -544,6 +544,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     await _target.skipTo(0);
   }
 
+  void updateSong(LibraryItem song) {
+    final index = state.songs.indexWhere((item) => item.id == song.id);
+    if (index < 0) return;
+    state = state.copyWith(songs: [...state.songs]..[index] = song);
+  }
+
   Future<void> moveInQueue(int from, int to) async {
     if (from == to) return;
     final songs = [...state.songs];
@@ -562,6 +568,44 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     );
 
     await _target.move(from, to);
+  }
+
+  Future<void> removeFromQueue(int index) async {
+    final songs = [...state.songs];
+    if (index < 0 || index >= songs.length) return;
+    if (songs.length == 1) return clear();
+
+    final wasCurrent = state.currentMediaIndex == index;
+    songs.removeAt(index);
+
+    if (wasCurrent) {
+      _reportStopped();
+      _reportedIndex = null;
+      _reportedPositionMs = 0;
+    } else {
+      final reported = _reportedIndex;
+      if (reported != null) {
+        _reportedIndex = _removedIndex(reported, index, songs.length);
+      }
+    }
+
+    state = state.copyWith(
+      songs: songs,
+      currentMediaIndex: _removedIndex(
+        state.currentMediaIndex,
+        index,
+        songs.length,
+      ),
+    );
+
+    await _target.remove(index);
+  }
+
+  int? _removedIndex(int? index, int removed, int length) {
+    if (index == null) return null;
+    if (index < removed) return index;
+    if (index > removed) return index - 1;
+    return index.clamp(0, length - 1);
   }
 
   int _movedIndex(int index, int from, int to) {
