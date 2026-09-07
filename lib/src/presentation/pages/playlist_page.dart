@@ -206,6 +206,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                 _getSongs();
                               },
                               optionsBuilder: (context) => [
+                                songDownloadMenuItem(ref, song),
                                 PopupMenuItem(
                                   onTap: () async {
                                     if (song.playlistItemId == null) {

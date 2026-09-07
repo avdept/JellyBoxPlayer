@@ -194,6 +194,7 @@ class _MainPageState extends ConsumerState<MainPage> {
               ),
             ],
           ),
+          if (_device.isDesktop) const Positioned.fill(child: QueueSidebar()),
           Visibility(
             visible: Platform.isLinux,
             child: const _WindowTitleBar(),

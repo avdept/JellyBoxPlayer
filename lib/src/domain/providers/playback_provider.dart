@@ -14,7 +14,6 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
-import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -118,7 +117,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (targetState.completed && state.status.isPlaying) {
       _reportStopped();
       _stopProgressReports();
-      state = PlaybackState.initial();
+      _reportedIndex = 0;
+      _reportedPositionMs = 0;
+      state = state.copyWith(
+        status: PlaybackStatus.stopped,
+        position: Duration.zero,
+        currentMediaIndex: 0,
+        totalDuration: _durationFor(0),
+      );
+      final first = state.songs.elementAtOrNull(0);
+      if (first != null && state.album != null) {
+        unawaited(_saveToStorage(songId: first.id, positionMs: 0));
+      }
+      if (_target.kind == PlaybackTargetKind.local) {
+        unawaited(_rewindToQueueStart());
+      }
     } else if (targetState.status.isPlaying && !state.status.isPlaying) {
       state = state.copyWith(status: PlaybackStatus.playing);
     } else if (targetState.status.isPaused && state.status.isPlaying) {
@@ -488,17 +501,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> resume() async {
-    if (state.status.isStopped && state.totalDuration?.inSeconds == 0) {
-      final queue = _ref.read(audioQueueProvider.notifier);
-      // Case when song has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
-      if (queue.state.songs.isNotEmpty) {
-        await play(
-          queue.state.songs.first,
-          queue.state.songs,
-          queue.state.album!,
-        );
-      }
-
+    final album = state.album;
+    if (state.status.isStopped && state.songs.isNotEmpty && album != null) {
+      // Case when queue has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
+      await play(state.songs.first, state.songs, album);
       return;
     }
 
@@ -531,6 +537,38 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> skipTo(int index, {bool autoPlay = false}) async {
     await _target.skipTo(index);
     if (autoPlay && !_targetState.status.isPlaying) await _target.play();
+  }
+
+  Future<void> _rewindToQueueStart() async {
+    await _target.pause();
+    await _target.skipTo(0);
+  }
+
+  Future<void> moveInQueue(int from, int to) async {
+    if (from == to) return;
+    final songs = [...state.songs];
+    if (from < 0 || from >= songs.length) return;
+    if (to < 0 || to >= songs.length) return;
+
+    songs.insert(to, songs.removeAt(from));
+    final current = state.currentMediaIndex;
+    final reported = _reportedIndex;
+    if (reported != null) _reportedIndex = _movedIndex(reported, from, to);
+    state = state.copyWith(
+      songs: songs,
+      currentMediaIndex: current != null
+          ? _movedIndex(current, from, to)
+          : null,
+    );
+
+    await _target.move(from, to);
+  }
+
+  int _movedIndex(int index, int from, int to) {
+    if (index == from) return to;
+    if (from < to && index > from && index <= to) return index - 1;
+    if (from > to && index >= to && index < from) return index + 1;
+    return index;
   }
 
   Future<void> stop() async {

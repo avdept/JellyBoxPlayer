@@ -7,6 +7,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_picker_sheet.dart';
+import 'package:jplayer/src/presentation/widgets/song_download_menu_item.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 
 class SongListSliver extends ConsumerStatefulWidget {
@@ -127,6 +128,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
               onTap: () => _onAddToPlaylistPressed(song),
               child: const Text('Add to playlist'),
             ),
+            songDownloadMenuItem(ref, song),
             if (!isDesktop)
               PopupMenuItem(
                 onTap: () => _onLikePressed(song),

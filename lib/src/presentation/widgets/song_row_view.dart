@@ -29,6 +29,8 @@ class SongRowView extends ConsumerWidget {
     this.optionsBuilder,
     this.position,
     this.showDownloadState = false,
+    this.secondaryTextColor,
+    this.trailing,
     this.edgePadding,
     this.testKeys,
     super.key,
@@ -44,6 +46,10 @@ class SongRowView extends ConsumerWidget {
   final int? position;
 
   final bool showDownloadState;
+
+  final Color? secondaryTextColor;
+
+  final Widget? trailing;
 
   final double? edgePadding;
 
@@ -77,6 +83,8 @@ class SongRowView extends ConsumerWidget {
         ? ref.watch(downloadServiceProvider).getTask(song.id)
         : null;
     final quality = song.audioSources.firstOrNull;
+    final secondaryColor =
+        secondaryTextColor ?? theme.colorScheme.onPrimary.withOpacity(0.6);
 
     return SimpleListTile(
       onTap: onTap != null ? () => onTap!(song) : null,
@@ -129,7 +137,7 @@ class SongRowView extends ConsumerWidget {
                 fontSize: isTablet ? 16 : 12,
                 fontWeight: FontWeight.w400,
                 height: 1.2,
-                color: theme.colorScheme.onPrimary.withOpacity(0.6),
+                color: secondaryColor,
                 overflow: TextOverflow.ellipsis,
               ),
               child: Text(song.albumArtist ?? '', maxLines: 1),
@@ -141,7 +149,9 @@ class SongRowView extends ConsumerWidget {
               codec: quality.codec,
               bitRate: quality.bitRate,
               fontSize: isTablet ? 11 : 9,
-              textColor: theme.colorScheme.onPrimary.withOpacity(0.7),
+              textColor:
+                  secondaryTextColor ??
+                  theme.colorScheme.onPrimary.withOpacity(0.7),
             ),
           ],
         ],
@@ -154,7 +164,7 @@ class SongRowView extends ConsumerWidget {
             formattedDuration,
             style: TextStyle(
               fontSize: isTablet ? 14 : 12,
-              color: theme.colorScheme.onPrimary.withOpacity(0.6),
+              color: secondaryColor,
             ),
           ),
           if (currentTask != null)
@@ -214,6 +224,7 @@ class SongRowView extends ConsumerWidget {
               tooltip: 'More',
               itemBuilder: optionsBuilder!,
             ),
+          if (trailing case final trailing?) trailing,
         ],
       ),
     );

@@ -487,6 +487,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                         onTap: () => _onAddToPlaylistPressed(song),
                         child: const Text('Add to playlist'),
                       ),
+                      songDownloadMenuItem(ref, song),
                       if (!_device.isDesktop)
                         PopupMenuItem(
                           onTap: () => _onLikePressed(song),

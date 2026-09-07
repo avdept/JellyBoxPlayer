@@ -40,6 +40,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   final _imageProvider = ValueNotifier<ImageProvider?>(null);
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
   final _isPlaying = ValueNotifier<bool>(false);
+  final _queueShown = ValueNotifier<bool>(false);
   final _likeTrack = ValueNotifier<bool>(false);
   late ThemeData _theme;
   late MaterialLocalizations _localizations;
@@ -72,54 +73,23 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                       return Column(
                         mainAxisSize: MainAxisSize.max,
                         children: [
+                          _sheetHeader(context),
                           Expanded(
-                            child: Consumer(
-                              builder: (context, ref, child) =>
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 250),
-                                    child: ref.watch(lyricsShownProvider)
-                                        ? const Padding(
-                                            key: ValueKey('lyrics'),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal:
-                                                  _sheetHorizontalPadding,
-                                            ),
-                                            child: LyricsView(),
-                                          )
-                                        : child,
-                                  ),
-                              child: ValueListenableBuilder<bool>(
-                                key: const ValueKey('artwork'),
-                                valueListenable: _isPlaying,
-                                builder: (context, isPlaying, child) =>
-                                    StreamBuilder<SequenceState?>(
-                                      stream: ref
-                                          .read(playerProvider)
-                                          .sequenceStateStream,
-                                      builder: (context, sequence) =>
-                                          SwipeableArtwork(
-                                            queue: ref.watch(
-                                              nowPlayingQueueProvider,
-                                            ),
-                                            currentIndex: ref.watch(
-                                              playbackProvider.select(
-                                                (s) => s.currentMediaIndex,
-                                              ),
-                                            ),
-                                            order: _shuffleOrder(
-                                              sequence.data,
-                                            ),
-                                            borderRadius: _isMobile ? 12 : 16,
-                                            artworkBuilder: _artwork,
-                                            horizontalPadding:
-                                                _sheetHorizontalPadding,
-                                            scale: isPlaying ? 1 : 0.82,
-                                          ),
-                                    ),
+                            child: ValueListenableBuilder<bool>(
+                              valueListenable: _queueShown,
+                              builder: (context, showQueue, _) => FlipPanel(
+                                showBack: showQueue,
+                                front: Column(
+                                  children: [
+                                    Expanded(child: _artworkArea()),
+                                    _sheetDetails(context, currentSong),
+                                  ],
+                                ),
+                                back: const NowPlayingQueueView(),
                               ),
                             ),
                           ),
-                          _sheetDetails(context, currentSong),
+                          _extraControls(),
                         ],
                       );
                     },
@@ -135,8 +105,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                 animationController: _animationController,
                 onClosing: () {},
                 enableDrag: false,
-                showDragHandle: true,
-                dragHandleSize: const Size(113, 10),
+                showDragHandle: false,
                 backgroundColor: colorScheme?.background,
                 constraints: BoxConstraints(
                   maxHeight: constraints.maxHeight * 0.92,
@@ -156,8 +125,72 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       .whenComplete(_onSheetClosed);
 
   void _onSheetClosed() {
+    _queueShown.value = false;
     if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
   }
+
+  Widget _artworkArea() => Consumer(
+    builder: (context, ref, child) => AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: ref.watch(lyricsShownProvider)
+          ? const Padding(
+              key: ValueKey('lyrics'),
+              padding: EdgeInsets.symmetric(
+                horizontal: _sheetHorizontalPadding,
+              ),
+              child: LyricsView(),
+            )
+          : child,
+    ),
+    child: ValueListenableBuilder<bool>(
+      key: const ValueKey('artwork'),
+      valueListenable: _isPlaying,
+      builder: (context, isPlaying, child) => StreamBuilder<SequenceState?>(
+        stream: ref.read(playerProvider).sequenceStateStream,
+        builder: (context, sequence) => SwipeableArtwork(
+          queue: ref.watch(nowPlayingQueueProvider),
+          currentIndex: ref.watch(
+            playbackProvider.select((s) => s.currentMediaIndex),
+          ),
+          order: _shuffleOrder(sequence.data),
+          borderRadius: _isMobile ? 12 : 16,
+          artworkBuilder: _artwork,
+          horizontalPadding: _sheetHorizontalPadding,
+          scale: isPlaying ? 1 : 0.82,
+        ),
+      ),
+    ),
+  );
+
+  Widget _sheetHeader(BuildContext context) => SizedBox(
+    height: kMinInteractiveDimension,
+    child: Center(
+      child: Container(
+        width: 113,
+        height: 10,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          borderRadius: BorderRadius.circular(5),
+        ),
+      ),
+    ),
+  );
+
+  Widget _queueButton() => ValueListenableBuilder<bool>(
+    valueListenable: _queueShown,
+    builder: (context, isShown, _) => IconButton(
+      onPressed: () => _queueShown.value = !isShown,
+      color: _theme.colorScheme.onPrimary,
+      iconSize: _isMobile ? 26 : 24,
+      tooltip: isShown ? 'Hide queue' : 'Queue',
+      icon: const Icon(Icons.queue_music),
+      selectedIcon: Icon(
+        Icons.queue_music,
+        color: _theme.colorScheme.primary,
+      ),
+      isSelected: isShown,
+    ),
+  );
 
   Widget _sheetDetails(BuildContext context, MediaItem? currentSong) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: _sheetHorizontalPadding),
@@ -245,38 +278,44 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         IconTheme.merge(
           data: IconThemeData(size: _isMobile ? 40 : 44),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              _secondaryControl(_randomQueueButton()),
               _prevTrackButton(),
-              SizedBox(width: _isMobile ? 32 : 24),
               SizedBox.square(
                 dimension: 72,
                 child: _playPauseButton(),
               ),
-              SizedBox(width: _isMobile ? 32 : 24),
               _nextTrackButton(),
-            ],
-          ),
-        ),
-        SizedBox(height: _isMobile ? 24 : 32),
-        IconTheme.merge(
-          data: IconThemeData(size: _isMobile ? 26 : 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _randomQueueButton(),
-              _repeatTrackButton(),
-              if (NativeRoutePicker.isSupported) _outputRouteButton(),
-              _playbackTargetButton(),
-              if (_isCasting) _volumeControl(),
-              _lyricsButton(),
-              _downloadTrackButton(),
-              _likeTrackButton(),
+              _secondaryControl(_repeatTrackButton()),
             ],
           ),
         ),
       ],
+    ),
+  );
+
+  Widget _extraControls() => Padding(
+    padding: EdgeInsets.only(
+      left: _sheetHorizontalPadding,
+      right: _sheetHorizontalPadding,
+      top: _isMobile ? 24 : 32,
+    ),
+    child: IconTheme.merge(
+      data: IconThemeData(size: _isMobile ? 26 : 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          if (NativeRoutePicker.isSupported) _outputRouteButton(),
+          _playbackTargetButton(),
+          if (_isCasting) _volumeControl(),
+          _lyricsButton(),
+          if (!_isMobile) _downloadTrackButton(),
+          _likeTrackButton(),
+          _queueButton(),
+        ],
+      ),
     ),
   );
 
@@ -438,6 +477,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             if (_isDesktop && NativeRoutePicker.isSupported)
                               _outputRouteButton(size: 44),
                             if (_isDesktop) _playbackTargetButton(size: 44),
+                            if (_isDesktop) _queueSidebarButton(),
                             if (!_isMobile) _studioModeButton(),
                           ],
                         ),
@@ -473,6 +513,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     _dynamicColors.dispose();
     _isPlaying.dispose();
     _likeTrack.dispose();
+    _queueShown.dispose();
     super.dispose();
   }
 
@@ -492,7 +533,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     onPressed: () => _onMorePressed(currentSong),
     color: _theme.colorScheme.onPrimary,
     iconSize: _isMobile ? 26 : 24,
-    icon: const Icon(JPlayer.more_horizontal),
+    icon: const Icon(Icons.more_vert),
   );
 
   Future<void> _onMorePressed(MediaItem? currentSong) async {
@@ -521,6 +562,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                 Navigator.of(sheetContext).pop();
                 _addToPlaylist(song);
               },
+            ),
+            SongDownloadListTile(
+              song: song,
+              onSelected: () => Navigator.of(sheetContext).pop(),
             ),
             if (artistId != null)
               ListTile(
@@ -576,6 +621,29 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     icon: const Icon(Entypo.fast_forward),
   );
 
+  Widget _queueSidebarButton() => Consumer(
+    builder: (context, ref, _) {
+      final isShown = ref.watch(queueSidebarVisibleProvider);
+      return SizedBox.square(
+        dimension: 44,
+        child: IconButton(
+          onPressed: () =>
+              ref.read(queueSidebarVisibleProvider.notifier).state = !isShown,
+          color: _theme.colorScheme.onPrimary,
+          padding: EdgeInsets.zero,
+          iconSize: 24,
+          tooltip: isShown ? 'Hide queue' : 'Queue',
+          icon: const Icon(Icons.queue_music),
+          selectedIcon: Icon(
+            Icons.queue_music,
+            color: _theme.colorScheme.primary,
+          ),
+          isSelected: isShown,
+        ),
+      );
+    },
+  );
+
   Widget _studioModeButton() => IconButton(
     onPressed: () {
       ref.read(lyricsVisibleProvider.notifier).state = false;
@@ -584,6 +652,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     color: _theme.colorScheme.onPrimary,
     tooltip: 'Studio mode',
     icon: const Icon(Icons.fullscreen),
+  );
+
+  Widget _secondaryControl(Widget child) => IconTheme.merge(
+    data: IconThemeData(size: _isMobile ? 20 : 24),
+    child: child,
   );
 
   Widget _randomQueueButton() => StreamBuilder<bool?>(
@@ -666,7 +739,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
       return IconButton(
         onPressed: hasLyrics
-            ? () => ref.read(lyricsVisibleProvider.notifier).state = !isShown
+            ? () {
+                _queueShown.value = false;
+                ref.read(lyricsVisibleProvider.notifier).state = !isShown;
+              }
             : null,
         color: _theme.colorScheme.onPrimary,
         disabledColor: _theme.colorScheme.onPrimary.withOpacity(0.3),

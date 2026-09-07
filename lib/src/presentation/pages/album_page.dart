@@ -314,6 +314,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                                             _onAddToPlaylistPressed(song),
                                         child: const Text('Add to playlist'),
                                       ),
+                                      songDownloadMenuItem(ref, song),
                                       if (!_device.isDesktop)
                                         PopupMenuItem(
                                           onTap: () => _onSongLikePressed(song),
