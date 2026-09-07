@@ -210,7 +210,7 @@ class UpnpControlPoint {
       return UpnpDevice.parse(body, location: location);
     } on Object catch (error) {
       _diagnostics.trail(
-        'device description failed',
+        'device description failed: $error',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -232,7 +232,7 @@ class UpnpControlPoint {
       return body == null ? const {} : parseScpdActions(body);
     } on Object catch (error) {
       _diagnostics.trail(
-        'service description failed',
+        'service description failed: $error',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -248,7 +248,7 @@ class UpnpControlPoint {
       ).sinkMimeTypes();
     } on Object catch (error) {
       _diagnostics.trail(
-        'GetProtocolInfo failed',
+        'GetProtocolInfo failed: $error',
         category: 'upnp',
         data: {'error': '$error'},
       );

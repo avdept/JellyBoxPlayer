@@ -11,9 +11,10 @@ const _sliderPadding = 14.0;
 const _hideDelay = Duration(milliseconds: 150);
 
 class VolumeControl extends ConsumerStatefulWidget {
-  const VolumeControl({this.size = _buttonSize, super.key});
+  const VolumeControl({this.size = _buttonSize, this.color, super.key});
 
   final double size;
+  final Color? color;
 
   @override
   ConsumerState<VolumeControl> createState() => _VolumeControlState();
@@ -53,6 +54,8 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     _hideTimer?.cancel();
     super.dispose();
   }
+
+  Color _tint(ThemeData theme) => widget.color ?? theme.colorScheme.onPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -118,9 +121,9 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     child: SliderTheme(
       data: SliderTheme.of(context).copyWith(
         trackHeight: 4,
-        activeTrackColor: theme.colorScheme.onPrimary,
-        inactiveTrackColor: theme.colorScheme.onPrimary.withOpacity(0.25),
-        thumbColor: theme.colorScheme.onPrimary,
+        activeTrackColor: _tint(theme),
+        inactiveTrackColor: _tint(theme).withOpacity(0.25),
+        thumbColor: _tint(theme),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
       ),
@@ -140,7 +143,7 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
       width: widget.size,
       height: widget.size,
     ),
-    color: theme.colorScheme.onPrimary,
+    color: _tint(theme),
     iconSize: widget.size * 0.55,
     icon: Icon(_iconFor(volume)),
   );

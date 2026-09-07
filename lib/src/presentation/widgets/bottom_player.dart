@@ -19,6 +19,9 @@ import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+import 'package:jplayer/src/domain/playback/playback_target.dart';
+import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/presentation/widgets/volume_control.dart';
 import 'package:native_route_picker/native_route_picker.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -266,6 +269,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               _repeatTrackButton(),
               if (NativeRoutePicker.isSupported) _outputRouteButton(),
               _playbackTargetButton(),
+              if (_isCasting) _volumeControl(),
               _lyricsButton(),
               _downloadTrackButton(),
               _likeTrackButton(),
@@ -629,6 +633,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     if (state.shuffleIndices.length != state.sequence.length) return null;
     return state.shuffleIndices;
   }
+
+  bool get _isCasting =>
+      ref.watch(playbackTargetProvider).kind != PlaybackTargetKind.local;
+
+  Widget _volumeControl({double size = 48}) => VolumeControl(
+    size: size,
+    color: _theme.colorScheme.onPrimary,
+  );
 
   Widget _playbackTargetButton({double? size}) => PlaybackTargetButton(
     size: size,

@@ -304,7 +304,7 @@ void main() {
 
       expect(target.state.status, isNot(PlaybackStatus.error));
       expect(captured, isEmpty);
-      expect(trails, contains('resume seek refused'));
+      expect(trails, anyElement(startsWith('resume seek refused')));
     });
 
     test(

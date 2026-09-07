@@ -226,7 +226,12 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     String operation,
     Map<String, Object?> extra,
   ) {
-    diagnostics.trail('cast failed', category: 'upnp', data: extra);
+    diagnostics.trail(
+      'cast failed: ${extra['streamHost'] ?? 'unknown host'}'
+      ' (${extra['mimeType'] ?? 'unknown type'})',
+      category: 'upnp',
+      data: extra,
+    );
     return diagnostics.capture(
       error,
       stackTrace: stackTrace,
@@ -308,7 +313,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       return value == null ? null : _quirks.volumeFromWire(value);
     } on Object catch (error) {
       diagnostics.trail(
-        'GetVolume failed',
+        'GetVolume failed: $error',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -415,7 +420,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       );
     } on Object catch (error) {
       diagnostics.trail(
-        'resume seek refused',
+        'resume seek refused: $error',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -437,7 +442,8 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     _gaveUpWaiting = true;
     _emit(status: PlaybackStatus.error);
     diagnostics.trail(
-      'cast failed: never left TRANSITIONING',
+      'cast failed: never left TRANSITIONING, '
+      '${_currentTrack?.uri.host ?? 'no track'}',
       category: 'upnp',
       data: _streamInfo(_currentTrack),
     );
@@ -481,7 +487,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     } on Object catch (error, stackTrace) {
       _failures++;
       diagnostics.trail(
-        'poll failed ($_failures)',
+        'poll failed ($_failures): $error',
         category: 'upnp',
         data: {'error': '$error'},
       );
