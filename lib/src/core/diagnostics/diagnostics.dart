@@ -52,7 +52,7 @@ class Diagnostics {
     String category = 'app',
     Map<String, Object?> data = const {},
   }) {
-    debugPrint('[$category] $message${data.isEmpty ? '' : ' $data'}');
+    debugPrint('[$category] $message');
     if (!Sentry.isEnabled) return;
 
     unawaited(
