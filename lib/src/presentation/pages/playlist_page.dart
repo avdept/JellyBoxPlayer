@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -6,16 +7,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
-import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/is_playlist_downloaded_provider.dart';
+import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 class PlaylistPage extends ConsumerStatefulWidget {
@@ -32,6 +37,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> songs = [];
+  var _isDownloadBusy = false;
 
   late final ImageService _imageService;
 
@@ -63,7 +69,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     super.initState();
     _currentSong = ValueNotifier<MediaItem?>(null);
     _imageService = ref.read(imageServiceProvider);
-    _getSongs();
+    unawaited(_getSongs());
     _currentSong.value = ref.read(nowPlayingProvider);
     ref.listenManual<MediaItem?>(nowPlayingProvider, (_, song) {
       if (!mounted) return;
@@ -75,20 +81,41 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     _scrollController.addListener(_onScroll);
   }
 
-  void _getSongs() {
-    ref
-        .read(mediaServerClientProvider)
-        .getPlaylistSongs(
-          userId: ref.read(currentUserProvider.notifier).state!.userId,
-          playlistId: widget.playlist.id,
-        )
-        .then((value) {
-          setState(() {
-            final items = [...value.items]
-              ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
-            songs = items;
-          });
-        });
+  Future<void> _getSongs() async {
+    if (ref.read(isOfflineProvider)) {
+      await _getDownloadedSongs();
+      return;
+    }
+    try {
+      final value = await ref
+          .read(mediaServerClientProvider)
+          .getPlaylistSongs(
+            userId: ref.read(currentUserProvider.notifier).state!.userId,
+            playlistId: widget.playlist.id,
+          );
+      if (!mounted) return;
+      setState(() {
+        songs = [...value.items]
+          ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+      });
+    } on Object {
+      await _getDownloadedSongs();
+    }
+  }
+
+  Future<void> _getDownloadedSongs() async {
+    final downloaded = await ref
+        .read(downloadDatabaseProvider)
+        .getDownloadedPlaylistSongs(widget.playlist.id);
+    if (!mounted) return;
+    setState(() => songs = downloaded.map((s) => s.item).toList());
+  }
+
+  void _showOfflineSnackBar() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Not available offline')),
+    );
   }
 
   @override
@@ -203,7 +230,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                       song.id,
                                       favorite: !song.userData.isFavorite,
                                     );
-                                _getSongs();
+                                unawaited(_getSongs());
                               },
                               optionsBuilder: (context) => [
                                 ...songQueueMenuItems(context, ref, song),
@@ -231,7 +258,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                           'Successfully removed item from playlist',
                                         ),
                                       );
-                                      _getSongs();
+                                      unawaited(_getSongs());
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(
                                           context,
@@ -360,7 +387,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // _downloadAlbumButton(),
+                _downloadAlbumButton(),
                 const RandomQueueButton(),
                 SizedBox.square(
                   dimension: _device.isMobile ? 38 : 48,
@@ -460,12 +487,113 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   );
 
   Widget _playAlbumButton() => PlayButton(
-    onPressed: () {},
+    isLoading: ref.watch(setPlaybackProvider) == widget.playlist.id,
+    onPressed: _onPlayPlaylistPressed,
   );
 
-  Widget _downloadAlbumButton() => IconButton(
-    onPressed: () {},
-    icon: const Icon(JPlayer.download),
+  Future<void> _onPlayPlaylistPressed() async {
+    try {
+      final result = await ref
+          .read(setPlaybackProvider.notifier)
+          .playPlaylist(widget.playlist);
+      if (result == SetPlaybackResult.empty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Nothing to play in "${widget.playlist.name}"'),
+          ),
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not start playing "${widget.playlist.name}"'),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _downloadAlbumButton() => Consumer(
+    builder: (context, ref, child) {
+      final isDownloaded = ref
+          .watch(isPlaylistDownloadedProvider(widget.playlist))
+          .valueOrNull;
+      if (isDownloaded == null) return const SizedBox.shrink();
+      if (!isDownloaded && ref.watch(isOfflineProvider)) {
+        return const SizedBox.shrink();
+      }
+      return IgnorePointer(
+        ignoring: _isDownloadBusy,
+        child: IconButton(
+          onPressed: () => _onDownloadPressed(isDownloaded: isDownloaded),
+          icon: _isDownloadBusy
+              ? const SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
+        ),
+      );
+    },
+  );
+
+  Future<void> _onDownloadPressed({required bool isDownloaded}) async {
+    if (!isDownloaded && songs.isEmpty) {
+      _showOfflineSnackBar();
+      return;
+    }
+    setState(() => _isDownloadBusy = true);
+    try {
+      if (!isDownloaded) {
+        await ref
+            .read(downloadManagerProvider.notifier)
+            .downloadPlaylist(widget.playlist, songs);
+      } else {
+        final shouldDelete = await _confirmDeleteDownload();
+        if (!(shouldDelete ?? false) || !mounted) return;
+        await ref
+            .read(downloadManagerProvider.notifier)
+            .deletePlaylist(widget.playlist.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Successfully deleted playlist')),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloadBusy = false);
+    }
+  }
+
+  Future<bool?> _confirmDeleteDownload() => showAdaptiveDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog.adaptive(
+      title: Text.rich(
+        TextSpan(
+          text: 'Delete downloaded ',
+          children: [
+            TextSpan(
+              text: '"${widget.playlist.name}"',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextSpan(text: '?'),
+          ],
+        ),
+        textAlign: TextAlign.center,
+      ),
+      actions: [
+        AdaptiveDialogAction(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('No'),
+        ),
+        AdaptiveDialogAction(
+          onPressed: () => Navigator.of(context).pop(true),
+          isDestructiveAction: true,
+          child: const Text('Yes'),
+        ),
+      ],
+    ),
   );
 
   Widget _albumDetails({

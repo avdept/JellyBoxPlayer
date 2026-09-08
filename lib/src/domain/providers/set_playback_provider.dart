@@ -80,13 +80,23 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
 
   Future<SetPlaybackResult> playPlaylist(LibraryItem playlist) => _play(
     setItem: playlist,
-    fetchSongs: () async {
-      final resp = await _ref
-          .read(mediaServerClientProvider)
-          .getPlaylistSongs(playlistId: playlist.id, userId: _userId);
-      return resp.items;
-    },
+    fetchSongs: () => _playlistSongs(playlist.id),
   );
+
+  Future<List<LibraryItem>> _playlistSongs(String playlistId) async {
+    if (!_ref.read(isOfflineProvider)) {
+      try {
+        final resp = await _ref
+            .read(mediaServerClientProvider)
+            .getPlaylistSongs(playlistId: playlistId, userId: _userId);
+        return resp.items;
+      } on Object {}
+    }
+    final downloaded = await _ref
+        .read(downloadDatabaseProvider)
+        .getDownloadedPlaylistSongs(playlistId);
+    return downloaded.map((s) => s.item).toList();
+  }
 
   Future<SetPlaybackResult> playFavouriteSongs(LibraryItem placeholder) =>
       _play(

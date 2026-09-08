@@ -25,3 +25,15 @@ class DownloadedAlbum {
   final int sizeInBytes;
   final DateTime downloadDate;
 }
+
+class DownloadedPlaylist {
+  const DownloadedPlaylist({
+    required this.item,
+    required this.sizeInBytes,
+    required this.downloadDate,
+  });
+
+  final LibraryItem item;
+  final int sizeInBytes;
+  final DateTime downloadDate;
+}

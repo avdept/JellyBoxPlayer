@@ -9,6 +9,9 @@ class DbMigrations {
   static const String downloadsV2 = 'assets/db/migrations/downloads_v2.sql';
   static const String albumsV4 = 'assets/db/migrations/albums_v4.sql';
   static const String downloadsV4 = 'assets/db/migrations/downloads_v4.sql';
+  static const String playlistsV5 = 'assets/db/migrations/playlists_v5.sql';
+  static const String playlistSongsV5 =
+      'assets/db/migrations/playlist_songs_v5.sql';
   static const String generatedPlaylists =
       'assets/db/migrations/generated_playlists.sql';
   static const String generatedPlaylistItems =

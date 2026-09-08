@@ -19,7 +19,7 @@ class DownloadedAlbumViewKeys {
   final Key confirmationDialog;
 }
 
-class DownloadedAlbumView extends ConsumerStatefulWidget {
+class DownloadedAlbumView extends StatelessWidget {
   const DownloadedAlbumView({
     required this.album,
     this.onTap,
@@ -36,11 +36,73 @@ class DownloadedAlbumView extends ConsumerStatefulWidget {
   final DownloadedAlbumViewKeys? testKeys;
 
   @override
-  ConsumerState<DownloadedAlbumView> createState() =>
-      _DownloadedAlbumViewState();
+  Widget build(BuildContext context) => DownloadedItemView(
+    item: album.item,
+    sizeInBytes: album.sizeInBytes,
+    onTap: (onTap != null) ? () => onTap!.call(album) : null,
+    onDelete: (onDelete != null) ? () => onDelete!.call(album) : null,
+    onPlayPressed: (onPlayPressed != null)
+        ? () => onPlayPressed!.call(album)
+        : null,
+    testKeys: testKeys,
+  );
 }
 
-class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
+class DownloadedPlaylistView extends StatelessWidget {
+  const DownloadedPlaylistView({
+    required this.playlist,
+    this.onTap,
+    this.onDelete,
+    this.onPlayPressed,
+    @visibleForTesting this.testKeys,
+    super.key,
+  });
+
+  final DownloadedPlaylist playlist;
+  final void Function(DownloadedPlaylist)? onTap;
+  final FutureOr<void> Function(DownloadedPlaylist)? onDelete;
+  final Future<void> Function(DownloadedPlaylist)? onPlayPressed;
+  final DownloadedAlbumViewKeys? testKeys;
+
+  @override
+  Widget build(BuildContext context) => DownloadedItemView(
+    item: playlist.item,
+    sizeInBytes: playlist.sizeInBytes,
+    subtitlePrefix: 'Playlist',
+    onTap: (onTap != null) ? () => onTap!.call(playlist) : null,
+    onDelete: (onDelete != null) ? () => onDelete!.call(playlist) : null,
+    onPlayPressed: (onPlayPressed != null)
+        ? () => onPlayPressed!.call(playlist)
+        : null,
+    testKeys: testKeys,
+  );
+}
+
+class DownloadedItemView extends ConsumerStatefulWidget {
+  const DownloadedItemView({
+    required this.item,
+    required this.sizeInBytes,
+    this.subtitlePrefix,
+    this.onTap,
+    this.onDelete,
+    this.onPlayPressed,
+    @visibleForTesting this.testKeys,
+    super.key,
+  });
+
+  final LibraryItem item;
+  final int sizeInBytes;
+  final String? subtitlePrefix;
+  final VoidCallback? onTap;
+  final FutureOr<void> Function()? onDelete;
+  final Future<void> Function()? onPlayPressed;
+  final DownloadedAlbumViewKeys? testKeys;
+
+  @override
+  ConsumerState<DownloadedItemView> createState() => _DownloadedItemViewState();
+}
+
+class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
   var _isBusy = false;
 
   Future<void> _onDeletePressed() async {
@@ -53,7 +115,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
             text: 'Delete ',
             children: [
               TextSpan(
-                text: '"${widget.album.item.name}"',
+                text: '"${widget.item.name}"',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
@@ -78,7 +140,7 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
     );
     if ((shouldDelete ?? false) && mounted) {
       setState(() => _isBusy = true);
-      await widget.onDelete?.call(widget.album);
+      await widget.onDelete?.call();
       _isBusy = false;
       if (mounted) setState(() {});
     }
@@ -98,9 +160,9 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
   }
 
   String get _subtitle {
-    final size = _formatSize(widget.album.sizeInBytes);
-    final artist = widget.album.item.albumArtist;
-    return (artist == null || artist.isEmpty) ? size : '$artist • $size';
+    final size = _formatSize(widget.sizeInBytes);
+    final prefix = widget.subtitlePrefix ?? widget.item.albumArtist;
+    return (prefix == null || prefix.isEmpty) ? size : '$prefix • $size';
   }
 
   @override
@@ -109,12 +171,10 @@ class _DownloadedAlbumViewState extends ConsumerState<DownloadedAlbumView> {
         getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.tablet;
 
     return AlbumView(
-      album: widget.album.item,
-      onTap: (widget.onTap != null)
-          ? (_) => widget.onTap!.call(widget.album)
-          : null,
+      album: widget.item,
+      onTap: (widget.onTap != null) ? (_) => widget.onTap!.call() : null,
       onPlayPressed: (widget.onPlayPressed != null)
-          ? (_) => widget.onPlayPressed!.call(widget.album)
+          ? (_) => widget.onPlayPressed!.call()
           : null,
       alignTextStart: true,
       subtitle: _subtitle,

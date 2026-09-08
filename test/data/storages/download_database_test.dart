@@ -87,6 +87,16 @@ void main() {
     ),
   );
 
+  LibraryItem buildPlaylist() => LibraryItem(
+    id: faker.datatype.uuid(),
+    name: faker.lorem.sentence(),
+    kind: ItemKind.playlist,
+  );
+
+  File newSongFile() => File(
+    join(tempDir.path, '${faker.datatype.uuid()}.flac'),
+  )..writeAsBytesSync(List.generate(512, (i) => i % 256));
+
   LibraryItem buildAlbum() => LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
@@ -252,6 +262,160 @@ void main() {
     });
   });
 
+  group('DownloadDatabase (playlists)', () {
+    test('- inserts and reads back a downloaded playlist', () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final song = buildSong();
+      final file = newSongFile();
+
+      await db.insertDownloadedSong(song, file: file);
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [song],
+        files: [file],
+      );
+
+      final playlists = await db.getDownloadedPlaylists();
+      expect(playlists, hasLength(1));
+      expect(playlists.single.item, equals(playlist));
+      expect(playlists.single.sizeInBytes, file.lengthSync());
+      expect(await db.isPlaylistDownloaded(playlist.id), isTrue);
+    });
+
+    test('- returns playlist songs in playlist order', () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final first = buildSong();
+      final second = buildSong();
+      final files = [newSongFile(), newSongFile()];
+
+      // Insert in reverse so ordering cannot come from insertion order.
+      await db.insertDownloadedSong(second, file: files[1]);
+      await db.insertDownloadedSong(first, file: files[0]);
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [first, second],
+        files: files,
+      );
+
+      final songs = await db.getDownloadedPlaylistSongs(playlist.id);
+      expect(songs.map((s) => s.item.id), [first.id, second.id]);
+    });
+
+    test('- re-downloading a playlist replaces its previous track list',
+        () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final removed = buildSong();
+      final kept = buildSong();
+
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [removed],
+        files: [newSongFile()],
+      );
+      await db.insertDownloadedSong(kept, file: newSongFile());
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [kept],
+        files: [newSongFile()],
+      );
+
+      expect(await db.getDownloadedPlaylists(), hasLength(1));
+      final songs = await db.getDownloadedPlaylistSongs(playlist.id);
+      expect(songs.map((s) => s.item.id), [kept.id]);
+    });
+
+    test('- deletes a playlist along with its songs and files', () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final song = buildSong();
+      final file = newSongFile();
+
+      await db.insertDownloadedSong(song, file: file);
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [song],
+        files: [file],
+      );
+
+      await db.deleteDownloadedPlaylist(playlist.id);
+
+      expect(await db.getDownloadedPlaylists(), isEmpty);
+      expect(await db.isPlaylistDownloaded(playlist.id), isFalse);
+      expect(await db.isSongDownloaded(song.id), isFalse);
+      expect(file.existsSync(), isFalse);
+    });
+
+    test('- keeps songs another playlist still references', () async {
+      final db = DownloadDatabase();
+      final shared = buildSong();
+      final file = newSongFile();
+      final keeper = buildPlaylist();
+      final doomed = buildPlaylist();
+
+      await db.insertDownloadedSong(shared, file: file);
+      for (final playlist in [keeper, doomed]) {
+        await db.insertDownloadedPlaylist(
+          playlist,
+          songs: [shared],
+          files: [file],
+        );
+      }
+
+      await db.deleteDownloadedPlaylist(doomed.id);
+
+      expect(await db.isSongDownloaded(shared.id), isTrue);
+      expect(file.existsSync(), isTrue);
+      expect(
+        await db.getDownloadedPlaylistSongs(keeper.id),
+        hasLength(1),
+      );
+    });
+
+    test('- keeps songs that belong to a downloaded album', () async {
+      final db = DownloadDatabase();
+      final album = buildAlbum();
+      final song = buildSong(albumId: album.id);
+      final file = newSongFile();
+      final playlist = buildPlaylist();
+
+      await db.insertDownloadedSong(song, file: file);
+      await db.insertDownloadedAlbum(album, files: [file]);
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [song],
+        files: [file],
+      );
+
+      await db.deleteDownloadedPlaylist(playlist.id);
+
+      expect(await db.isSongDownloaded(song.id), isTrue);
+      expect(file.existsSync(), isTrue);
+    });
+
+    test('- hides another server\'s playlists', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final playlist = buildPlaylist();
+      final song = buildSong();
+      final file = newSongFile();
+
+      await jellyfin.insertDownloadedSong(song, file: file);
+      await jellyfin.insertDownloadedPlaylist(
+        playlist,
+        songs: [song],
+        files: [file],
+      );
+
+      expect(await jellyfin.getDownloadedPlaylists(), hasLength(1));
+      expect(await emby.getDownloadedPlaylists(), isEmpty);
+      expect(await emby.isPlaylistDownloaded(playlist.id), isFalse);
+      expect(await emby.getDownloadedPlaylistSongs(playlist.id), isEmpty);
+    });
+  });
+
   group('DownloadDatabase (v1 -> v2 migration)', () {
     Future<void> seedLegacyDatabase({
       required Map<String, Object?> songRow,
@@ -386,6 +550,7 @@ void main() {
       expect(await db.isSongDownloaded(songId), isTrue);
       expect(await db.isAlbumDownloaded(albumId), isTrue);
       expect(await db.getDownloadedSongPath(songId), songFile.path);
+      expect(await db.getDownloadedPlaylists(), isEmpty);
     });
   });
 }
