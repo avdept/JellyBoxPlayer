@@ -1,10 +1,29 @@
 name: macOS DMG (notarized)
 
+# Called by the Release workflow, which creates the release and passes the
+# version and the tag to attach the DMG to. Can also be dispatched on its own.
+
 on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      build_number:
+        required: true
+        type: string
+      release_tag:
+        description: Existing release (draft or published) to attach the DMG to
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+    inputs:
+      release_tag:
+        description: 'Release to attach the DMG to: a tag, "latest", or blank to only build'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -31,23 +50,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from tag
+      - name: Resolve version
         id: version
         working-directory: .
+        env:
+          IN_VERSION: ${{ inputs.version }}
+          IN_BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            TAG="${GITHUB_REF#refs/tags/v}"
-            VERSION="${TAG%+*}"
-            BUILD_NUMBER="${TAG#*+}"
-            if [ "$BUILD_NUMBER" = "$TAG" ]; then
-              BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
-            fi
-            echo "tag=v${TAG}" >> "$GITHUB_OUTPUT"
+          if [ -n "$IN_VERSION" ]; then
+            VERSION="$IN_VERSION"
+            BUILD_NUMBER="${IN_BUILD_NUMBER:-$GITHUB_RUN_NUMBER}"
           else
-            # Manual dispatch: fall back to pubspec version
-            VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
-            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
-            echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+            # Standalone dispatch: fall back to the pubspec version.
+            VERSION="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+            BUILD_NUMBER="$GITHUB_RUN_NUMBER"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
@@ -189,13 +205,10 @@ jobs:
           name: jellybox-macos-dmg
           path: ${{ env.DMG }}
 
-      - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+      - name: Attach to release
+        if: ${{ inputs.release_tag != '' }}
+        uses: ./.github/actions/release-assets
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Release ${{ steps.version.outputs.version }}
+          release-tag: ${{ inputs.release_tag }}
           files: ${{ env.DMG }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,10 +1,19 @@
 name: iOS Beta
 
+# Called by the Release workflow so a tag push produces one run covering every
+# platform. Attaches nothing to the GitHub release — this leg only ships to
+# TestFlight. Can also be dispatched on its own.
+
 on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      build_number:
+        required: true
+        type: string
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   build:
@@ -13,7 +22,6 @@ jobs:
       run:
         working-directory: ios
     env:
-      BUILD_NUMBER: ${{ github.run_number }}
       APP_IDENTIFIER: ${{ vars.APP_IDENTIFIER }}
       APPLE_ID: ${{ vars.APPLE_ID }}
       ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
@@ -29,11 +37,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      # fastlane treats an empty BUILD_VERSION as a real value, so it is only
+      # written to the env when the caller actually passed one.
+      - name: Resolve version
+        working-directory: .
+        env:
+          IN_VERSION: ${{ inputs.version }}
+          IN_BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
-          echo "BUILD_VERSION=${TAG%+*}" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=${IN_BUILD_NUMBER:-$GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          if [ -n "$IN_VERSION" ]; then
+            echo "BUILD_VERSION=$IN_VERSION" >> "$GITHUB_ENV"
+          fi
 
       - uses: subosito/flutter-action@v2
         with:
