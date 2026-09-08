@@ -7,6 +7,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/didl_lite.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
+import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:upnp_quirks/upnp_quirks.dart';
 
@@ -19,6 +20,12 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   }) : pollInterval = pollInterval ?? renderer.quirks.pollInterval;
 
   static const _restartThreshold = Duration(seconds: 3);
+  static const _transitionBackoff = [
+    Duration(milliseconds: 300),
+    Duration(milliseconds: 600),
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+  ];
   static const _failureLimit = 3;
 
   final UpnpRenderer renderer;
@@ -163,7 +170,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   Future<void> play() async {
     _stopRequested = false;
     _gaveUpWaiting = false;
-    final ok = await _command('play', () => _transport.play());
+    final ok = await _command('play', _playWhenReady);
     if (!ok) return;
     _emit(status: PlaybackStatus.playing);
     _startPolling();
@@ -194,6 +201,24 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     );
     if (!ok) return;
     _emit(position: position);
+  }
+
+  Future<void> _playWhenReady() async {
+    for (var attempt = 0; ; attempt++) {
+      try {
+        await _transport.play();
+        return;
+      } on UpnpSoapFault catch (fault) {
+        if (attempt >= _transitionBackoff.length || fault.errorCode != '701') {
+          rethrow;
+        }
+        diagnostics.trail(
+          'device not ready for Play, waiting (${attempt + 1})',
+          category: 'upnp',
+        );
+        await Future<void>.delayed(_transitionBackoff[attempt]);
+      }
+    }
   }
 
   Future<bool> _command(String name, Future<void> Function() action) async {
@@ -437,7 +462,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       await _run(
         () => _transport.setUri(track.uri, metadata: _metadataFor(track)),
       );
-      if (autoPlay) await _run(_transport.play);
+      if (autoPlay) await _run(_playWhenReady);
       _pendingSeek = position > Duration.zero && _transport.supportsSeek
           ? position
           : null;

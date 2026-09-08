@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
@@ -145,7 +146,13 @@ class LocalPlaybackTarget implements PlaybackTarget {
   Future<void> seekToPrevious() => _player.smartSeekToPrevious();
 
   @override
-  Future<void> setVolume(double level) => _player.setVolume(level);
+  Future<void> setVolume(double level) async {
+    try {
+      await _player.setVolume(level);
+    } on MissingPluginException {
+      debugPrint('[LocalTarget] volume noted; player is between sessions');
+    }
+  }
 
   @override
   Future<double?> currentVolume() async => _player.volume;
