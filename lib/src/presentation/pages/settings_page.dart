@@ -121,10 +121,21 @@ class SettingsPage extends ConsumerWidget {
                   _librariesButton(context),
                   if (kDebugMode) _settingsButton(context),
                   _changelogButton(context, device),
+                  _sectionHeader('Home Page'),
                   _settingCheckbox(
                     ref: ref,
                     setting: AppSetting.generatedPlaylistsDisabled,
                     label: 'Disable auto-generated playlists',
+                  ),
+                  _settingCheckbox(
+                    ref: ref,
+                    setting: AppSetting.favouritesHidden,
+                    label: 'Hide favourites',
+                  ),
+                  _settingCheckbox(
+                    ref: ref,
+                    setting: AppSetting.recentlyPlayedHidden,
+                    label: 'Hide recently played',
                   ),
                   _sectionHeader('UI'),
                   _settingDropdown<StartPage>(
