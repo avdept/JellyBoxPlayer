@@ -16,6 +16,10 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
+final bool _isHyprland =
+    Platform.environment.containsKey('HYPRLAND_INSTANCE_SIGNATURE') ||
+    (Platform.environment['XDG_CURRENT_DESKTOP']?.toLowerCase() == 'hyprland');
+
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({
     required this.shell,
@@ -196,7 +200,7 @@ class _MainPageState extends ConsumerState<MainPage> {
           ),
           if (_device.isDesktop) const Positioned.fill(child: QueueSidebar()),
           Visibility(
-            visible: Platform.isLinux,
+            visible: Platform.isLinux && !_isHyprland,
             child: const _WindowTitleBar(),
           ),
           if (Platform.isWindows)

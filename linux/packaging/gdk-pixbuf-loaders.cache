@@ -1,0 +1,16 @@
+# GdkPixbuf Image Loader Modules file
+#
+# Deliberately empty: it registers no loader modules. linux/main.cc points
+# GDK_PIXBUF_MODULE_FILE at this file so gdk-pixbuf never dlopen()s the *host*
+# loader modules from /usr/lib/<triplet>/gdk-pixbuf-2.0/2.10.0/loaders/ into
+# this bundle's own GTK stack. Mixing the two is what aborted 2.4.1 on any
+# distro newer than the ubuntu-24.04 builder -- see the comment on
+# isolate_gdk_pixbuf_loaders() in linux/main.cc.
+#
+# gdk-pixbuf's PNG and JPEG loaders are compiled into libgdk_pixbuf-2.0.so.0
+# and stay available; only the dynamically loaded formats (svg, tiff, ico, ...)
+# are dropped. Nothing in this app asks GTK to rasterize one: Flutter renders
+# the whole UI and decodes its own images, and the Linux plugin set registers
+# no native dialogs. Should that change, bundle the matching loader modules
+# next to this file and list them here with absolute runtime paths instead of
+# falling back to the host's.

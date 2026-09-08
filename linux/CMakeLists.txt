@@ -117,6 +117,14 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+# Shipped so gdk-pixbuf resolves its loader modules against the bundle instead
+# of the host's /usr/lib/<triplet>/gdk-pixbuf-2.0/2.10.0/loaders.cache. The
+# path below is the one isolate_gdk_pixbuf_loaders() in main.cc looks for.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/gdk-pixbuf-loaders.cache"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/gdk-pixbuf-2.0"
+  RENAME "loaders.cache"
+  COMPONENT Runtime)
+
 foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
   install(FILES "${bundled_library}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
