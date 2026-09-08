@@ -14,7 +14,6 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
-import 'package:jplayer/src/domain/providers/queue_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -40,6 +39,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _reportedPositionMs = 0;
   var _startReported = false;
   var _preparingQueue = false;
+  var _queueEditsInFlight = 0;
   var _fallingBack = false;
   Timer? _progressTimer;
 
@@ -68,7 +68,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _onTargetState(TargetPlaybackState targetState) {
     _targetState = targetState;
-    final index = targetState.currentIndex;
+    // TODO: Come up with some better idea, this is shit and smells like shit
+    // This is hack which I have no idea how to do right currently. Basically it fixes issue when currenply playing song would point to wrong object right after reorder.
+    final index = _queueEditsInFlight > 0
+        ? state.currentMediaIndex
+        : targetState.currentIndex;
 
     if (!_preparingQueue && index != _reportedIndex) {
       _reportTrackChange(index);
@@ -118,7 +122,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (targetState.completed && state.status.isPlaying) {
       _reportStopped();
       _stopProgressReports();
-      state = PlaybackState.initial();
+      _reportedIndex = 0;
+      _reportedPositionMs = 0;
+      state = state.copyWith(
+        status: PlaybackStatus.stopped,
+        position: Duration.zero,
+        currentMediaIndex: 0,
+        totalDuration: _durationFor(0),
+      );
+      final first = state.songs.elementAtOrNull(0);
+      if (first != null && state.album != null) {
+        unawaited(_saveToStorage(songId: first.id, positionMs: 0));
+      }
+      if (_target.kind == PlaybackTargetKind.local) {
+        unawaited(_rewindToQueueStart());
+      }
     } else if (targetState.status.isPlaying && !state.status.isPlaying) {
       state = state.copyWith(status: PlaybackStatus.playing);
     } else if (targetState.status.isPaused && state.status.isPlaying) {
@@ -166,6 +184,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       initialPosition: position,
       autoPlay: wasPlaying,
     );
+  }
+
+  Future<void> _editQueue(Future<void> Function() edit) async {
+    _queueEditsInFlight++;
+    try {
+      await edit();
+    } finally {
+      _queueEditsInFlight--;
+    }
   }
 
   Duration? _durationFor(int? index, {List<LibraryItem>? songs}) {
@@ -488,17 +515,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> resume() async {
-    if (state.status.isStopped && state.totalDuration?.inSeconds == 0) {
-      final queue = _ref.read(audioQueueProvider.notifier);
-      // Case when song has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
-      if (queue.state.songs.isNotEmpty) {
-        await play(
-          queue.state.songs.first,
-          queue.state.songs,
-          queue.state.album!,
-        );
-      }
-
+    final album = state.album;
+    if (state.status.isStopped && state.songs.isNotEmpty && album != null) {
+      // Case when queue has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
+      await play(state.songs.first, state.songs, album);
       return;
     }
 
@@ -531,6 +551,118 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> skipTo(int index, {bool autoPlay = false}) async {
     await _target.skipTo(index);
     if (autoPlay && !_targetState.status.isPlaying) await _target.play();
+  }
+
+  Future<void> _rewindToQueueStart() async {
+    await _target.pause();
+    await _target.skipTo(0);
+  }
+
+  void updateSong(LibraryItem song) {
+    final index = state.songs.indexWhere((item) => item.id == song.id);
+    if (index < 0) return;
+    state = state.copyWith(songs: [...state.songs]..[index] = song);
+  }
+
+  Future<void> moveInQueue(int from, int to) async {
+    if (from == to) return;
+    final songs = [...state.songs];
+    if (from < 0 || from >= songs.length) return;
+    if (to < 0 || to >= songs.length) return;
+
+    songs.insert(to, songs.removeAt(from));
+    final current = state.currentMediaIndex;
+    final reported = _reportedIndex;
+    if (reported != null) _reportedIndex = _movedIndex(reported, from, to);
+    state = state.copyWith(
+      songs: songs,
+      currentMediaIndex: current != null
+          ? _movedIndex(current, from, to)
+          : null,
+    );
+
+    await _editQueue(() => _target.move(from, to));
+  }
+
+  Future<bool> playNext(LibraryItem song) => _enqueue(song, playNext: true);
+
+  Future<bool> addToQueue(LibraryItem song) => _enqueue(song, playNext: false);
+
+  Future<bool> _enqueue(LibraryItem song, {required bool playNext}) async {
+    final album = state.album ?? song;
+
+    if (state.songs.isEmpty) {
+      await play(song, [song], album, autoPlay: false);
+      return state.songs.isNotEmpty;
+    }
+
+    final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+    final sessionId = '$deviceId-$stamp-${song.id}';
+    final resolved = await _resolveTrack(song, album, sessionId);
+    if (resolved == null) return false;
+
+    final current = state.currentMediaIndex;
+    final index = playNext
+        ? ((current ?? -1) + 1).clamp(0, state.songs.length)
+        : state.songs.length;
+
+    _playSessionIds[song.id] = sessionId;
+    state = state.copyWith(
+      songs: [...state.songs]..insert(index, resolved.song),
+      currentMediaIndex: current != null && index <= current
+          ? current + 1
+          : current,
+    );
+
+    await _editQueue(
+      () => _target.insert(index, resolved.track, playNext: playNext),
+    );
+    return true;
+  }
+
+  Future<void> removeFromQueue(int index) async {
+    final songs = [...state.songs];
+    if (index < 0 || index >= songs.length) return;
+    if (songs.length == 1) return clear();
+
+    final wasCurrent = state.currentMediaIndex == index;
+    songs.removeAt(index);
+
+    if (wasCurrent) {
+      _reportStopped();
+      _reportedIndex = null;
+      _reportedPositionMs = 0;
+    } else {
+      final reported = _reportedIndex;
+      if (reported != null) {
+        _reportedIndex = _removedIndex(reported, index, songs.length);
+      }
+    }
+
+    state = state.copyWith(
+      songs: songs,
+      currentMediaIndex: _removedIndex(
+        state.currentMediaIndex,
+        index,
+        songs.length,
+      ),
+    );
+
+    await _editQueue(() => _target.remove(index));
+  }
+
+  int? _removedIndex(int? index, int removed, int length) {
+    if (index == null) return null;
+    if (index < removed) return index;
+    if (index > removed) return index - 1;
+    return index.clamp(0, length - 1);
+  }
+
+  int _movedIndex(int index, int from, int to) {
+    if (index == from) return to;
+    if (from < to && index > from && index <= to) return index - 1;
+    if (from > to && index >= to && index < from) return index + 1;
+    return index;
   }
 
   Future<void> stop() async {

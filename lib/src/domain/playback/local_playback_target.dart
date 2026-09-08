@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -20,6 +21,7 @@ class LocalPlaybackTarget implements PlaybackTarget {
 
   final AudioPlayer _player;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
+  final _shuffleOrder = QueueShuffleOrder();
 
   late final List<StreamSubscription<Object?>> _subscriptions;
 
@@ -60,6 +62,7 @@ class LocalPlaybackTarget implements PlaybackTarget {
         initialIndex: initialIndex,
         initialPosition: initialPosition,
         preload: true,
+        shuffleOrder: _shuffleOrder,
       );
     } on Object catch (error) {
       debugPrint('[LocalTarget] retrying after failed load: $error');
@@ -69,6 +72,7 @@ class LocalPlaybackTarget implements PlaybackTarget {
         initialIndex: initialIndex,
         initialPosition: initialPosition,
         preload: true,
+        shuffleOrder: _shuffleOrder,
       );
     }
     if (autoPlay) unawaited(_player.play());
@@ -112,6 +116,27 @@ class LocalPlaybackTarget implements PlaybackTarget {
 
   @override
   Future<void> skipTo(int index) => _player.seek(Duration.zero, index: index);
+
+  @override
+  Future<void> move(int from, int to) => _player.moveAudioSource(from, to);
+
+  @override
+  Future<void> remove(int index) => _player.removeAudioSourceAt(index);
+
+  @override
+  Future<void> insert(
+    int index,
+    TargetTrack track, {
+    bool playNext = false,
+  }) async {
+    if (_player.shuffleModeEnabled) {
+      final current = _player.currentIndex;
+      _shuffleOrder.nextInsertPosition = playNext && current != null
+          ? _shuffleOrder.positionAfterIndex(current)
+          : _shuffleOrder.lastPosition;
+    }
+    await _player.insertAudioSource(index, _audioSource(track));
+  }
 
   @override
   Future<void> seekToNext() => _player.seekToNext();

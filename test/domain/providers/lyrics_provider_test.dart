@@ -85,14 +85,17 @@ void main() {
       );
     });
 
-    test('- returns null when the server predates the endpoint (400)', () async {
-      when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(400));
+    test(
+      '- returns null when the server predates the endpoint (400)',
+      () async {
+        when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(400));
 
-      await expectLater(
-        containerWith().read(lyricsProvider('song-1').future),
-        completion(isNull),
-      );
-    });
+        await expectLater(
+          containerWith().read(lyricsProvider('song-1').future),
+          completion(isNull),
+        );
+      },
+    );
 
     test('- surfaces other failures', () async {
       when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(500));

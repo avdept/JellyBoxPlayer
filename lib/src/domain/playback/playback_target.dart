@@ -104,6 +104,12 @@ abstract class PlaybackTarget {
 
   Future<void> skipTo(int index);
 
+  Future<void> move(int from, int to);
+
+  Future<void> remove(int index);
+
+  Future<void> insert(int index, TargetTrack track, {bool playNext = false});
+
   Future<void> seekToNext();
 
   Future<void> seekToPrevious();

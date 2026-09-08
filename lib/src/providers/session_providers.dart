@@ -7,7 +7,6 @@ final sessionScopedProviders = <ProviderOrFamily>[
   mediaServerClientProvider,
   imageServiceProvider,
   currentLibraryProvider,
-  audioQueueProvider,
   setPlaybackProvider,
   downloadManagerProvider,
   downloadedAlbumsProvider,
