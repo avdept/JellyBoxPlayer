@@ -19,7 +19,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/native_route_picker/ios"
 
 SPEC CHECKSUMS:
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   media_kit_native_event_loop: 02f537bbf34235ec34dbbc7439a97ee96b776193
   native_route_picker: 7ff589d3c51dc52cbc1078adcdeac81ba9d87434
 
