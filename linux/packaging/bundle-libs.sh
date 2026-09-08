@@ -17,6 +17,16 @@ if [ ! -f "$LIB_DIR/libsqlite3.so" ]; then
   exit 1
 fi
 
+# Same reasoning for the loader cache that keeps gdk-pixbuf away from the
+# host's modules: without it the app aborts at startup on any distro whose
+# librsvg is newer than the builder's. See isolate_gdk_pixbuf_loaders() in
+# linux/main.cc.
+if [ ! -f "$LIB_DIR/gdk-pixbuf-2.0/loaders.cache" ]; then
+  echo "error: $LIB_DIR/gdk-pixbuf-2.0/loaders.cache is missing." >&2
+  echo "       Check the gdk-pixbuf-loaders.cache install() rule in linux/CMakeLists.txt." >&2
+  exit 1
+fi
+
 EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libnvidia.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
 
 # Emits "<soname>\t<resolved-path>" for each non-excluded dependency of $1.

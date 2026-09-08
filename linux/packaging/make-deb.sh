@@ -34,17 +34,21 @@ sed -e "s|@VERSION@|$VERSION|" -e 's#^Exec=jellybox#Exec=/usr/bin/jellybox#' \
 
 cp "$SCRIPT_DIR/jellybox.png" "$ROOT/usr/share/icons/hicolor/256x256/apps/jellybox.png"
 
-# The bundle carries libmpv and libsqlite3 itself, but the GTK stack reaches
-# for runtime data that lives outside any .so: gdk-pixbuf loader modules,
-# /usr/share/mime, and the icon themes GTK falls back through. librsvg2-common
-# is what registers the SVG pixbuf loader -- without it a KDE session running
-# a Breeze (SVG-only) icon theme cannot rasterize a single icon.
+# The bundle carries libmpv, libsqlite3 and the GTK stack itself, but GTK
+# reaches for runtime data that lives outside any .so: the compiled GSettings
+# schemas it g_error()s without, /usr/share/mime, and the icon themes it falls
+# back through.
+#
+# librsvg2-common is deliberately *not* a dependency any more. It provides the
+# host's SVG pixbuf loader, and loading a host module into a bundled GTK stack
+# is what aborted 2.4.1 at startup on distros newer than the builder (see
+# isolate_gdk_pixbuf_loaders() in linux/main.cc). The bundle now ships its own
+# loaders.cache and never consults the host's.
 fpm -s dir -t deb \
   -C "$ROOT" \
   -n jellybox \
   -d 'libgtk-3-0t64 | libgtk-3-0' \
   -d 'libgdk-pixbuf-2.0-0 | libgdk-pixbuf2.0-0' \
-  -d librsvg2-common \
   -d libegl1 \
   -d libgbm1 \
   -d libdrm2 \

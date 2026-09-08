@@ -34,15 +34,14 @@ sed -e "s|@VERSION@|$VERSION|" -e 's#^Exec=jellybox#Exec=/usr/bin/jellybox#' \
 
 cp "$SCRIPT_DIR/jellybox.png" "$ROOT/usr/share/icons/hicolor/256x256/apps/jellybox.png"
 
-# See make-deb.sh for why these are needed. Names below are the Fedora/RHEL
-# spellings; openSUSE calls gtk3 "libgtk-3-0" and librsvg2 "librsvg-2-2", and
-# fpm has no way to express an rpm dependency alternation, so this rpm targets
-# the Fedora family.
+# See make-deb.sh for why these are needed, and for why librsvg2 is no longer
+# among them. Names below are the Fedora/RHEL spellings; openSUSE calls gtk3
+# "libgtk-3-0", and fpm has no way to express an rpm dependency alternation, so
+# this rpm targets the Fedora family.
 fpm -s dir -t rpm \
   -C "$ROOT" \
   -n jellybox \
   -d gtk3 \
-  -d librsvg2 \
   -d libglvnd-egl \
   -d mesa-libgbm \
   -d libdrm \
