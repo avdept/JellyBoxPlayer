@@ -20,6 +20,17 @@ on:
 permissions:
   contents: write
 
+env:
+  # App Store Connect and Play require build numbers to increase forever. Each
+  # platform workflow used to supply its own `github.run_number`, and those
+  # counters (macos-beta had reached ~53, and macos/fastlane/Fastfile adds a
+  # further 20 on top) do not survive the move to this orchestrator: inside a
+  # reusable workflow `github.run_number` is the *caller's*, and this file's own
+  # counter restarted at 1. This base lifts the new sequence clear of every
+  # number those old counters ever produced. Bump it if this workflow file is
+  # ever renamed or recreated, which resets the counter again.
+  BUILD_NUMBER_BASE: 200
+
 # Two runs for the same tag would fight over the same release assets.
 concurrency:
   group: release-${{ github.ref }}
@@ -40,22 +51,42 @@ jobs:
       - name: Resolve version
         id: version
         run: |
+          set -euo pipefail
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             SOURCE="${GITHUB_REF#refs/tags/v}"
+            VERSION="${SOURCE%%+*}"
+            TAG_BUILD="${SOURCE#*+}"
+            [ "$TAG_BUILD" = "$SOURCE" ] && TAG_BUILD=""
           else
             # Manual run not against a tag: fall back to pubspec.yaml so VERSION
             # never ends up being a branch ref like "heads/releases-ci".
-            SOURCE="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')"
+            VERSION="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+            # pubspec's own build number is deliberately ignored — it trails the
+            # numbers already uploaded to the stores (see BUILD_NUMBER_BASE).
+            TAG_BUILD=""
           fi
-          VERSION="${SOURCE%+*}"
-          BUILD_NUMBER="${SOURCE#*+}"
-          if [ "$BUILD_NUMBER" = "$SOURCE" ]; then
-            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+
+          FLOOR=$(( GITHUB_RUN_NUMBER + BUILD_NUMBER_BASE ))
+          BUILD_NUMBER="$FLOOR"
+          if [ -n "$TAG_BUILD" ]; then
+            if ! [[ "$TAG_BUILD" =~ ^[0-9]+$ ]]; then
+              echo "::error::Tag build number '$TAG_BUILD' is not a number (expected a tag like v1.2.3+210)."
+              exit 1
+            fi
+            # An explicit build number is honoured, but never silently: one below
+            # the floor would be rejected by App Store Connect / Play after the
+            # builds have already run, which costs ~15 minutes to find out.
+            if [ "$TAG_BUILD" -lt "$FLOOR" ]; then
+              echo "::error::Tag build number $TAG_BUILD is below the floor $FLOOR — the stores would reject it. Re-tag without a +build suffix, or use one above $FLOOR."
+              exit 1
+            fi
+            BUILD_NUMBER="$TAG_BUILD"
           fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
           echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Releasing $VERSION (build $BUILD_NUMBER) as v$VERSION"
+          echo "Releasing $VERSION as v$VERSION, build $BUILD_NUMBER (floor $FLOOR)"
 
       - name: Create draft release
         env:
