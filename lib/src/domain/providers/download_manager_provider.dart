@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
@@ -106,6 +107,79 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     }
   }
 
+  Future<void> downloadPlaylist(
+    LibraryItem playlist,
+    List<LibraryItem> songs,
+  ) async {
+    final client = ref.read(mediaServerClientProvider);
+
+    try {
+      final files = <File>[];
+      final downloadedSongs = <LibraryItem>[];
+      final coveredAlbumIds = <String>{};
+
+      for (final song in songs) {
+        final existing = await _existingDownload(song);
+        final file = existing ?? await _downloadSongFile(song, client);
+        if (file == null) continue;
+
+        files.add(file);
+        downloadedSongs.add(song);
+        if (existing == null) {
+          await _database.insertDownloadedSong(song, file: file);
+        }
+
+        final albumId = song.albumId;
+        if (albumId != null && coveredAlbumIds.add(albumId)) {
+          await _downloadService.downloadAlbumCover(
+            albumId,
+            client.imageUri(song, kind: ImageKind.album),
+          );
+        }
+      }
+
+      if (files.isNotEmpty) {
+        await _database.insertDownloadedPlaylist(
+          playlist,
+          songs: downloadedSongs,
+          files: files,
+        );
+        await _downloadService.downloadAlbumCover(
+          playlist.id,
+          client.imageUri(playlist),
+        );
+      }
+
+      ref.invalidateSelf();
+    } catch (error, stackTrace) {
+      print(
+        'Error in downloadPlaylist: type=${error.runtimeType}, message=$error\n$stackTrace',
+      );
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  Future<File?> _existingDownload(LibraryItem song) async {
+    final path = await _database.getDownloadedSongPath(song.id);
+    if (path == null) return null;
+    final file = File(path);
+    return file.existsSync() ? file : null;
+  }
+
+  Future<File?> _downloadSongFile(
+    LibraryItem song,
+    MediaServerClient client,
+  ) async {
+    final task = await _downloadService.downloadSong(
+      song,
+      client,
+      deviceId: deviceId,
+    );
+    await _waitForDownloadCompletion(task);
+    if (task.status.value != DownloadStatus.completed) return null;
+    return File(task.destination);
+  }
+
   Future<void> _waitForDownloadCompletion(DownloadTask task) async {
     final completer = Completer<void>();
 
@@ -159,13 +233,33 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     }
   }
 
+  Future<void> deletePlaylist(String playlistId) async {
+    try {
+      await _database.deleteDownloadedPlaylist(playlistId);
+      await DownloadPaths.deleteAlbumDirectory(playlistId);
+
+      ref.invalidateSelf();
+    } catch (error, stackTrace) {
+      print(
+        'Error in deletePlaylist: type=${error.runtimeType}, message=$error\n$stackTrace',
+      );
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
   Future<bool> isSongDownloaded(String id) => _database.isSongDownloaded(id);
 
   Future<bool> isAlbumDownloaded(String albumId) =>
       _database.isAlbumDownloaded(albumId);
 
+  Future<bool> isPlaylistDownloaded(String playlistId) =>
+      _database.isPlaylistDownloaded(playlistId);
+
   Future<List<DownloadedAlbum>> getDownloadedAlbums() =>
       _database.getDownloadedAlbums();
+
+  Future<List<DownloadedPlaylist>> getDownloadedPlaylists() =>
+      _database.getDownloadedPlaylists();
 }
 
 final downloadManagerProvider =

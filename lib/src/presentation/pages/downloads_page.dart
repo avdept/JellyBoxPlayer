@@ -40,30 +40,61 @@ class DownloadsPage extends StatelessWidget {
         extra: {'album': album.item},
       );
 
-  Future<void> _onPlayPressed(
+  void _onPlaylistTap(BuildContext context, DownloadedPlaylist playlist) =>
+      context.pushNamed(
+        Routes.playlist.name,
+        extra: {'playlist': playlist.item},
+      );
+
+  Future<void> _play(
     BuildContext context,
-    WidgetRef ref,
-    DownloadedAlbum album,
+    LibraryItem item,
+    Future<SetPlaybackResult> Function() start,
   ) async {
     try {
-      final result = await ref
-          .read(setPlaybackProvider.notifier)
-          .playAlbum(album.item);
+      final result = await start();
       if (result == SetPlaybackResult.empty && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nothing to play in "${album.item.name}"')),
+          SnackBar(content: Text('Nothing to play in "${item.name}"')),
         );
       }
     } on Object catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not start playing "${album.item.name}"'),
-          ),
+          SnackBar(content: Text('Could not start playing "${item.name}"')),
         );
       }
     }
   }
+
+  String _counterLabel(int albumCount, int playlistCount) {
+    final albums = Intl.plural(
+      albumCount,
+      one: '$albumCount album',
+      other: '$albumCount albums',
+    );
+    if (playlistCount == 0) return albums;
+    final playlists = Intl.plural(
+      playlistCount,
+      one: '$playlistCount playlist',
+      other: '$playlistCount playlists',
+    );
+    return '$albums • $playlists';
+  }
+
+  Widget _sectionHeader(DeviceType device, String title) => SliverToBoxAdapter(
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: device.isMobile ? 16 : 22,
+          fontWeight: FontWeight.w600,
+          height: 1.2,
+        ),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -91,12 +122,14 @@ class DownloadsPage extends StatelessWidget {
                   final albumCount =
                       ref.watch(downloadedAlbumsProvider).valueOrNull?.length ??
                       0;
+                  final playlistCount =
+                      ref
+                          .watch(downloadedPlaylistsProvider)
+                          .valueOrNull
+                          ?.length ??
+                      0;
                   return Text(
-                    Intl.plural(
-                      albumCount,
-                      one: '$albumCount album',
-                      other: '$albumCount albums',
-                    ),
+                    _counterLabel(albumCount, playlistCount),
                     key: testKeys?.counterText,
                     style: TextStyle(
                       fontSize: device.isMobile ? 12 : 16,
@@ -117,42 +150,79 @@ class DownloadsPage extends StatelessWidget {
       slivers: [
         Consumer(
           builder: (context, ref, child) {
-            return ref
-                .watch(downloadedAlbumsProvider)
-                .when(
-                  data: (albums) {
-                    if (albums.isEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: Center(
-                          child: Text('No downloaded albums yet'),
-                        ),
-                      );
-                    }
+            final albums = ref.watch(downloadedAlbumsProvider);
+            final playlists = ref.watch(downloadedPlaylistsProvider);
 
-                    return SliverGrid.builder(
-                      gridDelegate: _gridDelegate(device),
-                      itemBuilder: (context, index) => DownloadedAlbumView(
-                        album: albums[index],
-                        onTap: (album) => _onAlbumTap(context, album),
-                        onPlayPressed: (album) =>
-                            _onPlayPressed(context, ref, album),
-                        onDelete: (album) => ref
-                            .read(downloadManagerProvider.notifier)
-                            .deleteAlbum(album.item.id),
-                      ),
-                      itemCount: albums.length,
-                    );
-                  },
-                  error: (error, stackTrace) {
-                    return SliverToBoxAdapter(
-                      child: Center(child: Text('Error: $error')),
-                    );
-                  },
-                  loading: () => AlbumCardsGridShimmer(
-                    device: device,
+            if (albums.isLoading || playlists.isLoading) {
+              return AlbumCardsGridShimmer(
+                device: device,
+                gridDelegate: _gridDelegate(device),
+              );
+            }
+
+            final error = albums.error ?? playlists.error;
+            if (error != null) {
+              return SliverToBoxAdapter(
+                child: Center(child: Text('Error: $error')),
+              );
+            }
+
+            final albumItems = albums.valueOrNull ?? const [];
+            final playlistItems = playlists.valueOrNull ?? const [];
+
+            if (albumItems.isEmpty && playlistItems.isEmpty) {
+              return const SliverToBoxAdapter(
+                child: Center(child: Text('No downloads yet')),
+              );
+            }
+
+            return SliverMainAxisGroup(
+              slivers: [
+                if (playlistItems.isNotEmpty) ...[
+                  _sectionHeader(device, 'Playlists'),
+                  SliverGrid.builder(
                     gridDelegate: _gridDelegate(device),
+                    itemBuilder: (context, index) => DownloadedPlaylistView(
+                      playlist: playlistItems[index],
+                      onTap: (playlist) => _onPlaylistTap(context, playlist),
+                      onPlayPressed: (playlist) => _play(
+                        context,
+                        playlist.item,
+                        () => ref
+                            .read(setPlaybackProvider.notifier)
+                            .playPlaylist(playlist.item),
+                      ),
+                      onDelete: (playlist) => ref
+                          .read(downloadManagerProvider.notifier)
+                          .deletePlaylist(playlist.item.id),
+                    ),
+                    itemCount: playlistItems.length,
                   ),
-                );
+                ],
+                if (albumItems.isNotEmpty) ...[
+                  if (playlistItems.isNotEmpty)
+                    _sectionHeader(device, 'Albums'),
+                  SliverGrid.builder(
+                    gridDelegate: _gridDelegate(device),
+                    itemBuilder: (context, index) => DownloadedAlbumView(
+                      album: albumItems[index],
+                      onTap: (album) => _onAlbumTap(context, album),
+                      onPlayPressed: (album) => _play(
+                        context,
+                        album.item,
+                        () => ref
+                            .read(setPlaybackProvider.notifier)
+                            .playAlbum(album.item),
+                      ),
+                      onDelete: (album) => ref
+                          .read(downloadManagerProvider.notifier)
+                          .deleteAlbum(album.item.id),
+                    ),
+                    itemCount: albumItems.length,
+                  ),
+                ],
+              ],
+            );
           },
         ),
       ],

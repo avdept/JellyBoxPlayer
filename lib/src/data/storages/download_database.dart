@@ -15,7 +15,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 4;
+  static const _schemaVersion = 5;
 
   final String serverId;
 
@@ -46,12 +46,22 @@ class DownloadDatabase {
     final queries = await Future.wait(sqlFiles.map(rootBundle.loadString));
     await Future.wait(queries.map(db.execute));
     await _migrateToV4(db);
+    await _migrateToV5(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) await _migrateToV2(db);
     if (oldVersion < 3) await _migrateToV3(db);
     if (oldVersion < 4) await _migrateToV4(db);
+    if (oldVersion < 5) await _migrateToV5(db);
+  }
+
+  Future<void> _migrateToV5(Database db) async {
+    final createV5 = [DbMigrations.playlistsV5, DbMigrations.playlistSongsV5];
+    final queries = await Future.wait(createV5.map(rootBundle.loadString));
+    for (final query in queries) {
+      await db.execute(query);
+    }
   }
 
   Future<void> _migrateToV4(Database db) async {
@@ -153,6 +163,117 @@ class DownloadDatabase {
       'DownloadDate': DateTime.now().millisecondsSinceEpoch,
       'Data': jsonEncode(album.toJson()),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertDownloadedPlaylist(
+    LibraryItem playlist, {
+    required List<LibraryItem> songs,
+    required List<File> files,
+  }) async {
+    final db = await database;
+    final batch = db.batch()
+      ..insert('Playlists', {
+        'Id': playlist.id,
+        'ServerId': serverId,
+        'SizeInBytes': files.map((e) => e.lengthSync()).sum,
+        'DownloadDate': DateTime.now().millisecondsSinceEpoch,
+        'Data': jsonEncode(playlist.toJson()),
+      }, conflictAlgorithm: ConflictAlgorithm.replace)
+      ..delete(
+        'PlaylistSongs',
+        where: 'PlaylistId = ? AND ServerId = ?',
+        whereArgs: [playlist.id, serverId],
+      );
+    for (final (position, song) in songs.indexed) {
+      batch.insert('PlaylistSongs', {
+        'PlaylistId': playlist.id,
+        'SongId': song.id,
+        'ServerId': serverId,
+        'Position': position,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<DownloadedPlaylist>> getDownloadedPlaylists() async {
+    final db = await database;
+    final results = await db.query(
+      'Playlists',
+      where: 'ServerId = ?',
+      whereArgs: [serverId],
+    );
+    return results.map(_downloadedPlaylistFromRow).toList();
+  }
+
+  Future<List<DownloadedSong>> getDownloadedPlaylistSongs(
+    String playlistId,
+  ) async {
+    final db = await database;
+    final results = await db.rawQuery(
+      'SELECT d.* FROM Downloads d '
+      'JOIN PlaylistSongs ps ON ps.SongId = d.Id AND ps.ServerId = d.ServerId '
+      'WHERE ps.PlaylistId = ? AND ps.ServerId = ? '
+      'ORDER BY ps.Position',
+      [playlistId, serverId],
+    );
+    return results.map(_downloadedSongFromRow).toList();
+  }
+
+  Future<void> deleteDownloadedPlaylist(String playlistId) async {
+    final db = await database;
+    final rows = await db.query(
+      'PlaylistSongs',
+      columns: ['SongId'],
+      where: 'PlaylistId = ? AND ServerId = ?',
+      whereArgs: [playlistId, serverId],
+    );
+    final songIds = rows.map((row) => row['SongId']! as String).toList();
+
+    for (final songId in songIds) {
+      final otherRefs = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM PlaylistSongs '
+          'WHERE SongId = ? AND ServerId = ? AND PlaylistId != ?',
+          [songId, serverId, playlistId],
+        ),
+      )!;
+      if (otherRefs > 0) continue;
+
+      final songRows = await db.query(
+        'Downloads',
+        columns: ['AlbumId'],
+        where: 'Id = ? AND ServerId = ?',
+        whereArgs: [songId, serverId],
+      );
+      final albumId = songRows.firstOrNull?['AlbumId'] as String?;
+      if (albumId != null && await isAlbumDownloaded(albumId)) continue;
+
+      await deleteDownloadedSong(songId);
+    }
+
+    final batch = db.batch()
+      ..delete(
+        'PlaylistSongs',
+        where: 'PlaylistId = ? AND ServerId = ?',
+        whereArgs: [playlistId, serverId],
+      )
+      ..delete(
+        'Playlists',
+        where: 'Id = ? AND ServerId = ?',
+        whereArgs: [playlistId, serverId],
+      );
+    await batch.commit(noResult: true);
+  }
+
+  Future<bool> isPlaylistDownloaded(String playlistId) async {
+    final db = await database;
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM Playlists WHERE Id = ? AND ServerId = ?',
+        [playlistId, serverId],
+      ),
+    );
+    return count! > 0;
   }
 
   Future<List<DownloadedSong>> getDownloadedSongs([
@@ -269,6 +390,17 @@ DownloadedSong _downloadedSongFromRow(Map<String, Object?> row) =>
         jsonDecode(row['Data']! as String) as Map<String, dynamic>,
       ),
       filePath: row['FilePath']! as String,
+      sizeInBytes: row['SizeInBytes']! as int,
+      downloadDate: DateTime.fromMillisecondsSinceEpoch(
+        row['DownloadDate']! as int,
+      ),
+    );
+
+DownloadedPlaylist _downloadedPlaylistFromRow(Map<String, Object?> row) =>
+    DownloadedPlaylist(
+      item: LibraryItem.fromJson(
+        jsonDecode(row['Data']! as String) as Map<String, dynamic>,
+      ),
       sizeInBytes: row['SizeInBytes']! as int,
       downloadDate: DateTime.fromMillisecondsSinceEpoch(
         row['DownloadDate']! as int,
