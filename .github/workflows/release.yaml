@@ -1,0 +1,158 @@
+name: Release
+
+# Single entry point for a release. The release itself is created exactly once
+# here, as a draft, and every platform build is called as a reusable workflow
+# that only appends assets to it. That is why no build leg is allowed to run
+# `generate_release_notes` any more: four legs each regenerating the body is
+# what produced the duplicated release text.
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish the draft release once every build succeeds'
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+# Two runs for the same tag would fight over the same release assets.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Resolved once and passed to every leg so the builds can't disagree with
+  # each other about the version they are stamping.
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            SOURCE="${GITHUB_REF#refs/tags/v}"
+          else
+            # Manual run not against a tag: fall back to pubspec.yaml so VERSION
+            # never ends up being a branch ref like "heads/releases-ci".
+            SOURCE="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')"
+          fi
+          VERSION="${SOURCE%+*}"
+          BUILD_NUMBER="${SOURCE#*+}"
+          if [ "$BUILD_NUMBER" = "$SOURCE" ]; then
+            BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing $VERSION (build $BUILD_NUMBER) as v$VERSION"
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Re-running the workflow must not regenerate the notes: an existing
+          # release (draft or published) is reused verbatim, so hand-edited
+          # release text survives a rebuild of any single platform.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::notice::Release $TAG already exists — reusing it, notes left untouched."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Release $VERSION" \
+            --target "$GITHUB_SHA" \
+            --generate-notes \
+            --draft
+          echo "::notice::Created draft release $TAG"
+
+  linux:
+    needs: prepare
+    uses: ./.github/workflows/linux-release.yaml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  windows:
+    needs: prepare
+    uses: ./.github/workflows/windows-release.yaml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  macos-dmg:
+    needs: prepare
+    uses: ./.github/workflows/macos-dmg.yaml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  android:
+    needs: prepare
+    uses: ./.github/workflows/android-beta.yaml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  # TestFlight legs attach nothing to the release; they are called from here so
+  # a tag push produces one run covering every platform.
+  ios:
+    needs: prepare
+    uses: ./.github/workflows/ios-beta.yaml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+    secrets: inherit
+
+  macos-testflight:
+    needs: prepare
+    uses: ./.github/workflows/macos-beta.yaml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+    secrets: inherit
+
+  publish:
+    needs: [prepare, linux, windows, macos-dmg, android, ios, macos-testflight]
+    # `always()` so a single failing leg still reaches this job and reports why
+    # the release stayed a draft.
+    if: ${{ always() && needs.prepare.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.publish) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release, or leave it as a draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "Build results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "*|*" cancelled "*)
+              echo "::warning::Not every build succeeded — $TAG stays a draft. Re-run the failed job, then publish it (the notes are preserved)."
+              exit 0
+              ;;
+          esac
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo "::notice::Published release $TAG"

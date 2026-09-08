@@ -1,15 +1,30 @@
 name: Android Release
 
+# Called by the Release workflow, which creates the release and passes the
+# version and the tag to attach the universal APK to. Can also be dispatched on
+# its own to rebuild or backfill the APK.
+
 on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      build_number:
+        required: true
+        type: string
+      release_tag:
+        description: Existing release (draft or published) to attach the APK to
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
-      publish_to_latest:
-        description: 'Attach the build to the latest existing release'
-        type: boolean
-        default: false
-  push:
-    tags:
-      - 'v*'
+      release_tag:
+        description: 'Release to attach the APK to: a tag, "latest", or blank to only build'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -31,13 +46,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      # fastlane reads BUILD_VERSION/BUILD_NUMBER; both are left unset on a
+      # standalone dispatch so it falls back to the pubspec values.
+      - name: Resolve version
+        working-directory: .
+        env:
+          IN_VERSION: ${{ inputs.version }}
+          IN_BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
-          echo "BUILD_VERSION=${TAG%+*}" >> "$GITHUB_ENV"
-          if [ "${TAG#*+}" != "$TAG" ]; then
-            echo "BUILD_NUMBER=${TAG#*+}" >> "$GITHUB_ENV"
+          if [ -n "$IN_VERSION" ]; then
+            echo "BUILD_VERSION=$IN_VERSION" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$IN_BUILD_NUMBER" ]; then
+            echo "BUILD_NUMBER=$IN_BUILD_NUMBER" >> "$GITHUB_ENV"
           fi
 
       - uses: actions/setup-java@v4
@@ -70,38 +91,10 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      # Tag push: create (or update) the release for that tag.
-      - name: Upload universal APK to release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+      - name: Attach to release
+        if: ${{ inputs.release_tag != '' }}
+        uses: ./.github/actions/release-assets
         with:
+          release-tag: ${{ inputs.release_tag }}
           files: build/app/outputs/universal/jellybox-universal.apk
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Manual run with the checkbox ticked: attach to whatever release GitHub
-      # currently marks as "Latest". Uses `gh release upload` rather than the
-      # release action so only assets are touched — the existing release's
-      # title and notes are left exactly as they are.
-      - name: Attach to latest release
-        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_latest
-        # This job defaults to the android/ directory; the APK path is
-        # workspace-relative, matching the release step above.
-        working-directory: .
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          # `|| true` because `set -e` would otherwise abort here when the repo
-          # has no published release, skipping the explanatory error below.
-          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)"
-          if [ -z "$TAG" ]; then
-            echo "::error::No published release found to attach to. Push a v* tag first, or publish a release manually."
-            exit 1
-          fi
-          echo "Attaching assets to existing release $TAG"
-          gh release upload "$TAG" \
-            "build/app/outputs/universal/jellybox-universal.apk" \
-            --repo "$GITHUB_REPOSITORY" --clobber
-          echo "::notice::Uploaded jellybox-universal.apk to release $TAG"
+          token: ${{ secrets.GITHUB_TOKEN }}

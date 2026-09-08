@@ -1,0 +1,70 @@
+name: Attach release assets
+description: >
+  Upload files to an existing GitHub release (including a draft) without
+  touching its title, notes or draft state. The release is created once by the
+  Release workflow; every build leg only appends assets to it.
+
+inputs:
+  release-tag:
+    description: >
+      Tag of the release to attach to, the literal "latest" to resolve whatever
+      GitHub currently marks as Latest, or empty to skip uploading entirely.
+    required: false
+    default: ''
+  files:
+    description: >
+      Whitespace- or newline-separated files/globs to upload, relative to the
+      workspace root.
+    required: true
+  token:
+    description: Token with contents:write on this repository
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Attach assets
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        RELEASE_TAG: ${{ inputs.release-tag }}
+        FILES: ${{ inputs.files }}
+      run: |
+        set -euo pipefail
+        # Composite steps do not inherit the caller job's working-directory
+        # default, so paths are always resolved against the workspace root.
+        cd "$GITHUB_WORKSPACE"
+
+        if [ -z "${RELEASE_TAG//[[:space:]]/}" ]; then
+          echo "::notice::No release tag given — built artifacts only, nothing uploaded."
+          exit 0
+        fi
+
+        TAG="$RELEASE_TAG"
+        if [ "$TAG" = "latest" ]; then
+          # `|| true` because `set -e` would otherwise abort here when the repo
+          # has no published release, skipping the explanatory error below.
+          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)"
+          if [ -z "$TAG" ]; then
+            echo "::error::No published release found to attach to. Run the Release workflow, or pass an explicit tag."
+            exit 1
+          fi
+        fi
+
+        # Globs are expanded here rather than by gh so a pattern that matches
+        # nothing fails loudly instead of uploading a literal filename.
+        assets=()
+        for pattern in $FILES; do
+          for f in $pattern; do
+            [ -e "$f" ] && assets+=("$f")
+          done
+        done
+        if [ ${#assets[@]} -eq 0 ]; then
+          echo "::error::None of the expected artifacts exist: $FILES"
+          exit 1
+        fi
+
+        echo "Attaching to release $TAG:"
+        printf '  %s\n' "${assets[@]}"
+        gh release upload "$TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+        echo "::notice::Uploaded ${#assets[@]} asset(s) to release $TAG"
