@@ -96,6 +96,9 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     }
     ref.listenManual(nowPlayingProvider, (_, song) => _onNowPlaying(song));
     _currentSong = ref.read(nowPlayingProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _prepareArtwork(_currentSong);
+    });
     ref.listenManual(
       playbackProvider.select(
         (state) => state.status == PlaybackStatus.playing,
