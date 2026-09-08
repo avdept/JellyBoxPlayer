@@ -7,10 +7,12 @@ import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppSetting {
-  sidebarCollapsed('sidebar_collapsed'),
+  sidebarCollapsed('sidebar_collapsed', defaultValue: true),
   studioModeFullscreen('studio_mode_fullscreen'),
   studioModeAnimation('studio_mode_animation', defaultValue: true),
   generatedPlaylistsDisabled('disable_generated_playlists'),
+  favouritesHidden('hide_favourites'),
+  recentlyPlayedHidden('hide_recently_played'),
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
