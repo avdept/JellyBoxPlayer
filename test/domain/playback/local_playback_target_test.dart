@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -254,5 +255,21 @@ void main() {
 
       verify(() => player.setVolume(0.4)).called(1);
     });
+  });
+
+  group('a player between sessions', () {
+    test(
+      '- absorbs the dead channel a stopped service leaves behind',
+      () async {
+        when(() => player.setVolume(any())).thenThrow(
+          MissingPluginException('setVolume'),
+        );
+
+        final target = LocalPlaybackTarget(player);
+        addTearDown(target.dispose);
+
+        await expectLater(target.setVolume(0.4), completes);
+      },
+    );
   });
 }

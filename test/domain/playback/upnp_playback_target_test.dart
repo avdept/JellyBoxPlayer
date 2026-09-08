@@ -878,15 +878,37 @@ void main() {
   });
 
   group('a device that refuses to start', () {
-    test('- reports a 701 on play instead of retrying it', () async {
-      when(transport.play).thenThrow(
-        const UpnpSoapFault(
-          action: 'Play',
-          statusCode: 500,
-          errorCode: '701',
-          description: 'Transition not available',
-        ),
-      );
+    test('- waits out a 701 on play instead of giving up', () async {
+      var attempts = 0;
+      when(transport.play).thenAnswer((_) async {
+        attempts++;
+        if (attempts < 3) throw refused('Play');
+      });
+      deviceReports(AvTransportState.stopped);
+      target = targetWith();
+
+      await start([track(1)]);
+
+      expect(attempts, 3);
+      expect(target.state.status, isNot(PlaybackStatus.error));
+      expect(captured, isEmpty);
+    });
+
+    test('- gives up on a 701 that never clears', () async {
+      when(transport.play).thenThrow(refused('Play'));
+      deviceReports(AvTransportState.stopped);
+      target = targetWith();
+
+      await start([track(1)]);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(verify(transport.play).callCount, 5);
+      expect(target.state.status, PlaybackStatus.error);
+      expect(capturedFor('setUri'), hasLength(1));
+    });
+
+    test('- does not retry other refusals', () async {
+      when(transport.play).thenThrow(refused('Play', '718'));
       deviceReports(AvTransportState.stopped);
       target = targetWith();
 
@@ -895,7 +917,6 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       verify(transport.play).called(1);
       expect(target.state.status, PlaybackStatus.error);
-      expect(captured.single, startsWith('upnp.setUri:'));
     });
   });
 
