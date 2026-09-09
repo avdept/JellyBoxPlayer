@@ -176,31 +176,29 @@ class SettingsPage extends ConsumerWidget {
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultBrowseTab, value.name),
                     ),
-                    if (device.isMobile) ...[
-                      _sectionHeader('Offline'),
-                      _settingDropdown<ForwardCacheLimit>(
+                    _sectionHeader('Offline'),
+                    _settingDropdown<ForwardCacheLimit>(
+                      context: context,
+                      label: 'Cache queue for offline',
+                      value: ref.watch(forwardCacheLimitProvider),
+                      options: _forwardCacheLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.forwardCacheLimit, value.name),
+                    ),
+                    if (ref.watch(forwardCacheLimitProvider).isEnabled)
+                      _settingDropdown<ForwardCacheWindow>(
                         context: context,
-                        label: 'Cache queue for offline',
-                        value: ref.watch(forwardCacheLimitProvider),
-                        options: _forwardCacheLabels,
+                        label: 'Cache ahead',
+                        value: ref.watch(forwardCacheWindowProvider),
+                        options: _forwardCacheWindowLabels,
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
-                            .setValue(AppSetting.forwardCacheLimit, value.name),
+                            .setValue(
+                              AppSetting.forwardCacheWindow,
+                              value.name,
+                            ),
                       ),
-                      if (ref.watch(forwardCacheLimitProvider).isEnabled)
-                        _settingDropdown<ForwardCacheWindow>(
-                          context: context,
-                          label: 'Cache ahead',
-                          value: ref.watch(forwardCacheWindowProvider),
-                          options: _forwardCacheWindowLabels,
-                          onChanged: (value) => ref
-                              .read(appSettingsProvider.notifier)
-                              .setValue(
-                                AppSetting.forwardCacheWindow,
-                                value.name,
-                              ),
-                        ),
-                    ],
                     if (!device.isMobile) ...[
                       _sectionHeader('Studio Mode'),
                       if (supportsWindowFullscreen)
