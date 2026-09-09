@@ -553,4 +553,42 @@ void main() {
       expect(await db.getDownloadedPlaylists(), isEmpty);
     });
   });
+
+  group('DownloadDatabase (storage location)', () {
+    late Directory overrideDir;
+
+    setUp(() async {
+      overrideDir = await Directory.systemTemp.createTemp('download_db_dir');
+    });
+
+    tearDown(() async {
+      DownloadDatabase.databaseDirectory = null;
+      if (overrideDir.existsSync()) await overrideDir.delete(recursive: true);
+    });
+
+    test('- opens the database under the configured directory', () async {
+      final target = join(overrideDir.path, 'nested');
+      DownloadDatabase.databaseDirectory = target;
+
+      await DownloadDatabase().getDownloadedSongs();
+
+      expect(File(join(target, 'downloads.db')).existsSync(), isTrue);
+      expect(File(dbPath).existsSync(), isFalse);
+    });
+
+    test('- moves a database left at the legacy location', () async {
+      final legacy = DownloadDatabase(serverId: 'server-a');
+      final song = buildSong();
+      await legacy.insertDownloadedSong(song, file: songFile);
+      await (await legacy.database).close();
+      expect(File(dbPath).existsSync(), isTrue);
+
+      DownloadDatabase.databaseDirectory = overrideDir.path;
+      final moved = DownloadDatabase(serverId: 'server-a');
+
+      expect(await moved.getDownloadedSongs(), hasLength(1));
+      expect(File(join(overrideDir.path, 'downloads.db')).existsSync(), isTrue);
+      expect(File(dbPath).existsSync(), isFalse);
+    });
+  });
 }
