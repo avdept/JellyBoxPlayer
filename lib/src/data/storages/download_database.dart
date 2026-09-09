@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show File;
+import 'dart:io' show Directory, File, FileSystemException;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -17,6 +17,8 @@ class DownloadDatabase {
 
   static const _schemaVersion = 5;
 
+  static String? databaseDirectory;
+
   final String serverId;
 
   Database? _db;
@@ -27,13 +29,41 @@ class DownloadDatabase {
   }
 
   Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
+    final override = databaseDirectory;
+    final dbPath = override ?? await getDatabasesPath();
+    if (override != null) {
+      await Directory(override).create(recursive: true);
+      await _adoptLegacyLocation(filePath, override);
+    }
     return openDatabase(
       join(dbPath, filePath),
       version: _schemaVersion,
       onCreate: (db, version) => _createDB(db),
       onUpgrade: _upgradeDB,
     );
+  }
+
+  Future<void> _adoptLegacyLocation(String filePath, String dbPath) async {
+    try {
+      final target = join(dbPath, filePath);
+      if (File(target).existsSync()) return;
+
+      final legacyDir = await getDatabasesPath();
+      if (equals(legacyDir, dbPath)) return;
+      if (!File(join(legacyDir, filePath)).existsSync()) return;
+
+      for (final suffix in const ['', '-wal', '-shm', '-journal']) {
+        final source = File(join(legacyDir, '$filePath$suffix'));
+        if (!source.existsSync()) continue;
+        try {
+          await source.rename('$target$suffix');
+        } on FileSystemException {
+          await source.copy('$target$suffix');
+        }
+      }
+    } on Object {
+      return;
+    }
   }
 
   Future<void> _createDB(Database db) async {

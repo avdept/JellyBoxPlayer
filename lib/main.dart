@@ -11,10 +11,12 @@ import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
+import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +32,11 @@ Future<void> main() async {
   }
 
   SentryWidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isLinux || Platform.isWindows) {
+    DownloadDatabase.databaseDirectory =
+        (await getApplicationSupportDirectory()).path;
+  }
 
   final analytics = Plausible(
     domain: "jellybox.app",
