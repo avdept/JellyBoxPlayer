@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 
 class DownloadPaths {
@@ -10,6 +11,9 @@ class DownloadPaths {
   static String? _root;
 
   static String? get root => _root;
+
+  @visibleForTesting
+  static set root(String? path) => _root = path;
 
   static Future<String> init() async {
     final existing = _root;

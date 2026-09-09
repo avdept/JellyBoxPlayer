@@ -17,6 +17,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -252,6 +253,11 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
                       name: Routes.palette.name,
                       pageBuilder: widget.screenFactory.palettePage,
                     ),
+                    GoRoute(
+                      path: Routes.queueCache.path,
+                      name: Routes.queueCache.name,
+                      pageBuilder: widget.screenFactory.queueCachePage,
+                    ),
                   ],
                 ),
               ],
@@ -310,6 +316,7 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
           _maybeRestorePlayback();
         }
       })
+      ..listen(forwardCacheProvider, (_, _) {})
       ..listen(castFailureProvider, (previous, next) {
         if (next == null) return;
         _scaffoldMessengerKey.currentState?.showSnackBar(

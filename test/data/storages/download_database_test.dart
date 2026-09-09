@@ -136,6 +136,18 @@ void main() {
       expect(await emby.isAlbumDownloaded(album.id), isFalse);
     });
 
+    test('- reports downloaded ids for the current server only', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final song = buildSong();
+
+      await jellyfin.insertDownloadedSong(song, file: songFile);
+
+      expect(await jellyfin.downloadedIds([song.id, 'missing']), {song.id});
+      expect(await emby.downloadedIds([song.id]), isEmpty);
+      expect(await jellyfin.downloadedIds(const []), isEmpty);
+    });
+
     test('- does not delete another server\'s rows', () async {
       final jellyfin = DownloadDatabase(serverId: 'server-a');
       final emby = DownloadDatabase(serverId: 'server-b');

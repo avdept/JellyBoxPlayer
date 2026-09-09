@@ -9,6 +9,7 @@ final sessionScopedProviders = <ProviderOrFamily>[
   currentLibraryProvider,
   setPlaybackProvider,
   downloadManagerProvider,
+  forwardCacheProvider,
   downloadedAlbumsProvider,
   downloadedPlaylistsProvider,
   currentDayProvider,

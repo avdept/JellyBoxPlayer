@@ -7,10 +7,12 @@ import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/services/album_cover_store.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:path_provider/path_provider.dart';
 
 class DownloadService extends ChangeNotifier {
+  final _covers = AlbumCoverStore();
   final _tasks = <String, DownloadTask>{};
   final _bdTasks = <String, bd.DownloadTask>{};
 
@@ -117,33 +119,8 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
-  Future<File?> downloadAlbumCover(String albumId, Uri? uri) async {
-    if (uri == null) return null;
-    await DownloadPaths.init();
-    final path = DownloadPaths.coverPath(albumId);
-    if (path == null) return null;
-
-    final file = File(path);
-    if (file.existsSync() && file.lengthSync() > 0) return file;
-
-    final httpClient = HttpClient();
-    try {
-      final response = await (await httpClient.getUrl(uri)).close();
-      if (response.statusCode != HttpStatus.ok) {
-        await response.drain<void>();
-        return null;
-      }
-      await file.parent.create(recursive: true);
-      await response.pipe(file.openWrite());
-      return file;
-    } on Object catch (error) {
-      debugPrint('[Download] cover for $albumId failed: $error');
-      if (file.existsSync()) await file.delete();
-      return null;
-    } finally {
-      httpClient.close(force: true);
-    }
-  }
+  Future<File?> downloadAlbumCover(String albumId, Uri? uri) =>
+      _covers.ensure(albumId, uri);
 
   Future<void> pauseDownload(String id) async {
     final bdTask = _bdTasks[id];

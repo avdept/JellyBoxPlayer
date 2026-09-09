@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
@@ -71,6 +72,12 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
           width: imageSize,
           height: imageSize,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Image.asset(
+            Images.album,
+            width: imageSize,
+            height: imageSize,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
       leadingToTitle: isMobile ? 12 : 16,

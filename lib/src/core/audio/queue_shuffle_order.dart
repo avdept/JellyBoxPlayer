@@ -14,6 +14,11 @@ class QueueShuffleOrder extends ShuffleOrder {
 
   int get lastPosition => indices.length;
 
+  int? positionOfIndex(int index) {
+    final position = indices.indexOf(index);
+    return position < 0 ? null : position;
+  }
+
   int positionAfterIndex(int index) {
     final position = indices.indexOf(index);
     return position < 0 ? indices.length : position + 1;

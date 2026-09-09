@@ -12,6 +12,7 @@ enum Routes {
   artist('artist'),
   genre('genre'),
   palette('palette'),
+  queueCache('queue-cache'),
   searchResults('search-results'),
   playlist('playlist'),
   favourites('favourites'),
