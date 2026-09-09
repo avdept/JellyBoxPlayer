@@ -248,6 +248,7 @@ void main() {
     queueCacheServiceProvider.overrideWith(
       (ref) => QueueCacheService(
         database: ref.watch(queueCacheDatabaseProvider),
+        downloads: ref.watch(downloadDatabaseProvider),
         downloader: downloader,
         deviceId: 'test-device',
       ),

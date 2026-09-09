@@ -408,6 +408,21 @@ class DownloadDatabase {
     return count! > 0;
   }
 
+  Future<Set<String>> downloadedAlbumIds() async {
+    final db = await database;
+    final albums = await db.query('Albums', columns: ['Id']);
+    final songs = await db.query(
+      'Downloads',
+      columns: ['AlbumId'],
+      distinct: true,
+      where: 'AlbumId IS NOT NULL',
+    );
+    return {
+      for (final row in albums) row['Id']! as String,
+      for (final row in songs) row['AlbumId']! as String,
+    };
+  }
+
   Future<Set<String>> downloadedIds(Iterable<String> ids) async {
     final wanted = ids.toSet().toList();
     if (wanted.isEmpty) return const {};

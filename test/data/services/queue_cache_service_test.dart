@@ -83,6 +83,7 @@ void main() {
     database = QueueCacheDatabase(DownloadDatabase(serverId: 'server-1'));
     service = QueueCacheService(
       database: database,
+      downloads: DownloadDatabase(serverId: 'server-1'),
       downloader: downloader,
       deviceId: 'test-device',
       covers: AlbumCoverStore(
@@ -268,6 +269,34 @@ void main() {
       expect(await database.cachedIds(), {'a'});
       expect(await other.cachedIds(), isEmpty);
       expect(theirFile.existsSync(), isFalse);
+    });
+
+    test('- reconciling keeps a downloaded album cover', () async {
+      final downloads = DownloadDatabase(serverId: 'server-1');
+      const album = LibraryItem(
+        id: 'album-kept',
+        name: 'Album',
+        kind: ItemKind.album,
+      );
+      await downloads.insertDownloadedAlbum(
+        album,
+        files: [File(join(filesDir.path, 'placeholder'))..writeAsBytesSync([1])],
+      );
+      final kept = File(
+        join(coversDir.path, 'album-kept', DownloadPaths.coverFileName),
+      );
+      await kept.parent.create(recursive: true);
+      kept.writeAsBytesSync([1, 2, 3]);
+      final orphan = File(
+        join(coversDir.path, 'album-gone', DownloadPaths.coverFileName),
+      );
+      await orphan.parent.create(recursive: true);
+      orphan.writeAsBytesSync([1, 2, 3]);
+
+      await service.reconcile();
+
+      expect(kept.existsSync(), isTrue);
+      expect(orphan.existsSync(), isFalse);
     });
 
     test('- prunes rows the OS reclaimed', () async {

@@ -148,6 +148,20 @@ void main() {
       expect(await jellyfin.downloadedIds(const []), isEmpty);
     });
 
+    test('- reports album ids from albums and songs alike', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final album = buildAlbum();
+      final song = buildSong();
+
+      await jellyfin.insertDownloadedAlbum(album, files: [songFile]);
+      await emby.insertDownloadedSong(song, file: songFile);
+
+      final ids = await jellyfin.downloadedAlbumIds();
+
+      expect(ids, containsAll([album.id, song.albumId]));
+    });
+
     test('- does not delete another server\'s rows', () async {
       final jellyfin = DownloadDatabase(serverId: 'server-a');
       final emby = DownloadDatabase(serverId: 'server-b');

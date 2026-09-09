@@ -6,16 +6,19 @@ import 'package:jplayer/src/core/downloads/cache_downloader.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/services/album_cover_store.dart';
+import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/queue_cache_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
 class QueueCacheService {
   QueueCacheService({
     required QueueCacheDatabase database,
+    required DownloadDatabase downloads,
     required CacheDownloader downloader,
     required String deviceId,
     AlbumCoverStore? covers,
   }) : _database = database,
+       _downloads = downloads,
        _downloader = downloader,
        _deviceId = deviceId,
        _covers = covers ?? AlbumCoverStore();
@@ -23,6 +26,7 @@ class QueueCacheService {
   static const _coverSize = 512;
 
   final QueueCacheDatabase _database;
+  final DownloadDatabase _downloads;
   final CacheDownloader _downloader;
   final String _deviceId;
   final AlbumCoverStore _covers;
@@ -109,6 +113,7 @@ class QueueCacheService {
       await _covers.sweepUnreferenced({
         for (final entry in entries)
           if (entry.item.albumId case final String albumId) albumId,
+        ...await _downloads.downloadedAlbumIds(),
       });
     } on Object catch (error) {
       debugPrint('[QueueCache] sweeping covers failed: $error');
