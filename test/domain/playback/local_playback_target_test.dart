@@ -244,6 +244,65 @@ void main() {
     });
   });
 
+  group('reorder', () {
+    TargetTrack trackNamed(String id) => TargetTrack(
+      itemId: id,
+      uri: Uri.parse('http://jelly.local:8096/Audio/$id/universal'),
+      mimeType: 'audio/flac',
+      isHls: false,
+      title: id,
+      duration: const Duration(minutes: 3),
+    );
+
+    late List<String> queue;
+
+    setUp(() {
+      queue = ['a', 'b', 'c', 'd'];
+      when(() => player.sequence).thenReturn(
+        List.filled(4, ProgressiveAudioSource(Uri.parse('http://a'))),
+      );
+      when(() => player.moveAudioSource(any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final from = invocation.positionalArguments[0] as int;
+        final to = invocation.positionalArguments[1] as int;
+        queue.insert(to, queue.removeAt(from));
+      });
+    });
+
+    test('- walks the queue into its new order one move at a time', () async {
+      const order = [2, 0, 3, 1];
+
+      await target.reorder(
+        [for (final index in order) trackNamed(queue[index])],
+        order: order,
+        currentIndex: 1,
+      );
+
+      expect(queue, ['c', 'a', 'd', 'b']);
+    });
+
+    test('- moves nothing when the order already matches', () async {
+      await target.reorder(
+        [for (final id in queue) trackNamed(id)],
+        order: [0, 1, 2, 3],
+        currentIndex: 0,
+      );
+
+      verifyNever(() => player.moveAudioSource(any(), any()));
+    });
+
+    test('- leaves the queue alone when it is out of step', () async {
+      await target.reorder(
+        [trackNamed('a')],
+        order: [0],
+        currentIndex: 0,
+      );
+
+      verifyNever(() => player.moveAudioSource(any(), any()));
+    });
+  });
+
   group('replacing a queued source', () {
     setUp(() {
       when(() => player.removeAudioSourceAt(any())).thenAnswer((_) async {});

@@ -12,7 +12,6 @@ class SwipeableArtwork extends ConsumerStatefulWidget {
     required this.queue,
     required this.currentIndex,
     required this.artworkBuilder,
-    this.order,
     this.borderRadius = 12,
     this.horizontalPadding = 30,
     this.scale = 1,
@@ -21,7 +20,6 @@ class SwipeableArtwork extends ConsumerStatefulWidget {
 
   final List<MediaItem> queue;
   final int? currentIndex;
-  final List<int>? order;
   final Widget Function(MediaItem? item) artworkBuilder;
   final double borderRadius;
   final double horizontalPadding;
@@ -35,17 +33,10 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
   late final PageController _controller;
   late int _page;
 
-  List<int> get _order {
-    final order = widget.order;
-    if (order != null && order.length == widget.queue.length) return order;
-    return List.generate(widget.queue.length, (index) => index);
-  }
-
   int get _currentPage {
     final currentIndex = widget.currentIndex;
-    if (currentIndex == null) return 0;
-    final page = _order.indexOf(currentIndex);
-    return page < 0 ? 0 : page;
+    if (currentIndex == null || currentIndex < 0) return 0;
+    return currentIndex;
   }
 
   @override
@@ -86,13 +77,11 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
     if (page == _page) return;
     _page = page;
 
-    final order = _order;
-    if (page < 0 || page >= order.length) return;
-    final index = order[page];
-    if (index == widget.currentIndex) return;
+    if (page < 0 || page >= widget.queue.length) return;
+    if (page == widget.currentIndex) return;
 
     _hapticTick();
-    await ref.read(playbackProvider.notifier).skipTo(index);
+    await ref.read(playbackProvider.notifier).skipTo(page);
   }
 
   void _hapticTick() {
@@ -110,8 +99,6 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
 
   @override
   Widget build(BuildContext context) {
-    final order = _order;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final side = math.min<double>(
@@ -129,10 +116,9 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
               controller: _controller,
               onPageChanged: _onPageChanged,
               allowImplicitScrolling: true,
-              itemCount: order.length,
+              itemCount: widget.queue.length,
               itemBuilder: (context, page) {
-                final index = order[page];
-                final item = widget.queue.elementAtOrNull(index);
+                final item = widget.queue.elementAtOrNull(page);
                 return Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: widget.horizontalPadding,

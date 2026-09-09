@@ -145,19 +145,15 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     child: ValueListenableBuilder<bool>(
       key: const ValueKey('artwork'),
       valueListenable: _isPlaying,
-      builder: (context, isPlaying, child) => StreamBuilder<SequenceState?>(
-        stream: ref.read(playerProvider).sequenceStateStream,
-        builder: (context, sequence) => SwipeableArtwork(
-          queue: ref.watch(nowPlayingQueueProvider),
-          currentIndex: ref.watch(
-            playbackProvider.select((s) => s.currentMediaIndex),
-          ),
-          order: _shuffleOrder(sequence.data),
-          borderRadius: _isMobile ? 12 : 16,
-          artworkBuilder: _artwork,
-          horizontalPadding: _sheetHorizontalPadding,
-          scale: isPlaying ? 1 : 0.82,
+      builder: (context, isPlaying, child) => SwipeableArtwork(
+        queue: ref.watch(nowPlayingQueueProvider),
+        currentIndex: ref.watch(
+          playbackProvider.select((s) => s.currentMediaIndex),
         ),
+        borderRadius: _isMobile ? 12 : 16,
+        artworkBuilder: _artwork,
+        horizontalPadding: _sheetHorizontalPadding,
+        scale: isPlaying ? 1 : 0.82,
       ),
     ),
   );
@@ -659,13 +655,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     child: child,
   );
 
-  Widget _randomQueueButton() => StreamBuilder<bool?>(
-    stream: ref.read(playerProvider).shuffleModeEnabledStream,
-    builder: (context, snapshot) {
+  Widget _randomQueueButton() => Consumer(
+    builder: (context, ref, child) {
+      final enabled = ref.watch(
+        playbackProvider.select((state) => state.shuffleEnabled),
+      );
       return IconButton(
-        onPressed: () => ref
-            .read(playerProvider)
-            .setShuffleModeEnabled(!(snapshot.data ?? false)),
+        onPressed: () =>
+            ref.read(playbackProvider.notifier).setShuffle(enabled: !enabled),
         icon: Icon(
           JPlayer.mix,
           color: _theme.colorScheme.onPrimary,
@@ -674,7 +671,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           JPlayer.mix,
           color: _theme.colorScheme.primary,
         ),
-        isSelected: snapshot.data ?? false,
+        isSelected: enabled,
       );
     },
   );
@@ -700,12 +697,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       );
     },
   );
-
-  List<int>? _shuffleOrder(SequenceState? state) {
-    if (state == null || !state.shuffleModeEnabled) return null;
-    if (state.shuffleIndices.length != state.sequence.length) return null;
-    return state.shuffleIndices;
-  }
 
   bool get _isCasting =>
       ref.watch(playbackTargetProvider).kind != PlaybackTargetKind.local;

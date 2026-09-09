@@ -16,6 +16,7 @@ abstract class PlaybackState with _$PlaybackState {
     required Duration cacheProgress,
     Duration? totalDuration,
     int? currentMediaIndex,
+    @Default(false) bool shuffleEnabled,
   }) = _PlaybackState;
 
   factory PlaybackState.initial() => const PlaybackState(

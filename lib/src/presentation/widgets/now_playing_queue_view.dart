@@ -7,8 +7,6 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/song_download_menu_item.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
-import 'package:just_audio/just_audio.dart';
 
 class NowPlayingQueueView extends ConsumerStatefulWidget {
   const NowPlayingQueueView({
@@ -66,12 +64,7 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
 
   void _revealCurrentSong() {
     if (!mounted || !_scrollController.hasClients) return;
-    final currentIndex = ref.read(playbackProvider).currentMediaIndex ?? 0;
-    final order = _order(
-      ref.read(playerProvider).sequenceState,
-      ref.read(playbackProvider).songs.length,
-    );
-    final position = order.indexOf(currentIndex);
+    final position = ref.read(playbackProvider).currentMediaIndex ?? 0;
     final scroll = _scrollController.position;
     final centered =
         (position < 0 ? 0 : position) * _itemExtent -
@@ -109,24 +102,15 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
     );
   }
 
-  List<Key> _itemKeys(List<int> order, List<LibraryItem> songs) {
+  List<Key> _itemKeys(List<LibraryItem> songs) {
     final seen = <String, int>{};
     return [
-      for (final index in order)
+      for (final song in songs)
         ValueKey(
-          '${songs[index].id}#'
-          '${seen.update(songs[index].id, (count) => count + 1, ifAbsent: () => 0)}',
+          '${song.id}#'
+          '${seen.update(song.id, (count) => count + 1, ifAbsent: () => 0)}',
         ),
     ];
-  }
-
-  List<int> _order(SequenceState? state, int length) {
-    if (state == null ||
-        !state.shuffleModeEnabled ||
-        state.shuffleIndices.length != length) {
-      return List.generate(length, (index) => index);
-    }
-    return state.shuffleIndices;
   }
 
   @override
@@ -135,42 +119,33 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
     final songs = playback.songs;
     final currentIndex = playback.currentMediaIndex;
 
-    return StreamBuilder<SequenceState?>(
-      stream: ref.read(playerProvider).sequenceStateStream,
-      builder: (context, snapshot) {
-        final isShuffled = snapshot.data?.shuffleModeEnabled ?? false;
-        final order = _order(snapshot.data, songs.length);
-        final keys = _itemKeys(order, songs);
-        final isDesktop = DeviceType.fromScreenSize(
-          MediaQuery.sizeOf(context),
-        ).isDesktop;
-        return ReorderableListView.builder(
-          scrollController: _scrollController,
-          padding: widget.padding,
-          itemExtent: _itemExtent,
-          buildDefaultDragHandles: false,
-          onReorder: (from, to) => ref
-              .read(playbackProvider.notifier)
-              .moveInQueue(from, to > from ? to - 1 : to),
-          itemCount: order.length,
-          itemBuilder: (context, position) {
-            final index = order[position];
-            final song = songs[index];
-            return _QueueRow(
-              key: keys[position],
-              song: song,
-              position: position,
-              isPlaying: index == currentIndex,
-              isDesktop: isDesktop,
-              isDraggable: !isShuffled,
-              onTap: () => ref
-                  .read(playbackProvider.notifier)
-                  .skipTo(index, autoPlay: true),
-              onLikePressed: () => _toggleFavourite(song),
-              onRemove: () =>
-                  ref.read(playbackProvider.notifier).removeFromQueue(index),
-            );
-          },
+    final keys = _itemKeys(songs);
+    final isDesktop = DeviceType.fromScreenSize(
+      MediaQuery.sizeOf(context),
+    ).isDesktop;
+
+    return ReorderableListView.builder(
+      scrollController: _scrollController,
+      padding: widget.padding,
+      itemExtent: _itemExtent,
+      buildDefaultDragHandles: false,
+      onReorder: (from, to) => ref
+          .read(playbackProvider.notifier)
+          .moveInQueue(from, to > from ? to - 1 : to),
+      itemCount: songs.length,
+      itemBuilder: (context, index) {
+        final song = songs[index];
+        return _QueueRow(
+          key: keys[index],
+          song: song,
+          position: index,
+          isPlaying: index == currentIndex,
+          isDesktop: isDesktop,
+          onTap: () =>
+              ref.read(playbackProvider.notifier).skipTo(index, autoPlay: true),
+          onLikePressed: () => _toggleFavourite(song),
+          onRemove: () =>
+              ref.read(playbackProvider.notifier).removeFromQueue(index),
         );
       },
     );
@@ -183,7 +158,6 @@ class _QueueRow extends ConsumerStatefulWidget {
     required this.position,
     required this.isPlaying,
     required this.isDesktop,
-    required this.isDraggable,
     required this.onTap,
     required this.onLikePressed,
     required this.onRemove,
@@ -194,7 +168,6 @@ class _QueueRow extends ConsumerStatefulWidget {
   final int position;
   final bool isPlaying;
   final bool isDesktop;
-  final bool isDraggable;
   final VoidCallback onTap;
   final VoidCallback onLikePressed;
   final Future<void> Function() onRemove;
@@ -226,17 +199,15 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
     return MouseRegion(
       onEnter: (_) => _setHovered(true),
       onExit: (_) => _setHovered(false),
-      child: switch ((widget.isDraggable, widget.isDesktop)) {
-        (false, _) => row,
-        (true, true) => ReorderableDragStartListener(
-          index: widget.position,
-          child: row,
-        ),
-        (true, false) => ReorderableDelayedDragStartListener(
-          index: widget.position,
-          child: row,
-        ),
-      },
+      child: widget.isDesktop
+          ? ReorderableDragStartListener(
+              index: widget.position,
+              child: row,
+            )
+          : ReorderableDelayedDragStartListener(
+              index: widget.position,
+              child: row,
+            ),
     );
   }
 
