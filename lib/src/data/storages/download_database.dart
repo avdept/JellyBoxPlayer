@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Directory, File, FileSystemException;
+import 'dart:math' show min;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 5;
+  static const _schemaVersion = 6;
 
   static String? databaseDirectory;
 
@@ -77,6 +78,7 @@ class DownloadDatabase {
     await Future.wait(queries.map(db.execute));
     await _migrateToV4(db);
     await _migrateToV5(db);
+    await _migrateToV6(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -84,6 +86,11 @@ class DownloadDatabase {
     if (oldVersion < 3) await _migrateToV3(db);
     if (oldVersion < 4) await _migrateToV4(db);
     if (oldVersion < 5) await _migrateToV5(db);
+    if (oldVersion < 6) await _migrateToV6(db);
+  }
+
+  Future<void> _migrateToV6(Database db) async {
+    await db.execute(await rootBundle.loadString(DbMigrations.queueCacheV6));
   }
 
   Future<void> _migrateToV5(Database db) async {
@@ -399,6 +406,40 @@ class DownloadDatabase {
       ),
     );
     return count! > 0;
+  }
+
+  Future<Set<String>> downloadedAlbumIds() async {
+    final db = await database;
+    final albums = await db.query('Albums', columns: ['Id']);
+    final songs = await db.query(
+      'Downloads',
+      columns: ['AlbumId'],
+      distinct: true,
+      where: 'AlbumId IS NOT NULL',
+    );
+    return {
+      for (final row in albums) row['Id']! as String,
+      for (final row in songs) row['AlbumId']! as String,
+    };
+  }
+
+  Future<Set<String>> downloadedIds(Iterable<String> ids) async {
+    final wanted = ids.toSet().toList();
+    if (wanted.isEmpty) return const {};
+    final db = await database;
+    final found = <String>{};
+    for (var start = 0; start < wanted.length; start += 500) {
+      final chunk = wanted.sublist(start, min(start + 500, wanted.length));
+      final placeholders = List.filled(chunk.length, '?').join(', ');
+      final results = await db.query(
+        'Downloads',
+        columns: ['Id'],
+        where: 'ServerId = ? AND Id IN ($placeholders)',
+        whereArgs: [serverId, ...chunk],
+      );
+      found.addAll(results.map((row) => row['Id']! as String));
+    }
+    return found;
   }
 
   Future<String?> getDownloadedSongPath(String id) async {

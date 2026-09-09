@@ -11,6 +11,7 @@ import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
+import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -142,4 +143,17 @@ Future<void> main() async {
       ),
     ),
   );
+
+  _silenceUnreachableImageErrors();
+}
+
+void _silenceUnreachableImageErrors() {
+  final reportError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    if (isUnreachableImageFailure(details)) {
+      debugPrint('[Images] unreachable: ${details.exception}');
+      return;
+    }
+    reportError?.call(details);
+  };
 }

@@ -31,6 +31,8 @@ class LibraryView extends ConsumerWidget {
             child: Image(
               image: libraryImage(ref),
               fit: BoxFit.fitWidth,
+              errorBuilder: (context, error, stackTrace) =>
+                  Image.asset(Images.librarySample, fit: BoxFit.fitWidth),
             ),
           ),
           Text(

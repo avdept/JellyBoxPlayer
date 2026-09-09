@@ -9,6 +9,7 @@ export 'download_manager_provider.dart';
 export 'downloaded_albums_provider.dart';
 export 'downloaded_playlists_provider.dart';
 export 'favourites_provider.dart';
+export 'forward_cache_provider.dart';
 export 'genre_albums_provider.dart';
 export 'home_sections_provider.dart';
 export 'is_album_downloaded_provider.dart';

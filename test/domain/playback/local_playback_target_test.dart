@@ -21,6 +21,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(<AudioSource>[]);
+    registerFallbackValue(AudioSource.uri(Uri.parse('http://jelly.local')));
     registerFallbackValue(Duration.zero);
     registerFallbackValue(QueueShuffleOrder());
   });
@@ -240,6 +241,53 @@ void main() {
 
       expect(attempts, 2);
       verify(player.stop).called(1);
+    });
+  });
+
+  group('replacing a queued source', () {
+    setUp(() {
+      when(() => player.removeAudioSourceAt(any())).thenAnswer((_) async {});
+      when(
+        () => player.insertAudioSource(any(), any()),
+      ).thenAnswer((_) async {});
+    });
+
+    test('- swaps the source sitting at that index', () async {
+      when(() => player.shuffleModeEnabled).thenReturn(false);
+
+      await target.replace(1, trackWith());
+
+      verifyInOrder([
+        () => player.removeAudioSourceAt(1),
+        () => player.insertAudioSource(1, any()),
+      ]);
+    });
+
+    test('- holds the entry in its shuffle slot', () async {
+      when(() => player.shuffleModeEnabled).thenReturn(true);
+
+      await target.load(
+        [trackWith(), trackWith(), trackWith()],
+        initialIndex: 0,
+        initialPosition: Duration.zero,
+        autoPlay: false,
+      );
+      final order =
+          verify(
+                () => player.setAudioSources(
+                  any(),
+                  initialIndex: any(named: 'initialIndex'),
+                  initialPosition: any(named: 'initialPosition'),
+                  preload: any(named: 'preload'),
+                  shuffleOrder: captureAny(named: 'shuffleOrder'),
+                ),
+              ).captured.single
+              as QueueShuffleOrder;
+      order.indices.addAll([2, 0, 1]);
+
+      await target.replace(1, trackWith());
+
+      expect(order.nextInsertPosition, 2);
     });
   });
 

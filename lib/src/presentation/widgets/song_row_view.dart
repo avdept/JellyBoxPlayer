@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -110,6 +111,12 @@ class SongRowView extends ConsumerWidget {
                 width: imageSize,
                 height: imageSize,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Image.asset(
+                  Images.album,
+                  width: imageSize,
+                  height: imageSize,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
       leadingToTitle: isMobile ? 12 : 16,

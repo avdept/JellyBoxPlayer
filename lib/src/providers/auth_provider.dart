@@ -20,6 +20,7 @@ import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
@@ -220,6 +221,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     state = const AsyncLoading();
     try {
       await _stopPlayback();
+      await _purgeQueueCache();
       PaintingBinding.instance.imageCache.clear();
       await Future.wait([
         ref.read(sharedPreferencesProvider).requireValue.clear(),
@@ -237,6 +239,15 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   Future<void> _stopPlayback() async {
     try {
       await ref.read(playbackProvider.notifier).clear();
+    } on Object {
+      return;
+    }
+  }
+
+  Future<void> _purgeQueueCache() async {
+    try {
+      await ref.read(forwardCacheProvider.notifier).cancelPending();
+      await ref.read(queueCacheServiceProvider).purge();
     } on Object {
       return;
     }

@@ -31,6 +31,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   final Ref _ref;
   final _playSessionIds = <String, String>{};
+  final _localSongIds = <String>{};
+  Future<void> _adoptions = Future<void>.value();
   late PlaybackTarget _target;
   StreamSubscription<TargetPlaybackState>? _targetSubscription;
   TargetPlaybackState _targetState = TargetPlaybackState.idle;
@@ -41,9 +43,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _preparingQueue = false;
   var _queueEditsInFlight = 0;
   var _fallingBack = false;
+  var _recoveringLostCache = false;
   Timer? _progressTimer;
 
   PlaybackTarget get target => _target;
+
+  bool get supportsLocalFiles => _target.supportsLocalFiles;
 
   LibraryItem? get _reportedSong {
     final index = _reportedIndex;
@@ -53,6 +58,18 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   void _onTargetFailure() {
     if (_target.kind == PlaybackTargetKind.local) {
       if (state.status == PlaybackStatus.error) return;
+      if (_recoveringLostCache) return;
+      final index = state.currentMediaIndex;
+      final song = index != null ? state.songs.elementAtOrNull(index) : null;
+      final album = state.album;
+      if (song != null &&
+          album != null &&
+          _localSongIds.contains(song.id) &&
+          !_ref.read(isOfflineProvider)) {
+        _recoveringLostCache = true;
+        unawaited(_recoverFromLostCache(song, album));
+        return;
+      }
       state = state.copyWith(status: PlaybackStatus.error);
       return;
     }
@@ -60,6 +77,31 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _fallingBack = true;
     _ref.read(castFailureProvider.notifier).report(_target.name);
     _ref.read(playbackTargetProvider.notifier).useLocal();
+  }
+
+  Future<void> _recoverFromLostCache(
+    LibraryItem song,
+    LibraryItem album,
+  ) async {
+    try {
+      if ((await _cachedPaths([song])).containsKey(song.id)) {
+        state = state.copyWith(status: PlaybackStatus.error);
+        return;
+      }
+      _localSongIds.remove(song.id);
+      try {
+        await _ref.read(queueCacheDatabaseProvider).delete(song.id);
+      } on Object catch (error) {
+        debugPrint('[Playback] dropping a lost cache row failed: $error');
+      }
+      debugPrint('[Playback] "${song.name}" lost its cached file; restreaming');
+      await play(song, state.songs, album, initialPosition: state.position);
+    } on Object catch (error) {
+      debugPrint('[Playback] recovering a lost cached file failed: $error');
+      state = state.copyWith(status: PlaybackStatus.error);
+    } finally {
+      _recoveringLostCache = false;
+    }
   }
 
   void _listenToTarget() {
@@ -317,16 +359,26 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         for (final song in songs) song.id: '$deviceId-$stamp-${song.id}',
       };
 
+      final cachedPaths = await _cachedPaths(songs);
       final resolved = await Future.wait(
-        songs.map((song) => _resolveTrack(song, album, sessionIds[song.id]!)),
+        songs.map(
+          (song) => _resolveTrack(
+            song,
+            album,
+            sessionIds[song.id]!,
+            cachedPath: cachedPaths[song.id],
+          ),
+        ),
       );
 
       final playableSongs = <LibraryItem>[];
       final tracks = <TargetTrack>[];
+      final localIds = <String>{};
       for (final entry in resolved) {
         if (entry == null) continue;
         playableSongs.add(entry.song);
         tracks.add(entry.track);
+        if (entry.track.isLocalFile) localIds.add(entry.song.id);
       }
 
       if (tracks.isEmpty) {
@@ -342,6 +394,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _playSessionIds
         ..clear()
         ..addAll(sessionIds);
+      _localSongIds
+        ..clear()
+        ..addAll(localIds);
       _preparingQueue = true;
       _reportedIndex = null;
 
@@ -402,11 +457,26 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  Future<Map<String, String>> _cachedPaths(List<LibraryItem> songs) async {
+    if (!_target.supportsLocalFiles || songs.isEmpty) {
+      return const <String, String>{};
+    }
+    try {
+      return await _ref
+          .read(queueCacheDatabaseProvider)
+          .pathsFor([for (final song in songs) song.id]);
+    } on Object catch (error) {
+      debugPrint('[Playback] reading cached paths failed: $error');
+      return const <String, String>{};
+    }
+  }
+
   Future<({LibraryItem song, TargetTrack track})?> _resolveTrack(
     LibraryItem song,
     LibraryItem album,
-    String playSessionId,
-  ) async {
+    String playSessionId, {
+    String? cachedPath,
+  }) async {
     final isDownloaded = await _ref
         .read(downloadManagerProvider.notifier)
         .isSongDownloaded(song.id);
@@ -415,15 +485,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
               .read(downloadDatabaseProvider)
               .getDownloadedSongPath(song.id)
         : null;
+    final localPath =
+        downloadedPath ?? (_target.supportsLocalFiles ? cachedPath : null);
 
-    if (downloadedPath == null && _ref.read(isOfflineProvider)) return null;
+    if (localPath == null && _ref.read(isOfflineProvider)) return null;
 
     Uri uri;
     var isHls = false;
     var transcoded = false;
     var mimeType = 'application/octet-stream';
-    if (downloadedPath != null) {
-      uri = Uri.file(downloadedPath);
+    if (localPath != null) {
+      uri = Uri.file(localPath);
     } else {
       final resolved = await _ref
           .read(mediaServerClientProvider)
@@ -598,8 +670,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
     final sessionId = '$deviceId-$stamp-${song.id}';
-    final resolved = await _resolveTrack(song, album, sessionId);
+    final cachedPaths = await _cachedPaths([song]);
+    final resolved = await _resolveTrack(
+      song,
+      album,
+      sessionId,
+      cachedPath: cachedPaths[song.id],
+    );
     if (resolved == null) return false;
+    if (resolved.track.isLocalFile) {
+      _localSongIds.add(song.id);
+    } else {
+      _localSongIds.remove(song.id);
+    }
 
     final current = state.currentMediaIndex;
     final index = playNext
@@ -678,7 +761,72 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> clear() async {
     await stop();
+    _localSongIds.clear();
     state = PlaybackState.initial();
+  }
+
+  Future<void> adoptCachedFiles(Map<String, String> pathsById) {
+    final pending = _adoptions.then((_) => _adoptCachedFiles(pathsById));
+    _adoptions = pending.then(
+      (_) {},
+      onError: (Object error) =>
+          debugPrint('[Playback] adopting cached files failed: $error'),
+    );
+    return pending;
+  }
+
+  Future<void> _adoptCachedFiles(Map<String, String> pathsById) async {
+    if (pathsById.isEmpty || !_target.supportsLocalFiles) return;
+    final target = _target;
+    if (target is! SwappableQueue) return;
+    final album = state.album;
+    if (album == null) return;
+
+    final songs = state.songs;
+    final queueIds = [for (final song in songs) song.id];
+    final adopted = <String>{};
+    final playing = <String>{};
+
+    for (final (index, song) in songs.indexed) {
+      if (!_queueMatches(queueIds)) return;
+      if (_localSongIds.contains(song.id)) continue;
+      final path = pathsById[song.id];
+      if (path == null) continue;
+      if (index == state.currentMediaIndex) {
+        playing.add(song.id);
+        continue;
+      }
+
+      final sessionId = _playSessionIds[song.id];
+      if (sessionId == null) continue;
+      final resolved = await _resolveTrack(
+        song,
+        album,
+        sessionId,
+        cachedPath: path,
+      );
+      if (resolved == null || !resolved.track.isLocalFile) continue;
+      if (state.songs.elementAtOrNull(index)?.id != song.id) continue;
+      if (index == state.currentMediaIndex) {
+        playing.add(song.id);
+        continue;
+      }
+
+      await _editQueue(() => target.replace(index, resolved.track));
+      adopted.add(song.id);
+      debugPrint('[Playback] adopted cached file for "${song.name}"');
+    }
+
+    _localSongIds.addAll(adopted.where((id) => !playing.contains(id)));
+  }
+
+  bool _queueMatches(List<String> queueIds) {
+    final songs = state.songs;
+    if (songs.length != queueIds.length) return false;
+    for (var i = 0; i < songs.length; i++) {
+      if (songs[i].id != queueIds[i]) return false;
+    }
+    return true;
   }
 
   void toggleRepeat() {

@@ -13,5 +13,6 @@ export 'library_page.dart';
 export 'login_page.dart';
 export 'main_page.dart';
 export 'playlist_page.dart';
+export 'queue_cache_page.dart';
 export 'search_results_page.dart';
 export 'settings_page.dart';

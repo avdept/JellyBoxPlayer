@@ -10,7 +10,7 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
-class LocalPlaybackTarget implements PlaybackTarget {
+class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   LocalPlaybackTarget(this._player) {
     _subscriptions = [
       _player.currentIndexStream.listen((_) => _emit()),
@@ -136,6 +136,14 @@ class LocalPlaybackTarget implements PlaybackTarget {
           ? _shuffleOrder.positionAfterIndex(current)
           : _shuffleOrder.lastPosition;
     }
+    await _player.insertAudioSource(index, _audioSource(track));
+  }
+
+  @override
+  Future<void> replace(int index, TargetTrack track) async {
+    final position = _shuffleOrder.positionOfIndex(index);
+    await _player.removeAudioSourceAt(index);
+    _shuffleOrder.nextInsertPosition = position;
     await _player.insertAudioSource(index, _audioSource(track));
   }
 

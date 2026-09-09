@@ -17,6 +17,8 @@ enum AppSetting {
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
   playerVolume('player_volume', defaultValue: 1.0),
+  forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
+  forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{});
 
   const AppSetting(this.key, {this.defaultValue = false});
@@ -54,6 +56,24 @@ final browseLayoutProvider = Provider<BrowseLayout>(
         AppSetting.browseLayout,
       )] ??
       BrowseLayout.cards,
+);
+
+final forwardCacheLimitProvider = Provider<ForwardCacheLimit>(
+  (ref) =>
+      ForwardCacheLimit.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.forwardCacheLimit],
+        AppSetting.forwardCacheLimit,
+      )] ??
+      ForwardCacheLimit.off,
+);
+
+final forwardCacheWindowProvider = Provider<ForwardCacheWindow>(
+  (ref) =>
+      ForwardCacheWindow.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.forwardCacheWindow],
+        AppSetting.forwardCacheWindow,
+      )] ??
+      ForwardCacheWindow.min30,
 );
 
 final defaultStartPageProvider = Provider<StartPage>(

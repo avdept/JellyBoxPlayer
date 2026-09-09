@@ -39,6 +39,23 @@ class SettingsPage extends ConsumerWidget {
     StartPage.browse: 'Browse',
   };
 
+  static const Map<ForwardCacheWindow, String> _forwardCacheWindowLabels = {
+    ForwardCacheWindow.min10: '10 min',
+    ForwardCacheWindow.min15: '15 min',
+    ForwardCacheWindow.min30: '30 min',
+    ForwardCacheWindow.min45: '45 min',
+    ForwardCacheWindow.min60: '60 min',
+  };
+
+  static const Map<ForwardCacheLimit, String> _forwardCacheLabels = {
+    ForwardCacheLimit.off: 'Off',
+    ForwardCacheLimit.mb500: '500 MB',
+    ForwardCacheLimit.gb1: '1 GB',
+    ForwardCacheLimit.gb2: '2 GB',
+    ForwardCacheLimit.gb4: '4 GB',
+    ForwardCacheLimit.gb8: '8 GB',
+  };
+
   ButtonStyle get _buttonStyle => TextButton.styleFrom(
     padding: _buttonPadding,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -109,78 +126,113 @@ class SettingsPage extends ConsumerWidget {
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: contentPadding.left,
-                right: contentPadding.right,
-              ),
-              child: Wrap(
-                direction: Axis.vertical,
-                spacing: 4,
-                children: [
-                  _librariesButton(context),
-                  if (kDebugMode) _settingsButton(context),
-                  _changelogButton(context, device),
-                  _sectionHeader('Home Page'),
-                  _settingCheckbox(
-                    ref: ref,
-                    setting: AppSetting.generatedPlaylistsDisabled,
-                    label: 'Disable auto-generated playlists',
-                  ),
-                  _settingCheckbox(
-                    ref: ref,
-                    setting: AppSetting.favouritesHidden,
-                    label: 'Hide favourites',
-                  ),
-                  _settingCheckbox(
-                    ref: ref,
-                    setting: AppSetting.recentlyPlayedHidden,
-                    label: 'Hide recently played',
-                  ),
-                  _sectionHeader('UI'),
-                  _settingDropdown<StartPage>(
-                    context: context,
-                    label: 'Default start page',
-                    value: ref.watch(defaultStartPageProvider),
-                    options: _startPageLabels,
-                    onChanged: (value) => ref
-                        .read(appSettingsProvider.notifier)
-                        .setValue(AppSetting.defaultStartPage, value.name),
-                  ),
-                  _settingDropdown<ItemList>(
-                    context: context,
-                    label: 'Default browse tab',
-                    value: ref.watch(defaultBrowseTabProvider),
-                    options: _browseTabLabels,
-                    onChanged: (value) => ref
-                        .read(appSettingsProvider.notifier)
-                        .setValue(AppSetting.defaultBrowseTab, value.name),
-                  ),
-                  if (!device.isMobile) ...[
-                    _sectionHeader('Studio Mode'),
-                    if (supportsWindowFullscreen)
-                      _settingCheckbox(
-                        ref: ref,
-                        setting: AppSetting.studioModeFullscreen,
-                        label:
-                            'Make player full screen when Studio Mode enabled',
-                      ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: contentPadding.left,
+                  right: contentPadding.right,
+                  bottom: contentPadding.bottom,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
+                  children: [
+                    _librariesButton(context),
+                    if (kDebugMode) _settingsButton(context),
+                    if (kDebugMode) _queueCacheButton(context),
+                    _changelogButton(context, device),
+                    _sectionHeader('Home Page'),
                     _settingCheckbox(
                       ref: ref,
-                      setting: AppSetting.studioModeAnimation,
-                      label: 'Enable Studio Mode animation',
+                      setting: AppSetting.generatedPlaylistsDisabled,
+                      label: 'Disable auto-generated playlists',
                     ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.favouritesHidden,
+                      label: 'Hide favourites',
+                    ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.recentlyPlayedHidden,
+                      label: 'Hide recently played',
+                    ),
+                    _sectionHeader('UI'),
+                    _settingDropdown<StartPage>(
+                      context: context,
+                      label: 'Default start page',
+                      value: ref.watch(defaultStartPageProvider),
+                      options: _startPageLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.defaultStartPage, value.name),
+                    ),
+                    _settingDropdown<ItemList>(
+                      context: context,
+                      label: 'Default browse tab',
+                      value: ref.watch(defaultBrowseTabProvider),
+                      options: _browseTabLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.defaultBrowseTab, value.name),
+                    ),
+                    if (device.isMobile) ...[
+                      _sectionHeader('Offline'),
+                      _settingDropdown<ForwardCacheLimit>(
+                        context: context,
+                        label: 'Cache queue for offline',
+                        value: ref.watch(forwardCacheLimitProvider),
+                        options: _forwardCacheLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(AppSetting.forwardCacheLimit, value.name),
+                      ),
+                      if (ref.watch(forwardCacheLimitProvider).isEnabled)
+                        _settingDropdown<ForwardCacheWindow>(
+                          context: context,
+                          label: 'Cache ahead',
+                          value: ref.watch(forwardCacheWindowProvider),
+                          options: _forwardCacheWindowLabels,
+                          onChanged: (value) => ref
+                              .read(appSettingsProvider.notifier)
+                              .setValue(
+                                AppSetting.forwardCacheWindow,
+                                value.name,
+                              ),
+                        ),
+                    ],
+                    if (!device.isMobile) ...[
+                      _sectionHeader('Studio Mode'),
+                      if (supportsWindowFullscreen)
+                        _settingCheckbox(
+                          ref: ref,
+                          setting: AppSetting.studioModeFullscreen,
+                          label:
+                              'Make player full screen when Studio Mode enabled',
+                        ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModeAnimation,
+                        label: 'Enable Studio Mode animation',
+                      ),
+                    ],
+                    if (!device.isDesktop) _logOutButton(ref),
                   ],
-                  if (!device.isDesktop) _logOutButton(ref),
-                ],
+                ),
               ),
             ),
-            SizedBox(height: contentPadding.bottom),
           ],
         ),
       ),
     );
   }
+
+  Widget _queueCacheButton(BuildContext context) => TextButton.icon(
+    onPressed: () => context.pushNamed(Routes.queueCache.name),
+    style: _buttonStyle,
+    icon: const Icon(JPlayer.download),
+    label: const Text('Queue cache'),
+  );
 
   Widget _settingsButton(BuildContext context) => TextButton.icon(
     onPressed: () => _onPaletteSettingsPressed(context),

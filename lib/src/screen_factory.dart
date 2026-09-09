@@ -145,6 +145,15 @@ class ScreenFactory {
     );
   }
 
+  Page<void> queueCachePage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const NoTransitionPage(
+      child: QueueCachePage(),
+    );
+  }
+
   Page<void> palettePage(
     BuildContext context,
     GoRouterState router,

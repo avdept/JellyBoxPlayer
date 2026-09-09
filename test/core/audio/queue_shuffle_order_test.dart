@@ -60,6 +60,24 @@ void main() {
       expect(order.indices.toSet(), {0, 1, 2, 3, 4});
     });
 
+    test('reports the shuffle position of a queue index', () {
+      final order = orderOf([2, 0, 3, 1]);
+
+      expect(order.positionOfIndex(3), 2);
+      expect(order.positionOfIndex(9), isNull);
+    });
+
+    test('keeps a swapped entry in its own shuffle slot', () {
+      final order = orderOf([2, 0, 3, 1]);
+
+      final position = order.positionOfIndex(1);
+      order.removeRange(1, 2);
+      order.nextInsertPosition = position;
+      order.insert(1, 1);
+
+      expect(order.indices, [2, 0, 3, 1]);
+    });
+
     test('drops a removed range and closes the gap', () {
       final order = orderOf([2, 0, 3, 1]);
 

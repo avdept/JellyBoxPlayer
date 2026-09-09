@@ -120,3 +120,7 @@ abstract class PlaybackTarget {
 
   Future<void> dispose();
 }
+
+mixin SwappableQueue implements PlaybackTarget {
+  Future<void> replace(int index, TargetTrack track);
+}
