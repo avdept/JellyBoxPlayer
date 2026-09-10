@@ -13,6 +13,7 @@ import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
+import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -134,6 +135,8 @@ Future<void> main() async {
   if (Platform.isLinux || Platform.isWindows) {
     JustAudioMediaKit.ensureInitialized();
   }
+
+  if (Platform.isWindows) await SmtcHandler.initialize(container);
 
   await SentryFlutter.init(
     (options) {

@@ -68,6 +68,24 @@ jobs:
         with:
           deploy-key: ${{ secrets.UPNP_QUIRKS_DEPLOY_KEY }}
 
+      # smtc_windows compiles a Rust crate through cargokit, which only ever
+      # looks for an existing rustup on PATH or in ~/.cargo/bin and fails the
+      # build rather than bootstrapping one. windows-latest happens to ship
+      # Rust today; this pins it instead of depending on the image.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ runner.os }}-cargo-${{ hashFiles('pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
       - name: Build Windows app
         run: |
           flutter pub get
