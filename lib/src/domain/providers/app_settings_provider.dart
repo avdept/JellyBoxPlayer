@@ -19,6 +19,7 @@ enum AppSetting {
   playerVolume('player_volume', defaultValue: 1.0),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
+  discordRichPresence('discord_rich_presence'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{});
 
   const AppSetting(this.key, {this.defaultValue = false});

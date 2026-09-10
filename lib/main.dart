@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
+import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
@@ -137,6 +138,8 @@ Future<void> main() async {
   }
 
   if (Platform.isWindows) await SmtcHandler.initialize(container);
+
+  DiscordPresenceHandler.initialize(container);
 
   await SentryFlutter.init(
     (options) {
