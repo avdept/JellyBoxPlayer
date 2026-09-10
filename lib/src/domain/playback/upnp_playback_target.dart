@@ -379,6 +379,31 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     _emit(currentIndex: _index, duration: _currentTrack?.duration);
   }
 
+  @override
+  Future<void> reorder(
+    List<TargetTrack> tracks, {
+    required List<int> order,
+    required int currentIndex,
+  }) async {
+    if (tracks.isEmpty) return;
+    _tracks
+      ..clear()
+      ..addAll(tracks);
+    _index = currentIndex.clamp(0, _tracks.length - 1);
+
+    final queue = _deviceQueue;
+    if (queue == null) {
+      _emit(currentIndex: _index, duration: _currentTrack?.duration);
+      return;
+    }
+
+    await _handOverQueue(
+      queue,
+      initialPosition: _state.position,
+      autoPlay: _state.status.isPlaying,
+    );
+  }
+
   int _movedIndex(int index, int from, int to) {
     if (index == from) return to;
     if (from < to && index > from && index <= to) return index - 1;

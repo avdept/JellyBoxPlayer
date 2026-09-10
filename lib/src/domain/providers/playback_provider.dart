@@ -32,6 +32,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final Ref _ref;
   final _playSessionIds = <String, String>{};
   final _localSongIds = <String>{};
+  final _tracks = <TargetTrack>[];
+  List<String>? _unshuffledOrder;
   Future<void> _adoptions = Future<void>.value();
   late PlaybackTarget _target;
   StreamSubscription<TargetPlaybackState>? _targetSubscription;
@@ -95,7 +97,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         debugPrint('[Playback] dropping a lost cache row failed: $error');
       }
       debugPrint('[Playback] "${song.name}" lost its cached file; restreaming');
-      await play(song, state.songs, album, initialPosition: state.position);
+      await play(
+        song,
+        state.songs,
+        album,
+        initialPosition: state.position,
+        reshuffle: false,
+      );
     } on Object catch (error) {
       debugPrint('[Playback] recovering a lost cached file failed: $error');
       state = state.copyWith(status: PlaybackStatus.error);
@@ -225,6 +233,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       album,
       initialPosition: position,
       autoPlay: wasPlaying,
+      reshuffle: false,
     );
   }
 
@@ -352,6 +361,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     LibraryItem album, {
     Duration? initialPosition,
     bool autoPlay = true,
+    bool reshuffle = true,
   }) async {
     try {
       final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
@@ -400,9 +410,31 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _preparingQueue = true;
       _reportedIndex = null;
 
+      if (reshuffle) {
+        if (state.shuffleEnabled) {
+          final source = [...playableSongs];
+          final sourceTracks = [...tracks];
+          final start = source.indexWhere((song) => song.id == playSong.id);
+          final order = _shuffledOrder(start < 0 ? 0 : start, source.length);
+          _unshuffledOrder = [for (final song in source) song.id];
+          playableSongs
+            ..clear()
+            ..addAll([for (final index in order) source[index]]);
+          tracks
+            ..clear()
+            ..addAll([for (final index in order) sourceTracks[index]]);
+        } else {
+          _unshuffledOrder = null;
+        }
+      }
+
       final startIndex = playableSongs.indexWhere((s) => s.id == playSong.id);
       final effectiveIndex = startIndex >= 0 ? startIndex : 0;
       final startPosition = initialPosition ?? Duration.zero;
+
+      _tracks
+        ..clear()
+        ..addAll(tracks);
 
       await _target.load(
         tracks,
@@ -625,6 +657,101 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (autoPlay && !_targetState.status.isPlaying) await _target.play();
   }
 
+  Future<void> setShuffle({required bool enabled}) async {
+    if (enabled == state.shuffleEnabled) return;
+
+    final songs = state.songs;
+    if (songs.isEmpty) {
+      state = state.copyWith(shuffleEnabled: enabled);
+      return;
+    }
+    if (_tracks.length != songs.length) {
+      debugPrint('[Playback] queue is out of sync; leaving its order alone');
+      state = state.copyWith(shuffleEnabled: enabled);
+      return;
+    }
+
+    final current = (state.currentMediaIndex ?? 0).clamp(0, songs.length - 1);
+    final order = enabled
+        ? _shuffledOrder(current, songs.length)
+        : _unshuffledIndices(songs);
+    _unshuffledOrder = enabled ? [for (final song in songs) song.id] : null;
+
+    state = state.copyWith(shuffleEnabled: enabled);
+    await _applyOrder(order);
+
+    final playing = state.currentMediaIndex;
+    final song = playing != null ? state.songs.elementAtOrNull(playing) : null;
+    if (song != null) {
+      unawaited(
+        _saveToStorage(
+          songId: song.id,
+          positionMs: state.position.inMilliseconds,
+        ),
+      );
+    }
+  }
+
+  List<int> _shuffledOrder(int current, int length) {
+    final rest = [
+      for (var index = 0; index < length; index++)
+        if (index != current) index,
+    ]..shuffle();
+    return [current, ...rest];
+  }
+
+  List<int> _unshuffledIndices(List<LibraryItem> songs) {
+    final original = _unshuffledOrder;
+    if (original == null) {
+      return [for (var index = 0; index < songs.length; index++) index];
+    }
+
+    final positions = <String, List<int>>{};
+    for (final (position, id) in original.indexed) {
+      (positions[id] ??= <int>[]).add(position);
+    }
+
+    final ranked = <({int rank, int index})>[];
+    for (final (index, song) in songs.indexed) {
+      final queued = positions[song.id];
+      final rank = queued == null || queued.isEmpty
+          ? original.length + index
+          : queued.removeAt(0);
+      ranked.add((rank: rank, index: index));
+    }
+    ranked.sort((a, b) => a.rank.compareTo(b.rank));
+    return [for (final entry in ranked) entry.index];
+  }
+
+  Future<void> _applyOrder(List<int> order) async {
+    final songs = state.songs;
+    final tracks = [for (final index in order) _tracks[index]];
+    final current = state.currentMediaIndex;
+    final currentIndex = current != null ? order.indexOf(current) : null;
+
+    final reported = _reportedIndex;
+    if (reported != null) {
+      final moved = order.indexOf(reported);
+      _reportedIndex = moved < 0 ? null : moved;
+    }
+
+    _tracks
+      ..clear()
+      ..addAll(tracks);
+    state = state.copyWith(
+      songs: [for (final index in order) songs[index]],
+      currentMediaIndex: currentIndex,
+    );
+
+    await _editQueue(
+      () => _target.reorder(
+        tracks,
+        order: order,
+        currentIndex: currentIndex ?? 0,
+      ),
+    );
+  }
+
   Future<void> _rewindToQueueStart() async {
     await _target.pause();
     await _target.skipTo(0);
@@ -643,6 +770,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (to < 0 || to >= songs.length) return;
 
     songs.insert(to, songs.removeAt(from));
+    _tracks.insert(to, _tracks.removeAt(from));
     final current = state.currentMediaIndex;
     final reported = _reportedIndex;
     if (reported != null) _reportedIndex = _movedIndex(reported, from, to);
@@ -690,6 +818,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         : state.songs.length;
 
     _playSessionIds[song.id] = sessionId;
+    _tracks.insert(index.clamp(0, _tracks.length), resolved.track);
     state = state.copyWith(
       songs: [...state.songs]..insert(index, resolved.song),
       currentMediaIndex: current != null && index <= current
@@ -710,6 +839,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     final wasCurrent = state.currentMediaIndex == index;
     songs.removeAt(index);
+    if (index < _tracks.length) _tracks.removeAt(index);
 
     if (wasCurrent) {
       _reportStopped();
@@ -762,6 +892,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> clear() async {
     await stop();
     _localSongIds.clear();
+    _tracks.clear();
+    _unshuffledOrder = null;
     state = PlaybackState.initial();
   }
 
@@ -813,6 +945,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
 
       await _editQueue(() => target.replace(index, resolved.track));
+      if (index < _tracks.length) _tracks[index] = resolved.track;
       adopted.add(song.id);
       debugPrint('[Playback] adopted cached file for "${song.name}"');
     }
@@ -869,6 +1002,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       snapshot.album,
       initialPosition: Duration(milliseconds: snapshot.positionMs),
       autoPlay: false,
+      reshuffle: false,
     );
     return true;
   }
