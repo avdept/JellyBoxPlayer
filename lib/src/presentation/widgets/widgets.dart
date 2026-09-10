@@ -6,6 +6,7 @@ export 'anchored_dropdown.dart';
 export 'app_dropdown.dart';
 export 'audio_quality_badge.dart';
 export 'bottom_player.dart';
+export 'certificate_trust_dialog.dart';
 export 'circle_play_button.dart';
 export 'clickable_widget.dart';
 export 'cover_mosaic.dart';

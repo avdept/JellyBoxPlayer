@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'dart:io' show HttpOverrides, Platform;
 import 'dart:math' show max;
 
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -12,6 +12,7 @@ import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
+import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -78,10 +79,15 @@ Future<void> main() async {
     );
   }
 
+  final prefs = await SharedPreferences.getInstance();
+  await CertificateTrust.instance.load(prefs);
+  HttpOverrides.global = TrustedCertificateHttpOverrides(
+    CertificateTrust.instance,
+  );
+
   final container = ProviderContainer();
   if (Platform.isIOS) CarPlayHandler.initialize(container);
 
-  final prefs = await SharedPreferences.getInstance();
   final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
 
   // Window settings

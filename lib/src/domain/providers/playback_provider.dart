@@ -494,9 +494,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       return const <String, String>{};
     }
     try {
-      return await _ref
-          .read(queueCacheDatabaseProvider)
-          .pathsFor([for (final song in songs) song.id]);
+      return await _ref.read(queueCacheDatabaseProvider).pathsFor([
+        for (final song in songs) song.id,
+      ]);
     } on Object catch (error) {
       debugPrint('[Playback] reading cached paths failed: $error');
       return const <String, String>{};
@@ -546,6 +546,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (_target.kind == PlaybackTargetKind.upnp) {
       uri = await rendererUriResolver.resolve(uri);
       if (artUri != null) artUri = await rendererUriResolver.resolve(artUri);
+    } else {
+      final proxy = _ref.read(streamProxyProvider);
+      uri = await proxy.resolve(uri);
+      if (artUri != null) artUri = await proxy.resolve(artUri);
     }
 
     final audioSource = song.audioSources.firstOrNull;
