@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -212,6 +213,14 @@ class SettingsPage extends ConsumerWidget {
                         ref: ref,
                         setting: AppSetting.studioModeAnimation,
                         label: 'Enable Studio Mode animation',
+                      ),
+                    ],
+                    if (supportsDiscordPresence) ...[
+                      _sectionHeader('Discord'),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.discordRichPresence,
+                        label: 'Share what I am listening to on Discord',
                       ),
                     ],
                     if (!device.isDesktop) _logOutButton(ref),
