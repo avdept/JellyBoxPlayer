@@ -19,6 +19,13 @@
 #define MyAppPublisher "JellyBox"
 #define MyAppURL "https://github.com/avdept/JellyBoxPlayer"
 #define MyAppExeName "jellybox.exe"
+; Explicit Application User Model ID. The shell resolves a running process's
+; AppUserModelID to a display name and icon by finding the shortcut that
+; carries the same System.AppUserModel.ID, which is what makes the Windows
+; media flyout show "JellyBox" and its icon instead of "Unknown app". MUST
+; stay identical to the string passed to SetCurrentProcessExplicitAppUserModelID
+; in windows/runner/main.cpp, and must never change (it resets taskbar pins).
+#define MyAppUserModelID "JellyBox.Player"
 
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
@@ -92,8 +99,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#AppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+; AppUserModelID must be on every shortcut for the app, per the AppUserModelID docs.
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; AppUserModelID: "{#MyAppUserModelID}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; AppUserModelID: "{#MyAppUserModelID}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
