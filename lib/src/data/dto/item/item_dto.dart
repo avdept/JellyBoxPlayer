@@ -18,7 +18,7 @@ abstract class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'PlaylistItemId') String? playlistItemId,
     @JsonKey(name: 'Overview') String? overview,
     @JsonKey(name: 'ProductionYear') int? productionYear,
-    // @JsonKey(name: 'ArtistItems') @Default([]) List<ArtistDTO> artists,
+    @JsonKey(name: 'ArtistItems') @Default([]) List<ArtistDTO> artists,
     @JsonKey(name: 'AlbumId') String? albumId,
     @JsonKey(name: 'AlbumPrimaryImageTag') String? albumPrimaryImageTag,
     @JsonKey(name: 'Album') String? albumName,

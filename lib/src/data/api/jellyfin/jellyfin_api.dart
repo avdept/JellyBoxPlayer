@@ -37,7 +37,8 @@ abstract class JellyfinApi {
     @Path('userId') required String userId,
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'music',
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -51,7 +52,8 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Ascending',
     @Query('Filters') List<String> filters = const [],
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -68,7 +70,8 @@ abstract class JellyfinApi {
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '300',
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -116,7 +119,8 @@ abstract class JellyfinApi {
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -161,13 +165,15 @@ abstract class JellyfinApi {
     @Path('playlistId') required String playlistId,
     @Query('userId') required String userId,
     @Query('IncludeItemTypes') String includeType = 'music',
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Items/{itemId}')
   Future<HttpResponse<ItemDTO>> getItem({
     @Path('itemId') required String itemId,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Audio/{itemId}/Lyrics')

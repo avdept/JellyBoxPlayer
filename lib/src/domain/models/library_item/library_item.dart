@@ -24,6 +24,7 @@ abstract class LibraryItem with _$LibraryItem {
     String? albumName,
     String? albumArtist,
     @Default([]) List<ArtistRef> albumArtists,
+    @Default([]) List<ArtistRef> artists,
     @Default([]) List<String> genres,
     @Default(ImageRefs()) ImageRefs images,
     @Default(false) bool hasLyrics,
@@ -34,6 +35,13 @@ abstract class LibraryItem with _$LibraryItem {
   const LibraryItem._();
 
   String get primaryImageId => images.primaryItemId ?? id;
+
+  List<ArtistRef> get effectiveArtists =>
+      artists.isNotEmpty ? artists : albumArtists;
+
+  String get artistLabel => effectiveArtists.isNotEmpty
+      ? effectiveArtists.map((artist) => artist.name).join(', ')
+      : (albumArtist ?? '');
 
   // ignore: prefer_constructors_over_static_methods
   static LibraryItem fromJson(Map<String, dynamic> json) => LibraryItem(
@@ -51,6 +59,9 @@ abstract class LibraryItem with _$LibraryItem {
     albumName: json['albumName'] as String?,
     albumArtist: json['albumArtist'] as String?,
     albumArtists: (json['albumArtists'] as List<dynamic>? ?? [])
+        .map((e) => ArtistRef.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    artists: (json['artists'] as List<dynamic>? ?? [])
         .map((e) => ArtistRef.fromJson(e as Map<String, dynamic>))
         .toList(),
     genres: (json['genres'] as List<dynamic>? ?? []).cast<String>(),
@@ -83,6 +94,7 @@ extension LibraryItemJson on LibraryItem {
     'albumName': albumName,
     'albumArtist': albumArtist,
     'albumArtists': albumArtists.map((artist) => artist.toJson()).toList(),
+    'artists': artists.map((artist) => artist.toJson()).toList(),
     'genres': genres,
     'images': images.toJson(),
     'hasLyrics': hasLyrics,

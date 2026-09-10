@@ -137,7 +137,8 @@ class SongRowView extends ConsumerWidget {
         children: [
           Flexible(
             child: ClickableWidget(
-              onPressed: (onArtistTap != null && song.albumArtists.isNotEmpty)
+              onPressed:
+                  (onArtistTap != null && song.effectiveArtists.isNotEmpty)
                   ? () => onArtistTap!(song)
                   : null,
               textStyle: TextStyle(
@@ -147,7 +148,7 @@ class SongRowView extends ConsumerWidget {
                 color: secondaryColor,
                 overflow: TextOverflow.ellipsis,
               ),
-              child: Text(song.albumArtist ?? '', maxLines: 1),
+              child: Text(song.artistLabel, maxLines: 1),
             ),
           ),
           if (quality != null) ...[

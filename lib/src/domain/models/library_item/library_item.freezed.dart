@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LibraryItem {
 
- String get id; String get name; ItemKind get kind; int get indexNumber; Duration get duration; String? get path; String? get collectionType; String? get playlistItemId; String? get overview; int? get productionYear; String? get albumId; String? get albumName; String? get albumArtist; List<ArtistRef> get albumArtists; List<String> get genres; ImageRefs get images; bool get hasLyrics; PlaybackUserData get userData; List<AudioSourceInfo> get audioSources;
+ String get id; String get name; ItemKind get kind; int get indexNumber; Duration get duration; String? get path; String? get collectionType; String? get playlistItemId; String? get overview; int? get productionYear; String? get albumId; String? get albumName; String? get albumArtist; List<ArtistRef> get albumArtists; List<ArtistRef> get artists; List<String> get genres; ImageRefs get images; bool get hasLyrics; PlaybackUserData get userData; List<AudioSourceInfo> get audioSources;
 /// Create a copy of LibraryItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $LibraryItemCopyWith<LibraryItem> get copyWith => _$LibraryItemCopyWithImpl<Libr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LibraryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other.albumArtists, albumArtists)&&const DeepCollectionEquality().equals(other.genres, genres)&&(identical(other.images, images) || other.images == images)&&(identical(other.hasLyrics, hasLyrics) || other.hasLyrics == hasLyrics)&&(identical(other.userData, userData) || other.userData == userData)&&const DeepCollectionEquality().equals(other.audioSources, audioSources));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LibraryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other.albumArtists, albumArtists)&&const DeepCollectionEquality().equals(other.artists, artists)&&const DeepCollectionEquality().equals(other.genres, genres)&&(identical(other.images, images) || other.images == images)&&(identical(other.hasLyrics, hasLyrics) || other.hasLyrics == hasLyrics)&&(identical(other.userData, userData) || other.userData == userData)&&const DeepCollectionEquality().equals(other.audioSources, audioSources));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,kind,indexNumber,duration,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(albumArtists),const DeepCollectionEquality().hash(genres),images,hasLyrics,userData,const DeepCollectionEquality().hash(audioSources)]);
+int get hashCode => Object.hashAll([runtimeType,id,name,kind,indexNumber,duration,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(albumArtists),const DeepCollectionEquality().hash(artists),const DeepCollectionEquality().hash(genres),images,hasLyrics,userData,const DeepCollectionEquality().hash(audioSources)]);
 
 @override
 String toString() {
-  return 'LibraryItem(id: $id, name: $name, kind: $kind, indexNumber: $indexNumber, duration: $duration, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, genres: $genres, images: $images, hasLyrics: $hasLyrics, userData: $userData, audioSources: $audioSources)';
+  return 'LibraryItem(id: $id, name: $name, kind: $kind, indexNumber: $indexNumber, duration: $duration, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, artists: $artists, genres: $genres, images: $images, hasLyrics: $hasLyrics, userData: $userData, audioSources: $audioSources)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $LibraryItemCopyWith<$Res>  {
   factory $LibraryItemCopyWith(LibraryItem value, $Res Function(LibraryItem) _then) = _$LibraryItemCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, ItemKind kind, int indexNumber, Duration duration, String? path, String? collectionType, String? playlistItemId, String? overview, int? productionYear, String? albumId, String? albumName, String? albumArtist, List<ArtistRef> albumArtists, List<String> genres, ImageRefs images, bool hasLyrics, PlaybackUserData userData, List<AudioSourceInfo> audioSources
+ String id, String name, ItemKind kind, int indexNumber, Duration duration, String? path, String? collectionType, String? playlistItemId, String? overview, int? productionYear, String? albumId, String? albumName, String? albumArtist, List<ArtistRef> albumArtists, List<ArtistRef> artists, List<String> genres, ImageRefs images, bool hasLyrics, PlaybackUserData userData, List<AudioSourceInfo> audioSources
 });
 
 
@@ -62,7 +62,7 @@ class _$LibraryItemCopyWithImpl<$Res>
 
 /// Create a copy of LibraryItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? kind = null,Object? indexNumber = null,Object? duration = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? genres = null,Object? images = null,Object? hasLyrics = null,Object? userData = null,Object? audioSources = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? kind = null,Object? indexNumber = null,Object? duration = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? artists = null,Object? genres = null,Object? images = null,Object? hasLyrics = null,Object? userData = null,Object? audioSources = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -78,6 +78,7 @@ as int?,albumId: freezed == albumId ? _self.albumId : albumId // ignore: cast_nu
 as String?,albumName: freezed == albumName ? _self.albumName : albumName // ignore: cast_nullable_to_non_nullable
 as String?,albumArtist: freezed == albumArtist ? _self.albumArtist : albumArtist // ignore: cast_nullable_to_non_nullable
 as String?,albumArtists: null == albumArtists ? _self.albumArtists : albumArtists // ignore: cast_nullable_to_non_nullable
+as List<ArtistRef>,artists: null == artists ? _self.artists : artists // ignore: cast_nullable_to_non_nullable
 as List<ArtistRef>,genres: null == genres ? _self.genres : genres // ignore: cast_nullable_to_non_nullable
 as List<String>,images: null == images ? _self.images : images // ignore: cast_nullable_to_non_nullable
 as ImageRefs,hasLyrics: null == hasLyrics ? _self.hasLyrics : hasLyrics // ignore: cast_nullable_to_non_nullable
@@ -186,10 +187,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  ItemKind kind,  int indexNumber,  Duration duration,  String? path,  String? collectionType,  String? playlistItemId,  String? overview,  int? productionYear,  String? albumId,  String? albumName,  String? albumArtist,  List<ArtistRef> albumArtists,  List<String> genres,  ImageRefs images,  bool hasLyrics,  PlaybackUserData userData,  List<AudioSourceInfo> audioSources)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  ItemKind kind,  int indexNumber,  Duration duration,  String? path,  String? collectionType,  String? playlistItemId,  String? overview,  int? productionYear,  String? albumId,  String? albumName,  String? albumArtist,  List<ArtistRef> albumArtists,  List<ArtistRef> artists,  List<String> genres,  ImageRefs images,  bool hasLyrics,  PlaybackUserData userData,  List<AudioSourceInfo> audioSources)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LibraryItem() when $default != null:
-return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.genres,_that.images,_that.hasLyrics,_that.userData,_that.audioSources);case _:
+return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.artists,_that.genres,_that.images,_that.hasLyrics,_that.userData,_that.audioSources);case _:
   return orElse();
 
 }
@@ -207,10 +208,10 @@ return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  ItemKind kind,  int indexNumber,  Duration duration,  String? path,  String? collectionType,  String? playlistItemId,  String? overview,  int? productionYear,  String? albumId,  String? albumName,  String? albumArtist,  List<ArtistRef> albumArtists,  List<String> genres,  ImageRefs images,  bool hasLyrics,  PlaybackUserData userData,  List<AudioSourceInfo> audioSources)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  ItemKind kind,  int indexNumber,  Duration duration,  String? path,  String? collectionType,  String? playlistItemId,  String? overview,  int? productionYear,  String? albumId,  String? albumName,  String? albumArtist,  List<ArtistRef> albumArtists,  List<ArtistRef> artists,  List<String> genres,  ImageRefs images,  bool hasLyrics,  PlaybackUserData userData,  List<AudioSourceInfo> audioSources)  $default,) {final _that = this;
 switch (_that) {
 case _LibraryItem():
-return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.genres,_that.images,_that.hasLyrics,_that.userData,_that.audioSources);case _:
+return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.artists,_that.genres,_that.images,_that.hasLyrics,_that.userData,_that.audioSources);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +228,10 @@ return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  ItemKind kind,  int indexNumber,  Duration duration,  String? path,  String? collectionType,  String? playlistItemId,  String? overview,  int? productionYear,  String? albumId,  String? albumName,  String? albumArtist,  List<ArtistRef> albumArtists,  List<String> genres,  ImageRefs images,  bool hasLyrics,  PlaybackUserData userData,  List<AudioSourceInfo> audioSources)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  ItemKind kind,  int indexNumber,  Duration duration,  String? path,  String? collectionType,  String? playlistItemId,  String? overview,  int? productionYear,  String? albumId,  String? albumName,  String? albumArtist,  List<ArtistRef> albumArtists,  List<ArtistRef> artists,  List<String> genres,  ImageRefs images,  bool hasLyrics,  PlaybackUserData userData,  List<AudioSourceInfo> audioSources)?  $default,) {final _that = this;
 switch (_that) {
 case _LibraryItem() when $default != null:
-return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.genres,_that.images,_that.hasLyrics,_that.userData,_that.audioSources);case _:
+return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,_that.path,_that.collectionType,_that.playlistItemId,_that.overview,_that.productionYear,_that.albumId,_that.albumName,_that.albumArtist,_that.albumArtists,_that.artists,_that.genres,_that.images,_that.hasLyrics,_that.userData,_that.audioSources);case _:
   return null;
 
 }
@@ -242,7 +243,7 @@ return $default(_that.id,_that.name,_that.kind,_that.indexNumber,_that.duration,
 
 
 class _LibraryItem extends LibraryItem {
-  const _LibraryItem({required this.id, required this.name, required this.kind, this.indexNumber = 0, this.duration = Duration.zero, this.path, this.collectionType, this.playlistItemId, this.overview, this.productionYear, this.albumId, this.albumName, this.albumArtist, final  List<ArtistRef> albumArtists = const [], final  List<String> genres = const [], this.images = const ImageRefs(), this.hasLyrics = false, this.userData = const PlaybackUserData(), final  List<AudioSourceInfo> audioSources = const []}): _albumArtists = albumArtists,_genres = genres,_audioSources = audioSources,super._();
+  const _LibraryItem({required this.id, required this.name, required this.kind, this.indexNumber = 0, this.duration = Duration.zero, this.path, this.collectionType, this.playlistItemId, this.overview, this.productionYear, this.albumId, this.albumName, this.albumArtist, final  List<ArtistRef> albumArtists = const [], final  List<ArtistRef> artists = const [], final  List<String> genres = const [], this.images = const ImageRefs(), this.hasLyrics = false, this.userData = const PlaybackUserData(), final  List<AudioSourceInfo> audioSources = const []}): _albumArtists = albumArtists,_artists = artists,_genres = genres,_audioSources = audioSources,super._();
   
 
 @override final  String id;
@@ -263,6 +264,13 @@ class _LibraryItem extends LibraryItem {
   if (_albumArtists is EqualUnmodifiableListView) return _albumArtists;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_albumArtists);
+}
+
+ final  List<ArtistRef> _artists;
+@override@JsonKey() List<ArtistRef> get artists {
+  if (_artists is EqualUnmodifiableListView) return _artists;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_artists);
 }
 
  final  List<String> _genres;
@@ -293,16 +301,16 @@ _$LibraryItemCopyWith<_LibraryItem> get copyWith => __$LibraryItemCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LibraryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other._albumArtists, _albumArtists)&&const DeepCollectionEquality().equals(other._genres, _genres)&&(identical(other.images, images) || other.images == images)&&(identical(other.hasLyrics, hasLyrics) || other.hasLyrics == hasLyrics)&&(identical(other.userData, userData) || other.userData == userData)&&const DeepCollectionEquality().equals(other._audioSources, _audioSources));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LibraryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.indexNumber, indexNumber) || other.indexNumber == indexNumber)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.path, path) || other.path == path)&&(identical(other.collectionType, collectionType) || other.collectionType == collectionType)&&(identical(other.playlistItemId, playlistItemId) || other.playlistItemId == playlistItemId)&&(identical(other.overview, overview) || other.overview == overview)&&(identical(other.productionYear, productionYear) || other.productionYear == productionYear)&&(identical(other.albumId, albumId) || other.albumId == albumId)&&(identical(other.albumName, albumName) || other.albumName == albumName)&&(identical(other.albumArtist, albumArtist) || other.albumArtist == albumArtist)&&const DeepCollectionEquality().equals(other._albumArtists, _albumArtists)&&const DeepCollectionEquality().equals(other._artists, _artists)&&const DeepCollectionEquality().equals(other._genres, _genres)&&(identical(other.images, images) || other.images == images)&&(identical(other.hasLyrics, hasLyrics) || other.hasLyrics == hasLyrics)&&(identical(other.userData, userData) || other.userData == userData)&&const DeepCollectionEquality().equals(other._audioSources, _audioSources));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,kind,indexNumber,duration,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(_albumArtists),const DeepCollectionEquality().hash(_genres),images,hasLyrics,userData,const DeepCollectionEquality().hash(_audioSources)]);
+int get hashCode => Object.hashAll([runtimeType,id,name,kind,indexNumber,duration,path,collectionType,playlistItemId,overview,productionYear,albumId,albumName,albumArtist,const DeepCollectionEquality().hash(_albumArtists),const DeepCollectionEquality().hash(_artists),const DeepCollectionEquality().hash(_genres),images,hasLyrics,userData,const DeepCollectionEquality().hash(_audioSources)]);
 
 @override
 String toString() {
-  return 'LibraryItem(id: $id, name: $name, kind: $kind, indexNumber: $indexNumber, duration: $duration, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, genres: $genres, images: $images, hasLyrics: $hasLyrics, userData: $userData, audioSources: $audioSources)';
+  return 'LibraryItem(id: $id, name: $name, kind: $kind, indexNumber: $indexNumber, duration: $duration, path: $path, collectionType: $collectionType, playlistItemId: $playlistItemId, overview: $overview, productionYear: $productionYear, albumId: $albumId, albumName: $albumName, albumArtist: $albumArtist, albumArtists: $albumArtists, artists: $artists, genres: $genres, images: $images, hasLyrics: $hasLyrics, userData: $userData, audioSources: $audioSources)';
 }
 
 
@@ -313,7 +321,7 @@ abstract mixin class _$LibraryItemCopyWith<$Res> implements $LibraryItemCopyWith
   factory _$LibraryItemCopyWith(_LibraryItem value, $Res Function(_LibraryItem) _then) = __$LibraryItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, ItemKind kind, int indexNumber, Duration duration, String? path, String? collectionType, String? playlistItemId, String? overview, int? productionYear, String? albumId, String? albumName, String? albumArtist, List<ArtistRef> albumArtists, List<String> genres, ImageRefs images, bool hasLyrics, PlaybackUserData userData, List<AudioSourceInfo> audioSources
+ String id, String name, ItemKind kind, int indexNumber, Duration duration, String? path, String? collectionType, String? playlistItemId, String? overview, int? productionYear, String? albumId, String? albumName, String? albumArtist, List<ArtistRef> albumArtists, List<ArtistRef> artists, List<String> genres, ImageRefs images, bool hasLyrics, PlaybackUserData userData, List<AudioSourceInfo> audioSources
 });
 
 
@@ -330,7 +338,7 @@ class __$LibraryItemCopyWithImpl<$Res>
 
 /// Create a copy of LibraryItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? kind = null,Object? indexNumber = null,Object? duration = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? genres = null,Object? images = null,Object? hasLyrics = null,Object? userData = null,Object? audioSources = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? kind = null,Object? indexNumber = null,Object? duration = null,Object? path = freezed,Object? collectionType = freezed,Object? playlistItemId = freezed,Object? overview = freezed,Object? productionYear = freezed,Object? albumId = freezed,Object? albumName = freezed,Object? albumArtist = freezed,Object? albumArtists = null,Object? artists = null,Object? genres = null,Object? images = null,Object? hasLyrics = null,Object? userData = null,Object? audioSources = null,}) {
   return _then(_LibraryItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -346,6 +354,7 @@ as int?,albumId: freezed == albumId ? _self.albumId : albumId // ignore: cast_nu
 as String?,albumName: freezed == albumName ? _self.albumName : albumName // ignore: cast_nullable_to_non_nullable
 as String?,albumArtist: freezed == albumArtist ? _self.albumArtist : albumArtist // ignore: cast_nullable_to_non_nullable
 as String?,albumArtists: null == albumArtists ? _self._albumArtists : albumArtists // ignore: cast_nullable_to_non_nullable
+as List<ArtistRef>,artists: null == artists ? _self._artists : artists // ignore: cast_nullable_to_non_nullable
 as List<ArtistRef>,genres: null == genres ? _self._genres : genres // ignore: cast_nullable_to_non_nullable
 as List<String>,images: null == images ? _self.images : images // ignore: cast_nullable_to_non_nullable
 as ImageRefs,hasLyrics: null == hasLyrics ? _self.hasLyrics : hasLyrics // ignore: cast_nullable_to_non_nullable

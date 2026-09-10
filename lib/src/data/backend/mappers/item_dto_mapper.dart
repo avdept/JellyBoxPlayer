@@ -20,6 +20,9 @@ extension ItemDTOMapping on ItemDTO {
       albumArtists: albumArtists
           .map((artist) => ArtistRef(id: artist.id, name: artist.name))
           .toList(),
+      artists: artists
+          .map((artist) => ArtistRef(id: artist.id, name: artist.name))
+          .toList(),
       genres: genres,
       images: ImageRefs(
         primary: imageTags['Primary'],
