@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/config/constants.dart';
+import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/emby/emby_auth_headers.dart';
 import 'package:jplayer/src/data/backend/emby/emby_client.dart';
@@ -48,6 +49,8 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   static const serverUnreachableError =
       'Server is not accessible. Check the server URL and your connection.';
   static const invalidCredentialsError = 'Incorrect login or password';
+  static const untrustedCertificateError =
+      "The server's security certificate is not trusted.";
 
   static const _sessionValidationTimeout = Duration(seconds: 6);
 
@@ -111,6 +114,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     ServerType? serverType,
   }) async {
     final serverUrl = normalizeServerUrl(credentials.serverUrl);
+    ref.read(certificateTrustProvider).clearRejections();
     _authenticating = true;
     try {
       final resolved = serverType ?? await _detectServerType(serverUrl);
@@ -168,7 +172,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       }
       state = AsyncData(sessionUsable);
     } on DioException catch (e) {
-      return _loginErrorMessage(e);
+      return _loginErrorMessage(e, serverUrl);
     }
     return state.error?.toString();
   }
@@ -195,7 +199,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     }
   }
 
-  String _loginErrorMessage(DioException e) {
+  String _loginErrorMessage(DioException e, String serverUrl) {
+    if (_rejectedCertificateFor(serverUrl) != null) {
+      return untrustedCertificateError;
+    }
     switch (e.type) {
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
@@ -215,6 +222,12 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     }
   }
 
+  ServerCertificate? _rejectedCertificateFor(String serverUrl) {
+    final host = Uri.tryParse(serverUrl)?.host;
+    if (host == null || host.isEmpty) return null;
+    return ref.read(certificateTrustProvider).rejectedFor(host);
+  }
+
   Future<void> logout() async {
     if (_loggingOut) return;
     _loggingOut = true;
@@ -226,6 +239,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       await Future.wait([
         ref.read(sharedPreferencesProvider).requireValue.clear(),
         _storage.deleteAll(),
+        ref.read(certificateTrustProvider).clear(),
         _signOutQuietly(),
       ]);
     } finally {

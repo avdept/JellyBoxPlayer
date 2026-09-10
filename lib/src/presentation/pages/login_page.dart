@@ -156,7 +156,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     });
   }
 
-  Future<void> signIn() async {
+  Future<void> signIn({bool promptForCertificate = true}) async {
     if (error != null) setState(() => error = null);
 
     final credentials = UserCredentials(
@@ -186,11 +186,41 @@ class LoginPageState extends ConsumerState<LoginPage> {
           credentials,
           serverType: _resolvedServerType,
         );
-    if (resp != null && mounted) {
-      setState(() {
-        error = resp;
-      });
+    if (resp == null || !mounted) return;
+
+    if (promptForCertificate && await _trustServerCertificate(serverUri.host)) {
+      if (!mounted) return;
+      await _reprobeServer();
+      if (!mounted) return;
+      await signIn(promptForCertificate: false);
+      return;
     }
+    if (!mounted) return;
+
+    setState(() {
+      error = resp;
+    });
+  }
+
+  Future<bool> _trustServerCertificate(String host) async {
+    final trust = ref.read(certificateTrustProvider);
+    final certificate = trust.rejectedFor(host);
+    if (certificate == null) return false;
+
+    final confirmed = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => CertificateTrustDialog(certificate: certificate),
+    );
+    if (confirmed ?? false) {
+      await trust.trust(certificate);
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _reprobeServer() async {
+    _probedInput = null;
+    await _probeServer();
   }
 
   @override

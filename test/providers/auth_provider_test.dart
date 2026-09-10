@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -35,9 +36,12 @@ void main() {
     serverUrl: 'http://jelly.local',
   );
 
-  Future<String?> loginResult() async {
+  Future<String?> loginResult({CertificateTrust? trust}) async {
     final container = createProviderContainer(
-      overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+      overrides: [
+        secureStorageProvider.overrideWithValue(mockStorage),
+        if (trust != null) certificateTrustProvider.overrideWithValue(trust),
+      ],
     );
     container.read(dioProvider).httpClientAdapter = mockAdapter;
     await container.read(authProvider.future);
@@ -125,6 +129,37 @@ void main() {
 
       expect(await loginResult(), AuthNotifier.serverUnreachableError);
     });
+
+    test(
+      '- reports an untrusted certificate when the handshake fails',
+      () async {
+        final trust = CertificateTrust();
+        when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+          _,
+        ) async {
+          trust.allowsCertificate(
+            ServerCertificate(
+              host: 'jelly.local',
+              port: 443,
+              fingerprint: 'aa11',
+              subject: '/CN=jelly.local',
+              issuer: '/CN=jelly.local',
+              validFrom: DateTime.utc(DateTime.now().year),
+              validTo: DateTime.utc(DateTime.now().year + 1),
+            ),
+          );
+          throw DioException.connectionError(
+            requestOptions: RequestOptions(path: '/Users/AuthenticateByName'),
+            reason: 'handshake failed',
+          );
+        });
+
+        expect(
+          await loginResult(trust: trust),
+          AuthNotifier.untrustedCertificateError,
+        );
+      },
+    );
   });
 
   group('AuthNotifier authorization headers', () {
