@@ -55,7 +55,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
   }
 
   Future<void> _onArtistTap(LibraryItem song) async {
-    final artistId = song.albumArtists.firstOrNull?.id;
+    final artistId = song.effectiveArtists.firstOrNull?.id;
     if (artistId == null) return;
     final item = await ref.read(mediaServerClientProvider).getItem(artistId);
     if (!mounted) return;
@@ -136,7 +136,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
                 onTap: () => _onLikePressed(song),
                 child: Text(favouriteMenuLabel(song)),
               ),
-            if (song.albumArtists.isNotEmpty)
+            if (song.effectiveArtists.isNotEmpty)
               PopupMenuItem(
                 onTap: () => _onArtistTap(song),
                 child: const Text('Go to Artist'),

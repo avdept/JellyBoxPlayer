@@ -130,7 +130,7 @@ class _EmbyApi implements EmbyApi {
     required String userId,
     required String albumId,
     String includeType = 'Audio',
-    List<String> fields = const ['MediaSources'],
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -173,7 +173,7 @@ class _EmbyApi implements EmbyApi {
     String sortOrder = 'Ascending',
     List<String> filters = const [],
     bool recursive = true,
-    List<String> fields = const ['MediaSources'],
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -225,7 +225,7 @@ class _EmbyApi implements EmbyApi {
     String startIndex = '0',
     String limit = '300',
     bool recursive = true,
-    List<String> fields = const ['MediaSources'],
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -412,7 +412,7 @@ class _EmbyApi implements EmbyApi {
     String limit = '100',
     String sortOrder = 'Descending',
     bool recursive = true,
-    List<String> fields = const ['MediaSources'],
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -593,7 +593,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemsWrapper>> getPlaylistSongs({
     required String playlistId,
     required String userId,
-    List<String> fields = const ['MediaSources'],
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -628,7 +628,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemDTO>> getItem({
     required String userId,
     required String itemId,
-    List<String> fields = const ['MediaSources'],
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'Fields': fields};

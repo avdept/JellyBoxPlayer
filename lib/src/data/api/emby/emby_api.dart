@@ -37,7 +37,8 @@ abstract class EmbyApi {
     @Path('userId') required String userId,
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'Audio',
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -51,7 +52,8 @@ abstract class EmbyApi {
     @Query('SortOrder') String sortOrder = 'Ascending',
     @Query('Filters') List<String> filters = const [],
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -68,7 +70,8 @@ abstract class EmbyApi {
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '300',
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -116,7 +119,8 @@ abstract class EmbyApi {
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -160,14 +164,16 @@ abstract class EmbyApi {
   Future<HttpResponse<ItemsWrapper>> getPlaylistSongs({
     @Path('playlistId') required String playlistId,
     @Query('UserId') required String userId,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Users/{userId}/Items/{itemId}')
   Future<HttpResponse<ItemDTO>> getItem({
     @Path('userId') required String userId,
     @Path('itemId') required String itemId,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ArtistItems'],
   });
 
   @GET('/Items/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.js')

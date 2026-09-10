@@ -268,7 +268,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   },
                                   child: const Text('Remove from playlist'),
                                 ),
-                                if (song.albumArtists.isNotEmpty)
+                                if (song.effectiveArtists.isNotEmpty)
                                   PopupMenuItem(
                                     onTap: () async {
                                       final res = await ref
@@ -277,8 +277,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                             userId: ref
                                                 .read(currentUserProvider)!
                                                 .userId,
-                                            searchTerm:
-                                                song.albumArtists.first.name,
+                                            searchTerm: song
+                                                .effectiveArtists
+                                                .first
+                                                .name,
                                           );
                                       if (context.mounted) {
                                         await context.pushNamed(
