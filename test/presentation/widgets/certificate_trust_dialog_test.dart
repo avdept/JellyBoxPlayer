@@ -6,6 +6,13 @@ import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/presentation/widgets/certificate_trust_dialog.dart';
 
 void main() {
+  final thisYear = DateTime.now().year;
+  final notExpired = DateTime.utc(thisYear + 1);
+  final longExpired = DateTime.utc(thisYear - 1);
+
+  String shortDate(DateTime date) =>
+      const DefaultMaterialLocalizations().formatShortDate(date.toLocal());
+
   ServerCertificate certificate({
     String subject = '/CN=jelly.local',
     String issuer = '/CN=jelly.local',
@@ -16,8 +23,8 @@ void main() {
     fingerprint: 'a1b2c3',
     subject: subject,
     issuer: issuer,
-    validFrom: DateTime.utc(2026),
-    validTo: validTo ?? DateTime.utc(2027, 3, 4),
+    validFrom: DateTime.utc(thisYear),
+    validTo: validTo ?? notExpired,
   );
 
   Future<bool?> showDialogFor(
@@ -58,18 +65,15 @@ void main() {
     expect(find.text('Untrusted certificate'), findsOneWidget);
     expect(find.text('A1:B2:C3'), findsOneWidget);
     expect(find.text('Expires'), findsOneWidget);
-    expect(find.text('Mar 4, 2027'), findsOneWidget);
+    expect(find.text(shortDate(notExpired)), findsOneWidget);
     expect(find.textContaining('self-signed certificate'), findsOneWidget);
   });
 
   testWidgets('marks an expired certificate', (tester) async {
-    await showDialogFor(
-      tester,
-      certificate(validTo: DateTime.utc(2020, 5, 6)),
-    );
+    await showDialogFor(tester, certificate(validTo: longExpired));
 
     expect(find.text('Expired'), findsOneWidget);
-    expect(find.text('May 6, 2020'), findsOneWidget);
+    expect(find.text(shortDate(longExpired)), findsOneWidget);
   });
 
   testWidgets('reports a certificate signed by another issuer', (tester) async {

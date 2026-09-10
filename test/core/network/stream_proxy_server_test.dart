@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/core/network/stream_proxy_server.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late HttpServer origin;
@@ -159,5 +161,77 @@ void main() {
     );
 
     expect((await get(elsewhere)).statusCode, HttpStatus.forbidden);
+  });
+
+  group('the predicate the app ships with', () {
+    late CertificateTrust trust;
+    late StreamProxyServer server;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      trust = CertificateTrust();
+      await trust.load(await SharedPreferences.getInstance());
+      await trust.trust(
+        ServerCertificate(
+          host: 'jelly.local',
+          port: 8920,
+          fingerprint: 'aa11',
+          subject: '/CN=jelly.local',
+          issuer: '/CN=jelly.local',
+          validFrom: DateTime.utc(DateTime.now().year),
+          validTo: DateTime.utc(DateTime.now().year + 1),
+        ),
+      );
+      server = StreamProxyServer(
+        shouldProxy: (uri) =>
+            uri.isScheme('https') && trust.isPinned(uri.host, uri.port),
+      );
+    });
+
+    tearDown(() => server.close());
+
+    Future<void> expectUntouched(String url) async {
+      final uri = Uri.parse(url);
+
+      expect(await server.resolve(uri), same(uri));
+      expect(server.port, isNull);
+    }
+
+    test('leaves a plain http server alone', () async {
+      await expectUntouched('http://jelly.local:8096/Audio/1/universal');
+    });
+
+    test('leaves a downloaded file alone', () async {
+      await expectUntouched('file:///music/song.flac');
+    });
+
+    test('leaves an https server with a trusted ca alone', () async {
+      await expectUntouched('https://jellyfin.example.com/Audio/1/universal');
+    });
+
+    test('leaves an unpinned port on a pinned host alone', () async {
+      await expectUntouched('https://jelly.local:9000/Audio/1/universal');
+    });
+
+    test('proxies the pinned server, implicit port included', () async {
+      await trust.trust(
+        ServerCertificate(
+          host: 'jelly.local',
+          port: 443,
+          fingerprint: 'bb22',
+          subject: '/CN=jelly.local',
+          issuer: '/CN=jelly.local',
+          validFrom: DateTime.utc(DateTime.now().year),
+          validTo: DateTime.utc(DateTime.now().year + 1),
+        ),
+      );
+
+      final resolved = await server.resolve(
+        Uri.parse('https://jelly.local/Audio/1/universal'),
+      );
+
+      expect(resolved.host, '127.0.0.1');
+      expect(resolved.port, server.port);
+    });
   });
 }

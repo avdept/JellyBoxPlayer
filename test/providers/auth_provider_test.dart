@@ -144,8 +144,8 @@ void main() {
               fingerprint: 'aa11',
               subject: '/CN=jelly.local',
               issuer: '/CN=jelly.local',
-              validFrom: DateTime.utc(2026),
-              validTo: DateTime.utc(2027),
+              validFrom: DateTime.utc(DateTime.now().year),
+              validTo: DateTime.utc(DateTime.now().year + 1),
             ),
           );
           throw DioException.connectionError(
