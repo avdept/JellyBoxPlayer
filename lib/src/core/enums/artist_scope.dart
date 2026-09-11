@@ -1,0 +1,1 @@
+enum ArtistScope { albumArtists, allArtists }

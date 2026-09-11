@@ -7,9 +7,8 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
   if (ref.watch(isOfflineProvider)) return Future.value();
-  final client = ref.watch(mediaServerClientProvider);
-  if (!client.capabilities.lyrics) return Future.value();
-  return client.getLyrics(itemId);
+  if (!ref.watch(serverCapabilitiesProvider).lyrics) return Future.value();
+  return ref.watch(mediaServerClientProvider).getLyrics(itemId);
 });
 
 final lyricsVisibleProvider = StateProvider<bool>((ref) => false);

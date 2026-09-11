@@ -7,6 +7,7 @@ import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -15,6 +16,7 @@ class ItemListNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
   late MediaServerClient _api;
   late Filter _filterState;
+  late ArtistScope _artistScope;
   String? _libraryId;
 
   SortDirection get _direction =>
@@ -25,6 +27,7 @@ class ItemListNotifier
     if (ref.watch(isOfflineProvider)) throw const OfflineException();
     _api = ref.watch(mediaServerClientProvider);
     _filterState = ref.watch(filterProvider);
+    _artistScope = ref.watch(effectiveArtistScopeProvider);
     _libraryId = ref.watch(currentLibraryProvider).valueOrNull?.id;
     return _fetchItems(startPage: const ItemsPage());
   }
@@ -47,6 +50,7 @@ class ItemListNotifier
           sort: _filterState.orderBy.itemSort,
           direction: _direction,
           startIndex: startIndex,
+          artistScope: _artistScope,
         ),
       ),
       ItemList.genres => _api.getGenres(

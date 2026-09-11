@@ -30,6 +30,7 @@ class LibraryQuery {
     this.genreIds = const [],
     this.ids = const [],
     this.appearsOnArtistId,
+    this.artistScope = ArtistScope.allArtists,
   });
 
   final String? libraryId;
@@ -43,6 +44,7 @@ class LibraryQuery {
   final List<String> genreIds;
   final List<String> ids;
   final String? appearsOnArtistId;
+  final ArtistScope artistScope;
 
   LibraryQuery copyWith({
     String? libraryId,
@@ -56,6 +58,7 @@ class LibraryQuery {
     List<String>? genreIds,
     List<String>? ids,
     String? appearsOnArtistId,
+    ArtistScope? artistScope,
   }) => LibraryQuery(
     libraryId: libraryId ?? this.libraryId,
     sort: sort ?? this.sort,
@@ -68,6 +71,7 @@ class LibraryQuery {
     genreIds: genreIds ?? this.genreIds,
     ids: ids ?? this.ids,
     appearsOnArtistId: appearsOnArtistId ?? this.appearsOnArtistId,
+    artistScope: artistScope ?? this.artistScope,
   );
 
   @override
@@ -75,7 +79,8 @@ class LibraryQuery {
       'LibraryQuery(libraryId: $libraryId, sort: $sort, '
       'direction: $direction, filters: $filters, fields: $fields, '
       'startIndex: $startIndex, limit: $limit, artistIds: $artistIds, '
-      'genreIds: $genreIds, ids: $ids, appearsOnArtistId: $appearsOnArtistId)';
+      'genreIds: $genreIds, ids: $ids, appearsOnArtistId: $appearsOnArtistId, '
+      'artistScope: $artistScope)';
 }
 
 SortDirection sortDirectionOf({required bool descending}) =>
@@ -97,6 +102,7 @@ class SearchQuery {
     this.startIndex = 0,
     this.limit = 100,
     this.direction = SortDirection.descending,
+    this.artistScope = ArtistScope.allArtists,
   });
 
   final String term;
@@ -104,9 +110,11 @@ class SearchQuery {
   final int startIndex;
   final int limit;
   final SortDirection direction;
+  final ArtistScope artistScope;
 
   @override
   String toString() =>
       'SearchQuery(term: $term, libraryId: $libraryId, '
-      'startIndex: $startIndex, limit: $limit, direction: $direction)';
+      'startIndex: $startIndex, limit: $limit, direction: $direction, '
+      'artistScope: $artistScope)';
 }
