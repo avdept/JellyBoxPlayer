@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class GenreAlbumsNotifier
@@ -27,12 +27,11 @@ class GenreAlbumsNotifier
     ItemsPage startPage = const ItemsPage(),
   }) async {
     final resp = await _client.getAlbums(
-      userId: ref.read(currentUserProvider)!.userId,
-      libraryId: _libraryId,
-      genreIds: [arg],
-      sortBy: 'SortName',
-      sortOrder: 'Ascending',
-      startIndex: startIndex.toString(),
+      LibraryQuery(
+        libraryId: _libraryId,
+        genreIds: [arg],
+        startIndex: startIndex,
+      ),
     );
     return startPage.copyWith(
       items: [...startPage.items, ...resp.items],

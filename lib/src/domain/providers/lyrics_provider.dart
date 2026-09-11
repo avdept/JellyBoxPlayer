@@ -1,27 +1,16 @@
-import 'dart:developer';
-
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
-final lyricsProvider = FutureProviderFamily<LyricsDTO?, String>(
-  (ref, itemId) async {
-    if (ref.watch(isOfflineProvider)) return null;
-    final client = ref.watch(mediaServerClientProvider);
-    try {
-      return await client.getLyrics(itemId);
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 404 || status == 400) return null;
-      log(e.message ?? 'Error while fetching lyrics for $itemId');
-      rethrow;
-    }
-  },
-);
+final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
+  if (ref.watch(isOfflineProvider)) return Future.value();
+  final client = ref.watch(mediaServerClientProvider);
+  if (!client.capabilities.lyrics) return Future.value();
+  return client.getLyrics(itemId);
+});
 
 final lyricsVisibleProvider = StateProvider<bool>((ref) => false);
 

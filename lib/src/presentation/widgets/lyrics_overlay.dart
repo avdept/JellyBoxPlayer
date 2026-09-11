@@ -168,8 +168,8 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
 
     final shifted = position + lyrics.offset;
     var index = -1;
-    for (var i = 0; i < lyrics.lyrics.length; i++) {
-      final start = lyrics.lyrics[i].startTime;
+    for (var i = 0; i < lyrics.lines.length; i++) {
+      final start = lyrics.lines[i].start;
       if (start == null) continue;
       if (start > shifted) break;
       index = i;
@@ -205,7 +205,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
       ),
       error: (_, _) => const _Message("Couldn't load lyrics"),
       data: (lyrics) {
-        final lines = lyrics?.lyrics ?? const <LyricLineDTO>[];
+        final lines = lyrics?.lines ?? const <LyricLine>[];
         if (lines.isEmpty) return const _Message('No lyrics for this track');
 
         if (_lineKeys.length != lines.length) {
@@ -234,9 +234,9 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
     );
   }
 
-  Widget _line(int index, LyricLineDTO line, {required bool isSynced}) {
+  Widget _line(int index, LyricLine line, {required bool isSynced}) {
     final isActive = isSynced && index == _activeLine;
-    final start = line.startTime;
+    final start = line.start;
     final text = line.text.trim();
 
     return Padding(

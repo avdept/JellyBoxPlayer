@@ -10,4 +10,5 @@ export 'library_item/item_kind.dart';
 export 'library_item/library_item.dart';
 export 'library_item/library_page.dart';
 export 'library_item/playback_user_data.dart';
+export 'lyrics/lyrics.dart';
 export 'playback_state/playback_state.dart';

@@ -34,18 +34,16 @@ void main() {
     sourceAddress: sourceAddress,
   );
 
-  ServerProbeResult probeResult({
+  ServerIdentity probeResult({
     String serverUrl = 'http://192.168.1.10:8096',
     ServerType serverType = ServerType.jellyfin,
     String? serverName = 'Living Room',
-  }) => ServerProbeResult(
+  }) => ServerIdentity(
     serverUrl: serverUrl,
     serverType: serverType,
-    info: PublicSystemInfoDTO(
-      id: 'server-id',
-      serverName: serverName,
-      version: '10.9.11',
-    ),
+    serverId: 'server-id',
+    name: serverName,
+    version: '10.9.11',
   );
 
   void announces(List<ServerAnnouncement> announcements) {

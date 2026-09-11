@@ -57,7 +57,9 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
   Future<void> _onArtistTap(LibraryItem song) async {
     final artistId = song.effectiveArtists.firstOrNull?.id;
     if (artistId == null) return;
-    final item = await ref.read(mediaServerClientProvider).getItem(artistId);
+    final item = await ref
+        .read(mediaServerClientProvider)
+        .getItem(artistId, kind: ItemKind.artist);
     if (!mounted) return;
     context.pushNamed(
       branchAwareName(context, Routes.artist),
@@ -68,7 +70,9 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
   Future<void> _onGoToAlbum(LibraryItem song) async {
     final albumId = song.albumId;
     if (albumId == null) return;
-    final item = await ref.read(mediaServerClientProvider).getItem(albumId);
+    final item = await ref
+        .read(mediaServerClientProvider)
+        .getItem(albumId, kind: ItemKind.album);
     if (!mounted) return;
     ref.read(currentAlbumProvider.notifier).setAlbum(item);
     context.pushNamed(

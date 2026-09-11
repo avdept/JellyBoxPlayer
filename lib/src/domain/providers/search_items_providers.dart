@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -28,35 +29,28 @@ class SearchItemsNotifier
     _searchTerm = searchQuery ?? '';
     if (_searchTerm.isEmpty) return const ItemsPage();
 
-    final userId = ref.read(currentUserProvider)!.userId;
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
 
     switch (arg) {
       case ItemList.songs:
         final resp = await _client.searchSongs(
-          userId: userId,
-          libraryId: libraryId,
-          searchTerm: _searchTerm,
+          SearchQuery(term: _searchTerm, libraryId: libraryId),
         );
         return ItemsPage(items: resp.items);
       case ItemList.artists:
         final resp = await _client.searchArtists(
-          userId: userId,
-          searchTerm: _searchTerm,
+          SearchQuery(term: _searchTerm),
         );
         return ItemsPage(items: resp.items);
       case ItemList.playlists:
+        if (!_client.capabilities.playlistSearch) return const ItemsPage();
         final resp = await _client.searchPlaylists(
-          userId: userId,
-          libraryId: libraryId ?? '',
-          searchTerm: _searchTerm,
+          SearchQuery(term: _searchTerm, libraryId: libraryId),
         );
         return ItemsPage(items: resp.items);
       default:
         final resp = await _client.searchAlbums(
-          userId: userId,
-          libraryId: libraryId,
-          searchTerm: _searchTerm,
+          SearchQuery(term: _searchTerm, libraryId: libraryId),
         );
         return ItemsPage(items: resp.items);
     }

@@ -11,8 +11,9 @@ similarAlbumsProvider = FutureProvider.autoDispose
       final user = ref.watch(currentUserProvider);
       if (user == null) return const [];
 
-      final response = await ref
-          .watch(mediaServerClientProvider)
-          .getSimilarAlbums(albumId: albumId, userId: user.userId);
+      final client = ref.watch(mediaServerClientProvider);
+      if (!client.capabilities.similarAlbums) return const [];
+
+      final response = await client.getSimilarAlbums(albumId);
       return response.items.where((album) => album.id != albumId).toList();
     });

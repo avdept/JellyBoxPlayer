@@ -34,6 +34,20 @@ String mediaBrowserCredentials({
   return 'MediaBrowser ${fields.join(', ')}';
 }
 
+class NoServerAuthHeaders extends ServerAuthHeaders {
+  const NoServerAuthHeaders({
+    super.deviceId = '',
+    super.deviceName = '',
+    super.version = '',
+  });
+
+  @override
+  Set<String> get managedKeys => const {};
+
+  @override
+  Map<String, String> build({String? token}) => const {};
+}
+
 abstract class ServerAuthHeaders {
   const ServerAuthHeaders({
     required this.deviceId,

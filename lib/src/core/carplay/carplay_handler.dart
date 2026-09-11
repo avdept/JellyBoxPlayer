@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -17,10 +18,10 @@ import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:string_capitalize/string_capitalize.dart';
 
 class CarPlayHandler {
   static const _channel = MethodChannel('com.prodigytech.jellybox/carplay');
+  static const _recentAlbumsLimit = 20;
   static final _items = <String, LibraryItem>{};
   static var _songs = <LibraryItem>[];
   static ProviderSubscription<AsyncValue<List<GeneratedPlaylist>>>? _mixesSub;
@@ -146,9 +147,12 @@ class CarPlayHandler {
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
     final recent = await _fetch(() async {
       final resp = await client.getAlbums(
-        userId: user.userId,
-        libraryId: libraryId,
-        limit: '20',
+        LibraryQuery(
+          libraryId: libraryId,
+          sort: ItemSort.dateCreated,
+          direction: SortDirection.descending,
+          limit: _recentAlbumsLimit,
+        ),
       );
       return resp.items;
     });
@@ -173,8 +177,8 @@ class CarPlayHandler {
 
     final client = ref.read(mediaServerClientProvider);
     final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
-    final sortBy = filter.orderBy.name.capitalize();
-    final sortOrder = filter.desc ? 'Descending' : 'Ascending';
+    final itemSort = filter.orderBy.itemSort;
+    final direction = sortDirectionOf(descending: filter.desc);
     final type = args['type'] as String?;
     if (type == 'mixes') {
       return {'items': _mixes(ref), 'sort': sort, 'hasMore': false};
@@ -188,27 +192,28 @@ class CarPlayHandler {
       if (query.isNotEmpty) {
         final resp = await switch (type) {
           'albums' => client.searchAlbums(
-            userId: user.userId,
-            libraryId: libraryId,
-            searchTerm: query,
-            startIndex: startIndex.toString(),
+            SearchQuery(
+              term: query,
+              libraryId: libraryId,
+              startIndex: startIndex,
+            ),
           ),
           'artists' => client.searchArtists(
-            userId: user.userId,
-            searchTerm: query,
-            startIndex: startIndex.toString(),
+            SearchQuery(term: query, startIndex: startIndex),
           ),
           'playlists' => client.searchPlaylists(
-            userId: user.userId,
-            libraryId: libraryId ?? '',
-            searchTerm: query,
-            startIndex: startIndex.toString(),
+            SearchQuery(
+              term: query,
+              libraryId: libraryId,
+              startIndex: startIndex,
+            ),
           ),
           'songs' => client.searchSongs(
-            userId: user.userId,
-            libraryId: libraryId,
-            searchTerm: query,
-            startIndex: startIndex.toString(),
+            SearchQuery(
+              term: query,
+              libraryId: libraryId,
+              startIndex: startIndex,
+            ),
           ),
           _ => throw ArgumentError('Unknown list type: $type'),
         };
@@ -216,31 +221,35 @@ class CarPlayHandler {
       }
       final resp = await switch (type) {
         'albums' => client.getAlbums(
-          userId: user.userId,
-          libraryId: artistId != null ? '' : libraryId,
-          sortBy: sortBy,
-          sortOrder: sortOrder,
-          startIndex: startIndex.toString(),
-          artistIds: artistId != null ? [artistId] : const [],
+          LibraryQuery(
+            libraryId: artistId != null ? null : libraryId,
+            sort: itemSort,
+            direction: direction,
+            startIndex: startIndex,
+            artistIds: artistId != null ? [artistId] : const [],
+          ),
         ),
         'artists' => client.getArtists(
-          userId: user.userId,
-          sortBy: sortBy,
-          sortOrder: sortOrder,
-          startIndex: startIndex.toString(),
+          LibraryQuery(
+            sort: itemSort,
+            direction: direction,
+            startIndex: startIndex,
+          ),
         ),
         'playlists' => client.getPlaylists(
-          userId: user.userId,
-          sortBy: sortBy,
-          sortOrder: sortOrder,
-          startIndex: startIndex.toString(),
+          LibraryQuery(
+            sort: itemSort,
+            direction: direction,
+            startIndex: startIndex,
+          ),
         ),
         'songs' => client.getAllSongs(
-          userId: user.userId,
-          libraryId: libraryId,
-          sortBy: filter.orderBy == EntityFilter.sortName ? 'Name' : sortBy,
-          sortOrder: sortOrder,
-          startIndex: startIndex.toString(),
+          LibraryQuery(
+            libraryId: libraryId,
+            sort: itemSort,
+            direction: direction,
+            startIndex: startIndex,
+          ),
         ),
         _ => throw ArgumentError('Unknown list type: $type'),
       };
@@ -278,32 +287,23 @@ class CarPlayHandler {
     final results = await Future.wait([
       _fetch(() async {
         final resp = await client.searchAlbums(
-          userId: user.userId,
-          libraryId: libraryId,
-          searchTerm: query,
+          SearchQuery(term: query, libraryId: libraryId),
         );
         return resp.items;
       }),
       _fetch(() async {
-        final resp = await client.searchArtists(
-          userId: user.userId,
-          searchTerm: query,
-        );
+        final resp = await client.searchArtists(SearchQuery(term: query));
         return resp.items;
       }),
       _fetch(() async {
         final resp = await client.searchPlaylists(
-          userId: user.userId,
-          libraryId: libraryId ?? '',
-          searchTerm: query,
+          SearchQuery(term: query, libraryId: libraryId),
         );
         return resp.items;
       }),
       _fetch(() async {
         final resp = await client.searchSongs(
-          userId: user.userId,
-          libraryId: libraryId,
-          searchTerm: query,
+          SearchQuery(term: query, libraryId: libraryId),
         );
         return resp.items;
       }),

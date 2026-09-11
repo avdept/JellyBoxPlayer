@@ -7,10 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/is_playlist_downloaded_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
@@ -89,10 +89,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     try {
       final value = await ref
           .read(mediaServerClientProvider)
-          .getPlaylistSongs(
-            userId: ref.read(currentUserProvider.notifier).state!.userId,
-            playlistId: widget.playlist.id,
-          );
+          .getPlaylistSongs(widget.playlist.id);
       if (!mounted) return;
       setState(() {
         songs = [...value.items]
@@ -274,13 +271,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                       final res = await ref
                                           .read(mediaServerClientProvider)
                                           .searchArtists(
-                                            userId: ref
-                                                .read(currentUserProvider)!
-                                                .userId,
-                                            searchTerm: song
-                                                .effectiveArtists
-                                                .first
-                                                .name,
+                                            SearchQuery(
+                                              term: song
+                                                  .effectiveArtists
+                                                  .first
+                                                  .name,
+                                            ),
                                           );
                                       if (context.mounted) {
                                         await context.pushNamed(
@@ -303,10 +299,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                       final res = await ref
                                           .read(mediaServerClientProvider)
                                           .searchAlbums(
-                                            userId: ref
-                                                .read(currentUserProvider)!
-                                                .userId,
-                                            searchTerm: song.albumName!,
+                                            SearchQuery(term: song.albumName!),
                                           );
                                       if (context.mounted) {
                                         await context.pushNamed(

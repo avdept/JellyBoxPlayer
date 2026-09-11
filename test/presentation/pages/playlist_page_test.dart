@@ -75,10 +75,7 @@ void main() {
   );
 
   Future<LibraryPage> mockGetPlaylistSongs({String? playlistId}) {
-    return mockMediaServerClient.getPlaylistSongs(
-      userId: mockUserId,
-      playlistId: playlistId ?? any(named: 'playlistId'),
-    );
+    return mockMediaServerClient.getPlaylistSongs(playlistId ?? any());
   }
 
   setUpAll(() {

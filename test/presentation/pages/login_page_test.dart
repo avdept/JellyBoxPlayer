@@ -51,18 +51,16 @@ void main() {
     home: const LoginPage(),
   );
 
-  ServerProbeResult discoveryResult(
+  ServerIdentity discoveryResult(
     String serverUrl, {
     ServerType serverType = ServerType.jellyfin,
     String serverName = 'Living Room',
-  }) => ServerProbeResult(
+  }) => ServerIdentity(
     serverUrl: serverUrl,
     serverType: serverType,
-    info: PublicSystemInfoDTO(
-      id: 'server-id',
-      serverName: serverName,
-      version: '10.9.11',
-    ),
+    serverId: 'server-id',
+    name: serverName,
+    version: '10.9.11',
   );
 
   void announcesServers(List<ServerAnnouncement> announcements) {

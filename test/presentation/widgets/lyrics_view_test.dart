@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -25,7 +26,7 @@ final _synced = LyricsDTO.fromJson({
     {'Text': 'second line', 'Start': 100000000},
     {'Text': 'third line', 'Start': 200000000},
   ],
-});
+}).toLyrics();
 
 final _unsynced = LyricsDTO.fromJson({
   'Metadata': {'IsSynced': false},
@@ -33,7 +34,7 @@ final _unsynced = LyricsDTO.fromJson({
     {'Text': 'plain one'},
     {'Text': 'plain two'},
   ],
-});
+}).toLyrics();
 
 PlaybackState _stateAt(Duration position, {bool hasLyrics = true}) =>
     PlaybackState(
@@ -60,7 +61,7 @@ void main() {
   Future<void> pumpLyricsView(
     WidgetTester tester, {
     required PlaybackState state,
-    LyricsDTO? lyrics,
+    Lyrics? lyrics,
   }) async {
     playback = FakePlaybackNotifier(state);
     final container = createProviderContainer(

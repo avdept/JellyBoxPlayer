@@ -72,8 +72,10 @@ void main() {
     mockStorage = MockSecureStorage();
     mockProbe = MockServerProbeService();
     when(() => mockProbe.probe(any())).thenAnswer(
-      (_) async => const PublicSystemInfoDTO(
-        id: 'server-id-from-probe',
+      (_) async => const ServerIdentity(
+        serverUrl: 'http://jelly.local',
+        serverType: ServerType.jellyfin,
+        serverId: 'server-id-from-probe',
         version: '10.9.11',
       ),
     );
@@ -437,48 +439,26 @@ void main() {
     test(
       '- identifies the server itself when the caller has no hint',
       () async {
-        when(() => mockProbe.probe(any())).thenAnswer((_) async => null);
         when(
-          () => mockProbe.ping(any()),
-        ).thenAnswer((_) async => 'Emby Server');
+          () => mockProbe.detectType(any()),
+        ).thenAnswer((_) async => ServerType.emby);
         respondWithSuccessfulLogin();
 
         await loginWith();
 
-        verify(() => mockProbe.ping('http://jelly.local')).called(1);
+        verify(() => mockProbe.detectType('http://jelly.local')).called(1);
         verify(
           () => mockStorage.write(key: 'serverType', value: 'emby'),
         ).called(1);
       },
     );
 
-    test('- uses the public info product name when there is one', () async {
-      when(() => mockProbe.probe(any())).thenAnswer(
-        (_) async => const PublicSystemInfoDTO(id: 'a', version: '4.9.5.0'),
-      );
-      when(
-        () => mockProbe.resolveServerType(
-          any(),
-          serverUrl: any(named: 'serverUrl'),
-        ),
-      ).thenAnswer((_) async => ServerType.emby);
-      respondWithSuccessfulLogin();
-
-      await loginWith();
-
-      verifyNever(() => mockProbe.ping(any()));
-      verify(
-        () => mockStorage.write(key: 'serverType', value: 'emby'),
-      ).called(1);
-    });
-
-    test('- trusts a caller hint without probing at all', () async {
+    test('- trusts a caller hint without identifying at all', () async {
       respondWithSuccessfulLogin();
 
       await loginWith(serverType: ServerType.emby);
 
-      verifyNever(() => mockProbe.probe(any()));
-      verifyNever(() => mockProbe.ping(any()));
+      verifyNever(() => mockProbe.detectType(any()));
       verify(
         () => mockStorage.write(key: 'serverType', value: 'emby'),
       ).called(1);
@@ -487,8 +467,7 @@ void main() {
     test(
       '- falls back to Jellyfin when the server cannot be identified',
       () async {
-        when(() => mockProbe.probe(any())).thenAnswer((_) async => null);
-        when(() => mockProbe.ping(any())).thenAnswer((_) async => null);
+        when(() => mockProbe.detectType(any())).thenAnswer((_) async => null);
         respondWithSuccessfulLogin();
 
         await loginWith();

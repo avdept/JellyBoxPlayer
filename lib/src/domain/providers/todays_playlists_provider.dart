@@ -34,7 +34,6 @@ Future<List<LibraryItem>> loadGeneratedPlaylistSongs(
   final songs = await ref
       .read(mediaServerClientProvider)
       .getGeneratedPlaylistSongs(
-        userId: userId,
         playlistId: playlistId,
         libraryId: libraryId,
       );
@@ -96,7 +95,6 @@ class TodaysPlaylistsNotifier
     final playlists = await ref
         .read(mediaServerClientProvider)
         .generateTodaysPlaylists(
-          userId: userId,
           libraryId: libraryId,
           includeDiscovery: true,
         );
