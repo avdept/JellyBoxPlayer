@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -9,7 +9,6 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:string_capitalize/string_capitalize.dart';
 
 const favouritesLimit = 100;
 
@@ -21,7 +20,7 @@ const likedSongsPlaylist = LibraryItem(
   kind: ItemKind.playlist,
 );
 
-const _favouriteFilter = ['IsFavorite'];
+const _favouriteFilter = {ItemFilterFlag.favorite};
 
 final AutoDisposeFutureProvider<List<LibraryItem>> favouriteAlbumsProvider =
     FutureProvider.autoDispose((ref) async {
@@ -31,12 +30,11 @@ final AutoDisposeFutureProvider<List<LibraryItem>> favouriteAlbumsProvider =
       if (userId == null) return const [];
 
       final page = await api.getAlbums(
-        userId: userId,
-        libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
-        sortBy: 'SortName',
-        sortOrder: 'Ascending',
-        filters: _favouriteFilter,
-        limit: '$favouritesLimit',
+        LibraryQuery(
+          libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+          filters: _favouriteFilter,
+          limit: favouritesLimit,
+        ),
       );
       return page.items;
     });
@@ -49,11 +47,7 @@ final AutoDisposeFutureProvider<List<LibraryItem>> favouriteArtistsProvider =
       if (userId == null) return const [];
 
       final page = await api.getArtists(
-        userId: userId,
-        sortBy: 'SortName',
-        sortOrder: 'Ascending',
-        filters: _favouriteFilter,
-        limit: '$favouritesLimit',
+        const LibraryQuery(filters: _favouriteFilter, limit: favouritesLimit),
       );
       return page.items;
     });
@@ -66,12 +60,11 @@ final AutoDisposeFutureProvider<LibraryPage> favouriteSongsProvider =
       if (userId == null) return const LibraryPage();
 
       return api.getAllSongs(
-        userId: userId,
-        libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
-        sortBy: 'SortName',
-        sortOrder: 'Ascending',
-        filters: _favouriteFilter,
-        limit: '$favouritesLimit',
+        LibraryQuery(
+          libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+          filters: _favouriteFilter,
+          limit: favouritesLimit,
+        ),
       );
     });
 
@@ -114,14 +107,13 @@ class FavouriteSongsNotifier
     if (userId == null) return startPage;
 
     final page = await _api.getAllSongs(
-      userId: userId,
-      libraryId: _libraryId,
-      sortBy: arg.orderBy == EntityFilter.sortName
-          ? 'Name'
-          : arg.orderBy.name.capitalize(),
-      sortOrder: arg.desc ? 'Descending' : 'Ascending',
-      filters: _favouriteFilter,
-      startIndex: '$startIndex',
+      LibraryQuery(
+        libraryId: _libraryId,
+        sort: arg.orderBy.itemSort,
+        direction: sortDirectionOf(descending: arg.desc),
+        filters: _favouriteFilter,
+        startIndex: startIndex,
+      ),
     );
     return startPage.copyWith(
       items: [...startPage.items, ...page.items],

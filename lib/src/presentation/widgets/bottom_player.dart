@@ -219,7 +219,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 currentSong!.extras!['artistId'] as String;
                             final item = await ref
                                 .read(mediaServerClientProvider)
-                                .getItem(artistId);
+                                .getItem(artistId, kind: ItemKind.artist);
                             if (!context.mounted) return;
                             Navigator.of(context).pop();
                             context.goNamed(
@@ -431,7 +431,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                             as String;
                                     final item = await ref
                                         .read(mediaServerClientProvider)
-                                        .getItem(artistId);
+                                        .getItem(
+                                          artistId,
+                                          kind: ItemKind.artist,
+                                        );
                                     if (!context.mounted) return;
                                     context.goNamed(
                                       Routes.artist.name,
@@ -589,7 +592,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   Future<void> _goToArtist(BuildContext sheetContext, String artistId) async {
-    final item = await ref.read(mediaServerClientProvider).getItem(artistId);
+    final item = await ref
+        .read(mediaServerClientProvider)
+        .getItem(artistId, kind: ItemKind.artist);
     if (sheetContext.mounted) Navigator.of(sheetContext).pop();
     if (!mounted) return;
     Navigator.of(context).pop();

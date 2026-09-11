@@ -5,11 +5,15 @@ import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/emby/mappers/emby_item_mapper.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/mappers/subtitle_track_mapper.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/media_server_exception.dart';
+import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
@@ -26,6 +30,9 @@ class EmbyClient implements MediaServerClient {
   static const _defaultImageSize = 420;
   static const _sizeParams = {'MaxWidth', 'MaxHeight'};
 
+  @override
+  MediaServerCapabilities get capabilities => const MediaServerCapabilities();
+
   final EmbyApi _api;
   final String _baseUrl;
   final String userId;
@@ -33,163 +40,103 @@ class EmbyClient implements MediaServerClient {
   final String deviceId;
 
   @override
-  Future<LibraryPage> getAlbums({
-    required String userId,
-    String? libraryId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortBy = 'DateCreated,SortName',
-    String? contributingArtistIds,
-    String sortOrder = 'Descending',
-    List<String> artistIds = const [],
-    List<String> genreIds = const [],
-    List<String> filters = const [],
-    List<String> ids = const [],
-  }) async {
+  Future<LibraryPage> getAlbums(LibraryQuery query) async {
     final response = await _api.getAlbums(
       userId: userId,
-      libraryId: libraryId,
-      startIndex: startIndex,
-      limit: limit,
-      sortBy: sortBy,
-      contributingArtistIds: contributingArtistIds,
-      sortOrder: sortOrder,
-      artistIds: artistIds,
-      genreIds: genreIds,
-      filters: filters,
-      ids: ids,
+      libraryId: query.libraryId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort),
+      contributingArtistIds: query.appearsOnArtistId,
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      artistIds: query.artistIds,
+      genreIds: query.genreIds,
+      filters: mediaBrowserFilters(query.filters),
+      ids: query.ids,
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getArtists({
-    required String userId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortBy = 'SortName',
-    String sortOrder = 'Descending',
-    List<String> filters = const [],
-  }) async {
+  Future<LibraryPage> getArtists(LibraryQuery query) async {
     final response = await _api.getArtists(
       userId: userId,
-      startIndex: startIndex,
-      limit: limit,
-      sortBy: sortBy,
-      sortOrder: sortOrder,
-      filters: filters,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      filters: mediaBrowserFilters(query.filters),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getGenres({
-    required String userId,
-    String? libraryId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortBy = 'SortName',
-    String sortOrder = 'Ascending',
-  }) async {
+  Future<LibraryPage> getGenres(LibraryQuery query) async {
     final response = await _api.getGenres(
       userId: userId,
-      libraryId: libraryId,
-      startIndex: startIndex,
-      limit: limit,
-      sortBy: sortBy,
-      sortOrder: sortOrder,
+      libraryId: query.libraryId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.genre),
+      sortOrder: mediaBrowserSortOrder(query.direction),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getPlaylists({
-    required String userId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortBy = 'DateCreated,SortName',
-    String? contributingArtistIds,
-    String sortOrder = 'Descending',
-    List<String> artistIds = const [],
-  }) async {
+  Future<LibraryPage> getPlaylists(LibraryQuery query) async {
     final response = await _api.getPlaylists(
       userId: userId,
-      startIndex: startIndex,
-      limit: limit,
-      sortBy: sortBy,
-      contributingArtistIds: contributingArtistIds,
-      sortOrder: sortOrder,
-      artistIds: artistIds,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.playlist),
+      contributingArtistIds: query.appearsOnArtistId,
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      artistIds: query.artistIds,
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getAllSongs({
-    required String userId,
-    String? libraryId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortBy = 'SortName',
-    String sortOrder = 'Ascending',
-    List<String> filters = const [],
-    List<String> fields = const ['MediaSources'],
-  }) async {
+  Future<LibraryPage> getAllSongs(LibraryQuery query) async {
     final response = await _api.getAllSongs(
       userId: userId,
-      libraryId: libraryId,
-      startIndex: startIndex,
-      limit: limit,
-      sortBy: sortBy,
-      sortOrder: sortOrder,
-      filters: filters,
-      fields: fields,
+      libraryId: query.libraryId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      filters: mediaBrowserFilters(query.filters),
+      fields: mediaBrowserFields(query.fields),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getSongs({
-    required String userId,
-    required String albumId,
-  }) async {
+  Future<LibraryPage> getSongs(String albumId) async {
     final response = await _api.getSongs(userId: userId, albumId: albumId);
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getSongsOfSet({
-    required String userId,
-    String? libraryId,
-    List<String> artistIds = const [],
-    List<String> genreIds = const [],
-    List<String> filters = const [],
-    String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
-    String sortOrder = 'Ascending',
-    String startIndex = '0',
-    String limit = '300',
-    List<String> fields = const ['MediaSources'],
-  }) async {
+  Future<LibraryPage> getSongsOfSet(LibraryQuery query) async {
     final response = await _api.getSongsOfSet(
       userId: userId,
-      libraryId: libraryId,
-      artistIds: artistIds,
-      genreIds: genreIds,
-      filters: filters,
-      sortBy: sortBy,
-      sortOrder: sortOrder,
-      startIndex: startIndex,
-      limit: limit,
-      fields: fields,
+      libraryId: query.libraryId,
+      artistIds: query.artistIds,
+      genreIds: query.genreIds,
+      filters: mediaBrowserFilters(query.filters),
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      fields: mediaBrowserFields(query.fields),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> getPlaylistSongs({
-    required String userId,
-    required String playlistId,
-  }) async {
+  Future<LibraryPage> getPlaylistSongs(String playlistId) async {
     final response = await _api.getPlaylistSongs(
       playlistId: playlistId,
       userId: userId,
@@ -198,129 +145,94 @@ class EmbyClient implements MediaServerClient {
   }
 
   @override
-  Future<LibraryPage> getSimilarAlbums({
-    required String userId,
-    required String albumId,
-    String limit = '12',
-  }) async {
+  Future<LibraryPage> getSimilarAlbums(String albumId, {int limit = 12}) async {
     final response = await _api.getSimilarAlbums(
       albumId: albumId,
       userId: userId,
-      limit: limit,
+      limit: '$limit',
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
   Future<List<GeneratedPlaylist>> generateTodaysPlaylists({
-    required String userId,
     String? libraryId,
     bool includeDiscovery = false,
   }) => generateJellyfinTodaysPlaylists(
     this,
-    userId: userId,
     libraryId: libraryId,
     includeDiscovery: includeDiscovery,
   );
 
   @override
   Future<List<LibraryItem>> getGeneratedPlaylistSongs({
-    required String userId,
     required String playlistId,
     String? libraryId,
   }) => fetchJellyfinGeneratedPlaylistSongs(
     this,
-    userId: userId,
     playlistId: playlistId,
     libraryId: libraryId,
   );
 
   @override
-  Future<LibraryPage> getLibraries({required String userId}) async {
+  Future<LibraryPage> getLibraries() async {
     final response = await _api.getLibraries(userId: userId);
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryItem> getItem(String itemId) async {
+  Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async {
     final response = await _api.getItem(userId: userId, itemId: itemId);
     return response.data.toEmbyLibraryItem();
   }
 
   @override
-  Future<LibraryPage> searchAlbums({
-    required String userId,
-    required String searchTerm,
-    String? libraryId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortOrder = 'Descending',
-  }) async {
+  Future<LibraryPage> searchAlbums(SearchQuery query) async {
     final response = await _api.searchAlbums(
       userId: userId,
-      searchTerm: searchTerm,
-      libraryId: libraryId,
-      startIndex: startIndex,
-      limit: limit,
-      sortOrder: sortOrder,
+      searchTerm: query.term,
+      libraryId: query.libraryId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortOrder: mediaBrowserSortOrder(query.direction),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> searchArtists({
-    required String userId,
-    required String searchTerm,
-    String startIndex = '0',
-    String limit = '100',
-    String sortOrder = 'Descending',
-  }) async {
+  Future<LibraryPage> searchArtists(SearchQuery query) async {
     final response = await _api.searchArtists(
       userId: userId,
-      searchTerm: searchTerm,
-      startIndex: startIndex,
-      limit: limit,
-      sortOrder: sortOrder,
+      searchTerm: query.term,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortOrder: mediaBrowserSortOrder(query.direction),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> searchSongs({
-    required String userId,
-    required String searchTerm,
-    String? libraryId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortOrder = 'Descending',
-  }) async {
+  Future<LibraryPage> searchSongs(SearchQuery query) async {
     final response = await _api.searchSongs(
       userId: userId,
-      searchTerm: searchTerm,
-      libraryId: libraryId,
-      startIndex: startIndex,
-      limit: limit,
-      sortOrder: sortOrder,
+      searchTerm: query.term,
+      libraryId: query.libraryId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortOrder: mediaBrowserSortOrder(query.direction),
     );
     return response.data.toEmbyLibraryPage();
   }
 
   @override
-  Future<LibraryPage> searchPlaylists({
-    required String userId,
-    required String searchTerm,
-    required String libraryId,
-    String startIndex = '0',
-    String limit = '100',
-    String sortOrder = 'Descending',
-  }) async {
+  Future<LibraryPage> searchPlaylists(SearchQuery query) async {
     final response = await _api.searchPlaylists(
       userId: userId,
-      libraryId: libraryId,
-      searchTerm: searchTerm,
-      startIndex: startIndex,
-      limit: limit,
-      sortOrder: sortOrder,
+      libraryId: query.libraryId ?? '',
+      searchTerm: query.term,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortOrder: mediaBrowserSortOrder(query.direction),
     );
     return response.data.toEmbyLibraryPage();
   }
@@ -365,7 +277,7 @@ class EmbyClient implements MediaServerClient {
   }
 
   @override
-  Future<LyricsDTO> getLyrics(String itemId) async {
+  Future<Lyrics?> getLyrics(String itemId) async {
     final item = await _api.getItem(userId: userId, itemId: itemId);
     for (final source in item.data.mediaSources) {
       final sourceId = source.id;
@@ -376,9 +288,9 @@ class EmbyClient implements MediaServerClient {
         mediaSourceId: sourceId,
         index: index,
       );
-      return parseSubtitleTrack(track.data).toLyricsDTO();
+      return parseSubtitleTrack(track.data).toLyricsDTO().toLyrics();
     }
-    return const LyricsDTO();
+    return null;
   }
 
   @override
@@ -501,8 +413,9 @@ class EmbyClient implements MediaServerClient {
       await _api.getArtists(userId: userId, limit: '1');
       return SessionStatus.valid;
     } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      if (statusCode == 401 || statusCode == 403) return SessionStatus.invalid;
+      if (MediaServerException.fromDio(e).isUnauthorized) {
+        return SessionStatus.invalid;
+      }
       return SessionStatus.unreachable;
     } on Object {
       return SessionStatus.unreachable;

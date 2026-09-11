@@ -300,12 +300,12 @@ void main() {
 
       final lyrics = await lyricsClient.getLyrics('57');
 
-      expect(lyrics.isSynced, isTrue);
-      expect(lyrics.lyrics.map((line) => line.text), ['Yeah!', 'second line']);
-      expect(lyrics.lyrics.first.startTime, const Duration(milliseconds: 2400));
+      expect(lyrics!.isSynced, isTrue);
+      expect(lyrics.lines.map((line) => line.text), ['Yeah!', 'second line']);
+      expect(lyrics.lines.first.start, const Duration(milliseconds: 2400));
     });
 
-    test('- returns empty lyrics without a second request when the song '
+    test('- returns no lyrics without a second request when the song '
         'has no lyric stream', () async {
       respond([
         {'Index': 0, 'Type': 'Audio', 'Codec': 'flac'},
@@ -313,7 +313,7 @@ void main() {
 
       final lyrics = await lyricsClient.getLyrics('57');
 
-      expect(lyrics.lyrics, isEmpty);
+      expect(lyrics, isNull);
       verify(() => mockAdapter.fetch(any(), any(), any())).called(1);
     });
   });

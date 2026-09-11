@@ -91,9 +91,7 @@ class ServerDiscoveryNotifier extends StateNotifier<ServerDiscoveryState> {
     final server = DiscoveredServer(
       id: announcement.id,
       name:
-          result.info.serverName ??
-          announcement.name ??
-          Uri.parse(result.serverUrl).host,
+          result.name ?? announcement.name ?? Uri.parse(result.serverUrl).host,
       serverUrl: result.serverUrl,
       serverType: result.serverType,
     );
@@ -108,7 +106,7 @@ class ServerDiscoveryNotifier extends StateNotifier<ServerDiscoveryState> {
     state = state.copyWith(scanning: false, finished: true);
   }
 
-  Future<ServerProbeResult?> _probeSourceAddress(
+  Future<ServerIdentity?> _probeSourceAddress(
     ServerAnnouncement announcement,
   ) async {
     final source = announcement.sourceAddress;

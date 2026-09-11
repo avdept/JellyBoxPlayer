@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,7 +12,10 @@ class MockMediaServerClient extends Mock implements MediaServerClient {}
 void main() {
   late MockMediaServerClient mockClient;
 
-  setUpAll(() => registerFallbackValue(<String>[]));
+  setUpAll(() {
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(const LibraryQuery());
+  });
 
   setUp(() => mockClient = MockMediaServerClient());
 
@@ -46,54 +50,23 @@ void main() {
 
   void stubScan(List<LibraryItem> songs) {
     when(
-      () => mockClient.getAllSongs(
-        userId: any(named: 'userId'),
-        libraryId: any(named: 'libraryId'),
-        startIndex: any(named: 'startIndex'),
-        limit: any(named: 'limit'),
-        sortBy: any(named: 'sortBy'),
-        sortOrder: any(named: 'sortOrder'),
-        filters: any(named: 'filters'),
-        fields: any(named: 'fields'),
-      ),
+      () => mockClient.getAllSongs(any()),
     ).thenAnswer((_) async => LibraryPage(items: songs));
   }
 
   void stubGenres(List<LibraryItem> genres) {
     when(
-      () => mockClient.getGenres(
-        userId: any(named: 'userId'),
-        libraryId: any(named: 'libraryId'),
-        startIndex: any(named: 'startIndex'),
-        limit: any(named: 'limit'),
-        sortBy: any(named: 'sortBy'),
-        sortOrder: any(named: 'sortOrder'),
-      ),
+      () => mockClient.getGenres(any()),
     ).thenAnswer((_) async => LibraryPage(items: genres));
   }
 
   void stubSongsOfSet(
-    LibraryPage Function(List<String> genreIds, List<String> filters) respond,
+    LibraryPage Function(List<String> genreIds, Set<ItemFilterFlag> filters)
+    respond,
   ) {
-    when(
-      () => mockClient.getSongsOfSet(
-        userId: any(named: 'userId'),
-        libraryId: any(named: 'libraryId'),
-        artistIds: any(named: 'artistIds'),
-        genreIds: any(named: 'genreIds'),
-        filters: any(named: 'filters'),
-        sortBy: any(named: 'sortBy'),
-        sortOrder: any(named: 'sortOrder'),
-        startIndex: any(named: 'startIndex'),
-        limit: any(named: 'limit'),
-        fields: any(named: 'fields'),
-      ),
-    ).thenAnswer((invocation) async {
-      final args = invocation.namedArguments;
-      return respond(
-        args[const Symbol('genreIds')] as List<String>,
-        args[const Symbol('filters')] as List<String>,
-      );
+    when(() => mockClient.getSongsOfSet(any())).thenAnswer((invocation) async {
+      final query = invocation.positionalArguments.first as LibraryQuery;
+      return respond(query.genreIds, query.filters);
     });
   }
 
@@ -102,7 +75,6 @@ void main() {
     int seed = 1,
   }) => generateJellyfinTodaysPlaylists(
     mockClient,
-    userId: 'user-1',
     includeDiscovery: includeDiscovery,
     random: Random(seed),
   );
@@ -190,14 +162,7 @@ void main() {
 
       expect(await generate(), isEmpty);
       verifyNever(
-        () => mockClient.getGenres(
-          userId: any(named: 'userId'),
-          libraryId: any(named: 'libraryId'),
-          startIndex: any(named: 'startIndex'),
-          limit: any(named: 'limit'),
-          sortBy: any(named: 'sortBy'),
-          sortOrder: any(named: 'sortOrder'),
-        ),
+        () => mockClient.getGenres(any()),
       );
     });
 
@@ -280,7 +245,7 @@ void main() {
     test('- gate on unplayed songs, not total songs', () async {
       stubOneMainAndSpareGenres();
       stubSongsOfSet(
-        (genreIds, filters) => filters.contains('IsUnplayed')
+        (genreIds, filters) => filters.contains(ItemFilterFlag.unplayed)
             ? pool(genreIds.first, albums: 2)
             : pool(genreIds.first, albums: 40),
       );
@@ -341,7 +306,6 @@ void main() {
 
       final songs = await fetchJellyfinGeneratedPlaylistSongs(
         mockClient,
-        userId: 'user-1',
         playlistId: jellyfinGenreMixId(const ['alt-1', 'alt-2']),
         random: Random(1),
       );
@@ -356,7 +320,7 @@ void main() {
       var calls = 0;
       stubSongsOfSet((genreIds, filters) {
         calls++;
-        expect(filters, ['IsUnplayed']);
+        expect(filters, {ItemFilterFlag.unplayed});
         return LibraryPage(
           items: [for (var i = 1; i <= 30; i++) song('n$i')],
         );
@@ -364,7 +328,6 @@ void main() {
 
       final songs = await fetchJellyfinGeneratedPlaylistSongs(
         mockClient,
-        userId: 'user-1',
         playlistId: jellyfinGenreDiscoveryId(const ['jazz-id']),
         random: Random(1),
       );
@@ -377,7 +340,6 @@ void main() {
     test('- refuses a playlist id it did not mint', () async {
       final songs = await fetchJellyfinGeneratedPlaylistSongs(
         mockClient,
-        userId: 'user-1',
         playlistId: 'navidrome:something-else',
         random: Random(1),
       );

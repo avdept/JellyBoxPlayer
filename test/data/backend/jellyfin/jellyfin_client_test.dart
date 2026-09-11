@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
@@ -6,9 +9,17 @@ import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockHttpClientAdapter extends Mock implements HttpClientAdapter {}
 
 void main() {
   late JellyfinClient client;
+
+  setUpAll(() {
+    registerFallbackValue(RequestOptions(path: '/'));
+    registerFallbackValue(const Stream<Uint8List>.empty());
+  });
 
   setUp(() {
     client = JellyfinClient(
@@ -56,6 +67,74 @@ void main() {
     kind: ItemKind.album,
     images: ImageRefs(primary: primary, backdrops: backdrops),
   );
+
+  group('getLyrics', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient lyricsClient;
+
+    setUp(() {
+      mockAdapter = MockHttpClientAdapter();
+      lyricsClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+    });
+
+    void respondWith(int statusCode, Object? body) {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode(body),
+          statusCode,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    }
+
+    test('- maps the payload onto synced lyrics', () async {
+      respondWith(200, {
+        'Metadata': {'IsSynced': true},
+        'Lyrics': [
+          {'Text': 'first line', 'Start': 0},
+          {'Text': 'second line', 'Start': 100000000},
+        ],
+      });
+
+      final lyrics = await lyricsClient.getLyrics('song-1');
+
+      expect(lyrics!.isSynced, isTrue);
+      expect(lyrics.lines.map((line) => line.text), [
+        'first line',
+        'second line',
+      ]);
+      expect(lyrics.lines.last.start, const Duration(seconds: 10));
+    });
+
+    test('- returns null when the track has no lyrics', () async {
+      respondWith(404, {'error': 'not found'});
+
+      expect(await lyricsClient.getLyrics('song-1'), isNull);
+    });
+
+    test('- returns null when the server predates the endpoint', () async {
+      respondWith(400, {'error': 'bad request'});
+
+      expect(await lyricsClient.getLyrics('song-1'), isNull);
+    });
+
+    test('- surfaces any other failure', () async {
+      respondWith(500, {'error': 'boom'});
+
+      await expectLater(
+        lyricsClient.getLyrics('song-1'),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
 
   group('resolveStreamSource', () {
     test(

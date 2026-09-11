@@ -164,10 +164,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     try {
       final response = await ref
           .read(mediaServerClientProvider)
-          .getSongs(
-            userId: ref.read(currentUserProvider)!.userId,
-            albumId: widget.album.id,
-          );
+          .getSongs(widget.album.id);
       if (!mounted) return;
       setState(() {
         songs = _sortedByIndex(response.items);
@@ -435,7 +432,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       onPressed: () async {
                         final item = await ref
                             .read(mediaServerClientProvider)
-                            .getItem(a.id);
+                            .getItem(a.id, kind: ItemKind.artist);
                         if (!mounted) return;
                         await context.pushNamed(
                           branchAwareName(context, Routes.artist),

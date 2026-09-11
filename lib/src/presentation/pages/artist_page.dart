@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -64,9 +64,11 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     final resp = await ref
         .read(mediaServerClientProvider)
         .getAlbums(
-          userId: ref.read(currentUserProvider)!.userId,
-          libraryId: '',
-          contributingArtistIds: widget.artist.id,
+          LibraryQuery(
+            sort: ItemSort.dateCreated,
+            direction: SortDirection.descending,
+            appearsOnArtistId: widget.artist.id,
+          ),
         );
     setState(() {
       _appearsOn = resp.items;
@@ -77,9 +79,11 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     final resp = await ref
         .read(mediaServerClientProvider)
         .getAlbums(
-          userId: ref.read(currentUserProvider)!.userId,
-          libraryId: '',
-          artistIds: [widget.artist.id],
+          LibraryQuery(
+            sort: ItemSort.dateCreated,
+            direction: SortDirection.descending,
+            artistIds: [widget.artist.id],
+          ),
         );
     setState(() {
       _albums = resp.items;

@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 
 class MockMediaServerClient extends Mock implements MediaServerClient {}
 
@@ -77,21 +78,26 @@ void main() {
     List<String>? artistIds,
   }) {
     return mockMediaServerClient.getAlbums(
-      userId: mockUserId,
-      libraryId: any(named: 'libraryId'),
-      startIndex: any(named: 'startIndex'),
-      limit: any(named: 'limit'),
-      sortBy: any(named: 'sortBy'),
-      contributingArtistIds:
-          contributingArtistIds ?? any(named: 'contributingArtistIds'),
-      sortOrder: any(named: 'sortOrder'),
-      artistIds: artistIds ?? any(named: 'artistIds'),
+      any(
+        that: predicate<LibraryQuery>((query) {
+          if (contributingArtistIds != null &&
+              query.appearsOnArtistId != contributingArtistIds) {
+            return false;
+          }
+          if (artistIds != null &&
+              query.artistIds.join(',') != artistIds.join(',')) {
+            return false;
+          }
+          return true;
+        }),
+      ),
     );
   }
 
   setUpAll(() {
     registerFallbackValue(ImageKind.primary);
     registerFallbackValue(mockArtist);
+    registerFallbackValue(const LibraryQuery());
   });
 
   setUp(() {

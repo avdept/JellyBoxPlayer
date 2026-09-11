@@ -5,7 +5,6 @@ import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>> {
@@ -17,9 +16,7 @@ class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>> {
     _client = ref.watch(mediaServerClientProvider);
     state = const AsyncLoading();
     try {
-      final libraries = await _client.getLibraries(
-        userId: ref.read(currentUserProvider)!.userId,
-      );
+      final libraries = await _client.getLibraries();
       return List.unmodifiable(
         libraries.items.where(
           (element) =>

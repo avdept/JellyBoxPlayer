@@ -116,7 +116,6 @@ void main() {
     client = MockMediaServerClient();
     when(
       () => client.generateTodaysPlaylists(
-        userId: any(named: 'userId'),
         libraryId: any(named: 'libraryId'),
         includeDiscovery: any(named: 'includeDiscovery'),
       ),
@@ -192,7 +191,6 @@ void main() {
     expect(generationCount, 0);
     verifyNever(
       () => client.generateTodaysPlaylists(
-        userId: any(named: 'userId'),
         libraryId: any(named: 'libraryId'),
         includeDiscovery: any(named: 'includeDiscovery'),
       ),

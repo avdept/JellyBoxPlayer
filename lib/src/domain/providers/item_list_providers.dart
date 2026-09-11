@@ -3,20 +3,22 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:string_capitalize/string_capitalize.dart';
 
 class ItemListNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
   late MediaServerClient _api;
   late Filter _filterState;
   String? _libraryId;
+
+  SortDirection get _direction =>
+      sortDirectionOf(descending: _filterState.desc);
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
@@ -33,41 +35,42 @@ class ItemListNotifier
   }) async {
     final resp = await switch (arg) {
       ItemList.albums => _api.getAlbums(
-        userId: ref.read(currentUserProvider)!.userId,
-        libraryId: _libraryId,
-        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
-        sortBy: _filterState.orderBy.name.capitalize(),
-        startIndex: startIndex.toString(),
+        LibraryQuery(
+          libraryId: _libraryId,
+          sort: _filterState.orderBy.itemSort,
+          direction: _direction,
+          startIndex: startIndex,
+        ),
       ),
       ItemList.artists => _api.getArtists(
-        userId: ref.read(currentUserProvider)!.userId,
-        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
-        sortBy: _filterState.orderBy.name.capitalize(),
-        startIndex: startIndex.toString(),
+        LibraryQuery(
+          sort: _filterState.orderBy.itemSort,
+          direction: _direction,
+          startIndex: startIndex,
+        ),
       ),
       ItemList.genres => _api.getGenres(
-        userId: ref.read(currentUserProvider)!.userId,
-        libraryId: _libraryId,
-        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
-        sortBy: _filterState.orderBy == EntityFilter.sortName
-            ? 'SortName'
-            : _filterState.orderBy.name.capitalize(),
-        startIndex: startIndex.toString(),
+        LibraryQuery(
+          libraryId: _libraryId,
+          sort: _filterState.orderBy.itemSort,
+          direction: _direction,
+          startIndex: startIndex,
+        ),
       ),
       ItemList.playlists => _api.getPlaylists(
-        userId: ref.read(currentUserProvider)!.userId,
-        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
-        sortBy: _filterState.orderBy.name.capitalize(),
-        startIndex: startIndex.toString(),
+        LibraryQuery(
+          sort: _filterState.orderBy.itemSort,
+          direction: _direction,
+          startIndex: startIndex,
+        ),
       ),
       ItemList.songs => _api.getAllSongs(
-        userId: ref.read(currentUserProvider)!.userId,
-        libraryId: _libraryId,
-        sortOrder: _filterState.desc ? 'Descending' : 'Ascending',
-        sortBy: _filterState.orderBy == EntityFilter.sortName
-            ? 'Name'
-            : _filterState.orderBy.name.capitalize(),
-        startIndex: startIndex.toString(),
+        LibraryQuery(
+          libraryId: _libraryId,
+          sort: _filterState.orderBy.itemSort,
+          direction: _direction,
+          startIndex: startIndex,
+        ),
       ),
     };
     return startPage.copyWith(

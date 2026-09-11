@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 
 class CurrentAlbumNotifier extends StateNotifier<LibraryItem?> {
   CurrentAlbumNotifier(this._ref) : super(null) {
@@ -25,10 +24,7 @@ class CurrentAlbumNotifier extends StateNotifier<LibraryItem?> {
   // TODO: should be moved to a separate provider
   Future<LibraryPage> fetchSongs(String albumId) async {
     try {
-      return await _client.getSongs(
-        userId: _ref.read(currentUserProvider)!.userId,
-        albumId: albumId,
-      );
+      return await _client.getSongs(albumId);
     } on DioException catch (e) {
       log(e.message ?? 'Error while fetching Songs');
     }

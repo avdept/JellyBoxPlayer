@@ -1,7 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -32,16 +34,6 @@ PlaybackState _playing(List<LibraryItem> songs, int index) => PlaybackState(
   currentMediaIndex: index,
 );
 
-DioException _failure(int? statusCode) {
-  final options = RequestOptions(path: '/Audio/song-1/Lyrics');
-  return DioException(
-    requestOptions: options,
-    response: statusCode == null
-        ? null
-        : Response<dynamic>(requestOptions: options, statusCode: statusCode),
-  );
-}
-
 void main() {
   late MockMediaServerClient mockClient;
 
@@ -51,7 +43,7 @@ void main() {
       {'Text': 'first line', 'Start': 0},
       {'Text': 'second line', 'Start': 100000000},
     ],
-  });
+  }).toLyrics();
 
   ProviderContainer containerWith({PlaybackNotifier? playback}) =>
       createProviderContainer(
@@ -61,7 +53,12 @@ void main() {
         ],
       );
 
-  setUp(() => mockClient = MockMediaServerClient());
+  setUp(() {
+    mockClient = MockMediaServerClient();
+    when(
+      () => mockClient.capabilities,
+    ).thenReturn(const MediaServerCapabilities());
+  });
 
   group('lyricsProvider', () {
     test('- returns the lyrics the server sends back', () async {
@@ -76,8 +73,8 @@ void main() {
       verify(() => mockClient.getLyrics('song-1')).called(1);
     });
 
-    test('- returns null when the track has no lyrics (404)', () async {
-      when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(404));
+    test('- returns null when the backend reports no lyrics', () async {
+      when(() => mockClient.getLyrics('song-1')).thenAnswer((_) async => null);
 
       await expectLater(
         containerWith().read(lyricsProvider('song-1').future),
@@ -85,24 +82,26 @@ void main() {
       );
     });
 
-    test(
-      '- returns null when the server predates the endpoint (400)',
-      () async {
-        when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(400));
-
-        await expectLater(
-          containerWith().read(lyricsProvider('song-1').future),
-          completion(isNull),
-        );
-      },
-    );
-
-    test('- surfaces other failures', () async {
-      when(() => mockClient.getLyrics('song-1')).thenThrow(_failure(500));
+    test('- asks for nothing when the backend has no lyrics support', () async {
+      when(
+        () => mockClient.capabilities,
+      ).thenReturn(const MediaServerCapabilities(lyrics: false));
 
       await expectLater(
         containerWith().read(lyricsProvider('song-1').future),
-        throwsA(isA<DioException>()),
+        completion(isNull),
+      );
+      verifyNever(() => mockClient.getLyrics(any()));
+    });
+
+    test('- surfaces a backend failure', () async {
+      when(() => mockClient.getLyrics('song-1')).thenThrow(
+        const MediaServerException(MediaServerErrorKind.server),
+      );
+
+      await expectLater(
+        containerWith().read(lyricsProvider('song-1').future),
+        throwsA(isA<MediaServerException>()),
       );
     });
   });

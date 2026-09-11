@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playlist_generation.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -8,6 +9,7 @@ const jellyfinGenreMixIdPrefix = 'jellybox:genre-mix:';
 const jellyfinGenreDiscoveryIdPrefix = 'jellybox:genre-discovery:';
 
 const _playedSongsScanLimit = 200;
+const _genreScanLimit = 500;
 const _genreCandidateCount = 5;
 const _discoveryCandidateCount = 8;
 const _maxMixPlaylists = 3;
@@ -35,7 +37,6 @@ List<String> jellyfinGenreIdsOf(String playlistId) {
 
 Future<List<GeneratedPlaylist>> generateJellyfinTodaysPlaylists(
   MediaServerClient client, {
-  required String userId,
   String? libraryId,
   bool includeDiscovery = false,
   Random? random,
@@ -43,22 +44,21 @@ Future<List<GeneratedPlaylist>> generateJellyfinTodaysPlaylists(
   final rng = random ?? Random();
 
   final played = await client.getAllSongs(
-    userId: userId,
-    libraryId: libraryId,
-    sortBy: 'PlayCount',
-    sortOrder: 'Descending',
-    filters: const ['IsPlayed'],
-    limit: '$_playedSongsScanLimit',
-    fields: const ['Genres'],
+    LibraryQuery(
+      libraryId: libraryId,
+      sort: ItemSort.playCount,
+      direction: SortDirection.descending,
+      filters: const {ItemFilterFlag.played},
+      fields: const {ItemField.genres},
+      limit: _playedSongsScanLimit,
+    ),
   );
 
   final ranking = _rankPlayedGenres(played.items);
   if (ranking.ranked.isEmpty && !includeDiscovery) return const [];
 
   final allGenres = await client.getGenres(
-    userId: userId,
-    libraryId: libraryId,
-    limit: '500',
+    LibraryQuery(libraryId: libraryId, limit: _genreScanLimit),
   );
 
   final idsByKey = <String, List<String>>{};
@@ -72,7 +72,6 @@ Future<List<GeneratedPlaylist>> generateJellyfinTodaysPlaylists(
 
   final playlists = await _mixPlaylists(
     client,
-    userId: userId,
     libraryId: libraryId,
     ranking: ranking,
     idsByKey: idsByKey,
@@ -84,7 +83,6 @@ Future<List<GeneratedPlaylist>> generateJellyfinTodaysPlaylists(
     ...playlists,
     ...await _discoveryPlaylists(
       client,
-      userId: userId,
       libraryId: libraryId,
       idsByKey: idsByKey,
       nameByKey: nameByKey,
@@ -129,7 +127,6 @@ _GenreRanking _rankPlayedGenres(List<LibraryItem> played) {
 
 Future<List<GeneratedPlaylist>> _mixPlaylists(
   MediaServerClient client, {
-  required String userId,
   required String? libraryId,
   required _GenreRanking ranking,
   required Map<String, List<String>> idsByKey,
@@ -148,12 +145,13 @@ Future<List<GeneratedPlaylist>> _mixPlaylists(
   final probes = await Future.wait([
     for (final candidate in candidates)
       client.getSongsOfSet(
-        userId: userId,
-        libraryId: libraryId,
-        genreIds: candidate.ids,
-        sortBy: 'Random',
-        limit: '$genreProbeLimit',
-        fields: const [],
+        LibraryQuery(
+          libraryId: libraryId,
+          genreIds: candidate.ids,
+          sort: ItemSort.random,
+          fields: const {},
+          limit: genreProbeLimit,
+        ),
       ),
   ]);
 
@@ -181,7 +179,6 @@ Future<List<GeneratedPlaylist>> _mixPlaylists(
 
 Future<List<GeneratedPlaylist>> _discoveryPlaylists(
   MediaServerClient client, {
-  required String userId,
   required String? libraryId,
   required Map<String, List<String>> idsByKey,
   required Map<String, String> nameByKey,
@@ -196,13 +193,14 @@ Future<List<GeneratedPlaylist>> _discoveryPlaylists(
   final probes = await Future.wait([
     for (final key in candidates)
       client.getSongsOfSet(
-        userId: userId,
-        libraryId: libraryId,
-        genreIds: idsByKey[key]!,
-        filters: const ['IsUnplayed'],
-        sortBy: 'Random',
-        limit: '$genreProbeLimit',
-        fields: const [],
+        LibraryQuery(
+          libraryId: libraryId,
+          genreIds: idsByKey[key]!,
+          filters: const {ItemFilterFlag.unplayed},
+          sort: ItemSort.random,
+          fields: const {},
+          limit: genreProbeLimit,
+        ),
       ),
   ]);
 
@@ -230,7 +228,6 @@ Future<List<GeneratedPlaylist>> _discoveryPlaylists(
 
 Future<List<LibraryItem>> fetchJellyfinGeneratedPlaylistSongs(
   MediaServerClient client, {
-  required String userId,
   required String playlistId,
   String? libraryId,
   Random? random,
@@ -242,12 +239,13 @@ Future<List<LibraryItem>> fetchJellyfinGeneratedPlaylistSongs(
 
   if (isJellyfinDiscoveryPlaylistId(playlistId)) {
     final unplayed = await client.getSongsOfSet(
-      userId: userId,
-      libraryId: libraryId,
-      genreIds: genreIds,
-      filters: const ['IsUnplayed'],
-      sortBy: 'Random',
-      limit: '$generatedPlaylistFetchLimit',
+      LibraryQuery(
+        libraryId: libraryId,
+        genreIds: genreIds,
+        filters: const {ItemFilterFlag.unplayed},
+        sort: ItemSort.random,
+        limit: generatedPlaylistFetchLimit,
+      ),
     );
 
     return blendSongs(
@@ -259,21 +257,23 @@ Future<List<LibraryItem>> fetchJellyfinGeneratedPlaylistSongs(
 
   final batches = await Future.wait([
     client.getSongsOfSet(
-      userId: userId,
-      libraryId: libraryId,
-      genreIds: genreIds,
-      filters: const ['IsPlayed'],
-      sortBy: 'PlayCount',
-      sortOrder: 'Descending',
-      limit: '$generatedPlaylistFetchLimit',
+      LibraryQuery(
+        libraryId: libraryId,
+        genreIds: genreIds,
+        filters: const {ItemFilterFlag.played},
+        sort: ItemSort.playCount,
+        direction: SortDirection.descending,
+        limit: generatedPlaylistFetchLimit,
+      ),
     ),
     client.getSongsOfSet(
-      userId: userId,
-      libraryId: libraryId,
-      genreIds: genreIds,
-      filters: const ['IsUnplayed'],
-      sortBy: 'Random',
-      limit: '$generatedPlaylistFetchLimit',
+      LibraryQuery(
+        libraryId: libraryId,
+        genreIds: genreIds,
+        filters: const {ItemFilterFlag.unplayed},
+        sort: ItemSort.random,
+        limit: generatedPlaylistFetchLimit,
+      ),
     ),
   ]);
 

@@ -9,14 +9,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
-import 'package:jplayer/src/data/api/api.dart';
-import 'package:jplayer/src/data/backend/emby/emby_auth_headers.dart';
-import 'package:jplayer/src/data/backend/emby/emby_client.dart';
-import 'package:jplayer/src/data/backend/jellyfin/jellyfin_auth_headers.dart';
-import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
+import 'package:jplayer/src/data/backend/media_server_backends.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/server_auth_headers.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
@@ -32,8 +28,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   AuthNotifier() {
     _noAuthNetworkInterceptor = InterceptorsWrapper(
       onError: (error, handler) {
-        final statusCode = error.response?.statusCode;
-        if (statusCode == 401 && !_authenticating && !_loggingOut) logout();
+        final failure = MediaServerException.fromDio(error);
+        if (failure.isUnauthorized && !_authenticating && !_loggingOut) {
+          logout();
+        }
         handler.next(error);
       },
     );
@@ -125,13 +123,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   }
 
   Future<ServerType> _detectServerType(String serverUrl) async {
-    final probe = ref.read(serverProbeServiceProvider);
-    final info = await probe.probe(serverUrl);
-    if (info != null) {
-      return probe.resolveServerType(info, serverUrl: serverUrl);
-    }
-    return serverTypeFromProductName(await probe.ping(serverUrl)) ??
-        ServerType.jellyfin;
+    final detected = await ref
+        .read(serverProbeServiceProvider)
+        .detectType(serverUrl);
+    return detected ?? ServerType.jellyfin;
   }
 
   Future<String?> _signIn(
@@ -141,10 +136,13 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   ) async {
     try {
       _setAuthHeader(serverType);
-      final result = await _authenticate(serverType, serverUrl, credentials);
-      final token = result.accessToken;
-      final userId = result.user.id;
-      final serverId = result.serverId.isNotEmpty ? result.serverId : serverUrl;
+      final session = await authenticatorFor(
+        serverType,
+        dio: _client,
+      ).signIn(credentials, serverUrl: serverUrl);
+      final token = session.token;
+      final userId = session.userId;
+      final serverId = session.serverId;
       await _storage.write(key: _authTokenKey, value: token);
       await _storage.write(key: _userIdKey, value: userId);
       await _storage.write(key: _serverUrlKey, value: serverUrl);
@@ -172,54 +170,18 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       }
       state = AsyncData(sessionUsable);
     } on DioException catch (e) {
+      return _loginErrorMessage(MediaServerException.fromDio(e), serverUrl);
+    } on MediaServerException catch (e) {
       return _loginErrorMessage(e, serverUrl);
     }
     return state.error?.toString();
   }
 
-  Future<SignInResultDTO> _authenticate(
-    ServerType serverType,
-    String serverUrl,
-    UserCredentials credentials,
-  ) async {
-    switch (serverType) {
-      case ServerType.jellyfin:
-        final response = await JellyfinApi(
-          _client,
-          baseUrl: serverUrl,
-        ).signIn(credentials: credentials);
-        return response.data;
-
-      case ServerType.emby:
-        final response = await EmbyApi(
-          _client,
-          baseUrl: serverUrl,
-        ).signIn(credentials: credentials);
-        return response.data;
-    }
-  }
-
-  String _loginErrorMessage(DioException e, String serverUrl) {
+  String _loginErrorMessage(MediaServerException e, String serverUrl) {
     if (_rejectedCertificateFor(serverUrl) != null) {
       return untrustedCertificateError;
     }
-    switch (e.type) {
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        if (statusCode == 401 || statusCode == 403) {
-          return invalidCredentialsError;
-        }
-        return serverUnreachableError;
-
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-      case DioExceptionType.connectionError:
-      case DioExceptionType.badCertificate:
-      case DioExceptionType.cancel:
-      case DioExceptionType.unknown:
-        return serverUnreachableError;
-    }
+    return e.isUnauthorized ? invalidCredentialsError : serverUnreachableError;
   }
 
   ServerCertificate? _rejectedCertificateFor(String serverUrl) {
@@ -273,8 +235,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
     // TODO: Remove in 2.5.0, tis is one time thing to adopt dowmloads without serverId
 
-    final info = await ref.read(serverProbeServiceProvider).probe(serverUrl);
-    final serverId = info?.id;
+    final identity = await ref
+        .read(serverProbeServiceProvider)
+        .probe(serverUrl);
+    final serverId = identity?.serverId;
     if (serverId == null || serverId.isEmpty) return null;
 
     await _storage.write(key: _serverIdKey, value: serverId);
@@ -320,27 +284,14 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     required String serverUrl,
     required String userId,
     required String token,
-  }) {
-    switch (serverType) {
-      case ServerType.jellyfin:
-        return JellyfinClient(
-          dio: _client,
-          baseUrl: serverUrl,
-          userId: userId,
-          token: token,
-          deviceId: deviceId,
-        );
-
-      case ServerType.emby:
-        return EmbyClient(
-          dio: _client,
-          baseUrl: serverUrl,
-          userId: userId,
-          token: token,
-          deviceId: deviceId,
-        );
-    }
-  }
+  }) => clientFor(
+    serverType,
+    dio: _client,
+    baseUrl: serverUrl,
+    userId: userId,
+    token: token,
+    deviceId: deviceId,
+  );
 
   ServerType _parseServerType(String? stored) =>
       ServerType.values.asNameMap()[stored] ?? ServerType.jellyfin;
@@ -396,21 +347,12 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     if (kDebugMode) _notifyDeveloper();
   }
 
-  ServerAuthHeaders _authHeadersOf(ServerType serverType) {
-    final deviceName = getCurrentPlatformName();
-    return switch (serverType) {
-      ServerType.jellyfin => JellyfinAuthHeaders(
-        deviceId: deviceId,
-        deviceName: deviceName,
-        version: version,
-      ),
-      ServerType.emby => EmbyAuthHeaders(
-        deviceId: deviceId,
-        deviceName: deviceName,
-        version: version,
-      ),
-    };
-  }
+  ServerAuthHeaders _authHeadersOf(ServerType serverType) => authHeadersFor(
+    serverType,
+    deviceId: deviceId,
+    deviceName: getCurrentPlatformName(),
+    version: version,
+  );
 
   void _notifyDeveloper() => log(
     {

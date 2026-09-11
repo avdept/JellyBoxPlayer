@@ -1,12 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+
+const _setSongsLimit = 300;
+const _favouriteSongsLimit = 500;
 
 enum SetPlaybackResult {
   started,
@@ -19,8 +22,6 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
 
   final Ref _ref;
 
-  String get _userId => _ref.read(currentUserProvider)!.userId;
-
   Future<SetPlaybackResult> playAlbum(LibraryItem album) => _play(
     setItem: album,
     fetchSongs: () => _albumSongs(album.id),
@@ -31,7 +32,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       try {
         final resp = await _ref
             .read(mediaServerClientProvider)
-            .getSongs(userId: _userId, albumId: albumId);
+            .getSongs(albumId);
         return _byIndexNumber(resp.items);
       } on Object {}
     }
@@ -49,7 +50,13 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     fetchSongs: () async {
       final resp = await _ref
           .read(mediaServerClientProvider)
-          .getSongsOfSet(userId: _userId, artistIds: [artist.id]);
+          .getSongsOfSet(
+            LibraryQuery(
+              artistIds: [artist.id],
+              sort: ItemSort.albumOrder,
+              limit: _setSongsLimit,
+            ),
+          );
       return resp.items;
     },
   );
@@ -60,9 +67,12 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       final resp = await _ref
           .read(mediaServerClientProvider)
           .getSongsOfSet(
-            userId: _userId,
-            libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
-            genreIds: [genre.id],
+            LibraryQuery(
+              libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+              genreIds: [genre.id],
+              sort: ItemSort.albumOrder,
+              limit: _setSongsLimit,
+            ),
           );
       return resp.items;
     },
@@ -88,7 +98,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       try {
         final resp = await _ref
             .read(mediaServerClientProvider)
-            .getPlaylistSongs(playlistId: playlistId, userId: _userId);
+            .getPlaylistSongs(playlistId);
         return resp.items;
       } on Object {}
     }
@@ -105,10 +115,11 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
           final resp = await _ref
               .read(mediaServerClientProvider)
               .getAllSongs(
-                userId: _userId,
-                libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
-                filters: const ['IsFavorite'],
-                limit: '500',
+                LibraryQuery(
+                  libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+                  filters: const {ItemFilterFlag.favorite},
+                  limit: _favouriteSongsLimit,
+                ),
               );
           return resp.items;
         },

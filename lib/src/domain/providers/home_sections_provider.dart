@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -13,14 +14,11 @@ const _playedSongsScanLimit = 200;
 
 Future<List<LibraryItem>> _albumsByIds(
   MediaServerClient api,
-  String userId,
   List<String> albumIds,
 ) async {
   if (albumIds.isEmpty) return const [];
   final albums = await api.getAlbums(
-    userId: userId,
-    ids: albumIds,
-    limit: '${albumIds.length}',
+    LibraryQuery(ids: albumIds, limit: albumIds.length),
   );
   final byId = {for (final album in albums.items) album.id: album};
   return [for (final id in albumIds) ?byId[id]];
@@ -34,12 +32,13 @@ recentlyPlayedAlbumsProvider = FutureProvider.autoDispose((ref) async {
   if (userId == null) return const [];
 
   final played = await api.getAllSongs(
-    userId: userId,
-    libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
-    sortBy: 'DatePlayed',
-    sortOrder: 'Descending',
-    filters: const ['IsPlayed'],
-    limit: '$_playedSongsScanLimit',
+    LibraryQuery(
+      libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+      sort: ItemSort.datePlayed,
+      direction: SortDirection.descending,
+      filters: const {ItemFilterFlag.played},
+      limit: _playedSongsScanLimit,
+    ),
   );
 
   final albumIds = <String>[];
@@ -50,7 +49,7 @@ recentlyPlayedAlbumsProvider = FutureProvider.autoDispose((ref) async {
     if (albumIds.length == homeSectionLimit) break;
   }
 
-  return _albumsByIds(api, userId, albumIds);
+  return _albumsByIds(api, albumIds);
 });
 
 final AutoDisposeFutureProvider<List<LibraryItem>>
@@ -61,12 +60,13 @@ frequentlyPlayedAlbumsProvider = FutureProvider.autoDispose((ref) async {
   if (userId == null) return const [];
 
   final played = await api.getAllSongs(
-    userId: userId,
-    libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
-    sortBy: 'PlayCount',
-    sortOrder: 'Descending',
-    filters: const ['IsPlayed'],
-    limit: '$_playedSongsScanLimit',
+    LibraryQuery(
+      libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+      sort: ItemSort.playCount,
+      direction: SortDirection.descending,
+      filters: const {ItemFilterFlag.played},
+      limit: _playedSongsScanLimit,
+    ),
   );
 
   final playsPerAlbum = <String, int>{};
@@ -83,11 +83,7 @@ frequentlyPlayedAlbumsProvider = FutureProvider.autoDispose((ref) async {
   final albumIds = playsPerAlbum.keys.toList()
     ..sort((a, b) => playsPerAlbum[b]!.compareTo(playsPerAlbum[a]!));
 
-  return _albumsByIds(
-    api,
-    userId,
-    albumIds.take(homeSectionLimit).toList(),
-  );
+  return _albumsByIds(api, albumIds.take(homeSectionLimit).toList());
 });
 
 final AutoDisposeFutureProvider<List<LibraryItem>> recentlyAddedAlbumsProvider =
@@ -98,10 +94,12 @@ final AutoDisposeFutureProvider<List<LibraryItem>> recentlyAddedAlbumsProvider =
       if (userId == null) return const [];
 
       final page = await api.getAlbums(
-        userId: userId,
-        libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
-        sortBy: 'DateCreated',
-        limit: '$homeSectionLimit',
+        LibraryQuery(
+          libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+          sort: ItemSort.dateCreated,
+          direction: SortDirection.descending,
+          limit: homeSectionLimit,
+        ),
       );
       return page.items;
     });
@@ -114,9 +112,11 @@ recentlyUpdatedPlaylistsProvider = FutureProvider.autoDispose((ref) async {
   if (userId == null) return const [];
 
   final page = await api.getPlaylists(
-    userId: userId,
-    sortBy: 'DateLastContentAdded',
-    limit: '$homeSectionLimit',
+    const LibraryQuery(
+      sort: ItemSort.dateLastContentAdded,
+      direction: SortDirection.descending,
+      limit: homeSectionLimit,
+    ),
   );
   return page.items;
 });

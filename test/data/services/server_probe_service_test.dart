@@ -295,6 +295,40 @@ void main() {
     });
   });
 
+  group('ServerProbeService.detectType', () {
+    test('- falls back to the ping product name when the public info '
+        'is unavailable', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.path.endsWith('/System/Ping')) {
+          return ResponseBody.fromString(
+            'Emby Server',
+            200,
+            headers: {
+              Headers.contentTypeHeader: ['text/plain'],
+            },
+          );
+        }
+        return jsonBody({'error': 'nope'}, 404);
+      });
+
+      expect(await service.detectType('http://media.local'), ServerType.emby);
+    });
+
+    test('- has no answer when neither the info nor the ping does', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenThrow(
+        DioException.connectionError(
+          requestOptions: RequestOptions(path: '/System/Ping'),
+          reason: 'refused',
+        ),
+      );
+
+      expect(await service.detectType('http://media.local'), isNull);
+    });
+  });
+
   group('serverPathCandidates', () {
     test('- tries the root then the /emby prefix', () {
       expect(serverPathCandidates('http://media.local:8096'), [
@@ -335,7 +369,7 @@ void main() {
         final info = await service.probe('http://jelly.local');
 
         expect(info, isNotNull);
-        expect(info!.serverName, 'Living Room');
+        expect(info!.name, 'Living Room');
         expect(info.version, '10.9.11');
       },
     );
@@ -350,7 +384,7 @@ void main() {
       final captured =
           verify(
                 () => mockAdapter.fetch(captureAny(), any(), any()),
-              ).captured.single
+              ).captured.first
               as RequestOptions;
       expect(captured.uri.toString(), 'http://jelly.local/System/Info/Public');
       expect(captured.method, 'GET');
