@@ -1,4 +1,5 @@
 export 'app_settings_provider.dart';
+export 'artist_scope_provider.dart';
 export 'current_album_provider.dart';
 export 'current_day_provider.dart';
 export 'current_library_provider.dart';

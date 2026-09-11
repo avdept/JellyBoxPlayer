@@ -13,12 +13,14 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 class SearchItemsNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList> {
   late MediaServerClient _client;
+  late ArtistScope _artistScope;
   var _searchTerm = '';
 
   @override
   FutureOr<ItemsPage> build(ItemList arg) async {
     if (ref.watch(isOfflineProvider)) throw const OfflineException();
     _client = ref.watch(mediaServerClientProvider);
+    _artistScope = ref.watch(effectiveArtistScopeProvider);
 
     final searchQuery = ref.watch(searchProvider)?.trim();
 
@@ -39,11 +41,13 @@ class SearchItemsNotifier
         return ItemsPage(items: resp.items);
       case ItemList.artists:
         final resp = await _client.searchArtists(
-          SearchQuery(term: _searchTerm),
+          SearchQuery(term: _searchTerm, artistScope: _artistScope),
         );
         return ItemsPage(items: resp.items);
       case ItemList.playlists:
-        if (!_client.capabilities.playlistSearch) return const ItemsPage();
+        if (!ref.read(serverCapabilitiesProvider).playlistSearch) {
+          return const ItemsPage();
+        }
         final resp = await _client.searchPlaylists(
           SearchQuery(term: _searchTerm, libraryId: libraryId),
         );

@@ -34,6 +34,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   late final Map<EntityFilter, bool> _availableFilters;
   late final ValueNotifier<Filter> _appliedFilter;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _artistScope = AnchoredDropdownController();
   final _searchOpened = ValueNotifier<bool>(false);
   final _searchQuery = ValueNotifier<String>('');
   final _searchController = TextEditingController();
@@ -619,7 +620,10 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
 
   Widget _pageViewToggle() => ChipTheme(
     data: ChipTheme.of(context).copyWith(
-      labelStyle: TextStyle(fontSize: _device.isMobile ? 14 : 16),
+      labelStyle: TextStyle(
+        fontSize: _device.isMobile ? 14 : 16,
+        fontFamily: _theme.textTheme.bodyMedium?.fontFamily,
+      ),
     ),
     child: SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -629,21 +633,122 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           for (final value in ItemList.values)
             ValueListenableBuilder(
               valueListenable: _currentView,
-              builder: (context, currentView, child) => ActionChip(
-                label: Text(_viewLabels[value] ?? '???'),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                backgroundColor: (value == currentView)
-                    ? _theme.chipTheme.selectedColor
-                    : _theme.chipTheme.backgroundColor,
-                onPressed: () => _currentView.value = value,
-              ),
+              builder: (context, currentView, child) =>
+                  value == ItemList.artists
+                  ? _artistsChip(isSelected: value == currentView)
+                  : _viewChip(
+                      label: _viewLabels[value] ?? '???',
+                      isSelected: value == currentView,
+                      onPressed: () => _currentView.value = value,
+                    ),
             ),
         ],
       ),
     ),
   );
+
+  OutlinedBorder get _chipShape =>
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(8));
+
+  Color? _chipColor({required bool isSelected}) => isSelected
+      ? _theme.chipTheme.selectedColor
+      : _theme.chipTheme.backgroundColor;
+
+  Widget _viewChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onPressed,
+  }) => ActionChip(
+    label: Text(label),
+    shape: _chipShape,
+    backgroundColor: _chipColor(isSelected: isSelected),
+    onPressed: onPressed,
+  );
+
+  Widget _artistsChip({required bool isSelected}) => Consumer(
+    builder: (context, ref, child) {
+      final supported = ref.watch(serverCapabilitiesProvider).artistScopes;
+      if (supported.length < 2) {
+        return _viewChip(
+          label: _viewLabels[ItemList.artists] ?? '???',
+          isSelected: isSelected,
+          onPressed: () => _currentView.value = ItemList.artists,
+        );
+      }
+      final scope = ref.watch(effectiveArtistScopeProvider);
+      return AnchoredDropdown(
+        controller: _artistScope,
+        alignment: DropAlignment.anchorCenter,
+        menuBuilder: (context) => _artistScopeMenu(supported, scope),
+        child: InputChip(
+          label: Text(_artistScopeLabel(scope)),
+          labelPadding: const EdgeInsets.only(left: 11, right: 3),
+          shape: _chipShape,
+          backgroundColor: _chipColor(isSelected: isSelected),
+          onPressed: () => _currentView.value = ItemList.artists,
+          deleteIcon: const Icon(Icons.expand_more, size: 16),
+          deleteButtonTooltipMessage: 'Choose which artists to browse',
+          onDeleted: _artistScope.toggle,
+        ),
+      );
+    },
+  );
+
+  Widget _artistScopeMenu(Set<ArtistScope> supported, ArtistScope selected) =>
+      Consumer(
+        builder: (context, ref, child) => Material(
+          key: const Key('artist-scope-menu'),
+          color: _theme.canvasColor,
+          elevation: 8,
+          borderRadius: BorderRadius.circular(6),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: 200,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 8),
+                for (final scope in ArtistScope.values)
+                  if (supported.contains(scope))
+                    InkWell(
+                      onTap: () {
+                        ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(AppSetting.artistBrowseScope, scope.name);
+                        _currentView.value = ItemList.artists;
+                        _artistScope.close();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 10,
+                        ),
+                        child: Text(
+                          _artistScopeLabel(scope),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.2,
+                            color: scope == selected
+                                ? _theme.colorScheme.primary
+                                : _theme.colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  String _artistScopeLabel(ArtistScope scope) => switch (scope) {
+    ArtistScope.albumArtists => 'Album Artists',
+    ArtistScope.allArtists => 'Artists',
+  };
 
   String _filterLabel(EntityFilter filter) {
     return _filtersLabels[filter] ?? '???';

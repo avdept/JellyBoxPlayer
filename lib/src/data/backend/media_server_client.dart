@@ -11,6 +11,8 @@ enum SessionStatus { valid, invalid, unreachable }
 abstract class MediaServerClient {
   MediaServerCapabilities get capabilities;
 
+  Future<MediaServerCapabilities> resolveCapabilities();
+
   Future<LibraryPage> getAlbums(LibraryQuery query);
 
   Future<LibraryPage> getArtists(LibraryQuery query);

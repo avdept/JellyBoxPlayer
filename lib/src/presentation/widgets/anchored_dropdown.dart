@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 enum DropDirection { up, down }
 
-enum DropAlignment { start, center, end }
+enum DropAlignment { start, center, anchorCenter, end }
 
 class AnchoredDropdownController {
   _AnchoredDropdownState? _state;
@@ -155,6 +155,8 @@ class _DropLayout extends SingleChildLayoutDelegate {
     final maxLeft = math.max(margin, size.width - childSize.width - margin);
     return switch (alignment) {
       DropAlignment.center => (size.width - childSize.width) / 2,
+      DropAlignment.anchorCenter =>
+        (anchor.center.dx - childSize.width / 2).clamp(margin, maxLeft),
       DropAlignment.start => anchor.left.clamp(margin, maxLeft),
       DropAlignment.end => (anchor.right - childSize.width).clamp(
         margin,

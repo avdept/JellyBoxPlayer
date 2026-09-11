@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
 import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -333,6 +335,86 @@ void main() {
       final original = Uri.parse('http://jelly.local/Items/a/Images/Primary');
 
       expect(client.resizedImageUri(original, 1024), original);
+    });
+  });
+
+  group('artist scope', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient scopedClient;
+
+    setUp(() {
+      mockAdapter = MockHttpClientAdapter();
+      scopedClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode({'Items': <Object>[], 'TotalRecordCount': 0}),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    });
+
+    String requestedPath() {
+      final captured = verify(
+        () => mockAdapter.fetch(captureAny(), any(), any()),
+      ).captured.single;
+      return (captured as RequestOptions).uri.path;
+    }
+
+    test('- browses album artists through the AlbumArtists endpoint', () async {
+      await scopedClient.getArtists(
+        const LibraryQuery(artistScope: ArtistScope.albumArtists),
+      );
+
+      expect(requestedPath(), '/Artists/AlbumArtists');
+    });
+
+    test('- browses every artist through the Artists endpoint', () async {
+      await scopedClient.getArtists(
+        const LibraryQuery(artistScope: ArtistScope.allArtists),
+      );
+
+      expect(requestedPath(), '/Artists');
+    });
+
+    test(
+      '- searches album artists through the AlbumArtists endpoint',
+      () async {
+        await scopedClient.searchArtists(
+          const SearchQuery(
+            term: 'portishead',
+            artistScope: ArtistScope.albumArtists,
+          ),
+        );
+
+        expect(requestedPath(), '/Artists/AlbumArtists');
+      },
+    );
+
+    test('- searches every artist through the Artists endpoint', () async {
+      await scopedClient.searchArtists(
+        const SearchQuery(
+          term: 'portishead',
+          artistScope: ArtistScope.allArtists,
+        ),
+      );
+
+      expect(requestedPath(), '/Artists');
+    });
+
+    test('- advertises both scopes', () {
+      expect(scopedClient.capabilities.artistScopes, {
+        ArtistScope.albumArtists,
+        ArtistScope.allArtists,
+      });
     });
   });
 }

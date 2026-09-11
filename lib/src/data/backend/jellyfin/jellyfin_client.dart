@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
@@ -30,7 +31,12 @@ class JellyfinClient implements MediaServerClient {
   static const _sizeParams = {'fillHeight', 'fillWidth'};
 
   @override
-  MediaServerCapabilities get capabilities => const MediaServerCapabilities();
+  MediaServerCapabilities get capabilities => const MediaServerCapabilities(
+    artistScopes: {ArtistScope.albumArtists, ArtistScope.allArtists},
+  );
+
+  @override
+  Future<MediaServerCapabilities> resolveCapabilities() async => capabilities;
 
   final JellyfinApi _api;
   final String _baseUrl;
@@ -58,14 +64,24 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> getArtists(LibraryQuery query) async {
-    final response = await _api.getArtists(
-      userId: userId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      filters: mediaBrowserFilters(query.filters),
-    );
+    final response = switch (query.artistScope) {
+      ArtistScope.albumArtists => await _api.getAlbumArtists(
+        userId: userId,
+        startIndex: '${query.startIndex}',
+        limit: '${query.limit}',
+        sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+        sortOrder: mediaBrowserSortOrder(query.direction),
+        filters: mediaBrowserFilters(query.filters),
+      ),
+      ArtistScope.allArtists => await _api.getArtists(
+        userId: userId,
+        startIndex: '${query.startIndex}',
+        limit: '${query.limit}',
+        sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+        sortOrder: mediaBrowserSortOrder(query.direction),
+        filters: mediaBrowserFilters(query.filters),
+      ),
+    };
     return response.data.toLibraryPage();
   }
 
@@ -200,13 +216,22 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> searchArtists(SearchQuery query) async {
-    final response = await _api.searchArtists(
-      userId: userId,
-      searchTerm: query.term,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortOrder: mediaBrowserSortOrder(query.direction),
-    );
+    final response = switch (query.artistScope) {
+      ArtistScope.albumArtists => await _api.searchAlbumArtists(
+        userId: userId,
+        searchTerm: query.term,
+        startIndex: '${query.startIndex}',
+        limit: '${query.limit}',
+        sortOrder: mediaBrowserSortOrder(query.direction),
+      ),
+      ArtistScope.allArtists => await _api.searchArtists(
+        userId: userId,
+        searchTerm: query.term,
+        startIndex: '${query.startIndex}',
+        limit: '${query.limit}',
+        sortOrder: mediaBrowserSortOrder(query.direction),
+      ),
+    };
     return response.data.toLibraryPage();
   }
 

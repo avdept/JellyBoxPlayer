@@ -8,6 +8,7 @@ import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
@@ -234,6 +235,7 @@ class CarPlayHandler {
             sort: itemSort,
             direction: direction,
             startIndex: startIndex,
+            artistScope: ref.read(effectiveArtistScopeProvider),
           ),
         ),
         'playlists' => client.getPlaylists(
@@ -292,7 +294,12 @@ class CarPlayHandler {
         return resp.items;
       }),
       _fetch(() async {
-        final resp = await client.searchArtists(SearchQuery(term: query));
+        final resp = await client.searchArtists(
+          SearchQuery(
+            term: query,
+            artistScope: ref.read(effectiveArtistScopeProvider),
+          ),
+        );
         return resp.items;
       }),
       _fetch(() async {

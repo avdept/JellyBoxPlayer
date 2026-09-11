@@ -834,6 +834,56 @@ class _JellyfinApi implements JellyfinApi {
   }
 
   @override
+  Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
+    required String userId,
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    bool includeArtists = true,
+    String type = 'Artist',
+    String startIndex = '0',
+    String limit = '100',
+    String sortBy = 'SortName',
+    String sortOrder = 'Descending',
+    bool recursive = true,
+    List<String> filters = const [],
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'userId': userId,
+      r'Fields': fields,
+      r'IncludeArtists': includeArtists,
+      r'IncludeItemTypes': type,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'SortBy': sortBy,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+      r'Filters': filters,
+    };
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Artists/AlbumArtists',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ItemsWrapper _value;
+    try {
+      _value = ItemsWrapper.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     required String userId,
     required String searchTerm,
@@ -864,6 +914,54 @@ class _JellyfinApi implements JellyfinApi {
           .compose(
             _dio.options,
             '/Artists',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late ItemsWrapper _value;
+    try {
+      _value = ItemsWrapper.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
+    required String userId,
+    required String searchTerm,
+    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    bool includeArtists = true,
+    String type = 'Artist',
+    String startIndex = '0',
+    String limit = '100',
+    String sortOrder = 'Descending',
+    bool recursive = true,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'userId': userId,
+      r'searchTerm': searchTerm,
+      r'Fields': fields,
+      r'IncludeArtists': includeArtists,
+      r'IncludeItemTypes': type,
+      r'StartIndex': startIndex,
+      r'Limit': limit,
+      r'SortOrder': sortOrder,
+      r'Recursive': recursive,
+    };
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Artists/AlbumArtists',
             queryParameters: queryParameters,
             data: _data,
           )
