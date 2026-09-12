@@ -478,4 +478,147 @@ void main() {
       },
     );
   });
+
+  group('AuthNotifier quick connect', () {
+    final requests = <RequestOptions>[];
+
+    ResponseBody jsonBody(Object? body, [int statusCode = 200]) =>
+        ResponseBody.fromString(
+          jsonEncode(body),
+          statusCode,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+
+    void routeQuickConnect({
+      bool enabled = true,
+      bool authenticated = true,
+      int connectStatus = 200,
+    }) {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        requests.add(options);
+        final path = options.path;
+        if (path.contains('/QuickConnect/Enabled')) return jsonBody(enabled);
+        if (path.contains('/QuickConnect/Initiate')) {
+          return jsonBody({'Secret': 'secret-1', 'Code': '123456'});
+        }
+        if (path.contains('/QuickConnect/Connect')) {
+          if (connectStatus != 200) {
+            return jsonBody({'error': 'nope'}, connectStatus);
+          }
+          return jsonBody({
+            'Secret': 'secret-1',
+            'Code': '123456',
+            'Authenticated': authenticated,
+          });
+        }
+        if (path.contains('AuthenticateWithQuickConnect')) {
+          return jsonBody({
+            'User': {'Id': 'user-1', 'Name': 'alex'},
+            'SessionInfo': {
+              'Id': 'session-1',
+              'PlayState': <String, dynamic>{},
+            },
+            'AccessToken': 'token-1',
+            'ServerId': 'server-1',
+          });
+        }
+        return jsonBody({'Items': <dynamic>[], 'TotalRecordCount': 0});
+      });
+    }
+
+    ProviderContainer containerWithAdapter() {
+      final container = createProviderContainer(
+        overrides: [
+          secureStorageProvider.overrideWithValue(mockStorage),
+          serverProbeServiceProvider.overrideWithValue(mockProbe),
+        ],
+      );
+      container.read(dioProvider).httpClientAdapter = mockAdapter;
+      return container;
+    }
+
+    setUp(requests.clear);
+
+    test('- refuses to start on Emby', () async {
+      routeQuickConnect();
+      final container = containerWithAdapter();
+      await container.read(authProvider.future);
+
+      final request = await container
+          .read(authProvider.notifier)
+          .beginQuickConnect(
+            'http://emby.local',
+            serverType: ServerType.emby,
+          );
+
+      expect(request, isNull);
+      expect(requests, isEmpty);
+    });
+
+    test('- signs in once the code is approved', () async {
+      routeQuickConnect();
+      final container = containerWithAdapter();
+      await container.read(authProvider.future);
+      final notifier = container.read(authProvider.notifier);
+
+      final request = await notifier.beginQuickConnect(
+        'http://jelly.local',
+        serverType: ServerType.jellyfin,
+      );
+      expect(request?.code, '123456');
+
+      expect(await notifier.awaitQuickConnect(), isNull);
+      expect(container.read(authProvider).value, isTrue);
+      verify(
+        () => mockStorage.write(key: 'authToken', value: 'token-1'),
+      ).called(1);
+      verify(() => mockStorage.write(key: 'userId', value: 'user-1')).called(1);
+      verify(
+        () => mockStorage.write(key: 'serverType', value: 'jellyfin'),
+      ).called(1);
+    });
+
+    test('- reports an expired code', () async {
+      routeQuickConnect(connectStatus: 404);
+      final container = containerWithAdapter();
+      await container.read(authProvider.future);
+      final notifier = container.read(authProvider.notifier);
+
+      await notifier.beginQuickConnect(
+        'http://jelly.local',
+        serverType: ServerType.jellyfin,
+      );
+
+      expect(
+        await notifier.awaitQuickConnect(),
+        AuthNotifier.quickConnectExpiredError,
+      );
+      expect(container.read(authProvider).value, isFalse);
+    });
+
+    test('- stops polling when cancelled', () async {
+      routeQuickConnect(authenticated: false);
+      final container = containerWithAdapter();
+      await container.read(authProvider.future);
+      final notifier = container.read(authProvider.notifier);
+
+      await notifier.beginQuickConnect(
+        'http://jelly.local',
+        serverType: ServerType.jellyfin,
+      );
+      requests.clear();
+      notifier.cancelQuickConnect();
+
+      expect(
+        await notifier.awaitQuickConnect(),
+        AuthNotifier.quickConnectCancelled,
+      );
+      expect(requests, isEmpty);
+    });
+  });
 }

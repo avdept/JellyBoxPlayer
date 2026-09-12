@@ -12,7 +12,9 @@ import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/backend/media_server_backends.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
+import 'package:jplayer/src/data/backend/quick_connect.dart';
 import 'package:jplayer/src/data/backend/server_auth_headers.dart';
+import 'package:jplayer/src/data/backend/server_session.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
@@ -43,14 +45,22 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
   bool _authenticating = false;
   bool _loggingOut = false;
+  _QuickConnectSession? _quickConnect;
 
   static const serverUnreachableError =
       'Server is not accessible. Check the server URL and your connection.';
   static const invalidCredentialsError = 'Incorrect login or password';
   static const untrustedCertificateError =
       "The server's security certificate is not trusted.";
+  static const quickConnectUnavailableError =
+      'Quick Connect is not available on this server.';
+  static const quickConnectExpiredError =
+      'The Quick Connect code expired. Try again.';
+  static const quickConnectCancelled = 'quick-connect-cancelled';
 
   static const _sessionValidationTimeout = Duration(seconds: 6);
+  static const _quickConnectPollInterval = Duration(seconds: 3);
+  static const _quickConnectTimeout = Duration(minutes: 5);
 
   static const _serverUrlKey = 'serverUrl';
   static const _serverTypeKey = 'serverType';
@@ -140,41 +150,126 @@ class AuthNotifier extends AsyncNotifier<bool?> {
         serverType,
         dio: _client,
       ).signIn(credentials, serverUrl: serverUrl);
-      final token = session.token;
-      final userId = session.userId;
-      final serverId = session.serverId;
-      await _storage.write(key: _authTokenKey, value: token);
-      await _storage.write(key: _userIdKey, value: userId);
-      await _storage.write(key: _serverUrlKey, value: serverUrl);
-      await _storage.write(key: _serverIdKey, value: serverId);
-      await _storage.write(key: _serverTypeKey, value: serverType.name);
-
-      ref.read(currentServerIdProvider.notifier).state = serverId;
-      ref.read(baseUrlProvider.notifier).state = serverUrl;
-      ref.read(currentServerTypeProvider.notifier).state = serverType;
-      ref.read(currentUserProvider.notifier).state = User(
-        userId: userId,
-        token: token,
-      );
-      final client = _clientFor(
-        serverType,
-        serverUrl: serverUrl,
-        userId: userId,
-        token: token,
-      );
-      final status = await _validateSession(client, token, serverType);
-      final sessionUsable = status != SessionStatus.invalid;
-      if (sessionUsable) {
-        _setAuthHeader(serverType, token);
-        await _adoptLegacyDownloads();
-      }
-      state = AsyncData(sessionUsable);
+      await _establishSession(serverType, serverUrl, session);
     } on DioException catch (e) {
       return _loginErrorMessage(MediaServerException.fromDio(e), serverUrl);
     } on MediaServerException catch (e) {
       return _loginErrorMessage(e, serverUrl);
     }
     return state.error?.toString();
+  }
+
+  Future<void> _establishSession(
+    ServerType serverType,
+    String serverUrl,
+    ServerSession session,
+  ) async {
+    final token = session.token;
+    final userId = session.userId;
+    final serverId = session.serverId;
+    await _storage.write(key: _authTokenKey, value: token);
+    await _storage.write(key: _userIdKey, value: userId);
+    await _storage.write(key: _serverUrlKey, value: serverUrl);
+    await _storage.write(key: _serverIdKey, value: serverId);
+    await _storage.write(key: _serverTypeKey, value: serverType.name);
+
+    ref.read(currentServerIdProvider.notifier).state = serverId;
+    ref.read(baseUrlProvider.notifier).state = serverUrl;
+    ref.read(currentServerTypeProvider.notifier).state = serverType;
+    ref.read(currentUserProvider.notifier).state = User(
+      userId: userId,
+      token: token,
+    );
+    final client = _clientFor(
+      serverType,
+      serverUrl: serverUrl,
+      userId: userId,
+      token: token,
+    );
+    final status = await _validateSession(client, token, serverType);
+    final sessionUsable = status != SessionStatus.invalid;
+    if (sessionUsable) {
+      _setAuthHeader(serverType, token);
+      await _adoptLegacyDownloads();
+    }
+    state = AsyncData(sessionUsable);
+  }
+
+  Future<QuickConnectRequest?> beginQuickConnect(
+    String serverUrl, {
+    ServerType? serverType,
+  }) async {
+    final url = normalizeServerUrl(serverUrl);
+    ref.read(certificateTrustProvider).clearRejections();
+    _authenticating = true;
+    try {
+      final resolved = serverType ?? await _detectServerType(url);
+      final authenticator = quickConnectFor(resolved, dio: _client);
+      if (authenticator == null) {
+        _authenticating = false;
+        return null;
+      }
+      _setAuthHeader(resolved);
+      final request = await authenticator.initiate(serverUrl: url);
+      _quickConnect = _QuickConnectSession(
+        authenticator: authenticator,
+        serverType: resolved,
+        serverUrl: url,
+        request: request,
+      );
+      return request;
+    } on Object {
+      _authenticating = false;
+      _removeAuthHeader();
+      return null;
+    }
+  }
+
+  Future<String?> awaitQuickConnect() async {
+    final session = _quickConnect!;
+    final deadline = DateTime.now().add(_quickConnectTimeout);
+    try {
+      while (DateTime.now().isBefore(deadline)) {
+        if (session.cancelled) return quickConnectCancelled;
+        final failure = await _pollQuickConnect(session);
+        if (session.cancelled) return quickConnectCancelled;
+        if (session.authorized) return null;
+        if (failure != null) return failure;
+        await Future<void>.delayed(_quickConnectPollInterval);
+      }
+      return quickConnectExpiredError;
+    } finally {
+      if (identical(_quickConnect, session)) _quickConnect = null;
+      _authenticating = false;
+      if (!session.authorized) _removeAuthHeader();
+    }
+  }
+
+  Future<String?> _pollQuickConnect(_QuickConnectSession session) async {
+    try {
+      final result = await session.authenticator.poll(
+        session.request,
+        serverUrl: session.serverUrl,
+      );
+      if (result == null) return null;
+      session.authorized = true;
+      await _establishSession(session.serverType, session.serverUrl, result);
+      return null;
+    } on DioException catch (e) {
+      return _quickConnectErrorMessage(
+        MediaServerException.fromDio(e),
+        session.serverUrl,
+      );
+    } on MediaServerException catch (e) {
+      return _quickConnectErrorMessage(e, session.serverUrl);
+    }
+  }
+
+  void cancelQuickConnect() => _quickConnect?.cancelled = true;
+
+  String _quickConnectErrorMessage(MediaServerException e, String serverUrl) {
+    if (e.isNotFound || e.isUnauthorized) return quickConnectExpiredError;
+    return _loginErrorMessage(e, serverUrl);
   }
 
   String _loginErrorMessage(MediaServerException e, String serverUrl) {
@@ -363,6 +458,23 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     }.toString(),
     name: 'Auth',
   );
+}
+
+class _QuickConnectSession {
+  _QuickConnectSession({
+    required this.authenticator,
+    required this.serverType,
+    required this.serverUrl,
+    required this.request,
+  });
+
+  final QuickConnectAuthenticator authenticator;
+  final ServerType serverType;
+  final String serverUrl;
+  final QuickConnectRequest request;
+
+  bool cancelled = false;
+  bool authorized = false;
 }
 
 final authProvider = AsyncNotifierProvider<AuthNotifier, bool?>(

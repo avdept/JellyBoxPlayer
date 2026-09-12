@@ -27,6 +27,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   String? _resolvedServerUrl;
   ServerType? _resolvedServerType;
+  bool _resolvedQuickConnect = false;
   String? _probedInput;
   int _probeGeneration = 0;
 
@@ -96,6 +97,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
       _mode = ServerUrlFieldMode.selected;
       _resolvedServerUrl = server.serverUrl;
       _resolvedServerType = server.serverType;
+      _resolvedQuickConnect = server.quickConnect;
     });
   }
 
@@ -134,6 +136,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
       setState(() {
         _resolvedServerUrl = null;
         _resolvedServerType = null;
+        _resolvedQuickConnect = false;
       });
     }
 
@@ -143,6 +146,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     setState(() {
       _resolvedServerUrl = result?.serverUrl;
       _resolvedServerType = result?.serverType;
+      _resolvedQuickConnect = result?.quickConnect ?? false;
     });
   }
 
@@ -153,7 +157,38 @@ class LoginPageState extends ConsumerState<LoginPage> {
     setState(() {
       _resolvedServerUrl = null;
       _resolvedServerType = null;
+      _resolvedQuickConnect = false;
     });
+  }
+
+  Future<void> signInWithQuickConnect() async {
+    if (error != null) setState(() => error = null);
+
+    final serverUrl = _effectiveServerUrl;
+    if (serverUrl.isEmpty) {
+      setState(() => error = 'Server URL is required');
+      return;
+    }
+
+    final auth = ref.read(authProvider.notifier);
+    final request = await auth.beginQuickConnect(
+      serverUrl,
+      serverType: _resolvedServerType,
+    );
+    if (!mounted) return;
+    if (request == null) {
+      setState(() => error = AuthNotifier.quickConnectUnavailableError);
+      return;
+    }
+
+    final result = await showAdaptiveDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => QuickConnectDialog(code: request.code),
+    );
+    if (!mounted) return;
+    if (result == null || result == AuthNotifier.quickConnectCancelled) return;
+    setState(() => error = result);
   }
 
   Future<void> signIn({bool promptForCertificate = true}) async {
@@ -288,25 +323,40 @@ class LoginPageState extends ConsumerState<LoginPage> {
     ),
   );
 
-  Widget _serverURLField() => Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      ServerUrlField(
-        mode: _mode,
-        controller: _serverUrlInputController,
-        focusNode: _serverUrlFocusNode,
-        servers: ref.watch(serverDiscoveryProvider).servers,
-        scanning: ref.watch(serverDiscoveryProvider).scanning,
-        selected: _selectedServer,
-        onEdit: _editSelectedServer,
-        onSelect: _selectServer,
-        suffixIcon: _serverUrlSuffixIcon(),
+  Widget _serverURLField() {
+    final footer = _serverFieldFooter();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ServerUrlField(
+          mode: _mode,
+          controller: _serverUrlInputController,
+          focusNode: _serverUrlFocusNode,
+          servers: ref.watch(serverDiscoveryProvider).servers,
+          scanning: ref.watch(serverDiscoveryProvider).scanning,
+          selected: _selectedServer,
+          onEdit: _editSelectedServer,
+          onSelect: _selectServer,
+          suffixIcon: _serverUrlSuffixIcon(),
+        ),
+        ?footer,
+      ],
+    );
+  }
+
+  Widget? _serverFieldFooter() {
+    if (!_resolvedQuickConnect) return null;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [_quickConnectButton()],
       ),
-      if (_mode != ServerUrlFieldMode.selected && _resolvedServerType != null)
-        _discoveredServerText(_resolvedServerType!),
-    ],
-  );
+    );
+  }
 
   Widget? _serverUrlSuffixIcon() => (_resolvedServerType != null)
       ? Icon(
@@ -315,18 +365,6 @@ class LoginPageState extends ConsumerState<LoginPage> {
           size: 22,
         )
       : null;
-
-  Widget _discoveredServerText(ServerType serverType) => Padding(
-    padding: const EdgeInsets.only(top: 4),
-    child: Text(
-      'Discovered: ${serverType.label} server',
-      style: TextStyle(
-        fontFamily: FontFamily.inter,
-        fontSize: 12,
-        color: Theme.of(context).colorScheme.secondary,
-      ),
-    ),
-  );
 
   Widget _loginField() => LabeledTextField(
     label: 'Login',
@@ -341,6 +379,28 @@ class LoginPageState extends ConsumerState<LoginPage> {
     obscureText: true,
     keyboardType: TextInputType.visiblePassword,
     textInputAction: TextInputAction.done,
+  );
+
+  Widget _quickConnectButton() => TextButton(
+    onPressed: signInWithQuickConnect,
+    style: TextButton.styleFrom(
+      padding: EdgeInsets.zero,
+      minimumSize: Size.zero,
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      foregroundColor: Colors.white,
+    ),
+    child: const Text(
+      'Quick Connect',
+      style: TextStyle(
+        fontFamily: FontFamily.inter,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+        decoration: TextDecoration.underline,
+        decorationColor: Colors.white,
+      ),
+    ),
   );
 
   Widget _signInButton() => ShadowedButton(

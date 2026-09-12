@@ -374,6 +374,69 @@ void main() {
       },
     );
 
+    test('- asks a Jellyfin server whether Quick Connect is on', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.path.endsWith('/QuickConnect/Enabled')) {
+          return jsonBody(true, 200);
+        }
+        return jsonBody({
+          'Id': 'a',
+          'Version': '10.9.11',
+          'ProductName': 'Jellyfin Server',
+        }, 200);
+      });
+
+      final info = await service.probe('http://jelly.local');
+
+      expect(info?.quickConnect, isTrue);
+    });
+
+    test('- treats a failed Quick Connect check as off', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.path.endsWith('/QuickConnect/Enabled')) {
+          return jsonBody({'error': 'nope'}, 404);
+        }
+        return jsonBody({
+          'Id': 'a',
+          'Version': '10.9.11',
+          'ProductName': 'Jellyfin Server',
+        }, 200);
+      });
+
+      final info = await service.probe('http://jelly.local');
+
+      expect(info?.quickConnect, isFalse);
+    });
+
+    test('- never asks an Emby server about Quick Connect', () async {
+      final requested = <RequestOptions>[];
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        requested.add(options);
+        return jsonBody({
+          'Id': 'a',
+          'Version': '4.8.0',
+          'ProductName': 'Emby Server',
+        }, 200);
+      });
+
+      final info = await service.probe('http://emby.local');
+
+      expect(info?.quickConnect, isFalse);
+      expect(
+        requested.where((o) => o.uri.path.endsWith('/QuickConnect/Enabled')),
+        isEmpty,
+      );
+    });
+
     test('- requests the public system info endpoint', () async {
       when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
         respondWith(jsonBody({'Id': 'a', 'Version': '10.9.11'}, 200)),

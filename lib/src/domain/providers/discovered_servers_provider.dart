@@ -12,12 +12,14 @@ class DiscoveredServer {
     required this.name,
     required this.serverUrl,
     required this.serverType,
+    this.quickConnect = false,
   });
 
   final String id;
   final String name;
   final String serverUrl;
   final ServerType serverType;
+  final bool quickConnect;
 }
 
 class ServerDiscoveryState {
@@ -94,6 +96,7 @@ class ServerDiscoveryNotifier extends StateNotifier<ServerDiscoveryState> {
           result.name ?? announcement.name ?? Uri.parse(result.serverUrl).host,
       serverUrl: result.serverUrl,
       serverType: result.serverType,
+      quickConnect: result.quickConnect,
     );
     state = state.copyWith(servers: [...state.servers, server]);
   }

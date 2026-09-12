@@ -50,14 +50,31 @@ class MediaBrowserProbe extends ServerProbe {
   Future<ServerIdentity?> identify(String serverUrl) async {
     final info = await publicInfo(serverUrl);
     if (info == null) return null;
+    final serverType = await resolveServerType(info, serverUrl: serverUrl);
     return ServerIdentity(
       serverUrl: serverUrl,
-      serverType: await resolveServerType(info, serverUrl: serverUrl),
+      serverType: serverType,
       serverId: info.id,
       name: info.serverName,
       version: info.version,
       productName: info.productName,
+      quickConnect: switch (serverType) {
+        ServerType.jellyfin => await quickConnectEnabled(serverUrl),
+        ServerType.emby => false,
+      },
     );
+  }
+
+  Future<bool> quickConnectEnabled(String serverUrl) async {
+    try {
+      final response = await JellyfinApi(
+        _client,
+        baseUrl: serverUrl,
+      ).quickConnectEnabled();
+      return response.data;
+    } on Object {
+      return false;
+    }
   }
 
   @override
