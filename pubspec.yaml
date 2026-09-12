@@ -69,6 +69,8 @@ dependencies:
   smtc_windows: ^1.1.0
   ffi: ^2.2.0
   flutter_rust_bridge: 2.11.1 #do not update
+  wakelock_plus: ^1.8.0
+  battery_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:

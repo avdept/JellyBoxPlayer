@@ -17,6 +17,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/audio_quality_badge.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
 import 'package:jplayer/src/presentation/widgets/flip_panel.dart';
+import 'package:jplayer/src/presentation/widgets/keep_screen_awake.dart';
 import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/presentation/widgets/now_playing_queue_view.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
@@ -170,6 +171,7 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
             decoration: BoxDecoration(gradient: _background(colorScheme)),
           ),
           const AuroraBackground(),
+          const KeepScreenAwake(),
           Material(
             type: MaterialType.transparency,
             child: SafeArea(

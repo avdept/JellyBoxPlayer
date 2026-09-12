@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
@@ -91,6 +92,68 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  group('LandscapePlayerScope', () {
+    Future<List<List<String>>> pumpScope(
+      WidgetTester tester, {
+      required PlaybackState state,
+    }) async {
+      final requested = <List<String>>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'SystemChrome.setPreferredOrientations') {
+          requested.add((call.arguments as List<Object?>).cast<String>());
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+
+      tester.view
+        ..physicalSize = const Size(780, 1688)
+        ..devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      final container = createProviderContainer(
+        overrides: [
+          playbackProvider.overrideWith((_) => FakePlaybackNotifier(state)),
+          mediaServerClientProvider.overrideWith((_) => client),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: Themes.red,
+            debugShowCheckedModeBanner: false,
+            builder: (context, child) => LandscapePlayerScope(child: child!),
+            home: const Scaffold(body: Text('library page')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return requested;
+    }
+
+    testWidgets('- keeps the phone in portrait while the queue is empty', (
+      tester,
+    ) async {
+      final requested = await pumpScope(tester, state: PlaybackState.initial());
+
+      expect(requested.last, ['DeviceOrientation.portraitUp']);
+      expect(find.byType(LandscapePlayer), findsNothing);
+    });
+
+    testWidgets('- opens landscape up once a track is loaded', (tester) async {
+      final requested = await pumpScope(tester, state: _state);
+
+      expect(requested.last, contains('DeviceOrientation.landscapeLeft'));
+      expect(requested.last, contains('DeviceOrientation.landscapeRight'));
+    });
+  });
 
   group('LandscapePlayer', () {
     testWidgets('- renders above the navigator without an Overlay ancestor', (

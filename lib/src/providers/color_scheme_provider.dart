@@ -18,15 +18,16 @@ final paletteProvider = FutureProvider<ColorScheme>((ref) async {
   );
 });
 
-final currentArtUriProvider = Provider<Uri?>(
+final AutoDisposeProvider<Uri?> currentArtUriProvider = Provider.autoDispose(
   (ref) => ref.watch(nowPlayingProvider)?.artUri,
 );
 
-final artworkSchemeProvider = FutureProvider<ColorScheme?>((ref) async {
-  final artUri = ref.watch(currentArtUriProvider);
-  if (artUri == null) return null;
-  return ColorScheme.fromImageProvider(
-    provider: ref.read(imageServiceProvider).artworkImage(artUri),
-    brightness: Brightness.dark,
-  );
-});
+final AutoDisposeFutureProvider<ColorScheme?> artworkSchemeProvider =
+    FutureProvider.autoDispose<ColorScheme?>((ref) async {
+      final artUri = ref.watch(currentArtUriProvider);
+      if (artUri == null) return null;
+      return ColorScheme.fromImageProvider(
+        provider: ref.read(imageServiceProvider).artworkImage(artUri),
+        brightness: Brightness.dark,
+      );
+    });

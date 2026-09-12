@@ -20,6 +20,7 @@ export 'gradient_background.dart';
 export 'gradient_panel_decoration.dart';
 export 'item_carousel.dart';
 export 'item_row_view.dart';
+export 'keep_screen_awake.dart';
 export 'labeled_text_field.dart';
 export 'landscape_player.dart';
 export 'library_selector_button.dart';
