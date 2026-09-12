@@ -5,6 +5,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
+import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class ItemCarousel extends StatelessWidget {
@@ -120,30 +121,35 @@ class ItemCarousel extends StatelessWidget {
 
   Widget _list(List<LibraryItem> list) => SizedBox(
     height: AlbumCardMetrics.carouselHeight(device),
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      clipBehavior: Clip.none,
-      itemCount: list.length,
-      separatorBuilder: (context, index) =>
-          SizedBox(width: AlbumCardMetrics.carouselSpacing(device)),
-      itemBuilder: (context, index) {
-        final item = list[index];
-        final builder = optionsBuilder;
-        return SizedBox(
-          width: AlbumCardMetrics.carouselWidth(device),
-          child: AlbumView(
-            album: item,
-            alignTextStart: true,
-            coverOverride: coverBuilder?.call(item),
-            onTap: onItemTap,
-            onPlayPressed: onPlayPressed,
-            optionsBuilder: builder == null
-                ? null
-                : (context) => builder(context, item),
-          ),
-        );
-      },
+    child: HorizontalScrollRegion(
+      controlsHeight: AlbumCardMetrics.carouselWidth(device),
+      controlsInset: horizontalPadding / 2,
+      builder: (context, controller) => ListView.separated(
+        controller: controller,
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        clipBehavior: Clip.none,
+        itemCount: list.length,
+        separatorBuilder: (context, index) =>
+            SizedBox(width: AlbumCardMetrics.carouselSpacing(device)),
+        itemBuilder: (context, index) {
+          final item = list[index];
+          final builder = optionsBuilder;
+          return SizedBox(
+            width: AlbumCardMetrics.carouselWidth(device),
+            child: AlbumView(
+              album: item,
+              alignTextStart: true,
+              coverOverride: coverBuilder?.call(item),
+              onTap: onItemTap,
+              onPlayPressed: onPlayPressed,
+              optionsBuilder: builder == null
+                  ? null
+                  : (context) => builder(context, item),
+            ),
+          );
+        },
+      ),
     ),
   );
 

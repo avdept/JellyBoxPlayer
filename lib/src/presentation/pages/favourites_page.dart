@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
+import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/scrollable_page_scaffold.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
@@ -161,18 +162,23 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
             cardWidth,
             isTablet: _device.isTablet,
           ),
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            padding: EdgeInsets.zero,
-            itemCount: items.length,
-            separatorBuilder: (context, index) => SizedBox(width: spacing),
-            itemBuilder: (context, index) => SizedBox(
-              width: cardWidth,
-              child: AlbumView(
-                album: items[index],
-                showArtist: category == ItemList.artists,
-                onTap: (item) => openSearchResult(context, ref, category, item),
+          child: HorizontalScrollRegion(
+            controlsHeight: cardWidth,
+            builder: (context, controller) => ListView.separated(
+              controller: controller,
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              padding: EdgeInsets.zero,
+              itemCount: items.length,
+              separatorBuilder: (context, index) => SizedBox(width: spacing),
+              itemBuilder: (context, index) => SizedBox(
+                width: cardWidth,
+                child: AlbumView(
+                  album: items[index],
+                  showArtist: category == ItemList.artists,
+                  onTap: (item) =>
+                      openSearchResult(context, ref, category, item),
+                ),
               ),
             ),
           ),

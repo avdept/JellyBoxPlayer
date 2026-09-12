@@ -566,28 +566,33 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       SliverToBoxAdapter(
         child: SizedBox(
           height: cardHeight,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.only(
-              left: horizontalPadding,
-              right: horizontalPadding,
-              bottom: 16,
-            ),
-            itemBuilder: (context, index) => SizedBox(
-              width: cardWidth,
-              child: AlbumView(
-                album: albums[index],
-                onTap: (album) => context.pushNamed(
-                  branchAwareName(context, Routes.album),
-                  extra: {'album': album},
-                ),
-                onPlayPressed: (album) =>
-                    ref.read(setPlaybackProvider.notifier).playAlbum(album),
+          child: HorizontalScrollRegion(
+            controlsHeight: cardWidth,
+            controlsInset: horizontalPadding / 2,
+            builder: (context, controller) => ListView.separated(
+              controller: controller,
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.only(
+                left: horizontalPadding,
+                right: horizontalPadding,
+                bottom: 16,
               ),
+              itemBuilder: (context, index) => SizedBox(
+                width: cardWidth,
+                child: AlbumView(
+                  album: albums[index],
+                  onTap: (album) => context.pushNamed(
+                    branchAwareName(context, Routes.album),
+                    extra: {'album': album},
+                  ),
+                  onPlayPressed: (album) =>
+                      ref.read(setPlaybackProvider.notifier).playAlbum(album),
+                ),
+              ),
+              separatorBuilder: (context, index) =>
+                  SizedBox(width: AlbumCardMetrics.crossAxisSpacing(_device)),
+              itemCount: albums.length,
             ),
-            separatorBuilder: (context, index) =>
-                SizedBox(width: AlbumCardMetrics.crossAxisSpacing(_device)),
-            itemCount: albums.length,
           ),
         ),
       ),
