@@ -21,6 +21,7 @@ import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
+import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/presentation/widgets/playback_keyboard_shortcuts.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -350,7 +351,11 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
           },
         );
 
-        return PlaybackKeyboardShortcuts(child: child!);
+        return PlaybackKeyboardShortcuts(
+          child: supportsLandscapePlayer
+              ? LandscapePlayerScope(child: child!)
+              : child!,
+        );
       },
     );
   }

@@ -20,10 +20,7 @@ MediaItem mediaItemFor(
     artist: song.albumArtist ?? album?.albumArtist,
     duration: song.duration,
     title: song.name,
-    artUri: images == null
-        ? null
-        : images.itemUri(song) ??
-              (album == null ? null : images.itemUri(album)),
+    artUri: images?.songArtUri(song, album: album),
     extras: {
       if (audioSource?.codec != null) 'codec': audioSource!.codec,
       if (audioSource?.bitRate != null) 'bitRate': audioSource!.bitRate,

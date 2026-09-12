@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
@@ -17,6 +18,7 @@ import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
@@ -61,6 +63,18 @@ Future<void> main() async {
     const ScreenBreakpoints(desktop: 1025, tablet: 600, watch: 200),
     customRefinedBreakpoints: const RefinedBreakpoints(),
   );
+
+  if (supportsLandscapePlayer) {
+    final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+    final size = view == null
+        ? Size.zero
+        : view.physicalSize / view.devicePixelRatio;
+    if (isPhoneSize(size)) {
+      await SystemChrome.setPreferredOrientations(
+        const [DeviceOrientation.portraitUp],
+      );
+    }
+  }
 
   if (Platform.isIOS || Platform.isAndroid) {
     await JustAudioBackground.init(

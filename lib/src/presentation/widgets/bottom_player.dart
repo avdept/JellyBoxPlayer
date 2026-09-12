@@ -48,85 +48,99 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   late Size _screenSize;
   late bool _isMobile;
   late bool _isDesktop;
+  late bool _isLandscape;
+  ModalSheetRoute<void>? _sheetRoute;
 
-  Future<void> _onExpand() => Navigator.of(context, rootNavigator: true)
-      .push(
-        ModalSheetRoute<void>(
-          builder: (context) => SafeArea(
-            top: false,
-            minimum: EdgeInsets.only(
-              top: _isMobile ? 0 : 20,
-              bottom: _isMobile ? 20 : 60,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 518),
-              child: ValueListenableBuilder(
-                valueListenable: _dynamicColors,
-                builder: (context, colorScheme, child) => Theme(
-                  data: Theme.of(context).copyWith(colorScheme: colorScheme),
-                  child: Consumer(
-                    builder: (context, ref, _) {
-                      if (!ref.watch(hasQueueProvider)) {
-                        return const SizedBox.shrink();
-                      }
-                      final currentSong = ref.watch(nowPlayingProvider);
-                      return Column(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          _sheetHeader(context),
-                          Expanded(
-                            child: ValueListenableBuilder<bool>(
-                              valueListenable: _queueShown,
-                              builder: (context, showQueue, _) => FlipPanel(
-                                showBack: showQueue,
-                                front: Column(
-                                  children: [
-                                    Expanded(child: _artworkArea()),
-                                    _sheetDetails(context, currentSong),
-                                  ],
-                                ),
-                                back: const NowPlayingQueueView(),
-                              ),
-                            ),
-                          ),
-                          _extraControls(),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-          containerBuilder: (context, animation, child) => LayoutBuilder(
-            builder: (context, constraints) => ValueListenableBuilder(
-              valueListenable: _dynamicColors,
-              builder: (context, colorScheme, child) => BottomSheet(
-                animationController: _animationController,
-                onClosing: () {},
-                enableDrag: false,
-                showDragHandle: false,
-                backgroundColor: colorScheme?.background,
-                constraints: BoxConstraints(
-                  maxHeight: constraints.maxHeight * 0.92,
-                  minWidth: constraints.maxWidth,
-                ),
-                builder: (context) => child!,
-              ),
-              child: child,
-            ),
-          ),
-          bounce: true,
-          expanded: true,
-          barrierLabel: _localizations.modalBarrierDismissLabel,
-          duration: const Duration(milliseconds: 300),
+  Future<void> _onExpand() {
+    if (_isMobile && _isLandscape) return Future<void>.value();
+    final route = ModalSheetRoute<void>(
+      builder: (context) => SafeArea(
+        top: false,
+        minimum: EdgeInsets.only(
+          top: _isMobile ? 0 : 20,
+          bottom: _isMobile ? 20 : 60,
         ),
-      )
-      .whenComplete(_onSheetClosed);
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 518),
+          child: ValueListenableBuilder(
+            valueListenable: _dynamicColors,
+            builder: (context, colorScheme, child) => Theme(
+              data: Theme.of(context).copyWith(colorScheme: colorScheme),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  if (!ref.watch(hasQueueProvider)) {
+                    return const SizedBox.shrink();
+                  }
+                  final currentSong = ref.watch(nowPlayingProvider);
+                  return Column(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      _sheetHeader(context),
+                      Expanded(
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _queueShown,
+                          builder: (context, showQueue, _) => FlipPanel(
+                            side: showQueue ? FlipSide.right : FlipSide.front,
+                            front: Column(
+                              children: [
+                                Expanded(child: _artworkArea()),
+                                _sheetDetails(context, currentSong),
+                              ],
+                            ),
+                            right: const NowPlayingQueueView(),
+                          ),
+                        ),
+                      ),
+                      _extraControls(),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+      containerBuilder: (context, animation, child) => LayoutBuilder(
+        builder: (context, constraints) => ValueListenableBuilder(
+          valueListenable: _dynamicColors,
+          builder: (context, colorScheme, child) => BottomSheet(
+            animationController: _animationController,
+            onClosing: () {},
+            enableDrag: false,
+            showDragHandle: false,
+            backgroundColor: colorScheme?.background,
+            constraints: BoxConstraints(
+              maxHeight: constraints.maxHeight * 0.92,
+              minWidth: constraints.maxWidth,
+            ),
+            builder: (context) => child!,
+          ),
+          child: child,
+        ),
+      ),
+      bounce: true,
+      expanded: true,
+      barrierLabel: _localizations.modalBarrierDismissLabel,
+      duration: const Duration(milliseconds: 300),
+    );
+    _sheetRoute = route;
+    return Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(route).whenComplete(_onSheetClosed);
+  }
 
   void _onSheetClosed() {
+    _sheetRoute = null;
     _queueShown.value = false;
     if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
+  }
+
+  void _closeSheet() {
+    final route = _sheetRoute;
+    if (route == null) return;
+    _sheetRoute = null;
+    if (route.isActive) route.navigator?.removeRoute(route);
   }
 
   Widget _artworkArea() => Consumer(
@@ -344,9 +358,15 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     _viewPadding = MediaQuery.viewPaddingOf(context);
     _screenSize = MediaQuery.sizeOf(context);
 
+    _isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
+
     final deviceType = getDeviceType(_screenSize);
     _isMobile = deviceType == DeviceScreenType.mobile;
     _isDesktop = deviceType == DeviceScreenType.desktop;
+
+    if (_isMobile && _isLandscape && _sheetRoute != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _closeSheet());
+    }
   }
 
   @override

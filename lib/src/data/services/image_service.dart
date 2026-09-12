@@ -44,6 +44,12 @@ class ImageService {
     String fallback = Images.album,
   }) => itemImageOrNull(item, kind: kind, size: size) ?? AssetImage(fallback);
 
+  Uri? songArtUri(LibraryItem song, {LibraryItem? album, int? size}) =>
+      itemUri(song, size: size) ??
+      (album != null && album.id == song.albumId
+          ? itemUri(album, size: size)
+          : null);
+
   ImageProvider? artworkImageOrNull(Uri? uri, {int? size}) {
     if (uri == null || uri.isScheme('file') || size == null) {
       return _imageOf(uri);

@@ -40,6 +40,48 @@ void main() {
     ),
   ).thenReturn(uri);
 
+  group('songArtUri', () {
+    const coverless = LibraryItem(
+      id: 'song-9',
+      name: 'Untagged',
+      kind: ItemKind.song,
+      albumId: 'album-9',
+    );
+
+    const ownAlbum = LibraryItem(
+      id: 'album-9',
+      name: 'Untagged album',
+      kind: ItemKind.album,
+      images: ImageRefs(primary: 'album-tag'),
+    );
+
+    const playlist = LibraryItem(
+      id: 'playlist-1',
+      name: 'Road trip',
+      kind: ItemKind.playlist,
+      images: ImageRefs(primary: 'playlist-tag'),
+    );
+
+    test('- falls back to the cover of the album the song belongs to', () {
+      final cover = Uri.parse('http://server.local/Items/album-9/Primary');
+      stubImageUri(cover);
+
+      expect(imageService.songArtUri(coverless, album: ownAlbum), cover);
+    });
+
+    test('- never borrows the cover of an unrelated playback context', () {
+      stubImageUri(Uri.parse('http://server.local/Items/playlist-1/Primary'));
+
+      expect(imageService.songArtUri(coverless, album: playlist), isNull);
+    });
+
+    test('- leaves a coverless song bare when there is no album', () {
+      stubImageUri(Uri.parse('http://server.local/Items/song-9/Primary'));
+
+      expect(imageService.songArtUri(coverless), isNull);
+    });
+  });
+
   group('itemUri', () {
     test('- hands the item to the backend to resolve', () {
       final resolved = Uri.parse('http://server.local/Items/album-1/Primary');

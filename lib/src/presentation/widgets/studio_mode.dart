@@ -3,7 +3,6 @@ import 'dart:developer' as dev;
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +11,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
@@ -57,16 +57,6 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   static const double _pausedSpeed = 1 / 450;
   static const double _speedRampSeconds = 1.5;
   static const _phaseInterval = Duration(milliseconds: 66);
-  static const int _blurTargetSize = 512;
-  static const double _blurSigma = 16;
-
-  static Future<ui.FragmentProgram>? _auroraProgramFuture;
-
-  static Future<ui.FragmentProgram> _auroraProgram() =>
-      _auroraProgramFuture ??= ui.FragmentProgram.fromAsset(
-        'shaders/studio_aurora.frag',
-      );
-
   final _isPlaying = ValueNotifier<bool>(false);
   final _backgroundPhase = ValueNotifier<double>(0);
   final _phaseWatch = Stopwatch();
@@ -136,8 +126,8 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       ui.FragmentShader? shader;
       ui.Image? blurred;
       try {
-        final program = await _auroraProgram();
-        blurred = await _blurArtwork(background);
+        final program = await auroraProgram();
+        blurred = await blurArtwork(background);
         shader = program.fragmentShader()..setImageSampler(0, blurred);
       } on Object catch (error) {
         dev.log('Failed to build aurora shader', error: error);
@@ -164,51 +154,6 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
         outgoingArt?.dispose();
       });
     }());
-  }
-
-  Future<ui.Image> _blurArtwork(ImageProvider provider) async {
-    final completer = Completer<ImageInfo>();
-    final stream = provider.resolve(ImageConfiguration.empty);
-    late final ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (info, _) {
-        stream.removeListener(listener);
-        completer.complete(info);
-      },
-      onError: (error, stackTrace) {
-        stream.removeListener(listener);
-        completer.completeError(error, stackTrace);
-      },
-    );
-    stream.addListener(listener);
-    final sourceInfo = await completer.future;
-    try {
-      final source = sourceInfo.image;
-      const targetRect = Rect.fromLTWH(
-        0,
-        0,
-        _blurTargetSize * 1.0,
-        _blurTargetSize * 1.0,
-      );
-      final recorder = ui.PictureRecorder();
-      Canvas(recorder).drawImageRect(
-        source,
-        Rect.fromLTWH(0, 0, source.width.toDouble(), source.height.toDouble()),
-        targetRect,
-        Paint()
-          ..imageFilter = ui.ImageFilter.blur(
-            sigmaX: _blurSigma,
-            sigmaY: _blurSigma,
-            tileMode: ui.TileMode.clamp,
-          ),
-      );
-      final picture = recorder.endRecording();
-      final blurred = await picture.toImage(_blurTargetSize, _blurTargetSize);
-      picture.dispose();
-      return blurred;
-    } finally {
-      sourceInfo.dispose();
-    }
   }
 
   void _onPhaseTick(Timer timer) {
@@ -358,7 +303,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     return SizedBox.expand(
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _AuroraPainter(shader: shader, phase: _backgroundPhase),
+          painter: AuroraPainter(shader: shader, phase: _backgroundPhase),
         ),
       ),
     );
@@ -473,25 +418,4 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     _isPlaying.dispose();
     super.dispose();
   }
-}
-
-class _AuroraPainter extends CustomPainter {
-  _AuroraPainter({required this.shader, required this.phase})
-    : super(repaint: phase);
-
-  final ui.FragmentShader shader;
-  final ValueListenable<double> phase;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    shader
-      ..setFloat(0, size.width)
-      ..setFloat(1, size.height)
-      ..setFloat(2, phase.value);
-    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
-  }
-
-  @override
-  bool shouldRepaint(covariant _AuroraPainter oldDelegate) =>
-      oldDelegate.shader != shader;
 }
