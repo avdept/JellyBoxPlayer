@@ -8,6 +8,7 @@ class ServerIdentity {
     this.name,
     this.version,
     this.productName,
+    this.quickConnect = false,
   });
 
   final String serverUrl;
@@ -16,4 +17,5 @@ class ServerIdentity {
   final String? name;
   final String? version;
   final String? productName;
+  final bool quickConnect;
 }

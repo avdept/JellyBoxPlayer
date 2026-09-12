@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/data/backend/quick_connect.dart';
 import 'package:jplayer/src/data/backend/server_discovery_protocol.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
@@ -55,12 +56,14 @@ void main() {
     String serverUrl, {
     ServerType serverType = ServerType.jellyfin,
     String serverName = 'Living Room',
+    bool quickConnect = false,
   }) => ServerIdentity(
     serverUrl: serverUrl,
     serverType: serverType,
     serverId: 'server-id',
     name: serverName,
     version: '10.9.11',
+    quickConnect: quickConnect,
   );
 
   void announcesServers(List<ServerAnnouncement> announcements) {
@@ -82,9 +85,15 @@ void main() {
     String url, {
     String name = 'Living Room',
     ServerType type = ServerType.jellyfin,
+    bool quickConnect = false,
   }) {
     when(() => mockProbeService.discover(url)).thenAnswer(
-      (_) async => discoveryResult(url, serverType: type, serverName: name),
+      (_) async => discoveryResult(
+        url,
+        serverType: type,
+        serverName: name,
+        quickConnect: quickConnect,
+      ),
     );
   }
 
@@ -205,13 +214,12 @@ void main() {
         await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
 
         verify(() => mockProbeService.discover('http://jelly.local')).called(1);
-        expect(find.text('Discovered: Jellyfin server'), findsOneWidget);
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
       },
     );
 
     testWidgets(
-      '- names Emby when an Emby server is discovered',
+      '- marks the logo with the type of server that was discovered',
       (widgetTester) async {
         when(() => mockProbeService.discover(any())).thenAnswer(
           (_) async => discoveryResult(
@@ -224,8 +232,10 @@ void main() {
         await widgetTester.pump(Duration.zero);
         await enterServerUrlAndUnfocus(widgetTester, 'http://emby.local:8096');
 
-        expect(find.text('Discovered: Emby server'), findsOneWidget);
-        expect(find.text('Discovered: Jellyfin server'), findsNothing);
+        expect(
+          widgetTester.widget<LoginLogo>(find.byType(LoginLogo)).serverType,
+          ServerType.emby,
+        );
       },
     );
 
@@ -241,7 +251,7 @@ void main() {
         await enterServerUrlAndUnfocus(widgetTester, 'jelly.local:8096');
 
         verify(() => mockProbeService.discover('jelly.local:8096')).called(1);
-        expect(find.text('Discovered: Jellyfin server'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
       },
     );
 
@@ -313,7 +323,6 @@ void main() {
         await enterServerUrlAndUnfocus(widgetTester, 'http://nope.local');
 
         verify(() => mockProbeService.discover('http://nope.local')).called(1);
-        expect(find.textContaining('Discovered:'), findsNothing);
         expect(find.byIcon(Icons.check_circle), findsNothing);
       },
     );
@@ -328,7 +337,7 @@ void main() {
         await widgetTester.pumpWidget(getWidgetUT());
         await widgetTester.pump(Duration.zero);
         await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
-        expect(find.text('Discovered: Jellyfin server'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
 
         await widgetTester.enterText(
           find.widgetWithText(LabeledTextField, 'Server URL'),
@@ -336,7 +345,6 @@ void main() {
         );
         await widgetTester.pumpAndSettle();
 
-        expect(find.text('Discovered: Jellyfin server'), findsNothing);
         expect(find.byIcon(Icons.check_circle), findsNothing);
       },
     );
@@ -727,6 +735,103 @@ void main() {
           find.text(AuthNotifier.serverUnreachableError),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      '- hides the code sign in when the server does not offer it',
+      (widgetTester) async {
+        findsServerAt('http://jelly.local');
+
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
+
+        expect(find.text('Quick Connect'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '- offers the code sign in once the server is known to support it',
+      (widgetTester) async {
+        findsServerAt('http://jelly.local', quickConnect: true);
+
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        expect(find.text('Quick Connect'), findsNothing);
+
+        await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
+
+        expect(find.text('Quick Connect'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '- keeps the code sign in on the right in auto discovery mode',
+      (widgetTester) async {
+        announcesServers([announcement(address: 'http://192.168.1.10:8096')]);
+        findsServerAt('http://192.168.1.10:8096', quickConnect: true);
+
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pumpAndSettle();
+
+        expect(find.text('Living Room'), findsOneWidget);
+
+        final quickConnect = find.text('Quick Connect');
+        expect(quickConnect, findsOneWidget);
+        expect(
+          widgetTester.getCenter(quickConnect).dx,
+          greaterThan(widgetTester.getCenter(find.byType(ServerUrlField)).dx),
+        );
+      },
+    );
+
+    testWidgets(
+      '- shows the code and cancels the request when dismissed',
+      (widgetTester) async {
+        findsServerAt('http://jelly.local', quickConnect: true);
+        when(
+          () => mockAuthNotifier.beginQuickConnect(
+            any(),
+            serverType: any(named: 'serverType'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const QuickConnectRequest(code: '123456', secret: 'secret-1'),
+        );
+        final pending = Completer<String?>();
+        addTearDown(() {
+          if (!pending.isCompleted) pending.complete(null);
+        });
+        when(mockAuthNotifier.awaitQuickConnect).thenAnswer(
+          (_) => pending.future,
+        );
+
+        await widgetTester.pumpWidget(getWidgetUT());
+        await widgetTester.pump(Duration.zero);
+        await enterServerUrlAndUnfocus(widgetTester, 'http://jelly.local');
+
+        final codeButton = find.text('Quick Connect');
+        await widgetTester.ensureVisible(codeButton);
+        await widgetTester.pump();
+        await widgetTester.tap(codeButton);
+        await widgetTester.pump();
+        await widgetTester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('123456'), findsOneWidget);
+        verify(
+          () => mockAuthNotifier.beginQuickConnect(
+            'http://jelly.local',
+            serverType: ServerType.jellyfin,
+          ),
+        ).called(1);
+
+        await widgetTester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await widgetTester.pump();
+        await widgetTester.pump(const Duration(milliseconds: 300));
+
+        verify(mockAuthNotifier.cancelQuickConnect).called(1);
+        expect(find.text('123456'), findsNothing);
       },
     );
   });

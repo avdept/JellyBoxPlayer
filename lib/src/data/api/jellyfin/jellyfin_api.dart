@@ -20,6 +20,22 @@ abstract class JellyfinApi {
     @Body() required UserCredentials credentials,
   });
 
+  @GET('/QuickConnect/Enabled')
+  Future<HttpResponse<bool>> quickConnectEnabled();
+
+  @POST('/QuickConnect/Initiate')
+  Future<HttpResponse<QuickConnectStateDTO>> initiateQuickConnect();
+
+  @GET('/QuickConnect/Connect')
+  Future<HttpResponse<QuickConnectStateDTO>> quickConnectState({
+    @Query('secret') required String secret,
+  });
+
+  @POST('/Users/AuthenticateWithQuickConnect')
+  Future<HttpResponse<SignInResultDTO>> signInWithQuickConnect({
+    @Body() required QuickConnectSecret secret,
+  });
+
   @POST('/Users/{userId}/FavoriteItems/{itemId}')
   Future<HttpResponse<void>> saveFavorite({
     @Path('userId') required String userId,

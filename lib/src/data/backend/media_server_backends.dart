@@ -5,8 +5,10 @@ import 'package:jplayer/src/data/backend/emby/emby_client.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_auth_headers.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_authenticator.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
+import 'package:jplayer/src/data/backend/jellyfin/jellyfin_quick_connect.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_probe.dart';
+import 'package:jplayer/src/data/backend/quick_connect.dart';
 import 'package:jplayer/src/data/backend/server_auth_headers.dart';
 import 'package:jplayer/src/data/backend/server_probe.dart';
 import 'package:jplayer/src/data/backend/server_session.dart';
@@ -22,6 +24,14 @@ MediaServerAuthenticator authenticatorFor(
 }) => switch (serverType) {
   ServerType.jellyfin => JellyfinAuthenticator(dio),
   ServerType.emby => EmbyAuthenticator(dio),
+};
+
+QuickConnectAuthenticator? quickConnectFor(
+  ServerType serverType, {
+  required Dio dio,
+}) => switch (serverType) {
+  ServerType.jellyfin => JellyfinQuickConnect(dio),
+  ServerType.emby => null,
 };
 
 ServerAuthHeaders authHeadersFor(

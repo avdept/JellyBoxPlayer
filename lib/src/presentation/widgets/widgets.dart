@@ -37,6 +37,7 @@ export 'playback_target_picker.dart';
 export 'playlist_picker_sheet.dart';
 export 'position_labels.dart';
 export 'queue_sidebar.dart';
+export 'quick_connect_dialog.dart';
 export 'rail_collapse_animation.dart';
 export 'rail_tooltip.dart';
 export 'random_queue_button.dart';

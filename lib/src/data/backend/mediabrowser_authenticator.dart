@@ -2,6 +2,16 @@ import 'package:jplayer/src/data/backend/server_session.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 
+ServerSession mediaBrowserSession(
+  SignInResultDTO result, {
+  required String serverUrl,
+}) => ServerSession(
+  userId: result.user.id,
+  token: result.accessToken,
+  serverId: result.serverId.isNotEmpty ? result.serverId : serverUrl,
+  serverName: result.user.name,
+);
+
 abstract class MediaBrowserAuthenticator extends MediaServerAuthenticator {
   const MediaBrowserAuthenticator();
 
@@ -16,11 +26,6 @@ abstract class MediaBrowserAuthenticator extends MediaServerAuthenticator {
     required String serverUrl,
   }) async {
     final result = await authenticate(credentials, serverUrl: serverUrl);
-    return ServerSession(
-      userId: result.user.id,
-      token: result.accessToken,
-      serverId: result.serverId.isNotEmpty ? result.serverId : serverUrl,
-      serverName: result.user.name,
-    );
+    return mediaBrowserSession(result, serverUrl: serverUrl);
   }
 }
