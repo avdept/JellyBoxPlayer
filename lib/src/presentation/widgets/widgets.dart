@@ -18,6 +18,7 @@ export 'downloaded_album_view.dart';
 export 'flip_panel.dart';
 export 'gradient_background.dart';
 export 'gradient_panel_decoration.dart';
+export 'horizontal_scroll_region.dart';
 export 'item_carousel.dart';
 export 'item_row_view.dart';
 export 'keep_screen_awake.dart';

@@ -269,10 +269,14 @@ void main() {
     ) async {
       await pumpHome(widgetTester);
 
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      final titleChevron = find.descendant(
+        of: find.byType(ClickableWidget),
+        matching: find.byIcon(Icons.chevron_right),
+      );
+      expect(titleChevron, findsOneWidget);
       expect(
         find.ancestor(
-          of: find.byIcon(Icons.chevron_right),
+          of: titleChevron,
           matching: find.widgetWithText(ItemCarousel, 'Favourites'),
         ),
         findsOneWidget,
