@@ -583,10 +583,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     );
   }
 
-  Uri? _artUri(LibraryItem song, LibraryItem album) {
-    final imageService = _ref.read(imageServiceProvider);
-    return imageService.itemUri(song) ?? imageService.itemUri(album);
-  }
+  Uri? _artUri(LibraryItem song, LibraryItem album) =>
+      _ref.read(imageServiceProvider).songArtUri(song, album: album);
 
   Future<void> seek(Duration position) async {
     await _target.seek(position);

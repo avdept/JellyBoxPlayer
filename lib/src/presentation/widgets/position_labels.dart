@@ -5,10 +5,12 @@ import 'package:jplayer/src/domain/providers/playback_provider.dart';
 class PositionLabels extends ConsumerWidget {
   const PositionLabels({
     this.fontSize = 13,
+    this.middle,
     super.key,
   });
 
   final double fontSize;
+  final Widget? middle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,10 +31,20 @@ class PositionLabels extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(_formatDuration(position), style: style),
-          Text('-${_formatDuration(remaining)}', style: style),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(_formatDuration(position), style: style),
+            ),
+          ),
+          ?middle,
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text('-${_formatDuration(remaining)}', style: style),
+            ),
+          ),
         ],
       ),
     );

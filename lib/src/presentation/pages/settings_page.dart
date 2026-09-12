@@ -35,6 +35,12 @@ class SettingsPage extends ConsumerWidget {
     ItemList.genres: 'Genres',
   };
 
+  static const Map<KeepScreenOn, String> _keepScreenOnLabels = {
+    KeepScreenOn.never: 'Never',
+    KeepScreenOn.charging: 'While charging',
+    KeepScreenOn.always: 'Always',
+  };
+
   static const Map<StartPage, String> _startPageLabels = {
     StartPage.home: 'Home',
     StartPage.browse: 'Browse',
@@ -200,6 +206,18 @@ class SettingsPage extends ConsumerWidget {
                               value.name,
                             ),
                       ),
+                    if (device.isMobile) ...[
+                      _sectionHeader('Landscape player'),
+                      _settingDropdown<KeepScreenOn>(
+                        context: context,
+                        label: 'Keep the screen on',
+                        value: ref.watch(keepScreenOnProvider),
+                        options: _keepScreenOnLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(AppSetting.keepScreenOn, value.name),
+                      ),
+                    ],
                     if (!device.isMobile) ...[
                       _sectionHeader('Studio Mode'),
                       if (supportsWindowFullscreen)

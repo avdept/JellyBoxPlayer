@@ -1,9 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockMediaServerClient extends Mock implements MediaServerClient {}
 
 class _StubPlayback extends StateNotifier<PlaybackState>
     implements PlaybackNotifier {
@@ -16,6 +22,67 @@ class _StubPlayback extends StateNotifier<PlaybackState>
 }
 
 void main() {
+  group('mediaItemFor artwork', () {
+    late _MockMediaServerClient client;
+    late ImageService images;
+
+    const coverlessSong = LibraryItem(
+      id: 'song-9',
+      name: 'Untagged',
+      kind: ItemKind.song,
+      albumId: 'album-9',
+    );
+
+    const playlist = LibraryItem(
+      id: 'playlist-1',
+      name: 'Road trip',
+      kind: ItemKind.playlist,
+      images: ImageRefs(primary: 'playlist-tag'),
+    );
+
+    const ownAlbum = LibraryItem(
+      id: 'album-9',
+      name: 'Untagged album',
+      kind: ItemKind.album,
+      images: ImageRefs(primary: 'album-tag'),
+    );
+
+    final albumCover = Uri.parse('http://server.local/Items/album-9/Primary');
+
+    setUpAll(() {
+      registerFallbackValue(coverlessSong);
+      registerFallbackValue(ImageKind.primary);
+    });
+
+    setUp(() {
+      client = _MockMediaServerClient();
+      images = ImageService(client: () => client);
+      when(
+        () => client.imageUri(
+          any(),
+          kind: any(named: 'kind'),
+          size: any(named: 'size'),
+        ),
+      ).thenReturn(albumCover);
+    });
+
+    test('- leaves a coverless song without artwork in a playlist', () {
+      final item = mediaItemFor(coverlessSong, album: playlist, images: images);
+
+      expect(item.artUri, isNull);
+    });
+
+    test('- falls back to the cover of the song own album', () {
+      final item = mediaItemFor(
+        coverlessSong,
+        album: ownAlbum,
+        images: images,
+      );
+
+      expect(item.artUri, albumCover);
+    });
+  });
+
   LibraryItem songNamed(
     String id,
     String name, {

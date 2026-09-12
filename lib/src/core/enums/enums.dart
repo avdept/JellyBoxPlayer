@@ -5,6 +5,7 @@ export 'entities.dart';
 export 'forward_cache_limit.dart';
 export 'forward_cache_window.dart';
 export 'item_list.dart';
+export 'keep_screen_on.dart';
 export 'layout.dart';
 export 'network_exceptions.dart';
 export 'playback_status.dart';

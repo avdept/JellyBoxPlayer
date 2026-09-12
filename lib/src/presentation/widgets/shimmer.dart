@@ -278,12 +278,15 @@ class TextLinesShimmer extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final width = constraints.hasBoundedWidth ? constraints.maxWidth : 240.0;
+      final lines = constraints.hasBoundedHeight
+          ? min(count, max(1, constraints.maxHeight ~/ (lineHeight + spacing)))
+          : count;
 
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: alignment,
         children: [
-          for (var index = 0; index < count; index++)
+          for (var index = 0; index < lines; index++)
             Padding(
               padding: EdgeInsets.only(bottom: spacing),
               child: ShimmerBox(
