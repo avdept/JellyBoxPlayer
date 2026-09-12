@@ -244,6 +244,41 @@ void main() {
       expect(find.byType(NowPlayingQueueView), findsOneWidget);
     });
 
+    testWidgets('- hides the system bars while it is on screen', (
+      tester,
+    ) async {
+      final calls = <MethodCall>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        calls.add(call);
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+
+      await pumpLandscapePlayer(tester);
+
+      expect(
+        calls
+            .where(
+              (call) => call.method == 'SystemChrome.setEnabledSystemUIMode',
+            )
+            .map((call) => call.arguments),
+        contains('SystemUiMode.immersiveSticky'),
+      );
+
+      calls.clear();
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      expect(
+        calls.map((call) => call.method),
+        contains('SystemChrome.setEnabledSystemUIOverlays'),
+      );
+    });
+
     testWidgets('- drives the playback notifier from the transport buttons', (
       tester,
     ) async {

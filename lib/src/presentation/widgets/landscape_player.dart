@@ -136,6 +136,9 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
   void initState() {
     super.initState();
     _isPlaying.value = ref.read(playbackProvider).status.isPlaying;
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+    );
   }
 
   @override
@@ -146,6 +149,12 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
 
   @override
   void dispose() {
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      ),
+    );
     _isPlaying.dispose();
     super.dispose();
   }
@@ -166,10 +175,7 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            decoration: BoxDecoration(gradient: _background(colorScheme)),
-          ),
+          ColoredBox(color: _theme.scaffoldBackgroundColor),
           const AuroraBackground(),
           const KeepScreenAwake(),
           Material(
@@ -206,16 +212,6 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
       ),
     );
   }
-
-  Gradient _background(ColorScheme colorScheme) => LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Color.lerp(colorScheme.primaryContainer, colorScheme.primary, 0.25)!,
-      colorScheme.primaryContainer,
-      Color.lerp(colorScheme.tertiaryContainer, colorScheme.surface, 0.35)!,
-    ],
-  );
 
   Widget _artwork(MediaItem? song) => ValueListenableBuilder<bool>(
     valueListenable: _isPlaying,
