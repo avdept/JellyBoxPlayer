@@ -158,6 +158,14 @@ void main() {
 
       expect(find.byType(LyricsView), findsOneWidget);
       expect(find.byType(PositionSlider), findsNothing);
+
+      final buttons = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.byIcon(Icons.queue_music),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(buttons.opacity, lessThan(1));
     });
 
     testWidgets('- lays out without overflow on a small phone', (

@@ -47,6 +47,7 @@ enum _Panel { player, lyrics, queue }
 const double _artworkInset = 14;
 const double _pausedArtworkScale = 0.92;
 const double _tapTargetOverhang = 12;
+const double _dimmedPanelButtons = 0.45;
 
 class LandscapePlayerScope extends ConsumerStatefulWidget {
   const LandscapePlayerScope({required this.child, super.key});
@@ -347,11 +348,15 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
     ],
   );
 
-  Widget _panelButtons() => IconTheme.merge(
-    data: const IconThemeData(size: 24),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [_lyricsButton(), _queueButton()],
+  Widget _panelButtons() => AnimatedOpacity(
+    opacity: _panel == _Panel.lyrics ? _dimmedPanelButtons : 1,
+    duration: const Duration(milliseconds: 200),
+    child: IconTheme.merge(
+      data: const IconThemeData(size: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [_lyricsButton(), _queueButton()],
+      ),
     ),
   );
 
