@@ -35,14 +35,14 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 | **macOS** | `.dmg` (signed & notarized) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Windows** | Installer `.exe` or portable `.zip` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Linux** | `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
-| **Android** | `.apk` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
-
-Google Play distribution is on the way, need to wait 2 weeks during closed beta period.
+| **Android** | Google Play | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
+| **Android** | `.apk` (sideload) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 
 ## Features
 
 **Library & browsing**
 - [x] Connect to Jellyfin or Emby servers, and switch between them without signing out
+- [x] Jellyfin Quick Connect - sign in from your phone or desktop without typing a password
 - [x] Browse albums, artists, genres, playlists and songs across multiple music libraries
 - [x] Search everything at once, or filter to playlists, albums, artists or songs
 - [x] Artist pages with biography and full discography
@@ -50,7 +50,7 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 - [x] Create playlists and add tracks to them from anywhere in the app
 - [x] Genre mixes on the home page, built from the genres you actually play - see
   [Normalizing your music genres](./docs/normalizing-genres.md) if your genre tags are messy
-- [ ] Home page - in development
+- [x] Home page with recently played, recently added and personalised mixes
 
 **Playback**
 - [x] Playback memory - app remembers your queue and playback position between restarts
@@ -58,6 +58,7 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 - [x] Queue management with shuffle, repeat and a randomised "surprise me" queue
 - [x] Per-connection streaming profiles with automatic transcoding when a codec isn't supported natively
 - [x] Audio quality badge, so you always know whether you're getting the original file
+- [x] Landscape now-playing layout on phones
 
 **Offline**
 - [x] Download albums and tracks for offline listening
@@ -71,10 +72,11 @@ Google Play distribution is on the way, need to wait 2 weeks during closed beta 
 - [x] Media keys and global keyboard shortcuts
 - [x] MPRIS support on Linux (works with GNOME/KDE media widgets and `playerctl`)
 - [x] AirPlay and system output routing on macOS and iOS
+- [x] Cast to DLNA / UPnP renderers (smart TVs, network speakers and receivers)
 - [x] Lock screen and notification controls on iOS and Android
 - [x] In-app changelog, so you can see what landed in each release
 - [x] Apple CarPlay - currently in beta stage.
-- [ ] Android auto - in development
+- [ ] Android Auto - in development
 
 ## Screenshots
 
@@ -152,7 +154,7 @@ The installer is unsigned, so SmartScreen will warn on first run - choose **More
 
 ### Android
 
-Builds are distributed as APKs from the [releases page](https://github.com/avdept/JellyBoxPlayer/releases). You'll need to allow installs from your browser or file manager.
+Install from [Google Play](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox), or sideload the APK from the [releases page](https://github.com/avdept/JellyBoxPlayer/releases). For the APK you'll need to allow installs from your browser or file manager.
 
 ### Linux
 
@@ -161,6 +163,8 @@ The release bundle expects a few shared libraries. On Debian/Ubuntu:
 ```bash
 sudo apt-get install libmpv-dev mpv libsecret-1-dev libsqlite3-dev libjsoncpp-dev libcurl4-openssl-dev libdbus-1-dev
 ```
+
+Note: Recently I bundled libs with app, but I need more folks to actually test it on different distros.
 
 ## Development
 
