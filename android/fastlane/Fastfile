@@ -10,7 +10,6 @@ UPLOAD_KEYSTORE_PATH = File.join(ANDROID_ROOT, "upload_key.jks")
 AAB_PATH = File.join(PROJECT_ROOT, "build/app/outputs/bundle/release/app-release.aab")
 FLUTTER_APK_PATH = File.join(PROJECT_ROOT, "build/app/outputs/flutter-apk/app-release.apk")
 UNIVERSAL_APK_PATH = File.join(PROJECT_ROOT, "build/app/outputs/universal/jellybox-universal.apk")
-PLAY_TRACKS = %w[internal alpha beta production].freeze
 
 def create_upload_key
   if ENV["ANDROID_KEYSTORE_ENV_VAR"].to_s.empty?
@@ -46,33 +45,43 @@ def pubspec_version_code
 end
 
 def highest_play_version_code
-  codes = PLAY_TRACKS.flat_map do |track|
-    begin
-      google_play_track_version_codes(
-        package_name: play_package_name,
-        track: track,
-        json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"]
-      )
-    rescue StandardError => e
-      UI.verbose("No version codes readable for track '#{track}': #{e.message.strip}")
-      []
-    end
+  require "supply"
+  require "supply/options"
+
+  Supply.config = FastlaneCore::Configuration.create(
+    Supply::Options.available_options,
+    { package_name: play_package_name, json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"] }
+  )
+  client = Supply::Client.make_from_config
+  client.begin_edit(package_name: play_package_name)
+  begin
+    codes = client.aab_version_codes + client.apks_version_codes
+  ensure
+    client.abort_current_edit
   end
 
+  UI.message("Play knows version codes: #{codes.map(&:to_i).sort.join(', ')}") unless codes.empty?
   codes.map(&:to_i).max
+rescue StandardError => e
+  UI.important("Could not read version codes from Play, uploading blind: #{e.message.strip}")
+  nil
 end
 
 def resolve_version_code
-  return ENV["BUILD_NUMBER"].to_i unless ENV["BUILD_NUMBER"].to_s.empty?
+  requested = ENV["BUILD_NUMBER"].to_s.empty? ? pubspec_version_code : ENV["BUILD_NUMBER"].to_i
 
   highest = highest_play_version_code
   if highest.nil?
-    UI.message("Play reports no existing version codes; falling back to pubspec.yaml")
-    return pubspec_version_code
+    UI.message("Play reports no existing version codes; using #{requested}")
+    return requested
   end
 
-  resolved = [highest + 1, pubspec_version_code].max
-  UI.message("Highest version code on Play is #{highest}; using #{resolved}")
+  resolved = [highest + 1, requested].max
+  if resolved != requested
+    UI.important("Requested version code #{requested} is not above Play's highest (#{highest}); using #{resolved} instead")
+  else
+    UI.message("Highest version code on Play is #{highest}; using #{resolved}")
+  end
   resolved
 end
 

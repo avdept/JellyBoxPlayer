@@ -21,7 +21,15 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane android beta
 ```
 
-Build and upload Android app to Crashlytics Beta
+Build a signed app bundle and universal APK, and upload the bundle to Play as a draft
+
+### android build_only
+
+```sh
+[bundle exec] fastlane android build_only
+```
+
+Build a signed app bundle and APK locally without uploading anywhere
 
 ----
 

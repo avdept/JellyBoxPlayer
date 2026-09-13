@@ -47,7 +47,10 @@ jobs:
       - uses: actions/checkout@v4
 
       # fastlane reads BUILD_VERSION/BUILD_NUMBER; both are left unset on a
-      # standalone dispatch so it falls back to the pubspec values.
+      # standalone dispatch so it falls back to the pubspec values. BUILD_NUMBER
+      # is a floor, not a promise: Play rejects any version code it has ever
+      # seen, so the lane also asks Play for its highest code and goes one above
+      # it when that is larger.
       - name: Resolve version
         working-directory: .
         env:

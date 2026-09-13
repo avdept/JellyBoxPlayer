@@ -28,7 +28,9 @@ env:
   # reusable workflow `github.run_number` is the *caller's*, and this file's own
   # counter restarted at 1. This base lifts the new sequence clear of every
   # number those old counters ever produced. Bump it if this workflow file is
-  # ever renamed or recreated, which resets the counter again.
+  # ever renamed or recreated, which resets the counter again. Android treats
+  # the result as a floor and may go higher if Play already holds a bigger
+  # version code (android/fastlane/Fastfile, resolve_version_code).
   BUILD_NUMBER_BASE: 200
 
 # Two runs for the same tag would fight over the same release assets.
