@@ -7,4 +7,4 @@
   Android throws IllegalArgumentException, crashing playback on start.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_stat_music" />
+    tools:keep="@drawable/ic_stat_music,@drawable/ic_auto_shuffle,@drawable/ic_auto_shuffle_on,@drawable/ic_auto_repeat,@drawable/ic_auto_repeat_on,@drawable/ic_auto_repeat_one_on,@drawable/ic_auto_favourite,@drawable/ic_auto_favourite_border" />
