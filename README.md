@@ -110,6 +110,11 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
   </tr>
 </table>
 
+<div align="center">
+  <img src="./docs/screenshots/mobile-landscape.png" width="90%" alt="Landscape now-playing layout on a phone">
+  <p><b>Landscape now playing</b> - rotate your phone for a wide player layout</p>
+</div>
+
 ## Features
 
 **Library & browsing**
