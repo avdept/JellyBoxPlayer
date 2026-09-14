@@ -10,8 +10,25 @@ import 'package:synchronized/synchronized.dart';
 
 export 'package:audio_service/audio_service.dart' show MediaItem;
 
-late SwitchAudioHandler _audioHandler;
+late _BrowsingSwitchAudioHandler _audioHandler;
 late JustAudioPlatform _platform;
+
+abstract class AudioBrowseDelegate {
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]);
+
+  Future<MediaItem?> getMediaItem(String mediaId);
+
+  Future<List<MediaItem>> search(String query, [Map<String, dynamic>? extras]);
+
+  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]);
+
+  Future<void> playFromSearch(String query, [Map<String, dynamic>? extras]);
+
+  Stream<String?> get childrenChanged;
+}
 
 /// Provides the [init] method to initialise just_audio for background playback.
 class JustAudioBackground {
@@ -72,6 +89,94 @@ class JustAudioBackground {
       androidBrowsableRootExtras: androidBrowsableRootExtras,
     );
   }
+
+  static set browseDelegate(AudioBrowseDelegate? delegate) {
+    _audioHandler.browseDelegate = delegate;
+  }
+}
+
+class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
+  _BrowsingSwitchAudioHandler() : super(BaseAudioHandler());
+
+  final _childrenSubjects = <String, BehaviorSubject<Map<String, dynamic>>>{};
+  AudioBrowseDelegate? _browseDelegate;
+  StreamSubscription<String?>? _childrenChangedSubscription;
+
+  set browseDelegate(AudioBrowseDelegate? delegate) {
+    _childrenChangedSubscription?.cancel();
+    _childrenChangedSubscription = null;
+    _browseDelegate = delegate;
+    if (delegate == null) return;
+    _childrenChangedSubscription =
+        delegate.childrenChanged.listen(_notifyChildrenChanged);
+    _notifyChildrenChanged(null);
+  }
+
+  void _notifyChildrenChanged(String? parentMediaId) {
+    if (parentMediaId == null) {
+      for (final subject in _childrenSubjects.values) {
+        subject.add(<String, dynamic>{});
+      }
+    } else {
+      _childrenSubjects[parentMediaId]?.add(<String, dynamic>{});
+    }
+  }
+
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.getChildren(parentMediaId, options);
+    return delegate.getChildren(parentMediaId, options);
+  }
+
+  @override
+  // ignore: must_call_super
+  ValueStream<Map<String, dynamic>> subscribeToChildren(String parentMediaId) {
+    return _childrenSubjects.putIfAbsent(
+      parentMediaId,
+      BehaviorSubject<Map<String, dynamic>>.new,
+    );
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.getMediaItem(mediaId);
+    return delegate.getMediaItem(mediaId);
+  }
+
+  @override
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.search(query, extras);
+    return delegate.search(query, extras);
+  }
+
+  @override
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.playFromMediaId(mediaId, extras);
+    return delegate.playFromMediaId(mediaId, extras);
+  }
+
+  @override
+  Future<void> playFromSearch(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.playFromSearch(query, extras);
+    return delegate.playFromSearch(query, extras);
+  }
 }
 
 class _JustAudioBackgroundPlugin extends JustAudioPlatform {
@@ -96,7 +201,7 @@ class _JustAudioBackgroundPlugin extends JustAudioPlatform {
     _platform = JustAudioPlatform.instance;
     JustAudioPlatform.instance = _JustAudioBackgroundPlugin();
     _audioHandler = await AudioService.init(
-      builder: () => SwitchAudioHandler(BaseAudioHandler()),
+      builder: _BrowsingSwitchAudioHandler.new,
       config: AudioServiceConfig(
         androidResumeOnClick: androidResumeOnClick,
         androidNotificationChannelId: androidNotificationChannelId,

@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
 import 'package:jplayer/src/app.dart';
+import 'package:jplayer/src/core/android_auto/android_auto_handler.dart';
+import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
@@ -82,6 +84,7 @@ Future<void> main() async {
       androidNotificationChannelName: 'Audio playback',
       androidNotificationOngoing: true,
       androidNotificationIcon: 'drawable/ic_stat_music',
+      androidBrowsableRootExtras: AndroidAutoHandler.rootExtras,
     );
   }
 
@@ -102,7 +105,9 @@ Future<void> main() async {
   );
 
   final container = ProviderContainer();
-  if (Platform.isIOS) CarPlayHandler.initialize(container);
+  final carContent = CarContent(container);
+  if (Platform.isIOS) CarPlayHandler.initialize(container, carContent);
+  if (Platform.isAndroid) AndroidAutoHandler.initialize(container, carContent);
 
   final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
 
