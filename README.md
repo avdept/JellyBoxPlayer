@@ -16,7 +16,7 @@
 [![Follow @_avdept](https://img.shields.io/badge/@__avdept-000000?logo=x&logoColor=white)](https://x.com/_avdept)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/avdept)
 
-[Download](#download) · [Features](#features) · [Screenshots](#screenshots) · [Development](#development)
+[Download](#download) · [Screenshots](#screenshots) · [Features](#features) · [Development](#development)
 
 </div>
 
@@ -37,6 +37,78 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 | **Linux** | `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android** | Google Play | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
 | **Android** | `.apk` (sideload) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
+
+## Screenshots
+
+### Desktop
+
+<div align="center">
+  <img src="./docs/screenshots/studio-mode.png" width="90%" alt="Studio Mode - full-screen playback with an animated backdrop">
+  <p><b>Studio Mode</b> - full-screen animated mode made for aesthetic</p>
+</div>
+
+<table>
+  <tr>
+    <td width="50%"><img src="./docs/screenshots/home.png" alt="Home page with recently played, mixes made for you and recently added"></td>
+    <td width="50%"><img src="./docs/screenshots/lyrics.png" alt="Time-synced lyrics"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Home</b></td>
+    <td align="center"><b>Time-synced lyrics</b></td>
+  </tr>
+</table>
+
+<details>
+<summary><b>More screenshots</b> - songs, search, albums, artists, downloads</summary>
+<br>
+
+<table>
+  <tr>
+    <td width="50%"><img src="./docs/screenshots/songs.png" alt="Songs view"></td>
+    <td width="50%"><img src="./docs/screenshots/search.png" alt="Search across albums, artists, songs and playlists"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Songs</b></td>
+    <td align="center"><b>Search</b></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="./docs/screenshots/album.png" alt="Albums grid"></td>
+    <td width="50%"><img src="./docs/screenshots/artist.png" alt="Artist view with biography and discography"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Albums</b></td>
+    <td align="center"><b>Artist</b></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="./docs/screenshots/downloads.png" alt="Downloaded albums available offline"></td>
+    <td width="50%"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Downloads</b></td>
+    <td></td>
+  </tr>
+</table>
+
+</details>
+
+### Mobile
+
+<table>
+  <tr>
+    <td width="20%"><img src="./docs/screenshots/mobile-home.png" alt="Home page on iPhone with recently played, mixes made for you and recently added"></td>
+    <td width="20%"><img src="./docs/screenshots/mobile-player.jpg" alt="Now playing on iPhone"></td>
+    <td width="20%"><img src="./docs/screenshots/mobile-lyrics.jpg" alt="Time-synced lyrics on iPhone"></td>
+    <td width="20%"><img src="./docs/screenshots/mobile-artist.jpg" alt="Artist view on iPhone"></td>
+    <td width="20%"><img src="./docs/screenshots/mobile-downloads.jpg" alt="Downloads on iPhone"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Home</b></td>
+    <td align="center"><b>Now playing</b></td>
+    <td align="center"><b>Lyrics</b></td>
+    <td align="center"><b>Artist</b></td>
+    <td align="center"><b>Downloads</b></td>
+  </tr>
+</table>
 
 ## Features
 
@@ -71,76 +143,13 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 **Desktop & system integration**
 - [x] Media keys and global keyboard shortcuts
 - [x] MPRIS support on Linux (works with GNOME/KDE media widgets and `playerctl`)
+- [x] Windows media overlay - now playing with artwork and transport controls in the system media popup, plus media key support
 - [x] AirPlay and system output routing on macOS and iOS
 - [x] Cast to DLNA / UPnP renderers (smart TVs, network speakers and receivers)
 - [x] Lock screen and notification controls on iOS and Android
 - [x] In-app changelog, so you can see what landed in each release
 - [x] Apple CarPlay - currently in beta stage.
 - [ ] Android Auto - in development
-
-## Screenshots
-
-### Desktop
-
-<div align="center">
-  <img src="./docs/screenshots/studio-mode.png" width="90%" alt="Studio Mode - full-screen playback with an animated backdrop">
-  <p><b>Studio Mode</b> - full-screen animated mode made for aesthetic</p>
-</div>
-
-<table>
-  <tr>
-    <td width="50%"><img src="./docs/screenshots/lyrics.png" alt="Time-synced lyrics"></td>
-    <td width="50%"><img src="./docs/screenshots/songs.png" alt="Songs view"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Time-synced lyrics</b></td>
-    <td align="center"><b>Songs</b></td>
-  </tr>
-</table>
-
-<details>
-<summary><b>More screenshots</b> - search, albums, artists, downloads</summary>
-<br>
-
-<table>
-  <tr>
-    <td width="50%"><img src="./docs/screenshots/search.png" alt="Search across albums, artists, songs and playlists"></td>
-    <td width="50%"><img src="./docs/screenshots/album.png" alt="Album view"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Search</b></td>
-    <td align="center"><b>Album</b></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="./docs/screenshots/artist.png" alt="Artist view with biography and discography"></td>
-    <td width="50%"><img src="./docs/screenshots/downloads.png" alt="Downloaded albums available offline"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Artist</b></td>
-    <td align="center"><b>Downloads</b></td>
-  </tr>
-</table>
-
-</details>
-
-### Mobile
-
-<table>
-  <tr>
-    <td width="20%"><img src="./docs/screenshots/mobile-player.jpg" alt="Now playing on iPhone"></td>
-    <td width="20%"><img src="./docs/screenshots/mobile-lyrics.jpg" alt="Time-synced lyrics on iPhone"></td>
-    <td width="20%"><img src="./docs/screenshots/mobile-albums.jpg" alt="Albums grid on iPhone"></td>
-    <td width="20%"><img src="./docs/screenshots/mobile-artist.jpg" alt="Artist view on iPhone"></td>
-    <td width="20%"><img src="./docs/screenshots/mobile-downloads.jpg" alt="Downloads on iPhone"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Now playing</b></td>
-    <td align="center"><b>Lyrics</b></td>
-    <td align="center"><b>Albums</b></td>
-    <td align="center"><b>Artist</b></td>
-    <td align="center"><b>Downloads</b></td>
-  </tr>
-</table>
 
 ## Platform notes
 
