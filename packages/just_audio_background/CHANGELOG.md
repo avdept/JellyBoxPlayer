@@ -1,3 +1,15 @@
+## 0.0.1-beta.17+jellybox.2 (LOCAL FORK)
+
+* PATCH: media-browser hook for Android Auto. `JustAudioBackground.browseDelegate`
+  installs an `AudioBrowseDelegate` that answers `getChildren`, `getMediaItem`,
+  `search`, `playFromMediaId` and `playFromSearch`. The handler registered with
+  audio_service is now `_BrowsingSwitchAudioHandler`, which owns the
+  `subscribeToChildren` subjects itself (audio_service caches the first stream
+  it gets per parent id for the life of the service) and forwards browse calls to
+  the delegate regardless of whether an `AudioPlayer` exists yet, so a cold
+  start from the car can browse before anything plays. Upstream has no way to
+  reach the browse callbacks without replacing `just_audio_background` outright.
+
 ## 0.0.1-beta.17+jellybox.1 (LOCAL FORK)
 
 Vendored copy of upstream 0.0.1-beta.17 with a local patch. Do not replace with
