@@ -60,6 +60,17 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     _scrollController.addListener(_onScroll);
   }
 
+  Future<void> _onAlbumLikePressed(LibraryItem album) async {
+    final updated = await toggleFavourite(ref, album);
+    if (!mounted) return;
+    LibraryItem replace(LibraryItem item) =>
+        item.id == updated.id ? updated : item;
+    setState(() {
+      _albums = _albums.map(replace).toList();
+      _appearsOn = _appearsOn.map(replace).toList();
+    });
+  }
+
   Future<void> _getAppearsOn() async {
     final resp = await ref
         .read(mediaServerClientProvider)
@@ -393,6 +404,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             itemBuilder: (context, index) => AlbumView(
               showArtist: false,
               album: _albums[index],
+              optionsBuilder: (context) => contextMenuActions(
+                context,
+                ref,
+                _albums[index],
+                scope: ContextMenuScope.browse,
+                onLike: _onAlbumLikePressed,
+              ),
               onTap: (album) => context.pushNamed(
                 branchAwareName(context, Routes.album),
                 extra: {
@@ -434,6 +452,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           itemBuilder: (context, index) => AlbumView(
             showArtist: false,
             album: _appearsOn[index],
+            optionsBuilder: (context) => contextMenuActions(
+              context,
+              ref,
+              _appearsOn[index],
+              scope: ContextMenuScope.browse,
+              onLike: _onAlbumLikePressed,
+            ),
             onTap: (album) => context.pushNamed(
               branchAwareName(context, Routes.album),
               extra: {

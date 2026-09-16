@@ -61,28 +61,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  Future<void> _onAddToPlaylistPressed(LibraryItem song) async {
-    if (ref.read(isOfflineProvider)) {
-      _showOfflineSnackBar();
-      return;
-    }
-    final playlist = await showPlaylistPicker(
-      context,
-      isDesktop: _device.isDesktop,
-    );
-    if (playlist != null) {
-      await ref
-          .read(mediaServerClientProvider)
-          .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
-      unawaited(_getSongs());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully added item to playlist')),
-        );
-      }
-    }
-  }
-
   void _showOfflineSnackBar() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -305,26 +283,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                                     showDownloadState: true,
                                     edgePadding: _device.isMobile ? 16 : 30,
                                     onLikePressed: _onSongLikePressed,
-                                    optionsBuilder: (context) => [
-                                      PopupMenuItem(
-                                        onTap: () =>
-                                            _onAddToPlaylistPressed(song),
-                                        child: const Text('Add to playlist'),
-                                      ),
-                                      ...songQueueMenuItems(
-                                        context,
-                                        ref,
-                                        song,
-                                      ),
-                                      songDownloadMenuItem(ref, song),
-                                      if (!_device.isDesktop)
-                                        PopupMenuItem(
-                                          onTap: () => _onSongLikePressed(song),
-                                          child: Text(
-                                            favouriteMenuLabel(song),
-                                          ),
+                                    optionsBuilder: (context) =>
+                                        contextMenuActions(
+                                          context,
+                                          ref,
+                                          song,
+                                          scope: ContextMenuScope.albumPage,
+                                          onLike: _onSongLikePressed,
                                         ),
-                                    ],
                                   );
                                 },
                               ),
@@ -385,7 +351,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               children: [
                 _downloadAlbumButton(),
                 _likeAlbumButton(),
-                const RandomQueueButton(),
                 SizedBox.square(
                   dimension: _device.isMobile ? 38 : 48,
                   child: _playAlbumButton(),
@@ -493,7 +458,6 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             children: [
               _downloadAlbumButton(),
               _likeAlbumButton(),
-              const RandomQueueButton(),
               SizedBox.square(
                 dimension: _device.isMobile ? 40 : 48,
                 child: _playAlbumButton(),
@@ -581,6 +545,13 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 width: cardWidth,
                 child: AlbumView(
                   album: albums[index],
+                  optionsBuilder: (context) => contextMenuActions(
+                    context,
+                    ref,
+                    albums[index],
+                    scope: ContextMenuScope.browse,
+                    onLike: _onSuggestedAlbumLikePressed,
+                  ),
                   onTap: (album) => context.pushNamed(
                     branchAwareName(context, Routes.album),
                     extra: {'album': album},
@@ -621,6 +592,11 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
           : 'Could not load this album.',
       onRetry: _retryLoad,
     );
+  }
+
+  Future<void> _onSuggestedAlbumLikePressed(LibraryItem album) async {
+    await toggleFavourite(ref, album);
+    ref.invalidate(similarAlbumsProvider(widget.album.id));
   }
 
   Future<void> _onSongLikePressed(LibraryItem song) async {

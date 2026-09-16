@@ -42,7 +42,7 @@ class SongRowView extends ConsumerWidget {
   final void Function(LibraryItem)? onTap;
   final void Function(LibraryItem)? onLikePressed;
   final void Function(LibraryItem)? onArtistTap;
-  final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
+  final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
 
   final int? position;
 
@@ -87,153 +87,158 @@ class SongRowView extends ConsumerWidget {
     final secondaryColor =
         secondaryTextColor ?? theme.colorScheme.onPrimary.withOpacity(0.6);
 
-    return SimpleListTile(
-      onTap: onTap != null ? () => onTap!(song) : null,
-      hoverColor: theme.colorScheme.onPrimary.withOpacity(0.06),
-      backgroundColor: isPlaying
-          ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
-          : Colors.transparent,
-      padding: EdgeInsets.fromLTRB(
-        horizontal,
-        8,
-        optionsBuilder != null ? 4 : horizontal,
-        8,
-      ),
-      leading: position != null
-          ? Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: Text('$position'),
+    return GestureDetector(
+      onSecondaryTapUp: optionsBuilder != null
+          ? (details) => showContextMenu(
+              context,
+              position: details.globalPosition,
+              actions: optionsBuilder!(context),
             )
-          : ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image(
-                image: _coverImage(ref),
-                width: imageSize,
-                height: imageSize,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Image.asset(
-                  Images.album,
+          : null,
+      child: SimpleListTile(
+        onTap: onTap != null ? () => onTap!(song) : null,
+        hoverColor: theme.colorScheme.onPrimary.withOpacity(0.06),
+        backgroundColor: isPlaying
+            ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
+            : Colors.transparent,
+        padding: EdgeInsets.fromLTRB(
+          horizontal,
+          8,
+          optionsBuilder != null ? 4 : horizontal,
+          8,
+        ),
+        leading: position != null
+            ? Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Text('$position'),
+              )
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image(
+                  image: _coverImage(ref),
                   width: imageSize,
                   height: imageSize,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                    Images.album,
+                    width: imageSize,
+                    height: imageSize,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-      leadingToTitle: isMobile ? 12 : 16,
-      title: Text(
-        song.name,
-        style: TextStyle(
-          fontSize: isTablet ? 18 : 14,
-          fontWeight: FontWeight.w600,
-          height: 1.2,
-          overflow: TextOverflow.ellipsis,
+        leadingToTitle: isMobile ? 12 : 16,
+        title: Text(
+          song.name,
+          style: TextStyle(
+            fontSize: isTablet ? 18 : 14,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          maxLines: 1,
         ),
-        maxLines: 1,
-      ),
-      subtitle: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Flexible(
-            child: ClickableWidget(
-              onPressed:
-                  (onArtistTap != null && song.effectiveArtists.isNotEmpty)
-                  ? () => onArtistTap!(song)
-                  : null,
-              textStyle: TextStyle(
-                fontSize: isTablet ? 16 : 12,
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-                color: secondaryColor,
-                overflow: TextOverflow.ellipsis,
+        subtitle: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: ClickableWidget(
+                onPressed:
+                    (onArtistTap != null && song.effectiveArtists.isNotEmpty)
+                    ? () => onArtistTap!(song)
+                    : null,
+                textStyle: TextStyle(
+                  fontSize: isTablet ? 16 : 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                  color: secondaryColor,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                child: Text(song.artistLabel, maxLines: 1),
               ),
-              child: Text(song.artistLabel, maxLines: 1),
             ),
-          ),
-          if (quality != null) ...[
-            const SizedBox(width: 6),
-            AudioQualityBadge(
-              codec: quality.codec,
-              bitRate: quality.bitRate,
-              fontSize: isTablet ? 11 : 9,
-              textColor:
-                  secondaryTextColor ??
-                  theme.colorScheme.onPrimary.withOpacity(0.7),
-            ),
+            if (quality != null) ...[
+              const SizedBox(width: 6),
+              AudioQualityBadge(
+                codec: quality.codec,
+                bitRate: quality.bitRate,
+                fontSize: isTablet ? 11 : 9,
+                textColor:
+                    secondaryTextColor ??
+                    theme.colorScheme.onPrimary.withOpacity(0.7),
+              ),
+            ],
           ],
-        ],
-      ),
-      trailing: Wrap(
-        spacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Text(
-            formattedDuration,
-            style: TextStyle(
-              fontSize: isTablet ? 14 : 12,
-              color: secondaryColor,
+        ),
+        trailing: Wrap(
+          spacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              formattedDuration,
+              style: TextStyle(
+                fontSize: isTablet ? 14 : 12,
+                color: secondaryColor,
+              ),
             ),
-          ),
-          if (currentTask != null)
-            ValueListenableBuilder<DownloadStatus>(
-              valueListenable: currentTask.status,
-              builder: (context, status, _) {
-                if (isDownloaded ?? false) {
-                  return Icon(
-                    Icons.check_circle,
-                    key: testKeys?.downloadedIcon,
-                    color: Colors.green,
+            if (currentTask != null)
+              ValueListenableBuilder<DownloadStatus>(
+                valueListenable: currentTask.status,
+                builder: (context, status, _) {
+                  if (isDownloaded ?? false) {
+                    return Icon(
+                      Icons.check_circle,
+                      key: testKeys?.downloadedIcon,
+                      color: Colors.green,
+                    );
+                  }
+                  if (!currentTask.isDownloadingNow) {
+                    return const SizedBox.shrink();
+                  }
+                  return SizedBox.square(
+                    dimension: 30,
+                    child: ValueListenableBuilder<double?>(
+                      valueListenable: currentTask.progress,
+                      builder: (context, progress, _) =>
+                          CircularProgressIndicator(
+                            key: testKeys?.downloadProgressIndicator,
+                            value: progress,
+                            color: const Color(0xFF0066FF),
+                            backgroundColor: theme.colorScheme.onPrimary,
+                            strokeWidth: 2,
+                          ),
+                    ),
                   );
-                }
-                if (!currentTask.isDownloadingNow) {
-                  return const SizedBox.shrink();
-                }
-                return SizedBox.square(
-                  dimension: 30,
-                  child: ValueListenableBuilder<double?>(
-                    valueListenable: currentTask.progress,
-                    builder: (context, progress, _) =>
-                        CircularProgressIndicator(
-                          key: testKeys?.downloadProgressIndicator,
-                          value: progress,
-                          color: const Color(0xFF0066FF),
-                          backgroundColor: theme.colorScheme.onPrimary,
-                          strokeWidth: 2,
-                        ),
-                  ),
-                );
-              },
-            )
-          else if (isDownloaded ?? false)
-            Icon(
-              Icons.check_circle,
-              key: testKeys?.downloadedIcon,
-              color: Colors.green,
-            ),
-          if (isDesktop)
-            IconButton(
-              onPressed: onLikePressed != null
-                  ? () => onLikePressed!(song)
-                  : null,
-              icon: Icon(
-                CupertinoIcons.heart,
-                color: theme.colorScheme.onPrimary,
+                },
+              )
+            else if (isDownloaded ?? false)
+              Icon(
+                Icons.check_circle,
+                key: testKeys?.downloadedIcon,
+                color: Colors.green,
               ),
-              selectedIcon: Icon(
-                CupertinoIcons.heart_fill,
-                color: theme.colorScheme.primary,
+            if (isDesktop)
+              IconButton(
+                onPressed: onLikePressed != null
+                    ? () => onLikePressed!(song)
+                    : null,
+                icon: Icon(
+                  CupertinoIcons.heart,
+                  color: theme.colorScheme.onPrimary,
+                ),
+                selectedIcon: Icon(
+                  CupertinoIcons.heart_fill,
+                  color: theme.colorScheme.primary,
+                ),
+                isSelected: song.userData.isFavorite,
               ),
-              isSelected: song.userData.isFavorite,
-            ),
-          if (optionsBuilder != null)
-            PopupMenuButton<void>(
-              icon: const Icon(Icons.more_vert),
-              tooltip: 'More',
-              itemBuilder: optionsBuilder!,
-            ),
-          if (trailing case final trailing?) trailing,
-        ],
+            if (optionsBuilder != null)
+              ContextMenuButton(actionsBuilder: optionsBuilder!),
+            if (trailing case final trailing?) trailing,
+          ],
+        ),
       ),
     );
   }

@@ -35,6 +35,20 @@ class _HomePageState extends ConsumerState<HomePage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
+  List<ContextMenuAction> Function(BuildContext, LibraryItem) _cardOptions(
+    ProviderOrFamily provider,
+  ) =>
+      (context, item) => contextMenuActions(
+        context,
+        ref,
+        item,
+        scope: ContextMenuScope.browse,
+        onLike: (item) async {
+          await toggleFavourite(ref, item);
+          ref.invalidate(provider);
+        },
+      );
+
   void _onAlbumTap(LibraryItem album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
@@ -183,6 +197,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 horizontalPadding: _horizontalPadding,
                 onItemTap: _onAlbumTap,
                 onPlayPressed: _onPlayAlbum,
+                optionsBuilder: _cardOptions(recentlyPlayedAlbumsProvider),
                 onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
               ),
             ),
@@ -212,6 +227,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               horizontalPadding: _horizontalPadding,
               onItemTap: _onAlbumTap,
               onPlayPressed: _onPlayAlbum,
+              optionsBuilder: _cardOptions(recentlyAddedAlbumsProvider),
               onRetry: () => ref.invalidate(recentlyAddedAlbumsProvider),
             ),
           ),
@@ -225,6 +241,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onItemTap: _onAlbumTap,
                 onPlayPressed: _onPlayAlbum,
                 onTitleTap: _onFavouritesTap,
+                optionsBuilder: _cardOptions(favouriteAlbumsProvider),
                 onRetry: () => ref.invalidate(favouriteAlbumsProvider),
               ),
             ),
@@ -239,6 +256,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               onItemTap: _onPlaylistTap,
               onPlayPressed: _onPlayPlaylist,
               coverBuilder: _playlistCover,
+              optionsBuilder: _cardOptions(recentlyUpdatedPlaylistsProvider),
+              hasOptions: (item) => item.id != likedSongsPlaylistId,
               onRetry: () => ref.invalidate(recentlyUpdatedPlaylistsProvider),
             ),
           ),
@@ -250,6 +269,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               horizontalPadding: _horizontalPadding,
               onItemTap: _onAlbumTap,
               onPlayPressed: _onPlayAlbum,
+              optionsBuilder: _cardOptions(frequentlyPlayedAlbumsProvider),
               onRetry: () => ref.invalidate(frequentlyPlayedAlbumsProvider),
             ),
           ),

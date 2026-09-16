@@ -30,6 +30,11 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
         childAspectRatio: _device.isTablet ? 360 / 413 : 175 / 215.7,
       );
 
+  Future<void> _onAlbumLikePressed(LibraryItem album) async {
+    final updated = await toggleFavourite(ref, album);
+    ref.read(genreAlbumsProvider(widget.genre.id).notifier).updateItem(updated);
+  }
+
   void _onAlbumTap(LibraryItem album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
@@ -98,6 +103,13 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
                     return AlbumView(
                       album: item,
                       onTap: _onAlbumTap,
+                      optionsBuilder: (context) => contextMenuActions(
+                        context,
+                        ref,
+                        item,
+                        scope: ContextMenuScope.browse,
+                        onLike: _onAlbumLikePressed,
+                      ),
                     );
                   },
                   itemCount: list.items.length,
