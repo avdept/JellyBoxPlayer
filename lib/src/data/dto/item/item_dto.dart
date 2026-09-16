@@ -36,6 +36,7 @@ abstract class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'MediaSources')
     @Default([])
     List<MediaSourceDTO> mediaSources,
+    @JsonKey(name: 'ProviderIds') @Default({}) Map<String, String?> providerIds,
   }) = _ItemDTO;
 
   const ItemDTO._();

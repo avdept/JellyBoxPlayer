@@ -19,7 +19,7 @@ class ItemRowView extends ConsumerStatefulWidget {
   final LibraryItem item;
   final void Function(LibraryItem)? onTap;
   final Future<void> Function(LibraryItem)? onPlayPressed;
-  final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
+  final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
   final double? edgePadding;
 
   @override
@@ -56,70 +56,79 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
     final subtitle = _subtitle;
     final isRound = item.kind == ItemKind.artist;
 
-    return SimpleListTile(
-      onTap: widget.onTap != null ? () => widget.onTap!(item) : null,
-      hoverColor: theme.colorScheme.onPrimary.withValues(alpha: 0.06),
-      padding: EdgeInsets.fromLTRB(
-        horizontal,
-        8,
-        widget.optionsBuilder != null ? 4 : horizontal,
-        8,
-      ),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
-        child: Image(
-          image: ref.read(imageServiceProvider).itemImage(item),
-          width: imageSize,
-          height: imageSize,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Image.asset(
-            Images.album,
+    return GestureDetector(
+      onSecondaryTapUp: widget.optionsBuilder != null
+          ? (details) => showContextMenu(
+              context,
+              position: details.globalPosition,
+              actions: widget.optionsBuilder!(context),
+            )
+          : null,
+      child: SimpleListTile(
+        onTap: widget.onTap != null ? () => widget.onTap!(item) : null,
+        hoverColor: theme.colorScheme.onPrimary.withValues(alpha: 0.06),
+        padding: EdgeInsets.fromLTRB(
+          horizontal,
+          8,
+          widget.optionsBuilder != null ? 4 : horizontal,
+          8,
+        ),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
+          child: Image(
+            image: ref.read(imageServiceProvider).itemImage(item),
             width: imageSize,
             height: imageSize,
             fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Image.asset(
+              Images.album,
+              width: imageSize,
+              height: imageSize,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
-      ),
-      leadingToTitle: isMobile ? 12 : 16,
-      title: Text(
-        item.name,
-        style: TextStyle(
-          fontSize: isTablet ? 18 : 14,
-          fontWeight: FontWeight.w600,
-          height: 1.2,
-          overflow: TextOverflow.ellipsis,
+        leadingToTitle: isMobile ? 12 : 16,
+        title: Text(
+          item.name,
+          style: TextStyle(
+            fontSize: isTablet ? 18 : 14,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          maxLines: 1,
         ),
-        maxLines: 1,
-      ),
-      subtitle: (subtitle != null && subtitle.isNotEmpty)
-          ? Text(
-              subtitle,
-              maxLines: 1,
-              style: TextStyle(
-                fontSize: isTablet ? 16 : 12,
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-                color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
-                overflow: TextOverflow.ellipsis,
+        subtitle: (subtitle != null && subtitle.isNotEmpty)
+            ? Text(
+                subtitle,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: isTablet ? 16 : 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            : null,
+        trailing: Wrap(
+          spacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (widget.onPlayPressed != null)
+              CirclePlayButton(
+                size: isMobile ? 36 : 40,
+                isLoading: _isPlayLoading,
+                onPressed: _onPlayPressed,
               ),
-            )
-          : null,
-      trailing: Wrap(
-        spacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          if (widget.onPlayPressed != null)
-            CirclePlayButton(
-              size: isMobile ? 36 : 40,
-              isLoading: _isPlayLoading,
-              onPressed: _onPlayPressed,
-            ),
-          if (widget.optionsBuilder case final builder?)
-            PopupMenuButton<void>(
-              itemBuilder: builder,
-              icon: const Icon(Icons.more_horiz),
-            ),
-        ],
+            if (widget.optionsBuilder case final builder?)
+              ContextMenuButton(
+                actionsBuilder: builder,
+                icon: Icons.more_horiz,
+              ),
+          ],
+        ),
       ),
     );
   }

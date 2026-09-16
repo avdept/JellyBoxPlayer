@@ -4,10 +4,7 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
-import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -220,102 +217,21 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               position: index + 1,
                               showDownloadState: true,
                               edgePadding: _device.isMobile ? 16 : 30,
-                              onLikePressed: (song) async {
-                                await ref
-                                    .read(mediaServerClientProvider)
-                                    .setFavorite(
-                                      song.id,
-                                      favorite: !song.userData.isFavorite,
-                                    );
-                                unawaited(_getSongs());
-                              },
+                              onLikePressed: _onSongLikePressed,
                               optionsBuilder: (context) => [
-                                ...songQueueMenuItems(context, ref, song),
-                                songDownloadMenuItem(ref, song),
-                                PopupMenuItem(
-                                  onTap: () async {
-                                    if (song.playlistItemId == null) {
-                                      const snackBar = SnackBar(
-                                        content: Text(
-                                          'Uff! Something went wrong...',
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(snackBar);
-                                    } else {
-                                      await ref
-                                          .read(mediaServerClientProvider)
-                                          .removePlaylistItem(
-                                            playlistId: widget.playlist.id,
-                                            entryId: song.playlistItemId!,
-                                          );
-                                      const snackBar = SnackBar(
-                                        content: Text(
-                                          'Successfully removed item from playlist',
-                                        ),
-                                      );
-                                      unawaited(_getSongs());
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(snackBar);
-                                      }
-                                    }
-                                  },
-                                  child: const Text('Remove from playlist'),
+                                ContextMenuAction(
+                                  entry: ContextMenuEntry.removeFromPlaylist,
+                                  icon: const Icon(Icons.playlist_remove),
+                                  label: const Text('Remove from playlist'),
+                                  run: () => _onRemoveFromPlaylist(song),
                                 ),
-                                if (song.effectiveArtists.isNotEmpty)
-                                  PopupMenuItem(
-                                    onTap: () async {
-                                      final res = await ref
-                                          .read(mediaServerClientProvider)
-                                          .searchArtists(
-                                            SearchQuery(
-                                              term: song
-                                                  .effectiveArtists
-                                                  .first
-                                                  .name,
-                                            ),
-                                          );
-                                      if (context.mounted) {
-                                        await context.pushNamed(
-                                          branchAwareName(
-                                            context,
-                                            Routes.artist,
-                                          ),
-                                          extra: {
-                                            'playlist': widget.playlist,
-                                            'artist': res.items.first,
-                                          },
-                                        );
-                                      }
-                                    },
-                                    child: const Text('Go to artist'),
-                                  ),
-                                if (song.albumName != null)
-                                  PopupMenuItem(
-                                    onTap: () async {
-                                      final res = await ref
-                                          .read(mediaServerClientProvider)
-                                          .searchAlbums(
-                                            SearchQuery(term: song.albumName!),
-                                          );
-                                      if (context.mounted) {
-                                        await context.pushNamed(
-                                          branchAwareName(
-                                            context,
-                                            Routes.album,
-                                          ),
-                                          extra: {
-                                            'playlist': widget.playlist,
-                                            'album': res.items.first,
-                                          },
-                                        );
-                                      }
-                                    },
-                                    child: const Text('Go to album'),
-                                  ),
+                                ...contextMenuActions(
+                                  context,
+                                  ref,
+                                  song,
+                                  scope: ContextMenuScope.playlistPage,
+                                  onLike: _onSongLikePressed,
+                                ),
                               ],
                             );
                           },
@@ -330,6 +246,31 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _onSongLikePressed(LibraryItem song) async {
+    await ref
+        .read(mediaServerClientProvider)
+        .setFavorite(song.id, favorite: !song.userData.isFavorite);
+    unawaited(_getSongs());
+  }
+
+  Future<void> _onRemoveFromPlaylist(LibraryItem song) async {
+    final entryId = song.playlistItemId;
+    if (entryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uff! Something went wrong...')),
+      );
+      return;
+    }
+    await ref
+        .read(mediaServerClientProvider)
+        .removePlaylistItem(playlistId: widget.playlist.id, entryId: entryId);
+    unawaited(_getSongs());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Successfully removed item from playlist')),
     );
   }
 

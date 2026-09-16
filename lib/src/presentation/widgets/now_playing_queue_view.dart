@@ -4,7 +4,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
-import 'package:jplayer/src/presentation/widgets/song_download_menu_item.dart';
+import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -199,31 +199,44 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
     return MouseRegion(
       onEnter: (_) => _setHovered(true),
       onExit: (_) => _setHovered(false),
-      child: widget.isDesktop
-          ? ReorderableDragStartListener(
-              index: widget.position,
-              child: row,
-            )
-          : ReorderableDelayedDragStartListener(
-              index: widget.position,
-              child: row,
-            ),
+      child: GestureDetector(
+        onSecondaryTapUp: (details) => showContextMenu(
+          context,
+          position: details.globalPosition,
+          actions: _menuActions(context),
+        ),
+        child: widget.isDesktop
+            ? ReorderableDragStartListener(
+                index: widget.position,
+                child: row,
+              )
+            : ReorderableDelayedDragStartListener(
+                index: widget.position,
+                child: row,
+              ),
+      ),
     );
   }
+
+  List<ContextMenuAction> _menuActions(BuildContext context) => [
+    ContextMenuAction(
+      entry: ContextMenuEntry.removeFromQueue,
+      icon: const Icon(Icons.remove_circle_outline),
+      label: const Text('Remove from queue'),
+      run: widget.onRemove,
+    ),
+    ...contextMenuActions(
+      context,
+      ref,
+      widget.song,
+      scope: ContextMenuScope.queue,
+      onLike: (_) async => widget.onLikePressed(),
+    ),
+  ];
 
   Widget _optionsButton() => AnimatedOpacity(
     opacity: (_isHovered || !widget.isDesktop) ? 1 : 0,
     duration: const Duration(milliseconds: 120),
-    child: PopupMenuButton<void>(
-      icon: const Icon(Icons.more_vert),
-      tooltip: 'More',
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          onTap: () => widget.onRemove().ignore(),
-          child: const Text('Remove from queue'),
-        ),
-        songDownloadMenuItem(ref, widget.song),
-      ],
-    ),
+    child: ContextMenuButton(actionsBuilder: _menuActions),
   );
 }

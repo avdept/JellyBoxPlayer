@@ -39,6 +39,19 @@ class GenreAlbumsNotifier
     );
   }
 
+  void updateItem(LibraryItem updated) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    state = AsyncData(
+      current.copyWith(
+        items: [
+          for (final item in current.items)
+            if (item.id == updated.id) updated else item,
+        ],
+      ),
+    );
+  }
+
   Future<void> loadMore() async {
     final current = state.valueOrNull;
     if (current == null) return;

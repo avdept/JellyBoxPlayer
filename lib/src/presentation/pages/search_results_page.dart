@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -21,6 +22,11 @@ class SearchResultsPage extends ConsumerStatefulWidget {
 class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
   late ThemeData _theme;
   late DeviceType _device;
+
+  Future<void> _onItemLikePressed(LibraryItem item) async {
+    final updated = await toggleFavourite(ref, item);
+    ref.read(searchItemsProvider(widget.category).notifier).updateItem(updated);
+  }
 
   @override
   void didChangeDependencies() {
@@ -101,6 +107,13 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
                           return AlbumView(
                             album: item,
                             showArtist: widget.category == ItemList.artists,
+                            optionsBuilder: (context) => contextMenuActions(
+                              context,
+                              ref,
+                              item,
+                              scope: ContextMenuScope.browse,
+                              onLike: _onItemLikePressed,
+                            ),
                             onTap: (item) => openSearchResult(
                               context,
                               ref,

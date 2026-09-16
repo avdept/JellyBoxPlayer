@@ -41,6 +41,11 @@ extension ItemDTOMapping on ItemDTO {
       audioSources: [
         for (final source in mediaSources) _toAudioSourceInfo(source),
       ],
+      externalIds: {
+        for (final entry in providerIds.entries)
+          if (entry.value case final String value when value.trim().isNotEmpty)
+            entry.key: value.trim(),
+      },
     );
   }
 }
@@ -75,6 +80,7 @@ ItemKind _kindFromType(String type) {
     case 'MusicAlbum':
       return ItemKind.album;
     case 'Artist':
+    case 'MusicArtist':
       return ItemKind.artist;
     case 'Playlist':
       return ItemKind.playlist;

@@ -6,7 +6,7 @@ import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
-import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
+import 'package:jplayer/src/data/backend/jellyfin/mappers/jellyfin_item_mapper.dart';
 import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -59,7 +59,7 @@ class JellyfinClient implements MediaServerClient {
       filters: mediaBrowserFilters(query.filters),
       ids: query.ids,
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -82,7 +82,7 @@ class JellyfinClient implements MediaServerClient {
         filters: mediaBrowserFilters(query.filters),
       ),
     };
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -95,7 +95,7 @@ class JellyfinClient implements MediaServerClient {
       sortBy: mediaBrowserSort(query.sort, target: ItemKind.genre),
       sortOrder: mediaBrowserSortOrder(query.direction),
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -109,7 +109,7 @@ class JellyfinClient implements MediaServerClient {
       sortOrder: mediaBrowserSortOrder(query.direction),
       artistIds: query.artistIds,
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -124,13 +124,13 @@ class JellyfinClient implements MediaServerClient {
       filters: mediaBrowserFilters(query.filters),
       fields: mediaBrowserFields(query.fields),
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
   Future<LibraryPage> getSongs(String albumId) async {
     final response = await _api.getSongs(userId: userId, albumId: albumId);
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -147,7 +147,7 @@ class JellyfinClient implements MediaServerClient {
       limit: '${query.limit}',
       fields: mediaBrowserFields(query.fields),
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -156,7 +156,7 @@ class JellyfinClient implements MediaServerClient {
       playlistId: playlistId,
       userId: userId,
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -166,7 +166,7 @@ class JellyfinClient implements MediaServerClient {
       userId: userId,
       limit: '$limit',
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -192,13 +192,13 @@ class JellyfinClient implements MediaServerClient {
   @override
   Future<LibraryPage> getLibraries() async {
     final response = await _api.getLibraries(userId: userId);
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
   Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async {
     final response = await _api.getItem(itemId: itemId);
-    return response.data.toLibraryItem();
+    return response.data.toJellyfinLibraryItem();
   }
 
   @override
@@ -211,7 +211,7 @@ class JellyfinClient implements MediaServerClient {
       limit: '${query.limit}',
       sortOrder: mediaBrowserSortOrder(query.direction),
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -232,7 +232,7 @@ class JellyfinClient implements MediaServerClient {
         sortOrder: mediaBrowserSortOrder(query.direction),
       ),
     };
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -245,7 +245,7 @@ class JellyfinClient implements MediaServerClient {
       limit: '${query.limit}',
       sortOrder: mediaBrowserSortOrder(query.direction),
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override
@@ -258,7 +258,7 @@ class JellyfinClient implements MediaServerClient {
       limit: '${query.limit}',
       sortOrder: mediaBrowserSortOrder(query.direction),
     );
-    return response.data.toLibraryPage();
+    return response.data.toJellyfinLibraryPage();
   }
 
   @override

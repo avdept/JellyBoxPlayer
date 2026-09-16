@@ -15,7 +15,7 @@ enum SortDirection { ascending, descending }
 
 enum ItemFilterFlag { favorite, played, unplayed }
 
-enum ItemField { audioSources, genres }
+enum ItemField { audioSources, genres, externalIds }
 
 class LibraryQuery {
   const LibraryQuery({
@@ -23,7 +23,7 @@ class LibraryQuery {
     this.sort = ItemSort.name,
     this.direction = SortDirection.ascending,
     this.filters = const {},
-    this.fields = const {ItemField.audioSources},
+    this.fields = const {ItemField.audioSources, ItemField.externalIds},
     this.startIndex = 0,
     this.limit = 100,
     this.artistIds = const [],

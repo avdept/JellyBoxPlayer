@@ -107,16 +107,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     );
   }
 
-  Future<void> _onSongGoToAlbum(LibraryItem song) async {
-    final albumId = song.albumId;
-    if (albumId == null) return;
-    final item = await ref
-        .read(mediaServerClientProvider)
-        .getItem(albumId, kind: ItemKind.album);
-    if (!mounted) return;
-    _onAlbumTap(item);
-  }
-
   Future<void> _onSongArtistTap(LibraryItem song) async {
     final artistId = song.effectiveArtists.firstOrNull?.id;
     if (artistId == null) return;
@@ -163,35 +153,21 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     ref.read(playbackProvider.notifier).play(song, allSongs, syntheticAlbum);
   }
 
-  Future<void> _onLikePressed(LibraryItem song) async {
-    final isFavorite = song.userData.isFavorite;
+  Future<void> _onLikePressed(LibraryItem song) =>
+      _onItemLikePressed(song, ItemList.songs);
+
+  Future<void> _onItemLikePressed(LibraryItem item, ItemList view) async {
+    final isFavorite = item.userData.isFavorite;
     await ref
         .read(mediaServerClientProvider)
-        .setFavorite(song.id, favorite: !isFavorite);
+        .setFavorite(item.id, favorite: !isFavorite);
     ref
-        .read(itemListProvider(ItemList.songs).notifier)
+        .read(itemListProvider(view).notifier)
         .updateItem(
-          song.copyWith(
-            userData: song.userData.copyWith(isFavorite: !isFavorite),
+          item.copyWith(
+            userData: item.userData.copyWith(isFavorite: !isFavorite),
           ),
         );
-  }
-
-  Future<void> _onAddToPlaylistPressed(LibraryItem song) async {
-    final playlist = await showPlaylistPicker(
-      context,
-      isDesktop: _device.isDesktop,
-    );
-    if (playlist != null && mounted) {
-      await ref
-          .read(mediaServerClientProvider)
-          .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully added to playlist')),
-        );
-      }
-    }
   }
 
   void _onCreateNewPlaylist() {
@@ -487,29 +463,13 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     onTap: (song) => _onSongTap(song, list.items),
                     onLikePressed: _onLikePressed,
                     onArtistTap: _onSongArtistTap,
-                    optionsBuilder: (context) => [
-                      PopupMenuItem(
-                        onTap: () => _onAddToPlaylistPressed(song),
-                        child: const Text('Add to playlist'),
-                      ),
-                      ...songQueueMenuItems(context, ref, song),
-                      songDownloadMenuItem(ref, song),
-                      if (!_device.isDesktop)
-                        PopupMenuItem(
-                          onTap: () => _onLikePressed(song),
-                          child: Text(favouriteMenuLabel(song)),
-                        ),
-                      if (song.effectiveArtists.isNotEmpty)
-                        PopupMenuItem(
-                          onTap: () => _onSongArtistTap(song),
-                          child: const Text('Go to Artist'),
-                        ),
-                      if (song.albumId != null)
-                        PopupMenuItem(
-                          onTap: () => _onSongGoToAlbum(song),
-                          child: const Text('Go to Album'),
-                        ),
-                    ],
+                    optionsBuilder: (context) => contextMenuActions(
+                      context,
+                      ref,
+                      song,
+                      scope: ContextMenuScope.browse,
+                      onLike: _onLikePressed,
+                    ),
                   );
                 },
                 itemCount: list.items.length,
@@ -522,17 +482,25 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
               ItemList.playlists => _onPlaylistTap(item),
               ItemList.songs => null,
             };
-            List<PopupMenuEntry<void>> Function(BuildContext)? optionsFor(
+            List<ContextMenuAction> optionsFor(
+              BuildContext context,
               LibraryItem item,
-            ) => switch (value) {
-              ItemList.playlists => (context) => [
-                PopupMenuItem(
-                  onTap: () => _onDeletePlaylist(item),
-                  child: const Text('Delete playlist'),
+            ) => [
+              if (value == ItemList.playlists)
+                ContextMenuAction(
+                  entry: ContextMenuEntry.deletePlaylist,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete playlist'),
+                  run: () => _onDeletePlaylist(item),
                 ),
-              ],
-              _ => null,
-            };
+              ...contextMenuActions(
+                context,
+                ref,
+                item,
+                scope: ContextMenuScope.browse,
+                onLike: (item) => _onItemLikePressed(item, value),
+              ),
+            ];
 
             if (ref.watch(browseLayoutProvider) == BrowseLayout.rows) {
               return SliverList.builder(
@@ -542,7 +510,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     item: item,
                     onTap: onItemTap,
                     onPlayPressed: (item) => _onPlaySetPressed(item, value),
-                    optionsBuilder: optionsFor(item),
+                    optionsBuilder: (context) => optionsFor(context, item),
                   );
                 },
                 itemCount: list.items.length,
@@ -565,15 +533,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                   onPlayPressed: (value == ItemList.songs)
                       ? null
                       : (item) => _onPlaySetPressed(item, value),
-                  optionsBuilder: switch (value) {
-                    ItemList.playlists => (context) => [
-                      PopupMenuItem(
-                        onTap: () => _onDeletePlaylist(item),
-                        child: const Text('Delete playlist'),
-                      ),
-                    ],
-                    _ => null,
-                  },
+                  optionsBuilder: (context) => optionsFor(context, item),
                 );
               },
               itemCount: list.items.length,

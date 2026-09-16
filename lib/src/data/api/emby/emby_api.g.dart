@@ -130,7 +130,7 @@ class _EmbyApi implements EmbyApi {
     required String userId,
     required String albumId,
     String includeType = 'Audio',
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -173,7 +173,7 @@ class _EmbyApi implements EmbyApi {
     String sortOrder = 'Ascending',
     List<String> filters = const [],
     bool recursive = true,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -225,7 +225,7 @@ class _EmbyApi implements EmbyApi {
     String startIndex = '0',
     String limit = '300',
     bool recursive = true,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -281,6 +281,7 @@ class _EmbyApi implements EmbyApi {
     List<String> filters = const [],
     List<String> ids = const [],
     bool recursive = true,
+    List<String> fields = const ['ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -296,6 +297,7 @@ class _EmbyApi implements EmbyApi {
       r'Filters': filters,
       r'Ids': ids,
       r'Recursive': recursive,
+      r'Fields': fields,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -327,11 +329,13 @@ class _EmbyApi implements EmbyApi {
     required String albumId,
     required String userId,
     String limit = '12',
+    List<String> fields = const ['ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'UserId': userId,
       r'Limit': limit,
+      r'Fields': fields,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -412,7 +416,7 @@ class _EmbyApi implements EmbyApi {
     String limit = '100',
     String sortOrder = 'Descending',
     bool recursive = true,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -460,6 +464,7 @@ class _EmbyApi implements EmbyApi {
     String limit = '100',
     String sortOrder = 'Descending',
     bool recursive = true,
+    List<String> fields = const ['ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -470,6 +475,7 @@ class _EmbyApi implements EmbyApi {
       r'Limit': limit,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
+      r'Fields': fields,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -593,7 +599,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemsWrapper>> getPlaylistSongs({
     required String playlistId,
     required String userId,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -628,7 +634,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemDTO>> getItem({
     required String userId,
     required String itemId,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'Fields': fields};
@@ -795,7 +801,7 @@ class _EmbyApi implements EmbyApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getArtists({
     required String userId,
-    List<String> fields = const ['Overview'],
+    List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
     String sortBy = 'SortName',
@@ -841,7 +847,7 @@ class _EmbyApi implements EmbyApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     required String userId,
-    List<String> fields = const ['Overview'],
+    List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
     String sortBy = 'SortName',
@@ -888,7 +894,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     required String userId,
     required String searchTerm,
-    List<String> fields = const ['Overview'],
+    List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
     String sortOrder = 'Descending',
@@ -932,7 +938,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
     required String userId,
     required String searchTerm,
-    List<String> fields = const ['Overview'],
+    List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
     String sortOrder = 'Descending',

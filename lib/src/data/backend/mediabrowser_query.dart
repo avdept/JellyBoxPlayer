@@ -32,5 +32,6 @@ List<String> mediaBrowserFields(Set<ItemField> fields) => [
     switch (field) {
       ItemField.audioSources => 'MediaSources',
       ItemField.genres => 'Genres',
+      ItemField.externalIds => 'ProviderIds',
     },
 ];

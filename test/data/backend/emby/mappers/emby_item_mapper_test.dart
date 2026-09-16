@@ -133,4 +133,27 @@ void main() {
       expect(song.userData.playCount, 0);
     });
   });
+
+  group('externalIds', () {
+    test('- normalizes Emby provider keys to app provider names', () {
+      final album = ItemDTO.fromJson({
+        'Id': '52',
+        'Name': 'Dummy',
+        'Type': 'MusicAlbum',
+        'ProviderIds': {
+          'MusicBrainzAlbum': 'release-id',
+          'MusicBrainzAlbumArtist': 'artist-id',
+          'AudioDbAlbum': '12345',
+          'SomethingElse': 'kept',
+        },
+      }).toEmbyLibraryItem();
+
+      expect(album.externalIds, {
+        ExternalIdProvider.musicBrainzAlbum: 'release-id',
+        ExternalIdProvider.musicBrainzAlbumArtist: 'artist-id',
+        ExternalIdProvider.audioDbAlbum: '12345',
+        'SomethingElse': 'kept',
+      });
+    });
+  });
 }

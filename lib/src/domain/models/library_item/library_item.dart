@@ -30,6 +30,7 @@ abstract class LibraryItem with _$LibraryItem {
     @Default(false) bool hasLyrics,
     @Default(PlaybackUserData()) PlaybackUserData userData,
     @Default([]) List<AudioSourceInfo> audioSources,
+    @Default({}) Map<String, String> externalIds,
   }) = _LibraryItem;
 
   const LibraryItem._();
@@ -75,6 +76,8 @@ abstract class LibraryItem with _$LibraryItem {
     audioSources: (json['audioSources'] as List<dynamic>? ?? [])
         .map((e) => AudioSourceInfo.fromJson(e as Map<String, dynamic>))
         .toList(),
+    externalIds: (json['externalIds'] as Map<String, dynamic>? ?? {})
+        .cast<String, String>(),
   );
 }
 
@@ -100,5 +103,6 @@ extension LibraryItemJson on LibraryItem {
     'hasLyrics': hasLyrics,
     'userData': userData.toJson(),
     'audioSources': audioSources.map((source) => source.toJson()).toList(),
+    'externalIds': externalIds,
   };
 }

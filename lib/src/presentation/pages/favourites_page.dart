@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
+import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/scrollable_page_scaffold.dart';
@@ -178,6 +179,13 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
                   showArtist: category == ItemList.artists,
                   onTap: (item) =>
                       openSearchResult(context, ref, category, item),
+                  optionsBuilder: (context) => contextMenuActions(
+                    context,
+                    ref,
+                    items[index],
+                    scope: ContextMenuScope.browse,
+                    onLike: (item) => toggleFavourite(ref, item),
+                  ),
                 ),
               ),
             ),
