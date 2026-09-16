@@ -5,6 +5,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
+import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
@@ -16,6 +17,7 @@ class ItemCarousel extends StatelessWidget {
     required this.onItemTap,
     this.onPlayPressed,
     this.optionsBuilder,
+    this.hasOptions,
     this.onRetry,
     this.onTitleTap,
     this.trailing,
@@ -29,8 +31,9 @@ class ItemCarousel extends StatelessWidget {
   final DeviceType device;
   final void Function(LibraryItem) onItemTap;
   final Future<void> Function(LibraryItem)? onPlayPressed;
-  final List<PopupMenuEntry<void>> Function(BuildContext, LibraryItem)?
+  final List<ContextMenuAction> Function(BuildContext, LibraryItem)?
   optionsBuilder;
+  final bool Function(LibraryItem)? hasOptions;
   final VoidCallback? onRetry;
   final VoidCallback? onTitleTap;
   final Widget? trailing;
@@ -143,7 +146,8 @@ class ItemCarousel extends StatelessWidget {
               coverOverride: coverBuilder?.call(item),
               onTap: onItemTap,
               onPlayPressed: onPlayPressed,
-              optionsBuilder: builder == null
+              optionsBuilder:
+                  builder == null || !(hasOptions?.call(item) ?? true)
                   ? null
                   : (context) => builder(context, item),
             ),

@@ -75,6 +75,7 @@ ItemKind _kindFromType(String type) {
     case 'MusicAlbum':
       return ItemKind.album;
     case 'Artist':
+    case 'MusicArtist':
       return ItemKind.artist;
     case 'Playlist':
       return ItemKind.playlist;

@@ -5,10 +5,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
-import 'package:jplayer/src/presentation/utils/utils.dart';
-import 'package:jplayer/src/presentation/widgets/playlist_picker_sheet.dart';
-import 'package:jplayer/src/presentation/widgets/song_download_menu_item.dart';
-import 'package:jplayer/src/presentation/widgets/song_queue_menu_items.dart';
+import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 
 class SongListSliver extends ConsumerStatefulWidget {
@@ -67,44 +64,10 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
     );
   }
 
-  Future<void> _onGoToAlbum(LibraryItem song) async {
-    final albumId = song.albumId;
-    if (albumId == null) return;
-    final item = await ref
-        .read(mediaServerClientProvider)
-        .getItem(albumId, kind: ItemKind.album);
-    if (!mounted) return;
-    ref.read(currentAlbumProvider.notifier).setAlbum(item);
-    context.pushNamed(
-      branchAwareName(context, Routes.album),
-      extra: {'album': item},
-    );
-  }
-
-  Future<void> _onAddToPlaylistPressed(LibraryItem song) async {
-    final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
-    final playlist = await showPlaylistPicker(
-      context,
-      isDesktop: device.isDesktop,
-    );
-    if (playlist == null || !mounted) return;
-    await ref
-        .read(mediaServerClientProvider)
-        .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Successfully added to playlist')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final songs = widget.songs;
     if (songs.isEmpty) return const SliverToBoxAdapter();
-
-    final isDesktop = DeviceType.fromScreenSize(
-      MediaQuery.sizeOf(context),
-    ).isDesktop;
 
     final currentSongId = ref.watch(
       playbackProvider.select((s) {
@@ -128,29 +91,13 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
           onLikePressed: _onLikePressed,
           onArtistTap: _onArtistTap,
           edgePadding: widget.edgePadding,
-          optionsBuilder: (context) => [
-            PopupMenuItem(
-              onTap: () => _onAddToPlaylistPressed(song),
-              child: const Text('Add to playlist'),
-            ),
-            ...songQueueMenuItems(context, ref, song),
-            songDownloadMenuItem(ref, song),
-            if (!isDesktop)
-              PopupMenuItem(
-                onTap: () => _onLikePressed(song),
-                child: Text(favouriteMenuLabel(song)),
-              ),
-            if (song.effectiveArtists.isNotEmpty)
-              PopupMenuItem(
-                onTap: () => _onArtistTap(song),
-                child: const Text('Go to Artist'),
-              ),
-            if (song.albumId != null)
-              PopupMenuItem(
-                onTap: () => _onGoToAlbum(song),
-                child: const Text('Go to Album'),
-              ),
-          ],
+          optionsBuilder: (context) => contextMenuActions(
+            context,
+            ref,
+            song,
+            scope: ContextMenuScope.browse,
+            onLike: _onLikePressed,
+          ),
         );
       },
     );

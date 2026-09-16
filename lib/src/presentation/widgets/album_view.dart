@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
+import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -27,7 +28,7 @@ class AlbumView extends ConsumerStatefulWidget {
   final bool showArtist;
   final void Function(LibraryItem)? onTap;
   final Future<void> Function(LibraryItem)? onPlayPressed;
-  final List<PopupMenuEntry<void>> Function(BuildContext)? optionsBuilder;
+  final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
   final TextStyle? mainTextStyle;
   final TextStyle? subTextStyle;
 
@@ -68,10 +69,24 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
   Widget build(BuildContext context) {
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isTablet = deviceType == DeviceScreenType.tablet;
+    final isDesktop = deviceType == DeviceScreenType.desktop;
 
     final card = GestureDetector(
+      onLongPress: (!isDesktop && widget.optionsBuilder != null)
+          ? () => showContextMenuSheet(
+              context,
+              actions: widget.optionsBuilder!(context),
+            )
+          : null,
       onTap: (widget.onTap != null)
           ? () => widget.onTap!.call(widget.album)
+          : null,
+      onSecondaryTapUp: widget.optionsBuilder != null
+          ? (details) => showContextMenu(
+              context,
+              position: details.globalPosition,
+              actions: widget.optionsBuilder!(context),
+            )
           : null,
       behavior: HitTestBehavior.opaque,
       child: Column(
@@ -99,13 +114,11 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                     Positioned(
                       top: 0,
                       right: 0,
-                      child: PopupMenuButton<void>(
-                        icon: const Icon(Icons.more_vert),
-                        tooltip: 'More',
+                      child: ContextMenuButton(
+                        actionsBuilder: widget.optionsBuilder!,
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.black45,
                         ),
-                        itemBuilder: widget.optionsBuilder!,
                       ),
                     ),
                   if (widget.onPlayPressed != null)

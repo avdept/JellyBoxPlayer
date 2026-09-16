@@ -411,7 +411,19 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                         padding: const EdgeInsets.only(right: 8),
                         leading: AspectRatio(
                           aspectRatio: 1,
-                          child: _artwork(currentSong),
+                          child: _isDesktop
+                              ? MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: _goToCurrentAlbum,
+                                    onSecondaryTapUp: (details) =>
+                                        _showArtworkMenu(
+                                          details.globalPosition,
+                                        ),
+                                    child: _artwork(currentSong),
+                                  ),
+                                )
+                              : _artwork(currentSong),
                         ),
                         title: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -555,70 +567,64 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     icon: const Icon(Icons.more_vert),
   );
 
-  Future<void> _onMorePressed(MediaItem? currentSong) async {
+  LibraryItem? get _currentQueueSong {
     final playback = ref.read(playbackProvider);
     final index = playback.currentMediaIndex;
-    final song = index != null ? playback.songs.elementAtOrNull(index) : null;
-    if (song == null) return;
-    final artistId = currentSong?.extras?['artistId'] as String?;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(CupertinoIcons.text_badge_plus),
-              title: const Text('Add to playlist'),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _addToPlaylist(song);
-              },
-            ),
-            SongDownloadListTile(
-              song: song,
-              onSelected: () => Navigator.of(sheetContext).pop(),
-            ),
-            if (artistId != null)
-              ListTile(
-                leading: const Icon(CupertinoIcons.person),
-                title: const Text('Go to artist'),
-                onTap: () => _goToArtist(sheetContext, artistId),
-              ),
-          ],
-        ),
-      ),
-    );
+    return index != null ? playback.songs.elementAtOrNull(index) : null;
   }
 
-  Future<void> _addToPlaylist(LibraryItem song) async {
-    final playlist = await showPlaylistPicker(context, isDesktop: _isDesktop);
-    if (playlist == null) return;
-
+  Future<void> _onLikeCurrent(LibraryItem song) async {
+    final isFavorite = song.userData.isFavorite;
     await ref
         .read(mediaServerClientProvider)
-        .addPlaylistItems(playlistId: playlist.id, itemIds: [song.id]);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Successfully added item to playlist')),
+        .setFavorite(song.id, favorite: !isFavorite);
+    ref
+        .read(playbackProvider.notifier)
+        .updateSong(
+          song.copyWith(
+            userData: song.userData.copyWith(isFavorite: !isFavorite),
+          ),
+        );
+  }
+
+  Future<void> _onMorePressed(MediaItem? currentSong) async {
+    final song = _currentQueueSong;
+    if (song == null) return;
+    final actions = contextMenuActions(
+      context,
+      ref,
+      song,
+      scope: ContextMenuScope.nowPlaying,
+      onLike: _onLikeCurrent,
+    );
+    await showContextMenuSheet(context, actions: actions);
+  }
+
+  Future<void> _showArtworkMenu(Offset position) async {
+    final song = _currentQueueSong;
+    if (song == null) return;
+    await showContextMenu(
+      context,
+      position: position,
+      actions: contextMenuActions(
+        context,
+        ref,
+        song,
+        scope: ContextMenuScope.nowPlaying,
+        onLike: _onLikeCurrent,
+      ),
     );
   }
 
-  Future<void> _goToArtist(BuildContext sheetContext, String artistId) async {
+  Future<void> _goToCurrentAlbum() async {
+    final albumId = _currentQueueSong?.albumId;
+    if (albumId == null) return;
     final item = await ref
         .read(mediaServerClientProvider)
-        .getItem(artistId, kind: ItemKind.artist);
-    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+        .getItem(albumId, kind: ItemKind.album);
     if (!mounted) return;
-    Navigator.of(context).pop();
-    context.goNamed(Routes.artist.name, extra: {'artist': item});
+    ref.read(currentAlbumProvider.notifier).setAlbum(item);
+    context.goNamed(Routes.album.name, extra: {'album': item});
   }
 
   Widget _playPauseButton() => PlayPauseButton(

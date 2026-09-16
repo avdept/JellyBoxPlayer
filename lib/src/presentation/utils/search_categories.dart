@@ -56,6 +56,3 @@ void openSearchResult(
       break;
   }
 }
-
-String favouriteMenuLabel(LibraryItem song) =>
-    song.userData.isFavorite ? 'Remove from favourites' : 'Add to favourites';
