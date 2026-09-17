@@ -19,6 +19,8 @@ const embyExternalIdKeys = <String, String>{
   'MusicBrainzTrack': ExternalIdProvider.musicBrainzTrack,
   'AudioDbAlbum': ExternalIdProvider.audioDbAlbum,
   'AudioDbArtist': ExternalIdProvider.audioDbArtist,
+  'DiscogsRelease': ExternalIdProvider.discogsRelease,
+  'DiscogsArtist': ExternalIdProvider.discogsArtist,
 };
 
 extension EmbyItemMapping on ItemDTO {

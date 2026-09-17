@@ -1,1 +1,1 @@
-typedef MetadataLink = ({String provider, String label, Uri uri});
+typedef MetadataLink = ({String provider, String label, String? icon, Uri uri});

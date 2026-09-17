@@ -144,6 +144,7 @@ void main() {
           'MusicBrainzAlbum': 'release-id',
           'MusicBrainzAlbumArtist': 'artist-id',
           'AudioDbAlbum': '12345',
+          'DiscogsRelease': '777',
           'SomethingElse': 'kept',
         },
       }).toEmbyLibraryItem();
@@ -152,6 +153,7 @@ void main() {
         ExternalIdProvider.musicBrainzAlbum: 'release-id',
         ExternalIdProvider.musicBrainzAlbumArtist: 'artist-id',
         ExternalIdProvider.audioDbAlbum: '12345',
+        ExternalIdProvider.discogsRelease: '777',
         'SomethingElse': 'kept',
       });
     });

@@ -3,7 +3,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -131,10 +133,13 @@ class ContextMenuAction {
 
   bool get isSubmenu => children.isNotEmpty;
 
+  Widget get menuIcon =>
+      Padding(padding: const EdgeInsetsDirectional.only(end: 4), child: icon);
+
   Widget toMenuItem(MenuController root) => isSubmenu
       ? _HoverSubmenu(action: this, root: root)
       : MenuItemButton(
-          leadingIcon: icon,
+          leadingIcon: menuIcon,
           onPressed: () {
             root.close();
             run?.call().ignore();
@@ -169,31 +174,87 @@ class _HoverSubmenu extends StatefulWidget {
 class _HoverSubmenuState extends State<_HoverSubmenu> {
   final _controller = MenuController();
   Timer? _closeTimer;
+  var _openLeft = false;
+  double _panelWidth = _menuMinWidth;
 
   void _handleHover(bool hovering) {
     _closeTimer?.cancel();
-    if (hovering) return;
+    if (hovering) return _measureSide();
     _closeTimer = Timer(_submenuCloseDelay, () {
       if (mounted && _controller.isOpen) _controller.close();
     });
+  }
+
+  void _measureSide() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final right = box.localToGlobal(Offset(box.size.width, 0)).dx;
+    final openLeft = right + _panelWidth > MediaQuery.sizeOf(context).width;
+    if (openLeft != _openLeft) setState(() => _openLeft = openLeft);
   }
 
   @override
   Widget build(BuildContext context) => SubmenuButton(
     controller: _controller,
     onHover: _handleHover,
-    leadingIcon: widget.action.icon,
+    onOpen: _measureSide,
+    leadingIcon: widget.action.menuIcon,
     trailingIcon: const Icon(Icons.arrow_right),
-    menuStyle: _submenuStyle,
+    menuStyle: _openLeft
+        ? _submenuStyle.copyWith(alignment: AlignmentDirectional.topStart)
+        : _submenuStyle,
+    alignmentOffset: _openLeft ? Offset(-_panelWidth, 0) : null,
     menuChildren: [
       MouseRegion(
         onEnter: (_) => _handleHover(true),
         onExit: (_) => _handleHover(false),
-        child: _MenuColumn(actions: widget.action.children, root: widget.root),
+        child: _ReportWidth(
+          onWidth: (width) {
+            if (mounted && width != _panelWidth) {
+              setState(() => _panelWidth = width);
+            }
+          },
+          child: _MenuColumn(
+            actions: widget.action.children,
+            root: widget.root,
+          ),
+        ),
       ),
     ],
     child: widget.action.label,
   );
+}
+
+class _ReportWidth extends SingleChildRenderObjectWidget {
+  const _ReportWidth({required this.onWidth, required super.child});
+
+  final ValueChanged<double> onWidth;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderReportWidth(onWidth);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderReportWidth renderObject,
+  ) => renderObject.onWidth = onWidth;
+}
+
+class _RenderReportWidth extends RenderProxyBox {
+  _RenderReportWidth(this.onWidth);
+
+  ValueChanged<double> onWidth;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final width = size.width;
+    if (width == _reported) return;
+    _reported = width;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onWidth(width));
+  }
 }
 
 class _MenuColumn extends StatelessWidget {
@@ -688,7 +749,9 @@ class _ContextMenuActions {
         for (final link in links)
           ContextMenuAction(
             entry: ContextMenuEntry.metadataLinks,
-            icon: const Icon(Icons.open_in_new),
+            icon: link.icon == null
+                ? const Icon(Icons.open_in_new)
+                : _SvgIcon(link.icon!),
             label: Text(link.label),
             run: () async {
               final opened = await launchUrl(
@@ -699,6 +762,23 @@ class _ContextMenuActions {
             },
           ),
       ],
+    );
+  }
+}
+
+class _SvgIcon extends StatelessWidget {
+  const _SvgIcon(this.asset);
+
+  final String asset;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = IconTheme.of(context);
+    return SvgPicture.asset(
+      asset,
+      width: theme.size,
+      height: theme.size,
+      colorFilter: ColorFilter.mode(theme.color!, BlendMode.srcIn),
     );
   }
 }
