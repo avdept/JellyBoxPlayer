@@ -24,10 +24,10 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
 
   Future<SetPlaybackResult> playAlbum(LibraryItem album) => _play(
     setItem: album,
-    fetchSongs: () => _albumSongs(album.id),
+    fetchSongs: () => albumSongs(album.id),
   );
 
-  Future<List<LibraryItem>> _albumSongs(String albumId) async {
+  Future<List<LibraryItem>> albumSongs(String albumId) async {
     if (!_ref.read(isOfflineProvider)) {
       try {
         final resp = await _ref
@@ -81,19 +81,22 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
   Future<SetPlaybackResult> playGeneratedPlaylist(LibraryItem playlist) =>
       _play(
         setItem: playlist,
-        fetchSongs: () => loadGeneratedPlaylistSongs(
-          _ref,
-          playlistId: playlist.id,
-          isOffline: _ref.read(isOfflineProvider),
-        ),
+        fetchSongs: () => generatedPlaylistSongs(playlist.id),
+      );
+
+  Future<List<LibraryItem>> generatedPlaylistSongs(String playlistId) =>
+      loadGeneratedPlaylistSongs(
+        _ref,
+        playlistId: playlistId,
+        isOffline: _ref.read(isOfflineProvider),
       );
 
   Future<SetPlaybackResult> playPlaylist(LibraryItem playlist) => _play(
     setItem: playlist,
-    fetchSongs: () => _playlistSongs(playlist.id),
+    fetchSongs: () => playlistSongs(playlist.id),
   );
 
-  Future<List<LibraryItem>> _playlistSongs(String playlistId) async {
+  Future<List<LibraryItem>> playlistSongs(String playlistId) async {
     if (!_ref.read(isOfflineProvider)) {
       try {
         final resp = await _ref
@@ -109,21 +112,20 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
   }
 
   Future<SetPlaybackResult> playFavouriteSongs(LibraryItem placeholder) =>
-      _play(
-        setItem: placeholder,
-        fetchSongs: () async {
-          final resp = await _ref
-              .read(mediaServerClientProvider)
-              .getAllSongs(
-                LibraryQuery(
-                  libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
-                  filters: const {ItemFilterFlag.favorite},
-                  limit: _favouriteSongsLimit,
-                ),
-              );
-          return resp.items;
-        },
-      );
+      _play(setItem: placeholder, fetchSongs: favouriteSongs);
+
+  Future<List<LibraryItem>> favouriteSongs() async {
+    final resp = await _ref
+        .read(mediaServerClientProvider)
+        .getAllSongs(
+          LibraryQuery(
+            libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+            filters: const {ItemFilterFlag.favorite},
+            limit: _favouriteSongsLimit,
+          ),
+        );
+    return resp.items;
+  }
 
   Future<SetPlaybackResult> _play({
     required LibraryItem setItem,

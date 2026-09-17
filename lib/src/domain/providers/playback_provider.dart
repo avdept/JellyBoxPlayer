@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'dart:io' show Platform;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/upnp/renderer_uri.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
@@ -550,6 +552,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       final proxy = _ref.read(streamProxyProvider);
       uri = await proxy.resolve(uri);
       if (artUri != null) artUri = await proxy.resolve(artUri);
+      if (Platform.isAndroid) artUri = androidCoverArtUri(artUri);
     }
 
     final audioSource = song.audioSources.firstOrNull;

@@ -2,53 +2,40 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/backend/library_query.dart';
-import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
-import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
-import 'package:jplayer/src/domain/providers/current_library_provider.dart';
-import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
-import 'package:jplayer/src/domain/providers/favourites_provider.dart';
-import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
-import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
-import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
-import 'package:jplayer/src/providers/auth_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class CarPlayHandler {
   static const _channel = MethodChannel('com.prodigytech.jellybox/carplay');
-  static const _recentAlbumsLimit = 20;
-  static final _items = <String, LibraryItem>{};
-  static var _songs = <LibraryItem>[];
-  static ProviderSubscription<AsyncValue<List<GeneratedPlaylist>>>? _mixesSub;
-  static ProviderSubscription<AsyncValue<LibraryPage>>? _likedSongsSub;
+  static late CarContent _content;
   static String? _lastSetId;
   static String? _lastSongId;
   static bool? _lastPlaying;
 
-  static void initialize(ProviderContainer ref) {
+  static void initialize(ProviderContainer ref, CarContent content) {
     if (!Platform.isIOS) return;
+    _content = content;
 
     _channel.setMethodCallHandler((call) async {
+      final args = switch (call.arguments) {
+        final Map<Object?, Object?> map => map.cast<String, dynamic>(),
+        _ => const <String, dynamic>{},
+      };
       switch (call.method) {
         case 'getHome':
-          return _home(ref);
+          return _home();
         case 'getList':
-          return _list(ref, (call.arguments as Map).cast<String, dynamic>());
+          return _list(args);
         case 'getDownloads':
-          return {'items': await _downloads(ref)};
+          return {'items': _maps(await _content.downloads())};
         case 'search':
-          return _search(ref, (call.arguments as Map).cast<String, dynamic>());
+          return _search(args);
         case 'getQueue':
           return _queue(ref);
         case 'playQueueItem':
-          final index =
-              (call.arguments as Map).cast<String, dynamic>()['index'] as int?;
+          final index = args['index'] as int?;
           if (index != null) {
             await ref
                 .read(playbackProvider.notifier)
@@ -56,26 +43,18 @@ class CarPlayHandler {
           }
           return null;
         case 'play':
-          await _play(ref, (call.arguments as Map).cast<String, dynamic>());
+          await _content.play(args['type'] as String, args['id'] as String);
           return null;
         case 'setSort':
-          _setSort(ref, (call.arguments as Map).cast<String, dynamic>());
+          _content.setSort(args['field'] as String?);
           return null;
         default:
           throw MissingPluginException();
       }
     });
 
+    _content.contentChanged.listen((_) => _notifyContentChanged());
     ref
-      ..listen(authProvider, (previous, next) => _notifyContentChanged())
-      ..listen(
-        currentLibraryProvider,
-        (previous, next) => _notifyContentChanged(),
-      )
-      ..listen(
-        carFilterProvider,
-        (previous, next) => _notifyContentChanged(),
-      )
       ..listen(
         searchProvider,
         fireImmediately: true,
@@ -130,7 +109,7 @@ class CarPlayHandler {
     return {
       'items': [
         for (final (index, song) in state.songs.indexed)
-          {..._toMap(ref, song), 'index': index},
+          {..._map(_content.entry(song)), 'index': index},
       ],
       'currentId': currentIndex != null
           ? state.songs.elementAtOrNull(currentIndex)?.id
@@ -138,324 +117,49 @@ class CarPlayHandler {
     };
   }
 
-  static Future<Map<String, dynamic>> _home(ProviderContainer ref) async {
-    final user = ref.read(currentUserProvider);
-    if (user == null) {
-      return {'recent': <Map<String, dynamic>>[], 'mixes': _mixes(ref)};
-    }
-
-    final client = ref.read(mediaServerClientProvider);
-    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
-    final recent = await _fetch(() async {
-      final resp = await client.getAlbums(
-        LibraryQuery(
-          libraryId: libraryId,
-          sort: ItemSort.dateCreated,
-          direction: SortDirection.descending,
-          limit: _recentAlbumsLimit,
-        ),
-      );
-      return resp.items;
-    });
-
-    final shuffled = [...recent]..shuffle();
-    return {
-      'recent': shuffled.map((e) => _toMap(ref, e)).toList(),
-      'mixes': _mixes(ref),
-    };
+  static Future<Map<String, dynamic>> _home() async {
+    final recent = await _content.recentAlbums();
+    return {'recent': _maps(recent), 'mixes': _maps(_content.mixes())};
   }
 
-  static Future<Map<String, dynamic>> _list(
-    ProviderContainer ref,
-    Map<String, dynamic> args,
-  ) async {
-    final user = ref.read(currentUserProvider);
-    final filter = ref.read(carFilterProvider);
-    final sort = {'field': filter.orderBy.name, 'desc': filter.desc};
-    if (user == null) {
-      return {'items': <Map<String, dynamic>>[], 'sort': sort};
-    }
-
-    final client = ref.read(mediaServerClientProvider);
-    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
-    final itemSort = filter.orderBy.itemSort;
-    final direction = sortDirectionOf(descending: filter.desc);
-    final type = args['type'] as String?;
-    if (type == 'mixes') {
-      return {'items': _mixes(ref), 'sort': sort, 'hasMore': false};
-    }
-    final startIndex = (args['startIndex'] as int?) ?? 0;
-    final query = (args['query'] as String?)?.trim() ?? '';
-    final artistId = args['artistId'] as String?;
-    const pageSize = 100;
-
-    final items = await _fetch(() async {
-      if (query.isNotEmpty) {
-        final resp = await switch (type) {
-          'albums' => client.searchAlbums(
-            SearchQuery(
-              term: query,
-              libraryId: libraryId,
-              startIndex: startIndex,
-            ),
-          ),
-          'artists' => client.searchArtists(
-            SearchQuery(term: query, startIndex: startIndex),
-          ),
-          'playlists' => client.searchPlaylists(
-            SearchQuery(
-              term: query,
-              libraryId: libraryId,
-              startIndex: startIndex,
-            ),
-          ),
-          'songs' => client.searchSongs(
-            SearchQuery(
-              term: query,
-              libraryId: libraryId,
-              startIndex: startIndex,
-            ),
-          ),
-          _ => throw ArgumentError('Unknown list type: $type'),
-        };
-        return resp.items;
-      }
-      final resp = await switch (type) {
-        'albums' => client.getAlbums(
-          LibraryQuery(
-            libraryId: artistId != null ? null : libraryId,
-            sort: itemSort,
-            direction: direction,
-            startIndex: startIndex,
-            artistIds: artistId != null ? [artistId] : const [],
-          ),
-        ),
-        'artists' => client.getArtists(
-          LibraryQuery(
-            sort: itemSort,
-            direction: direction,
-            startIndex: startIndex,
-            artistScope: ref.read(effectiveArtistScopeProvider),
-          ),
-        ),
-        'playlists' => client.getPlaylists(
-          LibraryQuery(
-            sort: itemSort,
-            direction: direction,
-            startIndex: startIndex,
-          ),
-        ),
-        'songs' => client.getAllSongs(
-          LibraryQuery(
-            libraryId: libraryId,
-            sort: itemSort,
-            direction: direction,
-            startIndex: startIndex,
-          ),
-        ),
-        _ => throw ArgumentError('Unknown list type: $type'),
-      };
-      return resp.items;
-    });
-
-    if (type == 'songs') {
-      _songs = startIndex == 0 ? items : [..._songs, ...items];
-    }
+  static Future<Map<String, dynamic>> _list(Map<String, dynamic> args) async {
+    final page = await _content.list(
+      type: args['type'] as String? ?? '',
+      startIndex: (args['startIndex'] as int?) ?? 0,
+      query: args['query'] as String? ?? '',
+      artistId: args['artistId'] as String?,
+    );
     return {
-      'items': items.map((e) => _toMap(ref, e)).toList(),
-      'sort': sort,
-      'hasMore': items.length >= pageSize,
+      'items': _maps(page.entries),
+      'sort': _sortMap(page.sort),
+      'hasMore': page.hasMore,
     };
   }
 
   static Future<Map<String, dynamic>> _search(
-    ProviderContainer ref,
     Map<String, dynamic> args,
   ) async {
-    final query = (args['query'] as String?)?.trim() ?? '';
-    final user = ref.read(currentUserProvider);
-    const empty = <Map<String, dynamic>>[];
-    if (query.isEmpty || user == null) {
-      return {
-        'albums': empty,
-        'artists': empty,
-        'playlists': empty,
-        'songs': empty,
-      };
-    }
-
-    final client = ref.read(mediaServerClientProvider);
-    final libraryId = ref.read(currentLibraryProvider).valueOrNull?.id;
-    final results = await Future.wait([
-      _fetch(() async {
-        final resp = await client.searchAlbums(
-          SearchQuery(term: query, libraryId: libraryId),
-        );
-        return resp.items;
-      }),
-      _fetch(() async {
-        final resp = await client.searchArtists(
-          SearchQuery(
-            term: query,
-            artistScope: ref.read(effectiveArtistScopeProvider),
-          ),
-        );
-        return resp.items;
-      }),
-      _fetch(() async {
-        final resp = await client.searchPlaylists(
-          SearchQuery(term: query, libraryId: libraryId),
-        );
-        return resp.items;
-      }),
-      _fetch(() async {
-        final resp = await client.searchSongs(
-          SearchQuery(term: query, libraryId: libraryId),
-        );
-        return resp.items;
-      }),
-    ]);
-
-    _songs = results[3];
+    final results = await _content.search(args['query'] as String? ?? '');
     return {
-      'albums': results[0].map((e) => _toMap(ref, e)).toList(),
-      'artists': results[1].map((e) => _toMap(ref, e)).toList(),
-      'playlists': results[2].map((e) => _toMap(ref, e)).toList(),
-      'songs': results[3].map((e) => _toMap(ref, e)).toList(),
+      'albums': _maps(results.albums),
+      'artists': _maps(results.artists),
+      'playlists': _maps(results.playlists),
+      'songs': _maps(results.songs),
     };
   }
 
-  static void _setSort(ProviderContainer ref, Map<String, dynamic> args) {
-    final field = EntityFilter.values.asNameMap()[args['field']];
-    if (field == null) return;
-    final filter = ref.read(carFilterProvider);
-    final desc = filter.orderBy == field
-        ? !filter.desc
-        : field == EntityFilter.dateCreated;
-    ref.read(carFilterProvider.notifier).filter(field: field, desc: desc);
-  }
+  static Map<String, dynamic> _sortMap(Filter sort) => {
+    'field': sort.orderBy.name,
+    'desc': sort.desc,
+  };
 
-  static Future<List<LibraryItem>> _fetch(
-    Future<List<LibraryItem>> Function() call,
-  ) async {
-    try {
-      return await call();
-    } on Object {
-      return [];
-    }
-  }
+  static List<Map<String, dynamic>> _maps(List<CarEntry> entries) =>
+      entries.map(_map).toList();
 
-  static Future<List<Map<String, dynamic>>> _downloads(
-    ProviderContainer ref,
-  ) async {
-    try {
-      final albums = await ref
-          .read(downloadManagerProvider.notifier)
-          .getDownloadedAlbums();
-      return albums.map((e) => _toMap(ref, e.item)).toList();
-    } on Object {
-      return [];
-    }
-  }
-
-  static List<Map<String, dynamic>> _mixes(ProviderContainer ref) {
-    final entries = <Map<String, dynamic>>[];
-    if (ref.read(settingProvider(AppSetting.generatedPlaylistsDisabled))) {
-      _mixesSub?.close();
-      _mixesSub = null;
-    } else {
-      _mixesSub ??= ref.listen(
-        todaysPlaylistsProvider,
-        (previous, next) => _notifyContentChanged(),
-      );
-      final playlists = ref.read(todaysPlaylistsProvider).valueOrNull;
-      for (final playlist in playlists ?? const <GeneratedPlaylist>[]) {
-        entries.add(_setMap(ref, playlist.item, playlist.coverSongs));
-      }
-    }
-
-    final liked = _likedSongs(ref);
-    if (liked != null) entries.add(liked);
-    return entries;
-  }
-
-  static Map<String, dynamic>? _likedSongs(ProviderContainer ref) {
-    _likedSongsSub ??= ref.listen(
-      favouriteSongsProvider,
-      (previous, next) => _notifyContentChanged(),
-    );
-    final page = ref.read(favouriteSongsProvider).valueOrNull;
-    if (page == null || page.items.isEmpty) return null;
-    return _setMap(ref, likedSongsPlaylist, ref.read(likedSongsCoversProvider));
-  }
-
-  static Map<String, dynamic> _setMap(
-    ProviderContainer ref,
-    LibraryItem item,
-    List<LibraryItem> covers,
-  ) {
-    _items[item.id] = item;
-    final imageService = ref.read(imageServiceProvider);
-    var artUri = imageService.itemUri(item);
-    for (final song in covers) {
-      if (artUri != null) break;
-      artUri = imageService.itemUri(song);
-    }
-    return {
-      'id': item.id,
-      'title': item.name,
-      'subtitle': '',
-      if (artUri != null) 'artworkUrl': artUri.toString(),
-    };
-  }
-
-  static Map<String, dynamic> _toMap(ProviderContainer ref, LibraryItem item) {
-    _items[item.id] = item;
-    final artUri = ref.read(imageServiceProvider).itemUri(item);
-    return {
-      'id': item.id,
-      'title': item.name,
-      'subtitle': item.albumArtist ?? '',
-      if (artUri != null) 'artworkUrl': artUri.toString(),
-    };
-  }
-
-  static Future<void> _play(
-    ProviderContainer ref,
-    Map<String, dynamic> args,
-  ) async {
-    final item = _items[args['id']];
-    if (item == null) return;
-    final playback = ref.read(setPlaybackProvider.notifier);
-    switch (args['type']) {
-      case 'playlist':
-        await playback.playPlaylist(item);
-      case 'mix':
-        if (item.id == likedSongsPlaylistId) {
-          await playback.playFavouriteSongs(item);
-        } else {
-          await playback.playGeneratedPlaylist(item);
-        }
-      case 'artist':
-        await playback.playArtist(item);
-      case 'album':
-      case 'download':
-        await playback.playAlbum(item);
-      case 'song':
-        await _playSong(ref, item);
-    }
-  }
-
-  static Future<void> _playSong(ProviderContainer ref, LibraryItem song) async {
-    final syntheticAlbum = LibraryItem(
-      id: song.albumId ?? song.id,
-      name: song.albumName ?? '',
-      kind: ItemKind.album,
-      albumArtist: song.albumArtist,
-      albumArtists: song.albumArtists,
-      images: song.images,
-    );
-    final queue = _songs.isEmpty ? [song] : _songs;
-    await ref.read(playbackProvider.notifier).play(song, queue, syntheticAlbum);
-  }
+  static Map<String, dynamic> _map(CarEntry entry) => {
+    'id': entry.id,
+    'title': entry.title,
+    'subtitle': entry.subtitle,
+    if (entry.artUri != null) 'artworkUrl': entry.artUri.toString(),
+  };
 }

@@ -8,10 +8,28 @@ import 'package:just_audio_platform_interface/just_audio_platform_interface.dart
 import 'package:rxdart/rxdart.dart';
 import 'package:synchronized/synchronized.dart';
 
-export 'package:audio_service/audio_service.dart' show MediaItem;
+export 'package:audio_service/audio_service.dart'
+    show AudioServiceShuffleMode, MediaControl, MediaItem;
 
-late SwitchAudioHandler _audioHandler;
+late _BrowsingSwitchAudioHandler _audioHandler;
 late JustAudioPlatform _platform;
+
+abstract class AudioBrowseDelegate {
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]);
+
+  Future<MediaItem?> getMediaItem(String mediaId);
+
+  Future<List<MediaItem>> search(String query, [Map<String, dynamic>? extras]);
+
+  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]);
+
+  Future<void> playFromSearch(String query, [Map<String, dynamic>? extras]);
+
+  Stream<String?> get childrenChanged;
+}
 
 /// Provides the [init] method to initialise just_audio for background playback.
 class JustAudioBackground {
@@ -72,6 +90,137 @@ class JustAudioBackground {
       androidBrowsableRootExtras: androidBrowsableRootExtras,
     );
   }
+
+  static set browseDelegate(AudioBrowseDelegate? delegate) {
+    _audioHandler.browseDelegate = delegate;
+  }
+
+  static set shuffleModeHandler(
+    Future<void> Function(AudioServiceShuffleMode mode)? handler,
+  ) {
+    _audioHandler.shuffleModeHandler = handler;
+  }
+
+  static void reportShuffleMode(AudioServiceShuffleMode mode) {
+    _playerAudioHandler.reportShuffleMode(mode);
+  }
+
+  static set customControls(List<MediaControl> Function()? builder) {
+    _playerAudioHandler.customControls = builder;
+    _playerAudioHandler._broadcastStateIfActive();
+  }
+
+  static set customActionHandler(
+    Future<dynamic> Function(String name, Map<String, dynamic>? extras)?
+        handler,
+  ) {
+    _audioHandler.customActionHandler = handler;
+  }
+
+  static void refreshPlaybackState() {
+    _playerAudioHandler._broadcastStateIfActive();
+  }
+}
+
+class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
+  _BrowsingSwitchAudioHandler() : super(BaseAudioHandler());
+
+  final _childrenSubjects = <String, BehaviorSubject<Map<String, dynamic>>>{};
+  AudioBrowseDelegate? _browseDelegate;
+  StreamSubscription<String?>? _childrenChangedSubscription;
+  Future<void> Function(AudioServiceShuffleMode mode)? shuffleModeHandler;
+  Future<dynamic> Function(String name, Map<String, dynamic>? extras)?
+      customActionHandler;
+
+  @override
+  Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) {
+    final handler = customActionHandler;
+    if (handler == null) return super.customAction(name, extras);
+    return handler(name, extras);
+  }
+
+  @override
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) {
+    final handler = shuffleModeHandler;
+    if (handler == null) return super.setShuffleMode(shuffleMode);
+    return handler(shuffleMode);
+  }
+
+  set browseDelegate(AudioBrowseDelegate? delegate) {
+    _childrenChangedSubscription?.cancel();
+    _childrenChangedSubscription = null;
+    _browseDelegate = delegate;
+    if (delegate == null) return;
+    _childrenChangedSubscription =
+        delegate.childrenChanged.listen(_notifyChildrenChanged);
+    _notifyChildrenChanged(null);
+  }
+
+  void _notifyChildrenChanged(String? parentMediaId) {
+    if (parentMediaId == null) {
+      for (final subject in _childrenSubjects.values) {
+        subject.add(<String, dynamic>{});
+      }
+    } else {
+      _childrenSubjects[parentMediaId]?.add(<String, dynamic>{});
+    }
+  }
+
+  @override
+  Future<List<MediaItem>> getChildren(
+    String parentMediaId, [
+    Map<String, dynamic>? options,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.getChildren(parentMediaId, options);
+    return delegate.getChildren(parentMediaId, options);
+  }
+
+  @override
+  // ignore: must_call_super
+  ValueStream<Map<String, dynamic>> subscribeToChildren(String parentMediaId) {
+    return _childrenSubjects.putIfAbsent(
+      parentMediaId,
+      BehaviorSubject<Map<String, dynamic>>.new,
+    );
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.getMediaItem(mediaId);
+    return delegate.getMediaItem(mediaId);
+  }
+
+  @override
+  Future<List<MediaItem>> search(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.search(query, extras);
+    return delegate.search(query, extras);
+  }
+
+  @override
+  Future<void> playFromMediaId(
+    String mediaId, [
+    Map<String, dynamic>? extras,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.playFromMediaId(mediaId, extras);
+    return delegate.playFromMediaId(mediaId, extras);
+  }
+
+  @override
+  Future<void> playFromSearch(
+    String query, [
+    Map<String, dynamic>? extras,
+  ]) {
+    final delegate = _browseDelegate;
+    if (delegate == null) return super.playFromSearch(query, extras);
+    return delegate.playFromSearch(query, extras);
+  }
 }
 
 class _JustAudioBackgroundPlugin extends JustAudioPlatform {
@@ -96,7 +245,7 @@ class _JustAudioBackgroundPlugin extends JustAudioPlatform {
     _platform = JustAudioPlatform.instance;
     JustAudioPlatform.instance = _JustAudioBackgroundPlugin();
     _audioHandler = await AudioService.init(
-      builder: () => SwitchAudioHandler(BaseAudioHandler()),
+      builder: _BrowsingSwitchAudioHandler.new,
       config: AudioServiceConfig(
         androidResumeOnClick: androidResumeOnClick,
         androidNotificationChannelId: androidNotificationChannelId,
@@ -364,6 +513,14 @@ class _PlayerAudioHandler extends BaseAudioHandler
   _Seeker? _seeker;
   AudioServiceRepeatMode _repeatMode = AudioServiceRepeatMode.none;
   AudioServiceShuffleMode _shuffleMode = AudioServiceShuffleMode.none;
+  AudioServiceShuffleMode? _reportedShuffleMode;
+  List<MediaControl> Function()? customControls;
+
+  void reportShuffleMode(AudioServiceShuffleMode mode) {
+    if (_reportedShuffleMode == mode) return;
+    _reportedShuffleMode = mode;
+    _broadcastStateIfActive();
+  }
   List<int> _shuffleIndices = [];
   List<int> _shuffleIndicesInv = [];
   List<int> _effectiveIndices = [];
@@ -773,22 +930,25 @@ class _PlayerAudioHandler extends BaseAudioHandler
 
   /// Broadcasts the current state to all clients.
   void _broadcastState() {
-    final controls = [
-      if (hasPrevious) MediaControl.skipToPrevious,
+    final transport = [
+      MediaControl.skipToPrevious,
       if (_playing) MediaControl.pause else MediaControl.play,
-      MediaControl.stop,
-      if (hasNext) MediaControl.skipToNext,
+      MediaControl.skipToNext,
     ];
+    final controls = [...transport, ...?customControls?.call()];
     playbackState.add(playbackState.nvalue!.copyWith(
       controls: controls,
       systemActions: {
         MediaAction.seek,
         MediaAction.seekForward,
         MediaAction.seekBackward,
+        MediaAction.setRepeatMode,
+        MediaAction.setShuffleMode,
       },
-      androidCompactActionIndices: List.generate(controls.length, (i) => i)
-          .where((i) => controls[i].action != MediaAction.stop)
-          .toList(),
+      repeatMode: _repeatMode,
+      shuffleMode: _reportedShuffleMode ?? _shuffleMode,
+      androidCompactActionIndices:
+          List.generate(transport.length, (i) => i),
       processingState: _justAudioEvent.errorCode != null
           ? AudioProcessingState.error
           : const {
