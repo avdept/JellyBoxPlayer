@@ -49,7 +49,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   late bool _isMobile;
   late bool _isDesktop;
   late bool _isLandscape;
-  ModalSheetRoute<void>? _sheetRoute;
 
   Future<void> _onExpand() {
     if (_isMobile && _isLandscape) return Future<void>.value();
@@ -68,7 +67,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               data: Theme.of(context).copyWith(colorScheme: colorScheme),
               child: Consumer(
                 builder: (context, ref, _) {
-                  if (!ref.watch(hasQueueProvider)) {
+                  final coveredByLandscapePlayer =
+                      _isMobile &&
+                      MediaQuery.orientationOf(context) ==
+                          Orientation.landscape;
+                  if (coveredByLandscapePlayer ||
+                      !ref.watch(hasQueueProvider)) {
                     return const SizedBox.shrink();
                   }
                   final currentSong = ref.watch(nowPlayingProvider);
@@ -123,7 +127,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       barrierLabel: _localizations.modalBarrierDismissLabel,
       duration: const Duration(milliseconds: 300),
     );
-    _sheetRoute = route;
     return Navigator.of(
       context,
       rootNavigator: true,
@@ -131,16 +134,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   void _onSheetClosed() {
-    _sheetRoute = null;
     _queueShown.value = false;
     if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
-  }
-
-  void _closeSheet() {
-    final route = _sheetRoute;
-    if (route == null) return;
-    _sheetRoute = null;
-    if (route.isActive) route.navigator?.removeRoute(route);
   }
 
   Widget _artworkArea() => Consumer(
@@ -363,10 +358,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     final deviceType = getDeviceType(_screenSize);
     _isMobile = deviceType == DeviceScreenType.mobile;
     _isDesktop = deviceType == DeviceScreenType.desktop;
-
-    if (_isMobile && _isLandscape && _sheetRoute != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _closeSheet());
-    }
   }
 
   @override

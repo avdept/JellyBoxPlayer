@@ -14,6 +14,7 @@ abstract class LibraryItem with _$LibraryItem {
     required String name,
     required ItemKind kind,
     @Default(0) int indexNumber,
+    int? discNumber,
     @Default(Duration.zero) Duration duration,
     String? path,
     String? collectionType,
@@ -44,12 +45,18 @@ abstract class LibraryItem with _$LibraryItem {
       ? effectiveArtists.map((artist) => artist.name).join(', ')
       : (albumArtist ?? '');
 
+  static int compareAlbumOrder(LibraryItem a, LibraryItem b) {
+    final byDisc = (a.discNumber ?? 0).compareTo(b.discNumber ?? 0);
+    return byDisc != 0 ? byDisc : a.indexNumber.compareTo(b.indexNumber);
+  }
+
   // ignore: prefer_constructors_over_static_methods
   static LibraryItem fromJson(Map<String, dynamic> json) => LibraryItem(
     id: json['id'] as String,
     name: json['name'] as String,
     kind: ItemKind.values.byName(json['kind'] as String),
     indexNumber: json['indexNumber'] as int? ?? 0,
+    discNumber: json['discNumber'] as int?,
     duration: Duration(milliseconds: json['durationMs'] as int? ?? 0),
     path: json['path'] as String?,
     collectionType: json['collectionType'] as String?,
@@ -87,6 +94,7 @@ extension LibraryItemJson on LibraryItem {
     'name': name,
     'kind': kind.name,
     'indexNumber': indexNumber,
+    'discNumber': discNumber,
     'durationMs': duration.inMilliseconds,
     'path': path,
     'collectionType': collectionType,

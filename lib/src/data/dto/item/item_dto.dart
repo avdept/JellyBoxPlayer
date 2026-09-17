@@ -12,6 +12,7 @@ abstract class ItemDTO with _$ItemDTO {
     @JsonKey(name: 'Name') required String name,
     @JsonKey(name: 'Type') required String type,
     @JsonKey(name: 'IndexNumber') @Default(0) int indexNumber,
+    @JsonKey(name: 'ParentIndexNumber') int? parentIndexNumber,
     @JsonKey(name: 'RunTimeTicks') @Default(0) int runTimeTicks,
     @JsonKey(name: 'Path') String? path,
     @JsonKey(name: 'CollectionType') String? collectionType,

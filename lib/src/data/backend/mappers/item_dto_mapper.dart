@@ -8,6 +8,7 @@ extension ItemDTOMapping on ItemDTO {
       name: name,
       kind: _kindFromType(type),
       indexNumber: indexNumber,
+      discNumber: parentIndexNumber,
       duration: duration,
       path: path,
       collectionType: collectionType,
