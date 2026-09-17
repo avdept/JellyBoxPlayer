@@ -1,21 +1,22 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/services/metadata_link_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_picker_sheet.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
-
-const contextMenuAnimation = AnimationStyle(
-  duration: Duration(milliseconds: 150),
-);
+import 'package:url_launcher/url_launcher.dart';
 
 enum ContextMenuScope { browse, albumPage, playlistPage, nowPlaying, queue }
 
@@ -28,6 +29,7 @@ enum ContextMenuEntry {
   like,
   goToArtist,
   goToAlbum,
+  metadataLinks,
   removeFromQueue,
   removeFromPlaylist,
   deletePlaylist,
@@ -44,6 +46,7 @@ const contextMenuLayout =
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
+          ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.albumPage: [
           ContextMenuEntry.addToPlaylist,
@@ -52,6 +55,7 @@ const contextMenuLayout =
           ContextMenuEntry.download,
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
+          ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.playlistPage: [
           ContextMenuEntry.playNext,
@@ -60,6 +64,7 @@ const contextMenuLayout =
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
+          ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.nowPlaying: [
           ContextMenuEntry.addToPlaylist,
@@ -67,6 +72,7 @@ const contextMenuLayout =
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
+          ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.queue: [
           ContextMenuEntry.addToPlaylist,
@@ -74,6 +80,7 @@ const contextMenuLayout =
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
+          ContextMenuEntry.metadataLinks,
         ],
       },
       ItemKind.album: {
@@ -82,10 +89,15 @@ const contextMenuLayout =
           ContextMenuEntry.download,
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
+          ContextMenuEntry.metadataLinks,
         ],
       },
       ItemKind.artist: {
-        ContextMenuScope.browse: [ContextMenuEntry.play, ContextMenuEntry.like],
+        ContextMenuScope.browse: [
+          ContextMenuEntry.play,
+          ContextMenuEntry.like,
+          ContextMenuEntry.metadataLinks,
+        ],
       },
       ItemKind.playlist: {
         ContextMenuScope.browse: [
@@ -109,24 +121,153 @@ class ContextMenuAction {
     required this.entry,
     required this.icon,
     required this.label,
-    required this.run,
+    this.run,
+    this.children = const [],
   });
 
   final ContextMenuEntry entry;
   final Widget icon;
   final Widget label;
-  final Future<void> Function() run;
+  final Future<void> Function()? run;
+  final List<ContextMenuAction> children;
 
-  PopupMenuItem<void> toPopupMenuItem() =>
-      PopupMenuItem(onTap: () => run().ignore(), child: label);
+  bool get isSubmenu => children.isNotEmpty;
 
-  ListTile toListTile({VoidCallback? onSelected}) => ListTile(
-    leading: icon,
-    title: label,
-    onTap: () {
-      onSelected?.call();
-      run().ignore();
-    },
+  Widget get menuIcon =>
+      Padding(padding: const EdgeInsetsDirectional.only(end: 4), child: icon);
+
+  Widget toMenuItem(MenuController root) => isSubmenu
+      ? _HoverSubmenu(action: this, root: root)
+      : MenuItemButton(
+          leadingIcon: menuIcon,
+          onPressed: () {
+            root.close();
+            run?.call().ignore();
+          },
+          child: label,
+        );
+
+  ListTile toListTile(BuildContext context, {VoidCallback? onSelected}) =>
+      ListTile(
+        leading: icon,
+        title: label,
+        trailing: isSubmenu ? const Icon(Icons.chevron_right) : null,
+        onTap: () {
+          onSelected?.call();
+          isSubmenu
+              ? unawaited(showContextMenuSheet(context, actions: children))
+              : run?.call().ignore();
+        },
+      );
+}
+
+class _HoverSubmenu extends StatefulWidget {
+  const _HoverSubmenu({required this.action, required this.root});
+
+  final ContextMenuAction action;
+  final MenuController root;
+
+  @override
+  State<_HoverSubmenu> createState() => _HoverSubmenuState();
+}
+
+class _HoverSubmenuState extends State<_HoverSubmenu> {
+  final _controller = MenuController();
+  Timer? _closeTimer;
+  var _openLeft = false;
+  double _panelWidth = _menuMinWidth;
+
+  void _handleHover(bool hovering) {
+    _closeTimer?.cancel();
+    if (hovering) return _measureSide();
+    _closeTimer = Timer(_submenuCloseDelay, () {
+      if (mounted && _controller.isOpen) _controller.close();
+    });
+  }
+
+  void _measureSide() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final right = box.localToGlobal(Offset(box.size.width, 0)).dx;
+    final openLeft = right + _panelWidth > MediaQuery.sizeOf(context).width;
+    if (openLeft != _openLeft) setState(() => _openLeft = openLeft);
+  }
+
+  @override
+  Widget build(BuildContext context) => SubmenuButton(
+    controller: _controller,
+    onHover: _handleHover,
+    onOpen: _measureSide,
+    leadingIcon: widget.action.menuIcon,
+    trailingIcon: const Icon(Icons.arrow_right),
+    menuStyle: _openLeft
+        ? _submenuStyle.copyWith(alignment: AlignmentDirectional.topStart)
+        : _submenuStyle,
+    alignmentOffset: _openLeft ? Offset(-_panelWidth, 0) : null,
+    menuChildren: [
+      MouseRegion(
+        onEnter: (_) => _handleHover(true),
+        onExit: (_) => _handleHover(false),
+        child: _ReportWidth(
+          onWidth: (width) {
+            if (mounted && width != _panelWidth) {
+              setState(() => _panelWidth = width);
+            }
+          },
+          child: _MenuColumn(
+            actions: widget.action.children,
+            root: widget.root,
+          ),
+        ),
+      ),
+    ],
+    child: widget.action.label,
+  );
+}
+
+class _ReportWidth extends SingleChildRenderObjectWidget {
+  const _ReportWidth({required this.onWidth, required super.child});
+
+  final ValueChanged<double> onWidth;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderReportWidth(onWidth);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderReportWidth renderObject,
+  ) => renderObject.onWidth = onWidth;
+}
+
+class _RenderReportWidth extends RenderProxyBox {
+  _RenderReportWidth(this.onWidth);
+
+  ValueChanged<double> onWidth;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final width = size.width;
+    if (width == _reported) return;
+    _reported = width;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onWidth(width));
+  }
+}
+
+class _MenuColumn extends StatelessWidget {
+  const _MenuColumn({required this.actions, required this.root});
+
+  final List<ContextMenuAction> actions;
+  final MenuController root;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [for (final action in actions) action.toMenuItem(root)],
   );
 }
 
@@ -160,6 +301,7 @@ List<ContextMenuAction> contextMenuActions(
           item.effectiveArtists.isNotEmpty ? actions.goToArtist() : null,
         ContextMenuEntry.goToAlbum =>
           item.albumId != null ? actions.goToAlbum() : null,
+        ContextMenuEntry.metadataLinks => actions.metadataLinks(),
         ContextMenuEntry.removeFromQueue ||
         ContextMenuEntry.removeFromPlaylist ||
         ContextMenuEntry.deletePlaylist => null,
@@ -167,25 +309,170 @@ List<ContextMenuAction> contextMenuActions(
   ].nonNulls.toList();
 }
 
-Future<void> showContextMenu(
+const _menuMinWidth = 224.0;
+const _menuDuration = Duration(milliseconds: 150);
+const _submenuCloseDelay = Duration(milliseconds: 250);
+const _submenuStyle = MenuStyle(
+  minimumSize: WidgetStatePropertyAll(Size(_menuMinWidth, 0)),
+  alignment: AlignmentDirectional.topEnd,
+  padding: WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 8)),
+);
+
+void showContextMenu(
   BuildContext context, {
   required Offset position,
   required List<ContextMenuAction> actions,
-}) async {
+}) {
   if (actions.isEmpty) return;
-  final overlay =
-      Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
-  final local = overlay.globalToLocal(position);
-  await showMenu<void>(
-    context: context,
-    popUpAnimationStyle: contextMenuAnimation,
-    constraints: const BoxConstraints(minWidth: 224),
-    position: RelativeRect.fromRect(
-      Rect.fromPoints(local, local),
-      Offset.zero & overlay.size,
+  final overlay = Navigator.of(context).overlay!;
+  final overlayBox = overlay.context.findRenderObject()! as RenderBox;
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => Positioned.fill(
+      child: _AnimatedMenu(
+        actions: actions,
+        openAt: overlayBox.globalToLocal(position),
+        onClosed: entry.remove,
+        builder: (_, _, _) => const SizedBox.expand(),
+      ),
     ),
-    items: [for (final action in actions) action.toPopupMenuItem()],
   );
+  overlay.insert(entry);
+}
+
+class _AnimatedMenu extends StatefulWidget {
+  const _AnimatedMenu({
+    required this.actions,
+    required this.builder,
+    this.openAt,
+    this.onClosed,
+  });
+
+  final List<ContextMenuAction> actions;
+  final RawMenuAnchorChildBuilder builder;
+  final Offset? openAt;
+  final VoidCallback? onClosed;
+
+  @override
+  State<_AnimatedMenu> createState() => _AnimatedMenuState();
+}
+
+class _AnimatedMenuState extends State<_AnimatedMenu>
+    with SingleTickerProviderStateMixin {
+  final _controller = MenuController();
+  late final _animation = AnimationController(
+    vsync: this,
+    duration: _menuDuration,
+  );
+  late final _curve = CurvedAnimation(
+    parent: _animation,
+    curve: Curves.easeOut,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.openAt case final position?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _controller.open(position: position);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _animation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RawMenuAnchor(
+    controller: _controller,
+    onOpenRequested: (_, showOverlay) {
+      showOverlay();
+      if (!_animation.status.isForwardOrCompleted) _animation.forward();
+    },
+    onCloseRequested: (hideOverlay) {
+      if (!_animation.status.isForwardOrCompleted) return;
+      unawaited(_animation.reverse().whenComplete(hideOverlay));
+    },
+    onClose: widget.onClosed,
+    overlayBuilder: _buildPanel,
+    builder: widget.builder,
+  );
+
+  Widget _buildPanel(BuildContext context, RawMenuOverlayInfo info) =>
+      Positioned.fill(
+        child: CustomSingleChildLayout(
+          delegate: _MenuLayout(info.anchorRect, info.position),
+          child: TapRegion(
+            groupId: info.tapRegionGroupId,
+            consumeOutsideTaps: true,
+            onTapOutside: (_) => _controller.close(),
+            child: FocusScope(
+              autofocus: true,
+              child: FadeTransition(
+                opacity: _curve,
+                child: ScaleTransition(
+                  scale: _curve,
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 3,
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(4),
+                    clipBehavior: Clip.antiAlias,
+                    child: IntrinsicWidth(
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: _menuMinWidth,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: _MenuColumn(
+                          actions: widget.actions,
+                          root: _controller,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _MenuLayout extends SingleChildLayoutDelegate {
+  const _MenuLayout(this.anchorRect, this.position);
+
+  final Rect anchorRect;
+  final Offset? position;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints.loose(constraints.biggest);
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final origin = position == null
+        ? anchorRect.bottomLeft
+        : anchorRect.topLeft + position!;
+    final flip = position == null ? anchorRect.topRight : origin;
+    final x = origin.dx + childSize.width > size.width
+        ? flip.dx - childSize.width
+        : origin.dx;
+    final y = origin.dy + childSize.height > size.height
+        ? flip.dy - childSize.height
+        : origin.dy;
+    return Offset(
+      x.clamp(0, math.max(0, size.width - childSize.width)),
+      y.clamp(0, math.max(0, size.height - childSize.height)),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_MenuLayout oldDelegate) =>
+      anchorRect != oldDelegate.anchorRect || position != oldDelegate.position;
 }
 
 Future<void> showContextMenuSheet(
@@ -207,6 +494,7 @@ Future<void> showContextMenuSheet(
         children: [
           for (final action in actions)
             action.toListTile(
+              context,
               onSelected: () => Navigator.of(sheetContext).pop(),
             ),
         ],
@@ -241,14 +529,15 @@ class ContextMenuButton extends StatelessWidget {
             showContextMenuSheet(context, actions: actionsBuilder(context)),
       );
     }
-    return PopupMenuButton<void>(
-      popUpAnimationStyle: contextMenuAnimation,
-      icon: Icon(icon),
-      tooltip: 'More',
-      style: style,
-      itemBuilder: (context) => [
-        for (final action in actionsBuilder(context)) action.toPopupMenuItem(),
-      ],
+    return _AnimatedMenu(
+      actions: actionsBuilder(context),
+      builder: (context, controller, _) => IconButton(
+        icon: Icon(icon),
+        tooltip: 'More',
+        style: style,
+        onPressed: () =>
+            controller.isOpen ? controller.close() : controller.open(),
+      ),
     );
   }
 }
@@ -448,6 +737,50 @@ class _ContextMenuActions {
       _navigate(Routes.album, 'album', target);
     },
   );
+
+  ContextMenuAction? metadataLinks() {
+    final links = metadataLinksFor(item.externalIds);
+    if (links.isEmpty) return null;
+    return ContextMenuAction(
+      entry: ContextMenuEntry.metadataLinks,
+      icon: const Icon(Icons.link),
+      label: const Text('View on'),
+      children: [
+        for (final link in links)
+          ContextMenuAction(
+            entry: ContextMenuEntry.metadataLinks,
+            icon: link.icon == null
+                ? const Icon(Icons.open_in_new)
+                : _SvgIcon(link.icon!),
+            label: Text(link.label),
+            run: () async {
+              final opened = await launchUrl(
+                link.uri,
+                mode: LaunchMode.externalApplication,
+              );
+              if (!opened) _showSnackBar('Could not open ${link.label}');
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _SvgIcon extends StatelessWidget {
+  const _SvgIcon(this.asset);
+
+  final String asset;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = IconTheme.of(context);
+    return SvgPicture.asset(
+      asset,
+      width: theme.size,
+      height: theme.size,
+      colorFilter: ColorFilter.mode(theme.color!, BlendMode.srcIn),
+    );
+  }
 }
 
 class _DownloadState extends ConsumerWidget {

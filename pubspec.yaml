@@ -71,6 +71,7 @@ dependencies:
   flutter_rust_bridge: 2.11.1 #do not update
   wakelock_plus: ^1.8.0
   battery_plus: ^7.1.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

@@ -600,10 +600,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     await showContextMenuSheet(context, actions: actions);
   }
 
-  Future<void> _showArtworkMenu(Offset position) async {
+  void _showArtworkMenu(Offset position) {
     final song = _currentQueueSong;
     if (song == null) return;
-    await showContextMenu(
+    showContextMenu(
       context,
       position: position,
       actions: contextMenuActions(

@@ -54,7 +54,7 @@ abstract class JellyfinApi {
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'music',
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -69,7 +69,7 @@ abstract class JellyfinApi {
     @Query('Filters') List<String> filters = const [],
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -87,7 +87,7 @@ abstract class JellyfinApi {
     @Query('Limit') String limit = '300',
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -105,6 +105,7 @@ abstract class JellyfinApi {
     @Query('Filters') List<String> filters = const [],
     @Query('Ids') List<String> ids = const [],
     @Query('Recursive') bool recursive = true,
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
   @GET('/Albums/{albumId}/Similar')
@@ -112,6 +113,7 @@ abstract class JellyfinApi {
     @Path('albumId') required String albumId,
     @Query('userId') required String userId,
     @Query('Limit') String limit = '12',
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
   @GET('/MusicGenres')
@@ -136,7 +138,7 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -149,6 +151,7 @@ abstract class JellyfinApi {
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -182,14 +185,14 @@ abstract class JellyfinApi {
     @Query('userId') required String userId,
     @Query('IncludeItemTypes') String includeType = 'music',
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Items/{itemId}')
   Future<HttpResponse<ItemDTO>> getItem({
     @Path('itemId') required String itemId,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Audio/{itemId}/Lyrics')
@@ -224,7 +227,11 @@ abstract class JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> getArtists({
     @Query('userId') required String userId,
     @Query('Fields')
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
@@ -239,7 +246,11 @@ abstract class JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     @Query('userId') required String userId,
     @Query('Fields')
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
@@ -255,7 +266,11 @@ abstract class JellyfinApi {
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
     @Query('Fields')
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',
@@ -269,7 +284,11 @@ abstract class JellyfinApi {
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
     @Query('Fields')
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     @Query('IncludeArtists') bool includeArtists = true,
     @Query('IncludeItemTypes') String type = 'Artist',
     @Query('StartIndex') String startIndex = '0',

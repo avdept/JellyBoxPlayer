@@ -38,7 +38,7 @@ abstract class EmbyApi {
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'Audio',
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -53,7 +53,7 @@ abstract class EmbyApi {
     @Query('Filters') List<String> filters = const [],
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -71,7 +71,7 @@ abstract class EmbyApi {
     @Query('Limit') String limit = '300',
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -89,6 +89,7 @@ abstract class EmbyApi {
     @Query('Filters') List<String> filters = const [],
     @Query('Ids') List<String> ids = const [],
     @Query('Recursive') bool recursive = true,
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
   @GET('/Albums/{albumId}/Similar')
@@ -96,6 +97,7 @@ abstract class EmbyApi {
     @Path('albumId') required String albumId,
     @Query('UserId') required String userId,
     @Query('Limit') String limit = '12',
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
   @GET('/MusicGenres')
@@ -120,7 +122,7 @@ abstract class EmbyApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -133,6 +135,7 @@ abstract class EmbyApi {
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items')
@@ -165,7 +168,7 @@ abstract class EmbyApi {
     @Path('playlistId') required String playlistId,
     @Query('UserId') required String userId,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Users/{userId}/Items/{itemId}')
@@ -173,7 +176,7 @@ abstract class EmbyApi {
     @Path('userId') required String userId,
     @Path('itemId') required String itemId,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   });
 
   @GET('/Items/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.js')
@@ -211,7 +214,7 @@ abstract class EmbyApi {
   @GET('/Artists')
   Future<HttpResponse<ItemsWrapper>> getArtists({
     @Query('UserId') required String userId,
-    @Query('Fields') List<String> fields = const ['Overview'],
+    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'SortName',
@@ -223,7 +226,7 @@ abstract class EmbyApi {
   @GET('/Artists/AlbumArtists')
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     @Query('UserId') required String userId,
-    @Query('Fields') List<String> fields = const ['Overview'],
+    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'SortName',
@@ -236,7 +239,7 @@ abstract class EmbyApi {
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     @Query('UserId') required String userId,
     @Query('SearchTerm') required String searchTerm,
-    @Query('Fields') List<String> fields = const ['Overview'],
+    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
@@ -247,7 +250,7 @@ abstract class EmbyApi {
   Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
     @Query('UserId') required String userId,
     @Query('SearchTerm') required String searchTerm,
-    @Query('Fields') List<String> fields = const ['Overview'],
+    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',

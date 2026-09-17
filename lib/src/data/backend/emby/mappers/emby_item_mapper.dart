@@ -11,6 +11,18 @@ extension EmbyMediaSourceMapping on MediaSourceDTO {
       mediaStreams.where((stream) => stream.isLyricStream).firstOrNull;
 }
 
+const embyExternalIdKeys = <String, String>{
+  'MusicBrainzAlbum': ExternalIdProvider.musicBrainzAlbum,
+  'MusicBrainzReleaseGroup': ExternalIdProvider.musicBrainzReleaseGroup,
+  'MusicBrainzArtist': ExternalIdProvider.musicBrainzArtist,
+  'MusicBrainzAlbumArtist': ExternalIdProvider.musicBrainzAlbumArtist,
+  'MusicBrainzTrack': ExternalIdProvider.musicBrainzTrack,
+  'AudioDbAlbum': ExternalIdProvider.audioDbAlbum,
+  'AudioDbArtist': ExternalIdProvider.audioDbArtist,
+  'DiscogsRelease': ExternalIdProvider.discogsRelease,
+  'DiscogsArtist': ExternalIdProvider.discogsArtist,
+};
+
 extension EmbyItemMapping on ItemDTO {
   bool get hasLyricStream =>
       mediaSources.any((source) => source.lyricStream != null);
@@ -21,6 +33,7 @@ extension EmbyItemMapping on ItemDTO {
       hasLyrics: hasLyricStream,
       images: _embyImages(item.images),
       userData: _embyUserData(item.userData),
+      externalIds: normalizeExternalIds(item.externalIds, embyExternalIdKeys),
     );
   }
 

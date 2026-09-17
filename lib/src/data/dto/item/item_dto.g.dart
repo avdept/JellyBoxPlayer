@@ -55,6 +55,11 @@ _ItemDTO _$ItemDTOFromJson(Map<String, dynamic> json) => _ItemDTO(
           ?.map((e) => MediaSourceDTO.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  providerIds:
+      (json['ProviderIds'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String?),
+      ) ??
+      const {},
 );
 
 Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
@@ -82,4 +87,5 @@ Map<String, dynamic> _$ItemDTOToJson(_ItemDTO instance) => <String, dynamic>{
   'HasLyrics': instance.hasLyrics,
   'UserData': instance.userData,
   'MediaSources': instance.mediaSources,
+  'ProviderIds': instance.providerIds,
 };

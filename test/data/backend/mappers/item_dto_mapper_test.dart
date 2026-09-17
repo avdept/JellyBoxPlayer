@@ -18,6 +18,12 @@ ItemDTO _song() => ItemDTO.fromJson({
   'AlbumPrimaryImageTag': 'album-tag',
   'BackdropImageTags': ['backdrop-1', 'backdrop-2'],
   'ImageTags': {'Primary': 'song-tag'},
+  'ProviderIds': {
+    'MusicBrainzTrack': 'mb-track-1',
+    'MusicBrainzAlbum': ' mb-album-1 ',
+    'Imdb': '',
+    'Tvdb': null,
+  },
   'HasLyrics': true,
   'UserData': {
     'PlaybackPositionTicks': 12340000,
@@ -75,6 +81,10 @@ void main() {
       expect(item.audioSources.single.bitDepth, 16);
       expect(item.audioSources.single.channels, 2);
       expect(item.audioSources.single.channelLayout, 'stereo');
+      expect(item.externalIds, {
+        'MusicBrainzTrack': 'mb-track-1',
+        'MusicBrainzAlbum': 'mb-album-1',
+      });
     });
 
     test('- maps each Jellyfin item type to the matching ItemKind', () {
@@ -87,6 +97,7 @@ void main() {
       expect(kindOf('Audio'), ItemKind.song);
       expect(kindOf('MusicAlbum'), ItemKind.album);
       expect(kindOf('Artist'), ItemKind.artist);
+      expect(kindOf('MusicArtist'), ItemKind.artist);
       expect(kindOf('Playlist'), ItemKind.playlist);
       expect(kindOf('MusicGenre'), ItemKind.genre);
       expect(kindOf('CollectionFolder'), ItemKind.library);
@@ -110,6 +121,29 @@ void main() {
       expect(page.totalRecordCount, 42);
       expect(page.items.map((i) => i.id), ['a', 'b']);
       expect(page.items, everyElement(isA<LibraryItem>()));
+    });
+  });
+
+  group('LibraryItem JSON round-trip', () {
+    test('- keeps externalIds through toJson and fromJson', () {
+      const item = LibraryItem(
+        id: 'song-1',
+        name: 'Roads',
+        kind: ItemKind.song,
+        externalIds: {ExternalIdProvider.musicBrainzTrack: 'track-id'},
+      );
+
+      final restored = LibraryItem.fromJson(item.toJson());
+
+      expect(restored.externalIds, item.externalIds);
+      expect(
+        LibraryItem.fromJson({
+          'id': 'x',
+          'name': 'x',
+          'kind': 'song',
+        }).externalIds,
+        isEmpty,
+      );
     });
   });
 

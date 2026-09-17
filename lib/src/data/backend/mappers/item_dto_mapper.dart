@@ -41,6 +41,11 @@ extension ItemDTOMapping on ItemDTO {
       audioSources: [
         for (final source in mediaSources) _toAudioSourceInfo(source),
       ],
+      externalIds: {
+        for (final entry in providerIds.entries)
+          if (entry.value case final String value when value.trim().isNotEmpty)
+            entry.key: value.trim(),
+      },
     );
   }
 }

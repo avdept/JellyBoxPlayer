@@ -246,7 +246,7 @@ class _JellyfinApi implements JellyfinApi {
     required String userId,
     required String albumId,
     String includeType = 'music',
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -289,7 +289,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Ascending',
     List<String> filters = const [],
     bool recursive = true,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -341,7 +341,7 @@ class _JellyfinApi implements JellyfinApi {
     String startIndex = '0',
     String limit = '300',
     bool recursive = true,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -397,6 +397,7 @@ class _JellyfinApi implements JellyfinApi {
     List<String> filters = const [],
     List<String> ids = const [],
     bool recursive = true,
+    List<String> fields = const ['ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -412,6 +413,7 @@ class _JellyfinApi implements JellyfinApi {
       r'Filters': filters,
       r'Ids': ids,
       r'Recursive': recursive,
+      r'Fields': fields,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -443,11 +445,13 @@ class _JellyfinApi implements JellyfinApi {
     required String albumId,
     required String userId,
     String limit = '12',
+    List<String> fields = const ['ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'Limit': limit,
+      r'Fields': fields,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -528,7 +532,7 @@ class _JellyfinApi implements JellyfinApi {
     String limit = '100',
     String sortOrder = 'Descending',
     bool recursive = true,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -576,6 +580,7 @@ class _JellyfinApi implements JellyfinApi {
     String limit = '100',
     String sortOrder = 'Descending',
     bool recursive = true,
+    List<String> fields = const ['ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -586,6 +591,7 @@ class _JellyfinApi implements JellyfinApi {
       r'Limit': limit,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
+      r'Fields': fields,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -710,7 +716,7 @@ class _JellyfinApi implements JellyfinApi {
     required String playlistId,
     required String userId,
     String includeType = 'music',
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -745,7 +751,7 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<ItemDTO>> getItem({
     required String itemId,
-    List<String> fields = const ['MediaSources', 'ArtistItems'],
+    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'Fields': fields};
@@ -902,7 +908,11 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getArtists({
     required String userId,
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     bool includeArtists = true,
     String type = 'Artist',
     String startIndex = '0',
@@ -952,7 +962,11 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     required String userId,
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     bool includeArtists = true,
     String type = 'Artist',
     String startIndex = '0',
@@ -1003,7 +1017,11 @@ class _JellyfinApi implements JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     required String userId,
     required String searchTerm,
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     bool includeArtists = true,
     String type = 'Artist',
     String startIndex = '0',
@@ -1051,7 +1069,11 @@ class _JellyfinApi implements JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
     required String userId,
     required String searchTerm,
-    List<String> fields = const ['BackdropImageTags', 'Overview'],
+    List<String> fields = const [
+      'BackdropImageTags',
+      'Overview',
+      'ProviderIds',
+    ],
     bool includeArtists = true,
     String type = 'Artist',
     String startIndex = '0',
