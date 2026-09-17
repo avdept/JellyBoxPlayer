@@ -43,7 +43,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
   }
 
   List<LibraryItem> _byIndexNumber(List<LibraryItem> songs) =>
-      [...songs]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+      [...songs]..sort(LibraryItem.compareAlbumOrder);
 
   Future<SetPlaybackResult> playArtist(LibraryItem artist) => _play(
     setItem: artist,

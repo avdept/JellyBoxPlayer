@@ -161,7 +161,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   }
 
   List<LibraryItem> _sortedByIndex(List<LibraryItem> items) =>
-      [...items]..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+      [...items]..sort(LibraryItem.compareAlbumOrder);
 
   Future<void> _retryLoad() async {
     setState(() {
@@ -266,36 +266,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                       if (songs.isEmpty)
                         SliverToBoxAdapter(child: _songsPlaceholder())
                       else
-                        SliverList.builder(
-                          itemBuilder: (context, index) =>
-                              ValueListenableBuilder(
-                                valueListenable: _currentSong,
-                                builder: (context, item, other) {
-                                  final song = songs[index];
-                                  return SongRowView(
-                                    song: song,
-                                    isPlaying:
-                                        item != null && song.id == item.id,
-                                    onTap: (song) => ref
-                                        .read(playbackProvider.notifier)
-                                        .play(song, songs, widget.album),
-                                    position: index + 1,
-                                    showDownloadState: true,
-                                    edgePadding: _device.isMobile ? 16 : 30,
-                                    onLikePressed: _onSongLikePressed,
-                                    optionsBuilder: (context) =>
-                                        contextMenuActions(
-                                          context,
-                                          ref,
-                                          song,
-                                          scope: ContextMenuScope.albumPage,
-                                          onLike: _onSongLikePressed,
-                                        ),
-                                  );
-                                },
-                              ),
-                          itemCount: songs.length,
-                        ),
+                        ..._songSlivers(),
                       ..._suggestedAlbumsSlivers(),
                     ],
                   ),
@@ -307,6 +278,60 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       ),
     );
   }
+
+  List<Widget> _songSlivers() {
+    final sections = discSections(songs);
+    final showHeaders = sections.length > 1;
+    return [
+      for (final section in sections) ...[
+        if (showHeaders) SliverToBoxAdapter(child: _discHeader(section)),
+        SliverList.builder(
+          itemBuilder: (context, index) => ValueListenableBuilder(
+            valueListenable: _currentSong,
+            builder: (context, item, other) {
+              final song = section.songs[index];
+              return SongRowView(
+                song: song,
+                isPlaying: item != null && song.id == item.id,
+                onTap: (song) => ref
+                    .read(playbackProvider.notifier)
+                    .play(song, songs, widget.album),
+                position: index + 1,
+                showDownloadState: true,
+                edgePadding: _device.isMobile ? 16 : 30,
+                onLikePressed: _onSongLikePressed,
+                optionsBuilder: (context) => contextMenuActions(
+                  context,
+                  ref,
+                  song,
+                  scope: ContextMenuScope.albumPage,
+                  onLike: _onSongLikePressed,
+                ),
+              );
+            },
+          ),
+          itemCount: section.songs.length,
+        ),
+      ],
+    ];
+  }
+
+  Widget _discHeader(DiscSection section) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      _device.isMobile ? 16 : 30,
+      20,
+      _device.isMobile ? 16 : 30,
+      8,
+    ),
+    child: Text(
+      section.discNumber != null ? 'Disc ${section.discNumber}' : 'Other',
+      style: TextStyle(
+        fontSize: _device.isMobile ? 16 : 18,
+        fontWeight: FontWeight.w600,
+        color: _theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+      ),
+    ),
+  );
 
   @override
   void dispose() {
