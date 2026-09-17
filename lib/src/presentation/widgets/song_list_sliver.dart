@@ -51,19 +51,6 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
     );
   }
 
-  Future<void> _onArtistTap(LibraryItem song) async {
-    final artistId = song.effectiveArtists.firstOrNull?.id;
-    if (artistId == null) return;
-    final item = await ref
-        .read(mediaServerClientProvider)
-        .getItem(artistId, kind: ItemKind.artist);
-    if (!mounted) return;
-    context.pushNamed(
-      branchAwareName(context, Routes.artist),
-      extra: {'artist': item},
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final songs = widget.songs;
@@ -89,7 +76,6 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
           isPlaying: currentSongId == song.id,
           onTap: (song) => _onSongTap(song, visible),
           onLikePressed: _onLikePressed,
-          onArtistTap: _onArtistTap,
           edgePadding: widget.edgePadding,
           optionsBuilder: (context) => contextMenuActions(
             context,

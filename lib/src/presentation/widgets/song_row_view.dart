@@ -26,7 +26,6 @@ class SongRowView extends ConsumerWidget {
     this.isPlaying = false,
     this.onTap,
     this.onLikePressed,
-    this.onArtistTap,
     this.optionsBuilder,
     this.position,
     this.showDownloadState = false,
@@ -41,7 +40,6 @@ class SongRowView extends ConsumerWidget {
   final bool isPlaying;
   final void Function(LibraryItem)? onTap;
   final void Function(LibraryItem)? onLikePressed;
-  final void Function(LibraryItem)? onArtistTap;
   final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
 
   final int? position;
@@ -144,19 +142,16 @@ class SongRowView extends ConsumerWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Flexible(
-              child: ClickableWidget(
-                onPressed:
-                    (onArtistTap != null && song.effectiveArtists.isNotEmpty)
-                    ? () => onArtistTap!(song)
-                    : null,
-                textStyle: TextStyle(
+              child: Text(
+                song.artistLabel,
+                maxLines: 1,
+                style: TextStyle(
                   fontSize: isTablet ? 16 : 12,
                   fontWeight: FontWeight.w400,
                   height: 1.2,
                   color: secondaryColor,
                   overflow: TextOverflow.ellipsis,
                 ),
-                child: Text(song.artistLabel, maxLines: 1),
               ),
             ),
             if (quality != null) ...[

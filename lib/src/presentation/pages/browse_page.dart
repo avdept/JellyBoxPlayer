@@ -107,16 +107,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     );
   }
 
-  Future<void> _onSongArtistTap(LibraryItem song) async {
-    final artistId = song.effectiveArtists.firstOrNull?.id;
-    if (artistId == null) return;
-    final item = await ref
-        .read(mediaServerClientProvider)
-        .getItem(artistId, kind: ItemKind.artist);
-    if (!mounted) return;
-    context.pushNamed(Routes.artist.name, extra: {'artist': item});
-  }
-
   Future<void> _onPlaySetPressed(LibraryItem item, ItemList view) async {
     final notifier = ref.read(setPlaybackProvider.notifier);
     try {
@@ -462,7 +452,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     isPlaying: currentSongId == song.id,
                     onTap: (song) => _onSongTap(song, list.items),
                     onLikePressed: _onLikePressed,
-                    onArtistTap: _onSongArtistTap,
                     optionsBuilder: (context) => contextMenuActions(
                       context,
                       ref,
