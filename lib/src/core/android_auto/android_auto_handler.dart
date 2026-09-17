@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/android_auto/auto_media_id.dart';
+import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -15,7 +16,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 class AndroidAutoHandler implements AudioBrowseDelegate {
   AndroidAutoHandler(this._ref, this._content);
 
-  static const coverAuthority = 'com.prodigytech.jellybox.covers';
+  static const coverAuthority = coverArtAuthority;
   static const homeRowLimit = 8;
 
   static const shuffleAction = 'jellybox.shuffle';
@@ -31,6 +32,8 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
   static const _groupTitleHint =
       'android.media.browse.CONTENT_STYLE_GROUP_TITLE_HINT';
   static const _searchFocus = 'android.intent.extra.focus';
+  static const _singleItemHint =
+      'android.media.browse.CONTENT_STYLE_SINGLE_ITEM_HINT';
   static const _listStyle = 1;
   static const _gridStyle = 2;
 
@@ -323,18 +326,26 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
         ),
       ];
     }
-    final downloads = _folder(
-      AutoMediaId.downloads,
-      'Downloads',
-      children: _gridChildren,
-    );
-    if (_ref.read(isOfflineProvider)) return [downloads];
     return [
       _folder(AutoMediaId.home, 'Home', children: _gridChildren),
       _folder(AutoMediaId.library, 'Library', children: _listChildren),
-      downloads,
+      _folder(AutoMediaId.downloads, 'Downloads', children: _gridChildren),
     ];
   }
+
+  bool get _offline => _ref.read(isOfflineProvider);
+
+  static final _offlineNotice = [
+    MediaItem(
+      id: AutoMediaId.offline,
+      title: "JellyBox can't connect to your server",
+      artist: 'Downloads are still available',
+      artUri: Uri.parse(
+        'android.resource://com.prodigytech.jellybox/drawable/ic_auto_offline',
+      ),
+      extras: const {_singleItemHint: _listStyle},
+    ),
+  ];
 
   Future<List<MediaItem>> _recent() async {
     final song = _currentSong(_ref.read(playbackProvider));
@@ -353,6 +364,7 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
   }
 
   Future<List<MediaItem>> _home() async {
+    if (_offline) return _offlineNotice;
     final [recent, playlists] = await Future.wait([
       _content.recentAlbums(limit: homeRowLimit, shuffle: false),
       _content.playlists(limit: homeRowLimit),
@@ -370,10 +382,14 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
   }
 
   Future<List<MediaItem>> _library() async => [
-    _folder(AutoMediaId.albums, 'Albums', children: _gridChildren),
-    _folder(AutoMediaId.artists, 'Artists', children: _listChildren),
-    _folder(AutoMediaId.playlists, 'Playlists', children: _listChildren),
-    _folder(AutoMediaId.songs, 'Songs', children: _songChildren),
+    if (_offline)
+      ..._offlineNotice
+    else ...[
+      _folder(AutoMediaId.albums, 'Albums', children: _gridChildren),
+      _folder(AutoMediaId.artists, 'Artists', children: _listChildren),
+      _folder(AutoMediaId.playlists, 'Playlists', children: _listChildren),
+      _folder(AutoMediaId.songs, 'Songs', children: _songChildren),
+    ],
   ];
 
   Future<List<MediaItem>> _downloads() async {
@@ -557,14 +573,5 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     return (song?.id, song?.userData.isFavorite ?? false);
   }
 
-  static Uri? autoArtUri(Uri? uri) {
-    if (uri == null || !uri.isScheme('file')) return uri;
-    final segments = uri.pathSegments;
-    if (segments.length < 2) return null;
-    return Uri(
-      scheme: 'content',
-      host: coverAuthority,
-      pathSegments: [segments[segments.length - 2]],
-    );
-  }
+  static Uri? autoArtUri(Uri? uri) => androidCoverArtUri(uri);
 }

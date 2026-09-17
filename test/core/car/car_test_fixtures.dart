@@ -119,6 +119,7 @@ class CarTestEnv {
     PlaybackState? playback,
   }) {
     SharedPreferences.setMockInitialValues({});
+    offlineState = StateProvider<bool>((_) => offline);
     registerFallbackValue(const LibraryQuery());
     registerFallbackValue(const SearchQuery(term: ''));
     registerFallbackValue(album('fallback'));
@@ -151,7 +152,7 @@ class CarTestEnv {
         currentUserProvider.overrideWith(
           (_) => signedIn ? const User(userId: 'user-1', token: 't') : null,
         ),
-        isOfflineProvider.overrideWithValue(offline),
+        isOfflineProvider.overrideWith((ref) => ref.watch(offlineState)),
         effectiveArtistScopeProvider.overrideWithValue(
           ArtistScope.albumArtists,
         ),
@@ -173,6 +174,7 @@ class CarTestEnv {
   }
 
   final client = MockMediaServerClient();
+  late final StateProvider<bool> offlineState;
   final player = MockAudioPlayer();
   final setPlayback = FakeSetPlayback();
   late FakePlaybackNotifier playbackNotifier;
@@ -200,6 +202,9 @@ class CarTestEnv {
   static Future<SetPlaybackResult> _started(Invocation _) async =>
       SetPlaybackResult.started;
 
+  void setOffline(bool value) =>
+      container.read(offlineState.notifier).state = value;
+
   void stubAlbums(List<LibraryItem> items) => when(
     () => client.getAlbums(any()),
   ).thenAnswer((_) async => LibraryPage(items: items));
@@ -210,10 +215,6 @@ class CarTestEnv {
 
   void stubPlaylists(List<LibraryItem> items) => when(
     () => client.getPlaylists(any()),
-  ).thenAnswer((_) async => LibraryPage(items: items));
-
-  void stubSongs(List<LibraryItem> items) => when(
-    () => client.getAllSongs(any()),
   ).thenAnswer((_) async => LibraryPage(items: items));
 
   void stubSearch({
@@ -236,5 +237,3 @@ class CarTestEnv {
     ).thenAnswer((_) async => LibraryPage(items: songs));
   }
 }
-
-Future<void> settle() => Future<void>.delayed(Duration.zero);

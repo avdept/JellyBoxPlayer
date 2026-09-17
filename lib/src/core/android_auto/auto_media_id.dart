@@ -16,6 +16,7 @@ class AutoMediaId {
   static const library = 'library';
   static const downloads = 'downloads';
   static const signIn = 'signin';
+  static const offline = 'offline';
   static const resume = 'resume';
   static const albums = 'albums';
   static const artists = 'artists';
@@ -35,6 +36,7 @@ class AutoMediaId {
     library,
     downloads,
     signIn,
+    offline,
     resume,
     albums,
     artists,

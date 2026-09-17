@@ -17,6 +17,7 @@ import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class CarEntry {
@@ -78,6 +79,7 @@ class CarContent {
       })
       ..listen(currentLibraryProvider, (previous, next) => _notifyChanged())
       ..listen(carFilterProvider, (previous, next) => _notifyChanged())
+      ..listen(isOfflineProvider, (previous, next) => _notifyChanged())
       ..listen(downloadedAlbumsProvider, (previous, next) => _notifyChanged());
   }
 
