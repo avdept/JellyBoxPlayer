@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: "none"
-version: 2.6.0+125
+version: 2.7.0+125
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -26,7 +26,7 @@ dependencies:
     path: ./native_route_picker
   just_audio:
   # Vendored fork of just_audio_background 0.0.1-beta.17 with a patched
-  # skipToPrevious (3s restart threshold) — upstream offers no hook for it.
+  # skipToPrevious (3s restart threshold) - upstream offers no hook for it.
   # See packages/just_audio_background/CHANGELOG.md.
   just_audio_background:
     path: ./packages/just_audio_background
