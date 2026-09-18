@@ -20,3 +20,9 @@ jobs:
         run: |
           dart pub get
           dart test
+
+      - name: genre_playlists package tests
+        working-directory: packages/genre_playlists
+        run: |
+          dart pub get
+          dart test

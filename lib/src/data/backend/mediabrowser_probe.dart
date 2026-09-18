@@ -58,10 +58,9 @@ class MediaBrowserProbe extends ServerProbe {
       name: info.serverName,
       version: info.version,
       productName: info.productName,
-      quickConnect: switch (serverType) {
-        ServerType.jellyfin => await quickConnectEnabled(serverUrl),
-        ServerType.emby => false,
-      },
+      quickConnect:
+          serverType == ServerType.jellyfin &&
+          await quickConnectEnabled(serverUrl),
     );
   }
 

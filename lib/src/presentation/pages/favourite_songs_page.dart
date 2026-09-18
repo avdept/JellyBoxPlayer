@@ -102,13 +102,19 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
         else
           ...songs.when(
             data: (page) => [
-              SongListSliver(
-                songs: page.items,
-                edgePadding: _horizontalPadding,
-                onItemUpdated: ref
-                    .read(favouriteSongsListProvider(_filter).notifier)
-                    .updateItem,
-              ),
+              if (page.items.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text("There's no songs yet.")),
+                )
+              else
+                SongListSliver(
+                  songs: page.items,
+                  edgePadding: _horizontalPadding,
+                  onItemUpdated: ref
+                      .read(favouriteSongsListProvider(_filter).notifier)
+                      .updateItem,
+                ),
             ],
             error: (error, stackTrace) => [
               SliverToBoxAdapter(

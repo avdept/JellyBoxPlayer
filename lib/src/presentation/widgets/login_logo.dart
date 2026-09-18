@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
+import 'package:jplayer/src/presentation/utils/server_logo.dart';
 
 class LoginLogo extends StatefulWidget {
   const LoginLogo({
     this.serverType,
+    this.productName,
     this.size = 160,
     this.pairedSize = 100,
     this.overlapFraction = 0.5,
@@ -15,6 +17,7 @@ class LoginLogo extends StatefulWidget {
   });
 
   final ServerType? serverType;
+  final String? productName;
   final double size;
   final double pairedSize;
   final double overlapFraction;
@@ -29,17 +32,22 @@ class _LoginLogoState extends State<LoginLogo> {
   static const _badgeFadeStart = 0.25;
 
   ServerType? _lastServerType;
+  String? _lastProductName;
 
   @override
   void initState() {
     super.initState();
     _lastServerType = widget.serverType;
+    _lastProductName = widget.productName;
   }
 
   @override
   void didUpdateWidget(LoginLogo oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.serverType != null) _lastServerType = widget.serverType;
+    if (widget.serverType != null) {
+      _lastServerType = widget.serverType;
+      _lastProductName = widget.productName;
+    }
   }
 
   double get _overlap => widget.pairedSize * widget.overlapFraction;
@@ -105,13 +113,10 @@ class _LoginLogoState extends State<LoginLogo> {
   Widget _serverBadge() {
     final serverType = _lastServerType;
     if (serverType == null) return const SizedBox.shrink();
-    return _logo(_badgeAsset(serverType));
+    return _logo(
+      serverLogoAsset(serverType, productName: _lastProductName),
+    );
   }
-
-  String _badgeAsset(ServerType serverType) => switch (serverType) {
-    ServerType.jellyfin => SvgPictures.jellyfinLogo,
-    ServerType.emby => SvgPictures.embyLogo,
-  };
 
   Widget _logo(String asset) => SvgPicture.asset(asset);
 }

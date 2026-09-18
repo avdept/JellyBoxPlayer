@@ -1,0 +1,8 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    sort_pub_dependencies: false
+    public_member_api_docs: false
+    lines_longer_than_80_chars: false
+    avoid_positional_boolean_parameters: false

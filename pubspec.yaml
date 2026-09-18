@@ -64,6 +64,8 @@ dependencies:
   updatify_flutter: ^1.7.1
   upnp_quirks:
     path: ./packages/upnp_quirks
+  genre_playlists:
+    path: ./packages/genre_playlists
   plausible: ^1.0.1
   connectivity_plus: ^7.3.1
   xml: ^6.6.1

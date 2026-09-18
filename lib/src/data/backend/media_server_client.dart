@@ -33,6 +33,16 @@ abstract class MediaServerClient {
 
   Future<List<LibraryItem>> getLatestAlbums({String? libraryId, int limit});
 
+  Future<List<LibraryItem>> getRecentlyPlayedAlbums({
+    String? libraryId,
+    int limit,
+  });
+
+  Future<List<LibraryItem>> getMostPlayedAlbums({
+    String? libraryId,
+    int limit,
+  });
+
   Future<List<GeneratedPlaylist>> generateTodaysPlaylists({
     String? libraryId,
     bool includeDiscovery = false,
