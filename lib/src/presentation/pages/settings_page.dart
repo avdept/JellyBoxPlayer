@@ -55,6 +55,14 @@ class SettingsPage extends ConsumerWidget {
     ForwardCacheWindow.min60: '60 min',
   };
 
+  static const Map<ContentUpdateInterval, String> _contentUpdateLabels = {
+    ContentUpdateInterval.min1: '1 minute',
+    ContentUpdateInterval.min5: '5 minutes',
+    ContentUpdateInterval.min15: '15 minutes',
+    ContentUpdateInterval.min30: '30 minutes',
+    ContentUpdateInterval.never: 'Never',
+  };
+
   static const Map<ForwardCacheLimit, String> _forwardCacheLabels = {
     ForwardCacheLimit.off: 'Off',
     ForwardCacheLimit.mb500: '500 MB',
@@ -164,6 +172,24 @@ class SettingsPage extends ConsumerWidget {
                       ref: ref,
                       setting: AppSetting.recentlyPlayedHidden,
                       label: 'Hide recently played',
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _settingDropdown<ContentUpdateInterval>(
+                          context: context,
+                          label: 'Content update interval',
+                          value: ref.watch(contentUpdateIntervalProvider),
+                          options: _contentUpdateLabels,
+                          onChanged: (value) => ref
+                              .read(appSettingsProvider.notifier)
+                              .setValue(
+                                AppSetting.contentUpdateInterval,
+                                value.name,
+                              ),
+                        ),
+                        _refreshContentButton(context, ref),
+                      ],
                     ),
                     _sectionHeader('UI'),
                     _settingDropdown<StartPage>(
@@ -283,6 +309,22 @@ class SettingsPage extends ConsumerWidget {
       label: const Text('Changelog'),
     );
   }
+
+  Widget _refreshContentButton(BuildContext context, WidgetRef ref) =>
+      IconButton(
+        onPressed: () {
+          ref.refreshHomeSections();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(content: Text('Home page refreshed')),
+            );
+        },
+        tooltip: 'Refresh now',
+        iconSize: 20,
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
+        icon: const Icon(Icons.refresh),
+      );
 
   Widget _sectionHeader(String title) => Padding(
     padding: const EdgeInsets.only(left: 12, top: 20, bottom: 4),

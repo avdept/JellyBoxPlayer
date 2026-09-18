@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -127,35 +131,29 @@ class ItemCarousel extends StatelessWidget {
     child: HorizontalScrollRegion(
       controlsHeight: AlbumCardMetrics.carouselWidth(device),
       controlsInset: horizontalPadding / 2,
-      builder: (context, controller) => ListView.separated(
+      builder: (context, controller) => _AnimatedCards(
+        items: list,
         controller: controller,
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-        clipBehavior: Clip.none,
-        itemCount: list.length,
-        separatorBuilder: (context, index) =>
-            SizedBox(width: AlbumCardMetrics.carouselSpacing(device)),
-        itemBuilder: (context, index) {
-          final item = list[index];
-          final builder = optionsBuilder;
-          return SizedBox(
-            width: AlbumCardMetrics.carouselWidth(device),
-            child: AlbumView(
-              album: item,
-              alignTextStart: true,
-              coverOverride: coverBuilder?.call(item),
-              onTap: onItemTap,
-              onPlayPressed: onPlayPressed,
-              optionsBuilder:
-                  builder == null || !(hasOptions?.call(item) ?? true)
-                  ? null
-                  : (context) => builder(context, item),
-            ),
-          );
-        },
+        device: device,
+        horizontalPadding: horizontalPadding,
+        cardBuilder: _card,
       ),
     ),
   );
+
+  Widget _card(LibraryItem item) {
+    final builder = optionsBuilder;
+    return AlbumView(
+      album: item,
+      alignTextStart: true,
+      coverOverride: coverBuilder?.call(item),
+      onTap: onItemTap,
+      onPlayPressed: onPlayPressed,
+      optionsBuilder: builder == null || !(hasOptions?.call(item) ?? true)
+          ? null
+          : (context) => builder(context, item),
+    );
+  }
 
   Widget _loading() => AlbumCardsRowShimmer(
     device: device,
@@ -183,4 +181,156 @@ class ItemCarousel extends StatelessWidget {
           ],
         ),
       );
+}
+
+const _growDuration = Duration(milliseconds: 280);
+const _shrinkDuration = Duration(milliseconds: 180);
+const _insertStagger = Duration(milliseconds: 30);
+const _maxCascade = Duration(milliseconds: 700);
+
+class _AnimatedCards extends StatefulWidget {
+  const _AnimatedCards({
+    required this.items,
+    required this.controller,
+    required this.device,
+    required this.horizontalPadding,
+    required this.cardBuilder,
+  });
+
+  final List<LibraryItem> items;
+  final ScrollController controller;
+  final DeviceType device;
+  final double horizontalPadding;
+  final Widget Function(LibraryItem) cardBuilder;
+
+  @override
+  State<_AnimatedCards> createState() => _AnimatedCardsState();
+}
+
+class _AnimatedCardsState extends State<_AnimatedCards> {
+  var _listKey = GlobalKey<AnimatedListState>();
+  late List<LibraryItem> _shown;
+  List<LibraryItem> _target = const [];
+  final _pendingInserts = <int>[];
+  Duration _stagger = _insertStagger;
+  Timer? _stepTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _shown = [...widget.items];
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedCards oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _animateTo(widget.items);
+  }
+
+  @override
+  void dispose() {
+    _stepTimer?.cancel();
+    super.dispose();
+  }
+
+  List<String> _ids(List<LibraryItem> items) => [
+    for (final item in items) item.id,
+  ];
+
+  void _animateTo(List<LibraryItem> target) {
+    final inProgress = _stepTimer?.isActive ?? false;
+    if (inProgress && listEquals(_ids(_target), _ids(target))) {
+      _target = target;
+      return;
+    }
+    _stepTimer?.cancel();
+    _pendingInserts.clear();
+    _target = target;
+
+    final diff = diffIds(_ids(_shown), _ids(target));
+    if (diff.isEmpty) {
+      setState(() => _shown = [...target]);
+      return;
+    }
+
+    final list = _listKey.currentState;
+    if (_shown.isEmpty || list == null) {
+      setState(() {
+        _shown = [...target];
+        _listKey = GlobalKey<AnimatedListState>();
+      });
+      return;
+    }
+
+    for (final index in diff.removals) {
+      final removed = _shown.removeAt(index);
+      list.removeItem(
+        index,
+        (context, animation) => _card(removed, animation),
+        duration: _shrinkDuration,
+      );
+    }
+    _pendingInserts.addAll(diff.insertions);
+    _stagger = Duration(
+      microseconds: min(
+        _insertStagger.inMicroseconds,
+        _maxCascade.inMicroseconds ~/ max(1, diff.insertions.length),
+      ),
+    );
+    _insertNext();
+  }
+
+  void _insertNext() {
+    if (_pendingInserts.isEmpty) {
+      setState(() => _shown = [..._target]);
+      return;
+    }
+    final index = _pendingInserts.removeAt(0);
+    _shown.insert(index, _target[index]);
+    _listKey.currentState?.insertItem(index, duration: _growDuration);
+    _stepTimer = Timer(_stagger, _insertNext);
+  }
+
+  Widget _card(LibraryItem item, Animation<double> animation) {
+    final curved = CurvedAnimation(parent: animation, curve: Curves.easeOut);
+    final card = FadeTransition(
+      opacity: curved,
+      child: Padding(
+        padding: EdgeInsets.only(
+          right: AlbumCardMetrics.carouselSpacing(widget.device),
+        ),
+        child: SizedBox(
+          width: AlbumCardMetrics.carouselWidth(widget.device),
+          child: widget.cardBuilder(item),
+        ),
+      ),
+    );
+    return AnimatedBuilder(
+      animation: curved,
+      builder: (context, child) => Align(
+        alignment: Alignment.centerLeft,
+        widthFactor: curved.value,
+        child: child,
+      ),
+      child: card,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = AlbumCardMetrics.carouselSpacing(widget.device);
+    return AnimatedList(
+      key: _listKey,
+      controller: widget.controller,
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.only(
+        left: widget.horizontalPadding,
+        right: max(0, widget.horizontalPadding - spacing),
+      ),
+      clipBehavior: Clip.none,
+      initialItemCount: _shown.length,
+      itemBuilder: (context, index, animation) =>
+          _card(_shown[index], animation),
+    );
+  }
 }
