@@ -170,6 +170,22 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getLatestAlbums({
+    String? libraryId,
+    int limit = 20,
+  }) async {
+    final response = await _api.getLatestItems(
+      userId: userId,
+      libraryId: libraryId,
+      limit: '$limit',
+    );
+    return [
+      for (final item in response.data)
+        if (item.type == 'MusicAlbum') item.toJellyfinLibraryItem(),
+    ];
+  }
+
+  @override
   Future<List<GeneratedPlaylist>> generateTodaysPlaylists({
     String? libraryId,
     bool includeDiscovery = false,

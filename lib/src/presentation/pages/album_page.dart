@@ -267,6 +267,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                         SliverToBoxAdapter(child: _songsPlaceholder())
                       else
                         ..._songSlivers(),
+                      ..._moreFromArtistSlivers(),
                       ..._suggestedAlbumsSlivers(),
                     ],
                   ),
@@ -521,12 +522,41 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
     }
   }
 
+  MoreFromArtistKey? get _moreFromArtistKey {
+    final artist = widget.album.albumArtists.firstOrNull;
+    if (artist == null) return null;
+    return (artistId: artist.id, albumId: widget.album.id);
+  }
+
+  List<Widget> _moreFromArtistSlivers() {
+    final key = _moreFromArtistKey;
+    if (key == null) return const [];
+    final albums = ref.watch(moreFromArtistProvider(key)).valueOrNull;
+    if (albums == null || albums.isEmpty) return const [];
+    return _albumRowSlivers(
+      title: 'More from ${widget.album.albumArtists.first.name}',
+      albums: albums,
+      onLike: _onMoreFromArtistLikePressed,
+    );
+  }
+
   List<Widget> _suggestedAlbumsSlivers() {
     final albums = ref
         .watch(similarAlbumsProvider(widget.album.id))
         .valueOrNull;
     if (albums == null || albums.isEmpty) return const [];
+    return _albumRowSlivers(
+      title: 'You may also like',
+      albums: albums,
+      onLike: _onSuggestedAlbumLikePressed,
+    );
+  }
 
+  List<Widget> _albumRowSlivers({
+    required String title,
+    required List<LibraryItem> albums,
+    required Future<void> Function(LibraryItem) onLike,
+  }) {
     final horizontalPadding = _device.isMobile ? 16.0 : 30.0;
     final cardWidth = AlbumCardMetrics.width(_device);
     final cardHeight = AlbumCardMetrics.height(
@@ -544,7 +574,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             bottom: 12,
           ),
           child: Text(
-            'You may also like',
+            title,
             style: TextStyle(
               fontSize: _device.isMobile ? 20 : 24,
               fontWeight: FontWeight.w500,
@@ -575,7 +605,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                     ref,
                     albums[index],
                     scope: ContextMenuScope.browse,
-                    onLike: _onSuggestedAlbumLikePressed,
+                    onLike: onLike,
                   ),
                   onTap: (album) => context.pushNamed(
                     branchAwareName(context, Routes.album),
@@ -622,6 +652,12 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
   Future<void> _onSuggestedAlbumLikePressed(LibraryItem album) async {
     await toggleFavourite(ref, album);
     ref.invalidate(similarAlbumsProvider(widget.album.id));
+  }
+
+  Future<void> _onMoreFromArtistLikePressed(LibraryItem album) async {
+    await toggleFavourite(ref, album);
+    final key = _moreFromArtistKey;
+    if (key != null) ref.invalidate(moreFromArtistProvider(key));
   }
 
   Future<void> _onSongLikePressed(LibraryItem song) async {

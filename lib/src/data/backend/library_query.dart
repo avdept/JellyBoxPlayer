@@ -4,6 +4,7 @@ enum ItemSort {
   name,
   albumArtist,
   dateCreated,
+  releaseDate,
   datePlayed,
   playCount,
   dateLastContentAdded,

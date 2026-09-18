@@ -186,9 +186,9 @@ void main() {
       await pumpHome(widgetTester);
 
       final titles = [
-        'Recently played',
-        'Made for you',
         'Recently added',
+        'Made for you',
+        'Recently played',
         'Favourites',
         'Playlists',
         'Frequently played',

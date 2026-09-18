@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -159,6 +160,7 @@ void main() {
     registerFallbackValue(mockAlbum);
     registerFallbackValue(mockSongs);
     registerFallbackValue(ImageKind.primary);
+    registerFallbackValue(LibraryQuery());
     deviceId = faker.datatype.uuid();
   });
 
@@ -185,6 +187,9 @@ void main() {
     ).thenAnswer((_) async => mockSongs);
     when(
       () => mockGetSimilarAlbums(albumId: mockAlbum.id),
+    ).thenAnswer((_) async => const LibraryPage(items: []));
+    when(
+      () => mockMediaServerClient.getAlbums(any()),
     ).thenAnswer((_) async => const LibraryPage(items: []));
     when(() => mockUser.userId).thenReturn(mockUserId);
   });

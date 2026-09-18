@@ -86,6 +86,8 @@ const contextMenuLayout =
       ItemKind.album: {
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
+          ContextMenuEntry.playNext,
+          ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
           ContextMenuEntry.goToArtist,
@@ -636,23 +638,51 @@ class _ContextMenuActions {
     entry: ContextMenuEntry.playNext,
     icon: const Icon(Icons.playlist_play),
     label: const Text('Play next'),
-    run: () async {
-      final queued = await ref.read(playbackProvider.notifier).playNext(item);
-      _showSnackBar(queued ? 'Playing next' : 'Could not queue ${item.name}');
-    },
+    run: () => _enqueue(playNext: true),
   );
 
   ContextMenuAction addToQueue() => ContextMenuAction(
     entry: ContextMenuEntry.addToQueue,
     icon: const Icon(Icons.playlist_add),
     label: const Text('Add to queue'),
-    run: () async {
-      final queued = await ref.read(playbackProvider.notifier).addToQueue(item);
-      _showSnackBar(
-        queued ? 'Added to queue' : 'Could not queue ${item.name}',
-      );
-    },
+    run: () => _enqueue(playNext: false),
   );
+
+  Future<void> _enqueue({required bool playNext}) async {
+    final List<LibraryItem> songs;
+    try {
+      songs = await _queueableSongs();
+    } on Object {
+      _showSnackBar('Could not queue ${item.name}');
+      return;
+    }
+    if (songs.isEmpty) {
+      _showSnackBar('Nothing to queue in "${item.name}"');
+      return;
+    }
+    final notifier = ref.read(playbackProvider.notifier);
+    final set = item.kind == ItemKind.song ? null : item;
+    final queued = playNext
+        ? await notifier.playNextAll(songs, set: set)
+        : await notifier.addAllToQueue(songs, set: set);
+    if (!queued) {
+      _showSnackBar('Could not queue ${item.name}');
+    } else if (playNext) {
+      _showSnackBar('Playing next');
+    } else {
+      _showSnackBar('Added to queue');
+    }
+  }
+
+  Future<List<LibraryItem>> _queueableSongs() async {
+    final playback = ref.read(setPlaybackProvider.notifier);
+    return switch (item.kind) {
+      ItemKind.song => [item],
+      ItemKind.album => playback.albumSongs(item.id),
+      ItemKind.playlist => playback.playlistSongs(item.id),
+      _ => const [],
+    };
+  }
 
   ContextMenuAction download() => ContextMenuAction(
     entry: ContextMenuEntry.download,

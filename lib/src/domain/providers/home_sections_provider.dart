@@ -93,15 +93,10 @@ final AutoDisposeFutureProvider<List<LibraryItem>> recentlyAddedAlbumsProvider =
       final userId = ref.watch(currentUserProvider)?.userId;
       if (userId == null) return const [];
 
-      final page = await api.getAlbums(
-        LibraryQuery(
-          libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
-          sort: ItemSort.dateCreated,
-          direction: SortDirection.descending,
-          limit: homeSectionLimit,
-        ),
+      return api.getLatestAlbums(
+        libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+        limit: homeSectionLimit,
       );
-      return page.items;
     });
 
 final AutoDisposeFutureProvider<List<LibraryItem>>

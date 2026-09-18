@@ -325,6 +325,50 @@ class _EmbyApi implements EmbyApi {
   }
 
   @override
+  Future<HttpResponse<List<ItemDTO>>> getLatestItems({
+    required String userId,
+    String? libraryId,
+    String type = 'Audio',
+    bool groupItems = true,
+    String limit = '20',
+    List<String> fields = const ['ProviderIds'],
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'ParentId': libraryId,
+      r'IncludeItemTypes': type,
+      r'GroupItems': groupItems,
+      r'Limit': limit,
+      r'Fields': fields,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<List<ItemDTO>>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/Users/${userId}/Items/Latest',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<ItemDTO> _value;
+    try {
+      _value = _result.data!
+          .map((dynamic i) => ItemDTO.fromJson(i as Map<String, dynamic>))
+          .toList();
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<ItemsWrapper>> getSimilarAlbums({
     required String albumId,
     required String userId,

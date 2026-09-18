@@ -43,7 +43,7 @@ void main() {
       () async {
         final (env, handler) = build(offline: true);
         env
-          ..stubAlbums([album('a1')])
+          ..stubLatestAlbums([album('a1')])
           ..stubPlaylists(const []);
 
         expect(await ids(handler, AutoMediaId.root), [
@@ -76,7 +76,7 @@ void main() {
       );
       final (env, handler) = build(mixes: [mix]);
       env
-        ..stubAlbums(albums(12))
+        ..stubLatestAlbums(albums(12))
         ..stubPlaylists([playlist('p1')]);
 
       final children = await handler.getChildren(AutoMediaId.home);
@@ -121,7 +121,7 @@ void main() {
 
     test('- an album opens Play all plus its tracks, both playable', () async {
       final (env, handler) = build();
-      env.stubAlbums([album('a1')]);
+      env.stubLatestAlbums([album('a1')]);
       when(
         () => env.setPlayback.albumSongs('a1'),
       ).thenAnswer((_) async => [song('s1'), song('s2')]);

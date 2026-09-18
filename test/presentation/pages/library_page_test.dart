@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/main.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -91,6 +92,12 @@ void main() {
 
   setUpAll(() {
     deviceId = faker.datatype.uuid();
+    appInfo = PackageInfo(
+      appName: 'JellyBox',
+      packageName: 'app.jellybox',
+      version: '0.0.0',
+      buildNumber: '0',
+    );
     registerFallbackValue(FakeLibraryItem());
   });
 

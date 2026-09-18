@@ -209,6 +209,13 @@ class CarTestEnv {
     () => client.getAlbums(any()),
   ).thenAnswer((_) async => LibraryPage(items: items));
 
+  void stubLatestAlbums(List<LibraryItem> items) => when(
+    () => client.getLatestAlbums(
+      libraryId: any(named: 'libraryId'),
+      limit: any(named: 'limit'),
+    ),
+  ).thenAnswer((_) async => items);
+
   void stubArtists(List<LibraryItem> items) => when(
     () => client.getArtists(any()),
   ).thenAnswer((_) async => LibraryPage(items: items));

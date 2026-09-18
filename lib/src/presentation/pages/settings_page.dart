@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -242,6 +243,7 @@ class SettingsPage extends ConsumerWidget {
                       ),
                     ],
                     if (!device.isDesktop) _logOutButton(ref),
+                    _versionLabel(context),
                   ],
                 ),
               ),
@@ -393,6 +395,23 @@ class SettingsPage extends ConsumerWidget {
           ),
           Text(label),
         ],
+      ),
+    );
+  }
+
+  Widget _versionLabel(BuildContext context) {
+    final build = appInfo.buildNumber;
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 20),
+      child: Text(
+        build.isEmpty
+            ? 'Version ${appInfo.version}'
+            : 'Version ${appInfo.version} ($build)',
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.2,
+          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
+        ),
       ),
     );
   }
