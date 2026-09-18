@@ -248,6 +248,46 @@ void main() {
     ]);
   });
 
+  test(
+    '- play next keeps several songs in order after the current one',
+    () async {
+      final playback = container.read(playbackProvider.notifier);
+      await playback.play(songs.first, songs.take(3).toList(), album);
+
+      await playback.playNextAll(songs.sublist(3, 6));
+
+      final state = container.read(playbackProvider);
+      expect(idsOf(state.songs), ['a', 'd', 'e', 'f', 'b', 'c']);
+      expect(state.currentMediaIndex, 0);
+    },
+  );
+
+  test('- add to queue appends several songs in order', () async {
+    final playback = container.read(playbackProvider.notifier);
+    await playback.play(songs.first, songs.take(3).toList(), album);
+
+    await playback.addAllToQueue(songs.sublist(3, 6));
+
+    expect(idsOf(container.read(playbackProvider).songs), [
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+    ]);
+  });
+
+  test('- queuing into an empty queue loads it without playing', () async {
+    final playback = container.read(playbackProvider.notifier);
+
+    await playback.addAllToQueue(songs.take(3).toList(), set: album);
+
+    final state = container.read(playbackProvider);
+    expect(idsOf(state.songs), ['a', 'b', 'c']);
+    expect(state.album?.id, album.id);
+  });
+
   test('- a new queue starts shuffled while shuffle is on', () async {
     final playback = container.read(playbackProvider.notifier);
     await playback.play(songs.first, songs, album);

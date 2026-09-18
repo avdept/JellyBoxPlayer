@@ -7,7 +7,6 @@ import 'package:flutter/painting.dart' show PaintingBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/main.dart';
-import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/backend/media_server_backends.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -446,7 +445,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     serverType,
     deviceId: deviceId,
     deviceName: getCurrentPlatformName(),
-    version: version,
+    version: appInfo.version,
   );
 
   void _notifyDeveloper() => log(

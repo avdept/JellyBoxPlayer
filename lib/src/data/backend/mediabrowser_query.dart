@@ -6,6 +6,7 @@ String mediaBrowserSort(ItemSort sort, {ItemKind target = ItemKind.album}) =>
       ItemSort.name => target == ItemKind.song ? 'Name' : 'SortName',
       ItemSort.albumArtist => 'AlbumArtist',
       ItemSort.dateCreated => 'DateCreated,SortName',
+      ItemSort.releaseDate => 'PremiereDate,ProductionYear,SortName',
       ItemSort.datePlayed => 'DatePlayed',
       ItemSort.playCount => 'PlayCount',
       ItemSort.dateLastContentAdded => 'DateLastContentAdded',

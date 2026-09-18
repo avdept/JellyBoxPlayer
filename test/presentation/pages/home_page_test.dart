@@ -2,6 +2,7 @@ import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
@@ -87,11 +88,15 @@ void main() {
     bool isOffline = false,
     bool devTools = false,
     bool generatedDisabled = false,
+    ContentUpdateInterval? updateInterval,
+    VoidCallback? onRecentlyAddedFetch,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(
         overrides: [
           isOfflineProvider.overrideWith((_) => isOffline),
+          if (updateInterval != null)
+            contentUpdateIntervalProvider.overrideWithValue(updateInterval),
           devToolsEnabledProvider.overrideWith((_) => devTools),
           if (generatedDisabled)
             settingProvider(
@@ -104,9 +109,10 @@ void main() {
           recentlyPlayedAlbumsProvider.overrideWith(
             (_) async => recentlyPlayed ?? createItems(3, ItemKind.album),
           ),
-          recentlyAddedAlbumsProvider.overrideWith(
-            (_) async => recentlyAdded ?? createItems(3, ItemKind.album),
-          ),
+          recentlyAddedAlbumsProvider.overrideWith((_) async {
+            onRecentlyAddedFetch?.call();
+            return recentlyAdded ?? createItems(3, ItemKind.album);
+          }),
           recentlyUpdatedPlaylistsProvider.overrideWith(
             (_) async => playlists ?? createItems(3, ItemKind.playlist),
           ),
@@ -137,6 +143,8 @@ void main() {
     bool isOffline = false,
     bool devTools = false,
     bool generatedDisabled = false,
+    ContentUpdateInterval? updateInterval,
+    VoidCallback? onRecentlyAddedFetch,
   }) async {
     widgetTester.view.physicalSize = const Size(390, 2000);
     widgetTester.view.devicePixelRatio = 1;
@@ -153,6 +161,8 @@ void main() {
         isOffline: isOffline,
         devTools: devTools,
         generatedDisabled: generatedDisabled,
+        updateInterval: updateInterval,
+        onRecentlyAddedFetch: onRecentlyAddedFetch,
       ),
     );
     await widgetTester.pump(Duration.zero);
@@ -180,15 +190,50 @@ void main() {
       expect(find.byType(ItemCarousel), findsNWidgets(6));
     });
 
+    testWidgets('- refetches recently added on the update interval', (
+      widgetTester,
+    ) async {
+      var fetches = 0;
+      await pumpHome(
+        widgetTester,
+        updateInterval: ContentUpdateInterval.min1,
+        onRecentlyAddedFetch: () => fetches++,
+      );
+      expect(fetches, 1);
+
+      await widgetTester.pump(const Duration(minutes: 1));
+      await widgetTester.pump(Duration.zero);
+      expect(fetches, 2);
+
+      await widgetTester.pump(const Duration(minutes: 1));
+      await widgetTester.pump(Duration.zero);
+      expect(fetches, 3);
+    });
+
+    testWidgets('- never refetches when updates are off', (
+      widgetTester,
+    ) async {
+      var fetches = 0;
+      await pumpHome(
+        widgetTester,
+        updateInterval: ContentUpdateInterval.never,
+        onRecentlyAddedFetch: () => fetches++,
+      );
+
+      await widgetTester.pump(const Duration(hours: 1));
+      await widgetTester.pump(Duration.zero);
+      expect(fetches, 1);
+    });
+
     testWidgets('- orders the sections with frequently played last', (
       widgetTester,
     ) async {
       await pumpHome(widgetTester);
 
       final titles = [
-        'Recently played',
-        'Made for you',
         'Recently added',
+        'Made for you',
+        'Recently played',
         'Favourites',
         'Playlists',
         'Frequently played',

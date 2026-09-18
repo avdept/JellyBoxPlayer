@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/main.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -52,6 +53,14 @@ class SettingsPage extends ConsumerWidget {
     ForwardCacheWindow.min30: '30 min',
     ForwardCacheWindow.min45: '45 min',
     ForwardCacheWindow.min60: '60 min',
+  };
+
+  static const Map<ContentUpdateInterval, String> _contentUpdateLabels = {
+    ContentUpdateInterval.min1: '1 minute',
+    ContentUpdateInterval.min5: '5 minutes',
+    ContentUpdateInterval.min15: '15 minutes',
+    ContentUpdateInterval.min30: '30 minutes',
+    ContentUpdateInterval.never: 'Never',
   };
 
   static const Map<ForwardCacheLimit, String> _forwardCacheLabels = {
@@ -164,6 +173,24 @@ class SettingsPage extends ConsumerWidget {
                       setting: AppSetting.recentlyPlayedHidden,
                       label: 'Hide recently played',
                     ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _settingDropdown<ContentUpdateInterval>(
+                          context: context,
+                          label: 'Content update interval',
+                          value: ref.watch(contentUpdateIntervalProvider),
+                          options: _contentUpdateLabels,
+                          onChanged: (value) => ref
+                              .read(appSettingsProvider.notifier)
+                              .setValue(
+                                AppSetting.contentUpdateInterval,
+                                value.name,
+                              ),
+                        ),
+                        _refreshContentButton(context, ref),
+                      ],
+                    ),
                     _sectionHeader('UI'),
                     _settingDropdown<StartPage>(
                       context: context,
@@ -242,6 +269,7 @@ class SettingsPage extends ConsumerWidget {
                       ),
                     ],
                     if (!device.isDesktop) _logOutButton(ref),
+                    _versionLabel(context),
                   ],
                 ),
               ),
@@ -281,6 +309,22 @@ class SettingsPage extends ConsumerWidget {
       label: const Text('Changelog'),
     );
   }
+
+  Widget _refreshContentButton(BuildContext context, WidgetRef ref) =>
+      IconButton(
+        onPressed: () {
+          ref.refreshHomeSections();
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(content: Text('Home page refreshed')),
+            );
+        },
+        tooltip: 'Refresh now',
+        iconSize: 20,
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
+        icon: const Icon(Icons.refresh),
+      );
 
   Widget _sectionHeader(String title) => Padding(
     padding: const EdgeInsets.only(left: 12, top: 20, bottom: 4),
@@ -393,6 +437,23 @@ class SettingsPage extends ConsumerWidget {
           ),
           Text(label),
         ],
+      ),
+    );
+  }
+
+  Widget _versionLabel(BuildContext context) {
+    final build = appInfo.buildNumber;
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 20),
+      child: Text(
+        build.isEmpty
+            ? 'Version ${appInfo.version}'
+            : 'Version ${appInfo.version} ($build)',
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.2,
+          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
+        ),
       ),
     );
   }

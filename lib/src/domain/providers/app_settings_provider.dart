@@ -22,6 +22,7 @@ enum AppSetting {
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
   discordRichPresence('discord_rich_presence'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
+  contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{});
 
   const AppSetting(this.key, {this.defaultValue = false});
@@ -86,6 +87,15 @@ final forwardCacheWindowProvider = Provider<ForwardCacheWindow>(
         AppSetting.forwardCacheWindow,
       )] ??
       ForwardCacheWindow.min30,
+);
+
+final contentUpdateIntervalProvider = Provider<ContentUpdateInterval>(
+  (ref) =>
+      ContentUpdateInterval.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.contentUpdateInterval],
+        AppSetting.contentUpdateInterval,
+      )] ??
+      ContentUpdateInterval.min5,
 );
 
 final keepScreenOnProvider = Provider<KeepScreenOn>(

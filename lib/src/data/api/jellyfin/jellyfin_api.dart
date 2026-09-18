@@ -108,6 +108,16 @@ abstract class JellyfinApi {
     @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
+  @GET('/Users/{userId}/Items/Latest')
+  Future<HttpResponse<List<ItemDTO>>> getLatestItems({
+    @Path('userId') required String userId,
+    @Query('ParentId') String? libraryId,
+    @Query('IncludeItemTypes') String type = 'Audio',
+    @Query('GroupItems') bool groupItems = true,
+    @Query('Limit') String limit = '20',
+    @Query('Fields') List<String> fields = const ['ProviderIds'],
+  });
+
   @GET('/Albums/{albumId}/Similar')
   Future<HttpResponse<ItemsWrapper>> getSimilarAlbums({
     @Path('albumId') required String albumId,

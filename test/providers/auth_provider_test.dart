@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -62,6 +63,12 @@ void main() {
 
   setUpAll(() {
     deviceId = 'test-device';
+    appInfo = PackageInfo(
+      appName: 'JellyBox',
+      packageName: 'app.jellybox',
+      version: '0.0.0',
+      buildNumber: '0',
+    );
     registerFallbackValue(RequestOptions(path: '/'));
     registerFallbackValue(const PublicSystemInfoDTO());
     registerFallbackValue(const Stream<Uint8List>.empty());

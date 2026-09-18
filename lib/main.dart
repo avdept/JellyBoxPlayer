@@ -24,6 +24,7 @@ import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -32,6 +33,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:plausible/plausible.dart';
 
 late String deviceId;
+late PackageInfo appInfo;
 
 Future<void> main() async {
   if (Platform.isLinux || Platform.isWindows) {
@@ -58,6 +60,7 @@ Future<void> main() async {
   );
 
   deviceId = (await FlutterUdid.udid).trim();
+  appInfo = await PackageInfo.fromPlatform();
 
   await DownloadPaths.init();
 

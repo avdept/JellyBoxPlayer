@@ -118,17 +118,9 @@ class CarContent {
     if (!isSignedIn) return const [];
     final client = _ref.read(mediaServerClientProvider);
     final libraryId = _ref.read(currentLibraryProvider).valueOrNull?.id;
-    final recent = await _fetch(() async {
-      final resp = await client.getAlbums(
-        LibraryQuery(
-          libraryId: libraryId,
-          sort: ItemSort.dateCreated,
-          direction: SortDirection.descending,
-          limit: limit,
-        ),
-      );
-      return resp.items;
-    });
+    final recent = await _fetch(
+      () => client.getLatestAlbums(libraryId: libraryId, limit: limit),
+    );
     final ordered = shuffle ? ([...recent]..shuffle()) : recent;
     return ordered.take(limit).map(entry).toList();
   }

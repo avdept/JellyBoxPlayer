@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
@@ -9,6 +10,8 @@ const _buttonSize = 44.0;
 const _sliderLength = 150.0;
 const _sliderPadding = 14.0;
 const _hideDelay = Duration(milliseconds: 150);
+const _wheelSettleDelay = Duration(milliseconds: 100);
+const _wheelLevelPerPixel = 0.0004;
 
 class VolumeControl extends ConsumerStatefulWidget {
   const VolumeControl({this.size = _buttonSize, this.color, super.key});
@@ -24,6 +27,7 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   final _portalController = OverlayPortalController();
   final _link = LayerLink();
   Timer? _hideTimer;
+  Timer? _wheelTimer;
   bool _expanded = false;
 
   void _show() {
@@ -42,6 +46,20 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     });
   }
 
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final delta = -event.scrollDelta.dy * _wheelLevelPerPixel;
+    if (delta == 0) return;
+    final notifier = ref.read(volumeProvider.notifier);
+    final level = (ref.read(volumeProvider).level + delta).clamp(0.0, 1.0);
+    unawaited(notifier.setLevel(level, persist: false));
+    _wheelTimer?.cancel();
+    _wheelTimer = Timer(_wheelSettleDelay, () {
+      if (!mounted) return;
+      unawaited(notifier.setLevel(ref.read(volumeProvider).level));
+    });
+  }
+
   IconData _iconFor(VolumeState volume) {
     if (volume.isSilent) return Icons.volume_off_rounded;
     if (volume.effectiveLevel < 0.34) return Icons.volume_mute_rounded;
@@ -52,6 +70,7 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _wheelTimer?.cancel();
     super.dispose();
   }
 
@@ -90,25 +109,28 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   Widget _capsule(ThemeData theme, VolumeState volume) => MouseRegion(
     onEnter: (_) => _show(),
     onExit: (_) => _scheduleHide(),
-    child: SizedBox(
-      width: widget.size,
-      height: _sliderLength + widget.size,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.size / 2),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: ColoredBox(
-            color: Colors.black.withOpacity(0.35),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: _sliderPadding),
-                    child: _slider(theme, volume),
+    child: Listener(
+      onPointerSignal: _onPointerSignal,
+      child: SizedBox(
+        width: widget.size,
+        height: _sliderLength + widget.size,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(widget.size / 2),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: ColoredBox(
+              color: Colors.black.withOpacity(0.35),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: _sliderPadding),
+                      child: _slider(theme, volume),
+                    ),
                   ),
-                ),
-                _muteButton(theme, volume),
-              ],
+                  _muteButton(theme, volume),
+                ],
+              ),
             ),
           ),
         ),

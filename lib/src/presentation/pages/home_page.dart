@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -24,10 +25,39 @@ class _HomePageState extends ConsumerState<HomePage> {
   static const _iconRowHeight = 48.0;
 
   late DeviceType _device;
+  Timer? _updateTimer;
 
   double get _horizontalPadding => _device.isMobile ? 16 : 30;
 
   double get _navigationBarHeight => _device.isMobile ? _iconRowHeight : 100;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(
+      contentUpdateIntervalProvider,
+      (_, interval) => _scheduleUpdates(interval),
+      fireImmediately: true,
+    );
+  }
+
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleUpdates(ContentUpdateInterval interval) {
+    _updateTimer?.cancel();
+    final duration = interval.duration;
+    if (duration == null) return;
+    _updateTimer = Timer.periodic(duration, (_) => _updateContent());
+  }
+
+  void _updateContent() {
+    if (ref.read(isOfflineProvider)) return;
+    ref.refreshHomeSections();
+  }
 
   @override
   void didChangeDependencies() {
@@ -188,19 +218,18 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           )
         else ...[
-          if (!ref.watch(settingProvider(AppSetting.recentlyPlayedHidden)))
-            SliverToBoxAdapter(
-              child: ItemCarousel(
-                title: 'Recently played',
-                items: ref.watch(recentlyPlayedAlbumsProvider),
-                device: _device,
-                horizontalPadding: _horizontalPadding,
-                onItemTap: _onAlbumTap,
-                onPlayPressed: _onPlayAlbum,
-                optionsBuilder: _cardOptions(recentlyPlayedAlbumsProvider),
-                onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
-              ),
+          SliverToBoxAdapter(
+            child: ItemCarousel(
+              title: 'Recently added',
+              items: ref.watch(recentlyAddedAlbumsProvider),
+              device: _device,
+              horizontalPadding: _horizontalPadding,
+              onItemTap: _onAlbumTap,
+              onPlayPressed: _onPlayAlbum,
+              optionsBuilder: _cardOptions(recentlyAddedAlbumsProvider),
+              onRetry: () => ref.invalidate(recentlyAddedAlbumsProvider),
             ),
+          ),
           if (!ref.watch(
             settingProvider(AppSetting.generatedPlaylistsDisabled),
           ))
@@ -219,18 +248,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                     : null,
               ),
             ),
-          SliverToBoxAdapter(
-            child: ItemCarousel(
-              title: 'Recently added',
-              items: ref.watch(recentlyAddedAlbumsProvider),
-              device: _device,
-              horizontalPadding: _horizontalPadding,
-              onItemTap: _onAlbumTap,
-              onPlayPressed: _onPlayAlbum,
-              optionsBuilder: _cardOptions(recentlyAddedAlbumsProvider),
-              onRetry: () => ref.invalidate(recentlyAddedAlbumsProvider),
+          if (!ref.watch(settingProvider(AppSetting.recentlyPlayedHidden)))
+            SliverToBoxAdapter(
+              child: ItemCarousel(
+                title: 'Recently played',
+                items: ref.watch(recentlyPlayedAlbumsProvider),
+                device: _device,
+                horizontalPadding: _horizontalPadding,
+                onItemTap: _onAlbumTap,
+                onPlayPressed: _onPlayAlbum,
+                optionsBuilder: _cardOptions(recentlyPlayedAlbumsProvider),
+                onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
+              ),
             ),
-          ),
           if (!ref.watch(settingProvider(AppSetting.favouritesHidden)))
             SliverToBoxAdapter(
               child: ItemCarousel(

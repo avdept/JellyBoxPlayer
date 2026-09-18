@@ -789,18 +789,44 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     await _editQueue(() => _target.move(from, to));
   }
 
-  Future<bool> playNext(LibraryItem song) => _enqueue(song, playNext: true);
+  Future<bool> playNext(LibraryItem song) =>
+      _enqueueAll([song], playNext: true);
 
-  Future<bool> addToQueue(LibraryItem song) => _enqueue(song, playNext: false);
+  Future<bool> addToQueue(LibraryItem song) =>
+      _enqueueAll([song], playNext: false);
 
-  Future<bool> _enqueue(LibraryItem song, {required bool playNext}) async {
-    final album = state.album ?? song;
+  Future<bool> playNextAll(List<LibraryItem> songs, {LibraryItem? set}) =>
+      _enqueueAll(songs, playNext: true, set: set);
+
+  Future<bool> addAllToQueue(List<LibraryItem> songs, {LibraryItem? set}) =>
+      _enqueueAll(songs, playNext: false, set: set);
+
+  Future<bool> _enqueueAll(
+    List<LibraryItem> songs, {
+    required bool playNext,
+    LibraryItem? set,
+  }) async {
+    if (songs.isEmpty) return false;
 
     if (state.songs.isEmpty) {
-      await play(song, [song], album, autoPlay: false);
+      await play(
+        songs.first,
+        songs,
+        set ?? state.album ?? songs.first,
+        autoPlay: false,
+      );
       return state.songs.isNotEmpty;
     }
 
+    var queued = false;
+    for (final song in playNext ? songs.reversed : songs) {
+      if (await _enqueue(song, playNext: playNext)) queued = true;
+    }
+    return queued;
+  }
+
+  Future<bool> _enqueue(LibraryItem song, {required bool playNext}) async {
+    final album = state.album ?? song;
     final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
     final sessionId = '$deviceId-$stamp-${song.id}';
     final cachedPaths = await _cachedPaths([song]);
