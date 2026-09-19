@@ -54,10 +54,11 @@ jobs:
         with:
           channel: stable
 
-      - name: Private UPnP quirks
+      - name: Private packages
         uses: ./.github/actions/private-quirks
         with:
           deploy-key: ${{ secrets.UPNP_QUIRKS_DEPLOY_KEY }}
+          genre-playlists-deploy-key: ${{ secrets.GENRE_PLAYLISTS_DEPLOY_KEY }}
 
       - uses: ruby/setup-ruby@v1
         with:

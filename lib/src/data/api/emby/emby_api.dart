@@ -186,7 +186,12 @@ abstract class EmbyApi {
     @Path('userId') required String userId,
     @Path('itemId') required String itemId,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    List<String> fields = const [
+      'MediaSources',
+      'ArtistItems',
+      'ProviderIds',
+      'Overview',
+    ],
   });
 
   @GET('/Items/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.js')

@@ -4,6 +4,7 @@ class PlaybackReport {
     required this.playSessionId,
     this.mediaSourceId,
     this.position,
+    this.duration,
     this.isPaused,
     this.canSeek,
     this.queueItemIds = const [],
@@ -13,6 +14,7 @@ class PlaybackReport {
   final String playSessionId;
   final String? mediaSourceId;
   final Duration? position;
+  final Duration? duration;
   final bool? isPaused;
   final bool? canSeek;
   final List<String> queueItemIds;

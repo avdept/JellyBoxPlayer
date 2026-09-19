@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
+import 'package:jplayer/src/presentation/utils/server_logo.dart';
 import 'package:jplayer/src/presentation/widgets/labeled_text_field.dart';
 
 enum ServerUrlFieldMode { discovering, manual, selected }
@@ -172,7 +172,7 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
 
 Widget serverSummary(DiscoveredServer server) => Row(
   children: [
-    SvgPicture.asset(_logoAsset(server.serverType), height: 22),
+    SvgPicture.asset(serverLogoAsset(server.serverType), height: 22),
     const SizedBox(width: 10),
     Expanded(
       child: Column(
@@ -204,11 +204,6 @@ Widget serverSummary(DiscoveredServer server) => Row(
     ),
   ],
 );
-
-String _logoAsset(ServerType serverType) => switch (serverType) {
-  ServerType.jellyfin => SvgPictures.jellyfinLogo,
-  ServerType.emby => SvgPictures.embyLogo,
-};
 
 class _HoverableServer extends StatefulWidget {
   const _HoverableServer({required this.server});

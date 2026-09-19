@@ -678,7 +678,12 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemDTO>> getItem({
     required String userId,
     required String itemId,
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    List<String> fields = const [
+      'MediaSources',
+      'ArtistItems',
+      'ProviderIds',
+      'Overview',
+    ],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{r'Fields': fields};

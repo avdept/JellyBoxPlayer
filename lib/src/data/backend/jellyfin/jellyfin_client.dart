@@ -4,13 +4,14 @@ import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
-import 'package:jplayer/src/data/backend/jellyfin/jellyfin_playlist_generator.dart';
+import 'package:jplayer/src/data/backend/genre_playlists.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/jellyfin/mappers/jellyfin_item_mapper.dart';
 import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
+import 'package:jplayer/src/data/backend/mediabrowser_home.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -186,10 +187,26 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getRecentlyPlayedAlbums({
+    String? libraryId,
+    int limit = 20,
+  }) => mediaBrowserRecentlyPlayedAlbums(
+    this,
+    libraryId: libraryId,
+    limit: limit,
+  );
+
+  @override
+  Future<List<LibraryItem>> getMostPlayedAlbums({
+    String? libraryId,
+    int limit = 20,
+  }) => mediaBrowserMostPlayedAlbums(this, libraryId: libraryId, limit: limit);
+
+  @override
   Future<List<GeneratedPlaylist>> generateTodaysPlaylists({
     String? libraryId,
     bool includeDiscovery = false,
-  }) => generateJellyfinTodaysPlaylists(
+  }) => generateGenrePlaylists(
     this,
     libraryId: libraryId,
     includeDiscovery: includeDiscovery,
@@ -199,7 +216,7 @@ class JellyfinClient implements MediaServerClient {
   Future<List<LibraryItem>> getGeneratedPlaylistSongs({
     required String playlistId,
     String? libraryId,
-  }) => fetchJellyfinGeneratedPlaylistSongs(
+  }) => fetchGenrePlaylistSongs(
     this,
     playlistId: playlistId,
     libraryId: libraryId,

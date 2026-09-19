@@ -28,6 +28,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> _albums = [];
   List<LibraryItem> _appearsOn = [];
+  late LibraryItem _artist = widget.artist;
 
   late Size _screenSize;
   late ThemeData _theme;
@@ -57,7 +58,21 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     super.initState();
     _getAlbums();
     _getAppearsOn();
+    _refreshArtist();
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _refreshArtist() async {
+    final LibraryItem fresh;
+    try {
+      fresh = await ref
+          .read(mediaServerClientProvider)
+          .getItem(widget.artist.id, kind: ItemKind.artist);
+    } on Object {
+      return;
+    }
+    if (!mounted || fresh.overview == null) return;
+    setState(() => _artist = fresh);
   }
 
   Future<void> _onAlbumLikePressed(LibraryItem album) async {
@@ -353,7 +368,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _infoText() => Padding(
     padding: const EdgeInsets.only(top: 20),
     child: Text(
-      widget.artist.overview ?? 'This artist does not have any information.',
+      _artist.overview ?? 'This artist does not have any information.',
       maxLines: 5,
       overflow: TextOverflow.ellipsis,
       softWrap: true,

@@ -147,6 +147,7 @@ void main() {
       expect(requested, [
         'https://jelly.local/System/Info/Public',
         'https://jelly.local/emby/System/Info/Public',
+        'https://jelly.local/rest/ping.view?v=1.16.1&c=JellyBox&f=json',
       ]);
     });
 

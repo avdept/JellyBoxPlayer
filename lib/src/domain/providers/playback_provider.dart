@@ -267,6 +267,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     playSessionId: _playSessionIds[song.id] ?? '',
     mediaSourceId: song.audioSources.firstOrNull?.id ?? song.id,
     position: Duration(milliseconds: positionMs),
+    duration: song.duration,
     isPaused: isPaused,
     canSeek: _targetState.canSeek,
     queueItemIds: [for (final queued in state.songs) queued.id],

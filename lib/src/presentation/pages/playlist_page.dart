@@ -34,6 +34,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   late ValueNotifier<MediaItem?> _currentSong;
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> songs = [];
+  bool _songsLoaded = false;
   var _isDownloadBusy = false;
 
   late final ImageService _imageService;
@@ -91,6 +92,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
       setState(() {
         songs = [...value.items]
           ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+        _songsLoaded = true;
       });
     } on Object {
       await _getDownloadedSongs();
@@ -102,7 +104,10 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
         .read(downloadDatabaseProvider)
         .getDownloadedPlaylistSongs(widget.playlist.id);
     if (!mounted) return;
-    setState(() => songs = downloaded.map((s) => s.item).toList());
+    setState(() {
+      songs = downloaded.map((s) => s.item).toList();
+      _songsLoaded = true;
+    });
   }
 
   void _showOfflineSnackBar() {
@@ -203,6 +208,11 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                           ),
                         ),
                       ],
+                      if (_songsLoaded && songs.isEmpty)
+                        const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(child: Text("There's no songs yet.")),
+                        ),
                       SliverList.builder(
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _currentSong,

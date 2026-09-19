@@ -27,6 +27,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   String? _resolvedServerUrl;
   ServerType? _resolvedServerType;
+  String? _resolvedProductName;
   bool _resolvedQuickConnect = false;
   String? _probedInput;
   int _probeGeneration = 0;
@@ -97,6 +98,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
       _mode = ServerUrlFieldMode.selected;
       _resolvedServerUrl = server.serverUrl;
       _resolvedServerType = server.serverType;
+      _resolvedProductName = null;
       _resolvedQuickConnect = server.quickConnect;
     });
   }
@@ -136,6 +138,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
       setState(() {
         _resolvedServerUrl = null;
         _resolvedServerType = null;
+        _resolvedProductName = null;
         _resolvedQuickConnect = false;
       });
     }
@@ -146,6 +149,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     setState(() {
       _resolvedServerUrl = result?.serverUrl;
       _resolvedServerType = result?.serverType;
+      _resolvedProductName = result?.productName;
       _resolvedQuickConnect = result?.quickConnect ?? false;
     });
   }
@@ -157,6 +161,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     setState(() {
       _resolvedServerUrl = null;
       _resolvedServerType = null;
+      _resolvedProductName = null;
       _resolvedQuickConnect = false;
     });
   }
@@ -287,6 +292,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       children: [
                         LoginLogo(
                           serverType: _resolvedServerType,
+                          productName: _resolvedProductName,
                         ),
                         const SizedBox(height: 63),
                         _serverURLField(),

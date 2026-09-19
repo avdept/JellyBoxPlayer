@@ -742,12 +742,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   Widget _lyricsButton() => Consumer(
     builder: (context, ref, _) {
-      final playback = ref.watch(playbackProvider);
-      final index = playback.currentMediaIndex;
-      final currentSong = index != null
-          ? playback.songs.elementAtOrNull(index)
-          : null;
-      final hasLyrics = currentSong?.hasLyrics ?? false;
+      final hasLyrics = ref.watch(currentSongHasLyricsProvider);
       final isShown = ref.watch(lyricsShownProvider);
 
       return IconButton(
