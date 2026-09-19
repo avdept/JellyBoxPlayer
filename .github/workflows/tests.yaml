@@ -10,10 +10,17 @@ jobs:
         with:
           channel: stable
 
-      - name: Check the tree builds without the private quirks table
+      - name: Check the tree builds without the private packages
         run: ./tool/check_public_pubspec.sh
 
-      - run: flutter test
+      - name: Private packages
+        uses: ./.github/actions/private-quirks
+        with:
+          deploy-key: ${{ secrets.UPNP_QUIRKS_DEPLOY_KEY }}
+          genre-playlists-deploy-key: ${{ secrets.GENRE_PLAYLISTS_DEPLOY_KEY }}
+
+      - name: App tests against the real packages
+        run: flutter test
 
       - name: upnp_quirks package tests
         working-directory: packages/upnp_quirks
