@@ -13,10 +13,16 @@ final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
 
 final lyricsVisibleProvider = StateProvider<bool>((ref) => false);
 
+final currentSongHasLyricsProvider = Provider<bool>((ref) {
+  final song = ref.watch(currentSongProvider);
+  if (song == null || !song.hasLyrics) return false;
+  final lyrics = ref.watch(lyricsProvider(song.id));
+  if (!lyrics.hasValue) return true;
+  return lyrics.value?.lines.isNotEmpty ?? false;
+});
+
 final lyricsShownProvider = Provider<bool>((ref) {
   if (!ref.watch(lyricsVisibleProvider)) return false;
   if (ref.watch(studioModeVisibleProvider)) return false;
-  return ref.watch(
-    currentSongProvider.select((song) => song?.hasLyrics ?? false),
-  );
+  return ref.watch(currentSongHasLyricsProvider);
 });

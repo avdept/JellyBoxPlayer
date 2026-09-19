@@ -95,7 +95,9 @@ void main() {
       }).toLibraryItem();
 
       expect(song.artists, [const ArtistRef(id: 'ar-solo', name: 'Solo')]);
-      expect(song.albumArtists, [const ArtistRef(id: 'ar-solo', name: 'Solo')]);
+      expect(song.albumArtists, [
+        const ArtistRef(id: 'ar-solo', name: 'Solo'),
+      ]);
       expect(song.genres, ['Jazz']);
       expect(song.externalIds, isEmpty);
       expect(song.images.hasCover, isFalse);
@@ -116,7 +118,7 @@ void main() {
     });
 
     test(
-      '- reasons about the transcoded container when the server has one',
+      '- describes the stored file even when a server profile would transcode',
       () {
         final song = SubsonicChildDTO.fromJson({
           'id': 's1',
@@ -127,18 +129,26 @@ void main() {
           'transcodedContentType': 'audio/mpeg',
         }).toLibraryItem();
 
-        expect(song.audioSources.single.container, 'mp3');
-        expect(song.audioSources.single.codec, 'mp3');
+        expect(song.audioSources.single.container, 'flac');
+        expect(song.audioSources.single.codec, 'flac');
+        expect(song.audioSources.single.bitDepth, 24);
       },
     );
 
-    test('- can be told lyrics are unavailable', () {
+    test('- drops artist references without an id', () {
       final song = SubsonicChildDTO.fromJson({
         'id': 's1',
-        'title': 'x',
-      }).toLibraryItem(lyricsAvailable: false);
+        'title': 'Various',
+        'artist': 'Unknown Artist',
+        'artists': [
+          {'id': '', 'name': 'Nameless'},
+          {'id': 'ar-2', 'name': 'Named'},
+        ],
+      }).toLibraryItem();
 
-      expect(song.hasLyrics, isFalse);
+      expect(song.artists, [const ArtistRef(id: 'ar-2', name: 'Named')]);
+      expect(song.albumArtists, isEmpty);
+      expect(song.albumArtist, 'Unknown Artist');
     });
   });
 
@@ -202,6 +212,7 @@ void main() {
 
     expect(artist.kind, ItemKind.artist);
     expect(artist.images.primary, 'ar-ar1_9b51ff9d4a89241c');
+    expect(artist.images.backdrops, isEmpty);
     expect(artist.externalIds, {
       ExternalIdProvider.musicBrainzArtist: 'mbid-1',
     });
@@ -228,6 +239,15 @@ void main() {
     expect(playlist.overview, 'windows down');
     expect(playlist.duration, const Duration(seconds: 3000));
     expect(playlist.images.primary, 'pl-pl1');
+  });
+
+  test('subsonicPlainText strips tags and entities from biographies', () {
+    expect(
+      subsonicPlainText('Hello <a href="x">there</a> &amp; &quot;you&quot;'),
+      'Hello there & "you"',
+    );
+    expect(subsonicPlainText('  <p></p> '), isNull);
+    expect(subsonicPlainText(null), isNull);
   });
 
   test('genres and music folders become browsable items', () {

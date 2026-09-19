@@ -72,7 +72,9 @@ void main() {
       overrides: [
         playbackProvider.overrideWith((_) => playback),
         mediaServerClientProvider.overrideWith((_) => client),
-        lyricsProvider(_song.id).overrideWith((_) async => null),
+        lyricsProvider(_song.id).overrideWith(
+          (_) async => const Lyrics(lines: [LyricLine(text: 'a line')]),
+        ),
       ],
     );
 

@@ -12,9 +12,9 @@ class SubsonicEnvelopeInterceptor extends Interceptor {
   }
 
   static int httpStatusForCode(int? code) => switch (code) {
-    40 || 41 || 50 => 401,
+    40 || 41 => 401,
+    50 => 409,
     70 => 404,
-    10 => 400,
     _ => 500,
   };
 
@@ -23,6 +23,9 @@ class SubsonicEnvelopeInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
+    if (!response.requestOptions.path.contains('/rest/')) {
+      return handler.next(response);
+    }
     final envelope = SubsonicApi.envelopeOf(response.data);
     if (envelope == null) return handler.next(response);
 

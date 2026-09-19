@@ -202,7 +202,12 @@ abstract class JellyfinApi {
   Future<HttpResponse<ItemDTO>> getItem({
     @Path('itemId') required String itemId,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    List<String> fields = const [
+      'MediaSources',
+      'ArtistItems',
+      'ProviderIds',
+      'Overview',
+    ],
   });
 
   @GET('/Audio/{itemId}/Lyrics')

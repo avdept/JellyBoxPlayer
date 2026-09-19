@@ -75,9 +75,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
       ),
     );
     try {
-      await client.getUri<void>(
-        Uri.parse(serverUrl).replace(path: 'System/Info/Public'),
-      );
+      await client.getUri<void>(Uri.parse(serverUrl));
       _setOnline(true);
     } on Object {
       _setOnline(false);

@@ -153,6 +153,22 @@ abstract class SubsonicArtistDTO with _$SubsonicArtistDTO {
 }
 
 @freezed
+abstract class SubsonicArtistInfoDTO with _$SubsonicArtistInfoDTO {
+  const factory SubsonicArtistInfoDTO({
+    String? biography,
+    String? musicBrainzId,
+    String? lastFmUrl,
+    String? smallImageUrl,
+    String? mediumImageUrl,
+    String? largeImageUrl,
+    @Default([]) List<SubsonicArtistDTO> similarArtist,
+  }) = _SubsonicArtistInfoDTO;
+
+  factory SubsonicArtistInfoDTO.fromJson(Map<String, dynamic> json) =>
+      _$SubsonicArtistInfoDTOFromJson(json);
+}
+
+@freezed
 abstract class SubsonicIndexDTO with _$SubsonicIndexDTO {
   const factory SubsonicIndexDTO({
     @Default('') String name,

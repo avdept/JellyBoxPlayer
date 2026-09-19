@@ -106,6 +106,66 @@ void main() {
     });
   });
 
+  group('currentSongHasLyricsProvider', () {
+    test('- is off for a track the server marks as lyric-less', () {
+      final playback = FakePlaybackNotifier(
+        _playing([_song('song-1', hasLyrics: false)], 0),
+      );
+
+      expect(
+        containerWith(playback: playback).read(currentSongHasLyricsProvider),
+        isFalse,
+      );
+      verifyNever(() => mockClient.getLyrics(any()));
+    });
+
+    test('- stays on while the lyrics are still loading', () async {
+      when(
+        () => mockClient.getLyrics('song-1'),
+      ).thenAnswer(
+        (_) => Future.delayed(const Duration(days: 1), () => lyrics),
+      );
+      final playback = FakePlaybackNotifier(
+        _playing([_song('song-1', hasLyrics: true)], 0),
+      );
+
+      expect(
+        containerWith(playback: playback).read(currentSongHasLyricsProvider),
+        isTrue,
+      );
+    });
+
+    test('- turns off once the server answers with nothing', () async {
+      when(() => mockClient.getLyrics('song-1')).thenAnswer((_) async => null);
+      final playback = FakePlaybackNotifier(
+        _playing([_song('song-1', hasLyrics: true)], 0),
+      );
+      final container = containerWith(playback: playback);
+      container.listen(currentSongHasLyricsProvider, (_, _) {});
+
+      await container.read(lyricsProvider('song-1').future);
+
+      expect(container.read(currentSongHasLyricsProvider), isFalse);
+      container.read(lyricsVisibleProvider.notifier).state = true;
+      expect(container.read(lyricsShownProvider), isFalse);
+    });
+
+    test('- stays on when real lyrics arrive', () async {
+      when(
+        () => mockClient.getLyrics('song-1'),
+      ).thenAnswer((_) async => lyrics);
+      final playback = FakePlaybackNotifier(
+        _playing([_song('song-1', hasLyrics: true)], 0),
+      );
+      final container = containerWith(playback: playback);
+      container.listen(currentSongHasLyricsProvider, (_, _) {});
+
+      await container.read(lyricsProvider('song-1').future);
+
+      expect(container.read(currentSongHasLyricsProvider), isTrue);
+    });
+  });
+
   group('lyricsShownProvider', () {
     test('- stays off until the user asks for lyrics', () {
       final playback = FakePlaybackNotifier(

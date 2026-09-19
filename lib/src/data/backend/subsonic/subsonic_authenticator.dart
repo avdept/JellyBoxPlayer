@@ -3,6 +3,7 @@ import 'package:jplayer/src/data/api/subsonic/subsonic_api.dart';
 import 'package:jplayer/src/data/backend/server_session.dart';
 import 'package:jplayer/src/data/backend/subsonic/subsonic_credentials.dart';
 import 'package:jplayer/src/data/backend/subsonic/subsonic_envelope_interceptor.dart';
+import 'package:jplayer/src/data/backend/subsonic/subsonic_probe.dart';
 import 'package:jplayer/src/data/params/params.dart';
 
 class SubsonicAuthenticator extends MediaServerAuthenticator {
@@ -21,7 +22,7 @@ class SubsonicAuthenticator extends MediaServerAuthenticator {
       username: credentials.username,
       password: credentials.pw,
     );
-    await SubsonicApi(
+    final envelope = await SubsonicApi(
       _client,
       baseUrl: serverUrl,
       credentials: subsonic,
@@ -30,7 +31,7 @@ class SubsonicAuthenticator extends MediaServerAuthenticator {
       userId: credentials.username,
       token: subsonic.encodedToken,
       serverId: subsonicServerId(serverUrl),
-      serverName: credentials.username,
+      serverName: subsonicProductLabel(envelope.type),
     );
   }
 }

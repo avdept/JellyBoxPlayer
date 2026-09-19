@@ -22,6 +22,27 @@ String? subsonicCodecForSuffix(String? suffix, {int? bitDepth}) {
   };
 }
 
+final _htmlTag = RegExp(r'<[^>]+>');
+
+const _htmlEntities = <String, String>{
+  '&amp;': '&',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&apos;': "'",
+  '&lt;': '<',
+  '&gt;': '>',
+  '&nbsp;': ' ',
+};
+
+String? subsonicPlainText(String? html) {
+  if (html == null) return null;
+  var text = html.replaceAll(_htmlTag, '');
+  for (final entry in _htmlEntities.entries) {
+    text = text.replaceAll(entry.key, entry.value);
+  }
+  return _presence(text);
+}
+
 String subsonicPlaylistEntryId(int index, String songId) => '$index:$songId';
 
 ({int index, String songId})? subsonicPlaylistEntryOf(String entryId) {
@@ -44,13 +65,14 @@ List<ArtistRef> _artistRefs(
 }) {
   final resolved = [
     for (final ref in refs)
-      if (ref.id.isNotEmpty || ref.name.isNotEmpty)
+      if (ref.id.isNotEmpty && ref.name.isNotEmpty)
         ArtistRef(id: ref.id, name: ref.name),
   ];
   if (resolved.isNotEmpty) return resolved;
+  final id = _presence(fallbackId);
   final name = _presence(fallbackName);
-  if (name == null) return const [];
-  return [ArtistRef(id: fallbackId ?? name, name: name)];
+  if (id == null || name == null) return const [];
+  return [ArtistRef(id: id, name: name)];
 }
 
 List<String> _genreNames(List<SubsonicNamedDTO> genres, String? fallback) {
@@ -80,7 +102,7 @@ extension SubsonicChildMapping on SubsonicChildDTO {
     int? indexNumber,
     bool lyricsAvailable = true,
   }) {
-    final container = _presence(transcodedSuffix) ?? _presence(suffix);
+    final container = _presence(suffix);
     final resolvedAlbumId = _presence(albumId);
     return LibraryItem(
       id: id,
@@ -169,6 +191,7 @@ extension SubsonicArtistMapping on SubsonicArtistDTO {
     kind: ItemKind.artist,
     images: ImageRefs(
       primary: _presence(coverArt) ?? '$subsonicArtistArtPrefix$id',
+      backdrops: [?_presence(artistImageUrl)],
     ),
     userData: _userData(playCount: 0, starred: starred),
     externalIds: _externalIds(

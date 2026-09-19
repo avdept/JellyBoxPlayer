@@ -71,11 +71,12 @@ void main() {
         expect(source.uri.queryParameters['u'], 'joe');
         expect(source.uri.queryParameters['t'], 'tok');
         expect(source.uri.queryParameters['s'], 'salt');
-        expect(source.uri.queryParameters.containsKey('format'), isFalse);
+        expect(source.uri.queryParameters['format'], 'raw');
+        expect(source.uri.queryParameters.containsKey('maxBitRate'), isFalse);
       },
     );
 
-    test('- asks for mp3 when the target cannot play the source', () async {
+    test('- asks for flac when a lossless source needs transcoding', () async {
       final source = await client.resolveStreamSource(
         song(suffix: 'm4a', bitDepth: 16),
         playSessionId: 'session-1',
@@ -83,8 +84,21 @@ void main() {
       );
 
       expect(source.requiresTranscode, isTrue);
+      expect(source.outputContainer, 'flac');
+      expect(source.mimeType, mimeTypeForContainer('flac'));
+      expect(source.uri.queryParameters['format'], 'flac');
+      expect(source.uri.queryParameters.containsKey('maxBitRate'), isFalse);
+    });
+
+    test('- asks for mp3 when the target has no lossless option', () async {
+      final source = await client.resolveStreamSource(
+        song(suffix: 'flac', bitDepth: 16),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.renderer(sinkMimeTypes: {'audio/mpeg'}),
+      );
+
+      expect(source.requiresTranscode, isTrue);
       expect(source.outputContainer, 'mp3');
-      expect(source.mimeType, mimeTypeForContainer('mp3'));
       expect(source.uri.queryParameters['format'], 'mp3');
       expect(source.uri.queryParameters['maxBitRate'], '320');
     });
@@ -154,6 +168,20 @@ void main() {
         (_) => subsonicFailed(40, 'Wrong username or password'),
       );
       expect(await client.validateSession(), SessionStatus.invalid);
+    });
+
+    test('- is invalid when the stored token cannot be decoded', () async {
+      server.ok('ping', {});
+      final broken = SubsonicClient(
+        dio: server.dio,
+        baseUrl: 'http://music.local:4533',
+        userId: 'joe',
+        token: 'legacy-mediabrowser-token',
+        deviceId: 'device-1',
+      );
+
+      expect(await broken.validateSession(), SessionStatus.invalid);
+      expect(server.requests, isEmpty);
     });
 
     test('- is unreachable on a transport error', () async {
@@ -602,6 +630,119 @@ void main() {
     });
   });
 
+  test(
+    'playlist creation finds the playlist by name when no body comes back',
+    () async {
+      server.ok('createPlaylist', {});
+      server.ok('getPlaylists', {
+        'playlists': {
+          'playlist': [
+            {'id': 'old', 'name': 'Shared', 'created': '2026-01-01T00:00:00Z'},
+            {'id': 'new', 'name': 'Shared', 'created': '2026-09-19T00:00:00Z'},
+            {'id': 'other', 'name': 'Other', 'created': '2026-09-19T00:00:00Z'},
+          ],
+        },
+      });
+      server.ok('updatePlaylist', {});
+
+      await client.createPlaylist(
+        const PlaylistData(name: 'Shared', userId: 'joe', isPublic: true),
+      );
+
+      final update = server.calls('updatePlaylist').single;
+      expect(update.queryParameters['playlistId'], 'new');
+      expect(update.queryParameters['public'], 'true');
+    },
+  );
+
+  group('artist details', () {
+    setUp(() {
+      server.ok('getArtist', {
+        'artist': {'id': 'ar1', 'name': 'Insomnium', 'coverArt': 'ar-ar1'},
+      });
+    });
+
+    test('- merge the biography from getArtistInfo2', () async {
+      server.ok('getArtistInfo2', {
+        'artistInfo2': {
+          'biography':
+              'Formed in <b>Joensuu</b>. <a href="https://last.fm/x">Read more on Last.fm</a> &amp; enjoy',
+          'similarArtist': <Object?>[],
+        },
+      });
+
+      final artist = await client.getItem('ar1', kind: ItemKind.artist);
+
+      expect(
+        artist.overview,
+        'Formed in Joensuu. Read more on Last.fm & enjoy',
+      );
+      expect(
+        server.calls('getArtistInfo2').single.queryParameters['id'],
+        'ar1',
+      );
+    });
+
+    test('- keep the artist when the info call fails or is empty', () async {
+      server.on('getArtistInfo2', (_) => subsonicFailed(0, 'no agent'));
+      expect(
+        (await client.getItem('ar1', kind: ItemKind.artist)).overview,
+        isNull,
+      );
+
+      server.ok('getArtistInfo2', {'artistInfo2': <String, Object?>{}});
+      expect(
+        (await client.getItem('ar1', kind: ItemKind.artist)).overview,
+        isNull,
+      );
+    });
+  });
+
+  test('artist images become the artist page backdrop', () async {
+    server.ok('getArtist', {
+      'artist': {
+        'id': 'ar1',
+        'name': 'Insomnium',
+        'coverArt': 'ar-ar1_abc',
+        'artistImageUrl': 'http://music.local:4533/share/img/token?size=600',
+      },
+    });
+
+    final artist = await client.getItem('ar1', kind: ItemKind.artist);
+
+    expect(artist.images.hasBackdrop, isTrue);
+    expect(
+      client.imageUri(artist, kind: ImageKind.backdrop),
+      Uri.parse('http://music.local:4533/share/img/token?size=600'),
+    );
+    expect(
+      client.imageUri(artist)!.queryParameters['id'],
+      'ar-ar1_abc',
+    );
+  });
+
+  test(
+    'a missing extension endpoint is not re-asked on every report',
+    () async {
+      server.on(
+        'getOpenSubsonicExtensions',
+        (_) => subsonicFailed(70, 'not found'),
+      );
+      server.ok('scrobble', {});
+      const report = PlaybackReport(itemId: 'song-1', playSessionId: 's');
+
+      await client.reportPlaybackStarted(report);
+      await client.reportPlaybackProgress(report);
+      await client.reportPlaybackProgress(report);
+      expect(server.calls('getOpenSubsonicExtensions'), hasLength(1));
+      expect(server.calls('scrobble'), hasLength(1));
+
+      now = now.add(SubsonicClient.extensionRetryInterval);
+      await client.reportPlaybackProgress(report);
+      expect(server.calls('getOpenSubsonicExtensions'), hasLength(2));
+    },
+  );
+
   group('capabilities', () {
     test('- turn lyrics off when the server lacks the extension', () async {
       extensions(['formPost']);
@@ -611,6 +752,10 @@ void main() {
       expect(resolved.lyrics, isFalse);
       expect(resolved.similarAlbums, isFalse);
       expect(client.capabilities.lyrics, isFalse);
+
+      server.ok('getSong', {'song': childJson('s1')});
+      final item = await client.getItem('s1', kind: ItemKind.song);
+      expect(item.hasLyrics, isFalse);
     });
 
     test(

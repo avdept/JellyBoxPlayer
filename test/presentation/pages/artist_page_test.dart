@@ -117,6 +117,12 @@ void main() {
       () => mockGetAlbums(contributingArtistIds: mockArtist.id),
     ).thenAnswer((_) async => mockAppearsOn);
     when(() => mockUser.userId).thenReturn(mockUserId);
+    when(
+      () => mockMediaServerClient.getItem(
+        mockArtist.id,
+        kind: ItemKind.artist,
+      ),
+    ).thenAnswer((_) async => mockArtist);
   });
 
   group('ArtistPage', () {

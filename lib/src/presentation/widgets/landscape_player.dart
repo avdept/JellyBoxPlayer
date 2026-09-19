@@ -11,6 +11,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/lyrics_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -360,9 +361,7 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
 
   Widget _lyricsButton() => Consumer(
     builder: (context, ref, _) {
-      final hasLyrics = ref.watch(
-        currentSongProvider.select((song) => song?.hasLyrics ?? false),
-      );
+      final hasLyrics = ref.watch(currentSongHasLyricsProvider);
       return IconButton(
         onPressed: hasLyrics ? () => _showPanel(_Panel.lyrics) : null,
         color: _foreground,

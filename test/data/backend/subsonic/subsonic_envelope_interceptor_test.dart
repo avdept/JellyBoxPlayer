@@ -66,13 +66,37 @@ void main() {
     expect(MediaServerException.fromDio(error).isNotFound, isTrue);
   });
 
-  test('- maps other Subsonic error codes to server/bad-request', () {
-    expect(SubsonicEnvelopeInterceptor.httpStatusForCode(10), 400);
+  test('- maps other Subsonic error codes without triggering a logout', () {
     expect(SubsonicEnvelopeInterceptor.httpStatusForCode(41), 401);
-    expect(SubsonicEnvelopeInterceptor.httpStatusForCode(50), 401);
+    expect(SubsonicEnvelopeInterceptor.httpStatusForCode(50), 409);
+    expect(SubsonicEnvelopeInterceptor.httpStatusForCode(10), 500);
     expect(SubsonicEnvelopeInterceptor.httpStatusForCode(0), 500);
     expect(SubsonicEnvelopeInterceptor.httpStatusForCode(null), 500);
   });
+
+  test('- a permission-denied envelope is a plain server error', () async {
+    respond(
+      subsonicFailed(50, 'User is not authorized for the given operation'),
+    );
+
+    final error = await failure();
+
+    final mapped = MediaServerException.fromDio(error);
+    expect(mapped.isUnauthorized, isFalse);
+    expect(mapped.isNotFound, isFalse);
+    expect(mapped.kind, MediaServerErrorKind.server);
+  });
+
+  test(
+    '- leaves non-Subsonic routes alone even with a look-alike body',
+    () async {
+      respond(subsonicFailed(40, 'not for us'));
+
+      final response = await dio.get<Object?>('http://jelly.local/Items');
+
+      expect(response.statusCode, 200);
+    },
+  );
 
   test('- lets successful envelopes through untouched', () async {
     respond(subsonicOk({'ping': true}));
@@ -91,6 +115,31 @@ void main() {
     expect(response.statusCode, 200);
     expect(response.data, {'Items': <Object?>[], 'TotalRecordCount': 0});
   });
+
+  test(
+    '- reaches error interceptors registered before it, like auto-logout',
+    () async {
+      final seenByEarlierInterceptor = <int?>[];
+      final earlyDio = Dio()..httpClientAdapter = adapter;
+      earlyDio.interceptors.add(
+        InterceptorsWrapper(
+          onError: (error, handler) {
+            seenByEarlierInterceptor.add(error.response?.statusCode);
+            handler.next(error);
+          },
+        ),
+      );
+      SubsonicEnvelopeInterceptor.install(earlyDio);
+      respond(subsonicFailed(40, 'Wrong username or password'));
+
+      await expectLater(
+        earlyDio.get<Object?>('http://music.local/rest/ping'),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(seenByEarlierInterceptor, [401]);
+    },
+  );
 
   test('- installs itself only once per Dio', () {
     SubsonicEnvelopeInterceptor.install(dio);

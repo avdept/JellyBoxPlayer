@@ -45,9 +45,12 @@ class SubsonicClient implements MediaServerClient {
 
   static const songLyricsExtension = 'songLyrics';
   static const playbackReportExtension = 'playbackReport';
-  static const transcodeFormat = 'mp3';
+  static const directPlayFormat = 'raw';
+  static const lossyTranscodeFormat = 'mp3';
+  static const losslessTranscodeFormat = 'flac';
   static const transcodeBitRate = 320;
   static const artistIndexTtl = Duration(seconds: 60);
+  static const extensionRetryInterval = Duration(minutes: 5);
   static const playedAlbumsScanLimit = 25;
   static const genreSetScanLimit = 500;
   static const minimumPlayDuration = Duration(minutes: 4);
@@ -65,7 +68,9 @@ class SubsonicClient implements MediaServerClient {
   final Random _random;
   final DateTime Function() _now;
 
-  Future<Set<String>>? _extensions;
+  Set<String>? _extensionNamesCache;
+  Future<Set<String>>? _extensionsInFlight;
+  DateTime? _extensionsFailedAt;
   MediaServerCapabilities? _resolved;
   final _artistIndex =
       <String?, ({DateTime fetchedAt, List<SubsonicArtistDTO> artists})>{};
@@ -84,13 +89,25 @@ class SubsonicClient implements MediaServerClient {
   }
 
   Future<Set<String>?> _extensionNames() async {
-    try {
-      return await (_extensions ??= _api.getOpenSubsonicExtensions().then(
-        (extensions) => {for (final extension in extensions) extension.name},
-      ));
-    } on Object {
-      _extensions = null;
+    final cached = _extensionNamesCache;
+    if (cached != null) return cached;
+    final failedAt = _extensionsFailedAt;
+    if (failedAt != null &&
+        _now().difference(failedAt) < extensionRetryInterval) {
       return null;
+    }
+    final inFlight = _extensionsInFlight ??= _api
+        .getOpenSubsonicExtensions()
+        .then(
+          (extensions) => {for (final extension in extensions) extension.name},
+        );
+    try {
+      return _extensionNamesCache = await inFlight;
+    } on Object {
+      _extensionsFailedAt = _now();
+      return null;
+    } finally {
+      if (identical(_extensionsInFlight, inFlight)) _extensionsInFlight = null;
     }
   }
 
@@ -318,7 +335,8 @@ class SubsonicClient implements MediaServerClient {
 
     if (query.genreIds.isNotEmpty) {
       final random = query.sort == ItemSort.random;
-      final filtered = query.filters.isNotEmpty;
+      final filtered =
+          query.filters.isNotEmpty || query.sort == ItemSort.playCount;
       final fetchSize = filtered
           ? min(genreSetScanLimit, query.limit * 5)
           : query.limit;
@@ -379,7 +397,8 @@ class SubsonicClient implements MediaServerClient {
   }
 
   List<LibraryItem> _songItems(List<SubsonicChildDTO> songs) => [
-    for (final song in songs) song.toLibraryItem(),
+    for (final song in songs)
+      song.toLibraryItem(lyricsAvailable: capabilities.lyrics),
   ];
 
   @override
@@ -397,6 +416,7 @@ class SubsonicClient implements MediaServerClient {
         entry.toLibraryItem(
           playlistItemId: subsonicPlaylistEntryId(index, entry.id),
           indexNumber: index + 1,
+          lyricsAvailable: capabilities.lyrics,
         ),
     ];
     return LibraryPage(items: songs, totalRecordCount: songs.length);
@@ -472,9 +492,11 @@ class SubsonicClient implements MediaServerClient {
   @override
   Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async =>
       switch (kind) {
-        ItemKind.song => (await _api.getSong(itemId)).toLibraryItem(),
+        ItemKind.song => (await _api.getSong(
+          itemId,
+        )).toLibraryItem(lyricsAvailable: capabilities.lyrics),
         ItemKind.album => (await _api.getAlbum(itemId)).toLibraryItem(),
-        ItemKind.artist => (await _api.getArtist(itemId)).toLibraryItem(),
+        ItemKind.artist => await _artistWithInfo(itemId),
         ItemKind.playlist => (await _api.getPlaylist(itemId)).toLibraryItem(),
         ItemKind.genre => LibraryItem(
           id: itemId,
@@ -491,6 +513,19 @@ class SubsonicClient implements MediaServerClient {
               )
               .toLibraryItem(),
       };
+
+  Future<LibraryItem> _artistWithInfo(String id) async {
+    final results = await Future.wait<Object?>([
+      _api.getArtist(id),
+      _api
+          .getArtistInfo2(id)
+          .then<Object?>((info) => info, onError: (_) => null),
+    ]);
+    final artist = (results[0]! as SubsonicArtistDTO).toLibraryItem();
+    final info = results[1] as SubsonicArtistInfoDTO?;
+    final biography = subsonicPlainText(info?.biography);
+    return biography == null ? artist : artist.copyWith(overview: biography);
+  }
 
   @override
   Future<LibraryPage> searchAlbums(SearchQuery query) async {
@@ -560,8 +595,17 @@ class SubsonicClient implements MediaServerClient {
 
   @override
   Future<void> createPlaylist(PlaylistData values) async {
-    final created = await _api.createPlaylist(name: values.name);
-    if (!values.isPublic || created == null) return;
+    var created = await _api.createPlaylist(name: values.name);
+    if (!values.isPublic) return;
+    created ??= subsonicSortPlaylists(
+      [
+        for (final playlist in await _api.getPlaylists())
+          if (playlist.name == values.name) playlist,
+      ],
+      ItemSort.dateCreated,
+      SortDirection.descending,
+    ).firstOrNull;
+    if (created == null) return;
     await _api.updatePlaylist(playlistId: created.id, public: true);
   }
 
@@ -626,26 +670,28 @@ class SubsonicClient implements MediaServerClient {
       sourceCodec: audioSource?.codec,
     );
 
-    if (profile.requiresTranscode) {
+    if (!profile.requiresTranscode) {
+      final container = profile.outputContainer;
       return StreamSource(
-        uri: _api.streamUri(
-          song.id,
-          format: transcodeFormat,
-          maxBitRate: transcodeBitRate,
-        ),
+        uri: _api.streamUri(song.id, format: directPlayFormat),
         isHls: false,
-        outputContainer: transcodeFormat,
-        mimeType: mimeTypeForContainer(transcodeFormat),
-        requiresTranscode: true,
+        outputContainer: container,
+        mimeType: mimeTypeForContainer(container),
       );
     }
 
-    final container = profile.outputContainer;
+    final lossless = profile.transcodingAudioCodec == losslessTranscodeFormat;
+    final format = lossless ? losslessTranscodeFormat : lossyTranscodeFormat;
     return StreamSource(
-      uri: _api.streamUri(song.id),
+      uri: _api.streamUri(
+        song.id,
+        format: format,
+        maxBitRate: lossless ? null : transcodeBitRate,
+      ),
       isHls: false,
-      outputContainer: container,
-      mimeType: mimeTypeForContainer(container),
+      outputContainer: format,
+      mimeType: mimeTypeForContainer(format),
+      requiresTranscode: true,
     );
   }
 
@@ -661,6 +707,10 @@ class SubsonicClient implements MediaServerClient {
       ImageKind.backdrop => item.images.backdrops.firstOrNull,
     };
     if (id == null) return null;
+    final absolute = Uri.tryParse(id);
+    if (absolute != null && absolute.hasScheme && absolute.host.isNotEmpty) {
+      return absolute;
+    }
     return _api.coverArtUri(id, size: size ?? _defaultImageSize);
   }
 
@@ -728,6 +778,7 @@ class SubsonicClient implements MediaServerClient {
 
   @override
   Future<SessionStatus> validateSession() async {
+    if (_api.credentials == null) return SessionStatus.invalid;
     try {
       await _api.ping();
       return SessionStatus.valid;

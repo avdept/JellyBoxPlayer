@@ -2136,6 +2136,293 @@ as List<SubsonicAlbumDTO>,
 
 
 /// @nodoc
+mixin _$SubsonicArtistInfoDTO {
+
+ String? get biography; String? get musicBrainzId; String? get lastFmUrl; String? get smallImageUrl; String? get mediumImageUrl; String? get largeImageUrl; List<SubsonicArtistDTO> get similarArtist;
+/// Create a copy of SubsonicArtistInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SubsonicArtistInfoDTOCopyWith<SubsonicArtistInfoDTO> get copyWith => _$SubsonicArtistInfoDTOCopyWithImpl<SubsonicArtistInfoDTO>(this as SubsonicArtistInfoDTO, _$identity);
+
+  /// Serializes this SubsonicArtistInfoDTO to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubsonicArtistInfoDTO&&(identical(other.biography, biography) || other.biography == biography)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.lastFmUrl, lastFmUrl) || other.lastFmUrl == lastFmUrl)&&(identical(other.smallImageUrl, smallImageUrl) || other.smallImageUrl == smallImageUrl)&&(identical(other.mediumImageUrl, mediumImageUrl) || other.mediumImageUrl == mediumImageUrl)&&(identical(other.largeImageUrl, largeImageUrl) || other.largeImageUrl == largeImageUrl)&&const DeepCollectionEquality().equals(other.similarArtist, similarArtist));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,biography,musicBrainzId,lastFmUrl,smallImageUrl,mediumImageUrl,largeImageUrl,const DeepCollectionEquality().hash(similarArtist));
+
+@override
+String toString() {
+  return 'SubsonicArtistInfoDTO(biography: $biography, musicBrainzId: $musicBrainzId, lastFmUrl: $lastFmUrl, smallImageUrl: $smallImageUrl, mediumImageUrl: $mediumImageUrl, largeImageUrl: $largeImageUrl, similarArtist: $similarArtist)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SubsonicArtistInfoDTOCopyWith<$Res>  {
+  factory $SubsonicArtistInfoDTOCopyWith(SubsonicArtistInfoDTO value, $Res Function(SubsonicArtistInfoDTO) _then) = _$SubsonicArtistInfoDTOCopyWithImpl;
+@useResult
+$Res call({
+ String? biography, String? musicBrainzId, String? lastFmUrl, String? smallImageUrl, String? mediumImageUrl, String? largeImageUrl, List<SubsonicArtistDTO> similarArtist
+});
+
+
+
+
+}
+/// @nodoc
+class _$SubsonicArtistInfoDTOCopyWithImpl<$Res>
+    implements $SubsonicArtistInfoDTOCopyWith<$Res> {
+  _$SubsonicArtistInfoDTOCopyWithImpl(this._self, this._then);
+
+  final SubsonicArtistInfoDTO _self;
+  final $Res Function(SubsonicArtistInfoDTO) _then;
+
+/// Create a copy of SubsonicArtistInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? biography = freezed,Object? musicBrainzId = freezed,Object? lastFmUrl = freezed,Object? smallImageUrl = freezed,Object? mediumImageUrl = freezed,Object? largeImageUrl = freezed,Object? similarArtist = null,}) {
+  return _then(_self.copyWith(
+biography: freezed == biography ? _self.biography : biography // ignore: cast_nullable_to_non_nullable
+as String?,musicBrainzId: freezed == musicBrainzId ? _self.musicBrainzId : musicBrainzId // ignore: cast_nullable_to_non_nullable
+as String?,lastFmUrl: freezed == lastFmUrl ? _self.lastFmUrl : lastFmUrl // ignore: cast_nullable_to_non_nullable
+as String?,smallImageUrl: freezed == smallImageUrl ? _self.smallImageUrl : smallImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,mediumImageUrl: freezed == mediumImageUrl ? _self.mediumImageUrl : mediumImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,largeImageUrl: freezed == largeImageUrl ? _self.largeImageUrl : largeImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,similarArtist: null == similarArtist ? _self.similarArtist : similarArtist // ignore: cast_nullable_to_non_nullable
+as List<SubsonicArtistDTO>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SubsonicArtistInfoDTO].
+extension SubsonicArtistInfoDTOPatterns on SubsonicArtistInfoDTO {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SubsonicArtistInfoDTO value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SubsonicArtistInfoDTO() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SubsonicArtistInfoDTO value)  $default,){
+final _that = this;
+switch (_that) {
+case _SubsonicArtistInfoDTO():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SubsonicArtistInfoDTO value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SubsonicArtistInfoDTO() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? biography,  String? musicBrainzId,  String? lastFmUrl,  String? smallImageUrl,  String? mediumImageUrl,  String? largeImageUrl,  List<SubsonicArtistDTO> similarArtist)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SubsonicArtistInfoDTO() when $default != null:
+return $default(_that.biography,_that.musicBrainzId,_that.lastFmUrl,_that.smallImageUrl,_that.mediumImageUrl,_that.largeImageUrl,_that.similarArtist);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? biography,  String? musicBrainzId,  String? lastFmUrl,  String? smallImageUrl,  String? mediumImageUrl,  String? largeImageUrl,  List<SubsonicArtistDTO> similarArtist)  $default,) {final _that = this;
+switch (_that) {
+case _SubsonicArtistInfoDTO():
+return $default(_that.biography,_that.musicBrainzId,_that.lastFmUrl,_that.smallImageUrl,_that.mediumImageUrl,_that.largeImageUrl,_that.similarArtist);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? biography,  String? musicBrainzId,  String? lastFmUrl,  String? smallImageUrl,  String? mediumImageUrl,  String? largeImageUrl,  List<SubsonicArtistDTO> similarArtist)?  $default,) {final _that = this;
+switch (_that) {
+case _SubsonicArtistInfoDTO() when $default != null:
+return $default(_that.biography,_that.musicBrainzId,_that.lastFmUrl,_that.smallImageUrl,_that.mediumImageUrl,_that.largeImageUrl,_that.similarArtist);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SubsonicArtistInfoDTO implements SubsonicArtistInfoDTO {
+  const _SubsonicArtistInfoDTO({this.biography, this.musicBrainzId, this.lastFmUrl, this.smallImageUrl, this.mediumImageUrl, this.largeImageUrl, final  List<SubsonicArtistDTO> similarArtist = const []}): _similarArtist = similarArtist;
+  factory _SubsonicArtistInfoDTO.fromJson(Map<String, dynamic> json) => _$SubsonicArtistInfoDTOFromJson(json);
+
+@override final  String? biography;
+@override final  String? musicBrainzId;
+@override final  String? lastFmUrl;
+@override final  String? smallImageUrl;
+@override final  String? mediumImageUrl;
+@override final  String? largeImageUrl;
+ final  List<SubsonicArtistDTO> _similarArtist;
+@override@JsonKey() List<SubsonicArtistDTO> get similarArtist {
+  if (_similarArtist is EqualUnmodifiableListView) return _similarArtist;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_similarArtist);
+}
+
+
+/// Create a copy of SubsonicArtistInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SubsonicArtistInfoDTOCopyWith<_SubsonicArtistInfoDTO> get copyWith => __$SubsonicArtistInfoDTOCopyWithImpl<_SubsonicArtistInfoDTO>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SubsonicArtistInfoDTOToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubsonicArtistInfoDTO&&(identical(other.biography, biography) || other.biography == biography)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.lastFmUrl, lastFmUrl) || other.lastFmUrl == lastFmUrl)&&(identical(other.smallImageUrl, smallImageUrl) || other.smallImageUrl == smallImageUrl)&&(identical(other.mediumImageUrl, mediumImageUrl) || other.mediumImageUrl == mediumImageUrl)&&(identical(other.largeImageUrl, largeImageUrl) || other.largeImageUrl == largeImageUrl)&&const DeepCollectionEquality().equals(other._similarArtist, _similarArtist));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,biography,musicBrainzId,lastFmUrl,smallImageUrl,mediumImageUrl,largeImageUrl,const DeepCollectionEquality().hash(_similarArtist));
+
+@override
+String toString() {
+  return 'SubsonicArtistInfoDTO(biography: $biography, musicBrainzId: $musicBrainzId, lastFmUrl: $lastFmUrl, smallImageUrl: $smallImageUrl, mediumImageUrl: $mediumImageUrl, largeImageUrl: $largeImageUrl, similarArtist: $similarArtist)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SubsonicArtistInfoDTOCopyWith<$Res> implements $SubsonicArtistInfoDTOCopyWith<$Res> {
+  factory _$SubsonicArtistInfoDTOCopyWith(_SubsonicArtistInfoDTO value, $Res Function(_SubsonicArtistInfoDTO) _then) = __$SubsonicArtistInfoDTOCopyWithImpl;
+@override @useResult
+$Res call({
+ String? biography, String? musicBrainzId, String? lastFmUrl, String? smallImageUrl, String? mediumImageUrl, String? largeImageUrl, List<SubsonicArtistDTO> similarArtist
+});
+
+
+
+
+}
+/// @nodoc
+class __$SubsonicArtistInfoDTOCopyWithImpl<$Res>
+    implements _$SubsonicArtistInfoDTOCopyWith<$Res> {
+  __$SubsonicArtistInfoDTOCopyWithImpl(this._self, this._then);
+
+  final _SubsonicArtistInfoDTO _self;
+  final $Res Function(_SubsonicArtistInfoDTO) _then;
+
+/// Create a copy of SubsonicArtistInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? biography = freezed,Object? musicBrainzId = freezed,Object? lastFmUrl = freezed,Object? smallImageUrl = freezed,Object? mediumImageUrl = freezed,Object? largeImageUrl = freezed,Object? similarArtist = null,}) {
+  return _then(_SubsonicArtistInfoDTO(
+biography: freezed == biography ? _self.biography : biography // ignore: cast_nullable_to_non_nullable
+as String?,musicBrainzId: freezed == musicBrainzId ? _self.musicBrainzId : musicBrainzId // ignore: cast_nullable_to_non_nullable
+as String?,lastFmUrl: freezed == lastFmUrl ? _self.lastFmUrl : lastFmUrl // ignore: cast_nullable_to_non_nullable
+as String?,smallImageUrl: freezed == smallImageUrl ? _self.smallImageUrl : smallImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,mediumImageUrl: freezed == mediumImageUrl ? _self.mediumImageUrl : mediumImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,largeImageUrl: freezed == largeImageUrl ? _self.largeImageUrl : largeImageUrl // ignore: cast_nullable_to_non_nullable
+as String?,similarArtist: null == similarArtist ? _self._similarArtist : similarArtist // ignore: cast_nullable_to_non_nullable
+as List<SubsonicArtistDTO>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SubsonicIndexDTO {
 
  String get name; List<SubsonicArtistDTO> get artist;
