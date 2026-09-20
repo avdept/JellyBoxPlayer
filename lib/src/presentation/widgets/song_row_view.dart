@@ -86,6 +86,12 @@ class SongRowView extends ConsumerWidget {
         secondaryTextColor ?? theme.colorScheme.onPrimary.withOpacity(0.6);
 
     return GestureDetector(
+      onLongPress: (!isDesktop && optionsBuilder != null)
+          ? () => showLongPressContextMenuSheet(
+              context,
+              actions: optionsBuilder!(context),
+            )
+          : null,
       onSecondaryTapUp: optionsBuilder != null
           ? (details) => showContextMenu(
               context,

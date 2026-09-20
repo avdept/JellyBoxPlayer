@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -112,8 +114,22 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  Future<void> _requestReview() async {
+    final review = InAppReview.instance;
+    try {
+      if (!await review.isAvailable()) return;
+      await ref.read(reviewPromptProvider.notifier).markPrompted();
+      await review.requestReview();
+    } on PlatformException {
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(reviewPromptProvider, (_, due) {
+      if (due) unawaited(_requestReview());
+    });
     final currentIndex = widget.shell.currentIndex;
     final isOffline = ref.watch(isOfflineProvider);
     final sidebarCollapsed = ref.watch(

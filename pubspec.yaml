@@ -75,6 +75,7 @@ dependencies:
   wakelock_plus: ^1.8.0
   battery_plus: ^7.1.1
   url_launcher: ^6.3.2
+  in_app_review: ^2.0.12
 
 dev_dependencies:
   flutter_test:
