@@ -17,6 +17,7 @@ import 'package:jplayer/src/data/backend/server_session.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
+import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -41,6 +42,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   late final Interceptor _noAuthNetworkInterceptor;
   late Dio _client;
   late FlutterSecureStorage _storage;
+  late KeychainAccess _keychain;
 
   bool _authenticating = false;
   bool _loggingOut = false;
@@ -73,6 +75,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   FutureOr<bool?> build() async {
     _client = ref.watch(dioProvider);
     _storage = ref.watch(secureStorageProvider);
+    _keychain = KeychainAccess(_storage);
     if (!_client.interceptors.contains(_noAuthNetworkInterceptor)) {
       _client.interceptors.add(_noAuthNetworkInterceptor);
     }
@@ -82,7 +85,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
     state = const AsyncLoading();
 
-    final serverUrl = await _storage.read(key: _serverUrlKey);
+    final serverUrl = await _keychain.readSessionKey(_serverUrlKey);
     ref.read(baseUrlProvider.notifier).state = serverUrl;
     if (serverUrl == null) return false;
 
