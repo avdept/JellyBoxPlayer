@@ -16,6 +16,9 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
       encryptedSharedPreferences: true,
       resetOnError: true,
     ),
+    iOptions: const IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
     mOptions: _kMacOsOptions,
   ),
 );
