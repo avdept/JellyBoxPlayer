@@ -23,7 +23,8 @@ enum AppSetting {
   discordRichPresence('discord_rich_presence'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
-  rendererVolumes('renderer_volumes', defaultValue: <String, double>{});
+  rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
+  listenBrainzUser('listenbrainz_user', defaultValue: '');
 
   const AppSetting(this.key, {this.defaultValue = false});
 

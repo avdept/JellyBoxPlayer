@@ -19,6 +19,7 @@ export 'is_song_downloaded_provider.dart';
 export 'item_list_providers.dart';
 export 'items_filter_provider.dart';
 export 'libraries_provider.dart';
+export 'listenbrainz_account_provider.dart';
 export 'lyrics_provider.dart';
 export 'more_from_artist_provider.dart';
 export 'now_playing_provider.dart';

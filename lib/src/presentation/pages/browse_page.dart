@@ -10,7 +10,6 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
-import 'package:jplayer/src/presentation/widgets/desktop/create_desktop_playlist_form.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -160,50 +159,14 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         );
   }
 
-  void _onCreateNewPlaylist() {
-    if (_device.isDesktop) {
-      showAdaptiveDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: SizedBox(
-            width: 360,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-              child: CreateDesktopPlaylistForm(
-                onCreated: () => ref.invalidate(playlistsProvider),
-              ),
-            ),
-          ),
-        ),
-      );
-    } else {
-      PersistentBottomSheetController? controller;
-      // _scaffoldKey.currentState?.showBodyScrim(true, 0.66);
-      showModalBottomSheet<void>(
-        useRootNavigator: true,
-        backgroundColor: Colors.grey[900],
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
-        ),
-        context: context,
-        builder: (context) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            CloseButton(onPressed: () => Navigator.of(context).pop()),
-            CreatePlaylistForm(
-              controller: controller,
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              onCreated: () => ref.invalidate(playlistsProvider),
-            ),
-          ],
-        ),
-      );
-    }
-  }
+  void _onCreateNewPlaylist() => unawaited(
+    showFormModal<void>(
+      context,
+      builder: (context) => CreatePlaylistForm(
+        onCreated: () => ref.invalidate(playlistsProvider),
+      ),
+    ),
+  );
 
   Future<void> _onDeletePlaylist(LibraryItem playlist) async {
     final shouldDelete = await showAdaptiveDialog<bool>(

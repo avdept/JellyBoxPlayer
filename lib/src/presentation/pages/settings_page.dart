@@ -122,7 +122,7 @@ class SettingsPage extends ConsumerWidget {
     return Scaffold(
       body: GradientBackground(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             GradientPanelDecoration(
               child: Padding(
@@ -268,6 +268,8 @@ class SettingsPage extends ConsumerWidget {
                         label: 'Share what I am listening to on Discord',
                       ),
                     ],
+                    _sectionHeader('ListenBrainz'),
+                    const ListenBrainzSettings(),
                     if (!device.isDesktop) _logOutButton(ref),
                     _versionLabel(context),
                   ],
