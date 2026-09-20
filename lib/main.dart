@@ -14,6 +14,8 @@ import 'package:jplayer/src/core/android_auto/android_auto_handler.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
+import 'package:jplayer/src/core/listenbrainz/listenbrainz_scrobbler.dart';
+import 'package:jplayer/src/core/scrobbling/scrobble_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
@@ -162,6 +164,12 @@ Future<void> main() async {
   if (Platform.isWindows) await SmtcHandler.initialize(container);
 
   DiscordPresenceHandler.initialize(container);
+  ScrobbleHandler.initialize(
+    container,
+    scrobblers: [
+      ListenBrainzScrobbler(container, clientVersion: appInfo.version),
+    ],
+  );
 
   await SentryFlutter.init(
     (options) {

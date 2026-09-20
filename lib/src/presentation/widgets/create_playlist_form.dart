@@ -1,120 +1,113 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/presentation/widgets/form_modal.dart';
+import 'package:jplayer/src/presentation/widgets/labeled_text_field.dart';
 
 class CreatePlaylistForm extends ConsumerStatefulWidget {
   const CreatePlaylistForm({
-    this.controller,
     this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
     this.onCreated,
     super.key,
   });
 
-  final PersistentBottomSheetController? controller;
   final EdgeInsets padding;
   final VoidCallback? onCreated;
 
   @override
-  ConsumerState<CreatePlaylistForm> createState() =>
-      _CreatePlaylistBottomSheetState();
+  ConsumerState<CreatePlaylistForm> createState() => _CreatePlaylistFormState();
 }
 
-class _CreatePlaylistBottomSheetState
-    extends ConsumerState<CreatePlaylistForm> {
-  final _inputController = TextEditingController(text: 'My new playlist');
-  var _isPublicPlaylist = true;
+class _CreatePlaylistFormState extends ConsumerState<CreatePlaylistForm> {
+  final _nameController = TextEditingController(text: 'My new playlist');
+  var _isPublic = true;
+  var _submitting = false;
+  String? _error;
 
-  Future<void> _onCreatePressed() async {
-    await ref
-        .read(mediaServerClientProvider)
-        .createPlaylist(
-          PlaylistData(
-            name: _inputController.text.trim(),
-            userId: ref.read(currentUserProvider)!.userId,
-            isPublic: _isPublicPlaylist,
-          ),
-        );
-    widget.onCreated?.call();
-    _onCloseBottomSheet();
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
-  void _onCloseBottomSheet() {
-    if (mounted) (widget.controller?.close ?? Navigator.of(context).pop).call();
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    if (_submitting || name.isEmpty) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(mediaServerClientProvider)
+          .createPlaylist(
+            PlaylistData(
+              name: name,
+              userId: ref.read(currentUserProvider)!.userId,
+              isPublic: _isPublic,
+            ),
+          );
+      widget.onCreated?.call();
+      if (mounted) Navigator.of(context).pop();
+    } on Object {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = 'Could not create the playlist';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SafeArea(
       top: false,
       minimum: widget.padding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Name your playlist',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
-          ),
-          const Padding(padding: EdgeInsets.only(top: 36)),
-          TextField(
-            controller: _inputController,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: InputDecoration(
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(width: 2, color: Colors.grey[600]!),
-              ),
-              border: UnderlineInputBorder(
-                borderSide: BorderSide(width: 2, color: Colors.grey[700]!),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-              hintText: 'Playlist name',
-              hintStyle: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade400,
-              ),
-            ),
+          const ModalFormHeader('New playlist'),
+          const SizedBox(height: 16),
+          LabeledTextField(
+            controller: _nameController,
+            placeholder: 'Playlist name',
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
             autofocus: true,
           ),
-          const SizedBox(height: 16),
+          if (_error case final error?)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                error,
+                style: TextStyle(fontSize: 13, color: theme.colorScheme.error),
+              ),
+            ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              StatefulBuilder(
-                builder: (context, setState) => Checkbox(
-                  value: _isPublicPlaylist,
-                  onChanged: (value) => setState(() {
-                    _isPublicPlaylist = value!;
-                  }),
-                ),
+              Checkbox(
+                value: _isPublic,
+                onChanged: (value) =>
+                    setState(() => _isPublic = value ?? _isPublic),
               ),
               const Text('Is public'),
             ],
           ),
-          const SizedBox(height: 72),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton(
-                onPressed: _onCreatePressed,
-                style: TextButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                child: const Text('Create playlist'),
-              ),
-            ],
+          const SizedBox(height: 16),
+          ModalFormActions(
+            submitLabel: 'Create playlist',
+            onSubmit: () => unawaited(_submit()),
+            busy: _submitting,
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _inputController.dispose();
-    super.dispose();
   }
 }
