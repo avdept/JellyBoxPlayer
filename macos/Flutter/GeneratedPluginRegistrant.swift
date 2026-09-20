@@ -11,6 +11,7 @@ import battery_plus
 import connectivity_plus
 import flutter_secure_storage_darwin
 import flutter_udid
+import in_app_review
 import just_audio
 import mediakeys_proxy
 import native_route_picker
@@ -30,6 +31,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))
   FlutterSecureStorageDarwinPlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStorageDarwinPlugin"))
   FlutterUdidPlugin.register(with: registry.registrar(forPlugin: "FlutterUdidPlugin"))
+  InAppReviewPlugin.register(with: registry.registrar(forPlugin: "InAppReviewPlugin"))
   JustAudioPlugin.register(with: registry.registrar(forPlugin: "JustAudioPlugin"))
   MediakeysProxyPlugin.register(with: registry.registrar(forPlugin: "MediakeysProxyPlugin"))
   NativeRoutePickerPlugin.register(with: registry.registrar(forPlugin: "NativeRoutePickerPlugin"))

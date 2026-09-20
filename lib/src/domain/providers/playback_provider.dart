@@ -16,6 +16,7 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -291,11 +292,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final song = _reportedSong;
     if (song == null) return;
     _startReported = false;
+    if (_listenedThrough(song)) {
+      _ref.read(reviewPromptProvider.notifier).recordTrackCompleted();
+    }
     _report(
       (client) => client.reportPlaybackStopped(
         _playbackReport(song, positionMs: _reportedPositionMs),
       ),
     );
+  }
+
+  bool _listenedThrough(LibraryItem song) {
+    final total = song.duration.inMilliseconds;
+    return total > 0 && _reportedPositionMs >= total * 0.9;
   }
 
   void _reportProgress() {

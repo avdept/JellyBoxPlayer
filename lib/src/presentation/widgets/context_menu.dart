@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -475,6 +476,15 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   @override
   bool shouldRelayout(_MenuLayout oldDelegate) =>
       anchorRect != oldDelegate.anchorRect || position != oldDelegate.position;
+}
+
+Future<void> showLongPressContextMenuSheet(
+  BuildContext context, {
+  required List<ContextMenuAction> actions,
+}) {
+  if (actions.isEmpty) return Future.value();
+  HapticFeedback.mediumImpact().ignore();
+  return showContextMenuSheet(context, actions: actions);
 }
 
 Future<void> showContextMenuSheet(

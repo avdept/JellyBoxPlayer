@@ -51,12 +51,19 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
     final deviceType = getDeviceType(MediaQuery.sizeOf(context));
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isTablet = deviceType == DeviceScreenType.tablet;
+    final isDesktop = deviceType == DeviceScreenType.desktop;
     final imageSize = isMobile ? 46.0 : 56.0;
     final horizontal = widget.edgePadding ?? 0;
     final subtitle = _subtitle;
     final isRound = item.kind == ItemKind.artist;
 
     return GestureDetector(
+      onLongPress: (!isDesktop && widget.optionsBuilder != null)
+          ? () => showLongPressContextMenuSheet(
+              context,
+              actions: widget.optionsBuilder!(context),
+            )
+          : null,
       onSecondaryTapUp: widget.optionsBuilder != null
           ? (details) => showContextMenu(
               context,

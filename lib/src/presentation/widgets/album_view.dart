@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
@@ -73,7 +74,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
 
     final card = GestureDetector(
       onLongPress: (!isDesktop && widget.optionsBuilder != null)
-          ? () => showContextMenuSheet(
+          ? () => showLongPressContextMenuSheet(
               context,
               actions: widget.optionsBuilder!(context),
             )
@@ -102,12 +103,13 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                 fit: StackFit.expand,
                 children: [
                   widget.coverOverride ??
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: _libraryImage,
-                          ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image(
+                          image: _libraryImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Image.asset(Images.album, fit: BoxFit.cover),
                         ),
                       ),
                   if (widget.optionsBuilder != null)
