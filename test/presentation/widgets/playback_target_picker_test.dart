@@ -13,6 +13,8 @@ import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
+import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/output_route_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
@@ -31,6 +33,21 @@ class _FakeRenderersNotifier extends UpnpRenderersNotifier {
 
   @override
   Future<void> refresh({Duration timeout = const Duration(seconds: 4)}) async {}
+}
+
+class _FakeCastNotifier extends CastDevicesNotifier {
+  _FakeCastNotifier(List<GoogleCastDevice> devices) {
+    state = CastDiscoveryState(devices: devices);
+  }
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
+
+  @override
+  void refresh() {}
 }
 
 class _RecordingDiagnostics extends Diagnostics {
@@ -126,9 +143,21 @@ void main() {
     );
   }
 
+  GoogleCastDevice castNamed(String name, {String? model}) => GoogleCastDevice(
+    deviceID: 'cast-$name',
+    friendlyName: name,
+    modelName: model,
+    statusText: null,
+    deviceVersion: '1.0',
+    isOnLocalNetwork: true,
+    category: '',
+    uniqueID: 'cast-$name',
+  );
+
   Future<void> pumpPicker(
     WidgetTester tester, {
     required List<UpnpRenderer> renderers,
+    List<GoogleCastDevice> castDevices = const [],
     PlaybackTarget? activeTarget,
     ControlPointHost host = ControlPointHost.sustained,
     CloudState? cloud,
@@ -143,6 +172,9 @@ void main() {
           currentOutputRouteProvider.overrideWith((ref) => Stream.value(route)),
           upnpRenderersProvider.overrideWith(
             (ref) => _FakeRenderersNotifier(renderers),
+          ),
+          castDevicesProvider.overrideWith(
+            (ref) => _FakeCastNotifier(castDevices),
           ),
           if (activeTarget != null)
             playbackTargetProvider.overrideWith(
@@ -577,6 +609,68 @@ void main() {
     expect(target.kind, PlaybackTargetKind.upnp);
     expect(target.id, renderer.id);
     expect(target.name, 'Kitchen');
+  });
+
+  testWidgets('- plays on a Cast device when one is picked', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        upnpRenderersProvider.overrideWith(
+          (ref) => _FakeRenderersNotifier(const []),
+        ),
+        castDevicesProvider.overrideWith(
+          (ref) => _FakeCastNotifier([castNamed('Kitchen', model: 'Nest')]),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Kitchen'));
+    await tester.pump();
+
+    final target = container.read(playbackTargetProvider);
+    expect(target.kind, PlaybackTargetKind.cast);
+    expect(target.id, 'cast:cast-Kitchen');
+    expect(target.name, 'Kitchen');
+  });
+
+  testWidgets('- marks which protocol each device speaks', (tester) async {
+    await pumpPicker(
+      tester,
+      renderers: [rendererNamed('Lounge TV', model: 'QE85')],
+      castDevices: [castNamed('Kitchen', model: 'Nest Audio')],
+    );
+
+    Finder tile(String title) =>
+        find.ancestor(of: find.text(title), matching: find.byType(ListTile));
+
+    expect(
+      find.descendant(of: tile('Kitchen'), matching: find.byIcon(Icons.cast)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tile('Lounge TV'),
+        matching: find.byIcon(Icons.settings_input_antenna),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tile('This device'),
+        matching: find.byIcon(Icons.settings_input_antenna),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('- tells three identical speakers apart by address', (

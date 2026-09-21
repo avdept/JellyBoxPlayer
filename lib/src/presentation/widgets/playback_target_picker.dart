@@ -3,14 +3,18 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/cast/cast_runtime.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:optional_features/jellybox_cloud.dart';
+import 'package:jplayer/src/domain/playback/cast_playback_target.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
+import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/output_route_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
@@ -28,6 +32,8 @@ import 'package:optional_features/upnp_quirks.dart';
 
 const _menuWidth = 320.0;
 const _menuMaxHeight = 360.0;
+const IconData _castBadge = Icons.cast;
+const IconData _dlnaBadge = Icons.settings_input_antenna;
 
 typedef ActiveDevice = ({String name, IconData icon});
 
@@ -48,9 +54,11 @@ final activeDeviceProvider = Provider<ActiveDevice?>((ref) {
   }
   return (
     name: target.name,
-    icon: target is UpnpPlaybackTarget
-        ? rendererIcon(target.renderer)
-        : Icons.speaker,
+    icon: switch (target) {
+      UpnpPlaybackTarget() => rendererIcon(target.renderer),
+      CastPlaybackTarget() => castDeviceIcon(target.device),
+      _ => Icons.speaker,
+    },
   );
 });
 
@@ -288,13 +296,24 @@ class PlaybackTargetMenu extends ConsumerStatefulWidget {
 }
 
 class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
+  CastDevicesNotifier? _cast;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final cast = ref.read(castDevicesProvider.notifier);
+      _cast = cast;
+      cast.start();
       unawaited(ref.read(upnpRenderersProvider.notifier).refresh());
     });
+  }
+
+  @override
+  void dispose() {
+    _cast?.stop();
+    super.dispose();
   }
 
   OutputController get _outputs => ref.read(outputControllerProvider);
@@ -339,6 +358,16 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     widget.onDone();
   }
 
+  void _selectCastDevice(GoogleCastDevice device) {
+    unawaited(_outputs.playOn(CastPlaybackTarget(device)));
+    widget.onDone();
+  }
+
+  void _rescan() {
+    _cast?.refresh();
+    unawaited(ref.read(upnpRenderersProvider.notifier).refresh());
+  }
+
   Future<void> _shareDevices(List<UpnpRenderer> renderers) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
     final diagnostics = ref.read(diagnosticsProvider);
@@ -362,8 +391,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final theme = Theme.of(context);
     final active = ref.watch(playbackTargetProvider);
     final discovery = ref.watch(upnpRenderersProvider);
+    final cast = ref.watch(castDevicesProvider);
     final conductor = ref.watch(cloudProvider);
     final host = ref.watch(controlPointHostProvider);
+    final scanning = discovery.scanning || cast.scanning;
     final width = math.min(_menuWidth, MediaQuery.sizeOf(context).width - 24);
     final elsewhere = ref.watch(remoteRendererProvider);
     final onThisDevice =
@@ -381,7 +412,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               children: [
                 Text('Play on', style: theme.textTheme.titleSmall),
                 const Spacer(),
-                if (discovery.scanning)
+                if (scanning)
                   const Padding(
                     padding: EdgeInsets.all(12),
                     child: SizedBox.square(
@@ -394,8 +425,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                     tooltip: 'Scan again',
                     iconSize: 18,
                     icon: const Icon(Icons.refresh),
-                    onPressed: () =>
-                        ref.read(upnpRenderersProvider.notifier).refresh(),
+                    onPressed: _rescan,
                   ),
                 IconButton(
                   tooltip: 'Share this device list with the developer',
@@ -436,6 +466,19 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             ),
             if (device.id == elsewhere?.id) _volume,
           ],
+          for (final device in cast.devices) ...[
+            _TargetTile(
+              icon: castDeviceIcon(device),
+              badge: _castBadge,
+              title: device.friendlyName,
+              subtitle: device.modelName,
+              selected:
+                  elsewhere == null && active.id == 'cast:${device.deviceID}',
+              onTap: () => _selectCastDevice(device),
+            ),
+            if (elsewhere == null && active.id == 'cast:${device.deviceID}')
+              _volume,
+          ],
           for (final renderer in discovery.renderers) ...[
             _rendererTile(
               renderer,
@@ -445,12 +488,15 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             if (elsewhere == null && active.id == renderer.id) _volume,
           ],
           if (discovery.renderers.isEmpty &&
+              cast.devices.isEmpty &&
               conductor.targets.isEmpty &&
-              !discovery.scanning)
+              !scanning)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               child: Text(
-                'No DLNA devices found on this network.',
+                castSupported
+                    ? 'No Cast or DLNA devices found on this network.'
+                    : 'No DLNA devices found on this network.',
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -541,6 +587,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
     return _TargetTile(
       icon: rendererIcon(renderer),
+      badge: _dlnaBadge,
       title: renderer.name,
       subtitle: blocked ?? [renderer.host, ?renderer.model].join(' · '),
       selected: selected,
@@ -572,6 +619,21 @@ IconData outputRouteIcon(OutputRouteKind kind) => switch (kind) {
   OutputRouteKind.builtIn || OutputRouteKind.other => Icons.speaker,
 };
 
+IconData castDeviceIcon(GoogleCastDevice device) {
+  final haystack = [
+    device.friendlyName,
+    device.modelName ?? '',
+  ].join(' ').toLowerCase();
+
+  if (haystack.contains('tv') ||
+      haystack.contains('display') ||
+      haystack.contains('chromecast') ||
+      haystack.contains('shield')) {
+    return Icons.tv;
+  }
+  return Icons.speaker;
+}
+
 IconData rendererIcon(UpnpRenderer renderer) {
   final haystack = [
     renderer.name,
@@ -602,11 +664,13 @@ class _TargetTile extends StatelessWidget {
     required this.title,
     required this.selected,
     required this.onTap,
+    this.badge,
     this.subtitle,
     this.busy = false,
   });
 
   final IconData icon;
+  final IconData? badge;
   final String title;
   final String? subtitle;
   final bool selected;
@@ -625,7 +689,7 @@ class _TargetTile extends StatelessWidget {
       dense: true,
       enabled: !disabled,
       hoverColor: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-      leading: Icon(icon, color: tint, size: 20),
+      leading: _TileIcon(icon: icon, badge: badge, tint: tint),
       title: Text(title, style: TextStyle(color: tint)),
       subtitle: subtitle == null
           ? null
@@ -647,6 +711,49 @@ class _TargetTile extends StatelessWidget {
     );
 
     return Material(type: MaterialType.transparency, child: tile);
+  }
+}
+
+class _TileIcon extends StatelessWidget {
+  const _TileIcon({
+    required this.icon,
+    required this.badge,
+    required this.tint,
+  });
+
+  final IconData icon;
+  final IconData? badge;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final glyph = Icon(icon, color: tint, size: 20);
+    final mark = badge;
+    if (mark == null) return glyph;
+
+    return SizedBox.square(
+      dimension: 20,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          glyph,
+          Positioned(
+            right: -4,
+            bottom: -4,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(1),
+                child: Icon(mark, size: 11, color: tint),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

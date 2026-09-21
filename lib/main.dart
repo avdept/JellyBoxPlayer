@@ -12,6 +12,7 @@ import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/core/android_auto/android_auto_handler.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
+import 'package:jplayer/src/core/cast/cast_runtime.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
 import 'package:jplayer/src/core/home_widget/widget_commands.dart';
@@ -86,6 +87,8 @@ Future<void> main() async {
       androidBrowsableRootExtras: AndroidAutoHandler.rootExtras,
     );
   }
+
+  await initializeCast();
 
   if (Platform.isIOS) {
     final session = await AudioSession.instance;
