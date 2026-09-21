@@ -4,13 +4,15 @@
 
 # JellyBox
 
-**The best native music player for your Jellyfin or Emby server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
+**The best native music player for your Jellyfin, Emby or Navidrome server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
 
 [![Works with Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?logo=jellyfin&logoColor=white)](https://jellyfin.org)
 [![Works with Emby](https://img.shields.io/badge/Emby-52B54B?logo=emby&logoColor=white)](https://emby.media)
+[![Works with Navidrome](https://img.shields.io/badge/Navidrome-1F2A44?logoColor=white)](https://www.navidrome.org)
 
 [![Build Status](https://github.com/avdept/JellyBoxPlayer/actions/workflows/tests.yaml/badge.svg)](https://github.com/avdept/JellyBoxPlayer/actions)
 [![Latest release](https://img.shields.io/github/v/release/avdept/JellyBoxPlayer)](https://github.com/avdept/JellyBoxPlayer/releases/latest)
+[![GitHub downloads](https://img.shields.io/github/downloads/avdept/JellyBoxPlayer/total?logo=github&logoColor=white&label=downloads)](https://github.com/avdept/JellyBoxPlayer/releases)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue)](./LICENSE)
 [![Stars](https://img.shields.io/github/stars/avdept/JellyBoxPlayer?style=flat)](https://github.com/avdept/JellyBoxPlayer/stargazers)
 [![Follow @_avdept](https://img.shields.io/badge/@__avdept-000000?logo=x&logoColor=white)](https://x.com/_avdept)
@@ -22,10 +24,10 @@
 
 ---
 
-JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org) and [Emby](https://emby.media). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads, lyrics, and artwork-driven theming - with a UI built for each platform rather than a single stretched layout.
+JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org), [Emby](https://emby.media) and [Navidrome](https://www.navidrome.org) (any OpenSubsonic-compatible server can be tried, but only Navidrome is tested). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads, lyrics, and artwork-driven theming - with a UI built for each platform rather than a single stretched layout.
 
 > [!IMPORTANT]
-> JellyBox is a client, not a server. You need access to a running Jellyfin or Emby server with a music library on it.
+> JellyBox is a client, not a server. You need access to a running Jellyfin, Emby or Navidrome server with a music library on it.
 
 ## Download
 
@@ -118,7 +120,7 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 ## Features
 
 **Library & browsing**
-- [x] Connect to Jellyfin or Emby servers, and switch between them without signing out
+- [x] Connect to Jellyfin, Emby or Navidrome (Subsonic API) servers, and switch between them without signing out
 - [x] Jellyfin Quick Connect - sign in from your phone or desktop without typing a password
 - [x] Browse albums, artists, genres, playlists and songs across multiple music libraries
 - [x] Search everything at once, or filter to playlists, albums, artists or songs
@@ -136,6 +138,7 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 - [x] Per-connection streaming profiles with automatic transcoding when a codec isn't supported natively
 - [x] Audio quality badge, so you always know whether you're getting the original file
 - [x] Landscape now-playing layout on phones
+- [x] ListenBrainz scrobbling - listens and now-playing go to your ListenBrainz account - see [ListenBrainz](./docs/listenbrainz.md)
 
 **Offline**
 - [x] Download albums and tracks for offline listening
@@ -154,7 +157,7 @@ JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org
 - [x] Lock screen and notification controls on iOS and Android
 - [x] In-app changelog, so you can see what landed in each release
 - [x] Apple CarPlay - currently in beta stage.
-- [ ] Android Auto - in development
+- [x] Android Auto - currently in beta stage.
 
 ## Platform notes
 

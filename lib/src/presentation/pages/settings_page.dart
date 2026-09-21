@@ -42,6 +42,13 @@ class SettingsPage extends ConsumerWidget {
     KeepScreenOn.always: 'Always',
   };
 
+  static const Map<AnimationSpeed, String> _animationSpeedLabels = {
+    AnimationSpeed.none: 'None',
+    AnimationSpeed.slow: 'Slow',
+    AnimationSpeed.medium: 'Medium',
+    AnimationSpeed.fast: 'Fast',
+  };
+
   static const Map<StartPage, String> _startPageLabels = {
     StartPage.home: 'Home',
     StartPage.browse: 'Browse',
@@ -201,6 +208,16 @@ class SettingsPage extends ConsumerWidget {
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultStartPage, value.name),
                     ),
+                    if (!device.isMobile)
+                      _settingDropdown<AnimationSpeed>(
+                        context: context,
+                        label: 'Animation speed',
+                        value: ref.watch(animationSpeedProvider),
+                        options: _animationSpeedLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(AppSetting.animationSpeed, value.name),
+                      ),
                     _settingDropdown<ItemList>(
                       context: context,
                       label: 'Default browse tab',
@@ -245,6 +262,15 @@ class SettingsPage extends ConsumerWidget {
                             .read(appSettingsProvider.notifier)
                             .setValue(AppSetting.keepScreenOn, value.name),
                       ),
+                      _settingDropdown<AnimationSpeed>(
+                        context: context,
+                        label: 'Animation speed',
+                        value: ref.watch(animationSpeedProvider),
+                        options: _animationSpeedLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(AppSetting.animationSpeed, value.name),
+                      ),
                     ],
                     if (!device.isMobile) ...[
                       _sectionHeader('Studio Mode'),
@@ -255,11 +281,6 @@ class SettingsPage extends ConsumerWidget {
                           label:
                               'Make player full screen when Studio Mode enabled',
                         ),
-                      _settingCheckbox(
-                        ref: ref,
-                        setting: AppSetting.studioModeAnimation,
-                        label: 'Enable Studio Mode animation',
-                      ),
                     ],
                     if (supportsDiscordPresence) ...[
                       _sectionHeader('Discord'),

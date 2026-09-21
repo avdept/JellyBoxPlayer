@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum AppSetting {
   sidebarCollapsed('sidebar_collapsed', defaultValue: true),
   studioModeFullscreen('studio_mode_fullscreen'),
-  studioModeAnimation('studio_mode_animation', defaultValue: true),
+  animationSpeed('animation_speed', defaultValue: 'medium'),
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),
   recentlyPlayedHidden('hide_recently_played'),
@@ -106,6 +106,15 @@ final keepScreenOnProvider = Provider<KeepScreenOn>(
         AppSetting.keepScreenOn,
       )] ??
       KeepScreenOn.never,
+);
+
+final animationSpeedProvider = Provider<AnimationSpeed>(
+  (ref) =>
+      AnimationSpeed.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.animationSpeed],
+        AppSetting.animationSpeed,
+      )] ??
+      AnimationSpeed.medium,
 );
 
 final defaultStartPageProvider = Provider<StartPage>(
