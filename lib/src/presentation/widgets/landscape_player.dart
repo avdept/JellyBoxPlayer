@@ -10,6 +10,7 @@ import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/lyrics_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
@@ -177,7 +178,9 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
         fit: StackFit.expand,
         children: [
           ColoredBox(color: _theme.scaffoldBackgroundColor),
-          const AuroraBackground(),
+          AuroraBackground(
+            animate: ref.watch(animationSpeedProvider).isAnimated,
+          ),
           const KeepScreenAwake(),
           Material(
             type: MaterialType.transparency,

@@ -6,6 +6,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
@@ -110,6 +112,7 @@ class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
   String? _displayedSongId;
   String? _pendingSongId;
   double _speed = _pausedSpeed;
+  double _speedScale = AnimationSpeed.medium.multiplier;
   bool _isPlaying = false;
 
   @override
@@ -117,16 +120,25 @@ class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
     super.initState();
     _isPlaying = ref.read(playbackProvider).status.isPlaying;
     _speed = _isPlaying ? _playingSpeed : _pausedSpeed;
-    if (widget.animate) {
-      _phaseWatch.start();
-      _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
-    }
+    _applyAnimationSpeed(ref.read(animationSpeedProvider));
+    ref.listenManual(
+      animationSpeedProvider,
+      (_, speed) => _applyAnimationSpeed(speed),
+    );
     ref.listenManual(
       playbackProvider.select((state) => state.status.isPlaying),
       (_, playing) => _isPlaying = playing,
     );
     ref.listenManual(nowPlayingProvider, (_, song) => _prepareArtwork(song));
     unawaited(_prepareArtwork(ref.read(nowPlayingProvider)));
+  }
+
+  @override
+  void didUpdateWidget(AuroraBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animate != widget.animate) {
+      _applyAnimationSpeed(ref.read(animationSpeedProvider));
+    }
   }
 
   @override
@@ -138,10 +150,27 @@ class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
     super.dispose();
   }
 
+  void _applyAnimationSpeed(AnimationSpeed speed) {
+    _speedScale = speed.multiplier;
+    if (!widget.animate || !speed.isAnimated) {
+      _phaseTimer?.cancel();
+      _phaseTimer = null;
+      _phaseWatch
+        ..stop()
+        ..reset();
+      return;
+    }
+    if (_phaseTimer != null) return;
+    _phaseWatch
+      ..reset()
+      ..start();
+    _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
+  }
+
   void _onPhaseTick(Timer timer) {
     final dt = _phaseWatch.elapsedMicroseconds / 1e6;
     _phaseWatch.reset();
-    final target = _isPlaying ? _playingSpeed : _pausedSpeed;
+    final target = (_isPlaying ? _playingSpeed : _pausedSpeed) * _speedScale;
     _speed += (target - _speed) * (1 - exp(-dt / _speedRampSeconds));
     _phase.value = (_phase.value + dt * _speed) % 1;
   }

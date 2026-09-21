@@ -68,6 +68,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   ui.FragmentShader? _auroraShader;
   ui.Image? _blurredArt;
   double _backgroundSpeed = _pausedSpeed;
+  double _speedScale = AnimationSpeed.medium.multiplier;
   Timer? _hideTimer;
   bool _controlsVisible = true;
   int _activePointers = 0;
@@ -80,10 +81,12 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     final playing = ref.read(playbackProvider).status == PlaybackStatus.playing;
     _isPlaying.value = playing;
     _backgroundSpeed = playing ? _playingSpeed : _pausedSpeed;
-    if (ref.read(settingProvider(AppSetting.studioModeAnimation))) {
-      _phaseWatch.start();
-      _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
-    }
+    _applyAnimationSpeed(ref.read(animationSpeedProvider));
+    ref.listenManual(
+      animationSpeedProvider,
+      (_, speed) => _applyAnimationSpeed(speed),
+    );
+    HardwareKeyboard.instance.addHandler(_onKeyEvent);
     ref.listenManual(nowPlayingProvider, (_, song) => _onNowPlaying(song));
     _currentSong = ref.read(nowPlayingProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -156,10 +159,28 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     }());
   }
 
+  void _applyAnimationSpeed(AnimationSpeed speed) {
+    _speedScale = speed.multiplier;
+    if (!speed.isAnimated) {
+      _phaseTimer?.cancel();
+      _phaseTimer = null;
+      _phaseWatch
+        ..stop()
+        ..reset();
+      return;
+    }
+    if (_phaseTimer != null) return;
+    _phaseWatch
+      ..reset()
+      ..start();
+    _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
+  }
+
   void _onPhaseTick(Timer timer) {
     final dt = _phaseWatch.elapsedMicroseconds / 1e6;
     _phaseWatch.reset();
-    final target = _isPlaying.value ? _playingSpeed : _pausedSpeed;
+    final target =
+        (_isPlaying.value ? _playingSpeed : _pausedSpeed) * _speedScale;
     _backgroundSpeed +=
         (target - _backgroundSpeed) * (1 - exp(-dt / _speedRampSeconds));
     _backgroundPhase.value =
@@ -199,13 +220,11 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     ref.read(studioModeVisibleProvider.notifier).state = false;
   }
 
-  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
-      _close();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
+  bool _onKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (event.logicalKey != LogicalKeyboardKey.escape) return false;
+    _close();
+    return true;
   }
 
   @override
@@ -214,7 +233,6 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       type: MaterialType.transparency,
       child: Focus(
         autofocus: true,
-        onKeyEvent: _onKeyEvent,
         child: MouseRegion(
           onHover: (_) => _pokeControls(),
           cursor: _controlsVisible
@@ -407,6 +425,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     if (_didEnterWindowFullscreen) {
       unawaited(windowManager.setFullScreen(false));
     }

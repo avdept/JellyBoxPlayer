@@ -1,3 +1,4 @@
+export 'animation_speed.dart';
 export 'artist_scope.dart';
 export 'browse_layout.dart';
 export 'content_update_interval.dart';
