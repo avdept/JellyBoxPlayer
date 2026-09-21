@@ -44,6 +44,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
   var _pumping = false;
   var _dirty = false;
   var _stopped = false;
+  var _purging = false;
 
   Future<void> _bootstrap() async {
     if (!mounted) return;
@@ -98,7 +99,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
   }
 
   Future<LibraryItem?> _nextCandidate() async {
-    if (_stopped) return null;
+    if (_stopped || _purging) return null;
     final limit = _ref.read(forwardCacheLimitProvider);
     if (!limit.isEnabled) return null;
     if (_ref.read(isOfflineProvider)) return null;
@@ -271,6 +272,23 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
   Future<void> cancelPending() async {
     _stopped = true;
     await _cancelInFlight();
+  }
+
+  Future<void> purge() async {
+    _purging = true;
+    try {
+      await _cancelInFlight();
+      _failedIds.clear();
+      await _currentService.purge();
+    } on Object catch (error) {
+      debugPrint('[ForwardCache] purging failed: $error');
+    } finally {
+      _purging = false;
+    }
+    if (!mounted) return;
+    await _refreshState();
+    if (!mounted) return;
+    _schedule();
   }
 
   Future<void> _onLimitChanged(ForwardCacheLimit limit) async {
