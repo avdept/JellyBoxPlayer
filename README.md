@@ -4,7 +4,7 @@
 
 # JellyBox
 
-**The best native music player for your Jellyfin, Emby or Navidrome server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
+**The best native music player for your Jellyfin, Emby or Navidrome server - on macOS, Windows, Linux, iOS and Android, with Apple CarPlay and Android Auto.**
 
 [![Works with Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?logo=jellyfin&logoColor=white)](https://jellyfin.org)
 [![Works with Emby](https://img.shields.io/badge/Emby-52B54B?logo=emby&logoColor=white)](https://emby.media)
