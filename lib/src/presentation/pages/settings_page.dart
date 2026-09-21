@@ -210,15 +210,16 @@ class SettingsPage extends ConsumerWidget {
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultBrowseTab, value.name),
                     ),
-                    _sectionHeader('Offline'),
+                    _sectionHeader('Cache'),
                     _settingDropdown<ForwardCacheLimit>(
                       context: context,
-                      label: 'Cache queue for offline',
+                      label: 'Cache limit',
                       value: ref.watch(forwardCacheLimitProvider),
                       options: _forwardCacheLabels,
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.forwardCacheLimit, value.name),
+                      trailing: _purgeCacheButton(context, ref),
                     ),
                     if (ref.watch(forwardCacheLimitProvider).isEnabled)
                       _settingDropdown<ForwardCacheWindow>(
@@ -280,6 +281,47 @@ class SettingsPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _purgeCacheButton(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return IconButton(
+      onPressed: () => _onPurgeCachePressed(context, ref),
+      icon: const Icon(Icons.delete_outline, size: 18),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+      visualDensity: VisualDensity.compact,
+      tooltip: 'Empty cache',
+      color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+    );
+  }
+
+  Future<void> _onPurgeCachePressed(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text('Empty the cache?', textAlign: TextAlign.center),
+        content: const Text(
+          'Tracks cached ahead for offline playback will be deleted.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          AdaptiveDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          AdaptiveDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDestructiveAction: true,
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(forwardCacheProvider.notifier).purge();
+    messenger.showSnackBar(const SnackBar(content: Text('Cache emptied')));
   }
 
   Widget _queueCacheButton(BuildContext context) => TextButton.icon(
@@ -346,6 +388,7 @@ class SettingsPage extends ConsumerWidget {
     required T value,
     required Map<T, String> options,
     required ValueChanged<T> onChanged,
+    Widget? trailing,
   }) {
     final theme = Theme.of(context);
     return Padding(
@@ -415,6 +458,10 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 4),
+            trailing,
+          ],
         ],
       ),
     );
