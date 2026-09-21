@@ -4,7 +4,7 @@
 
 # JellyBox
 
-**The best native music player for your Jellyfin, Emby or Navidrome server - on macOS, Windows, Linux, iOS(including CarPlay) and Android.**
+**A native crossplatform music player for your Jellyfin, Emby or Navidrome server - on macOS, Windows, Linux, iOS(including CarPlay) and Android(with Android Auto).**
 
 [![Works with Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?logo=jellyfin&logoColor=white)](https://jellyfin.org)
 [![Works with Emby](https://img.shields.io/badge/Emby-52B54B?logo=emby&logoColor=white)](https://emby.media)
@@ -24,7 +24,7 @@
 
 ---
 
-JellyBox is an unofficial, audio-only client for [Jellyfin](https://jellyfin.org), [Emby](https://emby.media) and [Navidrome](https://www.navidrome.org) (any OpenSubsonic-compatible server can be tried, but only Navidrome is tested). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads, lyrics, and artwork-driven theming - with a UI built for each platform rather than a single stretched layout.
+JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://emby.media) and [Navidrome](https://www.navidrome.org) (any OpenSubsonic-compatible server can be tried, but only Navidrome is tested). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads and progressive caching, lyrics, spotify-like everyday playlists along with a UI built for each platform rather than a single stretched layout.
 
 > [!IMPORTANT]
 > JellyBox is a client, not a server. You need access to a running Jellyfin, Emby or Navidrome server with a music library on it.
