@@ -38,6 +38,8 @@ class VolumeNotifier extends StateNotifier<VolumeState> {
     _lastAudibleLevel = state.level > 0 ? state.level : _fallbackLevel;
     if (_target.kind == PlaybackTargetKind.local) {
       unawaited(_target.setVolume(state.effectiveLevel));
+    } else if (_target.kind == PlaybackTargetKind.cast) {
+      unawaited(_adoptDeviceVolume());
     } else {
       unawaited(_startRendererVolume());
     }
@@ -55,6 +57,13 @@ class VolumeNotifier extends StateNotifier<VolumeState> {
       state = VolumeState(level: level);
     }
     await _target.setVolume(level);
+  }
+
+  Future<void> _adoptDeviceVolume() async {
+    final level = await _target.currentVolume();
+    if (level == null || !mounted) return;
+    _lastAudibleLevel = level > 0 ? level : _fallbackLevel;
+    state = VolumeState(level: level);
   }
 
   Future<void> setLevel(double value, {bool persist = true}) {

@@ -1,7 +1,7 @@
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 
-enum PlaybackTargetKind { local, upnp }
+enum PlaybackTargetKind { local, upnp, cast }
 
 class TargetTrack {
   const TargetTrack({

@@ -127,7 +127,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         ? state.currentMediaIndex
         : targetState.currentIndex;
 
-    if (!_preparingQueue && index != _reportedIndex) {
+    if (targetState.status == PlaybackStatus.error) {
+      _onTargetFailure();
+      return;
+    }
+
+    if (_preparingQueue) return;
+
+    if (index != _reportedIndex) {
       _reportTrackChange(index);
       final nextSong = index != null
           ? state.songs.elementAtOrNull(index)
@@ -137,9 +144,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
     }
 
-    if (!_preparingQueue &&
-        index == _reportedIndex &&
-        targetState.position > Duration.zero) {
+    if (index == _reportedIndex && targetState.position > Duration.zero) {
       _reportedPositionMs = targetState.position.inMilliseconds;
     }
 
@@ -165,11 +170,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           ),
         );
       }
-    }
-
-    if (targetState.status == PlaybackStatus.error) {
-      _onTargetFailure();
-      return;
     }
 
     if (targetState.completed && state.status.isPlaying) {
@@ -558,7 +558,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (_target.kind == PlaybackTargetKind.upnp) {
       uri = await rendererUriResolver.resolve(uri);
       if (artUri != null) artUri = await rendererUriResolver.resolve(artUri);
-    } else {
+    } else if (_target.kind == PlaybackTargetKind.local) {
       final proxy = _ref.read(streamProxyProvider);
       uri = await proxy.resolve(uri);
       if (artUri != null) artUri = await proxy.resolve(artUri);
