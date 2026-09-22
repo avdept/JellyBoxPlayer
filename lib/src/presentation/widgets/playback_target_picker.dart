@@ -3,12 +3,17 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/cast/cast_runtime.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
+import 'package:jplayer/src/domain/playback/cast_playback_target.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
+import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/anchored_dropdown.dart';
@@ -17,6 +22,9 @@ import 'package:upnp_quirks/upnp_quirks.dart';
 
 const _menuWidth = 320.0;
 const _menuMaxHeight = 360.0;
+const _menuSurface = Color(0xFF212121);
+const IconData _castBadge = Icons.cast;
+const IconData _dlnaBadge = Icons.settings_input_antenna;
 
 class PlaybackTargetButton extends ConsumerStatefulWidget {
   const PlaybackTargetButton({
@@ -148,26 +156,40 @@ class PlaybackTargetMenu extends ConsumerStatefulWidget {
 }
 
 class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
+  CastDevicesNotifier? _cast;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final cast = ref.read(castDevicesProvider.notifier);
+      _cast = cast;
+      cast.start();
       unawaited(ref.read(upnpRenderersProvider.notifier).refresh());
     });
   }
 
-  void _selectLocal() {
-    ref.read(playbackTargetProvider.notifier).useLocal();
-    widget.onDone();
+  @override
+  void dispose() {
+    _cast?.stop();
+    super.dispose();
   }
 
-  void _selectRenderer(UpnpRenderer renderer) {
-    ref
-        .read(playbackTargetProvider.notifier)
-        .select(UpnpPlaybackTarget(renderer));
-    widget.onDone();
+  void _selectLocal() => ref.read(playbackTargetProvider.notifier).useLocal();
+
+  void _selectCastDevice(GoogleCastDevice device) => ref
+      .read(playbackTargetProvider.notifier)
+      .select(CastPlaybackTarget(device));
+
+  void _rescan() {
+    _cast?.refresh();
+    unawaited(ref.read(upnpRenderersProvider.notifier).refresh());
   }
+
+  void _selectRenderer(UpnpRenderer renderer) => ref
+      .read(playbackTargetProvider.notifier)
+      .select(UpnpPlaybackTarget(renderer));
 
   Future<void> _shareDevices(List<UpnpRenderer> renderers) async {
     final messenger = ScaffoldMessenger.maybeOf(context);
@@ -192,11 +214,14 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final theme = Theme.of(context);
     final active = ref.watch(playbackTargetProvider);
     final discovery = ref.watch(upnpRenderersProvider);
+    final cast = ref.watch(castDevicesProvider);
     final host = ref.watch(controlPointHostProvider);
+    final scanning = discovery.scanning || cast.scanning;
+    final nothingFound = discovery.renderers.isEmpty && cast.devices.isEmpty;
     final width = math.min(_menuWidth, MediaQuery.sizeOf(context).width - 24);
 
     return Material(
-      color: Colors.grey[900],
+      color: _menuSurface,
       elevation: 8,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
@@ -217,7 +242,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                   children: [
                     Text('Play on', style: theme.textTheme.titleSmall),
                     const Spacer(),
-                    if (discovery.scanning)
+                    if (scanning)
                       const Padding(
                         padding: EdgeInsets.all(12),
                         child: SizedBox.square(
@@ -230,8 +255,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                         tooltip: 'Scan again',
                         iconSize: 18,
                         icon: const Icon(Icons.refresh),
-                        onPressed: () =>
-                            ref.read(upnpRenderersProvider.notifier).refresh(),
+                        onPressed: _rescan,
                       ),
                     IconButton(
                       tooltip: 'Share this device list with the developer',
@@ -251,13 +275,25 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 selected: active.kind == PlaybackTargetKind.local,
                 onTap: _selectLocal,
               ),
+              for (final device in cast.devices)
+                _TargetTile(
+                  icon: castDeviceIcon(device),
+                  badge: _castBadge,
+                  title: device.friendlyName,
+                  subtitle: device.modelName,
+                  selected: active.id == 'cast:${device.deviceID}',
+                  link: active.id == 'cast:${device.deviceID}' ? active : null,
+                  onTap: () => _selectCastDevice(device),
+                ),
               for (final renderer in discovery.renderers)
                 _rendererTile(renderer, active: active, host: host),
-              if (discovery.renderers.isEmpty && !discovery.scanning)
+              if (nothingFound && !scanning)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                   child: Text(
-                    'No DLNA devices found on this network.',
+                    castSupported
+                        ? 'No Cast or DLNA devices found on this network.'
+                        : 'No DLNA devices found on this network.',
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -280,9 +316,11 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
     return _TargetTile(
       icon: rendererIcon(renderer),
+      badge: _dlnaBadge,
       title: renderer.name,
       subtitle: blocked ?? [renderer.host, ?renderer.model].join(' · '),
       selected: active.id == renderer.id,
+      link: active.id == renderer.id ? active : null,
       onTap: blocked == null ? () => _selectRenderer(renderer) : null,
     );
   }
@@ -292,6 +330,21 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     if (Platform.isAndroid) return Icons.smartphone;
     return Icons.laptop_mac;
   }
+}
+
+IconData castDeviceIcon(GoogleCastDevice device) {
+  final haystack = [
+    device.friendlyName,
+    device.modelName ?? '',
+  ].join(' ').toLowerCase();
+
+  if (haystack.contains('tv') ||
+      haystack.contains('display') ||
+      haystack.contains('chromecast') ||
+      haystack.contains('shield')) {
+    return Icons.tv;
+  }
+  return Icons.speaker;
 }
 
 IconData rendererIcon(UpnpRenderer renderer) {
@@ -324,13 +377,17 @@ class _TargetTile extends StatelessWidget {
     required this.title,
     required this.selected,
     required this.onTap,
+    this.badge,
     this.subtitle,
+    this.link,
   });
 
   final IconData icon;
+  final IconData? badge;
   final String title;
   final String? subtitle;
   final bool selected;
+  final PlaybackTarget? link;
   final VoidCallback? onTap;
 
   @override
@@ -344,7 +401,7 @@ class _TargetTile extends StatelessWidget {
     return ListTile(
       dense: true,
       enabled: !disabled,
-      leading: Icon(icon, color: tint, size: 20),
+      leading: _TileIcon(icon: icon, badge: badge, tint: tint),
       title: Text(title, style: TextStyle(color: tint)),
       subtitle: subtitle == null
           ? null
@@ -354,10 +411,85 @@ class _TargetTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall,
             ),
-      trailing: selected
-          ? Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
-          : null,
+      trailing: selected ? _LinkMark(link: link) : null,
       onTap: onTap,
+    );
+  }
+}
+
+class _LinkMark extends StatelessWidget {
+  const _LinkMark({required this.link});
+
+  final PlaybackTarget? link;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = link;
+    if (target == null) return _tick(context);
+
+    return StreamBuilder<TargetPlaybackState>(
+      stream: target.stateStream,
+      initialData: target.state,
+      builder: (context, snapshot) {
+        final status = snapshot.data?.status;
+        if (status == PlaybackStatus.playing ||
+            status == PlaybackStatus.paused) {
+          return _tick(context);
+        }
+        return const SizedBox.square(
+          dimension: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      },
+    );
+  }
+
+  Widget _tick(BuildContext context) => Icon(
+    Icons.check,
+    size: 18,
+    color: Theme.of(context).colorScheme.primary,
+  );
+}
+
+class _TileIcon extends StatelessWidget {
+  const _TileIcon({
+    required this.icon,
+    required this.badge,
+    required this.tint,
+  });
+
+  final IconData icon;
+  final IconData? badge;
+  final Color? tint;
+
+  @override
+  Widget build(BuildContext context) {
+    final glyph = Icon(icon, color: tint, size: 20);
+    final mark = badge;
+    if (mark == null) return glyph;
+
+    return SizedBox.square(
+      dimension: 20,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          glyph,
+          Positioned(
+            right: -4,
+            bottom: -4,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                color: _menuSurface,
+                shape: BoxShape.circle,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(1),
+                child: Icon(mark, size: 11, color: tint),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

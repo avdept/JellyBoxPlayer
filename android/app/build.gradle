@@ -67,6 +67,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
         release {
             signingConfig keystoreProperties["storeFile"] ? signingConfigs.release : signingConfigs.debug
             shrinkResources true

@@ -8,9 +8,12 @@ import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
 import 'package:upnp_quirks/upnp_quirks.dart';
 import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
+import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/playback_target_picker.dart';
 import 'package:jplayer/src/providers/diagnostics_provider.dart';
@@ -23,6 +26,21 @@ class _FakeRenderersNotifier extends UpnpRenderersNotifier {
 
   @override
   Future<void> refresh({Duration timeout = const Duration(seconds: 4)}) async {}
+}
+
+class _FakeCastNotifier extends CastDevicesNotifier {
+  _FakeCastNotifier(List<GoogleCastDevice> devices) {
+    state = CastDiscoveryState(devices: devices);
+  }
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
+
+  @override
+  void refresh() {}
 }
 
 class _RecordingDiagnostics extends Diagnostics {
@@ -58,7 +76,7 @@ class _FakeQueue implements DeviceQueue {
 }
 
 class _FakeTarget implements PlaybackTarget {
-  _FakeTarget(this.id, this.name, this.kind);
+  _FakeTarget(this.id, this.name, this.kind, {this.status});
 
   @override
   final String id;
@@ -66,6 +84,18 @@ class _FakeTarget implements PlaybackTarget {
   final String name;
   @override
   final PlaybackTargetKind kind;
+
+  final PlaybackStatus? status;
+
+  @override
+  TargetPlaybackState get state => TargetPlaybackState(
+    status: status ?? PlaybackStatus.playing,
+    position: Duration.zero,
+  );
+
+  @override
+  Stream<TargetPlaybackState> get stateStream =>
+      Stream<TargetPlaybackState>.value(state);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -113,9 +143,21 @@ void main() {
     );
   }
 
+  GoogleCastDevice castNamed(String name, {String? model}) => GoogleCastDevice(
+    deviceID: 'cast-$name',
+    friendlyName: name,
+    modelName: model,
+    statusText: null,
+    deviceVersion: '1.0',
+    isOnLocalNetwork: true,
+    category: '',
+    uniqueID: 'cast-$name',
+  );
+
   Future<void> pumpPicker(
     WidgetTester tester, {
     required List<UpnpRenderer> renderers,
+    List<GoogleCastDevice> castDevices = const [],
     PlaybackTarget? activeTarget,
     ControlPointHost host = ControlPointHost.sustained,
   }) async {
@@ -124,6 +166,9 @@ void main() {
         overrides: [
           upnpRenderersProvider.overrideWith(
             (ref) => _FakeRenderersNotifier(renderers),
+          ),
+          castDevicesProvider.overrideWith(
+            (ref) => _FakeCastNotifier(castDevices),
           ),
           if (activeTarget != null)
             playbackTargetProvider.overrideWith(
@@ -156,6 +201,72 @@ void main() {
     expect(find.text('10.0.0.9 · HG55BU800EUXEN'), findsOneWidget);
     expect(find.text('Kitchen'), findsOneWidget);
     expect(find.text('No DLNA devices found on this network.'), findsNothing);
+  });
+
+  testWidgets('- marks which protocol each device speaks', (tester) async {
+    await pumpPicker(
+      tester,
+      renderers: [rendererNamed('Lounge TV', model: 'QE85')],
+      castDevices: [castNamed('Kitchen', model: 'Nest Audio')],
+    );
+
+    final castTile = find.ancestor(
+      of: find.text('Kitchen'),
+      matching: find.byType(ListTile),
+    );
+    final dlnaTile = find.ancestor(
+      of: find.text('Lounge TV'),
+      matching: find.byType(ListTile),
+    );
+
+    expect(
+      find.descendant(of: castTile, matching: find.byIcon(Icons.cast)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: dlnaTile,
+        matching: find.byIcon(Icons.settings_input_antenna),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: castTile, matching: find.byIcon(Icons.speaker)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dlnaTile, matching: find.byIcon(Icons.tv)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('This device'),
+          matching: find.byType(ListTile),
+        ),
+        matching: find.byIcon(Icons.settings_input_antenna),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('- plays on a Cast device when one is picked', (tester) async {
+    await pumpPicker(
+      tester,
+      renderers: const [],
+      castDevices: [castNamed('Kitchen', model: 'Nest Audio')],
+    );
+
+    await tester.tap(find.text('Kitchen'));
+    await tester.pump();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(PlaybackTargetMenu)),
+    );
+    final target = container.read(playbackTargetProvider);
+    expect(target.kind, PlaybackTargetKind.cast);
+    expect(target.id, 'cast:cast-Kitchen');
+    expect(target.name, 'Kitchen');
   });
 
   testWidgets('- gives each entry its own icon', (tester) async {
@@ -191,10 +302,16 @@ void main() {
       ),
     );
 
-    final ticked = tester.widget<ListTile>(
-      find.ancestor(of: find.text('Kitchen'), matching: find.byType(ListTile)),
+    expect(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Kitchen'),
+          matching: find.byType(ListTile),
+        ),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
     );
-    expect(ticked.trailing, isA<Icon>());
 
     final local = tester.widget<ListTile>(
       find.ancestor(
@@ -203,6 +320,36 @@ void main() {
       ),
     );
     expect(local.trailing, isNull);
+  });
+
+  testWidgets('- spins on the row it is still connecting to', (tester) async {
+    final renderer = rendererNamed('Kitchen', model: 'Sonos One');
+    await pumpPicker(
+      tester,
+      renderers: [renderer],
+      activeTarget: _FakeTarget(
+        renderer.id,
+        renderer.name,
+        PlaybackTargetKind.upnp,
+        status: PlaybackStatus.buffering,
+      ),
+    );
+
+    final tile = find.ancestor(
+      of: find.text('Kitchen'),
+      matching: find.byType(ListTile),
+    );
+    expect(
+      find.descendant(
+        of: tile,
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: tile, matching: find.byIcon(Icons.check)),
+      findsNothing,
+    );
   });
 
   testWidgets('- switches the target when a renderer is tapped', (
@@ -567,7 +714,7 @@ void main() {
       expect(menuRect.left, greaterThanOrEqualTo(0));
     });
 
-    testWidgets('- closes when the target is picked', (tester) async {
+    testWidgets('- stays open when the target is picked', (tester) async {
       await pumpBody(
         tester,
         Center(child: PlaybackTargetButton()),
@@ -577,9 +724,10 @@ void main() {
       await tester.tap(find.byType(IconButton));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kitchen'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      expect(find.text('Play on'), findsNothing);
+      expect(find.text('Play on'), findsOneWidget);
+      expect(find.textContaining('Kitchen'), findsWidgets);
     });
 
     testWidgets('- closes on a tap outside', (tester) async {

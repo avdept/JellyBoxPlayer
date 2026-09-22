@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_windows
   flutter_udid
   media_kit_libs_windows_audio
+  permission_handler_windows
   screen_retriever_windows
   sentry_flutter
   url_launcher_windows
