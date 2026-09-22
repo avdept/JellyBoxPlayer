@@ -31,6 +31,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   bool _resolvedQuickConnect = false;
   String? _probedInput;
   int _probeGeneration = 0;
+  List<ServerIdentity> _apiChoices = const [];
 
   ServerUrlFieldMode _mode = ServerUrlFieldMode.discovering;
   DiscoveredServer? _selectedServer;
@@ -96,11 +97,29 @@ class LoginPageState extends ConsumerState<LoginPage> {
       error = null;
       _selectedServer = server;
       _mode = ServerUrlFieldMode.selected;
+      _apiChoices = const [];
       _resolvedServerUrl = server.serverUrl;
       _resolvedServerType = server.serverType;
       _resolvedProductName = null;
       _resolvedQuickConnect = server.quickConnect;
     });
+  }
+
+  String? get _serverProductName =>
+      _apiChoices.firstOrNull?.productName ?? _resolvedProductName;
+
+  void _selectApi(ServerIdentity identity) {
+    setState(() {
+      error = null;
+      _applyIdentity(identity);
+    });
+  }
+
+  void _applyIdentity(ServerIdentity? identity) {
+    _resolvedServerUrl = identity?.serverUrl;
+    _resolvedServerType = identity?.serverType;
+    _resolvedProductName = identity?.productName;
+    _resolvedQuickConnect = identity?.quickConnect ?? false;
   }
 
   void _editSelectedServer() {
@@ -136,10 +155,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
     _probedInput = rawUrl;
     if (_resolvedServerType != null) {
       setState(() {
-        _resolvedServerUrl = null;
-        _resolvedServerType = null;
-        _resolvedProductName = null;
-        _resolvedQuickConnect = false;
+        _apiChoices = const [];
+        _applyIdentity(null);
       });
     }
 
@@ -147,10 +164,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
     if (!mounted || generation != _probeGeneration) return;
 
     setState(() {
-      _resolvedServerUrl = result?.serverUrl;
-      _resolvedServerType = result?.serverType;
-      _resolvedProductName = result?.productName;
-      _resolvedQuickConnect = result?.quickConnect ?? false;
+      _apiChoices = result == null || result.alternateApis.isEmpty
+          ? const []
+          : [result, ...result.alternateApis];
+      _applyIdentity(result);
     });
   }
 
@@ -159,10 +176,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
     _probedInput = null;
     if (_resolvedServerType == null) return;
     setState(() {
-      _resolvedServerUrl = null;
-      _resolvedServerType = null;
-      _resolvedProductName = null;
-      _resolvedQuickConnect = false;
+      _apiChoices = const [];
+      _applyIdentity(null);
     });
   }
 
@@ -292,7 +307,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       children: [
                         LoginLogo(
                           serverType: _resolvedServerType,
-                          productName: _resolvedProductName,
+                          productName: _serverProductName,
                         ),
                         const SizedBox(height: 63),
                         _serverURLField(),
@@ -348,6 +363,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
           suffixIcon: _serverUrlSuffixIcon(),
         ),
         ?footer,
+        ?_apiSelector(),
       ],
     );
   }
@@ -360,6 +376,19 @@ class LoginPageState extends ConsumerState<LoginPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [_quickConnectButton()],
+      ),
+    );
+  }
+
+  Widget? _apiSelector() {
+    if (_apiChoices.length < 2) return null;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: ServerApiSelector(
+        choices: _apiChoices,
+        selectedUrl: _resolvedServerUrl,
+        onSelect: _selectApi,
       ),
     );
   }

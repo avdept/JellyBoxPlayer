@@ -305,6 +305,9 @@ void main() {
 
   group('replacing a queued source', () {
     setUp(() {
+      when(() => player.sequence).thenReturn(
+        List.filled(3, ProgressiveAudioSource(Uri.parse('http://a'))),
+      );
       when(() => player.removeAudioSourceAt(any())).thenAnswer((_) async {});
       when(
         () => player.insertAudioSource(any(), any()),
@@ -347,6 +350,15 @@ void main() {
       await target.replace(1, trackWith());
 
       expect(order.nextInsertPosition, 2);
+    });
+
+    test('- skips an index the queue does not have yet', () async {
+      when(() => player.shuffleModeEnabled).thenReturn(false);
+
+      await target.replace(3, trackWith());
+
+      verifyNever(() => player.removeAudioSourceAt(any()));
+      verifyNever(() => player.insertAudioSource(any(), any()));
     });
   });
 
