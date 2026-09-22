@@ -16,9 +16,27 @@ public class MediakeysProxyPlugin: NSObject, FlutterPlugin, NSApplicationDelegat
     let instance = MediakeysProxyPlugin(channel: channel)
     registrar.addMethodCallDelegate(instance, channel: channel)
     instance.startMonitoring()
-    let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String : true]
-    let accessEnabled = AXIsProcessTrustedWithOptions(options)
-    print(accessEnabled)
+    requestAccessibilityIfNeeded()
+  }
+
+  private static let accessibilityPromptedKey = "mediakeys_proxy.accessibility_prompted"
+
+  /// Shows the macOS accessibility prompt at most once. Once the user has been
+  /// asked, we never prompt again, whatever they answered; they can still grant
+  /// access later in System Settings.
+  private static func requestAccessibilityIfNeeded() {
+    if AXIsProcessTrusted() {
+      return
+    }
+
+    let defaults = UserDefaults.standard
+    if defaults.bool(forKey: accessibilityPromptedKey) {
+      return
+    }
+    defaults.set(true, forKey: accessibilityPromptedKey)
+
+    let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+    _ = AXIsProcessTrustedWithOptions(options)
   }
 
   public func handle(mediaKey: MediaKey, event: KeyEvent) {
