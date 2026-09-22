@@ -47,6 +47,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _startReported = false;
   var _preparingQueue = false;
   var _queueEditsInFlight = 0;
+  Completer<void>? _queueEditsSettled;
   var _fallingBack = false;
   var _recoveringLostCache = false;
   Timer? _progressTimer;
@@ -246,7 +247,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       await edit();
     } finally {
       _queueEditsInFlight--;
+      if (_queueEditsInFlight == 0) {
+        _queueEditsSettled?.complete();
+        _queueEditsSettled = null;
+      }
     }
+  }
+
+  Future<void> _queueEditsToSettle() {
+    if (_queueEditsInFlight == 0) return Future<void>.value();
+    return (_queueEditsSettled ??= Completer<void>()).future;
   }
 
   Duration? _durationFor(int? index, {List<LibraryItem>? songs}) {
@@ -961,7 +971,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final playing = <String>{};
 
     for (final (index, song) in songs.indexed) {
-      if (!_queueMatches(queueIds)) return;
+      await _queueEditsToSettle();
+      if (!_queueIsSteady(queueIds)) return;
       if (_localSongIds.contains(song.id)) continue;
       final path = pathsById[song.id];
       if (path == null) continue;
@@ -979,7 +990,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         cachedPath: path,
       );
       if (resolved == null || !resolved.track.isLocalFile) continue;
-      if (state.songs.elementAtOrNull(index)?.id != song.id) continue;
+      await _queueEditsToSettle();
+      if (!_queueIsSteady(queueIds)) return;
       if (index == state.currentMediaIndex) {
         playing.add(song.id);
         continue;
@@ -993,6 +1005,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     _localSongIds.addAll(adopted.where((id) => !playing.contains(id)));
   }
+
+  bool _queueIsSteady(List<String> queueIds) =>
+      !_preparingQueue && _queueEditsInFlight == 0 && _queueMatches(queueIds);
 
   bool _queueMatches(List<String> queueIds) {
     final songs = state.songs;

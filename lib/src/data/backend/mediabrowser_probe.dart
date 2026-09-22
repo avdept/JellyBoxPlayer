@@ -6,6 +6,7 @@ import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 
 const embyPathPrefix = '/emby';
+const jellyfinPathPrefix = '/jellyfin';
 
 String _withoutTrailingSlash(String url) => url.replaceAll(RegExp(r'/+$'), '');
 

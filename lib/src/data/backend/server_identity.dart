@@ -9,6 +9,7 @@ class ServerIdentity {
     this.version,
     this.productName,
     this.quickConnect = false,
+    this.alternateApis = const [],
   });
 
   final String serverUrl;
@@ -18,4 +19,17 @@ class ServerIdentity {
   final String? version;
   final String? productName;
   final bool quickConnect;
+  final List<ServerIdentity> alternateApis;
+
+  ServerIdentity withAlternateApis(List<ServerIdentity> alternateApis) =>
+      ServerIdentity(
+        serverUrl: serverUrl,
+        serverType: serverType,
+        serverId: serverId,
+        name: name,
+        version: version,
+        productName: productName,
+        quickConnect: quickConnect,
+        alternateApis: alternateApis,
+      );
 }

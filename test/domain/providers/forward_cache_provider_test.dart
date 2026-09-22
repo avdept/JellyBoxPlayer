@@ -33,6 +33,9 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
 
   final loaded = <List<TargetTrack>>[];
   final replaced = <(int, TargetTrack)>[];
+  final queue = <TargetTrack>[];
+
+  Completer<void>? _insertGate;
 
   TargetPlaybackState _state = TargetPlaybackState.idle;
 
@@ -84,11 +87,33 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
     required bool autoPlay,
   }) async {
     loaded.add(tracks);
+    queue
+      ..clear()
+      ..addAll(tracks);
+  }
+
+  void holdInserts() => _insertGate ??= Completer<void>();
+
+  void releaseInserts() {
+    _insertGate?.complete();
+    _insertGate = null;
   }
 
   @override
-  Future<void> replace(int index, TargetTrack track) async =>
-      replaced.add((index, track));
+  Future<void> insert(int index, TargetTrack track, {bool playNext = false}) {
+    final gate = _insertGate;
+    if (gate == null) {
+      queue.insert(index, track);
+      return Future<void>.value();
+    }
+    return gate.future.then((_) => queue.insert(index, track));
+  }
+
+  @override
+  Future<void> replace(int index, TargetTrack track) async {
+    replaced.add((index, track));
+    queue[index] = track;
+  }
 
   @override
   Future<void> stop() async {}
@@ -629,6 +654,35 @@ void main() {
       await playback.adoptCachedFiles(paths);
 
       expect([for (final entry in target.replaced) entry.$1], [2]);
+    });
+
+    test('- waits for a queue insert the target has not applied yet', () async {
+      const extra = LibraryItem(
+        id: 'd',
+        name: 'song d',
+        kind: ItemKind.song,
+        duration: Duration(minutes: 5),
+      );
+      await playback.play(songs.first, songs, album);
+      target.holdInserts();
+      final enqueued = playback.addToQueue(extra);
+      await pumpUntil(
+        () => container.read(playbackProvider).songs.length == songs.length + 1,
+      );
+      expect(target.queue.length, songs.length);
+
+      final paths = await seedCache([songs[1], extra]);
+      final adoption = playback.adoptCachedFiles(paths);
+      await settle();
+      expect(target.replaced, isEmpty);
+
+      target.releaseInserts();
+      await enqueued;
+      await adoption;
+
+      expect(target.queue.length, songs.length + 1);
+      expect([for (final entry in target.replaced) entry.$1], [1, 3]);
+      expect(target.queue[3].isLocalFile, isTrue);
     });
 
     test('- restreams a track whose cached file vanished', () async {

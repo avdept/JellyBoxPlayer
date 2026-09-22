@@ -278,6 +278,97 @@ void main() {
       expect(result.serverType, ServerType.emby);
     });
 
+    test('- offers the jellyfin api of a subsonic server as an '
+        'alternate', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        final path = options.uri.path;
+        if (path.startsWith('/rest/')) {
+          return jsonBody({
+            'subsonic-response': {
+              'status': 'ok',
+              'version': '1.16.1',
+              'type': 'navidrome',
+              'serverVersion': '0.64.1',
+            },
+          }, 200);
+        }
+        if (path == '/jellyfin/System/Info/Public') {
+          return jsonBody({
+            'Id': 'be7d6efe',
+            'Version': '12.1.0',
+            'ProductName': 'Jellyfin Server',
+            'ServerName': 'Navidrome 0.64.1',
+          }, 200);
+        }
+        if (path == '/jellyfin/QuickConnect/Enabled') {
+          return jsonBody(true, 200);
+        }
+        return jsonBody({'error': 'nope'}, 404);
+      });
+
+      final result = await service.discover('http://navi.local:4533');
+
+      expect(result!.serverType, ServerType.subsonic);
+      expect(result.serverUrl, 'http://navi.local:4533');
+      expect(result.alternateApis, hasLength(1));
+
+      final alternate = result.alternateApis.single;
+      expect(alternate.serverType, ServerType.jellyfin);
+      expect(alternate.serverUrl, 'http://navi.local:4533/jellyfin');
+      expect(alternate.serverId, 'be7d6efe');
+      expect(alternate.quickConnect, isTrue);
+    });
+
+    test('- leaves a subsonic server alone when it has no jellyfin '
+        'api', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        if (options.uri.path.startsWith('/rest/')) {
+          return jsonBody({
+            'subsonic-response': {
+              'status': 'ok',
+              'version': '1.16.1',
+              'type': 'navidrome',
+            },
+          }, 200);
+        }
+        return jsonBody({'error': 'nope'}, 404);
+      });
+
+      final result = await service.discover('http://navi.local:4533');
+
+      expect(result!.serverType, ServerType.subsonic);
+      expect(result.alternateApis, isEmpty);
+    });
+
+    test('- never looks for an alternate api on a jellyfin server', () async {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        respondWith(
+          jsonBody({
+            'Id': 'a',
+            'Version': '10.9.11',
+            'ProductName': 'Jellyfin Server',
+          }, 200),
+        ),
+      );
+
+      final result = await service.discover('http://jelly.local:8096');
+
+      expect(result!.alternateApis, isEmpty);
+      final requested =
+          verify(
+            () => mockAdapter.fetch(captureAny(), any(), any()),
+          ).captured.cast<RequestOptions>().map(
+            (options) => options.uri.path,
+          );
+      expect(requested, isNot(contains(startsWith('/jellyfin'))));
+    });
+
     test('- keeps a jellyfin server found at the root', () async {
       when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
         respondWith(
