@@ -24,7 +24,8 @@ enum AppSetting {
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
-  listenBrainzUser('listenbrainz_user', defaultValue: '');
+  listenBrainzUser('listenbrainz_user', defaultValue: ''),
+  telemetryOptOut('telemetry_opt_out');
 
   const AppSetting(this.key, {this.defaultValue = false});
 
@@ -169,6 +170,9 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
           setting: legacy,
     };
   }
+
+  static bool isEnabledIn(SharedPreferences? prefs, AppSetting setting) =>
+      _asBool(_read(prefs)[setting], setting);
 
   bool isEnabled(AppSetting setting) => _asBool(state[setting], setting);
 

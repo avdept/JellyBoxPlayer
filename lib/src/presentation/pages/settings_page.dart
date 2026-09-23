@@ -292,6 +292,18 @@ class SettingsPage extends ConsumerWidget {
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
+                    _sectionHeader('Privacy'),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.telemetryOptOut,
+                      label: 'Opt out of analytics and crash reports',
+                    ),
+                    _settingNote(
+                      context,
+                      'Jellybox counts app launches and sends crash reports to '
+                      'help fix bugs. Nothing about your library or listening '
+                      'is collected.',
+                    ),
                     if (!device.isDesktop) _logOutButton(ref),
                     _versionLabel(context),
                   ],
@@ -510,6 +522,18 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _settingNote(BuildContext context, String text) => Padding(
+    padding: const EdgeInsets.only(left: 12, top: 2, right: 12),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        height: 1.3,
+        color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5),
+      ),
+    ),
+  );
 
   Widget _versionLabel(BuildContext context) {
     final build = appInfo.buildNumber;
