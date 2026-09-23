@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 
-const _showDelay = Duration(milliseconds: 350);
 const _fadeDuration = Duration(milliseconds: 120);
 
 class RailTooltip extends StatefulWidget {
@@ -44,7 +43,7 @@ class _RailTooltipState extends State<RailTooltip> {
   void _scheduleShow() {
     if (!widget.enabled) return;
     _timer?.cancel();
-    _timer = Timer(_showDelay, () {
+    _timer = Timer(Themes.tooltipDelay, () {
       if (mounted && widget.enabled) _controller.show();
     });
   }
@@ -75,29 +74,12 @@ class _RailTooltipState extends State<RailTooltip> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 240),
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Themes.changelogSurface,
-                    borderRadius: BorderRadius.circular(6),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                  decoration: Themes.tooltipDecoration,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    padding: Themes.tooltipPadding,
                     child: Text(
                       widget.message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        height: 1.2,
-                      ),
+                      style: Themes.tooltipTextStyle,
                     ),
                   ),
                 ),

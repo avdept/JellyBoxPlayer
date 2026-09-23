@@ -37,6 +37,51 @@ void main() {
 
       expect(profile.requiresTranscode, isFalse);
       expect(profile.outputContainer, 'flac');
+      expect(profile.useHls, isFalse);
+    });
+
+    test('streams FLAC over HLS on Apple platforms without transcoding', () {
+      final profile = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        target: StreamTargetProfile.localPlayer(
+          isAndroid: false,
+          isDarwin: true,
+        ),
+      );
+
+      expect(profile.useHls, isTrue);
+      expect(profile.requiresTranscode, isFalse);
+      expect(profile.hlsSegmentContainer, 'mp4');
+      expect(profile.transcodingAudioCodec, 'flac');
+      expect(profile.outputMimeType, 'application/vnd.apple.mpegurl');
+    });
+
+    test('leaves lossy sources on Apple platforms direct', () {
+      final profile = AudioStreamProfile.forSource(
+        sourceContainer: 'mp3',
+        sourceCodec: 'mp3',
+        target: StreamTargetProfile.localPlayer(
+          isAndroid: false,
+          isDarwin: true,
+        ),
+      );
+
+      expect(profile.useHls, isFalse);
+      expect(profile.requiresTranscode, isFalse);
+      expect(profile.outputContainer, 'mp3');
+    });
+
+    test('downloads FLAC directly on Apple platforms, never over HLS', () {
+      final profile = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        target: StreamTargetProfile.download(isAndroid: false),
+      );
+
+      expect(profile.useHls, isFalse);
+      expect(profile.requiresTranscode, isFalse);
+      expect(profile.outputContainer, 'flac');
     });
 
     test('direct-plays AAC-in-m4a on Android', () {

@@ -70,14 +70,19 @@ class StreamTargetProfile {
     required this.lossyTranscode,
     required this.losslessTranscode,
     required this.supportsHls,
+    this.preferHlsContainers = const {},
   });
 
   factory StreamTargetProfile.localPlayer({
     bool? isAndroid,
+    bool? isDarwin,
     bool supportsHls = true,
   }) {
     final android = isAndroid ?? Platform.isAndroid;
+    final darwin =
+        !android && (isDarwin ?? (Platform.isMacOS || Platform.isIOS));
     return StreamTargetProfile(
+      preferHlsContainers: darwin ? const {'flac'} : const {},
       directPlay: [
         const DirectPlayRule('mp3'),
         const DirectPlayRule('aac'),
@@ -142,6 +147,10 @@ class StreamTargetProfile {
   final TranscodeTarget lossyTranscode;
   final TranscodeTarget? losslessTranscode;
   final bool supportsHls;
+  final Set<String> preferHlsContainers;
+
+  bool prefersHls({required String? container}) =>
+      container != null && preferHlsContainers.contains(container);
 
   String get directPlayContainers =>
       directPlay.expand((rule) => rule.queryEntries).join(',');

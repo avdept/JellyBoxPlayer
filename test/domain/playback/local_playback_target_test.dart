@@ -32,6 +32,7 @@ void main() {
     int? index = 0,
     Duration position = Duration.zero,
     Duration? duration,
+    Duration bufferedPosition = Duration.zero,
   }) {
     final playerState = PlayerState(playing, processingState);
     when(() => player.playerState).thenReturn(playerState);
@@ -39,6 +40,7 @@ void main() {
     when(() => player.currentIndex).thenReturn(index);
     when(() => player.position).thenReturn(position);
     when(() => player.duration).thenReturn(duration);
+    when(() => player.bufferedPosition).thenReturn(bufferedPosition);
     playerStates.add(playerState);
   }
 
@@ -49,6 +51,7 @@ void main() {
     durations = StreamController<Duration?>.broadcast();
     playerStates = StreamController<PlayerState>.broadcast();
 
+    when(() => player.bufferedPosition).thenReturn(Duration.zero);
     when(() => player.currentIndexStream).thenAnswer((_) => indexes.stream);
     when(() => player.positionStream).thenAnswer((_) => positions.stream);
     when(() => player.durationStream).thenAnswer((_) => durations.stream);

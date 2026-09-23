@@ -84,6 +84,9 @@ class SongRowView extends ConsumerWidget {
     final quality = song.audioSources.firstOrNull;
     final secondaryColor =
         secondaryTextColor ?? theme.colorScheme.onPrimary.withOpacity(0.6);
+    final isCached = ref.watch(
+      forwardCacheProvider.select((ids) => ids.contains(song.id)),
+    );
 
     return GestureDetector(
       onLongPress: (!isDesktop && optionsBuilder != null)
@@ -132,15 +135,28 @@ class SongRowView extends ConsumerWidget {
                 ),
               ),
         leadingToTitle: isMobile ? 12 : 16,
-        title: Text(
-          song.name,
-          style: TextStyle(
-            fontSize: isTablet ? 18 : 14,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          maxLines: 1,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: Text(
+                song.name,
+                style: TextStyle(
+                  fontSize: isTablet ? 18 : 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                maxLines: 1,
+              ),
+            ),
+            if (isCached) ...[
+              const SizedBox(width: 6),
+              _CachedBadge(size: isTablet ? 15 : 13),
+            ],
+          ],
         ),
         subtitle: Row(
           mainAxisSize: MainAxisSize.min,
@@ -243,4 +259,40 @@ class SongRowView extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _CachedBadge extends StatefulWidget {
+  const _CachedBadge({required this.size});
+
+  final double size;
+
+  @override
+  State<_CachedBadge> createState() => _CachedBadgeState();
+}
+
+class _CachedBadgeState extends State<_CachedBadge> {
+  var _isHovered = false;
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) return;
+    setState(() => _isHovered = value);
+  }
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Cached track',
+    child: MouseRegion(
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: AnimatedOpacity(
+        opacity: _isHovered ? 1 : 0.65,
+        duration: const Duration(milliseconds: 120),
+        child: Icon(
+          Icons.cloud_done_outlined,
+          size: widget.size,
+          color: Colors.grey,
+        ),
+      ),
+    ),
+  );
 }
