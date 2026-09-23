@@ -7,6 +7,31 @@ abstract class Themes {
   /// maroon [BottomSheetThemeData] panel color used elsewhere in the app.
   static const changelogSurface = Color(0xFF1C1518);
 
+  static const tooltipDelay = Duration(milliseconds: 350);
+
+  static const tooltipPadding = EdgeInsets.symmetric(
+    horizontal: 10,
+    vertical: 6,
+  );
+
+  static const tooltipTextStyle = TextStyle(
+    color: Colors.white,
+    fontSize: 13,
+    height: 1.2,
+  );
+
+  static final tooltipDecoration = BoxDecoration(
+    color: changelogSurface,
+    borderRadius: BorderRadius.circular(6),
+    boxShadow: const [
+      BoxShadow(
+        color: Colors.black54,
+        blurRadius: 8,
+        offset: Offset(0, 2),
+      ),
+    ],
+  );
+
   static final red = ThemeData(
     useMaterial3: true,
     visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -63,6 +88,12 @@ abstract class Themes {
           fontWeight: FontWeight.w500,
         ),
       ),
+    ),
+    tooltipTheme: TooltipThemeData(
+      decoration: tooltipDecoration,
+      textStyle: tooltipTextStyle,
+      padding: tooltipPadding,
+      waitDuration: tooltipDelay,
     ),
   );
 }

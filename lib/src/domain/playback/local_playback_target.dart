@@ -210,6 +210,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       position: _player.position,
       currentIndex: _player.currentIndex,
       duration: _player.duration,
+      bufferedPosition: _player.bufferedPosition,
       completed: playerState.processingState == ProcessingState.completed,
     );
     _controller.add(_state);

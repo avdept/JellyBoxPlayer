@@ -60,7 +60,9 @@ class AudioStreamProfile {
       outputContainer: outputContainer,
       requiresTranscode: !directPlays,
       hlsSegmentContainer: transcode.hlsSegmentContainer,
-      useHls: !directPlays && target.supportsHls,
+      useHls:
+          target.supportsHls &&
+          (!directPlays || target.prefersHls(container: container)),
     );
   }
 

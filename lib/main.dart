@@ -21,7 +21,8 @@ import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
-import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/data/storages/window_placement_storage.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -114,7 +115,9 @@ Future<void> main() async {
   if (Platform.isIOS) CarPlayHandler.initialize(container, carContent);
   if (Platform.isAndroid) AndroidAutoHandler.initialize(container, carContent);
 
-  final lastWindowSize = await WindowSizeStorage(prefs).getWindowSize();
+  final placement = WindowPlacementStorage(prefs);
+  final lastWindowSize = await placement.getWindowSize();
+  final lastWindowPosition = await placement.getWindowPosition();
 
   // Window settings
   const minWindowSize = kDebugMode ? Size(360, 600) : Size(1280, 800);
@@ -128,19 +131,23 @@ Future<void> main() async {
   if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     await windowManager.ensureInitialized();
 
-    final windowOptions = WindowOptions(
-      size: initialWindowSize,
-      minimumSize: minWindowSize,
-      center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
-    );
-
     final isWayland =
         Platform.isLinux &&
         (Platform.environment['XDG_SESSION_TYPE']?.toLowerCase() == 'wayland' ||
             Platform.environment['WAYLAND_DISPLAY'] != null);
+
+    final restoredPosition = isWayland
+        ? null
+        : await _restorableWindowPosition(lastWindowPosition);
+
+    final windowOptions = WindowOptions(
+      size: initialWindowSize,
+      minimumSize: minWindowSize,
+      center: restoredPosition == null,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
+    );
 
     if (isWayland) {
       await windowManager.setOpacity(0);
@@ -150,6 +157,9 @@ Future<void> main() async {
     await windowManager.waitUntilReadyToShow(
       windowOptions,
       () async {
+        if (restoredPosition != null) {
+          await windowManager.setPosition(restoredPosition);
+        }
         if (isWayland) await windowManager.setOpacity(1);
         await windowManager.show();
         await windowManager.focus();
@@ -198,4 +208,20 @@ void _silenceUnreachableImageErrors() {
     }
     reportError?.call(details);
   };
+}
+
+Future<Offset?> _restorableWindowPosition(Offset? saved) async {
+  if (saved == null) return null;
+  try {
+    final displays = await screenRetriever.getAllDisplays();
+    final grabHandle = saved + const Offset(80, 16);
+    for (final display in displays) {
+      final origin = display.visiblePosition ?? Offset.zero;
+      final area = display.visibleSize ?? display.size;
+      if ((origin & area).contains(grabHandle)) return saved;
+    }
+  } on Object catch (error) {
+    debugPrint('[Window] checking the saved position failed: $error');
+  }
+  return null;
 }

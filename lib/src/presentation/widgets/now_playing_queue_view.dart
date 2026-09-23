@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -7,6 +9,8 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+
+const _dragBlur = 8.0;
 
 class NowPlayingQueueView extends ConsumerStatefulWidget {
   const NowPlayingQueueView({
@@ -129,6 +133,27 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
       padding: widget.padding,
       itemExtent: _itemExtent,
       buildDefaultDragHandles: false,
+      proxyDecorator: (child, index, animation) => AnimatedBuilder(
+        animation: animation,
+        builder: (context, dragged) {
+          final lift = Curves.easeOut.transform(animation.value);
+          return Transform.scale(
+            scale: 1 + 0.04 * lift,
+            child: lift < 0.01
+                ? dragged
+                : ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: _dragBlur * lift,
+                        sigmaY: _dragBlur * lift,
+                      ),
+                      child: dragged,
+                    ),
+                  ),
+          );
+        },
+        child: child,
+      ),
       onReorder: (from, to) => ref
           .read(playbackProvider.notifier)
           .moveInQueue(from, to > from ? to - 1 : to),
@@ -177,13 +202,6 @@ class _QueueRow extends ConsumerStatefulWidget {
 }
 
 class _QueueRowState extends ConsumerState<_QueueRow> {
-  var _isHovered = false;
-
-  void _setHovered(bool value) {
-    if (_isHovered == value) return;
-    setState(() => _isHovered = value);
-  }
-
   @override
   Widget build(BuildContext context) {
     final row = SongRowView(
@@ -193,28 +211,24 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
       edgePadding: 16,
       onTap: (_) => widget.onTap(),
       onLikePressed: (_) => widget.onLikePressed(),
-      trailing: _optionsButton(),
+      trailing: widget.isDesktop ? null : _optionsButton(),
     );
 
-    return MouseRegion(
-      onEnter: (_) => _setHovered(true),
-      onExit: (_) => _setHovered(false),
-      child: GestureDetector(
-        onSecondaryTapUp: (details) => showContextMenu(
-          context,
-          position: details.globalPosition,
-          actions: _menuActions(context),
-        ),
-        child: widget.isDesktop
-            ? ReorderableDragStartListener(
-                index: widget.position,
-                child: row,
-              )
-            : ReorderableDelayedDragStartListener(
-                index: widget.position,
-                child: row,
-              ),
+    return GestureDetector(
+      onSecondaryTapUp: (details) => showContextMenu(
+        context,
+        position: details.globalPosition,
+        actions: _menuActions(context),
       ),
+      child: widget.isDesktop
+          ? ReorderableDragStartListener(
+              index: widget.position,
+              child: row,
+            )
+          : ReorderableDelayedDragStartListener(
+              index: widget.position,
+              child: row,
+            ),
     );
   }
 
@@ -234,9 +248,5 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
     ),
   ];
 
-  Widget _optionsButton() => AnimatedOpacity(
-    opacity: (_isHovered || !widget.isDesktop) ? 1 : 0,
-    duration: const Duration(milliseconds: 120),
-    child: ContextMenuButton(actionsBuilder: _menuActions),
-  );
+  Widget _optionsButton() => ContextMenuButton(actionsBuilder: _menuActions);
 }

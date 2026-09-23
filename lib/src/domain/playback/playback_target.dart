@@ -39,6 +39,7 @@ class TargetPlaybackState {
     required this.position,
     this.currentIndex,
     this.duration,
+    this.bufferedPosition,
     this.canSeek = true,
     this.completed = false,
   });
@@ -52,6 +53,7 @@ class TargetPlaybackState {
   final Duration position;
   final int? currentIndex;
   final Duration? duration;
+  final Duration? bufferedPosition;
   final bool canSeek;
   final bool completed;
 
@@ -60,6 +62,7 @@ class TargetPlaybackState {
     Duration? position,
     int? currentIndex,
     Duration? duration,
+    Duration? bufferedPosition,
     bool? canSeek,
     bool? completed,
   }) => TargetPlaybackState(
@@ -67,6 +70,7 @@ class TargetPlaybackState {
     position: position ?? this.position,
     currentIndex: currentIndex ?? this.currentIndex,
     duration: duration ?? this.duration,
+    bufferedPosition: bufferedPosition ?? this.bufferedPosition,
     canSeek: canSeek ?? this.canSeek,
     completed: completed ?? this.completed,
   );
