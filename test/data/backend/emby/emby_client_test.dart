@@ -399,4 +399,62 @@ void main() {
       });
     });
   });
+
+  group('getInstantMix', () {
+    late MockHttpClientAdapter mockAdapter;
+    late EmbyClient mixClient;
+
+    setUpAll(() {
+      registerFallbackValue(RequestOptions(path: '/'));
+      registerFallbackValue(const Stream<Uint8List>.empty());
+    });
+
+    setUp(() {
+      mockAdapter = MockHttpClientAdapter();
+      mixClient = EmbyClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://emby.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode({
+            'Items': [
+              {'Id': 'song-1', 'Name': 'Roads', 'Type': 'Audio'},
+              {'Id': 'song-2', 'Name': 'Glory Box', 'Type': 'Audio'},
+            ],
+            'TotalRecordCount': 2,
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    });
+
+    Uri requestedUri() {
+      final captured = verify(
+        () => mockAdapter.fetch(captureAny(), any(), any()),
+      ).captured.single;
+      return (captured as RequestOptions).uri;
+    }
+
+    test('- seeds the mix from any item id', () async {
+      final songs = await mixClient.getInstantMix('album-1', limit: 25);
+
+      final uri = requestedUri();
+      expect(uri.path, '/Items/album-1/InstantMix');
+      expect(uri.queryParameters['UserId'], 'user-1');
+      expect(uri.queryParameters['Limit'], '25');
+      expect(uri.queryParametersAll['Fields'], [
+        'MediaSources',
+        'ProviderIds',
+      ]);
+      expect(songs.map((song) => song.id), ['song-1', 'song-2']);
+      expect(songs.first.kind, ItemKind.song);
+    });
+  });
 }

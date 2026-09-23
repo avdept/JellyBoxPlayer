@@ -11,4 +11,5 @@ class SvgPictures {
   static const String musicBrainzLogo = 'assets/images/musicbrainz_logo.svg';
   static const String subsonicLogo = 'assets/images/subsonic_logo.svg';
   static const String navidromeLogo = 'assets/images/navidrome_logo.svg';
+  static const String compassIcon = 'assets/images/compass_icon.svg';
 }
