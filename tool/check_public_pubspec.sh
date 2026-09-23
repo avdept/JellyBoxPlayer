@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fails when the working tree is configured for a build other people cannot
 # reproduce: a dependency override in place, or a lock file that resolved
-# upnp_quirks or genre_playlists to somewhere other than the in-repo stubs.
+# optional_features to somewhere other than the in-repo stub.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,7 +12,7 @@ if [[ -f "$root/pubspec_overrides.yaml" ]]; then
   status=1
 fi
 
-for package in upnp_quirks genre_playlists; do
+for package in optional_features; do
   if ! grep -q "path: \"packages/$package\"" "$root/pubspec.lock"; then
     echo "pubspec.lock does not resolve $package to the in-repo stub:" >&2
     grep -A6 "^  $package:" "$root/pubspec.lock" >&2 || true
@@ -22,6 +22,6 @@ for package in upnp_quirks genre_playlists; do
 done
 
 if [[ $status -eq 0 ]]; then
-  echo "pubspec.lock is buildable without the private packages"
+  echo "pubspec.lock is buildable without the private package"
 fi
 exit $status

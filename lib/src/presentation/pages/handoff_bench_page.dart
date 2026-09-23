@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/domain/playback/local_playback_target.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -518,7 +519,7 @@ class _HandoffBenchPageState extends ConsumerState<HandoffBenchPage> {
       final path = await ref
           .read(downloadDatabaseProvider)
           .getDownloadedSongPath(song.id);
-      if (path != null) return AudioSource.uri(Uri.file(path), tag: tag);
+      if (path != null) return playerAudioSource(Uri.file(path), tag: tag);
     }
 
     final resolved = await client.resolveStreamSource(
@@ -530,7 +531,7 @@ class _HandoffBenchPageState extends ConsumerState<HandoffBenchPage> {
     );
     return resolved.isHls
         ? HlsAudioSource(resolved.uri, tag: tag)
-        : AudioSource.uri(resolved.uri, tag: tag);
+        : playerAudioSource(resolved.uri, tag: tag);
   }
 }
 

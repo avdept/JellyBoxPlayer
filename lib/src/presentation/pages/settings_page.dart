@@ -11,9 +11,8 @@ import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
-import 'package:jplayer/src/data/conductor/conductor_models.dart';
-import 'package:jplayer/src/domain/providers/conductor_provider.dart';
 import 'package:jplayer/src/presentation/pages/handoff_bench_page.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -163,14 +162,16 @@ class SettingsPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 4,
                   children: [
+                    if (ref.watch(cloudAvailableProvider)) ...[
+                      _sectionHeader('Jellybox Cloud'),
+                      const JellyboxCloudSettings(),
+                    ],
+                    _sectionHeader('General'),
                     _librariesButton(context),
                     if (kDebugMode) _settingsButton(context),
                     if (kDebugMode) _queueCacheButton(context),
                     if (kDebugMode) _handoffBenchButton(context, ref),
                     _changelogButton(context, device),
-                    _sectionHeader('Continuity'),
-                    _conductorUrlField(ref),
-                    _conductorStatus(context, ref),
                     _sectionHeader('Home Page'),
                     _settingCheckbox(
                       ref: ref,
@@ -579,55 +580,6 @@ class SettingsPage extends ConsumerWidget {
         icon: const Icon(Icons.timer_outlined),
         label: const Text('Handoff bench'),
       );
-
-  Widget _conductorUrlField(WidgetRef ref) => Padding(
-    padding: const EdgeInsets.only(left: 12, right: 12, bottom: 4),
-    child: SizedBox(
-      width: 320,
-      child: TextFormField(
-        initialValue: ref.read(conductorUrlProvider),
-        decoration: const InputDecoration(
-          labelText: 'Conductor address',
-          hintText: '192.168.1.10:4010',
-          helperText: 'Leave empty to turn continuity off',
-        ),
-        onFieldSubmitted: (value) =>
-            ref.read(conductorUrlProvider.notifier).url = value,
-      ),
-    ),
-  );
-
-  Widget _conductorStatus(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(conductorProvider);
-    final label = switch (state.status) {
-      ConductorStatus.off => 'Off',
-      ConductorStatus.connecting => 'Connecting...',
-      ConductorStatus.reconnecting => 'Reconnecting...',
-      ConductorStatus.error => state.error ?? 'Connection problem',
-      ConductorStatus.listening => 'Connected — playing elsewhere',
-      ConductorStatus.rendering => 'Connected — playing here',
-    };
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, top: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label · ${state.devices.length} device'
-            '${state.devices.length == 1 ? '' : 's'}',
-          ),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: () => unawaited(ConductorDevicesSheet.show(context)),
-            style: _buttonStyle,
-            icon: const Icon(Icons.devices),
-            label: const Text('Play on...'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _logOutButton(WidgetRef ref) => TextButton.icon(
     onPressed: ref.read(authProvider.notifier).logout,

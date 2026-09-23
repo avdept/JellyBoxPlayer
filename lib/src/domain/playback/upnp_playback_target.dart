@@ -9,7 +9,7 @@ import 'package:jplayer/src/core/upnp/didl_lite.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
-import 'package:upnp_quirks/upnp_quirks.dart';
+import 'package:optional_features/upnp_quirks.dart';
 
 class UpnpPlaybackTarget implements PlaybackTarget {
   UpnpPlaybackTarget(

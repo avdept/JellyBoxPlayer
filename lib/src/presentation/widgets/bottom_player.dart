@@ -10,6 +10,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
@@ -372,7 +373,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     }
     return Consumer(
       builder: (context, ref, _) {
-        final isEmpty = !ref.watch(hasQueueProvider);
+        final playingElsewhere =
+            ref.watch(cloudProvider).remoteRenderer != null;
+        final isEmpty = !ref.watch(hasQueueProvider) || playingElsewhere;
         final currentSong = ref.watch(nowPlayingProvider);
         final image = ref
             .read(imageServiceProvider)

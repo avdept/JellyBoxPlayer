@@ -1,0 +1,44 @@
+name: Private package
+description: >
+  Point optional_features at its private repository when the deploy key is
+  available. Without a key the build uses the in-repo stub, so forks and public
+  clones still build — without renderer quirks, generated mixes or continuity.
+
+inputs:
+  deploy-key:
+    description: Read-only SSH deploy key for the private optional_features repository
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Enable the private package
+      shell: bash
+      env:
+        OPTIONAL_FEATURES_KEY: ${{ inputs.deploy-key }}
+      run: |
+        set -euo pipefail
+        overrides="$GITHUB_WORKSPACE/pubspec_overrides.yaml"
+        rm -f "$overrides"
+
+        if [[ -z "$OPTIONAL_FEATURES_KEY" ]]; then
+          echo "optional_features: in-repo stub, no quirks/mixes/continuity"
+          exit 0
+        fi
+
+        mkdir -p "$HOME/.ssh"
+        ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+
+        package=optional_features
+        key_file="$HOME/.ssh/${package}_ci"
+        host="github.com-${package}"
+        printf '%s\n' "$OPTIONAL_FEATURES_KEY" > "$key_file"
+        chmod 600 "$key_file"
+        printf 'Host %s\n  HostName github.com\n  User git\n  IdentityFile %s\n  IdentitiesOnly yes\n' \
+          "$host" "$key_file" >> "$HOME/.ssh/config"
+        git config --global "url.git@${host}:avdept/${package}.git.insteadOf" \
+          "git@github.com:avdept/${package}.git"
+        printf 'dependency_overrides:\n  %s:\n    git:\n      url: git@github.com:avdept/%s.git\n      ref: main\n' \
+          "$package" "$package" > "$overrides"
+        echo "${package}: private package"

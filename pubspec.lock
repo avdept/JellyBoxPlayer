@@ -570,15 +570,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  genre_playlists:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: main
-      resolved-ref: "322455c544032a4313ea8b2ea4933f4d6281ec2f"
-      url: "git@github.com:avdept/genre_playlists.git"
-    source: git
-    version: "0.1.0"
   glob:
     dependency: transitive
     description:
@@ -981,6 +972,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  optional_features:
+    dependency: "direct main"
+    description:
+      path: "packages/optional_features"
+      relative: true
+    source: path
+    version: "0.1.0"
   package_config:
     dependency: transitive
     description:
@@ -1626,15 +1624,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.7.1"
-  upnp_quirks:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: main
-      resolved-ref: fb1baf4b30d02cf0f8231ca7d976feec73e91544
-      url: "git@github.com:avdept/upnp_quirks.git"
-    source: git
-    version: "0.1.0"
   upower:
     dependency: transitive
     description:

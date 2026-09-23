@@ -23,6 +23,7 @@ import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -162,6 +163,8 @@ Future<void> main() async {
   }
 
   if (Platform.isWindows) await SmtcHandler.initialize(container);
+
+  container.read(cloudProvider.notifier);
 
   DiscordPresenceHandler.initialize(container);
   ScrobbleHandler.initialize(

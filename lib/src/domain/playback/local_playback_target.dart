@@ -92,15 +92,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
 
     return track.isHls
         ? HlsAudioSource(track.uri, tag: tag)
-        : ProgressiveAudioSource(
-            track.uri,
-            tag: tag,
-            options: const ProgressiveAudioSourceOptions(
-              darwinAssetOptions: DarwinAssetOptions(
-                preferPreciseDurationAndTiming: true,
-              ),
-            ),
-          );
+        : playerAudioSource(track.uri, tag: tag);
   }
 
   @override
@@ -227,3 +219,14 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     };
   }
 }
+
+AudioSource playerAudioSource(Uri uri, {required MediaItem tag}) =>
+    ProgressiveAudioSource(
+      uri,
+      tag: tag,
+      options: const ProgressiveAudioSourceOptions(
+        darwinAssetOptions: DarwinAssetOptions(
+          preferPreciseDurationAndTiming: true,
+        ),
+      ),
+    );

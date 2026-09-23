@@ -5,15 +5,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
+import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/anchored_dropdown.dart';
+import 'package:jplayer/src/presentation/widgets/cloud_devices_sheet.dart';
 import 'package:jplayer/src/providers/diagnostics_provider.dart';
-import 'package:upnp_quirks/upnp_quirks.dart';
+import 'package:optional_features/upnp_quirks.dart';
 
 const _menuWidth = 320.0;
 const _menuMaxHeight = 360.0;
@@ -159,6 +162,18 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
   void _selectLocal() {
     ref.read(playbackTargetProvider.notifier).useLocal();
+
+    final conductor = ref.read(cloudProvider);
+    final elsewhere = conductor.devices.any((d) => d.isRenderer && !d.isSelf);
+    if (conductor.isConnected && elsewhere) {
+      unawaited(ref.read(cloudProvider.notifier).claimHere());
+    }
+
+    widget.onDone();
+  }
+
+  void _handOffTo(ConductorDevice device) {
+    unawaited(ref.read(cloudProvider.notifier).handoffTo(device.id));
     widget.onDone();
   }
 
@@ -192,6 +207,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final theme = Theme.of(context);
     final active = ref.watch(playbackTargetProvider);
     final discovery = ref.watch(upnpRenderersProvider);
+    final conductor = ref.watch(cloudProvider);
     final host = ref.watch(controlPointHostProvider);
     final width = math.min(_menuWidth, MediaQuery.sizeOf(context).width - 24);
 
@@ -251,9 +267,19 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 selected: active.kind == PlaybackTargetKind.local,
                 onTap: _selectLocal,
               ),
+              for (final device in conductor.targets)
+                _TargetTile(
+                  icon: conductorDeviceIcon(device.platform),
+                  title: device.name,
+                  subtitle: device.isRenderer ? 'Playing' : 'Your device',
+                  selected: device.isRenderer,
+                  onTap: device.isRenderer ? null : () => _handOffTo(device),
+                ),
               for (final renderer in discovery.renderers)
                 _rendererTile(renderer, active: active, host: host),
-              if (discovery.renderers.isEmpty && !discovery.scanning)
+              if (discovery.renderers.isEmpty &&
+                  conductor.targets.isEmpty &&
+                  !discovery.scanning)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                   child: Text(

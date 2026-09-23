@@ -745,6 +745,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (autoPlay && !_targetState.status.isPlaying) await _target.play();
   }
 
+  void adoptShuffle({required bool enabled}) {
+    if (enabled == state.shuffleEnabled) return;
+    _unshuffledOrder = null;
+    state = state.copyWith(shuffleEnabled: enabled);
+  }
+
   Future<void> setShuffle({required bool enabled}) async {
     if (enabled == state.shuffleEnabled) return;
 

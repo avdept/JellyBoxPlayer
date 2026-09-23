@@ -208,6 +208,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                         ),
                       ),
                     ),
+                    const RemoteNowPlayingBar(),
                     const BottomPlayer(),
                   ],
                 ),

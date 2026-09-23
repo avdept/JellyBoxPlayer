@@ -1,9 +1,5 @@
 dependency_overrides:
-  upnp_quirks:
+  optional_features:
     git:
-      url: git@github.com:avdept/upnp_quirks.git
-      ref: main
-  genre_playlists:
-    git:
-      url: git@github.com:avdept/genre_playlists.git
+      url: git@github.com:avdept/optional_features.git
       ref: main
