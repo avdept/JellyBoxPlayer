@@ -22,6 +22,7 @@ import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -45,6 +46,8 @@ Future<void> main() async {
 
   SentryWidgetsFlutterBinding.ensureInitialized();
 
+  final prefs = await SharedPreferences.getInstance();
+
   if (Platform.isLinux || Platform.isWindows) {
     DownloadDatabase.databaseDirectory =
         (await getApplicationSupportDirectory()).path;
@@ -55,11 +58,13 @@ Future<void> main() async {
     server: Uri.https("plausible.prodigytech.dev", '/api/event'),
   );
 
-  analytics.send(path: '/');
-  analytics.send(
-    event: 'app-launched',
-    props: {'os': Platform.operatingSystem},
-  );
+  if (AppSettingsNotifier.peekBool(prefs, AppSetting.plausibleAnalytics)) {
+    analytics.send(path: '/');
+    analytics.send(
+      event: 'app-launched',
+      props: {'os': Platform.operatingSystem},
+    );
+  }
 
   deviceId = (await FlutterUdid.udid).trim();
   appInfo = await PackageInfo.fromPlatform();
@@ -103,7 +108,6 @@ Future<void> main() async {
     );
   }
 
-  final prefs = await SharedPreferences.getInstance();
   await CertificateTrust.instance.load(prefs);
   HttpOverrides.global = TrustedCertificateHttpOverrides(
     CertificateTrust.instance,
@@ -171,14 +175,27 @@ Future<void> main() async {
     ],
   );
 
-  await SentryFlutter.init(
-    (options) {
-      options
-        ..dsn =
-            'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
-        ..tracesSampleRate = 1.0;
-    },
-    appRunner: () => runApp(
+  Future<void> runAppWithSentry(AppRunner runner) async {
+    if (AppSettingsNotifier.peekBool(
+      prefs,
+      AppSetting.crashReporting,
+    )) {
+      await SentryFlutter.init(
+        (options) {
+          options
+            ..dsn =
+                'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
+            ..tracesSampleRate = 1.0;
+        },
+        appRunner: runner,
+      );
+    } else {
+      await runner();
+    }
+  }
+
+  await runAppWithSentry(
+    () => runApp(
       UncontrolledProviderScope(
         container: container,
         child: const App(screenFactory: ScreenFactory()),
