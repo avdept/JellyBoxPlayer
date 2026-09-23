@@ -290,6 +290,17 @@ class SettingsPage extends ConsumerWidget {
                         label: 'Share what I am listening to on Discord',
                       ),
                     ],
+                    _sectionHeader('Privacy'),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.crashReporting,
+                      label: 'Send crash reports to Sentry',
+                    ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.plausibleAnalytics,
+                      label: 'Send anonymous usage analytics',
+                    ),
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
                     if (!device.isDesktop) _logOutButton(ref),
