@@ -171,6 +171,19 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getInstantMix(
+    String itemId, {
+    int limit = 100,
+  }) async {
+    final response = await _api.getInstantMix(
+      itemId: itemId,
+      userId: userId,
+      limit: '$limit',
+    );
+    return response.data.toJellyfinLibraryPage().items;
+  }
+
+  @override
   Future<List<LibraryItem>> getLatestAlbums({
     String? libraryId,
     int limit = 20,

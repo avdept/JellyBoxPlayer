@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/metadata_link_service.dart';
@@ -26,6 +27,7 @@ enum ContextMenuEntry {
   addToPlaylist,
   playNext,
   addToQueue,
+  instantMix,
   download,
   like,
   goToArtist,
@@ -40,6 +42,7 @@ const contextMenuLayout =
     <ItemKind, Map<ContextMenuScope, List<ContextMenuEntry>>>{
       ItemKind.song: {
         ContextMenuScope.browse: [
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.playNext,
           ContextMenuEntry.addToQueue,
@@ -50,6 +53,7 @@ const contextMenuLayout =
           ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.albumPage: [
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.playNext,
           ContextMenuEntry.addToQueue,
@@ -59,6 +63,7 @@ const contextMenuLayout =
           ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.playlistPage: [
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.playNext,
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
@@ -68,6 +73,7 @@ const contextMenuLayout =
           ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.nowPlaying: [
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
@@ -76,6 +82,7 @@ const contextMenuLayout =
           ContextMenuEntry.metadataLinks,
         ],
         ContextMenuScope.queue: [
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
@@ -87,6 +94,7 @@ const contextMenuLayout =
       ItemKind.album: {
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.playNext,
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
@@ -98,6 +106,7 @@ const contextMenuLayout =
       ItemKind.artist: {
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
+          ContextMenuEntry.instantMix,
           ContextMenuEntry.like,
           ContextMenuEntry.metadataLinks,
         ],
@@ -297,6 +306,7 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.addToPlaylist => actions.addToPlaylist(),
         ContextMenuEntry.playNext => actions.playNext(),
         ContextMenuEntry.addToQueue => actions.addToQueue(),
+        ContextMenuEntry.instantMix => actions.instantMix(),
         ContextMenuEntry.download => actions.download(),
         ContextMenuEntry.like =>
           onLike != null && !rowHasLike ? actions.like(onLike) : null,
@@ -693,6 +703,25 @@ class _ContextMenuActions {
       _ => const [],
     };
   }
+
+  ContextMenuAction instantMix() => ContextMenuAction(
+    entry: ContextMenuEntry.instantMix,
+    icon: const _SvgIcon(SvgPictures.compassIcon),
+    label: const Text('Instant mix'),
+    run: () async {
+      if (_guardOffline()) return;
+      try {
+        final result = await ref
+            .read(setPlaybackProvider.notifier)
+            .playInstantMix(item);
+        if (result == SetPlaybackResult.empty) {
+          _showSnackBar('No mix available for "${item.name}"');
+        }
+      } on Object {
+        _showSnackBar('Could not start an instant mix for "${item.name}"');
+      }
+    },
+  );
 
   ContextMenuAction download() => ContextMenuAction(
     entry: ContextMenuEntry.download,

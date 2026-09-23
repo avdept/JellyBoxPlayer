@@ -31,6 +31,8 @@ abstract class MediaServerClient {
 
   Future<LibraryPage> getSimilarAlbums(String albumId, {int limit = 12});
 
+  Future<List<LibraryItem>> getInstantMix(String itemId, {int limit = 100});
+
   Future<List<LibraryItem>> getLatestAlbums({String? libraryId, int limit});
 
   Future<List<LibraryItem>> getRecentlyPlayedAlbums({

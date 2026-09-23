@@ -428,6 +428,12 @@ class SubsonicClient implements MediaServerClient {
     int limit = 12,
   }) async => const LibraryPage();
 
+  @override
+  Future<List<LibraryItem>> getInstantMix(
+    String itemId, {
+    int limit = 100,
+  }) async => _songItems(await _api.getSimilarSongs(id: itemId, count: limit));
+
   Future<List<LibraryItem>> _albumList(
     String type, {
     required String? libraryId,

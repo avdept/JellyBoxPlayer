@@ -922,4 +922,28 @@ void main() {
     server.on('getLyricsBySongId', (_) => subsonicFailed(70, 'not found'));
     expect(await client.getLyrics('s1'), isNull);
   });
+
+  group('getInstantMix', () {
+    test('- maps similar songs for any seed id', () async {
+      server.ok('getSimilarSongs', {
+        'similarSongs': {
+          'song': [childJson('song-1'), childJson('song-2')],
+        },
+      });
+
+      final songs = await client.getInstantMix('album-1', limit: 25);
+
+      final uri = server.calls('getSimilarSongs').single;
+      expect(uri.queryParameters['id'], 'album-1');
+      expect(uri.queryParameters['count'], '25');
+      expect(songs.map((song) => song.id), ['song-1', 'song-2']);
+      expect(songs.first.kind, ItemKind.song);
+    });
+
+    test('- returns nothing when the server knows no similar songs', () async {
+      server.ok('getSimilarSongs', {'similarSongs': <String, Object?>{}});
+
+      expect(await client.getInstantMix('song-1'), isEmpty);
+    });
+  });
 }

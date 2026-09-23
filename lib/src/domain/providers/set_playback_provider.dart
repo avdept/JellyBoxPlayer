@@ -11,6 +11,15 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 const _setSongsLimit = 300;
 const _favouriteSongsLimit = 500;
 
+const instantMixIdPrefix = 'instant-mix:';
+
+LibraryItem instantMixItem(LibraryItem seed) => LibraryItem(
+  id: '$instantMixIdPrefix${seed.id}',
+  name: 'Instant mix: ${seed.name}',
+  kind: ItemKind.playlist,
+  images: seed.images,
+);
+
 enum SetPlaybackResult {
   started,
   empty,
@@ -77,6 +86,14 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       return resp.items;
     },
   );
+
+  Future<SetPlaybackResult> playInstantMix(LibraryItem seed) => _play(
+    setItem: instantMixItem(seed),
+    fetchSongs: () => instantMixSongs(seed.id),
+  );
+
+  Future<List<LibraryItem>> instantMixSongs(String seedId) =>
+      _ref.read(mediaServerClientProvider).getInstantMix(seedId);
 
   Future<SetPlaybackResult> playGeneratedPlaylist(LibraryItem playlist) =>
       _play(

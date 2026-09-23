@@ -165,6 +165,14 @@ class SubsonicApi {
     return SubsonicSongListDTO.fromJson(_section(body, 'songsByGenre')).song;
   }
 
+  Future<List<SubsonicChildDTO>> getSimilarSongs({
+    required String id,
+    int count = 50,
+  }) async {
+    final body = await call('getSimilarSongs', {'id': id, 'count': count});
+    return SubsonicSongListDTO.fromJson(_section(body, 'similarSongs')).song;
+  }
+
   Future<SubsonicItemSetDTO> getStarred2({String? musicFolderId}) async =>
       SubsonicItemSetDTO.fromJson(
         _section(

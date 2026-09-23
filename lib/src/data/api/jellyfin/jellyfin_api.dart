@@ -126,6 +126,15 @@ abstract class JellyfinApi {
     @Query('Fields') List<String> fields = const ['ProviderIds'],
   });
 
+  @GET('/Items/{itemId}/InstantMix')
+  Future<HttpResponse<ItemsWrapper>> getInstantMix({
+    @Path('itemId') required String itemId,
+    @Query('userId') required String userId,
+    @Query('Limit') String limit = '100',
+    @Query('Fields')
+    List<String> fields = const ['MediaSources', 'ProviderIds'],
+  });
+
   @GET('/MusicGenres')
   Future<HttpResponse<ItemsWrapper>> getGenres({
     @Query('userId') required String userId,
