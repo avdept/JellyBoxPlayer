@@ -31,6 +31,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   static const _progressInterval = Duration(seconds: 10);
+  static const _stallSlack = Duration(seconds: 1);
+  static const _stallGrace = Duration(seconds: 6);
 
   final Ref _ref;
   final _playSessionIds = <String, String>{};
@@ -50,6 +52,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Completer<void>? _queueEditsSettled;
   var _fallingBack = false;
   var _recoveringLostCache = false;
+  int? _stallBufferedMs;
+  int? _stallIndex;
+  DateTime? _stalledSince;
+  var _stallLogged = false;
   Timer? _progressTimer;
 
   PlaybackTarget get target => _target;
@@ -116,6 +122,48 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  void _checkForStall(TargetPlaybackState targetState) {
+    final index = targetState.currentIndex;
+    if (index != _stallIndex) {
+      _stallIndex = index;
+      _stallBufferedMs = null;
+      _stalledSince = null;
+      _stallLogged = false;
+    }
+
+    if (_target.kind != PlaybackTargetKind.local) return;
+    if (_preparingQueue) return;
+    if (!targetState.status.isPlaying) return;
+
+    final buffered = targetState.bufferedPosition;
+    if (buffered == null || index == null) return;
+
+    final track = _tracks.elementAtOrNull(index);
+    if (track == null || track.isLocalFile) return;
+
+    final bufferedMs = buffered.inMilliseconds;
+    final grew = _stallBufferedMs == null || bufferedMs > _stallBufferedMs!;
+    _stallBufferedMs = bufferedMs;
+
+    if (grew || targetState.position <= buffered + _stallSlack) {
+      _stalledSince = null;
+      _stallLogged = false;
+      return;
+    }
+
+    if (_stallLogged) return;
+    final since = _stalledSince ??= DateTime.now();
+    if (DateTime.now().difference(since) < _stallGrace) return;
+
+    _stallLogged = true;
+    final song = state.songs.elementAtOrNull(index);
+    debugPrint(
+      '[Playback] "${song?.name ?? track.itemId}" is stalled: '
+      '${targetState.position.inSeconds}s played, '
+      '${buffered.inSeconds}s buffered and not growing',
+    );
+  }
+
   void _listenToTarget() {
     _targetSubscription = _target.stateStream.listen(_onTargetState);
   }
@@ -144,11 +192,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _reportedPositionMs = targetState.position.inMilliseconds;
     }
 
-    state = state.copyWith(
-      position: targetState.position,
-      totalDuration: _durationFor(index),
-      currentMediaIndex: index,
-    );
+    if (!_preparingQueue) {
+      state = state.copyWith(
+        position: targetState.position,
+        cacheProgress: targetState.bufferedPosition ?? Duration.zero,
+        totalDuration: _durationFor(index),
+        currentMediaIndex: index,
+      );
+    }
 
     final now = DateTime.now();
     if (state.status.isPlaying &&
@@ -167,6 +218,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         );
       }
     }
+
+    _checkForStall(targetState);
 
     if (targetState.status == PlaybackStatus.error) {
       _onTargetFailure();
@@ -457,6 +510,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _tracks
         ..clear()
         ..addAll(tracks);
+
+      state = state.copyWith(
+        songs: playableSongs,
+        album: album,
+        status: PlaybackStatus.buffering,
+        position: startPosition,
+        cacheProgress: Duration.zero,
+        totalDuration: _durationFor(effectiveIndex, songs: playableSongs),
+        currentMediaIndex: effectiveIndex,
+      );
 
       await _target.load(
         tracks,

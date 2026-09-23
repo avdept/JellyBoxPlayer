@@ -11,7 +11,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
-import 'package:jplayer/src/data/storages/window_size_storage.dart';
+import 'package:jplayer/src/data/storages/window_placement_storage.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
@@ -61,13 +61,15 @@ class App extends ConsumerStatefulWidget {
   ConsumerState<App> createState() => _AppState();
 }
 
-class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
+class _AppState extends ConsumerState<App>
+    with WidgetsBindingObserver, WindowListener {
   late final GoRouter _router;
   final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final _authState = ValueNotifier<bool?>(null);
   LibraryItem? _selectedLibrary;
   Timer? _resizeTimer;
+  Timer? _moveTimer;
   AppLifecycleListener? _lifecycleListener;
   var _playbackRestoreStarted = false;
 
@@ -83,7 +85,35 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
     }
     initRoutes();
     WidgetsBinding.instance.addObserver(this);
+    if (_tracksWindowPlacement) windowManager.addListener(this);
     _watchDayRollover();
+  }
+
+  bool get _tracksWindowPlacement =>
+      Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
+  @override
+  void onWindowMoved() {
+    if (!_tracksWindowPlacement) return;
+    _moveTimer?.cancel();
+    _moveTimer = Timer(
+      const Duration(seconds: 2),
+      () async {
+        _moveTimer = null;
+        if (supportsWindowFullscreen && await windowManager.isFullScreen()) {
+          return;
+        }
+        if (await windowManager.isMinimized()) return;
+        final position = await windowManager.getPosition();
+        if (!mounted) return;
+        ref.read(sharedPreferencesProvider).whenData((prefs) {
+          if (!mounted) return;
+          unawaited(
+            WindowPlacementStorage(prefs).saveWindowPosition(position),
+          );
+        });
+      },
+    );
   }
 
   void _checkDayRollover() {
@@ -129,7 +159,10 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
             return;
           }
           ref.read(sharedPreferencesProvider).whenData((prefs) {
-            if (mounted) WindowSizeStorage(prefs).saveWindowSize(context.size!);
+            if (!mounted) return;
+            unawaited(
+              WindowPlacementStorage(prefs).saveWindowSize(context.size!),
+            );
           });
         },
       );
@@ -363,9 +396,11 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (_tracksWindowPlacement) windowManager.removeListener(this);
     _router.routerDelegate.removeListener(_checkDayRollover);
     _lifecycleListener?.dispose();
     _resizeTimer?.cancel();
+    _moveTimer?.cancel();
     _authState.dispose();
     super.dispose();
   }

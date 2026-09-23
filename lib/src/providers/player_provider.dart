@@ -8,7 +8,13 @@ import 'package:just_audio/just_audio.dart';
 var _audioServiceInitialized = false;
 
 final playerProvider = Provider<AudioPlayer>((ref) {
-  final player = AudioPlayer();
+  final player = AudioPlayer(
+    audioLoadConfiguration: const AudioLoadConfiguration(
+      darwinLoadControl: DarwinLoadControl(
+        preferredForwardBufferDuration: Duration(minutes: 30),
+      ),
+    ),
+  );
   // On iOS/Android the media notification is handled by just_audio_background
   // (initialised in main.dart). On desktop — notably Linux, for MPRIS media
   // keys — we init audio_service with our own handler instead. Running both on
