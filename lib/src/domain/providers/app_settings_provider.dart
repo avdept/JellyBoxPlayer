@@ -21,6 +21,8 @@ enum AppSetting {
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
   discordRichPresence('discord_rich_presence'),
+  crashReporting('crash_reporting'),
+  plausibleAnalytics('plausible_analytics'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
@@ -171,6 +173,12 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
   }
 
   bool isEnabled(AppSetting setting) => _asBool(state[setting], setting);
+
+  /// Reads a single boolean setting before Riverpod is up, for startup paths
+  /// (such as analytics and crash reporting) that must decide before the
+  /// container exists.
+  static bool peekBool(SharedPreferences prefs, AppSetting setting) =>
+      _asBool(_read(prefs)[setting], setting);
 
   double? rendererVolume(String deviceId) {
     final level = _rendererVolumes()[deviceId];
