@@ -20,6 +20,7 @@ import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/core/smtc/smtc_handler.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
 import 'package:screen_retriever/screen_retriever.dart';
@@ -33,7 +34,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:plausible/plausible.dart';
 
 late String deviceId;
 late PackageInfo appInfo;
@@ -50,17 +50,6 @@ Future<void> main() async {
     DownloadDatabase.databaseDirectory =
         (await getApplicationSupportDirectory()).path;
   }
-
-  final analytics = Plausible(
-    domain: "jellybox.app",
-    server: Uri.https("plausible.prodigytech.dev", '/api/event'),
-  );
-
-  analytics.send(path: '/');
-  analytics.send(
-    event: 'app-launched',
-    props: {'os': Platform.operatingSystem},
-  );
 
   deviceId = (await FlutterUdid.udid).trim();
   appInfo = await PackageInfo.fromPlatform();
@@ -111,6 +100,7 @@ Future<void> main() async {
   );
 
   final container = ProviderContainer();
+  Telemetry.watch(container);
   final carContent = CarContent(container);
   if (Platform.isIOS) CarPlayHandler.initialize(container, carContent);
   if (Platform.isAndroid) AndroidAutoHandler.initialize(container, carContent);
@@ -181,13 +171,8 @@ Future<void> main() async {
     ],
   );
 
-  await SentryFlutter.init(
-    (options) {
-      options
-        ..dsn =
-            'https://37200398250012a53c6390d1bd05b60c@o4505940301840384.ingest.sentry.io/4506644062732288'
-        ..tracesSampleRate = 1.0;
-    },
+  await Telemetry.start(
+    optedOut: Telemetry.optedOutIn(prefs),
     appRunner: () => runApp(
       UncontrolledProviderScope(
         container: container,
