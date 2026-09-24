@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/now_playing_queue_view.dart';
 import 'package:jplayer/src/presentation/widgets/sidebar_overlay.dart';
@@ -11,7 +12,8 @@ class QueueSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isShown =
-        ref.watch(queueSidebarVisibleProvider) && ref.watch(hasQueueProvider);
+        ref.watch(queueSidebarVisibleProvider) &&
+        ref.watch(barHasQueueProvider);
 
     return SidebarOverlay(
       isShown: isShown,

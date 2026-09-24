@@ -1,7 +1,7 @@
 export 'cloud_devices_sheet.dart';
 export 'jellybox_cloud_connect_form.dart';
 export 'jellybox_cloud_settings.dart';
-export 'remote_now_playing_bar.dart';
+export 'playing_elsewhere_strip.dart';
 export 'adaptive_builder.dart';
 export 'adaptive_dialog_action.dart';
 export 'album_card_metrics.dart';

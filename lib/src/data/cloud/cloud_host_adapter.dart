@@ -9,9 +9,12 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
+import 'package:just_audio/just_audio.dart';
 
 String continuityDeviceName() {
   if (kIsWeb) return 'Browser';
@@ -31,11 +34,21 @@ String continuityPlatformName() {
 class CloudHostAdapter implements CloudHost<LibraryItem> {
   CloudHostAdapter(this._ref) {
     _ref.listen(playbackProvider, (_, next) => _playback.add(_snapshot(next)));
+    _loopMode = _ref
+        .read(playerProvider)
+        .loopModeStream
+        .distinct()
+        .skip(1)
+        .listen((_) {
+          if (_ref.exists(playbackProvider)) _playback.add(playback);
+        });
   }
 
   final Ref _ref;
 
   final _playback = StreamController<CloudPlayback?>.broadcast();
+  late final StreamSubscription<LoopMode> _loopMode;
+  ProviderSubscription<VolumeState>? _volume;
 
   @override
   String get deviceId => app.deviceId;
@@ -110,8 +123,39 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   Future<void> pause() => _ref.read(playbackProvider.notifier).pause();
 
   @override
+  Future<void> resume() => _ref.read(playbackProvider.notifier).resume();
+
+  @override
+  Future<void> skipNext() => _ref.read(playbackProvider.notifier).next();
+
+  @override
+  Future<void> skipPrevious() => _ref.read(playbackProvider.notifier).prev();
+
+  @override
   Future<void> seek(Duration position) =>
       _ref.read(playbackProvider.notifier).seek(position);
+
+  @override
+  Future<void> setShuffle({required bool enabled}) =>
+      _ref.read(playbackProvider.notifier).setShuffle(enabled: enabled);
+
+  @override
+  Future<void> setRepeat(String mode) =>
+      _ref.read(playerProvider).setLoopMode(switch (mode) {
+        'all' => LoopMode.all,
+        'one' => LoopMode.one,
+        _ => LoopMode.off,
+      });
+
+  @override
+  Future<void> setVolume(double level) async {
+    await _ref.read(volumeProvider.notifier).setLevel(level);
+    _watchVolume();
+  }
+
+  @override
+  Future<void> skipTo(int index) =>
+      _ref.read(playbackProvider.notifier).skipTo(index, autoPlay: true);
 
   @override
   bool get rendersLocally =>
@@ -122,6 +166,14 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   Duration get bufferedPosition => _ref.read(playerProvider).bufferedPosition;
 
   @override
+  /// How long until the player reports a position past [from], or null if
+  /// nothing ever says so.
+  ///
+  /// `updatePosition` is not a dependable signal — `media_kit` on desktop
+  /// often never emits one that passes the target — so null is a normal
+  /// outcome and means "not observed", never "slow". The wait is short
+  /// because a report that arrives later than the next handoff gets counted
+  /// against the wrong one.
   Future<int?> millisUntilAudible(Duration from) {
     final clock = Stopwatch()..start();
     return _ref
@@ -132,7 +184,7 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
               event.updatePosition > from + const Duration(milliseconds: 20),
         )
         .then<int?>((_) => clock.elapsedMilliseconds)
-        .timeout(const Duration(seconds: 15), onTimeout: () => null);
+        .timeout(const Duration(seconds: 4), onTimeout: () => null);
   }
 
   @override
@@ -147,9 +199,26 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   Future<void> deleteSecret(String key) =>
       _ref.read(secureStorageProvider).delete(key: key);
 
-  void dispose() => unawaited(_playback.close());
+  void dispose() {
+    _volume?.close();
+    unawaited(_loopMode.cancel());
+    unawaited(_playback.close());
+  }
+
+  void _watchVolume() {
+    if (_volume != null || !_ref.exists(volumeProvider)) return;
+    _volume = _ref.listen(volumeProvider, (_, _) => _playback.add(playback));
+  }
+
+  double get _volumeLevel => _ref.exists(volumeProvider)
+      ? _ref.read(volumeProvider).effectiveLevel
+      : _ref
+            .read(appSettingsProvider.notifier)
+            .numberOf(AppSetting.playerVolume)
+            .clamp(0.0, 1.0);
 
   CloudPlayback? _snapshot(PlaybackState playback) {
+    _watchVolume();
     if (playback.songs.isEmpty) return null;
     return CloudPlayback(
       itemIds: [for (final song in playback.songs) song.id],
@@ -158,6 +227,8 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
       position: playback.position,
       playing: playback.status.isPlaying,
       shuffle: playback.shuffleEnabled,
+      repeat: _ref.read(playerProvider).loopMode.name,
+      volume: _volumeLevel,
     );
   }
 }

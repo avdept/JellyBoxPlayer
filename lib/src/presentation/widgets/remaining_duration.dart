@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 
 class RemainingDuration extends ConsumerWidget {
   const RemainingDuration({super.key});
@@ -8,9 +8,7 @@ class RemainingDuration extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final remaining = ref.watch(
-      playbackProvider.select(
-        (state) => (state.totalDuration ?? Duration.zero) - state.position,
-      ),
+      barProgressProvider.select((progress) => progress.remaining),
     );
 
     return Text(

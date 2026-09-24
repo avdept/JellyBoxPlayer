@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/config/constants.dart';
@@ -60,6 +62,8 @@ class CloudNotifier extends StateNotifier<CloudState> {
         unawaited(_refresh());
       });
 
+    _watchNetwork();
+
     unawaited(_cloud.start(benchUrl: _benchUrl()));
   }
 
@@ -68,6 +72,8 @@ class CloudNotifier extends StateNotifier<CloudState> {
   late final CloudHostAdapter _host;
   late final JellyboxCloud<LibraryItem> _cloud;
   late final StreamSubscription<CloudState> _states;
+  StreamSubscription<List<ConnectivityResult>>? _network;
+  AppLifecycleListener? _lifecycle;
 
   bool get available => _cloud.available;
 
@@ -81,12 +87,40 @@ class CloudNotifier extends StateNotifier<CloudState> {
 
   Future<void> handoffTo(String deviceId) => _cloud.handoffTo(deviceId);
 
+  Future<void> sendCommand(PlayerCommand command, {Object? value}) =>
+      _cloud.sendCommand(command, value: value);
+
   Future<void> claimHere() => _cloud.claimHere();
 
   Future<void> shutdown() async {
+    _lifecycle?.dispose();
+    await _network?.cancel();
     await _states.cancel();
     await _cloud.dispose();
     _host.dispose();
+  }
+
+  void _watchNetwork() {
+    try {
+      _network = Connectivity().onConnectivityChanged.listen(
+        (results) {
+          if (results.every((r) => r == ConnectivityResult.none)) return;
+          unawaited(_cloud.networkChanged());
+        },
+        onError: (Object error) =>
+            debugPrint('[conductor] network events unavailable: $error'),
+      );
+    } on Object catch (error) {
+      debugPrint('[conductor] network events unavailable: $error');
+    }
+
+    try {
+      _lifecycle = AppLifecycleListener(
+        onResume: () => unawaited(_cloud.networkChanged()),
+      );
+    } on Object catch (error) {
+      debugPrint('[conductor] lifecycle events unavailable: $error');
+    }
   }
 
   Future<void> _refresh() => _cloud.refresh(benchUrl: _benchUrl());
@@ -102,18 +136,56 @@ final cloudAvailableProvider = Provider<bool>(
   (ref) => ref.watch(cloudProvider.notifier).available,
 );
 
-final remoteTrackIdProvider = Provider<String?>((ref) {
+final remoteSessionProvider = Provider<RemoteSession?>((ref) {
   final state = ref.watch(cloudProvider);
-  if (state.remoteRenderer == null) return null;
-  return state.remote?.doc.currentItemId;
+  final remote = state.remote;
+  if (state.remoteRenderer == null || remote == null || remote.doc.isEmpty) {
+    return null;
+  }
+  return remote;
 });
 
-final remoteNowPlayingProvider = FutureProvider<LibraryItem?>((ref) async {
-  final itemId = ref.watch(remoteTrackIdProvider);
+final playingElsewhereProvider = Provider<bool>(
+  (ref) => ref.watch(remoteSessionProvider) != null,
+);
+
+final remoteQueueProvider = FutureProvider<List<LibraryItem>>((ref) async {
+  final key = ref.watch(
+    remoteSessionProvider.select((remote) => remote?.doc.itemIds.join(',')),
+  );
+  if (key == null || key.isEmpty) return const [];
+
+  final ids = key.split(',');
+  final items = await ref.read(mediaServerClientProvider).getItemsByIds(ids);
+  final byId = {for (final item in items) item.id: item};
+  return [for (final id in ids) ?byId[id]];
+});
+
+final remoteNowPlayingProvider = Provider<LibraryItem?>((ref) {
+  final itemId = ref.watch(
+    remoteSessionProvider.select((remote) => remote?.doc.currentItemId),
+  );
   if (itemId == null) return null;
-
-  final items = await ref.read(mediaServerClientProvider).getItemsByIds([
-    itemId,
-  ]);
-  return items.isEmpty ? null : items.first;
+  final queue = ref.watch(remoteQueueProvider).valueOrNull ?? const [];
+  for (final item in queue) {
+    if (item.id == itemId) return item;
+  }
+  return null;
 });
+
+final AutoDisposeStreamProvider<int> _remoteTickProvider =
+    StreamProvider.autoDispose<int>((ref) {
+      final playing = ref.watch(
+        remoteSessionProvider.select((remote) => remote?.doc.playing ?? false),
+      );
+      if (!playing) return Stream.value(0);
+      return Stream.periodic(const Duration(milliseconds: 250), (tick) => tick);
+    });
+
+final AutoDisposeProvider<Duration> remotePositionProvider =
+    Provider.autoDispose<Duration>((ref) {
+      ref.watch(_remoteTickProvider);
+      final remote = ref.watch(remoteSessionProvider);
+      if (remote == null) return Duration.zero;
+      return remote.positionAt(DateTime.now());
+    });

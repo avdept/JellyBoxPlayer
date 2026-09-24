@@ -1,6 +1,31 @@
 import 'package:meta/meta.dart';
 
-enum ConductorStatus { off, connecting, listening, rendering, reconnecting, error }
+enum PlayerCommand {
+  play('play'),
+  pause('pause'),
+  next('next'),
+  previous('previous'),
+  seek('seek'),
+  shuffle('shuffle'),
+  repeat('repeat'),
+  volume('volume'),
+  skipTo('skip_to');
+
+  const PlayerCommand(this.wire);
+
+  final String wire;
+}
+
+const repeatModes = ['off', 'all', 'one'];
+
+enum ConductorStatus {
+  off,
+  connecting,
+  listening,
+  rendering,
+  reconnecting,
+  error,
+}
 
 @immutable
 class SessionDoc {
@@ -13,6 +38,7 @@ class SessionDoc {
     this.playing = false,
     this.shuffle = false,
     this.repeat = 'off',
+    this.volume = 1,
   });
 
   final String? backendRef;
@@ -23,6 +49,7 @@ class SessionDoc {
   final bool playing;
   final bool shuffle;
   final String repeat;
+  final double volume;
 
   bool get isEmpty => itemIds.isEmpty;
 

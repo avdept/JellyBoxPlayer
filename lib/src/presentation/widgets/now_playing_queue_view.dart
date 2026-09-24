@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
@@ -68,7 +70,7 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
 
   void _revealCurrentSong() {
     if (!mounted || !_scrollController.hasClients) return;
-    final position = ref.read(playbackProvider).currentMediaIndex ?? 0;
+    final position = ref.read(barQueueIndexProvider) ?? 0;
     final scroll = _scrollController.position;
     final centered =
         (position < 0 ? 0 : position) * _itemExtent -
@@ -92,6 +94,7 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
       return;
     }
     ref.invalidate(favouriteSongsProvider);
+    if (ref.read(playingElsewhereProvider)) ref.invalidate(remoteQueueProvider);
     ref
         .read(playbackProvider.notifier)
         .updateSong(
@@ -119,9 +122,9 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
 
   @override
   Widget build(BuildContext context) {
-    final playback = ref.watch(playbackProvider);
-    final songs = playback.songs;
-    final currentIndex = playback.currentMediaIndex;
+    final remote = ref.watch(playingElsewhereProvider);
+    final songs = ref.watch(barQueueProvider);
+    final currentIndex = ref.watch(barQueueIndexProvider);
 
     final keys = _itemKeys(songs);
     final isDesktop = DeviceType.fromScreenSize(
@@ -154,9 +157,12 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
         },
         child: child,
       ),
-      onReorder: (from, to) => ref
-          .read(playbackProvider.notifier)
-          .moveInQueue(from, to > from ? to - 1 : to),
+      onReorder: (from, to) {
+        if (remote) return;
+        ref
+            .read(playbackProvider.notifier)
+            .moveInQueue(from, to > from ? to - 1 : to);
+      },
       itemCount: songs.length,
       itemBuilder: (context, index) {
         final song = songs[index];
@@ -166,11 +172,12 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
           position: index,
           isPlaying: index == currentIndex,
           isDesktop: isDesktop,
-          onTap: () =>
-              ref.read(playbackProvider.notifier).skipTo(index, autoPlay: true),
+          onTap: () => ref.read(barControlsProvider).skipTo(index),
           onLikePressed: () => _toggleFavourite(song),
-          onRemove: () =>
-              ref.read(playbackProvider.notifier).removeFromQueue(index),
+          onRemove: remote
+              ? null
+              : () =>
+                    ref.read(playbackProvider.notifier).removeFromQueue(index),
         );
       },
     );
@@ -195,7 +202,7 @@ class _QueueRow extends ConsumerStatefulWidget {
   final bool isDesktop;
   final VoidCallback onTap;
   final VoidCallback onLikePressed;
-  final Future<void> Function() onRemove;
+  final Future<void> Function()? onRemove;
 
   @override
   ConsumerState<_QueueRow> createState() => _QueueRowState();
@@ -220,7 +227,9 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
         position: details.globalPosition,
         actions: _menuActions(context),
       ),
-      child: widget.isDesktop
+      child: widget.onRemove == null
+          ? row
+          : widget.isDesktop
           ? ReorderableDragStartListener(
               index: widget.position,
               child: row,
@@ -233,12 +242,13 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
   }
 
   List<ContextMenuAction> _menuActions(BuildContext context) => [
-    ContextMenuAction(
-      entry: ContextMenuEntry.removeFromQueue,
-      icon: const Icon(Icons.remove_circle_outline),
-      label: const Text('Remove from queue'),
-      run: widget.onRemove,
-    ),
+    if (widget.onRemove case final onRemove?)
+      ContextMenuAction(
+        entry: ContextMenuEntry.removeFromQueue,
+        icon: const Icon(Icons.remove_circle_outline),
+        label: const Text('Remove from queue'),
+        run: onRemove,
+      ),
     ...contextMenuActions(
       context,
       ref,

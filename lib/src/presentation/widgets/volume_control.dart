@@ -4,7 +4,9 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
+import 'package:optional_features/jellybox_cloud.dart';
 
 const _buttonSize = 44.0;
 const _sliderLength = 150.0;
@@ -12,6 +14,8 @@ const _sliderPadding = 14.0;
 const _hideDelay = Duration(milliseconds: 150);
 const _wheelSettleDelay = Duration(milliseconds: 100);
 const _wheelLevelPerPixel = 0.0004;
+const _remoteSendInterval = Duration(milliseconds: 150);
+const _remoteHold = Duration(seconds: 2);
 
 class VolumeControl extends ConsumerStatefulWidget {
   const VolumeControl({this.size = _buttonSize, this.color, super.key});
@@ -28,7 +32,72 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   final _link = LayerLink();
   Timer? _hideTimer;
   Timer? _wheelTimer;
+  Timer? _remoteSendTimer;
+  Timer? _remoteHoldTimer;
   bool _expanded = false;
+  double? _remoteLevel;
+  double? _remotePending;
+  double _lastRemoteAudible = 0.5;
+
+  bool get _remote => ref.read(playingElsewhereProvider);
+
+  double get _level => _remote
+      ? _remoteLevel ?? ref.read(remoteSessionProvider)?.doc.volume ?? 1
+      : ref.read(volumeProvider).level;
+
+  VolumeState _watchVolume() {
+    if (!ref.watch(playingElsewhereProvider)) return ref.watch(volumeProvider);
+    final reported = ref.watch(
+      remoteSessionProvider.select((remote) => remote?.doc.volume ?? 1),
+    );
+    return VolumeState(level: _remoteLevel ?? reported);
+  }
+
+  void _setLevel(double value, {bool settle = true}) {
+    if (!_remote) {
+      unawaited(
+        ref.read(volumeProvider.notifier).setLevel(value, persist: settle),
+      );
+      return;
+    }
+    final level = value.clamp(0.0, 1.0);
+    if (level > 0) _lastRemoteAudible = level;
+    setState(() => _remoteLevel = level);
+    _remotePending = level;
+    if (settle) {
+      _remoteSendTimer?.cancel();
+      _remoteSendTimer = null;
+      _flushRemote();
+    } else {
+      _remoteSendTimer ??= Timer(_remoteSendInterval, () {
+        _remoteSendTimer = null;
+        _flushRemote();
+      });
+    }
+    _remoteHoldTimer?.cancel();
+    _remoteHoldTimer = Timer(_remoteHold, () {
+      if (mounted) setState(() => _remoteLevel = null);
+    });
+  }
+
+  void _flushRemote() {
+    final level = _remotePending;
+    if (level == null || !mounted) return;
+    _remotePending = null;
+    unawaited(
+      ref
+          .read(cloudProvider.notifier)
+          .sendCommand(PlayerCommand.volume, value: level),
+    );
+  }
+
+  void _toggleMute() {
+    if (!_remote) {
+      unawaited(ref.read(volumeProvider.notifier).toggleMute());
+      return;
+    }
+    _setLevel(_level > 0 ? 0 : _lastRemoteAudible);
+  }
 
   void _show() {
     _hideTimer?.cancel();
@@ -50,13 +119,10 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     if (event is! PointerScrollEvent) return;
     final delta = -event.scrollDelta.dy * _wheelLevelPerPixel;
     if (delta == 0) return;
-    final notifier = ref.read(volumeProvider.notifier);
-    final level = (ref.read(volumeProvider).level + delta).clamp(0.0, 1.0);
-    unawaited(notifier.setLevel(level, persist: false));
+    _setLevel(_level + delta, settle: false);
     _wheelTimer?.cancel();
     _wheelTimer = Timer(_wheelSettleDelay, () {
-      if (!mounted) return;
-      unawaited(notifier.setLevel(ref.read(volumeProvider).level));
+      if (mounted) _setLevel(_level);
     });
   }
 
@@ -71,6 +137,8 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   void dispose() {
     _hideTimer?.cancel();
     _wheelTimer?.cancel();
+    _remoteSendTimer?.cancel();
+    _remoteHoldTimer?.cancel();
     super.dispose();
   }
 
@@ -79,7 +147,7 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final volume = ref.watch(volumeProvider);
+    final volume = _watchVolume();
 
     return OverlayPortal(
       controller: _portalController,
@@ -151,15 +219,14 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
       ),
       child: Slider(
         value: volume.effectiveLevel,
-        onChanged: (value) =>
-            ref.read(volumeProvider.notifier).setLevel(value, persist: false),
-        onChangeEnd: ref.read(volumeProvider.notifier).setLevel,
+        onChanged: (value) => _setLevel(value, settle: false),
+        onChangeEnd: _setLevel,
       ),
     ),
   );
 
   Widget _muteButton(ThemeData theme, VolumeState volume) => IconButton(
-    onPressed: ref.read(volumeProvider.notifier).toggleMute,
+    onPressed: _toggleMute,
     padding: EdgeInsets.zero,
     constraints: BoxConstraints.tightFor(
       width: widget.size,

@@ -11,12 +11,13 @@ import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
+import 'package:jplayer/src/presentation/widgets/cloud_devices_sheet.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
@@ -363,9 +364,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   @override
   Widget build(BuildContext context) {
-    final playBackProvider = ref.watch(playbackProvider);
-
-    final isPlaying = playBackProvider.status == PlaybackStatus.playing;
+    final isPlaying = ref.watch(barPlayingProvider);
     if (_isPlaying.value != isPlaying) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _isPlaying.value = isPlaying;
@@ -373,10 +372,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     }
     return Consumer(
       builder: (context, ref, _) {
-        final playingElsewhere =
-            ref.watch(cloudProvider).remoteRenderer != null;
-        final isEmpty = !ref.watch(hasQueueProvider) || playingElsewhere;
-        final currentSong = ref.watch(nowPlayingProvider);
+        final playingElsewhere = ref.watch(playingElsewhereProvider);
+        final isEmpty = !ref.watch(barHasQueueProvider);
+        final currentSong = ref.watch(barMediaItemProvider);
         final image = ref
             .read(imageServiceProvider)
             .artworkImage(currentSong?.artUri);
@@ -401,7 +399,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                           ?.withOpacity(0.75),
                       padding: EdgeInsets.only(bottom: _viewPadding.bottom),
                       child: SimpleListTile(
-                        onTap: !_isDesktop ? _onExpand : null,
+                        onTap: _isDesktop
+                            ? null
+                            : playingElsewhere
+                            ? () => CloudDevicesSheet.show(context)
+                            : _onExpand,
                         padding: const EdgeInsets.only(right: 8),
                         leading: AspectRatio(
                           aspectRatio: 1,
@@ -489,7 +491,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             if (_isDesktop) const RemainingDuration(),
-                            if (_isDesktop) const RandomQueueButton(),
+                            if (_isDesktop) _randomQueueButton(),
                             _prevTrackButton(),
                             SizedBox.square(
                               dimension: 45,
@@ -497,13 +499,17 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             ),
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
-                            if (_isDesktop) _lyricsButton(),
+                            if (_isDesktop && !playingElsewhere)
+                              _lyricsButton(),
                             if (_isDesktop) const VolumeControl(size: 44),
-                            if (_isDesktop && NativeRoutePicker.isSupported)
+                            if (_isDesktop &&
+                                !playingElsewhere &&
+                                NativeRoutePicker.isSupported)
                               _outputRouteButton(size: 44),
                             if (_isDesktop) _playbackTargetButton(size: 44),
                             if (_isDesktop) _queueSidebarButton(),
-                            if (!_isMobile) _studioModeButton(),
+                            if (!_isMobile && !playingElsewhere)
+                              _studioModeButton(),
                           ],
                         ),
                         leadingToTitle: 15,
@@ -521,7 +527,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                     left: -25,
                     top: -22,
                     right: -25,
-                    child: PositionSlider(),
+                    child: PositionSlider.bar(),
                   ),
                 ),
               ),
@@ -561,11 +567,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     icon: const Icon(Icons.more_vert),
   );
 
-  LibraryItem? get _currentQueueSong {
-    final playback = ref.read(playbackProvider);
-    final index = playback.currentMediaIndex;
-    return index != null ? playback.songs.elementAtOrNull(index) : null;
-  }
+  LibraryItem? get _currentQueueSong => ref.read(barSongProvider);
 
   Future<void> _onLikeCurrent(LibraryItem song) async {
     final isFavorite = song.userData.isFavorite;
@@ -622,22 +624,20 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   Widget _playPauseButton() => PlayPauseButton(
-    onPressed: () => _isPlaying.value
-        ? ref.read(playbackProvider.notifier).pause()
-        : ref.read(playbackProvider.notifier).resume(),
+    onPressed: ref.read(barControlsProvider).togglePlay,
     background: _theme.colorScheme.onPrimary,
     foreground: _theme.scaffoldBackgroundColor,
     stateNotifier: _isPlaying,
   );
 
   Widget _prevTrackButton() => IconButton(
-    onPressed: ref.read(playbackProvider.notifier).prev,
+    onPressed: ref.read(barControlsProvider).previous,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_backward),
   );
 
   Widget _nextTrackButton() => IconButton(
-    onPressed: ref.read(playbackProvider.notifier).next,
+    onPressed: ref.read(barControlsProvider).next,
     color: _theme.colorScheme.onPrimary,
     icon: const Icon(Entypo.fast_forward),
   );
@@ -682,12 +682,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   Widget _randomQueueButton() => Consumer(
     builder: (context, ref, child) {
-      final enabled = ref.watch(
-        playbackProvider.select((state) => state.shuffleEnabled),
-      );
+      final enabled = ref.watch(barShuffleProvider);
       return IconButton(
         onPressed: () =>
-            ref.read(playbackProvider.notifier).setShuffle(enabled: !enabled),
+            ref.read(barControlsProvider).setShuffle(enabled: !enabled),
         icon: Icon(
           JPlayer.mix,
           color: _theme.colorScheme.onPrimary,
@@ -701,15 +699,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     },
   );
 
-  Widget _repeatTrackButton() => StreamBuilder<LoopMode>(
-    stream: ref.read(playerProvider).loopModeStream,
-    builder: (context, snapshot) {
+  Widget _repeatTrackButton() => Consumer(
+    builder: (context, ref, _) {
+      final mode = ref.watch(barRepeatProvider);
       return IconButton(
         onPressed: () => ref
-            .read(playerProvider)
-            .setLoopMode(
-              snapshot.data == LoopMode.all ? LoopMode.off : LoopMode.all,
-            ),
+            .read(barControlsProvider)
+            .setRepeat(mode == LoopMode.all ? LoopMode.off : LoopMode.all),
         icon: Icon(
           JPlayer.repeat,
           color: _theme.colorScheme.onPrimary,
@@ -718,7 +714,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           JPlayer.repeat,
           color: _theme.colorScheme.primary,
         ),
-        isSelected: snapshot.data == LoopMode.all,
+        isSelected: mode == LoopMode.all,
       );
     },
   );

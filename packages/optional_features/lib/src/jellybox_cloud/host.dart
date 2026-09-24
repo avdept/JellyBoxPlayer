@@ -9,6 +9,8 @@ class CloudPlayback {
     required this.playing,
     this.albumId,
     this.shuffle = false,
+    this.repeat = 'off',
+    this.volume = 1,
   });
 
   final List<String> itemIds;
@@ -17,12 +19,13 @@ class CloudPlayback {
   final Duration position;
   final bool playing;
   final bool shuffle;
+  final String repeat;
+  final double volume;
 
   bool get isEmpty => itemIds.isEmpty;
 }
 
 abstract class CloudHost<S> {
-
   String get deviceId;
 
   String get deviceName;
@@ -54,7 +57,21 @@ abstract class CloudHost<S> {
 
   Future<void> pause();
 
+  Future<void> resume();
+
+  Future<void> skipNext();
+
+  Future<void> skipPrevious();
+
   Future<void> seek(Duration position);
+
+  Future<void> setShuffle({required bool enabled});
+
+  Future<void> setRepeat(String mode);
+
+  Future<void> setVolume(double level);
+
+  Future<void> skipTo(int index);
 
   bool get rendersLocally;
 

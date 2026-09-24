@@ -80,7 +80,11 @@ class JellyboxCloud<S> {
 
   void forgetAccount() {}
 
+  Future<void> networkChanged() async {}
+
   Future<void> handoffTo(String deviceId) async {}
+
+  Future<void> sendCommand(PlayerCommand command, {Object? value}) async {}
 
   Future<void> claimHere() async {}
 
