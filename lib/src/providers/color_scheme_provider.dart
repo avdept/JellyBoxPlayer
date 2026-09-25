@@ -26,8 +26,12 @@ final AutoDisposeFutureProvider<ColorScheme?> artworkSchemeProvider =
     FutureProvider.autoDispose<ColorScheme?>((ref) async {
       final artUri = ref.watch(currentArtUriProvider);
       if (artUri == null) return null;
-      return ColorScheme.fromImageProvider(
-        provider: ref.read(imageServiceProvider).artworkImage(artUri),
-        brightness: Brightness.dark,
-      );
+      try {
+        return await ColorScheme.fromImageProvider(
+          provider: ref.read(imageServiceProvider).artworkImage(artUri),
+          brightness: Brightness.dark,
+        );
+      } on Object {
+        return null;
+      }
     });

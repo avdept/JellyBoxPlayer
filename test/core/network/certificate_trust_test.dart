@@ -42,11 +42,17 @@ void main() {
     expect(trust.rejectedFor('jelly.local'), isNull);
   });
 
-  test('rejects a different certificate on a trusted host', () async {
+  test('keeps trusting a host after its certificate changes', () async {
     await trust.trust(certificate());
 
-    expect(trust.allowsCertificate(certificate(fingerprint: 'bb22')), isFalse);
-    expect(trust.rejectedFor('jelly.local')?.fingerprint, 'bb22');
+    expect(trust.allowsCertificate(certificate(fingerprint: 'bb22')), isTrue);
+    expect(trust.rejectedFor('jelly.local'), isNull);
+  });
+
+  test('host matching ignores case', () async {
+    await trust.trust(certificate(host: 'Jelly.Local'));
+
+    expect(trust.allowsCertificate(certificate()), isTrue);
   });
 
   test('rejects a trusted certificate served on another port', () async {

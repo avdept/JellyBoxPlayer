@@ -44,7 +44,8 @@ class CertificateTrustDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Only continue if this fingerprint matches your server.',
+              'JellyBox will trust ${certificate.host} from now on, even if '
+              'its certificate changes. Only continue if this is your server.',
               style: theme.textTheme.bodySmall,
             ),
           ],

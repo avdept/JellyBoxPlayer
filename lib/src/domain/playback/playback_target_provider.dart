@@ -1,10 +1,17 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/playback/local_playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 
 final localPlaybackTargetProvider = Provider<PlaybackTarget>((ref) {
-  final target = LocalPlaybackTarget(ref.watch(playerProvider));
+  final target = LocalPlaybackTarget(
+    ref.watch(playerProvider),
+    idleStopAfter: Platform.isAndroid
+        ? LocalPlaybackTarget.androidIdleStop
+        : null,
+  );
   ref.onDispose(target.dispose);
   return target;
 });

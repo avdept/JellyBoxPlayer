@@ -16,6 +16,7 @@ import 'package:jplayer/src/data/backend/server_auth_headers.dart';
 import 'package:jplayer/src/data/backend/server_session.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -299,6 +300,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
         ref.read(sharedPreferencesProvider).requireValue.clear(),
         _storage.deleteAll(),
         ref.read(certificateTrustProvider).clear(),
+        ArtworkCache.instance.emptyCache(),
         _signOutQuietly(),
       ]);
     } finally {

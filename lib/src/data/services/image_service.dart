@@ -2,6 +2,7 @@ import 'dart:io' show File;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -9,10 +10,14 @@ import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
 class ImageService {
-  ImageService({required MediaServerClient Function() client})
-    : _client = client;
+  ImageService({
+    required MediaServerClient Function() client,
+    BaseCacheManager Function()? cacheManager,
+  }) : _client = client,
+       _cacheManager = cacheManager;
 
   final MediaServerClient Function() _client;
+  final BaseCacheManager Function()? _cacheManager;
 
   Uri? itemUri(
     LibraryItem item, {
@@ -66,6 +71,9 @@ class ImageService {
   ImageProvider? _imageOf(Uri? uri) {
     if (uri == null) return null;
     if (uri.isScheme('file')) return FileImage(File.fromUri(uri));
-    return CachedNetworkImageProvider(uri.toString());
+    return CachedNetworkImageProvider(
+      uri.toString(),
+      cacheManager: _cacheManager?.call(),
+    );
   }
 }

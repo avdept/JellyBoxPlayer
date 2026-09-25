@@ -859,12 +859,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       completion(image)
       return
     }
-    URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-      guard let data, let image = UIImage(data: data) else { return }
-      DispatchQueue.main.async {
-        self?.artworkCache[urlString] = image
-        completion(image)
+    CarPlayBridge.shared.artworkFile(for: urlString) { [weak self] path in
+      guard let path else { return }
+      DispatchQueue.global(qos: .userInitiated).async {
+        guard let image = UIImage(contentsOfFile: path) else { return }
+        DispatchQueue.main.async {
+          self?.artworkCache[urlString] = image
+          completion(image)
+        }
       }
-    }.resume()
+    }
   }
 }

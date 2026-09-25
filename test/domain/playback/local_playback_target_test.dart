@@ -105,6 +105,55 @@ void main() {
     });
   });
 
+  group('idle stop', () {
+    const after = Duration(milliseconds: 30);
+    const longer = Duration(milliseconds: 80);
+
+    late LocalPlaybackTarget idle;
+
+    setUp(() => idle = LocalPlaybackTarget(player, idleStopAfter: after));
+    tearDown(() => idle.dispose());
+
+    test('- stops the player after staying paused', () async {
+      reportPlayer(playing: false, processingState: ProcessingState.ready);
+      await Future<void>.delayed(longer);
+
+      verify(player.stop).called(1);
+    });
+
+    test('- keeps a player that resumed before the timeout', () async {
+      reportPlayer(playing: false, processingState: ProcessingState.ready);
+      reportPlayer(playing: true, processingState: ProcessingState.ready);
+      await Future<void>.delayed(longer);
+
+      verifyNever(player.stop);
+    });
+
+    test(
+      '- ignores a player with nothing loaded or a finished queue',
+      () async {
+        reportPlayer(playing: false, processingState: ProcessingState.idle);
+        reportPlayer(
+          playing: false,
+          processingState: ProcessingState.completed,
+        );
+        await Future<void>.delayed(longer);
+
+        verifyNever(player.stop);
+      },
+    );
+  });
+
+  test(
+    '- a target without an idle timeout never stops a paused player',
+    () async {
+      reportPlayer(playing: false, processingState: ProcessingState.ready);
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      verifyNever(player.stop);
+    },
+  );
+
   group('state mapping', () {
     test('- reports playing whatever the processing state says', () async {
       final states = target.stateStream.take(1).toList();
