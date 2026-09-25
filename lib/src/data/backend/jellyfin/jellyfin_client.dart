@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:jplayer/src/core/audio/audio_container_mime.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -242,6 +243,25 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getItemsByIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+
+    final response = await _api.getItemsByIds(
+      userId: userId,
+      ids: ids.join(','),
+    );
+    final items = response.data.items.map(
+      (item) => item.toJellyfinLibraryItem(),
+    );
+    final byId = {for (final item in items) item.id: item};
+
+    return [
+      for (final id in ids)
+        if (byId[id] case final item?) item,
+    ];
+  }
+
+  @override
   Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async {
     final response = await _api.getItem(itemId: itemId);
     return response.data.toJellyfinLibraryItem();
@@ -362,6 +382,8 @@ class JellyfinClient implements MediaServerClient {
     LibraryItem song, {
     required String playSessionId,
     required StreamTargetProfile target,
+    bool forceTranscode = false,
+    Duration? startPosition,
   }) async {
     final audioSource = song.audioSources.firstOrNull;
 
@@ -371,7 +393,11 @@ class JellyfinClient implements MediaServerClient {
       sourceCodec: audioSource?.codec,
     );
 
-    final useHls = profile.useHls;
+    final useHls = target.supportsHls && (forceTranscode || profile.useHls);
+    final transcodes = forceTranscode || profile.requiresTranscode;
+    final outputContainer = transcodes
+        ? profile.transcodingContainer
+        : profile.outputContainer;
 
     final uri = _resolve(
       useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
@@ -385,10 +411,12 @@ class JellyfinClient implements MediaServerClient {
         if (useHls) ...{
           'SegmentContainer': profile.hlsSegmentContainer,
           'TranscodeReasons': 'AudioCodecNotSupported',
+          if (startPosition != null)
+            'StartTimeTicks': '${startPosition.inMicroseconds * 10}',
         } else ...{
           'TranscodingProtocol': 'http',
           'TranscodingContainer': profile.transcodingContainer,
-          'Container': profile.directPlayContainers,
+          if (!forceTranscode) 'Container': profile.directPlayContainers,
         },
       },
     );
@@ -396,9 +424,11 @@ class JellyfinClient implements MediaServerClient {
     return StreamSource(
       uri: uri,
       isHls: useHls,
-      outputContainer: profile.outputContainer,
-      mimeType: profile.outputMimeType,
-      requiresTranscode: profile.requiresTranscode,
+      outputContainer: outputContainer,
+      mimeType: useHls
+          ? mimeTypeForContainer('m3u8')
+          : mimeTypeForContainer(outputContainer),
+      requiresTranscode: transcodes,
     );
   }
 

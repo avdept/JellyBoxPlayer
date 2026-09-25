@@ -2,10 +2,65 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+enum OutputRouteKind { builtIn, airPlay, bluetooth, wired, car, other }
+
+@immutable
+class OutputRoute {
+  const OutputRoute({required this.kind, required this.name});
+
+  final OutputRouteKind kind;
+  final String name;
+
+  bool get isExternal => kind != OutputRouteKind.builtIn;
+
+  @override
+  bool operator ==(Object other) =>
+      other is OutputRoute && other.kind == kind && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(kind, name);
+}
+
 class NativeRoutePicker {
   NativeRoutePicker._();
 
   static const String viewType = 'native_route_picker/view';
+
+  static const _channel = MethodChannel('native_route_picker');
+  static const _outputVolume = EventChannel('native_route_picker/output_volume');
+
+  static const _outputRoute = EventChannel('native_route_picker/output_route');
+
+  static Stream<OutputRoute> get outputRoute => _outputRoute
+      .receiveBroadcastStream()
+      .map((value) {
+        final route = (value as Map).cast<String, String>();
+        return OutputRoute(
+          kind: OutputRouteKind.values.asNameMap()[route['kind']] ??
+              OutputRouteKind.other,
+          name: route['name'] ?? '',
+        );
+      })
+      .distinct();
+
+  static Stream<double> get outputVolume => _outputVolume
+      .receiveBroadcastStream()
+      .map((value) => (value as num).toDouble());
+
+  static Future<bool> showOutputSwitcher({Offset? anchor}) async {
+    if (!isSupported) return false;
+    try {
+      final shown = await _channel.invokeMethod<bool>('showOutputSwitcher', {
+        if (anchor != null) 'x': anchor.dx,
+        if (anchor != null) 'y': anchor.dy,
+      });
+      return shown ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
 
   /// Whether an in-app native picker is available on the current platform.
   ///

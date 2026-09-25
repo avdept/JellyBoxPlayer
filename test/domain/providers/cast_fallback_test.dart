@@ -6,8 +6,10 @@ import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeTarget implements PlaybackTarget {
   _FakeTarget({required this.id, required this.name, required this.kind});
@@ -22,6 +24,7 @@ class _FakeTarget implements PlaybackTarget {
   final _controller = StreamController<TargetPlaybackState>.broadcast();
   var stopped = false;
   var disposed = false;
+  final volumes = <double>[];
   TargetPlaybackState _state = TargetPlaybackState.idle;
 
   void fail() {
@@ -40,6 +43,9 @@ class _FakeTarget implements PlaybackTarget {
 
   @override
   Future<void> stop() async => stopped = true;
+
+  @override
+  Future<void> setVolume(double level) async => volumes.add(level);
 
   @override
   Future<void> dispose() async {
@@ -86,6 +92,54 @@ void main() {
     container.read(playbackTargetProvider.notifier).select(target);
     await Future<void>.delayed(Duration.zero);
   }
+
+  test('- starts a speaker it has never seen at a quiet level', () async {
+    await container.read(playbackProvider.notifier).switchTarget(speaker);
+
+    expect(speaker.volumes, [0.1]);
+  });
+
+  test('- starts a known speaker at the level it was left at', () async {
+    SharedPreferences.setMockInitialValues({
+      'app_settings': '{"renderer_volumes":{"uuid:kef":0.35}}',
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final remembering = ProviderContainer(
+      overrides: [
+        localPlaybackTargetProvider.overrideWithValue(local),
+        appSettingsProvider.overrideWith((_) => AppSettingsNotifier(prefs)),
+      ],
+    );
+    addTearDown(remembering.dispose);
+
+    await remembering.read(playbackProvider.notifier).switchTarget(speaker);
+
+    expect(speaker.volumes, [0.35]);
+  });
+
+  test('- finishes a switch only once the old output has stopped', () async {
+    await container.read(playbackProvider.notifier).switchTarget(speaker);
+
+    expect(local.stopped, isTrue);
+    expect(container.read(playbackProvider.notifier).target.id, 'uuid:kef');
+    expect(container.read(playbackTargetProvider).id, 'uuid:kef');
+  });
+
+  test('- runs two quick switches one after the other', () async {
+    final second = _FakeTarget(
+      id: 'uuid:wiim',
+      name: 'WiiM',
+      kind: PlaybackTargetKind.upnp,
+    );
+    final playback = container.read(playbackProvider.notifier);
+
+    unawaited(playback.switchTarget(speaker));
+    await playback.switchTarget(second);
+
+    expect(speaker.stopped, isTrue);
+    expect(speaker.disposed, isTrue);
+    expect(playback.target.id, 'uuid:wiim');
+  });
 
   test('- hands playback back to this device when a cast fails', () async {
     await castTo(speaker);

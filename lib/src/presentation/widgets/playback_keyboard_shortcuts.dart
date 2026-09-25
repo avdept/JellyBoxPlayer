@@ -4,7 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 
 /// Handles app-wide playback shortcuts on desktop.
 ///
@@ -38,7 +38,7 @@ class PlaybackKeyboardShortcuts extends ConsumerWidget {
             _isTextInputFocused) {
           return KeyEventResult.ignored;
         }
-        unawaited(ref.read(playbackProvider.notifier).playPause());
+        unawaited(ref.read(barControlsProvider).togglePlay());
         return KeyEventResult.handled;
       },
       child: child,

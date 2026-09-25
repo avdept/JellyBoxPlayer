@@ -427,6 +427,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
+    description:
+      name: flutter_plugin_android_lifecycle
+      sha256: "3854fe5e3bff0b113c658f260b90c95dea17c92db0f2addeac2e343dd9969785"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.35"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -536,6 +544,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.6"
+  flutter_volume_controller:
+    dependency: "direct main"
+    description:
+      name: flutter_volume_controller
+      sha256: f9ba12aa17880c1ee3e1668f14eefbc6704e2fed90ed0b2ca97b7dee71133240
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -570,13 +586,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  genre_playlists:
-    dependency: "direct main"
-    description:
-      path: "packages/genre_playlists"
-      relative: true
-    source: path
-    version: "0.1.0"
   glob:
     dependency: transitive
     description:
@@ -979,6 +988,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  optional_features:
+    dependency: "direct main"
+    description:
+      path: "packages/optional_features"
+      relative: true
+    source: path
+    version: "0.1.0"
   package_config:
     dependency: transitive
     description:
@@ -1624,13 +1640,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.7.1"
-  upnp_quirks:
-    dependency: "direct main"
-    description:
-      path: "packages/upnp_quirks"
-      relative: true
-    source: path
-    version: "0.1.0"
   upower:
     dependency: transitive
     description:
@@ -1824,7 +1833,7 @@ packages:
     source: hosted
     version: "1.0.1"
   web_socket_channel:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web_socket_channel
       sha256: d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8

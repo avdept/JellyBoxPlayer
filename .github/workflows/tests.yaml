@@ -10,26 +10,19 @@ jobs:
         with:
           channel: stable
 
-      - name: Check the tree builds without the private packages
+      - name: Check the tree builds without the private package
         run: ./tool/check_public_pubspec.sh
 
-      - name: Private packages
-        uses: ./.github/actions/private-quirks
+      - name: Private package
+        uses: ./.github/actions/optional-features
         with:
-          deploy-key: ${{ secrets.UPNP_QUIRKS_DEPLOY_KEY }}
-          genre-playlists-deploy-key: ${{ secrets.GENRE_PLAYLISTS_DEPLOY_KEY }}
+          deploy-key: ${{ secrets.OPTIONAL_FEATURES_DEPLOY_KEY }}
 
-      - name: App tests against the real packages
+      - name: App tests against the real package
         run: flutter test
 
-      - name: upnp_quirks package tests
-        working-directory: packages/upnp_quirks
-        run: |
-          dart pub get
-          dart test
-
-      - name: genre_playlists package tests
-        working-directory: packages/genre_playlists
+      - name: optional_features package tests
+        working-directory: packages/optional_features
         run: |
           dart pub get
           dart test

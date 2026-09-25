@@ -8,7 +8,7 @@ import 'package:jplayer/src/core/upnp/rendering_control.dart';
 import 'package:jplayer/src/core/upnp/ssdp_discovery.dart';
 import 'package:jplayer/src/core/upnp/upnp_device.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
-import 'package:upnp_quirks/upnp_quirks.dart';
+import 'package:optional_features/upnp_quirks.dart';
 
 class UpnpRenderer {
   const UpnpRenderer({

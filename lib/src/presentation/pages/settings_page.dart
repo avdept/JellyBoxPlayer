@@ -11,6 +11,7 @@ import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -160,6 +161,11 @@ class SettingsPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 4,
                   children: [
+                    if (ref.watch(cloudAvailableProvider)) ...[
+                      _sectionHeader('Jellybox Cloud'),
+                      const JellyboxCloudSettings(),
+                    ],
+                    _sectionHeader('General'),
                     _librariesButton(context),
                     if (kDebugMode) _settingsButton(context),
                     if (kDebugMode) _queueCacheButton(context),

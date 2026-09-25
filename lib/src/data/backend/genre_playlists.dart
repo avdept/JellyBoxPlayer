@@ -1,11 +1,11 @@
 import 'dart:math';
 
-import 'package:genre_playlists/genre_playlists.dart';
+import 'package:optional_features/genre_playlists.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
-export 'package:genre_playlists/genre_playlists.dart'
+export 'package:optional_features/genre_playlists.dart'
     show
         genreDiscoveryId,
         genreDiscoveryIdPrefix,

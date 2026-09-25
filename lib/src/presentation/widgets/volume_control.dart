@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/domain/providers/device_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
 
 const _buttonSize = 44.0;
@@ -23,7 +24,8 @@ class VolumeControl extends ConsumerStatefulWidget {
   ConsumerState<VolumeControl> createState() => _VolumeControlState();
 }
 
-class _VolumeControlState extends ConsumerState<VolumeControl> {
+class _VolumeControlState extends ConsumerState<VolumeControl>
+    with _VolumeLevel {
   final _portalController = OverlayPortalController();
   final _link = LayerLink();
   Timer? _hideTimer;
@@ -50,21 +52,11 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     if (event is! PointerScrollEvent) return;
     final delta = -event.scrollDelta.dy * _wheelLevelPerPixel;
     if (delta == 0) return;
-    final notifier = ref.read(volumeProvider.notifier);
-    final level = (ref.read(volumeProvider).level + delta).clamp(0.0, 1.0);
-    unawaited(notifier.setLevel(level, persist: false));
+    _setLevel(_level + delta, settle: false);
     _wheelTimer?.cancel();
     _wheelTimer = Timer(_wheelSettleDelay, () {
-      if (!mounted) return;
-      unawaited(notifier.setLevel(ref.read(volumeProvider).level));
+      if (mounted) _setLevel(_level);
     });
-  }
-
-  IconData _iconFor(VolumeState volume) {
-    if (volume.isSilent) return Icons.volume_off_rounded;
-    if (volume.effectiveLevel < 0.34) return Icons.volume_mute_rounded;
-    if (volume.effectiveLevel < 0.67) return Icons.volume_down_rounded;
-    return Icons.volume_up_rounded;
   }
 
   @override
@@ -79,7 +71,7 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final volume = ref.watch(volumeProvider);
+    final volume = _watchVolume();
 
     return OverlayPortal(
       controller: _portalController,
@@ -151,15 +143,14 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
       ),
       child: Slider(
         value: volume.effectiveLevel,
-        onChanged: (value) =>
-            ref.read(volumeProvider.notifier).setLevel(value, persist: false),
-        onChangeEnd: ref.read(volumeProvider.notifier).setLevel,
+        onChanged: (value) => _setLevel(value, settle: false),
+        onChangeEnd: _setLevel,
       ),
     ),
   );
 
   Widget _muteButton(ThemeData theme, VolumeState volume) => IconButton(
-    onPressed: ref.read(volumeProvider.notifier).toggleMute,
+    onPressed: _toggleMute,
     padding: EdgeInsets.zero,
     constraints: BoxConstraints.tightFor(
       width: widget.size,
@@ -169,4 +160,75 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     iconSize: widget.size * 0.55,
     icon: Icon(_iconFor(volume)),
   );
+}
+
+mixin _VolumeLevel<T extends ConsumerStatefulWidget> on ConsumerState<T> {
+  DeviceVolumeNotifier get _volume => ref.read(deviceVolumeProvider.notifier);
+
+  double get _level => ref.read(deviceVolumeProvider).level;
+
+  VolumeState _watchVolume() => ref.watch(deviceVolumeProvider);
+
+  void _setLevel(double value, {bool settle = true}) =>
+      unawaited(_volume.setLevel(value, settle: settle));
+
+  void _toggleMute() => unawaited(_volume.toggleMute());
+
+  IconData _iconFor(VolumeState volume) {
+    if (volume.isSilent) return Icons.volume_off_rounded;
+    if (volume.effectiveLevel < 0.34) return Icons.volume_mute_rounded;
+    if (volume.effectiveLevel < 0.67) return Icons.volume_down_rounded;
+    return Icons.volume_up_rounded;
+  }
+}
+
+class DeviceVolumeSlider extends ConsumerStatefulWidget {
+  const DeviceVolumeSlider({this.padding = EdgeInsets.zero, super.key});
+
+  final EdgeInsets padding;
+
+  @override
+  ConsumerState<DeviceVolumeSlider> createState() => _DeviceVolumeSliderState();
+}
+
+class _DeviceVolumeSliderState extends ConsumerState<DeviceVolumeSlider>
+    with _VolumeLevel {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final volume = _watchVolume();
+    final tint = theme.colorScheme.primary;
+
+    return Padding(
+      padding: widget.padding,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _toggleMute,
+            tooltip: volume.isSilent ? 'Unmute' : 'Mute',
+            iconSize: 20,
+            color: theme.colorScheme.onSurface,
+            icon: Icon(_iconFor(volume)),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                activeTrackColor: tint,
+                inactiveTrackColor: tint.withValues(alpha: 0.25),
+                thumbColor: tint,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              ),
+              child: Slider(
+                value: volume.effectiveLevel,
+                onChanged: (value) => _setLevel(value, settle: false),
+                onChangeEnd: _setLevel,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

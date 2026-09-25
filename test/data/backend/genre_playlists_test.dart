@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:genre_playlists/genre_playlists.dart';
+import 'package:optional_features/genre_playlists.dart';
 import 'package:jplayer/src/data/backend/genre_playlists.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';

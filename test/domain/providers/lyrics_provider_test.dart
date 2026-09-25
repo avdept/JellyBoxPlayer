@@ -7,6 +7,7 @@ import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -49,6 +50,7 @@ void main() {
       createProviderContainer(
         overrides: [
           mediaServerClientProvider.overrideWithValue(mockClient),
+          remoteRendererProvider.overrideWithValue(null),
           if (playback != null) playbackProvider.overrideWith((_) => playback),
         ],
       );

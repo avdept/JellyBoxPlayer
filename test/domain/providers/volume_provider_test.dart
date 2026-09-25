@@ -35,13 +35,33 @@ void main() {
   Future<(VolumeNotifier, _FakeTarget, AppSettingsNotifier)> notifierFor(
     _FakeTarget target, {
     Map<String, Object> prefs = const {},
+    bool pinnedToFull = false,
   }) async {
     SharedPreferences.setMockInitialValues(prefs);
     final settings = AppSettingsNotifier(
       await SharedPreferences.getInstance(),
     );
-    return (VolumeNotifier(target, settings), target, settings);
+    return (
+      VolumeNotifier(target, settings, pinnedToFull: pinnedToFull),
+      target,
+      settings,
+    );
   }
+
+  test('- keeps a phone player at full volume whatever was saved', () async {
+    final (notifier, target, settings) = await notifierFor(
+      _FakeTarget(id: 'local', kind: PlaybackTargetKind.local),
+      prefs: {'app_settings': '{"player_volume":0.2}'},
+      pinnedToFull: true,
+    );
+
+    await notifier.setLevel(0.1);
+    await notifier.toggleMute();
+
+    expect(notifier.state.level, 1.0);
+    expect(target.applied, [1.0]);
+    expect(settings.numberOf(AppSetting.playerVolume), 0.2);
+  });
 
   test('- starts a new speaker at 10 percent', () async {
     final (notifier, target, _) = await notifierFor(

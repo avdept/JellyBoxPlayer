@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 
 class PositionSlider extends ConsumerStatefulWidget {
-  const PositionSlider({super.key});
+  const PositionSlider({super.key}) : _followsBar = false;
+
+  const PositionSlider.bar({super.key}) : _followsBar = true;
+
+  final bool _followsBar;
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _PositionSliderState();
@@ -19,6 +24,19 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget._followsBar) {
+      final progress = ref.watch(barProgressProvider);
+      return Offstage(
+        offstage: progress.stopped,
+        child: SeekBar(
+          duration: progress.duration,
+          position: progress.position,
+          bufferedPosition: progress.buffered,
+          onChangeEnd: ref.read(barControlsProvider).seek,
+        ),
+      );
+    }
+
     final playbackState = ref.watch(playbackProvider);
 
     return Offstage(

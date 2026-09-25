@@ -209,6 +209,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                       ),
                     ),
                     const BottomPlayer(),
+                    const PlayingElsewhereStrip(),
                   ],
                 ),
               ),
