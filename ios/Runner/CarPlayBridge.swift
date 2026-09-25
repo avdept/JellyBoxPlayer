@@ -60,6 +60,18 @@ final class CarPlayBridge {
     }
   }
 
+  func artworkFile(for url: String, completion: @escaping (String?) -> Void) {
+    guard let channel else {
+      completion(nil)
+      return
+    }
+    DispatchQueue.main.async {
+      channel.invokeMethod("artwork", arguments: ["url": url]) { (response: Any?) in
+        completion(response as? String)
+      }
+    }
+  }
+
   func play(type: String, id: String) {
     DispatchQueue.main.async {
       self.channel?.invokeMethod("play", arguments: ["type": type, "id": id])

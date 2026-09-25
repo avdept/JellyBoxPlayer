@@ -1,10 +1,12 @@
 import 'dart:io' show Platform;
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/android_auto/auto_media_id.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -58,6 +60,11 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     JustAudioBackground.shuffleModeHandler = handler.setShuffleMode;
     JustAudioBackground.customActionHandler = handler.customAction;
     JustAudioBackground.customControls = handler.customControls;
+    const MethodChannel(coverArtChannel).setMethodCallHandler((call) async {
+      if (call.method != 'artwork') throw MissingPluginException();
+      final url = remoteCovers.urlFor(call.arguments as String? ?? '');
+      return url == null ? null : ArtworkCache.instance.pathFor(url);
+    });
     ref
       ..listen(
         playbackProvider.select((s) => s.shuffleEnabled),
@@ -573,5 +580,8 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     return (song?.id, song?.userData.isFavorite ?? false);
   }
 
-  static Uri? autoArtUri(Uri? uri) => androidCoverArtUri(uri);
+  static final remoteCovers = RemoteCoverArt();
+
+  static Uri? autoArtUri(Uri? uri) =>
+      androidCoverArtUri(uri, remote: remoteCovers);
 }

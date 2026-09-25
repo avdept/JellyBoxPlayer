@@ -184,7 +184,7 @@ void main() {
       );
       server = StreamProxyServer(
         shouldProxy: (uri) =>
-            uri.isScheme('https') && trust.isPinned(uri.host, uri.port),
+            uri.isScheme('https') && trust.isTrusted(uri.host, uri.port),
       );
     });
 

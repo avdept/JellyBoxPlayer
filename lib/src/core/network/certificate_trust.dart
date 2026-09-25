@@ -80,8 +80,7 @@ class CertificateTrust {
       allowsCertificate(ServerCertificate.of(cert, host, port));
 
   bool allowsCertificate(ServerCertificate certificate) {
-    final trusted = _trusted[_keyOf(certificate.host, certificate.port)];
-    if (trusted != null && trusted == certificate.fingerprint) {
+    if (isTrusted(certificate.host, certificate.port)) {
       _rejected.remove(certificate.host.toLowerCase());
       return true;
     }
@@ -91,7 +90,7 @@ class CertificateTrust {
 
   ServerCertificate? rejectedFor(String host) => _rejected[host.toLowerCase()];
 
-  bool isPinned(String host, int port) =>
+  bool isTrusted(String host, int port) =>
       _trusted.containsKey(_keyOf(host, port));
 
   Future<void> trust(ServerCertificate certificate) async {

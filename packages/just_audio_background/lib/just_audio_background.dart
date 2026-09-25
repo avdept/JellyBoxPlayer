@@ -50,6 +50,17 @@ class JustAudioBackground {
   /// Each parameter controls a behaviour in audio_service. Consult
   /// audio_service's `AudioServiceConfig` API documentation for more
   /// information.
+  static const _pendingPlayWindow = Duration(minutes: 1);
+  static DateTime? _pendingPlayAt;
+
+  static void _rememberPlay() => _pendingPlayAt = DateTime.now();
+
+  static bool takePendingPlay() {
+    final at = _pendingPlayAt;
+    _pendingPlayAt = null;
+    return at != null && DateTime.now().difference(at) < _pendingPlayWindow;
+  }
+
   static Future<void> init({
     bool androidResumeOnClick = true,
     String? androidNotificationChannelId,
@@ -124,6 +135,22 @@ class JustAudioBackground {
 
 class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
   _BrowsingSwitchAudioHandler() : super(BaseAudioHandler());
+
+  bool get _awaitingPlayer => !identical(inner, _playerAudioHandler);
+
+  @override
+  Future<void> play() async {
+    if (_awaitingPlayer) return JustAudioBackground._rememberPlay();
+    return super.play();
+  }
+
+  @override
+  Future<void> click([MediaButton button = MediaButton.media]) async {
+    if (_awaitingPlayer && button == MediaButton.media) {
+      return JustAudioBackground._rememberPlay();
+    }
+    return super.click(button);
+  }
 
   final _childrenSubjects = <String, BehaviorSubject<Map<String, dynamic>>>{};
   AudioBrowseDelegate? _browseDelegate;

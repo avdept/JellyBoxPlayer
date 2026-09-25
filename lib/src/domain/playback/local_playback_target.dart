@@ -11,16 +11,24 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
-  LocalPlaybackTarget(this._player) {
+  LocalPlaybackTarget(this._player, {Duration? idleStopAfter})
+    : _idleStopAfter = idleStopAfter {
     _subscriptions = [
       _player.currentIndexStream.listen((_) => _emit()),
       _player.positionStream.listen((_) => _emit()),
       _player.durationStream.listen((_) => _emit()),
-      _player.playerStateStream.listen((_) => _emit()),
+      _player.playerStateStream.listen((playerState) {
+        _scheduleIdleStop(playerState);
+        _emit();
+      }),
     ];
   }
 
+  static const androidIdleStop = Duration(minutes: 15);
+
   final AudioPlayer _player;
+  final Duration? _idleStopAfter;
+  Timer? _idleStop;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
   final _shuffleOrder = QueueShuffleOrder();
 
@@ -188,10 +196,29 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
 
   @override
   Future<void> dispose() async {
+    _idleStop?.cancel();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
     await _controller.close();
+  }
+
+  void _scheduleIdleStop(PlayerState playerState) {
+    final after = _idleStopAfter;
+    if (after == null) return;
+    final paused =
+        !playerState.playing &&
+        playerState.processingState != ProcessingState.idle &&
+        playerState.processingState != ProcessingState.completed;
+    if (!paused) {
+      _idleStop?.cancel();
+      _idleStop = null;
+      return;
+    }
+    _idleStop ??= Timer(after, () {
+      _idleStop = null;
+      if (!_player.playing) unawaited(_player.stop());
+    });
   }
 
   void _emit() {

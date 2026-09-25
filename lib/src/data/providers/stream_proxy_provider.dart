@@ -6,7 +6,7 @@ final streamProxyProvider = Provider<StreamProxyServer>((ref) {
   final trust = ref.watch(certificateTrustProvider);
   final proxy = StreamProxyServer(
     shouldProxy: (uri) =>
-        uri.isScheme('https') && trust.isPinned(uri.host, uri.port),
+        uri.isScheme('https') && trust.isTrusted(uri.host, uri.port),
   );
   ref.onDispose(proxy.close);
   return proxy;

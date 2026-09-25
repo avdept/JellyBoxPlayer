@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
@@ -48,6 +49,9 @@ class CarPlayHandler {
         case 'setSort':
           _content.setSort(args['field'] as String?);
           return null;
+        case 'artwork':
+          final url = args['url'] as String?;
+          return url == null ? null : ArtworkCache.instance.pathFor(url);
         default:
           throw MissingPluginException();
       }

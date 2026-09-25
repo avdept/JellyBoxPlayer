@@ -13,6 +13,12 @@ final playerProvider = Provider<AudioPlayer>((ref) {
       darwinLoadControl: DarwinLoadControl(
         preferredForwardBufferDuration: Duration(minutes: 30),
       ),
+      androidLoadControl: AndroidLoadControl(
+        minBufferDuration: Duration(minutes: 6),
+        maxBufferDuration: Duration(minutes: 10),
+        targetBufferBytes: 96 * 1024 * 1024,
+        backBufferDuration: Duration(minutes: 2),
+      ),
     ),
   );
   // On iOS/Android the media notification is handled by just_audio_background

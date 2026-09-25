@@ -292,7 +292,7 @@ void main() {
     );
   });
 
-  test('- downloaded covers are served through the content provider', () {
+  test('- covers are served through the content provider', () {
     final rewritten = AndroidAutoHandler.autoArtUri(
       Uri.file('/data/user/0/app/app_flutter/music/ab12/cover.jpg'),
     );
@@ -302,6 +302,12 @@ void main() {
       rewritten.toString(),
       'content://${AndroidAutoHandler.coverAuthority}/ab12',
     );
-    expect(AndroidAutoHandler.autoArtUri(server), same(server));
+    final remote = AndroidAutoHandler.autoArtUri(server)!;
+
+    expect(remote.authority, AndroidAutoHandler.coverAuthority);
+    expect(
+      AndroidAutoHandler.remoteCovers.urlFor(remote.pathSegments.last),
+      server.toString(),
+    );
   });
 }

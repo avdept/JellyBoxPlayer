@@ -24,6 +24,7 @@ import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -78,7 +79,7 @@ Future<void> main() async {
     await JustAudioBackground.init(
       androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
       androidNotificationChannelName: 'Audio playback',
-      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: false,
       androidNotificationIcon: 'drawable/ic_stat_music',
       androidBrowsableRootExtras: AndroidAutoHandler.rootExtras,
     );
@@ -100,7 +101,14 @@ Future<void> main() async {
     CertificateTrust.instance,
   );
 
-  final container = ProviderContainer();
+  final container = ProviderContainer(
+    overrides: [
+      if (Platform.isIOS || Platform.isAndroid)
+        pendingMediaPlayProvider.overrideWithValue(
+          JustAudioBackground.takePendingPlay,
+        ),
+    ],
+  );
   Telemetry.watch(container);
   final carContent = CarContent(container);
   if (Platform.isIOS) CarPlayHandler.initialize(container, carContent);

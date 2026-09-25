@@ -17,6 +17,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -1164,6 +1165,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<bool> tryRestore() async {
     final snapshot = await PlaybackStorage().load();
     if (snapshot == null) {
+      _ref.read(pendingMediaPlayProvider)();
       return false;
     }
 
@@ -1180,6 +1182,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       autoPlay: false,
       reshuffle: false,
     );
+    final pendingPress = _ref.read(pendingMediaPlayProvider)();
+    final alreadyPlaying = _targetState.status.isPlaying;
+    if (pendingPress || alreadyPlaying) {
+      await resume();
+    }
     return true;
   }
 
