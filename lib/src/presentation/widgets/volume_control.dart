@@ -4,9 +4,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/domain/providers/device_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
-import 'package:optional_features/jellybox_cloud.dart';
 
 const _buttonSize = 44.0;
 const _sliderLength = 150.0;
@@ -14,8 +13,6 @@ const _sliderPadding = 14.0;
 const _hideDelay = Duration(milliseconds: 150);
 const _wheelSettleDelay = Duration(milliseconds: 100);
 const _wheelLevelPerPixel = 0.0004;
-const _remoteSendInterval = Duration(milliseconds: 150);
-const _remoteHold = Duration(seconds: 2);
 
 class VolumeControl extends ConsumerStatefulWidget {
   const VolumeControl({this.size = _buttonSize, this.color, super.key});
@@ -27,77 +24,13 @@ class VolumeControl extends ConsumerStatefulWidget {
   ConsumerState<VolumeControl> createState() => _VolumeControlState();
 }
 
-class _VolumeControlState extends ConsumerState<VolumeControl> {
+class _VolumeControlState extends ConsumerState<VolumeControl>
+    with _VolumeLevel {
   final _portalController = OverlayPortalController();
   final _link = LayerLink();
   Timer? _hideTimer;
   Timer? _wheelTimer;
-  Timer? _remoteSendTimer;
-  Timer? _remoteHoldTimer;
   bool _expanded = false;
-  double? _remoteLevel;
-  double? _remotePending;
-  double _lastRemoteAudible = 0.5;
-
-  bool get _remote => ref.read(playingElsewhereProvider);
-
-  double get _level => _remote
-      ? _remoteLevel ?? ref.read(remoteSessionProvider)?.doc.volume ?? 1
-      : ref.read(volumeProvider).level;
-
-  VolumeState _watchVolume() {
-    if (!ref.watch(playingElsewhereProvider)) return ref.watch(volumeProvider);
-    final reported = ref.watch(
-      remoteSessionProvider.select((remote) => remote?.doc.volume ?? 1),
-    );
-    return VolumeState(level: _remoteLevel ?? reported);
-  }
-
-  void _setLevel(double value, {bool settle = true}) {
-    if (!_remote) {
-      unawaited(
-        ref.read(volumeProvider.notifier).setLevel(value, persist: settle),
-      );
-      return;
-    }
-    final level = value.clamp(0.0, 1.0);
-    if (level > 0) _lastRemoteAudible = level;
-    setState(() => _remoteLevel = level);
-    _remotePending = level;
-    if (settle) {
-      _remoteSendTimer?.cancel();
-      _remoteSendTimer = null;
-      _flushRemote();
-    } else {
-      _remoteSendTimer ??= Timer(_remoteSendInterval, () {
-        _remoteSendTimer = null;
-        _flushRemote();
-      });
-    }
-    _remoteHoldTimer?.cancel();
-    _remoteHoldTimer = Timer(_remoteHold, () {
-      if (mounted) setState(() => _remoteLevel = null);
-    });
-  }
-
-  void _flushRemote() {
-    final level = _remotePending;
-    if (level == null || !mounted) return;
-    _remotePending = null;
-    unawaited(
-      ref
-          .read(cloudProvider.notifier)
-          .sendCommand(PlayerCommand.volume, value: level),
-    );
-  }
-
-  void _toggleMute() {
-    if (!_remote) {
-      unawaited(ref.read(volumeProvider.notifier).toggleMute());
-      return;
-    }
-    _setLevel(_level > 0 ? 0 : _lastRemoteAudible);
-  }
 
   void _show() {
     _hideTimer?.cancel();
@@ -126,19 +59,10 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     });
   }
 
-  IconData _iconFor(VolumeState volume) {
-    if (volume.isSilent) return Icons.volume_off_rounded;
-    if (volume.effectiveLevel < 0.34) return Icons.volume_mute_rounded;
-    if (volume.effectiveLevel < 0.67) return Icons.volume_down_rounded;
-    return Icons.volume_up_rounded;
-  }
-
   @override
   void dispose() {
     _hideTimer?.cancel();
     _wheelTimer?.cancel();
-    _remoteSendTimer?.cancel();
-    _remoteHoldTimer?.cancel();
     super.dispose();
   }
 
@@ -236,4 +160,75 @@ class _VolumeControlState extends ConsumerState<VolumeControl> {
     iconSize: widget.size * 0.55,
     icon: Icon(_iconFor(volume)),
   );
+}
+
+mixin _VolumeLevel<T extends ConsumerStatefulWidget> on ConsumerState<T> {
+  DeviceVolumeNotifier get _volume => ref.read(deviceVolumeProvider.notifier);
+
+  double get _level => ref.read(deviceVolumeProvider).level;
+
+  VolumeState _watchVolume() => ref.watch(deviceVolumeProvider);
+
+  void _setLevel(double value, {bool settle = true}) =>
+      unawaited(_volume.setLevel(value, settle: settle));
+
+  void _toggleMute() => unawaited(_volume.toggleMute());
+
+  IconData _iconFor(VolumeState volume) {
+    if (volume.isSilent) return Icons.volume_off_rounded;
+    if (volume.effectiveLevel < 0.34) return Icons.volume_mute_rounded;
+    if (volume.effectiveLevel < 0.67) return Icons.volume_down_rounded;
+    return Icons.volume_up_rounded;
+  }
+}
+
+class DeviceVolumeSlider extends ConsumerStatefulWidget {
+  const DeviceVolumeSlider({this.padding = EdgeInsets.zero, super.key});
+
+  final EdgeInsets padding;
+
+  @override
+  ConsumerState<DeviceVolumeSlider> createState() => _DeviceVolumeSliderState();
+}
+
+class _DeviceVolumeSliderState extends ConsumerState<DeviceVolumeSlider>
+    with _VolumeLevel {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final volume = _watchVolume();
+    final tint = theme.colorScheme.primary;
+
+    return Padding(
+      padding: widget.padding,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _toggleMute,
+            tooltip: volume.isSilent ? 'Unmute' : 'Mute',
+            iconSize: 20,
+            color: theme.colorScheme.onSurface,
+            icon: Icon(_iconFor(volume)),
+          ),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 4,
+                activeTrackColor: tint,
+                inactiveTrackColor: tint.withValues(alpha: 0.25),
+                thumbColor: tint,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              ),
+              child: Slider(
+                value: volume.effectiveLevel,
+                onChanged: (value) => _setLevel(value, settle: false),
+                onChangeEnd: _setLevel,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

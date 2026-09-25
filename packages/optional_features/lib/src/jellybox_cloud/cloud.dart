@@ -86,7 +86,7 @@ class JellyboxCloud<S> {
 
   Future<void> sendCommand(PlayerCommand command, {Object? value}) async {}
 
-  Future<void> claimHere() async {}
+  Future<bool> claimHere() async => false;
 
   Future<void> dispose() async {}
 }

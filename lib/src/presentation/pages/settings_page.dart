@@ -13,7 +13,6 @@ import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
-import 'package:jplayer/src/presentation/pages/handoff_bench_page.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -170,7 +169,6 @@ class SettingsPage extends ConsumerWidget {
                     _librariesButton(context),
                     if (kDebugMode) _settingsButton(context),
                     if (kDebugMode) _queueCacheButton(context),
-                    if (kDebugMode) _handoffBenchButton(context, ref),
                     _changelogButton(context, device),
                     _sectionHeader('Home Page'),
                     _settingCheckbox(
@@ -559,27 +557,6 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _handoffBenchButton(BuildContext context, WidgetRef ref) =>
-      TextButton.icon(
-        onPressed: () {
-          final album = ref.read(playbackProvider).album;
-          if (album == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Play an album first — the bench hands off its queue.',
-                ),
-              ),
-            );
-            return;
-          }
-          unawaited(Navigator.of(context).push(HandoffBenchPage.route(album)));
-        },
-        style: _buttonStyle,
-        icon: const Icon(Icons.timer_outlined),
-        label: const Text('Handoff bench'),
-      );
 
   Widget _logOutButton(WidgetRef ref) => TextButton.icon(
     onPressed: ref.read(authProvider.notifier).logout,

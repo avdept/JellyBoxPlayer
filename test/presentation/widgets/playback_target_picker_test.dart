@@ -1,19 +1,27 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/upnp_device.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
+import 'package:optional_features/jellybox_cloud.dart';
 import 'package:optional_features/upnp_quirks.dart';
 import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/domain/providers/output_route_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
+import 'package:jplayer/src/presentation/widgets/jellybox_cloud_connect_form.dart';
 import 'package:jplayer/src/presentation/widgets/playback_target_picker.dart';
+import 'package:jplayer/src/presentation/widgets/volume_control.dart';
 import 'package:jplayer/src/providers/diagnostics_provider.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:native_route_picker/native_route_picker.dart';
 
 class _FakeRenderersNotifier extends UpnpRenderersNotifier {
   _FakeRenderersNotifier(List<UpnpRenderer> renderers)
@@ -67,6 +75,11 @@ class _FakeTarget implements PlaybackTarget {
   @override
   final PlaybackTargetKind kind;
 
+  double? volume;
+
+  @override
+  Future<void> setVolume(double level) async => volume = level;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -118,10 +131,16 @@ void main() {
     required List<UpnpRenderer> renderers,
     PlaybackTarget? activeTarget,
     ControlPointHost host = ControlPointHost.sustained,
+    CloudState? cloud,
+    OutputRoute? route,
+    bool cloudAvailable = false,
+    VoidCallback? onDone,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          cloudAvailableProvider.overrideWithValue(cloudAvailable),
+          currentOutputRouteProvider.overrideWith((ref) => Stream.value(route)),
           upnpRenderersProvider.overrideWith(
             (ref) => _FakeRenderersNotifier(renderers),
           ),
@@ -130,14 +149,173 @@ void main() {
               (ref) => PlaybackTargetNotifier(activeTarget),
             ),
           controlPointHostProvider.overrideWithValue(host),
+          if (cloud != null)
+            cloudProvider.overrideWith((ref) => _FakeCloudNotifier(cloud)),
         ],
         child: MaterialApp(
-          home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
+          home: Scaffold(body: PlaybackTargetMenu(onDone: onDone ?? () {})),
         ),
       ),
     );
     await tester.pump();
   }
+
+  const airPods = OutputRoute(
+    kind: OutputRouteKind.bluetooth,
+    name: 'AirPods Pro',
+  );
+
+  testWidgets(
+    '- ticks the AirPlay row, named, when audio goes to a system route',
+    (tester) async {
+      await pumpPicker(tester, renderers: const [], route: airPods);
+      await tester.pump();
+
+      ListTile tileOf(String title) => tester.widget<ListTile>(
+        find.ancestor(of: find.text(title), matching: find.byType(ListTile)),
+      );
+      expect(find.text('AirPods Pro'), findsOneWidget);
+      expect(tileOf('AirPlay & Bluetooth').trailing, isA<Icon>());
+      expect(tileOf('This device').trailing, isNull);
+      expect(find.byType(DeviceVolumeSlider), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    '- keeps this device ticked on its own speaker',
+    (tester) async {
+      await pumpPicker(
+        tester,
+        renderers: const [],
+        route: const OutputRoute(
+          kind: OutputRouteKind.builtIn,
+          name: 'Speaker',
+        ),
+      );
+      await tester.pump();
+
+      ListTile tileOf(String title) => tester.widget<ListTile>(
+        find.ancestor(of: find.text(title), matching: find.byType(ListTile)),
+      );
+      expect(tileOf('This device').trailing, isA<Icon>());
+      expect(tileOf('AirPlay & Bluetooth').trailing, isNull);
+      expect(find.text('Speaker'), findsNothing);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  group('activeDeviceProvider', () {
+    ProviderContainer containerWith({
+      OutputRoute? route,
+      CloudState? cloud,
+    }) {
+      final container = ProviderContainer(
+        overrides: [
+          externalOutputRouteProvider.overrideWithValue(route),
+          playbackTargetProvider.overrideWith(
+            (ref) => PlaybackTargetNotifier(
+              _FakeTarget('local', 'This device', PlaybackTargetKind.local),
+            ),
+          ),
+          cloudProvider.overrideWith(
+            (ref) => _FakeCloudNotifier(cloud ?? const CloudState()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('- names the system route this device plays through', () {
+      final device = containerWith(route: airPods).read(activeDeviceProvider);
+
+      expect(device?.name, 'AirPods Pro');
+      expect(device?.icon, Icons.bluetooth_audio);
+    });
+
+    test('- names nothing on the device\'s own speaker', () {
+      expect(containerWith().read(activeDeviceProvider), isNull);
+    });
+
+    test('- names the other device while one plays, over the route', () {
+      final device = containerWith(
+        route: airPods,
+        cloud: CloudState(
+          devices: const [
+            ConductorDevice(
+              id: 'mac',
+              name: 'MacBook',
+              platform: 'macos',
+              isRenderer: true,
+            ),
+          ],
+          remote: RemoteSession(
+            doc: const SessionDoc(itemIds: ['a']),
+            ageMs: 0,
+            receivedAt: DateTime(2026),
+          ),
+        ),
+      ).read(activeDeviceProvider);
+
+      expect(device?.name, 'MacBook');
+    });
+  });
+
+  group('continuity sign-in row', () {
+    testWidgets('- is offered while signed out', (tester) async {
+      await pumpPicker(
+        tester,
+        renderers: const [],
+        cloudAvailable: true,
+        cloud: const CloudState(),
+      );
+
+      expect(find.text('Continuity not available'), findsOneWidget);
+      expect(find.text('Tap to connect'), findsOneWidget);
+    });
+
+    testWidgets('- is gone once signed in', (tester) async {
+      await pumpPicker(
+        tester,
+        renderers: const [],
+        cloudAvailable: true,
+        cloud: const CloudState(
+          account: ContinuityAccount(
+            serverUrl: 'https://cloud.example',
+            email: 'alex@example.com',
+            userId: 'u',
+            token: 't',
+          ),
+        ),
+      );
+
+      expect(find.text('Continuity not available'), findsNothing);
+    });
+
+    testWidgets('- never shows in a build without continuity', (tester) async {
+      await pumpPicker(tester, renderers: const [], cloud: const CloudState());
+
+      expect(find.text('Continuity not available'), findsNothing);
+    });
+
+    testWidgets('- closes the menu and opens the sign-in form', (tester) async {
+      var closed = false;
+      await pumpPicker(
+        tester,
+        renderers: const [],
+        cloudAvailable: true,
+        cloud: const CloudState(),
+        onDone: () => closed = true,
+      );
+
+      await tester.tap(find.text('Continuity not available'));
+      await tester.pumpAndSettle();
+
+      expect(closed, isTrue);
+      expect(find.byType(JellyboxCloudConnectForm), findsOneWidget);
+    });
+  });
 
   testWidgets('- lists this device and every renderer in one list', (
     tester,
@@ -204,6 +382,164 @@ void main() {
     );
     expect(local.trailing, isNull);
   });
+
+  testWidgets('- ticks the device playing via continuity, not this device', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      renderers: const [],
+      cloud: CloudState(
+        status: ConductorStatus.listening,
+        devices: const [
+          ConductorDevice(
+            id: 'mac',
+            name: 'MacBook',
+            platform: 'macos',
+            isRenderer: true,
+          ),
+        ],
+        remote: RemoteSession(
+          doc: const SessionDoc(itemIds: ['a']),
+          ageMs: 0,
+          receivedAt: DateTime(2026),
+        ),
+      ),
+    );
+
+    final ticked = tester.widget<ListTile>(
+      find.ancestor(of: find.text('MacBook'), matching: find.byType(ListTile)),
+    );
+    expect(ticked.trailing, isA<Icon>());
+
+    final local = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('This device'),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(local.trailing, isNull);
+  });
+
+  testWidgets('- ticks only the device playing, not a leftover speaker', (
+    tester,
+  ) async {
+    final kitchen = rendererNamed('Kitchen', model: 'Sonos One');
+    await pumpPicker(
+      tester,
+      renderers: [kitchen],
+      activeTarget: _FakeTarget(
+        kitchen.id,
+        kitchen.name,
+        PlaybackTargetKind.upnp,
+      ),
+      cloud: CloudState(
+        status: ConductorStatus.listening,
+        devices: const [
+          ConductorDevice(
+            id: 'mac',
+            name: 'MacBook',
+            platform: 'macos',
+            isRenderer: true,
+          ),
+        ],
+        remote: RemoteSession(
+          doc: const SessionDoc(itemIds: ['a']),
+          ageMs: 0,
+          receivedAt: DateTime(2026),
+        ),
+      ),
+    );
+
+    ListTile tileOf(String title) => tester.widget<ListTile>(
+      find.ancestor(of: find.text(title), matching: find.byType(ListTile)),
+    );
+    expect(tileOf('MacBook').trailing, isA<Icon>());
+    expect(tileOf('Kitchen').trailing, isNull);
+    expect(tileOf('This device').trailing, isNull);
+  });
+
+  testWidgets('- the volume slider sets the ticked renderer volume', (
+    tester,
+  ) async {
+    final kitchen = rendererNamed('Kitchen', model: 'Sonos One');
+    final lounge = rendererNamed('Lounge', host: '10.0.0.10');
+    final target = _FakeTarget(
+      kitchen.id,
+      kitchen.name,
+      PlaybackTargetKind.upnp,
+    );
+    await pumpPicker(
+      tester,
+      renderers: [kitchen, lounge],
+      activeTarget: target,
+    );
+
+    expect(find.byType(DeviceVolumeSlider), findsOneWidget);
+
+    await tester.drag(find.byType(Slider), const Offset(-400, 0));
+    await tester.pump();
+    expect(target.volume, 0);
+  });
+
+  testWidgets(
+    '- opens the system output picker from the AirPlay row',
+    (
+      tester,
+    ) async {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('native_route_picker'),
+        (call) async {
+          calls.add(call);
+          return true;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('native_route_picker'),
+          null,
+        ),
+      );
+      var closed = false;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            upnpRenderersProvider.overrideWith(
+              (ref) => _FakeRenderersNotifier(const []),
+            ),
+            controlPointHostProvider.overrideWithValue(
+              ControlPointHost.sustained,
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: PlaybackTargetMenu(onDone: () => closed = true),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('AirPlay & Bluetooth'));
+      await tester.pump();
+
+      expect(closed, isTrue);
+      expect(calls.single.method, 'showOutputSwitcher');
+      expect(calls.single.arguments, containsPair('x', isA<double>()));
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    '- has no AirPlay row on Android',
+    (tester) async {
+      await pumpPicker(tester, renderers: const []);
+
+      expect(find.text('AirPlay & Bluetooth'), findsNothing);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 
   testWidgets('- switches the target when a renderer is tapped', (
     tester,
@@ -542,7 +878,13 @@ void main() {
       expect(textRect.width, lessThanOrEqualTo(pillRect.width));
     });
 
-    testWidgets('- opens the menu above the button', (tester) async {
+    testWidgets('- opens the menu above the button on a desktop', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
       await pumpBody(
         tester,
         Align(
@@ -601,7 +943,7 @@ void main() {
       expect(find.text('Play on'), findsNothing);
     });
 
-    testWidgets('- centres the menu on a phone-width screen', (tester) async {
+    testWidgets('- opens a full-width sheet on a phone', (tester) async {
       tester.view.physicalSize = const Size(375, 812);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -610,29 +952,15 @@ void main() {
         tester,
         Column(
           mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                const Icon(Icons.shuffle),
-                const Icon(Icons.repeat),
-                PlaybackTargetButton(),
-                const Icon(Icons.favorite),
-              ],
-            ),
-          ],
+          children: [PlaybackTargetButton()],
         ),
       );
 
-      final buttonRect = tester.getRect(find.byType(IconButton));
       await tester.tap(find.byType(IconButton));
       await tester.pumpAndSettle();
 
-      final menuRect = tester.getRect(find.byType(PlaybackTargetMenu));
-      expect(menuRect.left, greaterThanOrEqualTo(0));
-      expect(menuRect.right, lessThanOrEqualTo(375));
-      expect(menuRect.center.dx, moreOrLessEquals(375 / 2, epsilon: 1));
-      expect(menuRect.bottom, lessThanOrEqualTo(buttonRect.top));
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(tester.getSize(find.byType(PlaybackTargetMenu)).width, 375);
     });
 
     testWidgets('- tints the icon and badge with the colours it is given', (
@@ -686,4 +1014,10 @@ void main() {
       expect(box.height, lessThanOrEqualTo(48));
     });
   });
+}
+
+class _FakeCloudNotifier extends StateNotifier<CloudState>
+    with Mock
+    implements CloudNotifier {
+  _FakeCloudNotifier(super.state);
 }

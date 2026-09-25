@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
@@ -10,7 +9,6 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
-import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const _dragBlur = 8.0;
 
@@ -80,26 +78,8 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
   }
 
   Future<void> _toggleFavourite(LibraryItem song) async {
-    final favorite = !song.userData.isFavorite;
-    if (ref.read(isOfflineProvider)) {
-      _showOfflineNotice();
-      return;
-    }
-    try {
-      await ref
-          .read(mediaServerClientProvider)
-          .setFavorite(song.id, favorite: favorite);
-    } on Object {
-      _showOfflineNotice();
-      return;
-    }
-    ref.invalidate(favouriteSongsProvider);
-    if (ref.read(playingElsewhereProvider)) ref.invalidate(remoteQueueProvider);
-    ref
-        .read(playbackProvider.notifier)
-        .updateSong(
-          song.copyWith(userData: song.userData.copyWith(isFavorite: favorite)),
-        );
+    final saved = await ref.read(barControlsProvider).toggleFavourite(song);
+    if (!saved) _showOfflineNotice();
   }
 
   void _showOfflineNotice() {
@@ -173,11 +153,10 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
           isPlaying: index == currentIndex,
           isDesktop: isDesktop,
           onTap: () => ref.read(barControlsProvider).skipTo(index),
+          editable: !remote,
           onLikePressed: () => _toggleFavourite(song),
-          onRemove: remote
-              ? null
-              : () =>
-                    ref.read(playbackProvider.notifier).removeFromQueue(index),
+          onRemove: () =>
+              ref.read(playbackProvider.notifier).removeFromQueue(index),
         );
       },
     );
@@ -190,6 +169,7 @@ class _QueueRow extends ConsumerStatefulWidget {
     required this.position,
     required this.isPlaying,
     required this.isDesktop,
+    required this.editable,
     required this.onTap,
     required this.onLikePressed,
     required this.onRemove,
@@ -200,9 +180,10 @@ class _QueueRow extends ConsumerStatefulWidget {
   final int position;
   final bool isPlaying;
   final bool isDesktop;
+  final bool editable;
   final VoidCallback onTap;
   final VoidCallback onLikePressed;
-  final Future<void> Function()? onRemove;
+  final Future<void> Function() onRemove;
 
   @override
   ConsumerState<_QueueRow> createState() => _QueueRowState();
@@ -227,7 +208,7 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
         position: details.globalPosition,
         actions: _menuActions(context),
       ),
-      child: widget.onRemove == null
+      child: !widget.editable
           ? row
           : widget.isDesktop
           ? ReorderableDragStartListener(
@@ -242,12 +223,12 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
   }
 
   List<ContextMenuAction> _menuActions(BuildContext context) => [
-    if (widget.onRemove case final onRemove?)
+    if (widget.editable)
       ContextMenuAction(
         entry: ContextMenuEntry.removeFromQueue,
         icon: const Icon(Icons.remove_circle_outline),
         label: const Text('Remove from queue'),
-        run: onRemove,
+        run: widget.onRemove,
       ),
     ...contextMenuActions(
       context,

@@ -19,6 +19,7 @@ import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
@@ -40,9 +41,9 @@ class MediaKeyHandler {
   }
 
   static void _handleMediaKey(String event, WidgetRef ref) => switch (event) {
-    'playPause' => ref.read(playbackProvider.notifier).playPause(),
-    'next' => ref.read(playbackProvider.notifier).next(),
-    'prev' => ref.read(playbackProvider.notifier).prev(),
+    'playPause' => ref.read(barControlsProvider).togglePlay(),
+    'next' => ref.read(barControlsProvider).next(),
+    'prev' => ref.read(barControlsProvider).previous(),
     _ => debugPrint('Unknown event: $event'),
   };
 }

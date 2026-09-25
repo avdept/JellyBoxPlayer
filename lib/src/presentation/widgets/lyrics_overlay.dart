@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
@@ -20,7 +21,7 @@ class LyricsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
-    final song = ref.watch(currentSongProvider);
+    final song = ref.watch(barSongProvider);
 
     if (song == null || !song.hasLyrics) {
       return const _Message('No lyrics for this track');
@@ -56,7 +57,7 @@ class _LyricsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final song = ref.watch(currentSongProvider);
+    final song = ref.watch(barSongProvider);
 
     return ClipRect(
       child: BackdropFilter(
@@ -157,7 +158,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
   void initState() {
     super.initState();
     ref.listenManual(
-      playbackProvider.select((state) => state.position),
+      barProgressProvider.select((progress) => progress.position),
       (_, position) => _syncActiveLine(position),
     );
   }
@@ -214,7 +215,9 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
         if (!_didInitialSync) {
           _didInitialSync = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _syncActiveLine(ref.read(playbackProvider).position);
+            if (mounted) {
+              _syncActiveLine(ref.read(barProgressProvider).position);
+            }
           });
         }
 
@@ -244,7 +247,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: GestureDetector(
         onTap: (isSynced && start != null)
-            ? () => ref.read(playbackProvider.notifier).seek(start)
+            ? () => ref.read(barControlsProvider).seek(start)
             : null,
         behavior: HitTestBehavior.opaque,
         child: AnimatedDefaultTextStyle(

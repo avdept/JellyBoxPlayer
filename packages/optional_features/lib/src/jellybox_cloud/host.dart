@@ -73,6 +73,8 @@ abstract class CloudHost<S> {
 
   Future<void> skipTo(int index);
 
+  Future<void> releaseOutput();
+
   bool get rendersLocally;
 
   Future<int?> millisUntilAudible(Duration from);

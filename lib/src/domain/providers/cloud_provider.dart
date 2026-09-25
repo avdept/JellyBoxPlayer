@@ -90,7 +90,7 @@ class CloudNotifier extends StateNotifier<CloudState> {
   Future<void> sendCommand(PlayerCommand command, {Object? value}) =>
       _cloud.sendCommand(command, value: value);
 
-  Future<void> claimHere() => _cloud.claimHere();
+  Future<bool> claimHere() => _cloud.claimHere();
 
   Future<void> shutdown() async {
     _lifecycle?.dispose();
@@ -136,17 +136,20 @@ final cloudAvailableProvider = Provider<bool>(
   (ref) => ref.watch(cloudProvider.notifier).available,
 );
 
-final remoteSessionProvider = Provider<RemoteSession?>((ref) {
+final remoteRendererProvider = Provider<ConductorDevice?>((ref) {
   final state = ref.watch(cloudProvider);
-  final remote = state.remote;
-  if (state.remoteRenderer == null || remote == null || remote.doc.isEmpty) {
-    return null;
-  }
-  return remote;
+  final hasQueue = !(state.remote?.doc.isEmpty ?? true);
+  return hasQueue ? state.remoteRenderer : null;
 });
 
+final remoteSessionProvider = Provider<RemoteSession?>(
+  (ref) => ref.watch(remoteRendererProvider) == null
+      ? null
+      : ref.watch(cloudProvider.select((state) => state.remote)),
+);
+
 final playingElsewhereProvider = Provider<bool>(
-  (ref) => ref.watch(remoteSessionProvider) != null,
+  (ref) => ref.watch(remoteRendererProvider) != null,
 );
 
 final remoteQueueProvider = FutureProvider<List<LibraryItem>>((ref) async {
@@ -158,7 +161,11 @@ final remoteQueueProvider = FutureProvider<List<LibraryItem>>((ref) async {
   final ids = key.split(',');
   final items = await ref.read(mediaServerClientProvider).getItemsByIds(ids);
   final byId = {for (final item in items) item.id: item};
-  return [for (final id in ids) ?byId[id]];
+  return [
+    for (final id in ids)
+      byId[id] ??
+          LibraryItem(id: id, name: 'Unavailable track', kind: ItemKind.song),
+  ];
 });
 
 final remoteNowPlayingProvider = Provider<LibraryItem?>((ref) {

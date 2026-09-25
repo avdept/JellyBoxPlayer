@@ -16,8 +16,6 @@ enum PlayerCommand {
   final String wire;
 }
 
-const repeatModes = ['off', 'all', 'one'];
-
 enum ConductorStatus {
   off,
   connecting,

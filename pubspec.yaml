@@ -76,6 +76,7 @@ dependencies:
   url_launcher: ^6.3.2
   in_app_review: ^2.0.12
   web_socket_channel: ^3.0.3
+  flutter_volume_controller: ^2.0.2
 
 dev_dependencies:
   flutter_test:

@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 
@@ -25,14 +24,14 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget._followsBar && ref.watch(playingElsewhereProvider)) {
+    if (widget._followsBar) {
       final progress = ref.watch(barProgressProvider);
       return Offstage(
         offstage: progress.stopped,
         child: SeekBar(
           duration: progress.duration,
           position: progress.position,
-          bufferedPosition: Duration.zero,
+          bufferedPosition: progress.buffered,
           onChangeEnd: ref.read(barControlsProvider).seek,
         ),
       );

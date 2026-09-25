@@ -13,20 +13,21 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/upnp/renderer_uri.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
+import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(this._ref) : super(PlaybackState.initial()) {
-    _target = _ref.read(playbackTargetProvider);
+    _target = _destination = _ref.read(playbackTargetProvider);
     _listenToTarget();
-    _ref.listen<PlaybackTarget>(playbackTargetProvider, (previous, next) {
-      if (previous == null || previous.id == next.id) return;
-      unawaited(_handoff(from: previous, to: next));
+    _ref.listen<PlaybackTarget>(playbackTargetProvider, (_, next) {
+      if (next.id != _destination.id) _queueSwitch(next, carryQueue: true);
     });
   }
 
@@ -41,6 +42,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   List<String>? _unshuffledOrder;
   Future<void> _adoptions = Future<void>.value();
   late PlaybackTarget _target;
+  late PlaybackTarget _destination;
+  Future<void> _switching = Future<void>.value();
   StreamSubscription<TargetPlaybackState>? _targetSubscription;
   TargetPlaybackState _targetState = TargetPlaybackState.idle;
   DateTime? _lastPositionSave;
@@ -254,10 +257,44 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  Future<void> switchTarget(PlaybackTarget to, {bool carryQueue = true}) {
+    if (to.id != _destination.id) {
+      _queueSwitch(to, carryQueue: carryQueue);
+      _ref.read(playbackTargetProvider.notifier).select(to);
+    }
+    return _switching;
+  }
+
+  Future<void> reloadOnTarget() async {
+    final songs = state.songs;
+    final album = state.album;
+    if (songs.isEmpty || album == null) return;
+    final index = state.currentMediaIndex ?? 0;
+    await play(
+      songs.elementAtOrNull(index) ?? songs.first,
+      songs,
+      album,
+      initialPosition: state.position,
+      autoPlay: false,
+      reshuffle: false,
+    );
+  }
+
+  void _queueSwitch(PlaybackTarget to, {required bool carryQueue}) {
+    _destination = to;
+    final previous = _switching;
+    _switching = () async {
+      await previous;
+      await _handoff(from: _target, to: to, carryQueue: carryQueue);
+    }();
+  }
+
   Future<void> _handoff({
     required PlaybackTarget from,
     required PlaybackTarget to,
+    required bool carryQueue,
   }) async {
+    if (from.id == to.id) return;
     final songs = state.songs;
     final album = state.album;
     final wasPlaying = state.status.isPlaying;
@@ -280,7 +317,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _targetState = TargetPlaybackState.idle;
     _fallingBack = false;
     _listenToTarget();
+    if (to.kind != PlaybackTargetKind.local) await _applySavedVolume(to);
 
+    if (!carryQueue) {
+      state = state.copyWith(status: PlaybackStatus.paused);
+      return;
+    }
     if (songs.isEmpty || album == null) return;
 
     final startSong = songs.elementAtOrNull(index) ?? songs.first;
@@ -292,6 +334,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       autoPlay: wasPlaying,
       reshuffle: false,
     );
+  }
+
+  Future<void> _applySavedVolume(PlaybackTarget target) async {
+    final settings = _ref.read(appSettingsProvider.notifier);
+    try {
+      await target.setVolume(savedRendererLevel(settings, target.id));
+    } on Object catch (error) {
+      debugPrint('[Playback] setting ${target.name} volume failed: $error');
+    }
   }
 
   Future<void> _editQueue(Future<void> Function() edit) async {

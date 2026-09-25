@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
@@ -13,11 +16,13 @@ class BarProgress {
   const BarProgress({
     required this.position,
     required this.duration,
+    this.buffered = Duration.zero,
     this.stopped = false,
   });
 
   final Duration position;
   final Duration duration;
+  final Duration buffered;
   final bool stopped;
 
   Duration get remaining => duration - position;
@@ -28,6 +33,17 @@ final barSongProvider = Provider<LibraryItem?>(
       ? ref.watch(remoteNowPlayingProvider)
       : ref.watch(currentSongProvider),
 );
+
+final barMediaQueueProvider = Provider<List<MediaItem>>((ref) {
+  if (!ref.watch(playingElsewhereProvider)) {
+    return ref.watch(nowPlayingQueueProvider);
+  }
+  final images = ref.watch(imageServiceProvider);
+  return [
+    for (final song in ref.watch(barQueueProvider))
+      mediaItemFor(song, images: images),
+  ];
+});
 
 final barMediaItemProvider = Provider<MediaItem?>((ref) {
   if (!ref.watch(playingElsewhereProvider)) {
@@ -83,6 +99,7 @@ barProgressProvider = Provider.autoDispose<BarProgress>((ref) {
       (state) => BarProgress(
         position: state.position.isNegative ? Duration.zero : state.position,
         duration: state.totalDuration ?? Duration.zero,
+        buffered: state.cacheProgress,
         stopped: state.status == PlaybackStatus.stopped,
       ),
     ),
@@ -129,11 +146,9 @@ class BarControls {
       _ref.read(cloudProvider.notifier).sendCommand(command, value: value);
 
   Future<void> togglePlay() {
+    if (!_remote) return _local.playPause();
     final playing = _ref.read(barPlayingProvider);
-    if (_remote) {
-      return _send(playing ? PlayerCommand.pause : PlayerCommand.play);
-    }
-    return playing ? _local.pause() : _local.resume();
+    return _send(playing ? PlayerCommand.pause : PlayerCommand.play);
   }
 
   Future<void> next() => _remote ? _send(PlayerCommand.next) : _local.next();
@@ -153,7 +168,25 @@ class BarControls {
       ? _send(PlayerCommand.repeat, mode.name)
       : _ref.read(playerProvider).setLoopMode(mode);
 
-  Future<void> skipTo(int index) => _remote
+  Future<bool> toggleFavourite(LibraryItem song) async {
+    if (_ref.read(isOfflineProvider)) return false;
+    final favorite = !song.userData.isFavorite;
+    try {
+      await _ref
+          .read(mediaServerClientProvider)
+          .setFavorite(song.id, favorite: favorite);
+    } on Object {
+      return false;
+    }
+    _ref.invalidate(favouriteSongsProvider);
+    if (_remote) _ref.invalidate(remoteQueueProvider);
+    _local.updateSong(
+      song.copyWith(userData: song.userData.copyWith(isFavorite: favorite)),
+    );
+    return true;
+  }
+
+  Future<void> skipTo(int index, {bool autoPlay = true}) => _remote
       ? _send(PlayerCommand.skipTo, index)
-      : _local.skipTo(index, autoPlay: true);
+      : _local.skipTo(index, autoPlay: autoPlay);
 }

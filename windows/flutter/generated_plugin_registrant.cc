@@ -10,6 +10,7 @@
 #include <connectivity_plus/connectivity_plus_windows_plugin.h>
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
 #include <flutter_udid/flutter_udid_plugin_c_api.h>
+#include <flutter_volume_controller/flutter_volume_controller_plugin_c_api.h>
 #include <media_kit_libs_windows_audio/media_kit_libs_windows_audio_plugin_c_api.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
 #include <sentry_flutter/sentry_flutter_plugin.h>
@@ -25,6 +26,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
   FlutterUdidPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterUdidPluginCApi"));
+  FlutterVolumeControllerPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterVolumeControllerPluginCApi"));
   MediaKitLibsWindowsAudioPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("MediaKitLibsWindowsAudioPluginCApi"));
   ScreenRetrieverWindowsPluginCApiRegisterWithRegistrar(

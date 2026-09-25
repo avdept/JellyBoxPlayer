@@ -427,6 +427,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
+    description:
+      name: flutter_plugin_android_lifecycle
+      sha256: "3854fe5e3bff0b113c658f260b90c95dea17c92db0f2addeac2e343dd9969785"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.35"
   flutter_riverpod:
     dependency: "direct main"
     description:
@@ -536,6 +544,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.6"
+  flutter_volume_controller:
+    dependency: "direct main"
+    description:
+      name: flutter_volume_controller
+      sha256: f9ba12aa17880c1ee3e1668f14eefbc6704e2fed90ed0b2ca97b7dee71133240
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   flutter_web_plugins:
     dependency: transitive
     description: flutter

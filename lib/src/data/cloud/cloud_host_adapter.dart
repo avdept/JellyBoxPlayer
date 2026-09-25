@@ -8,9 +8,11 @@ import 'package:jplayer/main.dart' as app show deviceId;
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
+import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/system_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
@@ -42,7 +44,18 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
         .listen((_) {
           if (_ref.exists(playbackProvider)) _playback.add(playback);
         });
+    if (_ref.read(usesSystemVolumeProvider)) {
+      _ref.listen(systemVolumeProvider, (_, _) {
+        if (_systemScope && _ref.exists(playbackProvider)) {
+          _playback.add(playback);
+        }
+      });
+    }
   }
+
+  bool get _systemScope =>
+      _ref.read(usesSystemVolumeProvider) &&
+      _ref.read(playbackTargetProvider).kind == PlaybackTargetKind.local;
 
   final Ref _ref;
 
@@ -149,6 +162,9 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
 
   @override
   Future<void> setVolume(double level) async {
+    if (_systemScope) {
+      return _ref.read(systemVolumeProvider.notifier).setLevel(level);
+    }
     await _ref.read(volumeProvider.notifier).setLevel(level);
     _watchVolume();
   }
@@ -156,6 +172,13 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   @override
   Future<void> skipTo(int index) =>
       _ref.read(playbackProvider.notifier).skipTo(index, autoPlay: true);
+
+  @override
+  Future<void> releaseOutput() async {
+    final playback = _ref.read(playbackProvider.notifier);
+    if (playback.target.kind == PlaybackTargetKind.local) return;
+    await playback.switchTarget(_ref.read(localPlaybackTargetProvider));
+  }
 
   @override
   bool get rendersLocally =>
@@ -166,14 +189,6 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   Duration get bufferedPosition => _ref.read(playerProvider).bufferedPosition;
 
   @override
-  /// How long until the player reports a position past [from], or null if
-  /// nothing ever says so.
-  ///
-  /// `updatePosition` is not a dependable signal — `media_kit` on desktop
-  /// often never emits one that passes the target — so null is a normal
-  /// outcome and means "not observed", never "slow". The wait is short
-  /// because a report that arrives later than the next handoff gets counted
-  /// against the wrong one.
   Future<int?> millisUntilAudible(Duration from) {
     final clock = Stopwatch()..start();
     return _ref
@@ -210,7 +225,9 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
     _volume = _ref.listen(volumeProvider, (_, _) => _playback.add(playback));
   }
 
-  double get _volumeLevel => _ref.exists(volumeProvider)
+  double get _volumeLevel => _systemScope
+      ? _ref.read(systemVolumeProvider)
+      : _ref.exists(volumeProvider)
       ? _ref.read(volumeProvider).effectiveLevel
       : _ref
             .read(appSettingsProvider.notifier)

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -14,7 +14,7 @@ final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
 final lyricsVisibleProvider = StateProvider<bool>((ref) => false);
 
 final currentSongHasLyricsProvider = Provider<bool>((ref) {
-  final song = ref.watch(currentSongProvider);
+  final song = ref.watch(barSongProvider);
   if (song == null || !song.hasLyrics) return false;
   final lyrics = ref.watch(lyricsProvider(song.id));
   if (!lyrics.hasValue) return true;

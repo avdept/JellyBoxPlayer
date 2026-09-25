@@ -57,7 +57,7 @@ class _JellyboxCloudConnectFormState
         );
     if (!mounted) return;
     if (connected) {
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
       return;
     }
     setState(() => _submitting = false);
@@ -85,7 +85,7 @@ class _JellyboxCloudConnectFormState
           const ModalFormHeader('Jellybox Cloud'),
           const SizedBox(height: 8),
 
-          if (account != null) ...[
+          if (account != null && !_submitting) ...[
             Text(
               'Connected as ${account.email}',
               style: TextStyle(color: muted),
@@ -119,8 +119,13 @@ class _JellyboxCloudConnectFormState
             ),
           ] else ...[
             Text(
-              'Sign in to play across your devices — start on one, '
+              'Sign in to play across your devices - start on one, '
               'carry on with another.',
+              style: TextStyle(fontSize: 14, color: muted),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Hitting connect will either create new account or sign in to existing account.',
               style: TextStyle(fontSize: 14, color: muted),
             ),
             const SizedBox(height: 16),

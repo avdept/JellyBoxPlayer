@@ -14,17 +14,14 @@ import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
-import 'package:jplayer/src/presentation/widgets/cloud_devices_sheet.dart';
+import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
-import 'package:jplayer/src/domain/playback/playback_target.dart';
-import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/presentation/widgets/volume_control.dart';
-import 'package:native_route_picker/native_route_picker.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 const _sheetHorizontalPadding = 30.0;
@@ -43,7 +40,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   final _dynamicColors = ValueNotifier<ColorScheme?>(null);
   final _isPlaying = ValueNotifier<bool>(false);
   final _queueShown = ValueNotifier<bool>(false);
-  final _likeTrack = ValueNotifier<bool>(false);
   late ThemeData _theme;
   late MaterialLocalizations _localizations;
   late EdgeInsets _viewPadding;
@@ -74,10 +70,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                       MediaQuery.orientationOf(context) ==
                           Orientation.landscape;
                   if (coveredByLandscapePlayer ||
-                      !ref.watch(hasQueueProvider)) {
+                      !ref.watch(barHasQueueProvider)) {
                     return const SizedBox.shrink();
                   }
-                  final currentSong = ref.watch(nowPlayingProvider);
+                  final currentSong = ref.watch(barMediaItemProvider);
                   return Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
@@ -157,10 +153,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       key: const ValueKey('artwork'),
       valueListenable: _isPlaying,
       builder: (context, isPlaying, child) => SwipeableArtwork(
-        queue: ref.watch(nowPlayingQueueProvider),
-        currentIndex: ref.watch(
-          playbackProvider.select((s) => s.currentMediaIndex),
-        ),
+        queue: ref.watch(barMediaQueueProvider),
+        currentIndex: ref.watch(barQueueIndexProvider),
         borderRadius: _isMobile ? 12 : 16,
         artworkBuilder: _artwork,
         horizontalPadding: _sheetHorizontalPadding,
@@ -255,11 +249,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             ),
             Consumer(
               builder: (context, ref, _) {
-                final playback = ref.watch(playbackProvider);
-                final index = playback.currentMediaIndex;
-                final isLoaded =
-                    index != null &&
-                    playback.songs.elementAtOrNull(index) != null;
+                final isLoaded = ref.watch(barSongProvider) != null;
                 if (!isLoaded) return const SizedBox.shrink();
                 return Row(
                   mainAxisSize: MainAxisSize.min,
@@ -273,8 +263,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           ],
         ),
         SizedBox(height: _isMobile ? 12 : 20),
-        const PositionSlider(),
-        PositionLabels(fontSize: _isMobile ? 12 : 13),
+        const PositionSlider.bar(),
+        PositionLabels.bar(fontSize: _isMobile ? 12 : 13),
         SizedBox(height: _isMobile ? 8 : 12),
         AudioQualityBadge(
           codec: currentSong?.extras?['codec'] as String?,
@@ -311,17 +301,24 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     ),
     child: IconTheme.merge(
       data: IconThemeData(size: _isMobile ? 26 : 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          if (NativeRoutePicker.isSupported) _outputRouteButton(),
-          _playbackTargetButton(),
-          if (_isCasting) _volumeControl(),
-          _lyricsButton(),
-          if (!_isMobile) _downloadTrackButton(),
-          _likeTrackButton(),
-          _queueButton(),
-        ],
+      child: Consumer(
+        builder: (context, ref, _) {
+          final playingElsewhere = ref.watch(playingElsewhereProvider);
+          return Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _playbackTargetButton(showsDeviceName: true),
+                ),
+              ),
+              _lyricsButton(),
+              if (!_isMobile && !playingElsewhere) _downloadTrackButton(),
+              _likeTrackButton(),
+              _queueButton(),
+            ],
+          );
+        },
       ),
     ),
   );
@@ -374,6 +371,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       builder: (context, ref, _) {
         final playingElsewhere = ref.watch(playingElsewhereProvider);
         final isEmpty = !ref.watch(barHasQueueProvider);
+        final device = _isDesktop ? null : ref.watch(activeDeviceProvider);
         final currentSong = ref.watch(barMediaItemProvider);
         final image = ref
             .read(imageServiceProvider)
@@ -399,11 +397,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                           ?.withOpacity(0.75),
                       padding: EdgeInsets.only(bottom: _viewPadding.bottom),
                       child: SimpleListTile(
-                        onTap: _isDesktop
-                            ? null
-                            : playingElsewhere
-                            ? () => CloudDevicesSheet.show(context)
-                            : _onExpand,
+                        onTap: !_isDesktop ? _onExpand : null,
                         padding: const EdgeInsets.only(right: 8),
                         leading: AspectRatio(
                           aspectRatio: 1,
@@ -421,64 +415,85 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 )
                               : _artwork(currentSong),
                         ),
-                        title: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                currentSong?.title ?? '',
+                        title: device != null
+                            ? MarqueeText(
+                                [
+                                  if (currentSong?.artist?.isNotEmpty ?? false)
+                                    currentSong!.artist!,
+                                  currentSong?.title ?? '',
+                                ].join(' — '),
+                                bounce: true,
                                 style: TextStyle(
-                                  fontSize: _isMobile ? 18 : 24,
+                                  fontSize: _isMobile ? 16 : 22,
                                   fontWeight: FontWeight.w500,
                                   height: 1.2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
+                              )
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      currentSong?.title ?? '',
+                                      style: TextStyle(
+                                        fontSize: _isMobile ? 18 : 24,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  if (_isDesktop) const SizedBox(width: 8),
+                                  if (_isDesktop)
+                                    AudioQualityBadge(
+                                      codec:
+                                          currentSong?.extras?['codec']
+                                              as String?,
+                                      bitRate:
+                                          currentSong?.extras?['bitRate']
+                                              as int?,
+                                      sampleRate:
+                                          currentSong?.extras?['sampleRate']
+                                              as int?,
+                                    ),
+                                ],
                               ),
-                            ),
-                            if (_isDesktop) const SizedBox(width: 8),
-                            if (_isDesktop)
-                              AudioQualityBadge(
-                                codec: currentSong?.extras?['codec'] as String?,
-                                bitRate:
-                                    currentSong?.extras?['bitRate'] as int?,
-                                sampleRate:
-                                    currentSong?.extras?['sampleRate'] as int?,
+                        subtitle: device != null
+                            ? _deviceLine(device)
+                            : Align(
+                                alignment: Alignment.centerLeft,
+                                child: ClickableWidget(
+                                  onPressed:
+                                      (_isDesktop &&
+                                          currentSong?.extras?['artistId'] !=
+                                              null)
+                                      ? () async {
+                                          final artistId =
+                                              currentSong!.extras!['artistId']
+                                                  as String;
+                                          final item = await ref
+                                              .read(mediaServerClientProvider)
+                                              .getItem(
+                                                artistId,
+                                                kind: ItemKind.artist,
+                                              );
+                                          if (!context.mounted) return;
+                                          context.goNamed(
+                                            Routes.artist.name,
+                                            extra: {'artist': item},
+                                          );
+                                        }
+                                      : null,
+                                  textStyle: TextStyle(
+                                    fontSize: _isMobile ? 12 : 18,
+                                    height: 1.2,
+                                  ),
+                                  child: Text(
+                                    currentSong?.artist ?? '',
+                                  ),
+                                ),
                               ),
-                          ],
-                        ),
-                        subtitle: Align(
-                          alignment: Alignment.centerLeft,
-                          child: ClickableWidget(
-                            onPressed:
-                                (_isDesktop &&
-                                    currentSong?.extras?['artistId'] != null)
-                                ? () async {
-                                    final artistId =
-                                        currentSong!.extras!['artistId']
-                                            as String;
-                                    final item = await ref
-                                        .read(mediaServerClientProvider)
-                                        .getItem(
-                                          artistId,
-                                          kind: ItemKind.artist,
-                                        );
-                                    if (!context.mounted) return;
-                                    context.goNamed(
-                                      Routes.artist.name,
-                                      extra: {'artist': item},
-                                    );
-                                  }
-                                : null,
-                            textStyle: TextStyle(
-                              fontSize: _isMobile ? 12 : 18,
-                              height: 1.2,
-                            ),
-                            child: Text(
-                              currentSong?.artist ?? '',
-                            ),
-                          ),
-                        ),
                         // Text(
                         //   currentSong?.displayDescription ?? '',
                         //   style: TextStyle(
@@ -499,13 +514,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             ),
                             _nextTrackButton(),
                             if (_isDesktop) _repeatTrackButton(),
-                            if (_isDesktop && !playingElsewhere)
-                              _lyricsButton(),
+                            if (_isDesktop) _lyricsButton(),
                             if (_isDesktop) const VolumeControl(size: 44),
-                            if (_isDesktop &&
-                                !playingElsewhere &&
-                                NativeRoutePicker.isSupported)
-                              _outputRouteButton(size: 44),
                             if (_isDesktop) _playbackTargetButton(size: 44),
                             if (_isDesktop) _queueSidebarButton(),
                             if (!_isMobile && !playingElsewhere)
@@ -543,7 +553,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     _imageProvider.dispose();
     _dynamicColors.dispose();
     _isPlaying.dispose();
-    _likeTrack.dispose();
     _queueShown.dispose();
     super.dispose();
   }
@@ -570,17 +579,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   LibraryItem? get _currentQueueSong => ref.read(barSongProvider);
 
   Future<void> _onLikeCurrent(LibraryItem song) async {
-    final isFavorite = song.userData.isFavorite;
-    await ref
-        .read(mediaServerClientProvider)
-        .setFavorite(song.id, favorite: !isFavorite);
-    ref
-        .read(playbackProvider.notifier)
-        .updateSong(
-          song.copyWith(
-            userData: song.userData.copyWith(isFavorite: !isFavorite),
-          ),
-        );
+    final saved = await ref.read(barControlsProvider).toggleFavourite(song);
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This action needs a connection')),
+      );
+    }
   }
 
   Future<void> _onMorePressed(MediaItem? currentSong) async {
@@ -622,6 +626,33 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     ref.read(currentAlbumProvider.notifier).setAlbum(item);
     context.goNamed(Routes.album.name, extra: {'album': item});
   }
+
+  Widget _deviceLine(ActiveDevice device) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Row(
+      children: [
+        Icon(
+          device.icon,
+          size: _isMobile ? 17 : 21,
+          color: _theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            device.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: _isMobile ? 14 : 20,
+              height: 1.2,
+              fontWeight: FontWeight.w500,
+              color: _theme.colorScheme.primary,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _playPauseButton() => PlayPauseButton(
     onPressed: ref.read(barControlsProvider).togglePlay,
@@ -719,24 +750,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     },
   );
 
-  bool get _isCasting =>
-      ref.watch(playbackTargetProvider).kind != PlaybackTargetKind.local;
-
-  Widget _volumeControl({double size = 48}) => VolumeControl(
-    size: size,
-    color: _theme.colorScheme.onPrimary,
-  );
-
-  Widget _playbackTargetButton({double? size}) => PlaybackTargetButton(
+  Widget _playbackTargetButton({
+    double? size,
+    bool showsDeviceName = false,
+  }) => PlaybackTargetButton(
     size: size,
     color: _theme.colorScheme.onPrimary,
     activeColor: _theme.colorScheme.primary,
-  );
-
-  Widget _outputRouteButton({double? size}) => RoutePickerButton(
-    size: size ?? (_isMobile ? 40 : 36),
-    color: _theme.colorScheme.onPrimary,
-    activeColor: _theme.colorScheme.primary,
+    showsDeviceName: showsDeviceName,
   );
 
   Widget _lyricsButton() => Consumer(
@@ -822,19 +843,21 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     },
   );
 
-  Widget _likeTrackButton() => ValueListenableBuilder(
-    valueListenable: _likeTrack,
-    builder: (context, isLiked, child) => IconButton(
-      onPressed: () => _likeTrack.value = !isLiked,
-      icon: Icon(
-        CupertinoIcons.heart,
-        color: _theme.colorScheme.onPrimary,
-      ),
-      selectedIcon: Icon(
-        CupertinoIcons.heart_fill,
-        color: _theme.colorScheme.primary,
-      ),
-      isSelected: isLiked,
-    ),
+  Widget _likeTrackButton() => Consumer(
+    builder: (context, ref, _) {
+      final song = ref.watch(barSongProvider);
+      return IconButton(
+        onPressed: song == null ? null : () => _onLikeCurrent(song),
+        icon: Icon(
+          CupertinoIcons.heart,
+          color: _theme.colorScheme.onPrimary,
+        ),
+        selectedIcon: Icon(
+          CupertinoIcons.heart_fill,
+          color: _theme.colorScheme.primary,
+        ),
+        isSelected: song?.userData.isFavorite ?? false,
+      );
+    },
   );
 }
