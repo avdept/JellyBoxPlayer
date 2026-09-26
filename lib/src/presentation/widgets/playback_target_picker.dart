@@ -17,6 +17,7 @@ import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/anchored_dropdown.dart';
+import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_settings.dart';
 import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/volume_control.dart';
@@ -274,16 +275,11 @@ class PlaybackTargetMenu extends ConsumerStatefulWidget {
         context: context,
         useRootNavigator: true,
         isScrollControlled: true,
-        backgroundColor: Colors.grey[900],
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-        ),
-        builder: (sheetContext) => SafeArea(
-          top: false,
-          child: PlaybackTargetMenu(
-            inSheet: true,
-            onDone: () => Navigator.of(sheetContext).pop(),
-          ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        builder: (sheetContext) => PlaybackTargetMenu(
+          inSheet: true,
+          onDone: () => Navigator.of(sheetContext).pop(),
         ),
       );
 
@@ -400,7 +396,6 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             selected: localSelected,
             onTap: _selectLocal,
           ),
-          if (localSelected) _volume,
           if (ref.watch(cloudAvailableProvider) && conductor.account == null)
             _TargetTile(
               icon: Icons.cloud_off_outlined,
@@ -455,30 +450,46 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
       ),
     );
 
+    final palette = ref.watch(artworkSchemeProvider).valueOrNull;
+
     if (widget.inSheet) {
-      return ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+      return FrostedPanel(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+            ),
+            child: list,
+          ),
         ),
-        child: list,
       );
     }
 
-    final palette = ref.watch(artworkSchemeProvider).valueOrNull;
     return Theme(
       data: palette == null ? theme : theme.copyWith(colorScheme: palette),
-      child: Material(
-        color: Colors.grey[900],
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: width,
-            minWidth: width,
-            maxHeight: _menuMaxHeight,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x80000000),
+              blurRadius: 32,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: FrostedPanel(
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: width,
+              minWidth: width,
+              maxHeight: _menuMaxHeight,
+            ),
+            child: list,
           ),
-          child: list,
         ),
       ),
     );

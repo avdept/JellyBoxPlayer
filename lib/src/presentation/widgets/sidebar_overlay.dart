@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
 
 class SidebarOverlay extends StatelessWidget {
   const SidebarOverlay({
@@ -8,7 +7,6 @@ class SidebarOverlay extends StatelessWidget {
     required this.onClose,
     required this.child,
     this.title,
-    this.backgroundColor,
     this.width = 380,
     this.duration = const Duration(milliseconds: 250),
     super.key,
@@ -18,19 +16,12 @@ class SidebarOverlay extends StatelessWidget {
   final VoidCallback onClose;
   final Widget child;
   final String? title;
-  final Color? backgroundColor;
   final double width;
   final Duration duration;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final panelColor =
-        (backgroundColor ??
-                theme.bottomSheetTheme.backgroundColor ??
-                Colors.black)
-            .withValues(alpha: 0.88);
-
     return IgnorePointer(
       ignoring: !isShown,
       child: TweenAnimationBuilder<double>(
@@ -62,42 +53,35 @@ class SidebarOverlay extends StatelessWidget {
             ),
           ],
         ),
-        child: Material(
-          color: panelColor,
-          surfaceTintColor: Colors.transparent,
+        child: FrostedPanel(
           elevation: 12,
-          child: ClipRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 12, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title ?? '',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 12, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title ?? '',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
                           ),
-                          IconButton(
-                            onPressed: onClose,
-                            color: theme.colorScheme.onPrimary,
-                            tooltip: 'Close',
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    Expanded(child: child),
-                  ],
+                      IconButton(
+                        onPressed: onClose,
+                        color: theme.colorScheme.onPrimary,
+                        tooltip: 'Close',
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Expanded(child: child),
+              ],
             ),
           ),
         ),
