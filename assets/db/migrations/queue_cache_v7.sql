@@ -1,0 +1,1 @@
+ALTER TABLE QueueCache ADD COLUMN Quality TEXT

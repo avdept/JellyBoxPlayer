@@ -13,6 +13,7 @@ class DbMigrations {
   static const String playlistSongsV5 =
       'assets/db/migrations/playlist_songs_v5.sql';
   static const String queueCacheV6 = 'assets/db/migrations/queue_cache_v6.sql';
+  static const String queueCacheV7 = 'assets/db/migrations/queue_cache_v7.sql';
   static const String generatedPlaylists =
       'assets/db/migrations/generated_playlists.sql';
   static const String generatedPlaylistItems =

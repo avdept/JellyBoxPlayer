@@ -20,6 +20,16 @@ enum AppSetting {
   playerVolume('player_volume', defaultValue: 1.0),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
+  streamQualityWifi(
+    'stream_quality_wifi',
+    defaultValue: 'original',
+    syncs: false,
+  ),
+  streamQualityCellular(
+    'stream_quality_cellular',
+    defaultValue: 'original',
+    syncs: false,
+  ),
   discordRichPresence('discord_rich_presence'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
@@ -27,10 +37,11 @@ enum AppSetting {
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   telemetryOptOut('telemetry_opt_out');
 
-  const AppSetting(this.key, {this.defaultValue = false});
+  const AppSetting(this.key, {this.defaultValue = false, this.syncs = true});
 
   final String key;
   final Object defaultValue;
+  final bool syncs;
 }
 
 final appSettingsProvider =
@@ -90,6 +101,21 @@ final forwardCacheWindowProvider = Provider<ForwardCacheWindow>(
       )] ??
       ForwardCacheWindow.min30,
 );
+
+final streamQualityWifiProvider = Provider<StreamQuality>(
+  (ref) => _streamQuality(ref, AppSetting.streamQualityWifi),
+);
+
+final streamQualityCellularProvider = Provider<StreamQuality>(
+  (ref) => _streamQuality(ref, AppSetting.streamQualityCellular),
+);
+
+StreamQuality _streamQuality(Ref ref, AppSetting setting) =>
+    StreamQuality.values.asNameMap()[_asString(
+      ref.watch(appSettingsProvider)[setting],
+      setting,
+    )] ??
+    StreamQuality.original;
 
 final contentUpdateIntervalProvider = Provider<ContentUpdateInterval>(
   (ref) =>

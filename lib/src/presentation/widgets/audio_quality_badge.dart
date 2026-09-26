@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/core/audio/quality_extras.dart';
 
 class AudioQualityBadge extends StatelessWidget {
   const AudioQualityBadge({
@@ -10,6 +11,25 @@ class AudioQualityBadge extends StatelessWidget {
     this.fontSize = 10,
     super.key,
   });
+
+  factory AudioQualityBadge.heard(
+    Map<String, dynamic>? extras, {
+    Color? backgroundColor,
+    Color? textColor,
+    double fontSize = 10,
+    Key? key,
+  }) {
+    final quality = QualityExtras.heard(extras);
+    return AudioQualityBadge(
+      codec: quality.codec,
+      bitRate: quality.bitRate,
+      sampleRate: quality.sampleRate,
+      backgroundColor: backgroundColor,
+      textColor: textColor,
+      fontSize: fontSize,
+      key: key,
+    );
+  }
 
   final String? codec;
   final int? bitRate;

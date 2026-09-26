@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:jplayer/src/core/audio/audio_container_mime.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 
 class DirectPlayRule {
   const DirectPlayRule(
@@ -71,6 +72,7 @@ class StreamTargetProfile {
     required this.losslessTranscode,
     required this.supportsHls,
     this.preferHlsContainers = const {},
+    this.preference = StreamPreference.original,
   });
 
   factory StreamTargetProfile.localPlayer({
@@ -148,6 +150,21 @@ class StreamTargetProfile {
   final TranscodeTarget? losslessTranscode;
   final bool supportsHls;
   final Set<String> preferHlsContainers;
+  final StreamPreference preference;
+
+  int? get maxBitRate => preference.maxBitRate;
+
+  TranscodeTarget get lossyTarget => preference.codec ?? lossyTranscode;
+
+  StreamTargetProfile withPreference(StreamPreference preference) =>
+      StreamTargetProfile(
+        directPlay: directPlay,
+        lossyTranscode: lossyTranscode,
+        losslessTranscode: losslessTranscode,
+        supportsHls: supportsHls,
+        preferHlsContainers: preferHlsContainers,
+        preference: preference,
+      );
 
   bool prefersHls({required String? container}) =>
       container != null && preferHlsContainers.contains(container);
@@ -159,5 +176,5 @@ class StreamTargetProfile {
       .any((rule) => rule.matches(container: container, codec: codec));
 
   TranscodeTarget transcodeFor({required bool isLossless}) =>
-      isLossless ? (losslessTranscode ?? lossyTranscode) : lossyTranscode;
+      isLossless ? (losslessTranscode ?? lossyTarget) : lossyTarget;
 }

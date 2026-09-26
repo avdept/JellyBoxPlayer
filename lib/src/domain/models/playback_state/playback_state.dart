@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/models/library_item/audio_source_info.dart';
 import 'package:jplayer/src/domain/models/library_item/library_item.dart';
 
 export 'package:jplayer/src/core/enums/enums.dart' show PlaybackStatus;
@@ -17,6 +18,8 @@ abstract class PlaybackState with _$PlaybackState {
     Duration? totalDuration,
     int? currentMediaIndex,
     @Default(false) bool shuffleEnabled,
+    @Default(<String, AudioSourceInfo>{})
+    Map<String, AudioSourceInfo> deliveredQualities,
   }) = _PlaybackState;
 
   factory PlaybackState.initial() => const PlaybackState(

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/audio/quality_extras.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -9,8 +10,8 @@ MediaItem mediaItemFor(
   LibraryItem song, {
   LibraryItem? album,
   ImageService? images,
+  AudioSourceInfo? streamed,
 }) {
-  final audioSource = song.audioSources.firstOrNull;
   final artistId =
       song.albumArtists.firstOrNull?.id ?? album?.albumArtists.firstOrNull?.id;
 
@@ -22,22 +23,31 @@ MediaItem mediaItemFor(
     title: song.name,
     artUri: images?.songArtUri(song, album: album),
     extras: {
-      if (audioSource?.codec != null) 'codec': audioSource!.codec,
-      if (audioSource?.bitRate != null) 'bitRate': audioSource!.bitRate,
-      if (audioSource?.sampleRate != null)
-        'sampleRate': audioSource!.sampleRate,
+      ...QualityExtras.of(
+        original: song.audioSources.firstOrNull,
+        streamed: streamed,
+      ),
       'artistId': ?artistId,
     },
   );
 }
 
 final nowPlayingQueueProvider = Provider<List<MediaItem>>((ref) {
-  final playback = ref.watch(playbackProvider);
-  if (playback.songs.isEmpty) return const [];
+  final (songs, album, qualities) = ref.watch(
+    playbackProvider.select(
+      (state) => (state.songs, state.album, state.deliveredQualities),
+    ),
+  );
+  if (songs.isEmpty) return const [];
   final images = ref.watch(imageServiceProvider);
   return [
-    for (final song in playback.songs)
-      mediaItemFor(song, album: playback.album, images: images),
+    for (final song in songs)
+      mediaItemFor(
+        song,
+        album: album,
+        images: images,
+        streamed: qualities[song.id],
+      ),
   ];
 });
 

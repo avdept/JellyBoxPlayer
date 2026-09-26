@@ -266,11 +266,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         const PositionSlider.bar(),
         PositionLabels.bar(fontSize: _isMobile ? 12 : 13),
         SizedBox(height: _isMobile ? 8 : 12),
-        AudioQualityBadge(
-          codec: currentSong?.extras?['codec'] as String?,
-          bitRate: currentSong?.extras?['bitRate'] as int?,
-          sampleRate: currentSong?.extras?['sampleRate'] as int?,
-        ),
+        AudioQualityBadge.heard(currentSong?.extras),
         SizedBox(height: _isMobile ? 12 : 24),
         IconTheme.merge(
           data: IconThemeData(size: _isMobile ? 40 : 44),
@@ -450,16 +446,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                   ),
                                   if (_isDesktop) const SizedBox(width: 8),
                                   if (_isDesktop)
-                                    AudioQualityBadge(
-                                      codec:
-                                          currentSong?.extras?['codec']
-                                              as String?,
-                                      bitRate:
-                                          currentSong?.extras?['bitRate']
-                                              as int?,
-                                      sampleRate:
-                                          currentSong?.extras?['sampleRate']
-                                              as int?,
+                                    AudioQualityBadge.heard(
+                                      currentSong?.extras,
                                     ),
                                 ],
                               ),

@@ -5,6 +5,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/audio/quality_extras.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
+import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -19,9 +22,11 @@ import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
+import 'package:jplayer/src/domain/providers/stream_preference_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:jplayer/src/providers/network_type_provider.dart';
 
 class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackNotifier(this._ref) : super(PlaybackState.initial()) {
@@ -30,7 +35,24 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _ref.listen<PlaybackTarget>(playbackTargetProvider, (_, next) {
       if (next.id != _destination.id) _queueSwitch(next, carryQueue: true);
     });
+    _ref.listen<StreamPreference>(activeStreamPreferenceProvider, (
+      previous,
+      next,
+    ) {
+      if (previous != next) _scheduleRequalify();
+    });
   }
+
+  void _scheduleRequalify() {
+    _requalifyDebounce?.cancel();
+    _requalifyDebounce = Timer(
+      requalifyDelay,
+      () => unawaited(requalifyStreams()),
+    );
+  }
+
+  @visibleForTesting
+  static Duration requalifyDelay = const Duration(seconds: 2);
 
   static const _progressInterval = Duration(seconds: 10);
   static const _stallSlack = Duration(seconds: 1);
@@ -41,7 +63,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final _localSongIds = <String>{};
   final _tracks = <TargetTrack>[];
   List<String>? _unshuffledOrder;
-  Future<void> _adoptions = Future<void>.value();
+  Future<void> _swaps = Future<void>.value();
   late PlaybackTarget _target;
   late PlaybackTarget _destination;
   Future<void> _switching = Future<void>.value();
@@ -61,10 +83,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   DateTime? _stalledSince;
   var _stallLogged = false;
   Timer? _progressTimer;
+  Timer? _requalifyDebounce;
+  var _requalifyGeneration = 0;
 
   PlaybackTarget get target => _target;
 
   bool get supportsLocalFiles => _target.supportsLocalFiles;
+
+  StreamTargetProfile get _streamProfile =>
+      _target.kind == PlaybackTargetKind.local
+      ? _target.streamProfile.withPreference(
+          _ref.read(activeStreamPreferenceProvider),
+        )
+      : _target.streamProfile;
 
   LibraryItem? get _reportedSong {
     final index = _reportedIndex;
@@ -565,6 +596,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
       state = state.copyWith(
         songs: playableSongs,
+        deliveredQualities: _deliveredQualities(),
         album: album,
         status: PlaybackStatus.buffering,
         position: startPosition,
@@ -640,6 +672,20 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  Map<String, AudioSourceInfo> _deliveredQualities() => {
+    for (final track in _tracks)
+      track.itemId: ?QualityExtras.streamed(track.extras),
+  };
+
+  Future<AudioSourceInfo?> _cachedQuality(String id) async {
+    try {
+      return await _ref.read(queueCacheDatabaseProvider).qualityOf(id);
+    } on Object catch (error) {
+      debugPrint('[Playback] reading cached quality failed: $error');
+      return null;
+    }
+  }
+
   Future<({LibraryItem song, TargetTrack track})?> _resolveTrack(
     LibraryItem song,
     LibraryItem album,
@@ -659,24 +705,34 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     if (localPath == null && _ref.read(isOfflineProvider)) return null;
 
+    final audioSource = song.audioSources.firstOrNull;
+
     Uri uri;
     var isHls = false;
     var transcoded = false;
     var mimeType = 'application/octet-stream';
+    var quality = audioSource;
     if (localPath != null) {
       uri = Uri.file(localPath);
+      if (downloadedPath == null) {
+        quality = await _cachedQuality(song.id) ?? audioSource;
+      }
     } else {
+      if (_target.kind == PlaybackTargetKind.local) {
+        await _ref.read(networkTypeProvider.notifier).ready;
+      }
       final resolved = await _ref
           .read(mediaServerClientProvider)
           .resolveStreamSource(
             song,
             playSessionId: playSessionId,
-            target: _target.streamProfile,
+            target: _streamProfile,
           );
       uri = resolved.uri;
       isHls = resolved.isHls;
       mimeType = resolved.mimeType;
       transcoded = resolved.requiresTranscode;
+      quality = resolved.delivered ?? audioSource;
     }
 
     var artUri = _artUri(song, album);
@@ -690,13 +746,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (Platform.isAndroid) artUri = androidCoverArtUri(artUri);
     }
 
-    final audioSource = song.audioSources.firstOrNull;
-
     final extras = <String, dynamic>{
-      if (audioSource?.codec != null) 'codec': audioSource!.codec,
-      if (audioSource?.bitRate != null) 'bitRate': audioSource!.bitRate,
-      if (audioSource?.sampleRate != null)
-        'sampleRate': audioSource!.sampleRate,
+      ...QualityExtras.of(original: audioSource, streamed: quality),
       if (song.albumArtists.isNotEmpty)
         'artistId': song.albumArtists.first.id
       else if (album.albumArtists.isNotEmpty)
@@ -993,6 +1044,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _tracks.insert(index.clamp(0, _tracks.length), resolved.track);
     state = state.copyWith(
       songs: [...state.songs]..insert(index, resolved.song),
+      deliveredQualities: _deliveredQualities(),
       currentMediaIndex: current != null && index <= current
           ? current + 1
           : current,
@@ -1070,17 +1122,62 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> adoptCachedFiles(Map<String, String> pathsById) {
-    final pending = _adoptions.then((_) => _adoptCachedFiles(pathsById));
-    _adoptions = pending.then(
+    if (pathsById.isEmpty) return Future<void>.value();
+    return _swapQueue('adopted', (song, album, sessionId) async {
+      final path = pathsById[song.id];
+      if (path == null || _localSongIds.contains(song.id)) return null;
+      final resolved = await _resolveTrack(
+        song,
+        album,
+        sessionId,
+        cachedPath: path,
+      );
+      final track = resolved?.track;
+      return track != null && track.isLocalFile ? track : null;
+    });
+  }
+
+  Future<void> requalifyStreams() {
+    final generation = ++_requalifyGeneration;
+    return _swapQueue(
+      'requalified',
+      (song, album, sessionId) async {
+        if (_localSongIds.contains(song.id)) return null;
+        return (await _resolveTrack(song, album, sessionId))?.track;
+      },
+      cancelled: () => generation != _requalifyGeneration,
+      retryWhenInterrupted: true,
+    );
+  }
+
+  Future<void> _swapQueue(
+    String label,
+    _ResolveSwap resolve, {
+    bool Function()? cancelled,
+    bool retryWhenInterrupted = false,
+  }) {
+    final pending = _swaps.then(
+      (_) => _runSwap(
+        label,
+        resolve,
+        cancelled: cancelled,
+        retryWhenInterrupted: retryWhenInterrupted,
+      ),
+    );
+    _swaps = pending.then(
       (_) {},
       onError: (Object error) =>
-          debugPrint('[Playback] adopting cached files failed: $error'),
+          debugPrint('[Playback] $label swap failed: $error'),
     );
     return pending;
   }
 
-  Future<void> _adoptCachedFiles(Map<String, String> pathsById) async {
-    if (pathsById.isEmpty || !_target.supportsLocalFiles) return;
+  Future<void> _runSwap(
+    String label,
+    _ResolveSwap resolve, {
+    required bool Function()? cancelled,
+    required bool retryWhenInterrupted,
+  }) async {
     final target = _target;
     if (target is! SwappableQueue) return;
     final album = state.album;
@@ -1088,44 +1185,59 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     final songs = state.songs;
     final queueIds = [for (final song in songs) song.id];
-    final adopted = <String>{};
-    final playing = <String>{};
+    final start = (state.currentMediaIndex ?? -1) + 1;
+    var swapped = 0;
+    var interrupted = false;
 
-    for (final (index, song) in songs.indexed) {
-      await _queueEditsToSettle();
-      if (!_queueIsSteady(queueIds)) return;
-      if (_localSongIds.contains(song.id)) continue;
-      final path = pathsById[song.id];
-      if (path == null) continue;
-      if (index == state.currentMediaIndex) {
-        playing.add(song.id);
-        continue;
-      }
-
-      final sessionId = _playSessionIds[song.id];
-      if (sessionId == null) continue;
-      final resolved = await _resolveTrack(
-        song,
-        album,
-        sessionId,
-        cachedPath: path,
-      );
-      if (resolved == null || !resolved.track.isLocalFile) continue;
-      await _queueEditsToSettle();
-      if (!_queueIsSteady(queueIds)) return;
-      if (index == state.currentMediaIndex) {
-        playing.add(song.id);
-        continue;
-      }
-
-      await _editQueue(() => target.replace(index, resolved.track));
-      if (index < _tracks.length) _tracks[index] = resolved.track;
-      adopted.add(song.id);
-      debugPrint('[Playback] adopted cached file for "${song.name}"');
+    bool proceed() {
+      if (cancelled?.call() ?? false) return false;
+      interrupted = !_queueIsSteady(queueIds);
+      return !interrupted;
     }
 
-    _localSongIds.addAll(adopted.where((id) => !playing.contains(id)));
+    try {
+      for (var step = 0; step < songs.length; step++) {
+        final index = (start + step) % songs.length;
+        final song = songs[index];
+        await _queueEditsToSettle();
+        if (!proceed()) return;
+        if (index == state.currentMediaIndex) continue;
+        final sessionId = _playSessionIds[song.id];
+        if (sessionId == null) continue;
+
+        final track = await resolve(song, album, sessionId);
+        if (track == null) continue;
+        await _queueEditsToSettle();
+        if (!proceed()) return;
+        if (index == state.currentMediaIndex) continue;
+        if (index < _tracks.length && _sameStream(_tracks[index], track)) {
+          continue;
+        }
+
+        await _editQueue(() => target.replace(index, track));
+        if (index < _tracks.length) _tracks[index] = track;
+        if (track.isLocalFile) {
+          _localSongIds.add(song.id);
+        } else {
+          _localSongIds.remove(song.id);
+        }
+        swapped++;
+      }
+    } finally {
+      if (swapped > 0 && mounted) {
+        state = state.copyWith(deliveredQualities: _deliveredQualities());
+        debugPrint('[Playback] $label $swapped tracks');
+      }
+      if (interrupted && retryWhenInterrupted && mounted) _scheduleRequalify();
+    }
   }
+
+  bool _sameStream(TargetTrack a, TargetTrack b) =>
+      a.isLocalFile == b.isLocalFile &&
+      a.mimeType == b.mimeType &&
+      a.isHls == b.isHls &&
+      a.transcoded == b.transcoded &&
+      QualityExtras.streamed(a.extras) == QualityExtras.streamed(b.extras);
 
   bool _queueIsSteady(List<String> queueIds) =>
       !_preparingQueue && _queueEditsInFlight == 0 && _queueMatches(queueIds);
@@ -1192,6 +1304,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   @override
   void dispose() {
+    _requalifyDebounce?.cancel();
     _stopProgressReports();
     _reportStopped();
     unawaited(_targetSubscription?.cancel());
@@ -1211,3 +1324,10 @@ final currentSongProvider = Provider<LibraryItem?>(
     }),
   ),
 );
+
+typedef _ResolveSwap =
+    Future<TargetTrack?> Function(
+      LibraryItem song,
+      LibraryItem album,
+      String sessionId,
+    );

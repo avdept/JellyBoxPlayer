@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/downloads/cache_downloader.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
@@ -137,6 +138,47 @@ void main() {
       ).captured;
       expect(captured.first, 'cache-test-device-a');
       expect((captured.last as StreamTargetProfile).supportsHls, isFalse);
+    });
+
+    test('- fetches at the active cap and remembers what arrived', () async {
+      when(
+        () => client.resolveStreamSource(
+          any(),
+          playSessionId: any(named: 'playSessionId'),
+          target: any(named: 'target'),
+        ),
+      ).thenAnswer(
+        (_) async => StreamSource(
+          uri: Uri.parse('http://server/audio/stream'),
+          isHls: false,
+          outputContainer: 'm4a',
+          mimeType: 'audio/mp4',
+          requiresTranscode: true,
+          delivered: const AudioSourceInfo(codec: 'aac', bitRate: 128000),
+        ),
+      );
+
+      await service.cache(
+        song('a'),
+        client,
+        preference: const StreamPreference(maxBitRate: 128),
+      );
+
+      final target =
+          verify(
+                () => client.resolveStreamSource(
+                  any(),
+                  playSessionId: any(named: 'playSessionId'),
+                  target: captureAny(named: 'target'),
+                ),
+              ).captured.single
+              as StreamTargetProfile;
+      expect(target.maxBitRate, 128);
+      expect(target.supportsHls, isFalse);
+      expect(
+        await database.qualityOf('a'),
+        const AudioSourceInfo(codec: 'aac', bitRate: 128000),
+      );
     });
 
     test('- stores the album cover alongside the audio', () async {

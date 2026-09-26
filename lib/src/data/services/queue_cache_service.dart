@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/downloads/cache_downloader.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -31,12 +32,16 @@ class QueueCacheService {
   final String _deviceId;
   final AlbumCoverStore _covers;
 
-  Future<String?> cache(LibraryItem song, MediaServerClient client) async {
+  Future<String?> cache(
+    LibraryItem song,
+    MediaServerClient client, {
+    StreamPreference preference = StreamPreference.original,
+  }) async {
     try {
       final resolved = await client.resolveStreamSource(
         song,
         playSessionId: 'cache-$_deviceId-${song.id}',
-        target: StreamTargetProfile.download(),
+        target: StreamTargetProfile.download().withPreference(preference),
       );
       final path = await _downloader.fetch(
         id: song.id,
@@ -49,7 +54,7 @@ class QueueCacheService {
         if (file.existsSync()) await file.delete();
         return null;
       }
-      await _database.insert(song, file: file);
+      await _database.insert(song, file: file, quality: resolved.delivered);
       await _cacheCover(song, client);
       debugPrint('[QueueCache] cached "${song.name}"');
       return path;

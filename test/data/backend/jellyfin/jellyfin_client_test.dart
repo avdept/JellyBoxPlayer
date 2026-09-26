@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
@@ -33,19 +34,20 @@ void main() {
     );
   });
 
-  LibraryItem songWith({String? container, String? codec}) => ItemDTO.fromJson({
-    'Id': 'song-1',
-    'Name': 'Roads',
-    'Type': 'Audio',
-    'MediaSources': [
-      {
-        'Container': container,
-        'MediaStreams': [
-          {'Type': 'Audio', 'Codec': codec},
+  LibraryItem songWith({String? container, String? codec, int? bitRate}) =>
+      ItemDTO.fromJson({
+        'Id': 'song-1',
+        'Name': 'Roads',
+        'Type': 'Audio',
+        'MediaSources': [
+          {
+            'Container': container,
+            'MediaStreams': [
+              {'Type': 'Audio', 'Codec': codec, 'BitRate': bitRate},
+            ],
+          },
         ],
-      },
-    ],
-  }).toLibraryItem();
+      }).toLibraryItem();
 
   LibraryItem imageSong({
     String? primary,
@@ -139,6 +141,101 @@ void main() {
   });
 
   group('resolveStreamSource', () {
+    StreamTargetProfile capped(int kbps) => StreamTargetProfile.localPlayer(
+      isAndroid: false,
+    ).withPreference(StreamPreference(maxBitRate: kbps));
+
+    test('- caps a source over the limit and reports what arrives', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'flac', codec: 'flac', bitRate: 1000000),
+        playSessionId: 'session-1',
+        target: capped(192),
+      );
+
+      expect(source.requiresTranscode, isTrue);
+      expect(source.uri.path, '/Audio/song-1/main.m3u8');
+      expect(source.uri.queryParameters['AudioCodec'], 'aac');
+      expect(source.uri.queryParameters['MaxStreamingBitrate'], '192000');
+      expect(source.uri.queryParameters['AudioBitRate'], '192000');
+      expect(source.delivered?.codec, 'aac');
+      expect(source.delivered?.bitRate, 192000);
+    });
+
+    test('- reports no more than the 256k Jellyfin encodes to', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'flac', codec: 'flac', bitRate: 1000000),
+        playSessionId: 'session-1',
+        target: capped(320),
+      );
+
+      expect(source.uri.queryParameters['AudioBitRate'], '320000');
+      expect(source.delivered?.bitRate, 256000);
+    });
+
+    test('- direct plays a source under the limit', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'mp3', codec: 'mp3', bitRate: 128000),
+        playSessionId: 'session-1',
+        target: capped(192),
+      );
+
+      expect(source.requiresTranscode, isFalse);
+      expect(source.uri.path, '/Audio/song-1/universal');
+      expect(
+        source.uri.queryParameters.containsKey('MaxStreamingBitrate'),
+        isFalse,
+      );
+      expect(source.uri.queryParameters.containsKey('AudioBitRate'), isFalse);
+      expect(source.delivered?.codec, 'mp3');
+      expect(source.delivered?.bitRate, 128000);
+    });
+
+    test(
+      '- leaves the server no room to transcode a source exactly at the cap',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'mp3', codec: 'mp3', bitRate: 320000),
+          playSessionId: 'session-1',
+          target: capped(320),
+        );
+
+        expect(source.requiresTranscode, isFalse);
+        expect(source.mimeType, 'audio/mpeg');
+        expect(
+          source.uri.queryParameters.containsKey('MaxStreamingBitrate'),
+          isFalse,
+        );
+        expect(source.uri.queryParameters['Container'], contains('mp3'));
+      },
+    );
+
+    test('- caps a forced transcode', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'mp3', codec: 'mp3', bitRate: 128000),
+        playSessionId: 'session-1',
+        target: capped(192),
+        forceTranscode: true,
+      );
+
+      expect(source.requiresTranscode, isTrue);
+      expect(source.uri.queryParameters['AudioBitRate'], '192000');
+    });
+
+    test('- sends no bitrate when uncapped', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'flac', codec: 'flac', bitRate: 1000000),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(isAndroid: false),
+      );
+
+      expect(
+        source.uri.queryParameters.containsKey('MaxStreamingBitrate'),
+        isFalse,
+      );
+      expect(source.uri.queryParameters.containsKey('AudioBitRate'), isFalse);
+      expect(source.delivered?.bitRate, 1000000);
+    });
+
     test(
       '- returns a direct-play universal URL for a supported container',
       () async {

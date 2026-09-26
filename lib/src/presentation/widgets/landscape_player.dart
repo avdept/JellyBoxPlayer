@@ -323,10 +323,8 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
       const PositionSlider(),
       PositionLabels(
         fontSize: 12,
-        middle: AudioQualityBadge(
-          codec: song?.extras?['codec'] as String?,
-          bitRate: song?.extras?['bitRate'] as int?,
-          sampleRate: song?.extras?['sampleRate'] as int?,
+        middle: AudioQualityBadge.heard(
+          song?.extras,
           textColor: _foreground,
         ),
       ),

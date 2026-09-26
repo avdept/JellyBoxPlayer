@@ -30,6 +30,7 @@ export 'review_prompt_provider.dart';
 export 'search_items_providers.dart';
 export 'set_playback_provider.dart';
 export 'similar_albums_provider.dart';
+export 'stream_preference_provider.dart';
 export 'studio_mode_provider.dart';
 export 'todays_playlists_provider.dart';
 export 'upnp_renderers_provider.dart';

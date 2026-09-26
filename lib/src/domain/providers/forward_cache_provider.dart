@@ -8,6 +8,7 @@ import 'package:jplayer/src/data/services/queue_cache_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/stream_preference_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class ForwardCacheNotifier extends StateNotifier<Set<String>> {
@@ -193,6 +194,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     final path = await service.cache(
       song,
       _ref.read(mediaServerClientProvider),
+      preference: _ref.read(activeStreamPreferenceProvider),
     );
     _inFlight.remove(song.id);
     if (!mounted) return;

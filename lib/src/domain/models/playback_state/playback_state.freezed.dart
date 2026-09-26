@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlaybackState {
 
- LibraryItem? get album; List<LibraryItem> get songs; PlaybackStatus get status; Duration get position; Duration get cacheProgress; Duration? get totalDuration; int? get currentMediaIndex; bool get shuffleEnabled;
+ LibraryItem? get album; List<LibraryItem> get songs; PlaybackStatus get status; Duration get position; Duration get cacheProgress; Duration? get totalDuration; int? get currentMediaIndex; bool get shuffleEnabled; Map<String, AudioSourceInfo> get deliveredQualities;
 /// Create a copy of PlaybackState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $PlaybackStateCopyWith<PlaybackState> get copyWith => _$PlaybackStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaybackState&&(identical(other.album, album) || other.album == album)&&const DeepCollectionEquality().equals(other.songs, songs)&&(identical(other.status, status) || other.status == status)&&(identical(other.position, position) || other.position == position)&&(identical(other.cacheProgress, cacheProgress) || other.cacheProgress == cacheProgress)&&(identical(other.totalDuration, totalDuration) || other.totalDuration == totalDuration)&&(identical(other.currentMediaIndex, currentMediaIndex) || other.currentMediaIndex == currentMediaIndex)&&(identical(other.shuffleEnabled, shuffleEnabled) || other.shuffleEnabled == shuffleEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaybackState&&(identical(other.album, album) || other.album == album)&&const DeepCollectionEquality().equals(other.songs, songs)&&(identical(other.status, status) || other.status == status)&&(identical(other.position, position) || other.position == position)&&(identical(other.cacheProgress, cacheProgress) || other.cacheProgress == cacheProgress)&&(identical(other.totalDuration, totalDuration) || other.totalDuration == totalDuration)&&(identical(other.currentMediaIndex, currentMediaIndex) || other.currentMediaIndex == currentMediaIndex)&&(identical(other.shuffleEnabled, shuffleEnabled) || other.shuffleEnabled == shuffleEnabled)&&const DeepCollectionEquality().equals(other.deliveredQualities, deliveredQualities));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,album,const DeepCollectionEquality().hash(songs),status,position,cacheProgress,totalDuration,currentMediaIndex,shuffleEnabled);
+int get hashCode => Object.hash(runtimeType,album,const DeepCollectionEquality().hash(songs),status,position,cacheProgress,totalDuration,currentMediaIndex,shuffleEnabled,const DeepCollectionEquality().hash(deliveredQualities));
 
 @override
 String toString() {
-  return 'PlaybackState(album: $album, songs: $songs, status: $status, position: $position, cacheProgress: $cacheProgress, totalDuration: $totalDuration, currentMediaIndex: $currentMediaIndex, shuffleEnabled: $shuffleEnabled)';
+  return 'PlaybackState(album: $album, songs: $songs, status: $status, position: $position, cacheProgress: $cacheProgress, totalDuration: $totalDuration, currentMediaIndex: $currentMediaIndex, shuffleEnabled: $shuffleEnabled, deliveredQualities: $deliveredQualities)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $PlaybackStateCopyWith<$Res>  {
   factory $PlaybackStateCopyWith(PlaybackState value, $Res Function(PlaybackState) _then) = _$PlaybackStateCopyWithImpl;
 @useResult
 $Res call({
- LibraryItem? album, List<LibraryItem> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex, bool shuffleEnabled
+ LibraryItem? album, List<LibraryItem> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex, bool shuffleEnabled, Map<String, AudioSourceInfo> deliveredQualities
 });
 
 
@@ -62,7 +62,7 @@ class _$PlaybackStateCopyWithImpl<$Res>
 
 /// Create a copy of PlaybackState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? album = freezed,Object? songs = null,Object? status = null,Object? position = null,Object? cacheProgress = null,Object? totalDuration = freezed,Object? currentMediaIndex = freezed,Object? shuffleEnabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? album = freezed,Object? songs = null,Object? status = null,Object? position = null,Object? cacheProgress = null,Object? totalDuration = freezed,Object? currentMediaIndex = freezed,Object? shuffleEnabled = null,Object? deliveredQualities = null,}) {
   return _then(_self.copyWith(
 album: freezed == album ? _self.album : album // ignore: cast_nullable_to_non_nullable
 as LibraryItem?,songs: null == songs ? _self.songs : songs // ignore: cast_nullable_to_non_nullable
@@ -72,7 +72,8 @@ as Duration,cacheProgress: null == cacheProgress ? _self.cacheProgress : cachePr
 as Duration,totalDuration: freezed == totalDuration ? _self.totalDuration : totalDuration // ignore: cast_nullable_to_non_nullable
 as Duration?,currentMediaIndex: freezed == currentMediaIndex ? _self.currentMediaIndex : currentMediaIndex // ignore: cast_nullable_to_non_nullable
 as int?,shuffleEnabled: null == shuffleEnabled ? _self.shuffleEnabled : shuffleEnabled // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,deliveredQualities: null == deliveredQualities ? _self.deliveredQualities : deliveredQualities // ignore: cast_nullable_to_non_nullable
+as Map<String, AudioSourceInfo>,
   ));
 }
 /// Create a copy of PlaybackState
@@ -169,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex,  bool shuffleEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex,  bool shuffleEnabled,  Map<String, AudioSourceInfo> deliveredQualities)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlaybackState() when $default != null:
-return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex,_that.shuffleEnabled);case _:
+return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex,_that.shuffleEnabled,_that.deliveredQualities);case _:
   return orElse();
 
 }
@@ -190,10 +191,10 @@ return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheP
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex,  bool shuffleEnabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex,  bool shuffleEnabled,  Map<String, AudioSourceInfo> deliveredQualities)  $default,) {final _that = this;
 switch (_that) {
 case _PlaybackState():
-return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex,_that.shuffleEnabled);case _:
+return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex,_that.shuffleEnabled,_that.deliveredQualities);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -210,10 +211,10 @@ return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheP
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex,  bool shuffleEnabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( LibraryItem? album,  List<LibraryItem> songs,  PlaybackStatus status,  Duration position,  Duration cacheProgress,  Duration? totalDuration,  int? currentMediaIndex,  bool shuffleEnabled,  Map<String, AudioSourceInfo> deliveredQualities)?  $default,) {final _that = this;
 switch (_that) {
 case _PlaybackState() when $default != null:
-return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex,_that.shuffleEnabled);case _:
+return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheProgress,_that.totalDuration,_that.currentMediaIndex,_that.shuffleEnabled,_that.deliveredQualities);case _:
   return null;
 
 }
@@ -225,7 +226,7 @@ return $default(_that.album,_that.songs,_that.status,_that.position,_that.cacheP
 
 
 class _PlaybackState implements PlaybackState {
-  const _PlaybackState({required this.album, required final  List<LibraryItem> songs, required this.status, required this.position, required this.cacheProgress, this.totalDuration, this.currentMediaIndex, this.shuffleEnabled = false}): _songs = songs;
+  const _PlaybackState({required this.album, required final  List<LibraryItem> songs, required this.status, required this.position, required this.cacheProgress, this.totalDuration, this.currentMediaIndex, this.shuffleEnabled = false, final  Map<String, AudioSourceInfo> deliveredQualities = const <String, AudioSourceInfo>{}}): _songs = songs,_deliveredQualities = deliveredQualities;
   
 
 @override final  LibraryItem? album;
@@ -242,6 +243,13 @@ class _PlaybackState implements PlaybackState {
 @override final  Duration? totalDuration;
 @override final  int? currentMediaIndex;
 @override@JsonKey() final  bool shuffleEnabled;
+ final  Map<String, AudioSourceInfo> _deliveredQualities;
+@override@JsonKey() Map<String, AudioSourceInfo> get deliveredQualities {
+  if (_deliveredQualities is EqualUnmodifiableMapView) return _deliveredQualities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_deliveredQualities);
+}
+
 
 /// Create a copy of PlaybackState
 /// with the given fields replaced by the non-null parameter values.
@@ -253,16 +261,16 @@ _$PlaybackStateCopyWith<_PlaybackState> get copyWith => __$PlaybackStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlaybackState&&(identical(other.album, album) || other.album == album)&&const DeepCollectionEquality().equals(other._songs, _songs)&&(identical(other.status, status) || other.status == status)&&(identical(other.position, position) || other.position == position)&&(identical(other.cacheProgress, cacheProgress) || other.cacheProgress == cacheProgress)&&(identical(other.totalDuration, totalDuration) || other.totalDuration == totalDuration)&&(identical(other.currentMediaIndex, currentMediaIndex) || other.currentMediaIndex == currentMediaIndex)&&(identical(other.shuffleEnabled, shuffleEnabled) || other.shuffleEnabled == shuffleEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlaybackState&&(identical(other.album, album) || other.album == album)&&const DeepCollectionEquality().equals(other._songs, _songs)&&(identical(other.status, status) || other.status == status)&&(identical(other.position, position) || other.position == position)&&(identical(other.cacheProgress, cacheProgress) || other.cacheProgress == cacheProgress)&&(identical(other.totalDuration, totalDuration) || other.totalDuration == totalDuration)&&(identical(other.currentMediaIndex, currentMediaIndex) || other.currentMediaIndex == currentMediaIndex)&&(identical(other.shuffleEnabled, shuffleEnabled) || other.shuffleEnabled == shuffleEnabled)&&const DeepCollectionEquality().equals(other._deliveredQualities, _deliveredQualities));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,album,const DeepCollectionEquality().hash(_songs),status,position,cacheProgress,totalDuration,currentMediaIndex,shuffleEnabled);
+int get hashCode => Object.hash(runtimeType,album,const DeepCollectionEquality().hash(_songs),status,position,cacheProgress,totalDuration,currentMediaIndex,shuffleEnabled,const DeepCollectionEquality().hash(_deliveredQualities));
 
 @override
 String toString() {
-  return 'PlaybackState(album: $album, songs: $songs, status: $status, position: $position, cacheProgress: $cacheProgress, totalDuration: $totalDuration, currentMediaIndex: $currentMediaIndex, shuffleEnabled: $shuffleEnabled)';
+  return 'PlaybackState(album: $album, songs: $songs, status: $status, position: $position, cacheProgress: $cacheProgress, totalDuration: $totalDuration, currentMediaIndex: $currentMediaIndex, shuffleEnabled: $shuffleEnabled, deliveredQualities: $deliveredQualities)';
 }
 
 
@@ -273,7 +281,7 @@ abstract mixin class _$PlaybackStateCopyWith<$Res> implements $PlaybackStateCopy
   factory _$PlaybackStateCopyWith(_PlaybackState value, $Res Function(_PlaybackState) _then) = __$PlaybackStateCopyWithImpl;
 @override @useResult
 $Res call({
- LibraryItem? album, List<LibraryItem> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex, bool shuffleEnabled
+ LibraryItem? album, List<LibraryItem> songs, PlaybackStatus status, Duration position, Duration cacheProgress, Duration? totalDuration, int? currentMediaIndex, bool shuffleEnabled, Map<String, AudioSourceInfo> deliveredQualities
 });
 
 
@@ -290,7 +298,7 @@ class __$PlaybackStateCopyWithImpl<$Res>
 
 /// Create a copy of PlaybackState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? album = freezed,Object? songs = null,Object? status = null,Object? position = null,Object? cacheProgress = null,Object? totalDuration = freezed,Object? currentMediaIndex = freezed,Object? shuffleEnabled = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? album = freezed,Object? songs = null,Object? status = null,Object? position = null,Object? cacheProgress = null,Object? totalDuration = freezed,Object? currentMediaIndex = freezed,Object? shuffleEnabled = null,Object? deliveredQualities = null,}) {
   return _then(_PlaybackState(
 album: freezed == album ? _self.album : album // ignore: cast_nullable_to_non_nullable
 as LibraryItem?,songs: null == songs ? _self._songs : songs // ignore: cast_nullable_to_non_nullable
@@ -300,7 +308,8 @@ as Duration,cacheProgress: null == cacheProgress ? _self.cacheProgress : cachePr
 as Duration,totalDuration: freezed == totalDuration ? _self.totalDuration : totalDuration // ignore: cast_nullable_to_non_nullable
 as Duration?,currentMediaIndex: freezed == currentMediaIndex ? _self.currentMediaIndex : currentMediaIndex // ignore: cast_nullable_to_non_nullable
 as int?,shuffleEnabled: null == shuffleEnabled ? _self.shuffleEnabled : shuffleEnabled // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,deliveredQualities: null == deliveredQualities ? _self._deliveredQualities : deliveredQualities // ignore: cast_nullable_to_non_nullable
+as Map<String, AudioSourceInfo>,
   ));
 }
 

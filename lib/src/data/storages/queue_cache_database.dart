@@ -29,7 +29,11 @@ class QueueCacheDatabase {
 
   String get _serverId => _owner.serverId;
 
-  Future<void> insert(LibraryItem song, {required File file}) async {
+  Future<void> insert(
+    LibraryItem song, {
+    required File file,
+    AudioSourceInfo? quality,
+  }) async {
     final db = await _database;
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.insert(_table, {
@@ -40,7 +44,21 @@ class QueueCacheDatabase {
       'CachedDate': now,
       'LastUsedDate': now,
       'Data': jsonEncode(song.toJson()),
+      'Quality': quality == null ? null : jsonEncode(quality.toJson()),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<AudioSourceInfo?> qualityOf(String id) async {
+    final db = await _database;
+    final results = await db.query(
+      _table,
+      columns: ['Quality'],
+      where: 'Id = ? AND ServerId = ?',
+      whereArgs: [id, _serverId],
+    );
+    final stored = results.firstOrNull?['Quality'] as String?;
+    if (stored == null) return null;
+    return AudioSourceInfo.fromJson(jsonDecode(stored) as Map<String, dynamic>);
   }
 
   Future<String?> pathOf(String id) async {
