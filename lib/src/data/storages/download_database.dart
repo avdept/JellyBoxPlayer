@@ -16,7 +16,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 6;
+  static const _schemaVersion = 7;
 
   static String? databaseDirectory;
 
@@ -79,6 +79,7 @@ class DownloadDatabase {
     await _migrateToV4(db);
     await _migrateToV5(db);
     await _migrateToV6(db);
+    await _migrateToV7(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -87,6 +88,11 @@ class DownloadDatabase {
     if (oldVersion < 4) await _migrateToV4(db);
     if (oldVersion < 5) await _migrateToV5(db);
     if (oldVersion < 6) await _migrateToV6(db);
+    if (oldVersion < 7) await _migrateToV7(db);
+  }
+
+  Future<void> _migrateToV7(Database db) async {
+    await db.execute(await rootBundle.loadString(DbMigrations.queueCacheV7));
   }
 
   Future<void> _migrateToV6(Database db) async {

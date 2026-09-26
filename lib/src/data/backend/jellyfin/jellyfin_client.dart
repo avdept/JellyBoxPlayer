@@ -30,6 +30,7 @@ class JellyfinClient implements MediaServerClient {
        _baseUrl = baseUrl;
 
   static const _defaultImageSize = 420;
+  static const _lossyBitRateCeiling = 256;
   static const _sizeParams = {'fillHeight', 'fillWidth'};
 
   @override
@@ -391,6 +392,7 @@ class JellyfinClient implements MediaServerClient {
       target: target,
       sourceContainer: audioSource?.container,
       sourceCodec: audioSource?.codec,
+      sourceBitRate: audioSource?.bitRate,
     );
 
     final useHls = target.supportsHls && (forceTranscode || profile.useHls);
@@ -408,6 +410,10 @@ class JellyfinClient implements MediaServerClient {
         'PlaySessionId': playSessionId,
         'MediaSourceId': audioSource?.id ?? song.id,
         'AudioCodec': profile.transcodingAudioCodec,
+        if (profile.bitRateCap case final int kbps when transcodes) ...{
+          'MaxStreamingBitrate': '${kbps * 1000}',
+          'AudioBitRate': '${kbps * 1000}',
+        },
         if (useHls) ...{
           'SegmentContainer': profile.hlsSegmentContainer,
           'TranscodeReasons': 'AudioCodecNotSupported',
@@ -429,6 +435,11 @@ class JellyfinClient implements MediaServerClient {
           ? mimeTypeForContainer('m3u8')
           : mimeTypeForContainer(outputContainer),
       requiresTranscode: transcodes,
+      delivered: profile.deliveredQuality(
+        audioSource,
+        transcodes: transcodes,
+        bitRateCeiling: _lossyBitRateCeiling,
+      ),
     );
   }
 

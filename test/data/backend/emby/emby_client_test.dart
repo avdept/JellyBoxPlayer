@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
@@ -34,6 +35,7 @@ void main() {
     String? container,
     String? codec,
     String? mediaSourceId = 'mediasource_song-1',
+    int? bitRate,
   }) => ItemDTO.fromJson({
     'Id': 'song-1',
     'Name': 'Roads',
@@ -43,13 +45,45 @@ void main() {
         'Id': mediaSourceId,
         'Container': container,
         'MediaStreams': [
-          {'Type': 'Audio', 'Codec': codec},
+          {'Type': 'Audio', 'Codec': codec, 'BitRate': bitRate},
         ],
       },
     ],
   }).toEmbyLibraryItem();
 
   group('resolveStreamSource', () {
+    test('- caps a source over the limit', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'flac', codec: 'flac', bitRate: 1000000),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(
+          isAndroid: false,
+        ).withPreference(const StreamPreference(maxBitRate: 128)),
+      );
+
+      expect(source.requiresTranscode, isTrue);
+      expect(source.uri.queryParameters['AudioCodec'], 'aac');
+      expect(source.uri.queryParameters['MaxStreamingBitrate'], '128000');
+      expect(source.uri.queryParameters['AudioBitRate'], '128000');
+      expect(source.delivered?.bitRate, 128000);
+    });
+
+    test('- sends no cap when the source direct plays under it', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'mp3', codec: 'mp3', bitRate: 128000),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(
+          isAndroid: false,
+        ).withPreference(const StreamPreference(maxBitRate: 192)),
+      );
+
+      expect(source.requiresTranscode, isFalse);
+      expect(
+        source.uri.queryParameters.containsKey('MaxStreamingBitrate'),
+        isFalse,
+      );
+    });
+
     test(
       '- returns a direct-play universal URL for a supported container',
       () async {
@@ -74,18 +108,70 @@ void main() {
       },
     );
 
-    test('- transcodes an unsupported container to HLS', () async {
+    test(
+      '- transcodes an unsupported container to HLS in ts segments',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'ogg', codec: 'vorbis'),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.localPlayer(isAndroid: false),
+        );
+
+        expect(source.isHls, isTrue);
+        expect(source.uri.path, '/Audio/song-1/main.m3u8');
+        expect(source.uri.queryParameters['AudioCodec'], 'aac');
+        expect(source.uri.queryParameters['SegmentContainer'], 'ts');
+      },
+    );
+
+    test(
+      '- streams FLAC directly on Apple platforms, never over HLS',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'flac', codec: 'flac'),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.localPlayer(
+            isAndroid: false,
+            isDarwin: true,
+          ),
+        );
+
+        expect(source.isHls, isFalse);
+        expect(source.requiresTranscode, isFalse);
+        expect(source.uri.path, '/Audio/song-1/universal');
+        expect(source.mimeType, 'audio/flac');
+      },
+    );
+
+    test('- transcodes ALAC on Android to progressive FLAC', () async {
       final source = await client.resolveStreamSource(
-        songWith(container: 'ogg', codec: 'vorbis'),
+        songWith(container: 'm4a', codec: 'alac'),
         playSessionId: 'session-1',
-        target: StreamTargetProfile.localPlayer(isAndroid: false),
+        target: StreamTargetProfile.localPlayer(isAndroid: true),
       );
 
-      expect(source.isHls, isTrue);
-      expect(source.outputContainer, 'm4a');
-      expect(source.uri.path, '/Audio/song-1/main.m3u8');
-      expect(source.uri.queryParameters['AudioCodec'], 'aac');
-      expect(source.uri.queryParameters['SegmentContainer'], 'ts');
+      expect(source.isHls, isFalse);
+      expect(source.requiresTranscode, isTrue);
+      expect(source.uri.path, '/Audio/song-1/universal');
+      expect(source.uri.queryParameters['TranscodingContainer'], 'flac');
+      expect(source.outputContainer, 'flac');
+    });
+
+    test('- asks for ADTS rather than m4a on the progressive path', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'flac', codec: 'flac', bitRate: 1000000),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.download(
+          isAndroid: false,
+        ).withPreference(const StreamPreference(maxBitRate: 128)),
+      );
+
+      expect(source.isHls, isFalse);
+      expect(source.uri.queryParameters['TranscodingContainer'], 'aac');
+      expect(source.outputContainer, 'aac');
+      expect(source.mimeType, 'audio/aac');
+      expect(source.delivered?.container, 'aac');
+      expect(source.delivered?.codec, 'aac');
     });
 
     test('- falls back to the item id when the source has no id', () async {

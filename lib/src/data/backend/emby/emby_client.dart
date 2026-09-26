@@ -396,12 +396,17 @@ class EmbyClient implements MediaServerClient {
       target: target,
       sourceContainer: audioSource?.container,
       sourceCodec: audioSource?.codec,
+      sourceBitRate: audioSource?.bitRate,
     );
 
-    final useHls = target.supportsHls && (forceTranscode || profile.useHls);
     final transcodes = forceTranscode || profile.requiresTranscode;
+    final useHls =
+        target.supportsHls && transcodes && !profile.transcodesLossless;
+    final transcodingContainer = _progressiveContainer(
+      profile.transcodingContainer,
+    );
     final outputContainer = transcodes
-        ? profile.transcodingContainer
+        ? transcodingContainer
         : profile.outputContainer;
 
     final uri = _resolve(
@@ -413,6 +418,10 @@ class EmbyClient implements MediaServerClient {
         'PlaySessionId': playSessionId,
         'MediaSourceId': audioSource?.id ?? song.id,
         'AudioCodec': profile.transcodingAudioCodec,
+        if (profile.bitRateCap case final int kbps when transcodes) ...{
+          'MaxStreamingBitrate': '${kbps * 1000}',
+          'AudioBitRate': '${kbps * 1000}',
+        },
         if (useHls) ...{
           'SegmentContainer': profile.hlsSegmentContainer,
           'TranscodeReasons': 'AudioCodecNotSupported',
@@ -420,7 +429,7 @@ class EmbyClient implements MediaServerClient {
             'StartTimeTicks': '${startPosition.inMicroseconds * 10}',
         } else ...{
           'TranscodingProtocol': 'http',
-          'TranscodingContainer': profile.transcodingContainer,
+          'TranscodingContainer': transcodingContainer,
           if (!forceTranscode) 'Container': profile.directPlayContainers,
         },
       },
@@ -434,8 +443,14 @@ class EmbyClient implements MediaServerClient {
           ? mimeTypeForContainer('m3u8')
           : mimeTypeForContainer(outputContainer),
       requiresTranscode: transcodes,
+      delivered: profile
+          .deliveredQuality(audioSource, transcodes: transcodes)
+          .copyWith(container: useHls ? null : outputContainer),
     );
   }
+
+  static String _progressiveContainer(String container) =>
+      container == 'm4a' ? 'aac' : container;
 
   @override
   Uri? imageUri(

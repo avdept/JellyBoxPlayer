@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/audio_container_mime.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -53,6 +54,65 @@ void main() {
       ).toLibraryItem();
 
   group('resolveStreamSource', () {
+    StreamTargetProfile capped(int kbps) => StreamTargetProfile.localPlayer(
+      isAndroid: false,
+    ).withPreference(StreamPreference(maxBitRate: kbps));
+
+    test('- re-encodes to the cap when the source is over it', () async {
+      final source = await client.resolveStreamSource(
+        song(),
+        playSessionId: 'session-1',
+        target: capped(128),
+      );
+
+      expect(source.requiresTranscode, isTrue);
+      expect(source.outputContainer, 'mp3');
+      expect(source.uri.queryParameters['format'], 'mp3');
+      expect(source.uri.queryParameters['maxBitRate'], '128');
+      expect(source.delivered?.codec, 'mp3');
+      expect(source.delivered?.container, 'mp3');
+      expect(source.delivered?.bitRate, 128000);
+    });
+
+    test('- turns a lossless source lossy under a cap', () async {
+      final source = await client.resolveStreamSource(
+        song(suffix: 'flac', bitDepth: 16),
+        playSessionId: 'session-1',
+        target: capped(128),
+      );
+
+      expect(source.uri.queryParameters['format'], 'mp3');
+      expect(source.uri.queryParameters['maxBitRate'], '128');
+    });
+
+    test('- serves the raw file when the source fits the cap', () async {
+      final source = await client.resolveStreamSource(
+        song(),
+        playSessionId: 'session-1',
+        target: capped(320),
+      );
+
+      expect(source.requiresTranscode, isFalse);
+      expect(source.uri.queryParameters['format'], 'raw');
+      expect(source.delivered?.bitRate, 320000);
+    });
+
+    test('- asks for the codec of the preference when one is set', () async {
+      final source = await client.resolveStreamSource(
+        song(),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(isAndroid: false)
+            .withPreference(
+              const StreamPreference(
+                maxBitRate: 128,
+                codec: TranscodeTarget.aac,
+              ),
+            ),
+      );
+
+      expect(source.uri.queryParameters['format'], 'aac');
+    });
+
     test(
       '- direct plays without a format and keeps the source container',
       () async {

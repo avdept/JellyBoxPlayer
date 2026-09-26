@@ -61,6 +61,66 @@ void main() {
       expect(await database.totalBytes(), 2048);
     });
 
+    test('- keeps the quality a file was fetched at', () async {
+      final database = await freshDb();
+      const quality = AudioSourceInfo(
+        container: 'm4a',
+        codec: 'aac',
+        bitRate: 128000,
+        sampleRate: 44100,
+      );
+
+      await database.insert(song('a'), file: cachedFile('a'), quality: quality);
+      await database.insert(song('b'), file: cachedFile('b'));
+
+      expect(await database.qualityOf('a'), quality);
+      expect(await database.qualityOf('b'), isNull);
+      expect(await database.qualityOf('missing'), isNull);
+    });
+
+    test(
+      '- adds the quality column to a v6 cache without losing rows',
+      () async {
+        await deleteDb();
+        final path = join(await getDatabasesPath(), 'downloads.db');
+        final v6 = await databaseFactory.openDatabase(
+          path,
+          options: OpenDatabaseOptions(
+            version: 6,
+            onCreate: (db, version) async => db.execute(
+              File(
+                'assets/db/migrations/queue_cache_v6.sql',
+              ).readAsStringSync(),
+            ),
+          ),
+        );
+        final file = cachedFile('a');
+        await v6.insert('QueueCache', {
+          'Id': 'a',
+          'ServerId': 'server-1',
+          'FilePath': file.path,
+          'SizeInBytes': 1024,
+          'CachedDate': 0,
+          'LastUsedDate': 0,
+          'Data': '{}',
+        });
+        await v6.close();
+
+        final database = QueueCacheDatabase(
+          DownloadDatabase(serverId: 'server-1'),
+        );
+
+        expect(await database.pathOf('a'), file.path);
+        expect(await database.qualityOf('a'), isNull);
+        await database.insert(
+          song('b'),
+          file: cachedFile('b'),
+          quality: const AudioSourceInfo(codec: 'aac', bitRate: 96000),
+        );
+        expect((await database.qualityOf('b'))?.bitRate, 96000);
+      },
+    );
+
     test('- skips entries whose file vanished', () async {
       final database = await freshDb();
       final kept = cachedFile('a');

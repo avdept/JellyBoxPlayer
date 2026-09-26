@@ -698,6 +698,7 @@ class SubsonicClient implements MediaServerClient {
       target: target,
       sourceContainer: audioSource?.container,
       sourceCodec: audioSource?.codec,
+      sourceBitRate: audioSource?.bitRate,
     );
 
     if (!forceTranscode && !profile.requiresTranscode) {
@@ -707,21 +708,33 @@ class SubsonicClient implements MediaServerClient {
         isHls: false,
         outputContainer: container,
         mimeType: mimeTypeForContainer(container),
+        delivered: profile.deliveredQuality(audioSource, transcodes: false),
       );
     }
 
-    final lossless = profile.transcodingAudioCodec == losslessTranscodeFormat;
-    final format = lossless ? losslessTranscodeFormat : lossyTranscodeFormat;
+    final lossless = profile.transcodesLossless;
+    final format = lossless
+        ? losslessTranscodeFormat
+        : target.preference.codec?.codec ?? lossyTranscodeFormat;
+    final bitRate = profile.bitRateCap ?? transcodeBitRate;
+    final delivered = profile.deliveredQuality(audioSource, transcodes: true);
     return StreamSource(
       uri: _api.streamUri(
         song.id,
         format: format,
-        maxBitRate: lossless ? null : transcodeBitRate,
+        maxBitRate: lossless ? null : bitRate,
       ),
       isHls: false,
       outputContainer: format,
       mimeType: mimeTypeForContainer(format),
       requiresTranscode: true,
+      delivered: lossless
+          ? delivered
+          : delivered.copyWith(
+              container: format,
+              codec: format,
+              bitRate: bitRate * 1000,
+            ),
     );
   }
 

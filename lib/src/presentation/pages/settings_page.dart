@@ -17,6 +17,7 @@ import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/network_type_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -61,6 +62,16 @@ class SettingsPage extends ConsumerWidget {
     ForwardCacheWindow.min30: '30 min',
     ForwardCacheWindow.min45: '45 min',
     ForwardCacheWindow.min60: '60 min',
+  };
+
+  static const Map<StreamQuality, String> _streamQualityLabels = {
+    StreamQuality.original: 'Original',
+    StreamQuality.kbps320: '320 kbps',
+    StreamQuality.kbps256: '256 kbps',
+    StreamQuality.kbps192: '192 kbps',
+    StreamQuality.kbps128: '128 kbps',
+    StreamQuality.kbps96: '96 kbps',
+    StreamQuality.kbps64: '64 kbps',
   };
 
   static const Map<ContentUpdateInterval, String> _contentUpdateLabels = {
@@ -232,6 +243,35 @@ class SettingsPage extends ConsumerWidget {
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultBrowseTab, value.name),
+                    ),
+                    _sectionHeader('Streaming'),
+                    _settingDropdown<StreamQuality>(
+                      context: context,
+                      label: deviceHasCellular ? 'Wi-Fi' : 'Streaming quality',
+                      value: ref.watch(streamQualityWifiProvider),
+                      options: _streamQualityLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.streamQualityWifi, value.name),
+                    ),
+                    if (deviceHasCellular)
+                      _settingDropdown<StreamQuality>(
+                        context: context,
+                        label: 'Cellular',
+                        value: ref.watch(streamQualityCellularProvider),
+                        options: _streamQualityLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(
+                              AppSetting.streamQualityCellular,
+                              value.name,
+                            ),
+                      ),
+                    _settingNote(
+                      context,
+                      'Songs above the limit are converted by your server. '
+                      'Changes apply from the next song. Downloads always '
+                      'keep the original quality.',
                     ),
                     _sectionHeader('Cache'),
                     _settingDropdown<ForwardCacheLimit>(
