@@ -4,7 +4,6 @@ import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/now_playing_queue_view.dart';
 import 'package:jplayer/src/presentation/widgets/sidebar_overlay.dart';
-import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 class QueueSidebar extends ConsumerWidget {
   const QueueSidebar({super.key});
@@ -18,7 +17,6 @@ class QueueSidebar extends ConsumerWidget {
     return SidebarOverlay(
       isShown: isShown,
       title: 'Queue',
-      backgroundColor: ref.watch(artworkSchemeProvider).valueOrNull?.surface,
       onClose: () =>
           ref.read(queueSidebarVisibleProvider.notifier).state = false,
       child: NowPlayingQueueView(isActive: isShown),
