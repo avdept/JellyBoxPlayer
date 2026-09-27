@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum AppSetting {
   sidebarCollapsed('sidebar_collapsed', defaultValue: true),
   studioModeFullscreen('studio_mode_fullscreen'),
+  nowPlayingHalo('now_playing_halo'),
   animationSpeed('animation_speed', defaultValue: 'medium'),
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),

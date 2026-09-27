@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
@@ -60,7 +61,8 @@ class _NowPlayingGlowState extends ConsumerState<NowPlayingGlow>
   }
 
   void _syncBreath(PlaybackStatus? status) {
-    if (_isPlaying(status)) {
+    if (_isPlaying(status) &&
+        ref.read(settingProvider(AppSetting.nowPlayingHalo))) {
       if (!_breath.isAnimating) _breath.repeat(reverse: true);
     } else if (_breath.isAnimating || _breath.value != 1) {
       _breath.animateTo(1, duration: const Duration(milliseconds: 400));
@@ -70,10 +72,16 @@ class _NowPlayingGlowState extends ConsumerState<NowPlayingGlow>
   @override
   Widget build(BuildContext context) {
     final provider = queueSourceStatus(widget.item.id);
-    ref.listen(provider, (_, next) => _syncBreath(next));
+    ref
+      ..listen(provider, (_, next) => _syncBreath(next))
+      ..listen(
+        settingProvider(AppSetting.nowPlayingHalo),
+        (_, _) => _syncBreath(ref.read(provider)),
+      );
+    final enabled = ref.watch(settingProvider(AppSetting.nowPlayingHalo));
     final status = ref.watch(provider);
     final isPlaying = _isPlaying(status);
-    final isActive = isPlaying || status == PlaybackStatus.paused;
+    final isActive = enabled && (isPlaying || status == PlaybackStatus.paused);
 
     if (isActive) {
       final resolved = ref.watch(itemGlowColorProvider(widget.item));

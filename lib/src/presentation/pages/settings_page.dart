@@ -250,6 +250,11 @@ class SettingsPage extends ConsumerWidget {
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultBrowseTab, value.name),
                     ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.nowPlayingHalo,
+                      label: 'Enable halo effect for currently playing media',
+                    ),
                     _sectionHeader('Streaming'),
                     _settingDropdown<StreamQuality>(
                       context: context,
