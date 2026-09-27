@@ -84,8 +84,12 @@ void main() {
       await content.play('song', 's2', songContext: CarContent.searchContext);
 
       final call = verify(
-        () =>
-            env.playbackNotifier.play(captureAny(), captureAny(), captureAny()),
+        () => env.playbackNotifier.play(
+          captureAny(),
+          captureAny(),
+          captureAny(),
+          sourceId: captureAny(named: 'sourceId'),
+        ),
       ).captured;
       expect((call[0] as LibraryItem).id, 's2');
       expect((call[1] as List<LibraryItem>).map((s) => s.id), ['s1', 's2']);

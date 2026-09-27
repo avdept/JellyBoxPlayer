@@ -17,6 +17,7 @@ abstract class PlaybackState with _$PlaybackState {
     required Duration cacheProgress,
     Duration? totalDuration,
     int? currentMediaIndex,
+    String? sourceId,
     @Default(false) bool shuffleEnabled,
     @Default(<String, AudioSourceInfo>{})
     Map<String, AudioSourceInfo> deliveredQualities,

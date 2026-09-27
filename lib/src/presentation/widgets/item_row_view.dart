@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -34,6 +35,8 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
   Future<void> _onPlayPressed() async {
     final onPlayPressed = widget.onPlayPressed;
     if (onPlayPressed == null || _isPlayLoading) return;
+    final toggled = toggleQueueSource(ref, item.id);
+    if (toggled != null) return toggled;
     setState(() => _isPlayLoading = true);
     try {
       await onPlayPressed(item);
@@ -80,18 +83,23 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
           widget.optionsBuilder != null ? 4 : horizontal,
           8,
         ),
-        leading: ClipRRect(
+        leading: NowPlayingGlow(
+          item: item,
           borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
-          child: Image(
-            image: ref.read(imageServiceProvider).itemImage(item),
-            width: imageSize,
-            height: imageSize,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Image.asset(
-              Images.album,
+          blurRadius: 14,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
+            child: Image(
+              image: ref.read(imageServiceProvider).itemImage(item),
               width: imageSize,
               height: imageSize,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Image.asset(
+                Images.album,
+                width: imageSize,
+                height: imageSize,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
@@ -127,6 +135,10 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
               CirclePlayButton(
                 size: isMobile ? 36 : 40,
                 isLoading: _isPlayLoading,
+                isPlaying: switch (ref.watch(queueSourceStatus(item.id))) {
+                  PlaybackStatus.playing || PlaybackStatus.buffering => true,
+                  _ => false,
+                },
                 onPressed: _onPlayPressed,
               ),
             if (widget.optionsBuilder case final builder?)

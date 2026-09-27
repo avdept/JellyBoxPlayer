@@ -419,7 +419,9 @@ class CarContent {
           albumArtists: song.albumArtists,
           images: song.images,
         );
-    await _ref.read(playbackProvider.notifier).play(song, queue, album);
+    await _ref
+        .read(playbackProvider.notifier)
+        .play(song, queue, album, sourceId: set?.id);
   }
 
   LibraryItem? _setFor(String context) {

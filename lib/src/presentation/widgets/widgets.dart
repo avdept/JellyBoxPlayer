@@ -34,6 +34,7 @@ export 'listenbrainz_connect_form.dart';
 export 'listenbrainz_settings.dart';
 export 'login_logo.dart';
 export 'lyrics_overlay.dart';
+export 'now_playing_glow.dart';
 export 'now_playing_queue_view.dart';
 export 'offline_banner.dart';
 export 'offline_notice.dart';

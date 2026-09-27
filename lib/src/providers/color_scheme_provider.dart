@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -35,3 +36,20 @@ final AutoDisposeFutureProvider<ColorScheme?> artworkSchemeProvider =
         return null;
       }
     });
+
+final AutoDisposeFutureProviderFamily<Color?, LibraryItem>
+itemGlowColorProvider = FutureProvider.autoDispose.family<Color?, LibraryItem>((
+  ref,
+  item,
+) async {
+  try {
+    final scheme = await ColorScheme.fromImageProvider(
+      provider: ref.read(imageServiceProvider).itemImage(item),
+      brightness: Brightness.dark,
+      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+    );
+    return scheme.primary;
+  } on Object {
+    return null;
+  }
+});

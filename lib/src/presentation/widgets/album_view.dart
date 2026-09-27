@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
+import 'package:jplayer/src/presentation/widgets/now_playing_glow.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -58,6 +60,8 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
   Future<void> _onPlayPressed() async {
     final onPlayPressed = widget.onPlayPressed;
     if (onPlayPressed == null || _isPlayLoading) return;
+    final toggled = toggleQueueSource(ref, widget.album.id);
+    if (toggled != null) return toggled;
     setState(() => _isPlayLoading = true);
     try {
       await onPlayPressed(widget.album);
@@ -102,16 +106,21 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  widget.coverOverride ??
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image(
-                          image: _libraryImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset(Images.album, fit: BoxFit.cover),
+                  NowPlayingGlow(
+                    item: widget.album,
+                    borderRadius: BorderRadius.circular(12),
+                    child:
+                        widget.coverOverride ??
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image(
+                            image: _libraryImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Image.asset(Images.album, fit: BoxFit.cover),
+                          ),
                         ),
-                      ),
+                  ),
                   if (widget.optionsBuilder != null)
                     Positioned(
                       top: 0,
@@ -201,6 +210,13 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
     maxLines: 1,
   );
 
+  bool get _isSourcePlaying => switch (ref.watch(
+    queueSourceStatus(widget.album.id),
+  )) {
+    PlaybackStatus.playing || PlaybackStatus.buffering => true,
+    _ => false,
+  };
+
   Widget _playButton(double size) {
     final isVisible = _isHovered || _isPlayLoading;
 
@@ -212,6 +228,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
         child: CirclePlayButton(
           size: size,
           isLoading: _isPlayLoading,
+          isPlaying: _isSourcePlaying,
           onPressed: _onPlayPressed,
         ),
       ),

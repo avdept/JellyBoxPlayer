@@ -138,12 +138,17 @@ void main() {
 
       verify(() => env.setPlayback.playAlbum(album('a1'))).called(1);
       final call = verify(
-        () =>
-            env.playbackNotifier.play(captureAny(), captureAny(), captureAny()),
+        () => env.playbackNotifier.play(
+          captureAny(),
+          captureAny(),
+          captureAny(),
+          sourceId: captureAny(named: 'sourceId'),
+        ),
       ).captured;
       expect((call[0] as LibraryItem).id, 's2');
       expect((call[1] as List<LibraryItem>).map((s) => s.id), ['s1', 's2']);
       expect((call[2] as LibraryItem).id, 'a1');
+      expect(call[3], 'a1');
     });
 
     test('- downloads open their tracks', () async {
@@ -196,8 +201,12 @@ void main() {
       await handler.playFromMediaId(results.last.id);
 
       final call = verify(
-        () =>
-            env.playbackNotifier.play(captureAny(), captureAny(), captureAny()),
+        () => env.playbackNotifier.play(
+          captureAny(),
+          captureAny(),
+          captureAny(),
+          sourceId: captureAny(named: 'sourceId'),
+        ),
       ).captured;
       expect((call[0] as LibraryItem).id, 's2');
       expect((call[1] as List<LibraryItem>).map((s) => s.id), ['s1', 's2']);
@@ -228,6 +237,7 @@ void main() {
             captureAny(),
             captureAny(),
             captureAny(),
+            sourceId: captureAny(named: 'sourceId'),
           ),
         ).captured;
         expect((call[0] as LibraryItem).id, 's1');
