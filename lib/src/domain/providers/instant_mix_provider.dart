@@ -1,45 +1,38 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/providers/instant_mix_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/storages/instant_mix_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 
-const instantMixIdPrefix = 'instant-mix:';
 const recentInstantMixesLimit = 5;
 
-bool isInstantMixId(String id) => id.startsWith(instantMixIdPrefix);
-
-LibraryItem instantMixItem(LibraryItem seed) => LibraryItem(
-  id: '$instantMixIdPrefix${seed.id}',
-  name: "${seed.name}'s mix",
-  kind: ItemKind.playlist,
-  images: seed.images,
-);
-
-class InstantMix {
-  const InstantMix({
-    required this.seed,
-    required this.item,
-    required this.songs,
-    this.libraryId,
-  });
-
-  final LibraryItem seed;
-  final LibraryItem item;
-  final List<LibraryItem> songs;
-  final String? libraryId;
-
-  InstantMix withSongs(List<LibraryItem> songs) => InstantMix(
-    seed: seed,
-    item: item,
-    songs: songs,
-    libraryId: libraryId,
-  );
-}
-
 class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
-  InstantMixesNotifier(this._ref) : super(const []);
+  InstantMixesNotifier(this._ref, this._database) : super(const []) {
+    restored = _restore();
+  }
 
   final Ref _ref;
+  final InstantMixDatabase _database;
+  final _fresh = <String>{};
+
+  late final Future<void> restored;
+
+  Future<void> _restore() async {
+    final List<InstantMix> stored;
+    try {
+      stored = await _database.getMixes();
+    } on Object {
+      return;
+    }
+    if (!mounted) return;
+    final known = {for (final mix in state) mix.item.id};
+    state = [
+      ...state,
+      for (final mix in stored)
+        if (!known.contains(mix.item.id)) mix,
+    ].take(recentInstantMixesLimit).toList();
+  }
 
   InstantMix? byId(String id) {
     for (final mix in state) {
@@ -67,12 +60,29 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
 
     final mix = InstantMix(
       seed: seed,
-      item: instantMixItem(seed),
       songs: songs,
       libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
     );
+    _fresh.add(mix.item.id);
     _remember(mix);
     return mix;
+  }
+
+  Future<void> refresh(String id) async {
+    final mix = byId(id);
+    if (mix == null || !_fresh.add(id)) return;
+    final List<LibraryItem> songs;
+    try {
+      songs = await _ref.read(mediaServerClientProvider).getItemsByIds([
+        for (final song in mix.songs) song.id,
+      ]);
+    } on Object {
+      _fresh.remove(id);
+      return;
+    }
+    if (!mounted) return;
+    final current = byId(id);
+    if (current != null) _setSongs(current, songs);
   }
 
   void touch(String id) {
@@ -81,16 +91,21 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
   }
 
   void updateSong(String mixId, LibraryItem updated) {
+    final mix = byId(mixId);
+    if (mix == null) return;
+    _setSongs(mix, [
+      for (final song in mix.songs)
+        if (song.id == updated.id) updated else song,
+    ]);
+  }
+
+  void _setSongs(InstantMix mix, List<LibraryItem> songs) {
+    final updated = mix.withSongs(songs);
     state = [
-      for (final mix in state)
-        if (mix.item.id == mixId)
-          mix.withSongs([
-            for (final song in mix.songs)
-              if (song.id == updated.id) updated else song,
-          ])
-        else
-          mix,
+      for (final other in state)
+        if (other.item.id == mix.item.id) updated else other,
     ];
+    _database.updateSongs(updated).ignore();
   }
 
   void _remember(InstantMix mix) {
@@ -98,12 +113,13 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
       mix,
       ...state.where((other) => other.item.id != mix.item.id),
     ].take(recentInstantMixesLimit).toList();
+    _database.saveMix(mix, keep: recentInstantMixesLimit).ignore();
   }
 }
 
 final instantMixesProvider =
     StateNotifierProvider<InstantMixesNotifier, List<InstantMix>>(
-      InstantMixesNotifier.new,
+      (ref) => InstantMixesNotifier(ref, ref.watch(instantMixDatabaseProvider)),
     );
 
 final AutoDisposeProvider<List<InstantMix>> libraryInstantMixesProvider =

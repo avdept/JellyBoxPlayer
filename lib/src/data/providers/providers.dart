@@ -2,6 +2,7 @@ export 'certificate_trust_provider.dart';
 export 'dio_provider.dart';
 export 'download_database_provider.dart';
 export 'generated_playlist_database_provider.dart';
+export 'instant_mix_database_provider.dart';
 export 'media_server_client_provider.dart';
 export 'playback_storage_provider.dart';
 export 'queue_cache_database_provider.dart';
