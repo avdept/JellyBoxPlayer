@@ -12,6 +12,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -107,6 +108,7 @@ void main() {
   databaseFactory = databaseFactoryFfi;
 
   late ProviderContainer container;
+  final restarted = <ProviderContainer>[];
   late _FakeTarget target;
   late MediaServerClient client;
 
@@ -115,10 +117,24 @@ void main() {
     for (final id in ['a', 'b', 'c', 'd']) _song(id),
   ];
 
+  ProviderContainer newContainer({String? userId}) => ProviderContainer(
+    overrides: [
+      localPlaybackTargetProvider.overrideWithValue(target),
+      mediaServerClientProvider.overrideWith((_) => client),
+      isOfflineProvider.overrideWithValue(false),
+      if (userId != null)
+        currentUserProvider.overrideWith(
+          (_) => User(userId: userId, token: 'token'),
+        ),
+    ],
+  );
+
   setUpAll(() async {
     final dbDir = await Directory.systemTemp.createTemp('instant_mix_db');
     await databaseFactory.setDatabasesPath(dbDir.path);
     registerFallbackValue(queue.first);
+    registerFallbackValue(ItemKind.song);
+    registerFallbackValue(<String>[]);
     registerFallbackValue(StreamTargetProfile.download(isAndroid: false));
     registerFallbackValue(
       const PlaybackReport(itemId: 'fallback', playSessionId: 'fallback'),
@@ -151,18 +167,16 @@ void main() {
     when(() => client.reportPlaybackStopped(any())).thenAnswer((_) async {});
     when(() => client.reportPlaybackProgress(any())).thenAnswer((_) async {});
 
-    container = ProviderContainer(
-      overrides: [
-        localPlaybackTargetProvider.overrideWithValue(target),
-        mediaServerClientProvider.overrideWith((_) => client),
-        isOfflineProvider.overrideWithValue(false),
-      ],
-    );
+    container = newContainer();
   });
 
   tearDown(() async {
     await container.read(playbackProvider.notifier).clear();
     container.dispose();
+    for (final other in restarted) {
+      other.dispose();
+    }
+    restarted.clear();
   });
 
   void mixReturns(String seedId, List<LibraryItem> songs) => when(
@@ -313,6 +327,167 @@ void main() {
         _trackIds(target.replaced.single.upcoming),
         _ids(state.songs).skip(1),
       );
+    });
+  });
+
+  group('- persisting mixes', () {
+    Future<ProviderContainer> signedIn(String userId) async {
+      final signedIn = newContainer(userId: userId);
+      restarted.add(signedIn);
+      await signedIn.read(instantMixesProvider.notifier).restored;
+      return signedIn;
+    }
+
+    Future<void> flush(ProviderContainer session) =>
+        session.read(instantMixDatabaseProvider).getMixes();
+
+    List<String> seedsOf(ProviderContainer session) => [
+      for (final mix in session.read(instantMixesProvider)) mix.seed.id,
+    ];
+
+    void serverHas(List<LibraryItem> songs) {
+      final byId = {for (final song in songs) song.id: song};
+      when(() => client.getItemsByIds(any())).thenAnswer((invocation) async {
+        final ids = invocation.positionalArguments.first as List<String>;
+        return [
+          for (final id in ids) ?byId[id],
+        ];
+      });
+    }
+
+    Future<void> createMixes(
+      ProviderContainer session,
+      List<String> seeds,
+    ) async {
+      final notifier = session.read(instantMixesProvider.notifier);
+      for (final seed in seeds) {
+        mixReturns(seed, [_song(seed), _song('$seed-x')]);
+        await notifier.create(_song(seed));
+      }
+      await flush(session);
+    }
+
+    String mixId(String seed) => instantMixItem(_song(seed)).id;
+
+    test(
+      '- mixes come back with their songs without asking the server',
+      () async {
+        final session = await signedIn('user-1');
+        await createMixes(session, ['s1', 's2']);
+
+        final restartedSession = await signedIn('user-1');
+
+        expect(seedsOf(restartedSession), ['s2', 's1']);
+        final mix = restartedSession.read(instantMixesProvider).last;
+        expect(_ids(mix.songs), ['s1', 's1-x']);
+        expect(mix.item.name, "song s1's mix");
+        verifyNever(() => client.getItemsByIds(any()));
+        verifyNever(() => client.getItem(any(), kind: any(named: 'kind')));
+      },
+    );
+
+    test('- opening a restored mix swaps in the server songs', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, ['s1']);
+      serverHas([
+        _song('s1').copyWith(
+          userData: const PlaybackUserData(isFavorite: true),
+        ),
+      ]);
+
+      final restartedSession = await signedIn('user-1');
+      await restartedSession
+          .read(instantMixesProvider.notifier)
+          .refresh(mixId('s1'));
+
+      final songs = restartedSession.read(instantMixesProvider).single.songs;
+      expect(_ids(songs), ['s1']);
+      expect(songs.single.userData.isFavorite, isTrue);
+
+      await flush(restartedSession);
+      final nextLaunch = await signedIn('user-1');
+      final saved = nextLaunch.read(instantMixesProvider).single.songs;
+      expect(saved.single.userData.isFavorite, isTrue);
+    });
+
+    test('- a mix is refetched at most once per session', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, ['s1']);
+      await session.read(instantMixesProvider.notifier).refresh(mixId('s1'));
+      verifyNever(() => client.getItemsByIds(any()));
+
+      serverHas([_song('s1'), _song('s1-x')]);
+      final restartedSession = await signedIn('user-1');
+      final notifier = restartedSession.read(instantMixesProvider.notifier);
+      await Future.wait([
+        notifier.refresh(mixId('s1')),
+        notifier.refresh(mixId('s1')),
+      ]);
+      await notifier.refresh(mixId('s1'));
+
+      verify(() => client.getItemsByIds(any())).called(1);
+    });
+
+    test(
+      '- a failed refetch keeps the saved songs and retries later',
+      () async {
+        final session = await signedIn('user-1');
+        await createMixes(session, ['s1']);
+        when(
+          () => client.getItemsByIds(any()),
+        ).thenAnswer((_) async => throw const SocketException('offline'));
+
+        final restartedSession = await signedIn('user-1');
+        final notifier = restartedSession.read(instantMixesProvider.notifier);
+        await notifier.refresh(mixId('s1'));
+
+        expect(
+          _ids(restartedSession.read(instantMixesProvider).single.songs),
+          ['s1', 's1-x'],
+        );
+
+        serverHas([_song('s1')]);
+        await notifier.refresh(mixId('s1'));
+        expect(
+          _ids(restartedSession.read(instantMixesProvider).single.songs),
+          ['s1'],
+        );
+      },
+    );
+
+    test('- only the most recent mixes are kept', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, [
+        for (var i = 0; i <= recentInstantMixesLimit; i++) 's$i',
+      ]);
+
+      final restartedSession = await signedIn('user-1');
+
+      expect(seedsOf(restartedSession), ['s5', 's4', 's3', 's2', 's1']);
+      final stored = await restartedSession
+          .read(instantMixDatabaseProvider)
+          .getMixes();
+      expect(stored, hasLength(recentInstantMixesLimit));
+    });
+
+    test('- replaying a mix moves it to the front after a restart', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, ['s1', 's2']);
+      session.read(instantMixesProvider.notifier).touch(mixId('s1'));
+      await flush(session);
+
+      final restartedSession = await signedIn('user-1');
+
+      expect(seedsOf(restartedSession), ['s1', 's2']);
+    });
+
+    test('- another user does not see them', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, ['s1']);
+
+      final otherUser = await signedIn('user-2');
+
+      expect(otherUser.read(instantMixesProvider), isEmpty);
     });
   });
 }

@@ -21,6 +21,12 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
+  @override
+  void initState() {
+    super.initState();
+    ref.read(instantMixesProvider.notifier).refresh(widget.mix.id).ignore();
+  }
+
   double get _horizontalPadding => _device.isMobile ? 16 : 30;
 
   @override
