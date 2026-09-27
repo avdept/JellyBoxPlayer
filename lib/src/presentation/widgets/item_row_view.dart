@@ -83,25 +83,36 @@ class _ItemRowViewState extends ConsumerState<ItemRowView> {
           widget.optionsBuilder != null ? 4 : horizontal,
           8,
         ),
-        leading: NowPlayingGlow(
-          item: item,
-          borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
-          blurRadius: 14,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
-            child: Image(
-              image: ref.read(imageServiceProvider).itemImage(item),
-              width: imageSize,
-              height: imageSize,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Image.asset(
-                Images.album,
-                width: imageSize,
-                height: imageSize,
-                fit: BoxFit.cover,
+        leading: Stack(
+          children: [
+            NowPlayingGlow(
+              item: item,
+              borderRadius: BorderRadius.circular(isRound ? imageSize / 2 : 6),
+              blurRadius: 14,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  isRound ? imageSize / 2 : 6,
+                ),
+                child: Image(
+                  image: ref.read(imageServiceProvider).itemImage(item),
+                  width: imageSize,
+                  height: imageSize,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                    Images.album,
+                    width: imageSize,
+                    height: imageSize,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
-          ),
+            Positioned(
+              top: 3,
+              left: 3,
+              child: DownloadBadgeIcon(item: item, size: 16),
+            ),
+          ],
         ),
         leadingToTitle: isMobile ? 12 : 16,
         title: Text(

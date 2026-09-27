@@ -8,8 +8,9 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
-import 'package:jplayer/src/domain/providers/is_playlist_downloaded_provider.dart';
+import 'package:jplayer/src/domain/providers/download_sync_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -35,7 +36,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> songs = [];
   bool _songsLoaded = false;
-  var _isDownloadBusy = false;
 
   late final ImageService _imageService;
 
@@ -282,6 +282,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     await ref
         .read(mediaServerClientProvider)
         .removePlaylistItem(playlistId: widget.playlist.id, entryId: entryId);
+    ref.read(downloadSyncProvider).syncPlaylist(widget.playlist.id);
     unawaited(_getSongs());
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -467,53 +468,51 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
 
   Widget _downloadAlbumButton() => Consumer(
     builder: (context, ref, child) {
-      final isDownloaded = ref
-          .watch(isPlaylistDownloadedProvider(widget.playlist))
-          .valueOrNull;
-      if (isDownloaded == null) return const SizedBox.shrink();
-      if (!isDownloaded && ref.watch(isOfflineProvider)) {
+      final playlist = widget.playlist;
+      final badge = ref.watch(
+        downloadBadgeProvider((playlist.kind, playlist.id)),
+      );
+      if (badge == null && ref.watch(isOfflineProvider)) {
         return const SizedBox.shrink();
       }
-      return IgnorePointer(
-        ignoring: _isDownloadBusy,
-        child: IconButton(
-          onPressed: () => _onDownloadPressed(isDownloaded: isDownloaded),
-          icon: _isDownloadBusy
-              ? const SizedBox.square(
-                  dimension: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
-        ),
+      return IconButton(
+        onPressed: () => badge == null ? _onDownload() : _onRemoveDownload(),
+        tooltip: badge == null ? 'Download' : 'Remove download',
+        icon: switch (badge) {
+          null => const Icon(JPlayer.download),
+          DownloadBadge.downloaded => const Icon(JPlayer.trash_2),
+          DownloadBadge.downloading => SizedBox.square(
+            dimension: 20,
+            child: CircularProgressIndicator(
+              value: ref.watch(downloadProgressProvider(playlist.id)),
+              strokeWidth: 2,
+            ),
+          ),
+        },
       );
     },
   );
 
-  Future<void> _onDownloadPressed({required bool isDownloaded}) async {
-    if (!isDownloaded && songs.isEmpty) {
+  Future<void> _onDownload() async {
+    if (songs.isEmpty) {
       _showOfflineSnackBar();
       return;
     }
-    setState(() => _isDownloadBusy = true);
-    try {
-      if (!isDownloaded) {
-        await ref
-            .read(downloadManagerProvider.notifier)
-            .downloadPlaylist(widget.playlist, songs);
-      } else {
-        final shouldDelete = await _confirmDeleteDownload();
-        if (!(shouldDelete ?? false) || !mounted) return;
-        await ref
-            .read(downloadManagerProvider.notifier)
-            .deletePlaylist(widget.playlist.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Successfully deleted playlist')),
-          );
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _isDownloadBusy = false);
+    await ref
+        .read(downloadManagerProvider.notifier)
+        .downloadPlaylist(widget.playlist, songs);
+  }
+
+  Future<void> _onRemoveDownload() async {
+    final shouldDelete = await _confirmDeleteDownload();
+    if (!(shouldDelete ?? false) || !mounted) return;
+    await ref
+        .read(downloadManagerProvider.notifier)
+        .deletePlaylist(widget.playlist.id);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Successfully deleted playlist')),
+      );
     }
   }
 

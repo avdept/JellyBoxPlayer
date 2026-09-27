@@ -146,7 +146,6 @@ class DownloadService extends ChangeNotifier {
       task.status.value = DownloadStatus.canceled;
       File(task.destination).delete().ignore();
       _tasks.remove(id);
-      task.dispose();
     }
   }
 
