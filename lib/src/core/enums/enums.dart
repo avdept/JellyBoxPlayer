@@ -11,5 +11,6 @@ export 'keep_screen_on.dart';
 export 'layout.dart';
 export 'network_exceptions.dart';
 export 'playback_status.dart';
+export 'player_time_display.dart';
 export 'start_page.dart';
 export 'stream_quality.dart';

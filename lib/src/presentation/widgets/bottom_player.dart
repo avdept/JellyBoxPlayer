@@ -16,7 +16,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
-import 'package:jplayer/src/presentation/widgets/remaining_duration.dart';
+import 'package:jplayer/src/presentation/widgets/player_time.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -497,7 +497,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                           spacing: 8,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            if (_isDesktop) const RemainingDuration(),
+                            if (_isDesktop) const PlayerTime(),
                             if (_isDesktop) _randomQueueButton(),
                             _prevTrackButton(),
                             SizedBox.square(

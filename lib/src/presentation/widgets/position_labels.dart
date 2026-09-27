@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 
 class PositionLabels extends ConsumerWidget {
   const PositionLabels({
@@ -50,31 +51,18 @@ class PositionLabels extends ConsumerWidget {
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(_formatDuration(position), style: style),
+              child: Text(formatPlaybackTime(position), style: style),
             ),
           ),
           ?middle,
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: Text('-${_formatDuration(remaining)}', style: style),
+              child: Text('-${formatPlaybackTime(remaining)}', style: style),
             ),
           ),
         ],
       ),
     );
-  }
-
-  static String _formatDuration(Duration value) {
-    final duration = value < Duration.zero ? Duration.zero : value;
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
-    final seconds = duration.inSeconds % 60;
-    final ss = seconds.toString().padLeft(2, '0');
-    if (hours > 0) {
-      final mm = minutes.toString().padLeft(2, '0');
-      return '$hours:$mm:$ss';
-    }
-    return '${duration.inMinutes}:$ss';
   }
 }
