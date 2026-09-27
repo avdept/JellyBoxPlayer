@@ -276,10 +276,19 @@ class _MenuColumn extends StatelessWidget {
   final MenuController root;
 
   @override
-  Widget build(BuildContext context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [for (final action in actions) action.toMenuItem(root)],
+  Widget build(BuildContext context) => MenuButtonTheme(
+    data: MenuButtonThemeData(
+      style: ButtonStyle(
+        textStyle: WidgetStatePropertyAll(
+          Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 13),
+        ),
+      ),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [for (final action in actions) action.toMenuItem(root)],
+    ),
   );
 }
 
@@ -296,7 +305,10 @@ List<ContextMenuAction> contextMenuActions(
   final isDesktop = DeviceType.fromScreenSize(
     MediaQuery.sizeOf(context),
   ).isDesktop;
-  final rowHasLike = isDesktop && item.kind == ItemKind.song;
+  final rowHasLike =
+      isDesktop &&
+      item.kind == ItemKind.song &&
+      scope != ContextMenuScope.nowPlaying;
   final actions = _ContextMenuActions(context, ref, item, scope);
 
   return [

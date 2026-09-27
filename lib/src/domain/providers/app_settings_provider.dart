@@ -18,6 +18,7 @@ enum AppSetting {
   browseLayout('browse_layout', defaultValue: 'cards'),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   playerVolume('player_volume', defaultValue: 1.0),
+  playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
   streamQualityWifi(
@@ -143,6 +144,15 @@ final animationSpeedProvider = Provider<AnimationSpeed>(
         AppSetting.animationSpeed,
       )] ??
       AnimationSpeed.medium,
+);
+
+final playerTimeDisplayProvider = Provider<PlayerTimeDisplay>(
+  (ref) =>
+      PlayerTimeDisplay.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.playerTimeDisplay],
+        AppSetting.playerTimeDisplay,
+      )] ??
+      PlayerTimeDisplay.remaining,
 );
 
 final defaultStartPageProvider = Provider<StartPage>(
