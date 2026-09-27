@@ -597,9 +597,10 @@ class _TargetTile extends StatelessWidget {
         ? theme.disabledColor
         : (selected ? theme.colorScheme.primary : null);
 
-    return ListTile(
+    final tile = ListTile(
       dense: true,
       enabled: !disabled,
+      hoverColor: theme.colorScheme.onSurface.withValues(alpha: 0.06),
       leading: Icon(icon, color: tint, size: 20),
       title: Text(title, style: TextStyle(color: tint)),
       subtitle: subtitle == null
@@ -615,6 +616,8 @@ class _TargetTile extends StatelessWidget {
           : null,
       onTap: onTap,
     );
+
+    return Material(type: MaterialType.transparency, child: tile);
   }
 }
 

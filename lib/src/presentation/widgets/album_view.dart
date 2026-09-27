@@ -231,7 +231,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
   };
 
   Widget _playButton(double size) {
-    final isVisible = _isHovered || _isPlayLoading;
+    final isVisible = _isHovered || _isPlayLoading || _isSourcePlaying;
 
     return IgnorePointer(
       ignoring: !isVisible,

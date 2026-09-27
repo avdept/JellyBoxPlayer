@@ -54,6 +54,7 @@ class Telemetry {
     _optedOut = optedOut;
 
     if (optedOut) {
+      unawaited(_sendEvent('analytics-opted-out'));
       await Sentry.close();
     } else {
       unawaited(_sendLaunchEvents());
@@ -61,15 +62,24 @@ class Telemetry {
     }
   }
 
+  static Plausible _plausible() => Plausible(
+    domain: _plausibleDomain,
+    server: Uri.https(_plausibleHost, '/api/event'),
+  );
+
   static Future<void> _sendLaunchEvents() async {
-    final analytics = Plausible(
-      domain: _plausibleDomain,
-      server: Uri.https(_plausibleHost, '/api/event'),
-    );
     try {
-      await analytics.send();
-      await analytics.send(
-        event: 'app-launched',
+      await _plausible().send();
+    } on Object catch (error) {
+      debugPrint('[Telemetry] $error');
+    }
+    await _sendEvent('app-launched');
+  }
+
+  static Future<void> _sendEvent(String event) async {
+    try {
+      await _plausible().send(
+        event: event,
         props: {'os': Platform.operatingSystem},
       );
     } on Object catch (error) {
