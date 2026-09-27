@@ -183,6 +183,9 @@ void main() {
           ),
         ).thenAnswer((_) async => faker.datatype.number());
         when(
+          () => mockDownloadDatabase.getDownloadedSongPath(any()),
+        ).thenAnswer((_) async => null);
+        when(
           () => mockDownloadService.downloadAlbumCover(any(), any()),
         ).thenAnswer((_) async => FakeFile());
         providerContainer.listen(

@@ -215,6 +215,11 @@ class SettingsPage extends ConsumerWidget {
                         _refreshContentButton(context, ref),
                       ],
                     ),
+                    _settingNote(
+                      context,
+                      'How often the home page refreshes and downloaded '
+                      'playlists check your server for changes.',
+                    ),
                     _sectionHeader('UI'),
                     _settingDropdown<StartPage>(
                       context: context,
@@ -225,7 +230,7 @@ class SettingsPage extends ConsumerWidget {
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultStartPage, value.name),
                     ),
-                    if (!device.isMobile)
+                    if (!device.isMobile) ...[
                       _settingDropdown<AnimationSpeed>(
                         context: context,
                         label: 'Animation speed',
@@ -235,6 +240,11 @@ class SettingsPage extends ConsumerWidget {
                             .read(appSettingsProvider.notifier)
                             .setValue(AppSetting.animationSpeed, value.name),
                       ),
+                      _settingNote(
+                        context,
+                        'Affects Studio Mode and Landscape Mode.',
+                      ),
+                    ],
                     _settingDropdown<ItemList>(
                       context: context,
                       label: 'Default browse tab',
@@ -273,6 +283,20 @@ class SettingsPage extends ConsumerWidget {
                       'Changes apply from the next song. Downloads always '
                       'keep the original quality.',
                     ),
+                    if (deviceHasCellular) ...[
+                      _sectionHeader('Downloads'),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.downloadSyncOnCellular,
+                        label: 'Update downloaded playlists on cellular',
+                      ),
+                      _settingNote(
+                        context,
+                        'Downloaded playlists follow your server: new songs '
+                        'are downloaded and removed songs are deleted. '
+                        'Otherwise this only happens on Wi-Fi.',
+                      ),
+                    ],
                     _sectionHeader('Cache'),
                     _settingDropdown<ForwardCacheLimit>(
                       context: context,
@@ -316,6 +340,10 @@ class SettingsPage extends ConsumerWidget {
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
                             .setValue(AppSetting.animationSpeed, value.name),
+                      ),
+                      _settingNote(
+                        context,
+                        'Affects Studio Mode and Landscape Mode.',
                       ),
                     ],
                     if (!device.isMobile) ...[

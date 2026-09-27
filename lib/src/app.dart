@@ -17,6 +17,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/download_sync_provider.dart';
 import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
@@ -352,6 +353,7 @@ class _AppState extends ConsumerState<App>
         }
       })
       ..listen(forwardCacheProvider, (_, _) {})
+      ..listen(downloadSyncProvider, (_, _) {})
       ..listen(castFailureProvider, (previous, next) {
         if (next == null) return;
         _scaffoldMessengerKey.currentState?.showSnackBar(

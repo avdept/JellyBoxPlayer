@@ -5,6 +5,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
+import 'package:jplayer/src/presentation/widgets/download_badge_icon.dart';
 import 'package:jplayer/src/presentation/widgets/now_playing_glow.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -22,6 +23,7 @@ class AlbumView extends ConsumerStatefulWidget {
     this.trailing,
     this.alignTextStart = false,
     this.coverOverride,
+    this.showDownloadBadge = true,
     super.key,
   });
 
@@ -41,6 +43,8 @@ class AlbumView extends ConsumerStatefulWidget {
   final bool alignTextStart;
 
   final Widget? coverOverride;
+
+  final bool showDownloadBadge;
 
   @override
   ConsumerState<AlbumView> createState() => _AlbumViewState();
@@ -121,6 +125,15 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                           ),
                         ),
                   ),
+                  if (widget.showDownloadBadge)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: DownloadBadgeIcon(
+                        item: widget.album,
+                        size: isTablet ? 28 : 22,
+                      ),
+                    ),
                   if (widget.optionsBuilder != null)
                     Positioned(
                       top: 0,

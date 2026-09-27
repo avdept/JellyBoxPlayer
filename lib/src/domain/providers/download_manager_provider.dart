@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
@@ -17,6 +18,8 @@ import 'package:jplayer/src/providers/download_service_provider.dart';
 class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
   late DownloadService _downloadService;
   late DownloadDatabase _database;
+  final _cancelled = <String>{};
+  final _currentSong = <String, String>{};
 
   @override
   FutureOr<List<DownloadedSong>> build() async {
@@ -70,34 +73,17 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     final client = ref.read(mediaServerClientProvider);
 
     try {
-      final files = <File>[];
-
-      // Download songs one at a time sequentially
-      for (final song in songs) {
-        final task = await _downloadService.downloadSong(
-          song,
-          client,
-          deviceId: deviceId,
+      await _downloadCollection(album.id, songs, (stored) async {
+        if (stored.isEmpty) return;
+        await _database.insertDownloadedAlbum(
+          album,
+          files: [for (final (_, file) in stored) file],
         );
-        await _waitForDownloadCompletion(task);
-
-        if (task.status.value == DownloadStatus.completed) {
-          final file = File(task.destination);
-          files.add(file);
-          await _database.insertDownloadedSong(song, file: file);
-        }
-      }
-
-      // Add album to database
-      if (files.isNotEmpty) {
-        await _database.insertDownloadedAlbum(album, files: files);
         await _downloadService.downloadAlbumCover(
           album.id,
           client.imageUri(album),
         );
-      }
-
-      // Refresh state
+      });
       ref.invalidateSelf();
     } catch (error, stackTrace) {
       print(
@@ -111,45 +97,8 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     LibraryItem playlist,
     List<LibraryItem> songs,
   ) async {
-    final client = ref.read(mediaServerClientProvider);
-
     try {
-      final files = <File>[];
-      final downloadedSongs = <LibraryItem>[];
-      final coveredAlbumIds = <String>{};
-
-      for (final song in songs) {
-        final existing = await _existingDownload(song);
-        final file = existing ?? await _downloadSongFile(song, client);
-        if (file == null) continue;
-
-        files.add(file);
-        downloadedSongs.add(song);
-        if (existing == null) {
-          await _database.insertDownloadedSong(song, file: file);
-        }
-
-        final albumId = song.albumId;
-        if (albumId != null && coveredAlbumIds.add(albumId)) {
-          await _downloadService.downloadAlbumCover(
-            albumId,
-            client.imageUri(song, kind: ImageKind.album),
-          );
-        }
-      }
-
-      if (files.isNotEmpty) {
-        await _database.insertDownloadedPlaylist(
-          playlist,
-          songs: downloadedSongs,
-          files: files,
-        );
-        await _downloadService.downloadAlbumCover(
-          playlist.id,
-          client.imageUri(playlist),
-        );
-      }
-
+      await _storePlaylist(playlist, songs);
       ref.invalidateSelf();
     } catch (error, stackTrace) {
       print(
@@ -157,6 +106,111 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
       );
       state = AsyncValue.error(error, stackTrace);
     }
+  }
+
+  Future<bool> syncPlaylist(
+    LibraryItem playlist,
+    List<LibraryItem> songs,
+  ) async {
+    final database = _database;
+    final localIds = await database.getPlaylistSongIds(playlist.id);
+    final serverIds = [for (final song in songs) song.id];
+    if (listEquals(localIds, serverIds)) return false;
+
+    await _storePlaylist(playlist, songs);
+
+    final wanted = serverIds.toSet();
+    await database.pruneSongs(localIds.where((id) => !wanted.contains(id)));
+    ref.invalidateSelf();
+    return true;
+  }
+
+  Future<void> _storePlaylist(
+    LibraryItem playlist,
+    List<LibraryItem> songs,
+  ) {
+    final client = ref.read(mediaServerClientProvider);
+    return _downloadCollection(playlist.id, songs, (stored) async {
+      if (stored.isEmpty) return;
+      await _database.insertDownloadedPlaylist(
+        playlist,
+        songs: [for (final (song, _) in stored) song],
+        files: [for (final (_, file) in stored) file],
+      );
+      final covers = <String, LibraryItem>{
+        for (final (song, _) in stored) ?song.albumId: song,
+      };
+      for (final MapEntry(key: albumId, value: song) in covers.entries) {
+        await _downloadService.downloadAlbumCover(
+          albumId,
+          client.imageUri(song, kind: ImageKind.album),
+        );
+      }
+      await _downloadService.downloadAlbumCover(
+        playlist.id,
+        client.imageUri(playlist),
+      );
+    });
+  }
+
+  Future<void> _downloadCollection(
+    String id,
+    List<LibraryItem> songs,
+    Future<void> Function(List<(LibraryItem, File)> stored) save,
+  ) async {
+    final client = ref.read(mediaServerClientProvider);
+    final database = _database;
+    final stored = <(LibraryItem, File)>[];
+    final inserted = <String>[];
+    _setProgress(id, 0);
+
+    try {
+      for (final (index, song) in songs.indexed) {
+        if (_cancelled.contains(id)) break;
+        _currentSong[id] = song.id;
+        final existing = await _existingDownload(song);
+        final file =
+            existing ??
+            await _downloadSongFile(
+              song,
+              client,
+              onProgress: (value) =>
+                  _setProgress(id, (index + value) / songs.length),
+            );
+        _setProgress(id, (index + 1) / songs.length);
+        if (file == null) continue;
+
+        stored.add((song, file));
+        if (existing == null) {
+          await database.insertDownloadedSong(song, file: file);
+          inserted.add(song.id);
+        }
+      }
+
+      if (_cancelled.contains(id)) {
+        await database.pruneSongs(inserted);
+        return;
+      }
+      await save(stored);
+    } finally {
+      _cancelled.remove(id);
+      _currentSong.remove(id);
+      _setProgress(id, null);
+    }
+  }
+
+  Future<void> _cancelCollection(String id) async {
+    if (!ref.read(activeDownloadsProvider).containsKey(id)) return;
+    _cancelled.add(id);
+    final songId = _currentSong[id];
+    if (songId != null) await _downloadService.cancelDownload(songId);
+  }
+
+  void _setProgress(String id, double? progress) {
+    final notifier = ref.read(activeDownloadsProvider.notifier);
+    notifier.state = progress == null
+        ? ({...notifier.state}..remove(id))
+        : {...notifier.state, id: progress};
   }
 
   Future<File?> _existingDownload(LibraryItem song) async {
@@ -168,14 +222,22 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
 
   Future<File?> _downloadSongFile(
     LibraryItem song,
-    MediaServerClient client,
-  ) async {
+    MediaServerClient client, {
+    void Function(double progress)? onProgress,
+  }) async {
     final task = await _downloadService.downloadSong(
       song,
       client,
       deviceId: deviceId,
     );
-    await _waitForDownloadCompletion(task);
+    void report() =>
+        onProgress?.call((task.progress.value ?? 0).clamp(0.0, 1.0));
+    task.progress.addListener(report);
+    try {
+      await _waitForDownloadCompletion(task);
+    } finally {
+      task.progress.removeListener(report);
+    }
     if (task.status.value != DownloadStatus.completed) return null;
     return File(task.destination);
   }
@@ -220,6 +282,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
 
   Future<void> deleteAlbum(String albumId) async {
     try {
+      await _cancelCollection(albumId);
       await _database.deleteDownloadedAlbum(albumId);
       await DownloadPaths.deleteAlbumDirectory(albumId);
 
@@ -235,6 +298,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
 
   Future<void> deletePlaylist(String playlistId) async {
     try {
+      await _cancelCollection(playlistId);
       await _database.deleteDownloadedPlaylist(playlistId);
       await DownloadPaths.deleteAlbumDirectory(playlistId);
 
@@ -261,6 +325,10 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
   Future<List<DownloadedPlaylist>> getDownloadedPlaylists() =>
       _database.getDownloadedPlaylists();
 }
+
+final activeDownloadsProvider = StateProvider<Map<String, double>>(
+  (ref) => const {},
+);
 
 final downloadManagerProvider =
     AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedSong>>(

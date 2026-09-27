@@ -650,6 +650,7 @@ class _ContextMenuActions {
       await ref
           .read(mediaServerClientProvider)
           .addPlaylistItems(playlistId: playlist.id, itemIds: [item.id]);
+      ref.read(downloadSyncProvider).syncPlaylist(playlist.id);
       _showSnackBar('Successfully added to playlist');
     },
   );
@@ -730,6 +731,9 @@ class _ContextMenuActions {
     run: () async {
       final manager = ref.read(downloadManagerProvider.notifier);
       final client = ref.read(mediaServerClientProvider);
+      final downloading = ref
+          .read(activeDownloadsProvider)
+          .containsKey(item.id);
       switch (item.kind) {
         case ItemKind.song:
           if (await manager.isSongDownloaded(item.id)) {
@@ -738,7 +742,7 @@ class _ContextMenuActions {
             await manager.downloadSong(item);
           }
         case ItemKind.album:
-          if (await manager.isAlbumDownloaded(item.id)) {
+          if (downloading || await manager.isAlbumDownloaded(item.id)) {
             await manager.deleteAlbum(item.id);
           } else {
             if (_guardOffline()) return;
@@ -746,7 +750,7 @@ class _ContextMenuActions {
             await manager.downloadAlbum(item, page.items);
           }
         case ItemKind.playlist:
-          if (await manager.isPlaylistDownloaded(item.id)) {
+          if (downloading || await manager.isPlaylistDownloaded(item.id)) {
             await manager.deletePlaylist(item.id);
           } else {
             if (_guardOffline()) return;
@@ -860,11 +864,12 @@ class _DownloadState extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = switch (item.kind) {
-      ItemKind.album => isAlbumDownloadedProvider(item),
-      ItemKind.playlist => isPlaylistDownloadedProvider(item),
-      _ => isSongDownloadedProvider(item),
-    };
-    return builder(ref.watch(provider).valueOrNull ?? false);
+    if (item.kind case ItemKind.album || ItemKind.playlist) {
+      final badge = ref.watch(downloadBadgeProvider((item.kind, item.id)));
+      return builder(badge != null);
+    }
+    return builder(
+      ref.watch(isSongDownloadedProvider(item)).valueOrNull ?? false,
+    );
   }
 }

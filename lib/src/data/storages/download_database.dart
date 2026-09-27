@@ -262,37 +262,21 @@ class DownloadDatabase {
     return results.map(_downloadedSongFromRow).toList();
   }
 
-  Future<void> deleteDownloadedPlaylist(String playlistId) async {
+  Future<List<String>> getPlaylistSongIds(String playlistId) async {
     final db = await database;
     final rows = await db.query(
       'PlaylistSongs',
       columns: ['SongId'],
       where: 'PlaylistId = ? AND ServerId = ?',
       whereArgs: [playlistId, serverId],
+      orderBy: 'Position',
     );
-    final songIds = rows.map((row) => row['SongId']! as String).toList();
+    return rows.map((row) => row['SongId']! as String).toList();
+  }
 
-    for (final songId in songIds) {
-      final otherRefs = Sqflite.firstIntValue(
-        await db.rawQuery(
-          'SELECT COUNT(*) FROM PlaylistSongs '
-          'WHERE SongId = ? AND ServerId = ? AND PlaylistId != ?',
-          [songId, serverId, playlistId],
-        ),
-      )!;
-      if (otherRefs > 0) continue;
-
-      final songRows = await db.query(
-        'Downloads',
-        columns: ['AlbumId'],
-        where: 'Id = ? AND ServerId = ?',
-        whereArgs: [songId, serverId],
-      );
-      final albumId = songRows.firstOrNull?['AlbumId'] as String?;
-      if (albumId != null && await isAlbumDownloaded(albumId)) continue;
-
-      await deleteDownloadedSong(songId);
-    }
+  Future<void> deleteDownloadedPlaylist(String playlistId) async {
+    final db = await database;
+    final songIds = await getPlaylistSongIds(playlistId);
 
     final batch = db.batch()
       ..delete(
@@ -306,6 +290,34 @@ class DownloadDatabase {
         whereArgs: [playlistId, serverId],
       );
     await batch.commit(noResult: true);
+
+    await pruneSongs(songIds);
+  }
+
+  Future<void> pruneSongs(Iterable<String> songIds) async {
+    final db = await database;
+    for (final songId in songIds.toSet()) {
+      final refs = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM PlaylistSongs '
+          'WHERE SongId = ? AND ServerId = ?',
+          [songId, serverId],
+        ),
+      )!;
+      if (refs > 0) continue;
+
+      final songRows = await db.query(
+        'Downloads',
+        columns: ['AlbumId'],
+        where: 'Id = ? AND ServerId = ?',
+        whereArgs: [songId, serverId],
+      );
+      if (songRows.isEmpty) continue;
+      final albumId = songRows.first['AlbumId'] as String?;
+      if (albumId != null && await isAlbumDownloaded(albumId)) continue;
+
+      await deleteDownloadedSong(songId);
+    }
   }
 
   Future<bool> isPlaylistDownloaded(String playlistId) async {
@@ -412,6 +424,21 @@ class DownloadDatabase {
       ),
     );
     return count! > 0;
+  }
+
+  Future<Set<String>> albumIds() => _ids('Albums');
+
+  Future<Set<String>> playlistIds() => _ids('Playlists');
+
+  Future<Set<String>> _ids(String table) async {
+    final db = await database;
+    final rows = await db.query(
+      table,
+      columns: ['Id'],
+      where: 'ServerId = ?',
+      whereArgs: [serverId],
+    );
+    return {for (final row in rows) row['Id']! as String};
   }
 
   Future<Set<String>> downloadedAlbumIds() async {

@@ -177,6 +177,7 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
           ? (_) => widget.onPlayPressed!.call()
           : null,
       alignTextStart: true,
+      showDownloadBadge: false,
       subtitle: _subtitle,
       trailing: IgnorePointer(
         ignoring: _isBusy,
