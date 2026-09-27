@@ -9,12 +9,14 @@ class PlaybackSnapshot {
     required this.album,
     required this.songId,
     required this.positionMs,
+    this.sourceId,
   });
 
   final List<LibraryItem> songs;
   final LibraryItem album;
   final String songId;
   final int positionMs;
+  final String? sourceId;
 }
 
 class PlaybackStorage {
@@ -22,12 +24,14 @@ class PlaybackStorage {
   static const _albumKey = 'pb_album';
   static const _songIdKey = 'pb_song_id';
   static const _positionMsKey = 'pb_position_ms';
+  static const _sourceIdKey = 'pb_source_id';
 
   Future<void> save({
     required List<LibraryItem> songs,
     required LibraryItem album,
     required String songId,
     required int positionMs,
+    String? sourceId,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -38,6 +42,10 @@ class PlaybackStorage {
         prefs.setString(_albumKey, albumEncoded),
         prefs.setString(_songIdKey, songId),
         prefs.setInt(_positionMsKey, positionMs),
+        if (sourceId != null)
+          prefs.setString(_sourceIdKey, sourceId)
+        else
+          prefs.remove(_sourceIdKey),
       ]);
     } on Object {
       // ignore
@@ -65,6 +73,7 @@ class PlaybackStorage {
         album: album,
         songId: songId,
         positionMs: positionMs,
+        sourceId: prefs.getString(_sourceIdKey),
       );
     } on Object {
       return null;

@@ -164,11 +164,12 @@ void main() {
     return container;
   }
 
-  Future<void> saveQueue() => PlaybackStorage().save(
+  Future<void> saveQueue({String? sourceId}) => PlaybackStorage().save(
     songs: songs,
     album: album,
     songId: 'b',
     positionMs: 90000,
+    sourceId: sourceId,
   );
 
   test(
@@ -222,4 +223,31 @@ void main() {
     expect(target.loads, isEmpty);
     expect(target.plays, 0);
   });
+
+  test('- restores which set the queue was started from', () async {
+    await saveQueue(sourceId: 'album');
+    final container = containerWith(pendingPress: false);
+
+    await container.read(playbackProvider.notifier).tryRestore();
+
+    expect(container.read(playbackProvider).sourceId, 'album');
+  });
+
+  test(
+    '- drops the source when a loose song list replaces the queue',
+    () async {
+      final container = containerWith(pendingPress: false);
+      final playback = container.read(playbackProvider.notifier);
+
+      await playback.play(songs.first, songs, album, sourceId: 'album');
+      await pumpEventQueue();
+      expect((await PlaybackStorage().load())?.sourceId, 'album');
+
+      await playback.play(songs.last, songs, album);
+
+      expect(container.read(playbackProvider).sourceId, isNull);
+      await pumpEventQueue();
+      expect((await PlaybackStorage().load())?.sourceId, isNull);
+    },
+  );
 }

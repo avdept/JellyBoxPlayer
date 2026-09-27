@@ -125,6 +125,7 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
       songs[index],
       songs,
       album ?? placeholderAlbumFor(songs[index]),
+      sourceId: album?.id,
       initialPosition: position,
       autoPlay: autoPlay,
       reshuffle: false,

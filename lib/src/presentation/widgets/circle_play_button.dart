@@ -5,12 +5,14 @@ class CirclePlayButton extends StatefulWidget {
     required this.size,
     this.onPressed,
     this.isLoading = false,
+    this.isPlaying = false,
     super.key,
   });
 
   final double size;
   final VoidCallback? onPressed;
   final bool isLoading;
+  final bool isPlaying;
 
   @override
   State<CirclePlayButton> createState() => _CirclePlayButtonState();
@@ -48,7 +50,7 @@ class _CirclePlayButtonState extends State<CirclePlayButton> {
                     ),
                   )
                 : Icon(
-                    Icons.play_arrow_outlined,
+                    widget.isPlaying ? Icons.pause : Icons.play_arrow_outlined,
                     size: size * 0.65,
                     color: Colors.white,
                   ),

@@ -517,6 +517,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     LibraryItem playSong,
     List<LibraryItem> songs,
     LibraryItem album, {
+    String? sourceId,
     Duration? initialPosition,
     bool autoPlay = true,
     bool reshuffle = true,
@@ -598,6 +599,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         songs: playableSongs,
         deliveredQualities: _deliveredQualities(),
         album: album,
+        sourceId: sourceId,
         status: PlaybackStatus.buffering,
         position: startPosition,
         cacheProgress: Duration.zero,
@@ -813,7 +815,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final album = state.album;
     if (state.status.isStopped && state.songs.isNotEmpty && album != null) {
       // Case when queue has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
-      await play(state.songs.first, state.songs, album);
+      await play(
+        state.songs.first,
+        state.songs,
+        album,
+        sourceId: state.sourceId,
+      );
       return;
     }
 
@@ -1271,6 +1278,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       album: effectiveAlbum,
       songId: songId,
       positionMs: positionMs,
+      sourceId: state.sourceId,
     );
   }
 
@@ -1290,6 +1298,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       song,
       snapshot.songs,
       snapshot.album,
+      sourceId: snapshot.sourceId,
       initialPosition: Duration(milliseconds: snapshot.positionMs),
       autoPlay: false,
       reshuffle: false,
@@ -1315,6 +1324,20 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 final playbackProvider = StateNotifierProvider<PlaybackNotifier, PlaybackState>(
   PlaybackNotifier.new,
 );
+
+ProviderListenable<PlaybackStatus?> queueSourceStatus(String id) =>
+    playbackProvider.select(
+      (state) => state.sourceId == id ? state.status : null,
+    );
+
+Future<void>? toggleQueueSource(WidgetRef ref, String id) {
+  final playback = ref.read(playbackProvider.notifier);
+  return switch (ref.read(queueSourceStatus(id))) {
+    PlaybackStatus.playing || PlaybackStatus.buffering => playback.pause(),
+    PlaybackStatus.paused => playback.resume(),
+    _ => null,
+  };
+}
 
 final currentSongProvider = Provider<LibraryItem?>(
   (ref) => ref.watch(

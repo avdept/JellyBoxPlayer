@@ -155,7 +155,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       if (songs.isEmpty) return SetPlaybackResult.empty;
       await _ref
           .read(playbackProvider.notifier)
-          .play(songs.first, songs, setItem);
+          .play(songs.first, songs, setItem, sourceId: setItem.id);
       return SetPlaybackResult.started;
     } finally {
       state = null;

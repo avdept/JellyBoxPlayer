@@ -223,7 +223,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               isPlaying: item != null && song.id == item.id,
                               onTap: (song) => ref
                                   .read(playbackProvider.notifier)
-                                  .play(song, songs, widget.playlist),
+                                  .play(
+                                    song,
+                                    songs,
+                                    widget.playlist,
+                                    sourceId: widget.playlist.id,
+                                  ),
                               position: index + 1,
                               showDownloadState: true,
                               edgePadding: _device.isMobile ? 16 : 30,

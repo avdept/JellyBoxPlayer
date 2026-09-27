@@ -2,13 +2,37 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
+
+class _FakePlayback extends StateNotifier<PlaybackState>
+    implements PlaybackNotifier {
+  _FakePlayback(super.state);
+
+  final calls = <String>[];
+
+  @override
+  Future<void> pause() async {
+    calls.add('pause');
+    state = state.copyWith(status: PlaybackStatus.paused);
+  }
+
+  @override
+  Future<void> resume() async {
+    calls.add('resume');
+    state = state.copyWith(status: PlaybackStatus.playing);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -185,6 +209,92 @@ void main() {
       await hoverOver(tester, find.byType(SimpleListTile));
 
       expect(tileColor(tester), Colors.transparent);
+    });
+  });
+
+  group('the playing set', () {
+    late _FakePlayback playback;
+
+    Widget wrapPlaying(Widget child, {required PlaybackStatus status}) {
+      playback = _FakePlayback(
+        PlaybackState.initial().copyWith(sourceId: album.id, status: status),
+      );
+      return createTestApp(
+        providerContainer: createProviderContainer(
+          overrides: [
+            playbackProvider.overrideWith((_) => playback),
+            itemGlowColorProvider.overrideWith((_, _) async => null),
+          ],
+        ),
+        home: Center(child: child),
+      );
+    }
+
+    Future<void> unmount(WidgetTester tester) async {
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('- pauses instead of restarting it', (tester) async {
+      var restarts = 0;
+      await tester.pumpWidget(
+        wrapPlaying(
+          ItemRowView(item: album, onPlayPressed: (_) async => restarts++),
+          status: PlaybackStatus.playing,
+        ),
+      );
+      expect(find.byIcon(Icons.pause), findsOneWidget);
+
+      await tester.tap(find.byType(CirclePlayButton));
+      await tester.pump();
+
+      expect(playback.calls, ['pause']);
+      expect(restarts, 0);
+      expect(find.byIcon(Icons.play_arrow_outlined), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('- resumes it where it was paused', (tester) async {
+      var restarts = 0;
+      await tester.pumpWidget(
+        wrapPlaying(
+          ItemRowView(item: album, onPlayPressed: (_) async => restarts++),
+          status: PlaybackStatus.paused,
+        ),
+      );
+
+      await tester.tap(find.byType(CirclePlayButton));
+      await tester.pump();
+
+      expect(playback.calls, ['resume']);
+      expect(restarts, 0);
+      await unmount(tester);
+    });
+
+    testWidgets('- plays another item from the start', (tester) async {
+      LibraryItem? played;
+      const other = LibraryItem(
+        id: 'album-2',
+        name: 'Other',
+        kind: ItemKind.album,
+      );
+      await tester.pumpWidget(
+        wrapPlaying(
+          ItemRowView(
+            item: other,
+            onPlayPressed: (item) async => played = item,
+          ),
+          status: PlaybackStatus.playing,
+        ),
+      );
+      expect(find.byIcon(Icons.play_arrow_outlined), findsOneWidget);
+
+      await tester.tap(find.byType(CirclePlayButton));
+      await tester.pump();
+
+      expect(played, other);
+      expect(playback.calls, isEmpty);
+      await unmount(tester);
     });
   });
 }

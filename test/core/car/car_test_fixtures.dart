@@ -182,7 +182,12 @@ class CarTestEnv {
 
   void _stubPlayback() {
     when(
-      () => playbackNotifier.play(any(), any(), any()),
+      () => playbackNotifier.play(
+        any(),
+        any(),
+        any(),
+        sourceId: any(named: 'sourceId'),
+      ),
     ).thenAnswer((_) async {});
     when(() => playbackNotifier.resume()).thenAnswer((_) async {});
     when(
