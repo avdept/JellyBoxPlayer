@@ -96,9 +96,6 @@ class SettingsPage extends ConsumerWidget {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
   );
 
-  void _onLibrariesPressed(BuildContext context) =>
-      context.pushNamed(Routes.library.name);
-
   void _onPaletteSettingsPressed(BuildContext context) =>
       context.pushNamed(Routes.palette.name);
 
@@ -177,7 +174,6 @@ class SettingsPage extends ConsumerWidget {
                       const JellyboxCloudSettings(),
                     ],
                     _sectionHeader('General'),
-                    _librariesButton(context),
                     if (kDebugMode) _settingsButton(context),
                     if (kDebugMode) _queueCacheButton(context),
                     _changelogButton(context, device),
@@ -443,13 +439,6 @@ class SettingsPage extends ConsumerWidget {
     style: _buttonStyle,
     icon: const Icon(JPlayer.music),
     label: const Text('Palette settings'),
-  );
-
-  Widget _librariesButton(BuildContext context) => TextButton.icon(
-    onPressed: () => _onLibrariesPressed(context),
-    style: _buttonStyle,
-    icon: const Icon(JPlayer.music),
-    label: const Text('Music libraries'),
   );
 
   Widget _changelogButton(BuildContext context, DeviceType device) {
