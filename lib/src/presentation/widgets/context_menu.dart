@@ -708,16 +708,21 @@ class _ContextMenuActions {
   ContextMenuAction instantMix() => ContextMenuAction(
     entry: ContextMenuEntry.instantMix,
     icon: const _SvgIcon(SvgPictures.compassIcon),
-    label: const Text('Instant mix'),
+    label: Text(switch (item.kind) {
+      ItemKind.album => 'Start album mix',
+      ItemKind.artist => 'Start artist mix',
+      _ => 'Start song mix',
+    }),
     run: () async {
       if (_guardOffline()) return;
       try {
-        final result = await ref
-            .read(setPlaybackProvider.notifier)
-            .playInstantMix(item);
-        if (result == SetPlaybackResult.empty) {
+        final mix = await ref.read(instantMixesProvider.notifier).create(item);
+        if (mix == null) {
           _showSnackBar('No mix available for "${item.name}"');
+          return;
         }
+        _navigate(Routes.instantMix, 'mix', mix.item);
+        await ref.read(setPlaybackProvider.notifier).playInstantMix(mix);
       } on Object {
         _showSnackBar('Could not start an instant mix for "${item.name}"');
       }

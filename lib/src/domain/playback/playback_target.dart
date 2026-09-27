@@ -114,6 +114,11 @@ abstract class PlaybackTarget {
 
   Future<void> insert(int index, TargetTrack track, {bool playNext = false});
 
+  Future<void> replaceAroundCurrent(
+    int currentIndex,
+    List<TargetTrack> upcoming,
+  );
+
   Future<void> reorder(
     List<TargetTrack> tracks, {
     required List<int> order,

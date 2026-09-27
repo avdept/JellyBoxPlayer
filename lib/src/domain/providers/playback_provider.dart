@@ -1000,6 +1000,116 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<bool> addAllToQueue(List<LibraryItem> songs, {LibraryItem? set}) =>
       _enqueueAll(songs, playNext: false, set: set);
 
+  Future<bool> replaceUpcoming(
+    List<LibraryItem> songs,
+    LibraryItem album, {
+    String? sourceId,
+  }) async {
+    final startIndex = state.currentMediaIndex;
+    final playing = startIndex != null
+        ? state.songs.elementAtOrNull(startIndex)
+        : null;
+    if (playing == null) return false;
+
+    final upcoming = [
+      for (final song in songs)
+        if (song.id != playing.id) song,
+    ];
+    final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+    final sessionIds = {
+      for (final song in upcoming) song.id: '$deviceId-$stamp-${song.id}',
+    };
+    final cachedPaths = await _cachedPaths(upcoming);
+    final resolved = await Future.wait(
+      upcoming.map(
+        (song) => _resolveTrack(
+          song,
+          album,
+          sessionIds[song.id]!,
+          cachedPath: cachedPaths[song.id],
+        ),
+      ),
+    );
+
+    final current = state.currentMediaIndex;
+    if (current == null ||
+        state.songs.elementAtOrNull(current)?.id != playing.id ||
+        current >= _tracks.length) {
+      return false;
+    }
+
+    final playableSongs = <LibraryItem>[];
+    final tracks = <TargetTrack>[];
+    final localIds = <String>{};
+    for (final entry in resolved) {
+      if (entry == null) continue;
+      playableSongs.add(entry.song);
+      tracks.add(entry.track);
+      if (entry.track.isLocalFile) localIds.add(entry.song.id);
+    }
+
+    if (state.shuffleEnabled) {
+      _unshuffledOrder = [
+        playing.id,
+        for (final song in playableSongs) song.id,
+      ];
+      final order = _shuffledOrder(0, playableSongs.length + 1).skip(1);
+      final source = [...playableSongs];
+      final sourceTracks = [...tracks];
+      playableSongs
+        ..clear()
+        ..addAll([for (final index in order) source[index - 1]]);
+      tracks
+        ..clear()
+        ..addAll([for (final index in order) sourceTracks[index - 1]]);
+    } else {
+      _unshuffledOrder = null;
+    }
+
+    final playingSessionId = _playSessionIds[playing.id];
+    _playSessionIds
+      ..clear()
+      ..addAll({
+        for (final song in playableSongs) song.id: sessionIds[song.id]!,
+      });
+    if (playingSessionId != null) {
+      _playSessionIds[playing.id] = playingSessionId;
+    }
+
+    final playingIsLocal = _localSongIds.contains(playing.id);
+    _localSongIds
+      ..clear()
+      ..addAll(localIds);
+    if (playingIsLocal) _localSongIds.add(playing.id);
+
+    _reportedIndex = _reportedIndex == current ? 0 : null;
+
+    final playingTrack = _tracks[current];
+    _tracks
+      ..clear()
+      ..add(playingTrack)
+      ..addAll(tracks);
+    state = state.copyWith(
+      songs: [playing, ...playableSongs],
+      deliveredQualities: _deliveredQualities(),
+      album: album,
+      sourceId: sourceId,
+      currentMediaIndex: 0,
+    );
+
+    await _editQueue(() => _target.replaceAroundCurrent(current, tracks));
+
+    unawaited(
+      _saveToStorage(
+        songId: playing.id,
+        positionMs: state.position.inMilliseconds,
+        songs: state.songs,
+        album: album,
+      ),
+    );
+    return true;
+  }
+
   Future<bool> _enqueueAll(
     List<LibraryItem> songs, {
     required bool playNext,

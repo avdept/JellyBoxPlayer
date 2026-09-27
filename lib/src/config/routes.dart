@@ -17,10 +17,12 @@ enum Routes {
   playlist('playlist'),
   favourites('favourites'),
   favouriteSongs('favourite-songs'),
+  instantMix('instant-mix'),
   homeAlbum('album'),
   homeArtist('artist'),
   homeGenre('genre'),
   homeGeneratedPlaylist('generated-playlist'),
+  homeInstantMix('instant-mix'),
   homePlaylist('playlist'),
   homeFavourites('favourites'),
   homeFavouriteSongs('favourite-songs');
@@ -43,6 +45,7 @@ String branchAwareName(BuildContext context, Routes route) {
     Routes.playlist => Routes.homePlaylist.name,
     Routes.favourites => Routes.homeFavourites.name,
     Routes.favouriteSongs => Routes.homeFavouriteSongs.name,
+    Routes.instantMix => Routes.homeInstantMix.name,
     _ => route.name,
   };
 }

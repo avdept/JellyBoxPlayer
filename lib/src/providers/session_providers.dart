@@ -8,6 +8,7 @@ final sessionScopedProviders = <ProviderOrFamily>[
   imageServiceProvider,
   currentLibraryProvider,
   setPlaybackProvider,
+  instantMixesProvider,
   downloadManagerProvider,
   forwardCacheProvider,
   downloadedAlbumsProvider,

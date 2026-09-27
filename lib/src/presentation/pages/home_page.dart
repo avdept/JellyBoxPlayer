@@ -167,6 +167,37 @@ class _HomePageState extends ConsumerState<HomePage> {
     color: Theme.of(context).colorScheme.onPrimary,
   );
 
+  void _onRecentlyPlayedTap(LibraryItem item) {
+    if (!isInstantMixId(item.id)) return _onAlbumTap(item);
+    ref.read(instantMixesProvider.notifier).touch(item.id);
+    unawaited(
+      context.pushNamed(Routes.homeInstantMix.name, extra: {'mix': item}),
+    );
+  }
+
+  Future<void> _onPlayRecentlyPlayed(LibraryItem item) async {
+    if (!isInstantMixId(item.id)) return _onPlayAlbum(item);
+    final mix = ref.read(instantMixesProvider.notifier).byId(item.id);
+    if (mix == null) return;
+    await ref.read(setPlaybackProvider.notifier).playInstantMix(mix);
+  }
+
+  Widget? _instantMixCover(LibraryItem item) {
+    if (!isInstantMixId(item.id)) return null;
+    final songs = ref
+        .watch(libraryInstantMixesProvider)
+        .firstWhereOrNull((mix) => mix.item.id == item.id)
+        ?.songs;
+    if (songs == null || songs.isEmpty) return null;
+
+    final imageService = ref.read(imageServiceProvider);
+    return CoverMosaic(
+      images: [
+        for (final song in songs.take(4)) imageService.itemImage(song),
+      ],
+    );
+  }
+
   void _onFavouritesTap() =>
       context.pushNamed(branchAwareName(context, Routes.favourites));
 
@@ -252,12 +283,14 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverToBoxAdapter(
               child: ItemCarousel(
                 title: 'Recently played',
-                items: ref.watch(recentlyPlayedAlbumsProvider),
+                items: ref.watch(recentlyPlayedItemsProvider),
                 device: _device,
                 horizontalPadding: _horizontalPadding,
-                onItemTap: _onAlbumTap,
-                onPlayPressed: _onPlayAlbum,
+                onItemTap: _onRecentlyPlayedTap,
+                onPlayPressed: _onPlayRecentlyPlayed,
+                coverBuilder: _instantMixCover,
                 optionsBuilder: _cardOptions(recentlyPlayedAlbumsProvider),
+                hasOptions: (item) => !isInstantMixId(item.id),
                 onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
               ),
             ),
