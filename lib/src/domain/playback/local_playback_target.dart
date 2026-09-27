@@ -140,6 +140,30 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   }
 
   @override
+  Future<void> replaceAroundCurrent(
+    int currentIndex,
+    List<TargetTrack> upcoming,
+  ) async {
+    final length = _player.sequence.length;
+    if (currentIndex < 0 || currentIndex >= length) {
+      debugPrint('[LocalTarget] queue is out of step; leaving it alone');
+      return;
+    }
+
+    if (currentIndex + 1 < length) {
+      await _player.removeAudioSourceRange(currentIndex + 1, length);
+    }
+    if (currentIndex > 0) {
+      await _player.removeAudioSourceRange(0, currentIndex);
+    }
+    if (upcoming.isEmpty) return;
+    _shuffleOrder.nextInsertPosition = _shuffleOrder.lastPosition;
+    await _player.addAudioSources([
+      for (final track in upcoming) _audioSource(track),
+    ]);
+  }
+
+  @override
   Future<void> reorder(
     List<TargetTrack> tracks, {
     required List<int> order,

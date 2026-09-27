@@ -4,21 +4,13 @@ import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const _setSongsLimit = 300;
 const _favouriteSongsLimit = 500;
-
-const instantMixIdPrefix = 'instant-mix:';
-
-LibraryItem instantMixItem(LibraryItem seed) => LibraryItem(
-  id: '$instantMixIdPrefix${seed.id}',
-  name: 'Instant mix: ${seed.name}',
-  kind: ItemKind.playlist,
-  images: seed.images,
-);
 
 enum SetPlaybackResult {
   started,
@@ -87,13 +79,14 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     },
   );
 
-  Future<SetPlaybackResult> playInstantMix(LibraryItem seed) => _play(
-    setItem: instantMixItem(seed),
-    fetchSongs: () => instantMixSongs(seed.id),
-  );
-
-  Future<List<LibraryItem>> instantMixSongs(String seedId) =>
-      _ref.read(mediaServerClientProvider).getInstantMix(seedId);
+  Future<SetPlaybackResult> playInstantMix(InstantMix mix) {
+    _ref.read(instantMixesProvider.notifier).touch(mix.item.id);
+    return _play(
+      setItem: mix.item,
+      fetchSongs: () async => mix.songs,
+      keepPlaying: mix.seed.kind == ItemKind.song ? mix.seed.id : null,
+    );
+  }
 
   Future<SetPlaybackResult> playGeneratedPlaylist(LibraryItem playlist) =>
       _play(
@@ -147,19 +140,34 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
   Future<SetPlaybackResult> _play({
     required LibraryItem setItem,
     required Future<List<LibraryItem>> Function() fetchSongs,
+    String? keepPlaying,
   }) async {
     if (state != null) return SetPlaybackResult.busy;
     state = setItem.id;
     try {
       final songs = await fetchSongs();
       if (songs.isEmpty) return SetPlaybackResult.empty;
-      await _ref
-          .read(playbackProvider.notifier)
-          .play(songs.first, songs, setItem, sourceId: setItem.id);
+      final playback = _ref.read(playbackProvider.notifier);
+      if (keepPlaying != null &&
+          _currentSongId() == keepPlaying &&
+          await playback.replaceUpcoming(
+            songs,
+            setItem,
+            sourceId: setItem.id,
+          )) {
+        return SetPlaybackResult.started;
+      }
+      await playback.play(songs.first, songs, setItem, sourceId: setItem.id);
       return SetPlaybackResult.started;
     } finally {
       state = null;
     }
+  }
+
+  String? _currentSongId() {
+    final playback = _ref.read(playbackProvider);
+    final index = playback.currentMediaIndex;
+    return index != null ? playback.songs.elementAtOrNull(index)?.id : null;
   }
 }
 

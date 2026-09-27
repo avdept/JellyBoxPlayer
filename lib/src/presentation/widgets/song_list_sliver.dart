@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +16,7 @@ class SongListSliver extends ConsumerStatefulWidget {
     required this.onItemUpdated,
     this.limit,
     this.edgePadding,
+    this.set,
     super.key,
   });
 
@@ -21,6 +24,7 @@ class SongListSliver extends ConsumerStatefulWidget {
   final void Function(LibraryItem updated) onItemUpdated;
   final int? limit;
   final double? edgePadding;
+  final LibraryItem? set;
 
   @override
   ConsumerState<SongListSliver> createState() => _SongListSliverState();
@@ -28,6 +32,15 @@ class SongListSliver extends ConsumerStatefulWidget {
 
 class _SongListSliverState extends ConsumerState<SongListSliver> {
   void _onSongTap(LibraryItem song, List<LibraryItem> songs) {
+    final set = widget.set;
+    if (set != null) {
+      unawaited(
+        ref
+            .read(playbackProvider.notifier)
+            .play(song, songs, set, sourceId: set.id),
+      );
+      return;
+    }
     final syntheticAlbum = LibraryItem(
       id: song.albumId ?? song.id,
       name: song.albumName ?? '',

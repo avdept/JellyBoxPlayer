@@ -63,6 +63,20 @@ class ScreenFactory {
     );
   }
 
+  Page<void> instantMixPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final params = router.extra! as Map<String, dynamic>;
+    final mix = params['mix'] is LibraryItem
+        ? params['mix'] as LibraryItem
+        : LibraryItem.fromJson(params['mix'] as Map<String, dynamic>);
+
+    return CupertinoPage(
+      child: InstantMixPage(mix: mix),
+    );
+  }
+
   Page<void> downloadsPage(
     BuildContext context,
     GoRouterState router,

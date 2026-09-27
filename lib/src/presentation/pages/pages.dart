@@ -9,6 +9,7 @@ export 'generated_playlist_page.dart';
 export 'genre_albums_page.dart';
 export 'home_page.dart';
 export 'initial_page.dart';
+export 'instant_mix_page.dart';
 export 'library_page.dart';
 export 'login_page.dart';
 export 'main_page.dart';

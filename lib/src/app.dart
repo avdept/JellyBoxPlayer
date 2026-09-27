@@ -226,6 +226,11 @@ class _AppState extends ConsumerState<App>
                       pageBuilder: widget.screenFactory.generatedPlaylistPage,
                     ),
                     GoRoute(
+                      path: Routes.homeInstantMix.path,
+                      name: Routes.homeInstantMix.name,
+                      pageBuilder: widget.screenFactory.instantMixPage,
+                    ),
+                    GoRoute(
                       path: Routes.homeFavourites.path,
                       name: Routes.homeFavourites.name,
                       pageBuilder: widget.screenFactory.favouritesPage,
@@ -267,6 +272,11 @@ class _AppState extends ConsumerState<App>
                       path: Routes.genre.path,
                       name: Routes.genre.name,
                       pageBuilder: widget.screenFactory.genrePage,
+                    ),
+                    GoRoute(
+                      path: Routes.instantMix.path,
+                      name: Routes.instantMix.name,
+                      pageBuilder: widget.screenFactory.instantMixPage,
                     ),
                     GoRoute(
                       path: Routes.searchResults.path,
