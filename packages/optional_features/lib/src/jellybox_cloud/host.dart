@@ -8,6 +8,7 @@ class CloudPlayback {
     required this.position,
     required this.playing,
     this.albumId,
+    this.sourceId,
     this.shuffle = false,
     this.repeat = 'off',
     this.volume = 1,
@@ -15,6 +16,7 @@ class CloudPlayback {
 
   final List<String> itemIds;
   final String? albumId;
+  final String? sourceId;
   final int index;
   final Duration position;
   final bool playing;
@@ -50,6 +52,7 @@ abstract class CloudHost<S> {
     required List<S> songs,
     required int index,
     required S? album,
+    required String? sourceId,
     required Duration position,
     required bool autoPlay,
     required bool shuffle,
