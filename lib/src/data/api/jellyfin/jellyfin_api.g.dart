@@ -742,6 +742,7 @@ class _JellyfinApi implements JellyfinApi {
     String sortOrder = 'Descending',
     List<String> artistIds = const [],
     bool recursive = true,
+    List<String> filters = const [],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -753,6 +754,7 @@ class _JellyfinApi implements JellyfinApi {
       r'SortOrder': sortOrder,
       r'AlbumArtistIds': artistIds,
       r'Recursive': recursive,
+      r'Filters': filters,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};

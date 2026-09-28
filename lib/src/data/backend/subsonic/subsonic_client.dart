@@ -59,6 +59,7 @@ class SubsonicClient implements MediaServerClient {
   static const _albumFanOut = 8;
   static const _baseCapabilities = MediaServerCapabilities(
     similarAlbums: false,
+    playlistFavourites: false,
   );
 
   final SubsonicApi _api;
@@ -250,7 +251,9 @@ class SubsonicClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> getPlaylists(LibraryQuery query) async {
-    if (query.artistIds.isNotEmpty || query.appearsOnArtistId != null) {
+    if (query.artistIds.isNotEmpty ||
+        query.appearsOnArtistId != null ||
+        query.filters.contains(ItemFilterFlag.favorite)) {
       return const LibraryPage();
     }
     final playlists = subsonicSortPlaylists(

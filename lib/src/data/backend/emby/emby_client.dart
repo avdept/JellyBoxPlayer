@@ -111,6 +111,7 @@ class EmbyClient implements MediaServerClient {
       contributingArtistIds: query.appearsOnArtistId,
       sortOrder: mediaBrowserSortOrder(query.direction),
       artistIds: query.artistIds,
+      filters: mediaBrowserFilters(query.filters),
     );
     return response.data.toEmbyLibraryPage();
   }

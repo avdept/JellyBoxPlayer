@@ -13,6 +13,8 @@ Future<LibraryItem> toggleFavourite(WidgetRef ref, LibraryItem item) async {
       ref.invalidate(favouriteAlbumsProvider);
     case ItemKind.artist:
       ref.invalidate(favouriteArtistsProvider);
+    case ItemKind.playlist:
+      ref.invalidate(favouritePlaylistsProvider);
     case ItemKind.song:
       ref.invalidate(favouriteSongsProvider);
     case _:

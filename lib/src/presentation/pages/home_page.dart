@@ -198,12 +198,24 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  void _onFavouriteTap(LibraryItem item) =>
+      item.kind == ItemKind.playlist ? _onPlaylistTap(item) : _onAlbumTap(item);
+
+  Future<void> _onPlayFavourite(LibraryItem item) =>
+      item.kind == ItemKind.playlist
+      ? _onPlayPlaylist(item)
+      : _onPlayAlbum(item);
+
+  void _refreshFavourites() => ref
+    ..invalidate(favouriteAlbumsProvider)
+    ..invalidate(favouritePlaylistsProvider);
+
   void _onFavouritesTap() =>
       context.pushNamed(branchAwareName(context, Routes.favourites));
 
   void _refresh() {
+    _refreshFavourites();
     ref
-      ..invalidate(favouriteAlbumsProvider)
       ..invalidate(recentlyPlayedAlbumsProvider)
       ..invalidate(frequentlyPlayedAlbumsProvider)
       ..invalidate(recentlyAddedAlbumsProvider)
@@ -298,14 +310,14 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverToBoxAdapter(
               child: ItemCarousel(
                 title: 'Favourites',
-                items: ref.watch(favouriteAlbumsProvider),
+                items: ref.watch(homeFavouritesProvider),
                 device: _device,
                 horizontalPadding: _horizontalPadding,
-                onItemTap: _onAlbumTap,
-                onPlayPressed: _onPlayAlbum,
+                onItemTap: _onFavouriteTap,
+                onPlayPressed: _onPlayFavourite,
                 onTitleTap: _onFavouritesTap,
-                optionsBuilder: _cardOptions(favouriteAlbumsProvider),
-                onRetry: () => ref.invalidate(favouriteAlbumsProvider),
+                optionsBuilder: _cardOptions(homeFavouritesProvider),
+                onRetry: _refreshFavourites,
               ),
             ),
           SliverToBoxAdapter(

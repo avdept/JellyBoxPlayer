@@ -688,6 +688,26 @@ void main() {
 
       expect(page.items.map((p) => p.id), ['p1']);
     });
+
+    test(
+      '- favourite playlists are empty since playlists cannot be starred',
+      () async {
+        server.ok('getPlaylists', {
+          'playlists': {
+            'playlist': [
+              {'id': 'p1', 'name': 'Road Trip'},
+            ],
+          },
+        });
+
+        final page = await client.getPlaylists(
+          const LibraryQuery(filters: {ItemFilterFlag.favorite}),
+        );
+
+        expect(page.items, isEmpty);
+        expect(server.calls('getPlaylists'), isEmpty);
+      },
+    );
   });
 
   test(
