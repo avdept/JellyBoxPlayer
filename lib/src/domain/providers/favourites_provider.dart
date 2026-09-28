@@ -52,6 +52,32 @@ final AutoDisposeFutureProvider<List<LibraryItem>> favouriteArtistsProvider =
       return page.items;
     });
 
+final AutoDisposeFutureProvider<List<LibraryItem>> favouritePlaylistsProvider =
+    FutureProvider.autoDispose((ref) async {
+      if (ref.watch(isOfflineProvider)) throw const OfflineException();
+      final api = ref.watch(mediaServerClientProvider);
+      final userId = ref.watch(currentUserProvider)?.userId;
+      if (userId == null) return const [];
+
+      if (!ref.watch(serverCapabilitiesProvider).playlistFavourites) {
+        return const [];
+      }
+
+      final page = await api.getPlaylists(
+        const LibraryQuery(filters: _favouriteFilter, limit: favouritesLimit),
+      );
+      return page.items;
+    });
+
+final AutoDisposeFutureProvider<List<LibraryItem>> homeFavouritesProvider =
+    FutureProvider.autoDispose((ref) async {
+      final [playlists, albums] = await Future.wait([
+        ref.watch(favouritePlaylistsProvider.future),
+        ref.watch(favouriteAlbumsProvider.future),
+      ]);
+      return [...playlists, ...albums];
+    });
+
 final AutoDisposeFutureProvider<LibraryPage> favouriteSongsProvider =
     FutureProvider.autoDispose((ref) async {
       if (ref.watch(isOfflineProvider)) throw const OfflineException();

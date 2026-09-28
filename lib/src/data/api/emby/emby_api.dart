@@ -175,6 +175,7 @@ abstract class EmbyApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('Recursive') bool recursive = true,
+    @Query('Filters') List<String> filters = const [],
   });
 
   @GET('/Users/{userId}/Items')

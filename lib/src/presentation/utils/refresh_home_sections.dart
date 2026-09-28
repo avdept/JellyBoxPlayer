@@ -11,6 +11,7 @@ extension RefreshHomeSections on WidgetRef {
     }
     if (!read(settingProvider(AppSetting.favouritesHidden))) {
       invalidate(favouriteAlbumsProvider);
+      invalidate(favouritePlaylistsProvider);
     }
     if (!read(settingProvider(AppSetting.generatedPlaylistsDisabled))) {
       read(currentDayProvider.notifier).check();

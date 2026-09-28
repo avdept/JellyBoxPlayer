@@ -42,6 +42,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
     ref
       ..invalidate(favouriteAlbumsProvider)
       ..invalidate(favouriteArtistsProvider)
+      ..invalidate(favouritePlaylistsProvider)
       ..invalidate(favouriteSongsProvider);
   }
 
@@ -50,6 +51,8 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
     final isOffline = ref.watch(isOfflineProvider);
     final albums = ref.watch(favouriteAlbumsProvider).valueOrNull ?? const [];
     final artists = ref.watch(favouriteArtistsProvider).valueOrNull ?? const [];
+    final playlists =
+        ref.watch(favouritePlaylistsProvider).valueOrNull ?? const [];
     final songsPage =
         ref.watch(favouriteSongsProvider).valueOrNull ?? const LibraryPage();
     final songs = songsPage.items;
@@ -58,6 +61,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
     final isLoading =
         ref.watch(favouriteAlbumsProvider).isLoading ||
         ref.watch(favouriteArtistsProvider).isLoading ||
+        ref.watch(favouritePlaylistsProvider).isLoading ||
         ref.watch(favouriteSongsProvider).isLoading;
 
     return ScrollablePageScaffold(
@@ -101,11 +105,15 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
         else if (isLoading &&
             albums.isEmpty &&
             artists.isEmpty &&
+            playlists.isEmpty &&
             songs.isEmpty)
           SliverToBoxAdapter(
             child: SectionsShimmer(device: _device, cardRows: 2),
           )
-        else if (albums.isEmpty && artists.isEmpty && songs.isEmpty)
+        else if (albums.isEmpty &&
+            artists.isEmpty &&
+            playlists.isEmpty &&
+            songs.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
@@ -123,6 +131,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
         else ...[
           ..._cardsSection(ItemList.albums, albums),
           ..._cardsSection(ItemList.artists, artists),
+          ..._cardsSection(ItemList.playlists, playlists),
           if (songs.isNotEmpty) ...[
             _sectionHeader('Songs'),
             SongListSliver(

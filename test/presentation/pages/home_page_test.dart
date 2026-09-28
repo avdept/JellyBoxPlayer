@@ -106,6 +106,7 @@ void main() {
           favouriteAlbumsProvider.overrideWith(
             (_) async => favourites ?? createItems(3, ItemKind.album),
           ),
+          favouritePlaylistsProvider.overrideWith((_) async => const []),
           recentlyPlayedAlbumsProvider.overrideWith(
             (_) async => recentlyPlayed ?? createItems(3, ItemKind.album),
           ),

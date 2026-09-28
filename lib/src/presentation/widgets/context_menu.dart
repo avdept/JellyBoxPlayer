@@ -309,6 +309,9 @@ List<ContextMenuAction> contextMenuActions(
       isDesktop &&
       item.kind == ItemKind.song &&
       scope != ContextMenuScope.nowPlaying;
+  final canLike =
+      item.kind != ItemKind.playlist ||
+      ref.read(serverCapabilitiesProvider).playlistFavourites;
   final actions = _ContextMenuActions(context, ref, item, scope);
 
   return [
@@ -321,7 +324,9 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.instantMix => actions.instantMix(),
         ContextMenuEntry.download => actions.download(),
         ContextMenuEntry.like =>
-          onLike != null && !rowHasLike ? actions.like(onLike) : null,
+          onLike != null && !rowHasLike && canLike
+              ? actions.like(onLike)
+              : null,
         ContextMenuEntry.goToArtist =>
           item.effectiveArtists.isNotEmpty ? actions.goToArtist() : null,
         ContextMenuEntry.goToAlbum =>
