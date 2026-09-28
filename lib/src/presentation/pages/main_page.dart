@@ -251,12 +251,75 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     if (_device.isMobile) return scaffold;
 
-    return Stack(
+    final content = Stack(
       children: [
         scaffold,
         const Positioned.fill(child: StudioMode()),
       ],
     );
+
+    if (Platform.isLinux && !_isHyprland) {
+      return _WindowResizeFrame(child: content);
+    }
+    return content;
+  }
+}
+
+class _WindowResizeFrame extends StatefulWidget {
+  const _WindowResizeFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_WindowResizeFrame> createState() => _WindowResizeFrameState();
+}
+
+class _WindowResizeFrameState extends State<_WindowResizeFrame>
+    with WindowListener {
+  bool _isMaximized = false;
+  bool _isFullScreen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    unawaited(_syncWindowState());
+  }
+
+  Future<void> _syncWindowState() async {
+    final isMaximized = await windowManager.isMaximized();
+    final isFullScreen = await windowManager.isFullScreen();
+    if (!mounted) return;
+    setState(() {
+      _isMaximized = isMaximized;
+      _isFullScreen = isFullScreen;
+    });
+  }
+
+  @override
+  void onWindowMaximize() => setState(() => _isMaximized = true);
+
+  @override
+  void onWindowUnmaximize() => setState(() => _isMaximized = false);
+
+  @override
+  void onWindowEnterFullScreen() => setState(() => _isFullScreen = true);
+
+  @override
+  void onWindowLeaveFullScreen() => setState(() => _isFullScreen = false);
+
+  @override
+  Widget build(BuildContext context) {
+    return DragToResizeArea(
+      enableResizeEdges: _isMaximized || _isFullScreen ? const [] : null,
+      child: widget.child,
+    );
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
   }
 }
 
