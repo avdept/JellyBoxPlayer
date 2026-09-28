@@ -85,7 +85,7 @@ class CloudNotifier extends StateNotifier<CloudState> {
 
   Future<void> signOut() => _cloud.signOut();
 
-  Future<void> handoffTo(String deviceId) => _cloud.handoffTo(deviceId);
+  Future<bool> handoffTo(String deviceId) => _cloud.handoffTo(deviceId);
 
   Future<void> sendCommand(PlayerCommand command, {Object? value}) =>
       _cloud.sendCommand(command, value: value);

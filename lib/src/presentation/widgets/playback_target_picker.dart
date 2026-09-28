@@ -299,6 +299,8 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
   OutputController get _outputs => ref.read(outputControllerProvider);
 
+  String? _failedHandoff;
+
   void _selectLocal() {
     unawaited(_outputs.playHere());
     widget.onDone();
@@ -310,9 +312,26 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     unawaited(connectJellyboxCloud(navigator.context));
   }
 
-  void _handOffTo(ConductorDevice device) {
-    unawaited(_outputs.handOffTo(device));
-    widget.onDone();
+  Future<void> _handOffTo(ConductorDevice device) async {
+    setState(() => _failedHandoff = null);
+    final taken = await _outputs.handOffTo(device);
+    if (!mounted) return;
+    if (taken) {
+      widget.onDone();
+    } else {
+      setState(() => _failedHandoff = device.id);
+    }
+  }
+
+  String _deviceSubtitle(ConductorDevice device, CloudState conductor) {
+    if (conductor.handingOffTo == device.id) {
+      return device.isOnline ? 'Connecting…' : 'Waking up…';
+    }
+    if (_failedHandoff == device.id) {
+      return conductor.error ?? 'Could not take over';
+    }
+    if (device.isRenderer) return 'Playing';
+    return device.isOnline ? 'Your device' : 'Asleep';
   }
 
   void _selectRenderer(UpnpRenderer renderer) {
@@ -408,13 +427,12 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             _TargetTile(
               icon: conductorDeviceIcon(device.platform),
               title: device.name,
-              subtitle: device.isRenderer
-                  ? 'Playing'
-                  : device.isOnline
-                  ? 'Your device'
-                  : 'Asleep',
+              subtitle: _deviceSubtitle(device, conductor),
               selected: device.id == elsewhere?.id,
-              onTap: device.isRenderer ? null : () => _handOffTo(device),
+              busy: conductor.handingOffTo == device.id,
+              onTap: device.isRenderer || conductor.handingOffTo == device.id
+                  ? null
+                  : () => unawaited(_handOffTo(device)),
             ),
             if (device.id == elsewhere?.id) _volume,
           ],
@@ -585,18 +603,20 @@ class _TargetTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.subtitle,
+    this.busy = false,
   });
 
   final IconData icon;
   final String title;
   final String? subtitle;
   final bool selected;
+  final bool busy;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final disabled = onTap == null;
+    final disabled = onTap == null && !busy;
     final tint = disabled
         ? theme.disabledColor
         : (selected ? theme.colorScheme.primary : null);
@@ -615,7 +635,12 @@ class _TargetTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall,
             ),
-      trailing: selected
+      trailing: busy
+          ? const SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : selected
           ? Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
           : null,
       onTap: onTap,

@@ -74,6 +74,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _reportedPositionMs = 0;
   var _startReported = false;
   var _preparingQueue = false;
+  var _queueGeneration = 0;
   var _queueEditsInFlight = 0;
   Completer<void>? _queueEditsSettled;
   var _fallingBack = false;
@@ -522,6 +523,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool autoPlay = true,
     bool reshuffle = true,
   }) async {
+    final generation = ++_queueGeneration;
     try {
       final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
       final sessionIds = {
@@ -539,6 +541,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           ),
         ),
       );
+      if (generation != _queueGeneration) return;
 
       final playableSongs = <LibraryItem>[];
       final tracks = <TargetTrack>[];
@@ -613,6 +616,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         initialPosition: startPosition,
         autoPlay: autoPlay,
       );
+      if (generation != _queueGeneration) return;
 
       state = state.copyWith(
         songs: playableSongs,
@@ -1393,8 +1397,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<bool> tryRestore() async {
+    final generation = _queueGeneration;
     final snapshot = await PlaybackStorage().load();
-    if (snapshot == null) {
+    if (snapshot == null || generation != _queueGeneration) {
       _ref.read(pendingMediaPlayProvider)();
       return false;
     }
@@ -1414,6 +1419,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       reshuffle: false,
     );
     final pendingPress = _ref.read(pendingMediaPlayProvider)();
+    if (_queueGeneration != generation + 1) return false;
     final alreadyPlaying = _targetState.status.isPlaying;
     if (pendingPress || alreadyPlaying) {
       await resume();
