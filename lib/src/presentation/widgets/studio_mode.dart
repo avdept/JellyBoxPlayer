@@ -106,6 +106,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     if (!ref.read(settingProvider(AppSetting.studioModeFullscreen))) return;
     if (await windowManager.isFullScreen()) return;
     _didEnterWindowFullscreen = true;
+    await windowManager.setMinimumSize(Size.zero);
     await windowManager.setFullScreen(true);
   }
 
@@ -427,7 +428,13 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     if (_didEnterWindowFullscreen) {
-      unawaited(windowManager.setFullScreen(false));
+      unawaited(
+        windowManager
+            .setFullScreen(false)
+            .then(
+              (_) => windowManager.setMinimumSize(minWindowSize),
+            ),
+      );
     }
     _hideTimer?.cancel();
     _phaseTimer?.cancel();
