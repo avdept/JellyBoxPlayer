@@ -191,14 +191,14 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   Duration get bufferedPosition => _ref.read(playerProvider).bufferedPosition;
 
   @override
-  Future<int?> millisUntilAudible(Duration from) {
+  Future<int?> millisUntilPlaying() {
     final clock = Stopwatch()..start();
     return _ref
         .read(playerProvider)
-        .playbackEventStream
+        .playerStateStream
         .firstWhere(
-          (event) =>
-              event.updatePosition > from + const Duration(milliseconds: 20),
+          (state) =>
+              state.playing && state.processingState == ProcessingState.ready,
         )
         .then<int?>((_) => clock.elapsedMilliseconds)
         .timeout(const Duration(seconds: 4), onTimeout: () => null);
