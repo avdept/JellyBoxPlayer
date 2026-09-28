@@ -408,7 +408,11 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             _TargetTile(
               icon: conductorDeviceIcon(device.platform),
               title: device.name,
-              subtitle: device.isRenderer ? 'Playing' : 'Your device',
+              subtitle: device.isRenderer
+                  ? 'Playing'
+                  : device.isOnline
+                  ? 'Your device'
+                  : 'Asleep',
               selected: device.id == elsewhere?.id,
               onTap: device.isRenderer ? null : () => _handOffTo(device),
             ),

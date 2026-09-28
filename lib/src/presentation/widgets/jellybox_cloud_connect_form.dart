@@ -104,7 +104,7 @@ class _JellyboxCloudConnectFormState
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Current online devices: ${ref.watch(cloudProvider).devices.length}',
+                'Current online devices: ${ref.watch(cloudProvider).devices.where((d) => d.isOnline).length}',
                 style: TextStyle(color: muted),
               ),
             ),
