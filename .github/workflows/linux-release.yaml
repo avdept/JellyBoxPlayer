@@ -88,11 +88,10 @@ jobs:
         with:
           channel: stable
 
-      - name: Private packages
-        uses: ./.github/actions/private-quirks
+      - name: Private package
+        uses: ./.github/actions/optional-features
         with:
-          deploy-key: ${{ secrets.UPNP_QUIRKS_DEPLOY_KEY }}
-          genre-playlists-deploy-key: ${{ secrets.GENRE_PLAYLISTS_DEPLOY_KEY }}
+          deploy-key: ${{ secrets.OPTIONAL_FEATURES_DEPLOY_KEY }}
 
       # flutter-action installs from releases_linux.json, which only ever
       # contains x64 archives — there is no Linux arm64 Flutter SDK tarball to

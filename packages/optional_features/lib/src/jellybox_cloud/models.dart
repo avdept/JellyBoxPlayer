@@ -65,6 +65,7 @@ class ConductorDevice {
     required this.platform,
     this.isRenderer = false,
     this.isSelf = false,
+    this.isOnline = true,
   });
 
   final String id;
@@ -72,6 +73,7 @@ class ConductorDevice {
   final String platform;
   final bool isRenderer;
   final bool isSelf;
+  final bool isOnline;
 }
 
 @immutable
