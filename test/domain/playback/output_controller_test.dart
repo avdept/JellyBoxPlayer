@@ -48,10 +48,12 @@ class _Playback extends StateNotifier<PlaybackState>
 class _Cloud extends StateNotifier<CloudState>
     with Mock
     implements CloudNotifier {
-  _Cloud(this.log, {this.claims = true}) : super(const CloudState());
+  _Cloud(this.log, {this.claims = true, this.takes = true})
+    : super(const CloudState());
 
   final List<String> log;
   final bool claims;
+  final bool takes;
 
   @override
   Future<bool> claimHere() async {
@@ -60,7 +62,10 @@ class _Cloud extends StateNotifier<CloudState>
   }
 
   @override
-  Future<void> handoffTo(String deviceId) async => log.add('handoff $deviceId');
+  Future<bool> handoffTo(String deviceId) async {
+    log.add('handoff $deviceId');
+    return takes;
+  }
 }
 
 const _iphone = ConductorDevice(
@@ -80,13 +85,16 @@ void main() {
     ConductorDevice? elsewhere,
     PlaybackTarget? current,
     bool claims = true,
+    bool takes = true,
   }) {
     final container = ProviderContainer(
       overrides: [
         localPlaybackTargetProvider.overrideWithValue(local),
         remoteRendererProvider.overrideWithValue(elsewhere),
         playbackProvider.overrideWith((_) => _Playback(log, current ?? local)),
-        cloudProvider.overrideWith((_) => _Cloud(log, claims: claims)),
+        cloudProvider.overrideWith(
+          (_) => _Cloud(log, claims: claims, takes: takes),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -125,6 +133,16 @@ void main() {
     await controllerWith(current: kef).handOffTo(_iphone);
 
     expect(log, ['handoff iphone', 'switch local']);
+  });
+
+  test('a handoff that fails keeps the speaker', () async {
+    final taken = await controllerWith(
+      current: kef,
+      takes: false,
+    ).handOffTo(_iphone);
+
+    expect(taken, isFalse);
+    expect(log, ['handoff iphone']);
   });
 
   test('handing off from this device leaves its output alone', () async {

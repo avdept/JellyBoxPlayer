@@ -29,10 +29,11 @@ class OutputController {
     if (!claimed) await _playback.reloadOnTarget();
   }
 
-  Future<void> handOffTo(ConductorDevice device) async {
-    await _ref.read(cloudProvider.notifier).handoffTo(device.id);
-    if (_playback.target.kind != PlaybackTargetKind.local) {
+  Future<bool> handOffTo(ConductorDevice device) async {
+    final taken = await _ref.read(cloudProvider.notifier).handoffTo(device.id);
+    if (taken && _playback.target.kind != PlaybackTargetKind.local) {
       await _playback.switchTarget(_ref.read(localPlaybackTargetProvider));
     }
+    return taken;
   }
 }

@@ -224,6 +224,53 @@ void main() {
     expect(target.plays, 0);
   });
 
+  test('- leaves alone a queue that arrived while it was loading', () async {
+    await saveQueue();
+    final container = containerWith(pendingPress: true);
+    final playback = container.read(playbackProvider.notifier);
+    final handedOff = [songs.last];
+
+    final restoring = playback.tryRestore();
+    await playback.play(songs.last, handedOff, album);
+
+    expect(await restoring, isFalse);
+    expect(pendingTakes, 1);
+    expect(target.loads, hasLength(1));
+    expect(target.loads.single.autoPlay, isTrue);
+    expect(container.read(playbackProvider).songs.map((s) => s.id), ['c']);
+  });
+
+  test('- a newer queue wins over one still being prepared', () async {
+    final gate = Completer<void>();
+    when(
+      () => client.resolveStreamSource(
+        any(),
+        playSessionId: any(named: 'playSessionId'),
+        target: any(named: 'target'),
+      ),
+    ).thenAnswer((invocation) async {
+      final song = invocation.positionalArguments.first as LibraryItem;
+      if (song.id == 'a') await gate.future;
+      return StreamSource(
+        uri: Uri.parse('http://server/audio/${song.id}'),
+        isHls: false,
+        outputContainer: 'flac',
+        mimeType: 'audio/flac',
+      );
+    });
+    final container = containerWith(pendingPress: false);
+    final playback = container.read(playbackProvider.notifier);
+
+    final older = playback.play(songs.first, songs, album);
+    await pumpEventQueue();
+    await playback.play(songs.last, [songs.last], album);
+    gate.complete();
+    await older;
+
+    expect(target.loads, hasLength(1));
+    expect(container.read(playbackProvider).songs.map((s) => s.id), ['c']);
+  });
+
   test('- restores which set the queue was started from', () async {
     await saveQueue(sourceId: 'album');
     final container = containerWith(pendingPress: false);

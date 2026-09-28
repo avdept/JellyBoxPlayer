@@ -29,6 +29,7 @@ class CloudState {
     this.busy = false,
     this.lastHandoffMs,
     this.error,
+    this.handingOffTo,
   });
 
   final ConductorStatus status;
@@ -38,6 +39,7 @@ class CloudState {
   final bool busy;
   final int? lastHandoffMs;
   final String? error;
+  final String? handingOffTo;
 
   bool get signedIn => account != null;
 
@@ -82,7 +84,7 @@ class JellyboxCloud<S> {
 
   Future<void> networkChanged() async {}
 
-  Future<void> handoffTo(String deviceId) async {}
+  Future<bool> handoffTo(String deviceId) async => false;
 
   Future<void> sendCommand(PlayerCommand command, {Object? value}) async {}
 
