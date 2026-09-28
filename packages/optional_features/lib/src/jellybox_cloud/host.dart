@@ -80,7 +80,7 @@ abstract class CloudHost<S> {
 
   bool get rendersLocally;
 
-  Future<int?> millisUntilAudible(Duration from);
+  Future<int?> millisUntilPlaying();
 
   Duration get bufferedPosition;
 
