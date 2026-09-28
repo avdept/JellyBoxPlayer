@@ -4,7 +4,6 @@ import 'dart:math' show max;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:audio_session/audio_session.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +24,7 @@ import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
+import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/screen_factory.dart';
@@ -119,8 +119,6 @@ Future<void> main() async {
   final lastWindowPosition = await placement.getWindowPosition();
 
   // Window settings
-  const minWindowSize = kDebugMode ? Size(360, 600) : Size(1280, 800);
-
   final savedOrDefaultSize = lastWindowSize ?? const Size(1440, 1000);
   final initialWindowSize = Size(
     max(savedOrDefaultSize.width, minWindowSize.width),
