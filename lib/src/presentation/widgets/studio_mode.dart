@@ -12,6 +12,8 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
+import 'package:jplayer/src/presentation/widgets/flip_panel.dart';
+import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
@@ -217,6 +219,9 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     _pokeControls();
   }
 
+  void _toggleLyrics() =>
+      ref.read(studioModeLyricsProvider.notifier).update((shown) => !shown);
+
   void _close() {
     ref.read(studioModeVisibleProvider.notifier).state = false;
   }
@@ -258,41 +263,12 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                 ),
                 RepaintBoundary(
                   child: SafeArea(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final coverSize = min(
-                          min(
-                            constraints.maxHeight * 0.5,
-                            constraints.maxWidth * 0.7,
-                          ),
-                          480,
-                        ).toDouble();
-                        return Stack(
-                          children: [
-                            Center(child: _centeredCover(coverSize)),
-                            Positioned(
-                              top: (constraints.maxHeight + coverSize) / 2 + 20,
-                              left: 0,
-                              right: 0,
-                              child: _fadeWithControls(
-                                Center(
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 480,
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 24,
-                                      ),
-                                      child: _controls(),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                    child: FlipPanel(
+                      side: ref.watch(studioModeLyricsProvider)
+                          ? FlipSide.left
+                          : FlipSide.front,
+                      front: _nowPlayingFace(),
+                      left: _lyricsFace(),
                     ),
                   ),
                 ),
@@ -300,11 +276,18 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                   top: 16,
                   right: 16,
                   child: _fadeWithControls(
-                    IconButton(
-                      onPressed: _close,
-                      color: Colors.white,
-                      tooltip: 'Exit studio mode',
-                      icon: const Icon(Icons.fullscreen_exit),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _lyricsButton(),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          onPressed: _close,
+                          color: Colors.white,
+                          tooltip: 'Exit studio mode',
+                          icon: const Icon(Icons.fullscreen_exit),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -315,6 +298,67 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       ),
     );
   }
+
+  Widget _nowPlayingFace() => LayoutBuilder(
+    builder: (context, constraints) {
+      final coverSize = min(
+        min(
+          constraints.maxHeight * 0.5,
+          constraints.maxWidth * 0.7,
+        ),
+        480,
+      ).toDouble();
+      return Stack(
+        children: [
+          Center(child: _centeredCover(coverSize)),
+          Positioned(
+            top: (constraints.maxHeight + coverSize) / 2 + 20,
+            left: 0,
+            right: 0,
+            child: _fadeWithControls(
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 480,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                    ),
+                    child: _controls(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  Widget _lyricsFace() => const LyricsView(
+    padding: EdgeInsets.symmetric(horizontal: 48, vertical: 72),
+  );
+
+  Widget _lyricsButton() => Consumer(
+    builder: (context, ref, _) {
+      final hasLyrics = ref.watch(currentSongHasLyricsProvider);
+      final showLyrics = ref.watch(studioModeLyricsProvider);
+      return IconButton(
+        onPressed: hasLyrics || showLyrics ? _toggleLyrics : null,
+        color: Colors.white,
+        disabledColor: Colors.white.withValues(alpha: 0.3),
+        tooltip: switch ((hasLyrics, showLyrics)) {
+          (_, true) => 'Hide lyrics',
+          (true, false) => 'Lyrics',
+          (false, false) => 'No lyrics for this track',
+        },
+        icon: const Icon(Icons.lyrics_outlined),
+        selectedIcon: const Icon(Icons.lyrics),
+        isSelected: showLyrics,
+      );
+    },
+  );
 
   Widget _animatedBackground() {
     final shader = _auroraShader;

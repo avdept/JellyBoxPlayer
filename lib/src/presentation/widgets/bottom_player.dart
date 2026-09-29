@@ -691,6 +691,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   Widget _studioModeButton() => IconButton(
     onPressed: () {
       ref.read(lyricsVisibleProvider.notifier).state = false;
+      ref.read(studioModeLyricsProvider.notifier).state = false;
       ref.read(studioModeVisibleProvider.notifier).state = true;
     },
     color: _theme.colorScheme.onPrimary,
