@@ -1,0 +1,21 @@
+name: home_screen_widgets
+description: "Shared storage and reloads for the home screen widgets on Android and iOS."
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.prodigytech.home_screen_widgets
+        pluginClass: HomeScreenWidgetsPlugin
+      ios:
+        pluginClass: HomeScreenWidgetsPlugin
