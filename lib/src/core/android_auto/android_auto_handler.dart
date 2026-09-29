@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/android_auto/auto_media_id.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
-import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/playback_toggles.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -286,41 +286,15 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     String name,
     Map<String, dynamic>? extras,
   ) async {
+    final toggles = PlaybackToggles(_ref);
     switch (name) {
       case shuffleAction:
-        final enabled = _ref.read(playbackProvider).shuffleEnabled;
-        await _ref
-            .read(playbackProvider.notifier)
-            .setShuffle(enabled: !enabled);
+        await toggles.toggleShuffle();
       case repeatAction:
-        final player = _ref.read(playerProvider);
-        await player.setLoopMode(
-          player.loopMode == LoopMode.off ? LoopMode.all : LoopMode.off,
-        );
+        await toggles.toggleRepeat();
       case favouriteAction:
-        await _toggleFavourite();
+        await toggles.toggleFavourite();
     }
-  }
-
-  Future<void> _toggleFavourite() async {
-    final song = _currentSong(_ref.read(playbackProvider));
-    if (song == null || _ref.read(isOfflineProvider)) return;
-    final favourite = !song.userData.isFavorite;
-    try {
-      await _ref
-          .read(mediaServerClientProvider)
-          .setFavorite(song.id, favorite: favourite);
-    } on Object {
-      return;
-    }
-    _ref.invalidate(favouriteSongsProvider);
-    _ref
-        .read(playbackProvider.notifier)
-        .updateSong(
-          song.copyWith(
-            userData: song.userData.copyWith(isFavorite: favourite),
-          ),
-        );
   }
 
   Future<List<MediaItem>> _root() async {

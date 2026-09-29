@@ -610,6 +610,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  home_screen_widgets:
+    dependency: "direct main"
+    description:
+      path: home_screen_widgets
+      relative: true
+    source: path
+    version: "0.0.1"
   hooks:
     dependency: transitive
     description:

@@ -14,6 +14,7 @@ import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
+import 'package:jplayer/src/core/home_widget/widget_commands.dart';
 import 'package:jplayer/src/core/listenbrainz/listenbrainz_scrobbler.dart';
 import 'package:jplayer/src/core/scrobbling/scrobble_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
@@ -115,6 +116,7 @@ Future<void> main() async {
   if (Platform.isIOS) CarPlayHandler.initialize(container, carContent);
   if (Platform.isAndroid) AndroidAutoHandler.initialize(container, carContent);
   NowPlayingWidgetSync.initialize(container);
+  WidgetCommands.initialize(container, carContent);
 
   final placement = WindowPlacementStorage(prefs);
   final lastWindowSize = await placement.getWindowSize();

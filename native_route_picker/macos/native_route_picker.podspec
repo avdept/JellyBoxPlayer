@@ -6,9 +6,9 @@ Pod::Spec.new do |s|
 Embeds AVRoutePickerView so users can pick an AirPlay / Bluetooth / wired
 output for audio playback.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://jellybox.app'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'ProdigyTech Inc.' => 'alex@nimbleindustries.io' }
+  s.author           = { 'Alex' => 'jellybox@prodigytech.dev' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
   s.dependency 'FlutterMacOS'

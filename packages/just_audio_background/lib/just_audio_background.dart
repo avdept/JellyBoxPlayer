@@ -53,7 +53,7 @@ class JustAudioBackground {
   static const _pendingPlayWindow = Duration(minutes: 1);
   static DateTime? _pendingPlayAt;
 
-  static void _rememberPlay() => _pendingPlayAt = DateTime.now();
+  static void rememberPlay() => _pendingPlayAt = DateTime.now();
 
   static bool takePendingPlay() {
     final at = _pendingPlayAt;
@@ -140,14 +140,14 @@ class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
 
   @override
   Future<void> play() async {
-    if (_awaitingPlayer) return JustAudioBackground._rememberPlay();
+    if (_awaitingPlayer) return JustAudioBackground.rememberPlay();
     return super.play();
   }
 
   @override
   Future<void> click([MediaButton button = MediaButton.media]) async {
     if (_awaitingPlayer && button == MediaButton.media) {
-      return JustAudioBackground._rememberPlay();
+      return JustAudioBackground.rememberPlay();
     }
     return super.click(button);
   }

@@ -2,9 +2,9 @@ Pod::Spec.new do |s|
   s.name             = 'home_screen_widgets'
   s.version          = '0.0.1'
   s.summary          = 'Shared storage and reloads for the home screen widgets.'
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://jellybox.app'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'ProdigyTech Inc.' => 'alex@nimbleindustries.io' }
+  s.author           = { 'Alex' => 'jellybox@prodigytech.dev' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
   s.dependency 'Flutter'

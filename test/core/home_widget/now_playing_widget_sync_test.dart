@@ -67,8 +67,9 @@ void main() {
     List<LibraryItem> songs,
     PlaybackStatus status, {
     bool shuffle = false,
+    LibraryItem? album,
   }) => PlaybackState(
-    album: null,
+    album: album,
     songs: songs,
     status: status,
     position: Duration.zero,
@@ -77,7 +78,7 @@ void main() {
     shuffleEnabled: shuffle,
   );
 
-  void start({String? path}) {
+  void start({String? path, List<LibraryItem>? Function()? recent}) {
     host = _FakeHost(path);
     sync = NowPlayingWidgetSync(
       host: host,
@@ -85,6 +86,9 @@ void main() {
         artworkLoads.add(item.id);
         return item.id == 'bare' ? null : artwork;
       },
+      recentAlbums: recent == null ? null : () async => recent() ?? const [],
+      thumbnail: (album) async => Uint8List.fromList([9]),
+      recentDelay: Duration.zero,
     )..attach(container, loopModes: loopModes.stream, signedIn: signedIn);
   }
 
@@ -238,6 +242,82 @@ void main() {
     await signIn(const AsyncData(true));
 
     expect(snapshot(), isEmpty);
+  });
+
+  group('recent albums', () {
+    LibraryItem album(String id) =>
+        LibraryItem(id: id, name: 'Album $id', kind: ItemKind.album);
+
+    test('are shown next to nothing playing', () async {
+      start(path: root.path, recent: () => [album('a'), album('b')]);
+      await sync.idle;
+
+      expect(snapshot()['title'], isNull);
+      expect(snapshot()['recent'], [
+        {'id': 'a', 'title': 'Album a', 'cover': file('recent_0.png').path},
+        {'id': 'b', 'title': 'Album b', 'cover': file('recent_1.png').path},
+      ]);
+      expect(file('recent_0.png').readAsBytesSync(), [9]);
+    });
+
+    test('keep only the first four', () async {
+      start(
+        path: root.path,
+        recent: () => [for (final id in 'abcdef'.split('')) album(id)],
+      );
+      await sync.idle;
+
+      expect(snapshot()['recent'], hasLength(4));
+    });
+
+    test('refresh when a different album starts playing', () async {
+      var albums = [album('a')];
+      start(path: root.path, recent: () => albums);
+      await emit(
+        stateWith(
+          [song('1', 'Sour Times')],
+          PlaybackStatus.playing,
+          album: album('a'),
+        ),
+      );
+
+      albums = [album('b'), album('a')];
+      await emit(
+        stateWith(
+          [song('2', 'Roads')],
+          PlaybackStatus.playing,
+          album: album('b'),
+        ),
+      );
+      await sync.idle;
+
+      expect(
+        [for (final e in snapshot()['recent']! as List) (e as Map)['id']],
+        ['b', 'a'],
+      );
+    });
+
+    test('are dropped on logout', () async {
+      start(path: root.path, recent: () => [album('a')]);
+      await sync.idle;
+      await signIn(const AsyncData(false));
+
+      expect(snapshot(), {'signedOut': true});
+    });
+
+    test('keep the last list when loading fails', () async {
+      var fail = false;
+      start(
+        path: root.path,
+        recent: () => fail ? throw Exception('offline') : [album('a')],
+      );
+      await sync.idle;
+      fail = true;
+      await signIn(const AsyncLoading());
+      await signIn(const AsyncData(true));
+
+      expect(snapshot()['recent'], hasLength(1));
+    });
   });
 
   test('does nothing when the platform has no shared directory', () async {

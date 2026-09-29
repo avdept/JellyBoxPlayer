@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_screen_widgets/home_screen_widgets.dart';
 import 'package:jplayer/src/core/home_widget/widget_artwork.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -42,39 +44,47 @@ class PluginWidgetHost implements WidgetHost {
 
 typedef WidgetArtworkLoader = Future<WidgetArtwork?> Function(MediaItem item);
 
-typedef _Published = ({
-  String id,
-  String title,
-  String artist,
-  bool playing,
-  bool liked,
-  bool shuffle,
-  LoopMode repeat,
-});
+typedef RecentAlbumsLoader = Future<List<LibraryItem>> Function();
 
-enum _Placeholder { empty, signedOut }
+typedef WidgetThumbnailLoader = Future<Uint8List?> Function(LibraryItem album);
+
+typedef _Recent = ({String id, String title, String? cover});
 
 class NowPlayingWidgetSync {
   NowPlayingWidgetSync({
     WidgetHost host = const PluginWidgetHost(),
     WidgetArtworkLoader artwork = loadWidgetArtwork,
+    RecentAlbumsLoader? recentAlbums,
+    WidgetThumbnailLoader? thumbnail,
+    Duration recentDelay = const Duration(seconds: 15),
   }) : _host = host,
-       _artwork = artwork;
+       _artwork = artwork,
+       _recentAlbums = recentAlbums,
+       _thumbnail = thumbnail,
+       _recentDelay = recentDelay;
 
   static const snapshotFile = 'now_playing.json';
   static const coverFile = 'now_playing_cover.png';
+  static const recentCount = 4;
 
   final WidgetHost _host;
   final WidgetArtworkLoader _artwork;
+  final RecentAlbumsLoader? _recentAlbums;
+  final WidgetThumbnailLoader? _thumbnail;
+  final Duration _recentDelay;
 
   Future<Directory?>? _directory;
   Future<void>? _draining;
   var _running = false;
   var _dirty = false;
-  Object? _published;
+  String? _published;
   var _signedOut = false;
   String? _coverId;
   WidgetArtwork? _cover;
+  List<_Recent> _recent = const [];
+  Timer? _recentTimer;
+  Future<void>? _recentLoad;
+  String? _playingSet;
 
   MediaItem? _item;
   var _playing = false;
@@ -84,7 +94,31 @@ class NowPlayingWidgetSync {
 
   static void initialize(ProviderContainer ref) {
     if (!Platform.isAndroid && !Platform.isIOS) return;
-    NowPlayingWidgetSync().attach(ref);
+    if (!Platform.isIOS) {
+      NowPlayingWidgetSync().attach(ref);
+      return;
+    }
+    NowPlayingWidgetSync(
+      recentAlbums: () => _loadRecentAlbums(ref),
+      thumbnail: (album) =>
+          loadWidgetThumbnail(ref.read(imageServiceProvider).itemUri(album)),
+    ).attach(ref);
+  }
+
+  static Future<List<LibraryItem>> _loadRecentAlbums(
+    ProviderContainer ref,
+  ) async {
+    final library = ref.listen(currentLibraryProvider, (_, _) {});
+    try {
+      final current = await ref
+          .read(currentLibraryProvider.future)
+          .timeout(const Duration(seconds: 10), onTimeout: () => null);
+      return await ref
+          .read(mediaServerClientProvider)
+          .getRecentlyPlayedAlbums(libraryId: current?.id, limit: recentCount);
+    } finally {
+      library.close();
+    }
   }
 
   void attach(
@@ -98,6 +132,12 @@ class NowPlayingWidgetSync {
     ) {
       if (next is! AsyncData<bool?>) return;
       _signedOut = next.value == false;
+      if (_signedOut) {
+        _recentTimer?.cancel();
+        _recent = const [];
+      } else if (next.value == true) {
+        _loadRecent();
+      }
       _schedule();
     });
     ref.listen(
@@ -124,6 +164,7 @@ class NowPlayingWidgetSync {
         _playing = playing;
         _liked = song?.userData.isFavorite ?? false;
         _shuffle = shuffle;
+        _onPlayingSet(album?.id);
         _schedule();
       },
     );
@@ -134,7 +175,65 @@ class NowPlayingWidgetSync {
   }
 
   @visibleForTesting
-  Future<void> get idle => _draining ?? Future<void>.value();
+  Future<void> get idle async {
+    while (_running || (_recentTimer?.isActive ?? false)) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    await _recentLoad;
+    await _draining;
+  }
+
+  void _loadRecent() => _recentLoad = _refreshRecent();
+
+  void _onPlayingSet(String? id) {
+    if (_recentAlbums == null || id == null || id == _playingSet) return;
+    final first = _playingSet == null;
+    _playingSet = id;
+    if (first) return;
+    _recentTimer?.cancel();
+    _recentTimer = Timer(_recentDelay, _loadRecent);
+  }
+
+  Future<void> _refreshRecent() async {
+    final load = _recentAlbums;
+    if (load == null || _signedOut) return;
+    final directory = await (_directory ??= _resolveDirectory());
+    if (directory == null) return;
+
+    final List<LibraryItem> albums;
+    try {
+      albums = (await load()).take(recentCount).toList();
+    } on Object catch (error) {
+      debugPrint('[HomeWidget] recent albums failed: $error');
+      return;
+    }
+    final ids = [for (final album in albums) album.id];
+    if (listEquals(ids, [for (final recent in _recent) recent.id])) return;
+
+    final recent = <_Recent>[];
+    for (final (index, album) in albums.indexed) {
+      Uint8List? png;
+      try {
+        png = await _thumbnail?.call(album);
+      } on Object catch (error) {
+        debugPrint('[HomeWidget] recent cover failed: $error');
+      }
+      final file = File(p.join(directory.path, 'recent_$index.png'));
+      if (png != null) {
+        await _replace(file, png);
+      } else if (file.existsSync()) {
+        await file.delete();
+      }
+      recent.add((
+        id: album.id,
+        title: album.name,
+        cover: png == null ? null : file.path,
+      ));
+    }
+    if (_signedOut) return;
+    _recent = recent;
+    _schedule();
+  }
 
   void _schedule() {
     _dirty = true;
@@ -155,45 +254,43 @@ class NowPlayingWidgetSync {
   }
 
   Future<void> _apply(MediaItem? item) async {
-    final published = _signedOut
-        ? _Placeholder.signedOut
-        : item == null
-        ? _Placeholder.empty
-        : (
-            id: item.id,
-            title: item.title,
-            artist: item.artist ?? '',
-            playing: _playing,
-            liked: _liked,
-            shuffle: _shuffle,
-            repeat: _repeat,
-          );
-    if (published == _published) return;
-    if (published == _Placeholder.empty && _published == null) return;
-
     final directory = await (_directory ??= _resolveDirectory());
     if (directory == null) return;
 
-    if (published == _Placeholder.signedOut) {
-      await _writeJson(directory, const {'signedOut': true});
-    } else if (published is! _Published) {
-      await _writeJson(directory, const <String, Object?>{});
+    final recent = [
+      for (final album in _recent)
+        {'id': album.id, 'title': album.title, 'cover': album.cover},
+    ];
+    final Map<String, Object?> json;
+    if (_signedOut) {
+      json = const {'signedOut': true};
+    } else if (item == null) {
+      json = {if (recent.isNotEmpty) 'recent': recent};
     } else {
-      if (published.id != _coverId) await _refreshCover(directory, item!);
+      if (item.id != _coverId) await _refreshCover(directory, item);
       final cover = _cover;
-      await _writeJson(directory, {
-        'title': published.title,
-        'artist': published.artist,
-        'playing': published.playing,
-        'liked': published.liked,
-        'shuffle': published.shuffle,
-        'repeat': published.repeat.name,
+      json = {
+        'title': item.title,
+        'artist': item.artist ?? '',
+        'playing': _playing,
+        'liked': _liked,
+        'shuffle': _shuffle,
+        'repeat': _repeat.name,
         'cover': cover == null ? null : p.join(directory.path, coverFile),
         'background': cover?.background.toARGB32(),
         'foreground': cover?.foreground.toARGB32(),
-      });
+        if (recent.isNotEmpty) 'recent': recent,
+      };
     }
-    _published = published;
+
+    final encoded = jsonEncode(json);
+    if (encoded == _published) return;
+    if (json.isEmpty && _published == null) return;
+    await _replace(
+      File(p.join(directory.path, snapshotFile)),
+      utf8.encode(encoded),
+    );
+    _published = encoded;
     await _host.reload();
   }
 
@@ -219,12 +316,6 @@ class NowPlayingWidgetSync {
     _coverId = item.id;
     _cover = cover;
   }
-
-  Future<void> _writeJson(Directory directory, Map<String, Object?> json) =>
-      _replace(
-        File(p.join(directory.path, snapshotFile)),
-        utf8.encode(jsonEncode(json)),
-      );
 
   Future<void> _replace(File file, List<int> bytes) async {
     final temp = File('${file.path}.tmp');

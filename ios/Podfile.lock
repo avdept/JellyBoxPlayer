@@ -1,5 +1,7 @@
 PODS:
   - Flutter (1.0.0)
+  - home_screen_widgets (0.0.1):
+    - Flutter
   - media_kit_native_event_loop (1.0.0):
     - Flutter
   - native_route_picker (0.0.1):
@@ -7,12 +9,15 @@ PODS:
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
+  - home_screen_widgets (from `.symlinks/plugins/home_screen_widgets/ios`)
   - media_kit_native_event_loop (from `.symlinks/plugins/media_kit_native_event_loop/ios`)
   - native_route_picker (from `.symlinks/plugins/native_route_picker/ios`)
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
+  home_screen_widgets:
+    :path: ".symlinks/plugins/home_screen_widgets/ios"
   media_kit_native_event_loop:
     :path: ".symlinks/plugins/media_kit_native_event_loop/ios"
   native_route_picker:
@@ -20,8 +25,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  home_screen_widgets: b8bab176f6dd1d5a6063ea6f83a13195bd6e509b
   media_kit_native_event_loop: 02f537bbf34235ec34dbbc7439a97ee96b776193
-  native_route_picker: 7ff589d3c51dc52cbc1078adcdeac81ba9d87434
+  native_route_picker: a73e48e8dc7a45df456bc1bda7dfba41dc7e92d3
 
 PODFILE CHECKSUM: b2e52f8d7b4da8f44cfe81b7f2636e3d26d55617
 

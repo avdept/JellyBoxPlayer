@@ -20,6 +20,7 @@ class WidgetArtwork {
 }
 
 const widgetCoverSize = 400;
+const widgetThumbnailSize = 200;
 
 Future<WidgetArtwork?> loadWidgetArtwork(MediaItem item) async {
   final uri = item.artUri;
@@ -29,7 +30,7 @@ Future<WidgetArtwork?> loadWidgetArtwork(MediaItem item) async {
       : await ArtworkCache.instance.pathFor(uri.toString());
   if (path == null) return null;
 
-  final png = await _downscale(await File(path).readAsBytes());
+  final png = await _downscale(await File(path).readAsBytes(), widgetCoverSize);
   final scheme = await ColorScheme.fromImageProvider(
     provider: MemoryImage(png),
     brightness: Brightness.dark,
@@ -41,16 +42,23 @@ Future<WidgetArtwork?> loadWidgetArtwork(MediaItem item) async {
   );
 }
 
-Future<Uint8List> _downscale(Uint8List bytes) async {
+Future<Uint8List?> loadWidgetThumbnail(Uri? uri) async {
+  if (uri == null) return null;
+  final path = uri.isScheme('file')
+      ? uri.toFilePath()
+      : await ArtworkCache.instance.pathFor(uri.toString());
+  if (path == null) return null;
+  return _downscale(await File(path).readAsBytes(), widgetThumbnailSize);
+}
+
+Future<Uint8List> _downscale(Uint8List bytes, int size) async {
   final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
   final descriptor = await ui.ImageDescriptor.encoded(buffer);
   final wide = descriptor.width >= descriptor.height;
-  final fits =
-      descriptor.width <= widgetCoverSize &&
-      descriptor.height <= widgetCoverSize;
+  final fits = descriptor.width <= size && descriptor.height <= size;
   final codec = await descriptor.instantiateCodec(
-    targetWidth: fits || !wide ? null : widgetCoverSize,
-    targetHeight: fits || wide ? null : widgetCoverSize,
+    targetWidth: fits || !wide ? null : size,
+    targetHeight: fits || wide ? null : size,
   );
   try {
     final frame = await codec.getNextFrame();
