@@ -15,9 +15,9 @@ final lyricsVisibleProvider = StateProvider<bool>((ref) => false);
 
 final currentSongHasLyricsProvider = Provider<bool>((ref) {
   final song = ref.watch(barSongProvider);
-  if (song == null || !song.hasLyrics) return false;
+  if (song == null) return false;
   final lyrics = ref.watch(lyricsProvider(song.id));
-  if (!lyrics.hasValue) return true;
+  if (!lyrics.hasValue) return song.hasLyrics;
   return lyrics.value?.lines.isNotEmpty ?? false;
 });
 

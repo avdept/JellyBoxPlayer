@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
@@ -60,6 +62,9 @@ void main() {
     when(
       () => mockClient.capabilities,
     ).thenReturn(const MediaServerCapabilities());
+    when(
+      () => mockClient.getLyrics(any()),
+    ).thenAnswer((_) => Completer<Lyrics?>().future);
   });
 
   group('lyricsProvider', () {
@@ -109,7 +114,12 @@ void main() {
   });
 
   group('currentSongHasLyricsProvider', () {
-    test('- is off for a track the server marks as lyric-less', () {
+    test('- is off for a lyric-less track until the server says otherwise', () {
+      when(
+        () => mockClient.getLyrics('song-1'),
+      ).thenAnswer(
+        (_) => Future.delayed(const Duration(days: 1), () => null),
+      );
       final playback = FakePlaybackNotifier(
         _playing([_song('song-1', hasLyrics: false)], 0),
       );
@@ -118,7 +128,21 @@ void main() {
         containerWith(playback: playback).read(currentSongHasLyricsProvider),
         isFalse,
       );
-      verifyNever(() => mockClient.getLyrics(any()));
+    });
+
+    test('- turns on when a stale lyric-less track has lyrics now', () async {
+      when(
+        () => mockClient.getLyrics('song-1'),
+      ).thenAnswer((_) async => lyrics);
+      final playback = FakePlaybackNotifier(
+        _playing([_song('song-1', hasLyrics: false)], 0),
+      );
+      final container = containerWith(playback: playback);
+      container.listen(currentSongHasLyricsProvider, (_, _) {});
+
+      await container.read(lyricsProvider('song-1').future);
+
+      expect(container.read(currentSongHasLyricsProvider), isTrue);
     });
 
     test('- stays on while the lyrics are still loading', () async {
