@@ -122,6 +122,16 @@ class _LyricsPanel extends ConsumerWidget {
               ),
             ),
             IconButton(
+              onPressed: () {
+                ref.read(lyricsVisibleProvider.notifier).state = false;
+                ref.read(studioModeLyricsProvider.notifier).state = true;
+                ref.read(studioModeVisibleProvider.notifier).state = true;
+              },
+              color: Colors.white,
+              tooltip: 'Studio mode',
+              icon: const Icon(Icons.fullscreen),
+            ),
+            IconButton(
               onPressed: () =>
                   ref.read(lyricsVisibleProvider.notifier).state = false,
               color: Colors.white,

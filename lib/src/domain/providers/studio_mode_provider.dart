@@ -12,6 +12,8 @@ const minWindowSize = kDebugMode ? Size(360, 600) : Size(1280, 800);
 
 final studioModeVisibleProvider = StateProvider<bool>((ref) => false);
 
+final studioModeLyricsProvider = StateProvider<bool>((ref) => false);
+
 final studioModeShownProvider = Provider<bool>((ref) {
   if (!ref.watch(studioModeVisibleProvider)) return false;
   return ref.watch(currentSongProvider.select((song) => song != null));
