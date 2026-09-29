@@ -166,7 +166,8 @@ void main() {
   );
 
   testWidgets(
-    '- ticks the AirPlay row, named, when audio goes to a system route',
+    '- ticks the AirPlay row, named, and hides this device when audio goes '
+    'to a system route',
     (tester) async {
       await pumpPicker(tester, renderers: const [], route: airPods);
       await tester.pump();
@@ -176,7 +177,7 @@ void main() {
       );
       expect(find.text('AirPods Pro'), findsOneWidget);
       expect(tileOf('AirPlay & Bluetooth').trailing, isA<Icon>());
-      expect(tileOf('This device').trailing, isNull);
+      expect(find.text('This device'), findsNothing);
       expect(find.byType(DeviceVolumeSlider), findsOneWidget);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.iOS),

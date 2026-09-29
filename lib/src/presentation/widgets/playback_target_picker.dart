@@ -369,7 +369,6 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final onThisDevice =
         active.kind == PlaybackTargetKind.local && elsewhere == null;
     final route = onThisDevice ? ref.watch(externalOutputRouteProvider) : null;
-    final localSelected = onThisDevice && route == null;
 
     final list = SingleChildScrollView(
       child: Column(
@@ -409,12 +408,13 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               ],
             ),
           ),
-          _TargetTile(
-            icon: _thisDeviceIcon,
-            title: 'This device',
-            selected: localSelected,
-            onTap: _selectLocal,
-          ),
+          if (route == null)
+            _TargetTile(
+              icon: _thisDeviceIcon,
+              title: 'This device',
+              selected: onThisDevice,
+              onTap: _selectLocal,
+            ),
           if (ref.watch(cloudAvailableProvider) && conductor.account == null)
             _TargetTile(
               icon: Icons.cloud_off_outlined,
