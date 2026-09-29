@@ -1,6 +1,7 @@
 name: native_route_picker
 description: "Native audio output route picker — AVRoutePickerView (AirPlay) on iOS/macOS, system output switcher on Android."
 version: 0.0.1
+homepage: https://jellybox.app
 publish_to: "none"
 
 environment:

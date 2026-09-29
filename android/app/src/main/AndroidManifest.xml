@@ -65,6 +65,17 @@
             android:name="com.google.android.gms.car.notification.SmallIcon"
             android:resource="@drawable/ic_stat_music" />
 
+        <receiver
+            android:name="com.prodigytech.jellybox.NowPlayingWidget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/now_playing_widget_info" />
+        </receiver>
+
         <provider
             android:name="com.prodigytech.jellybox.CoverArtProvider"
             android:authorities="${applicationId}.covers"

@@ -1,3 +1,9 @@
+## 0.0.1-beta.17+jellybox.3 (LOCAL FORK)
+
+* `JustAudioBackground.rememberPlay()` is public so the iOS home screen widget
+  can record a play tap that arrives before the queue is restored, the same way
+  a cold-start media button press is recorded.
+
 ## 0.0.1-beta.17+jellybox.2 (LOCAL FORK)
 
 * PATCH: media-browser hook for Android Auto. `JustAudioBackground.browseDelegate`

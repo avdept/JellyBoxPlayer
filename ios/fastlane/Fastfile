@@ -55,13 +55,16 @@ platform :ios do
         is_key_content_base64: true
     )
 
+    widget_identifier = "#{ENV["APP_IDENTIFIER"]}.NowPlayingWidget"
+
     remove_provisioning_profile(app_identifier: ENV["APP_IDENTIFIER"], type: "appstore")
+    remove_provisioning_profile(app_identifier: widget_identifier, type: "appstore")
     raise "BUILD_NUMBER is not set" unless ENV["BUILD_NUMBER"]
 
     match(
         type: "appstore",
         readonly: false,
-        app_identifier: ENV["APP_IDENTIFIER"]
+        app_identifier: [ENV["APP_IDENTIFIER"], widget_identifier]
     )
 
     update_project_provisioning(
@@ -69,6 +72,13 @@ platform :ios do
         build_configuration: "Release",
         target_filter: "Runner",
         profile: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-path"]
+    )
+
+    update_project_provisioning(
+        xcodeproj: "Runner.xcodeproj",
+        build_configuration: "Release",
+        target_filter: "^NowPlayingWidgetExtension$",
+        profile: ENV["sigh_#{widget_identifier}_appstore_profile-path"]
     )
 
     sh("flutter pub get")

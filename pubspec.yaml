@@ -25,6 +25,8 @@ dependencies:
     path: ./mediakeys_proxy
   native_route_picker:
     path: ./native_route_picker
+  home_screen_widgets:
+    path: ./home_screen_widgets
   just_audio:
   # Vendored fork of just_audio_background 0.0.1-beta.17 with a patched
   # skipToPrevious (3s restart threshold) - upstream offers no hook for it.

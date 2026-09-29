@@ -1,7 +1,7 @@
 name: mediakeys_proxy
 description: "Mediakeys proxy plugin"
 version: 0.0.1
-homepage: 'https://github/avdept'
+homepage: https://jellybox.app
 
 environment:
   sdk: '>=3.4.0 <4.0.0'

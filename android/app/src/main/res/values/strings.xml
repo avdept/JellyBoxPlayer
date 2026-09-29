@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_now_playing_description">Control what\'s playing from your home screen.</string>
+    <string name="widget_idle_title">JellyBox</string>
+    <string name="widget_idle_subtitle">Nothing playing</string>
+    <string name="widget_signed_out_subtitle">Sign in to start listening</string>
+    <string name="widget_previous">Previous</string>
+    <string name="widget_play">Play</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_next">Next</string>
+    <string name="widget_like">Like</string>
+    <string name="widget_unlike">Remove like</string>
+    <string name="widget_shuffle">Shuffle</string>
+    <string name="widget_repeat">Repeat</string>
+</resources>
