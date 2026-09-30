@@ -11,6 +11,7 @@ import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -322,6 +323,7 @@ class SettingsPage extends ConsumerWidget {
                               value.name,
                             ),
                       ),
+                    _clearImageCacheButton(context),
                     if (device.isMobile) ...[
                       _sectionHeader('Landscape player'),
                       _settingDropdown<KeepScreenOn>(
@@ -430,6 +432,49 @@ class SettingsPage extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(forwardCacheProvider.notifier).purge();
     messenger.showSnackBar(const SnackBar(content: Text('Cache emptied')));
+  }
+
+  Widget _clearImageCacheButton(BuildContext context) => TextButton.icon(
+    onPressed: () => _onClearImageCachePressed(context),
+    style: _buttonStyle,
+    icon: const Icon(Icons.image_not_supported_outlined),
+    label: const Text('Clear image cache'),
+  );
+
+  Future<void> _onClearImageCachePressed(BuildContext context) async {
+    final confirmed = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text(
+          'Clear the image cache?',
+          textAlign: TextAlign.center,
+        ),
+        content: const Text(
+          'Artwork will be downloaded again from your server as you browse.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          AdaptiveDialogAction(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          AdaptiveDialogAction(
+            onPressed: () => Navigator.of(context).pop(true),
+            isDestructiveAction: true,
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ArtworkCache.instance.emptyCache();
+    PaintingBinding.instance.imageCache
+      ..clear()
+      ..clearLiveImages();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Image cache cleared')),
+    );
   }
 
   Widget _queueCacheButton(BuildContext context) => TextButton.icon(
