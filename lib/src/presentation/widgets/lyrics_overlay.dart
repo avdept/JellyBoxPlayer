@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -23,7 +25,7 @@ class LyricsView extends ConsumerWidget {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
     final song = ref.watch(barSongProvider);
 
-    if (song == null || !song.hasLyrics) {
+    if (song == null) {
       return const _Message('No lyrics for this track');
     }
 
@@ -159,7 +161,15 @@ class _LyricsBody extends ConsumerStatefulWidget {
   ConsumerState<_LyricsBody> createState() => _LyricsBodyState();
 }
 
-class _LyricsBodyState extends ConsumerState<_LyricsBody> {
+class _LyricsBodyState extends ConsumerState<_LyricsBody>
+    with SingleTickerProviderStateMixin {
+  static const _maxExtrapolation = Duration(milliseconds: 1500);
+
+  final _clock = ValueNotifier<Duration>(Duration.zero);
+  final _sinceAnchor = Stopwatch();
+  late final Ticker _ticker = createTicker(_onTick);
+  Duration _anchor = Duration.zero;
+  bool _playing = false;
   List<GlobalKey> _lineKeys = const [];
   int _activeLine = -1;
   bool _didInitialSync = false;
@@ -167,10 +177,53 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
   @override
   void initState() {
     super.initState();
-    ref.listenManual(
-      barProgressProvider.select((progress) => progress.position),
-      (_, position) => _syncActiveLine(position),
-    );
+    _clock.addListener(() => _syncActiveLine(_clock.value));
+    ref
+      ..listenManual(
+        barProgressProvider.select((progress) => progress.position),
+        (_, position) => _anchorAt(position),
+      )
+      ..listenManual(barPlayingProvider, (_, playing) {
+        _playing = playing;
+        _updateTicker();
+      }, fireImmediately: true)
+      ..listenManual(
+        lyricsProvider(widget.songId),
+        (_, _) => _updateTicker(),
+      );
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    _clock.dispose();
+    super.dispose();
+  }
+
+  void _anchorAt(Duration position) {
+    _anchor = position;
+    _sinceAnchor
+      ..reset()
+      ..start();
+    _clock.value = position;
+  }
+
+  void _onTick(Duration _) {
+    final elapsed = _sinceAnchor.elapsed;
+    _clock.value =
+        _anchor + (elapsed > _maxExtrapolation ? _maxExtrapolation : elapsed);
+  }
+
+  void _updateTicker() {
+    final lyrics = ref.read(lyricsProvider(widget.songId)).valueOrNull;
+    final shouldRun = _playing && (lyrics?.hasWordCues ?? false);
+    if (shouldRun && !_ticker.isActive) {
+      _anchorAt(_clock.value);
+      _ticker.start();
+    } else if (!shouldRun && _ticker.isActive) {
+      _ticker.stop();
+      _clock.value = _anchor;
+    }
   }
 
   void _syncActiveLine(Duration position) {
@@ -226,7 +279,8 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
           _didInitialSync = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              _syncActiveLine(ref.read(barProgressProvider).position);
+              _anchorAt(ref.read(barProgressProvider).position);
+              _syncActiveLine(_clock.value);
             }
           });
         }
@@ -239,7 +293,12 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (var i = 0; i < lines.length; i++)
-                _line(i, lines[i], isSynced: isSynced),
+                _line(
+                  i,
+                  lines[i],
+                  isSynced: isSynced,
+                  offset: lyrics.offset,
+                ),
             ],
           ),
         );
@@ -247,14 +306,28 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
     );
   }
 
-  Widget _line(int index, LyricLine line, {required bool isSynced}) {
+  Widget _line(
+    int index,
+    LyricLine line, {
+    required bool isSynced,
+    required Duration offset,
+  }) {
     final isActive = isSynced && index == _activeLine;
     final start = line.start;
-    final text = line.text.trim();
+    final trimmed = line.text.trim();
+    final text = trimmed.isEmpty ? '♪' : trimmed;
 
-    return Padding(
+    return AnimatedPadding(
       key: _lineKeys[index],
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.symmetric(
+        vertical: switch ((isSynced, isActive)) {
+          (false, _) => 8,
+          (true, true) => widget.device.isMobile ? 14 : 20,
+          (true, false) => 3,
+        },
+      ),
       child: GestureDetector(
         onTap: (isSynced && start != null)
             ? () => ref.read(barControlsProvider).seek(start)
@@ -274,7 +347,15 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody> {
             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             height: 1.35,
           ),
-          child: Text(text.isEmpty ? '♪' : text, textAlign: TextAlign.center),
+          child: isActive
+              ? _ActiveLineText(
+                  line: line,
+                  text: text,
+                  leading: line.text.length - line.text.trimLeft().length,
+                  clock: _clock,
+                  offset: offset,
+                )
+              : Text(text, textAlign: TextAlign.center),
         ),
       ),
     );
@@ -297,4 +378,193 @@ class _Message extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _ActiveLineText extends StatefulWidget {
+  const _ActiveLineText({
+    required this.line,
+    required this.text,
+    required this.leading,
+    required this.clock,
+    required this.offset,
+  });
+
+  final LyricLine line;
+  final String text;
+  final int leading;
+  final ValueListenable<Duration> clock;
+  final Duration offset;
+
+  @override
+  State<_ActiveLineText> createState() => _ActiveLineTextState();
+}
+
+class _ActiveLineTextState extends State<_ActiveLineText> {
+  final _base = TextPainter(textAlign: TextAlign.center);
+  final _sung = TextPainter(textAlign: TextAlign.center);
+
+  @override
+  void dispose() {
+    _base.dispose();
+    _sung.dispose();
+    super.dispose();
+  }
+
+  void _layout(TextStyle style, double maxWidth) {
+    final color = style.color ?? Colors.white;
+    final direction = Directionality.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    for (final (painter, paintColor) in [
+      (_base, color.withValues(alpha: color.a * 0.45)),
+      (_sung, color),
+    ]) {
+      painter
+        ..text = TextSpan(
+          text: widget.text,
+          style: style.copyWith(color: paintColor),
+        )
+        ..textDirection = direction
+        ..textScaler = scaler
+        ..layout(maxWidth: maxWidth);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = DefaultTextStyle.of(context).style;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _layout(style, constraints.maxWidth);
+        return CustomPaint(
+          painter: _ActiveLinePainter(
+            base: _base,
+            sung: _sung,
+            line: widget.line,
+            text: widget.text,
+            leading: widget.leading,
+            clock: widget.clock,
+            offset: widget.offset,
+            fontSize: style.fontSize ?? 14,
+          ),
+          child: Text(
+            widget.text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.transparent),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ActiveLinePainter extends CustomPainter {
+  _ActiveLinePainter({
+    required this.base,
+    required this.sung,
+    required this.line,
+    required this.text,
+    required this.leading,
+    required this.clock,
+    required this.offset,
+    required this.fontSize,
+  }) : super(repaint: line.cues.isEmpty ? null : clock);
+
+  static const _glowOpacity = 0.85;
+
+  final TextPainter base;
+  final TextPainter sung;
+  final LyricLine line;
+  final String text;
+  final int leading;
+  final ValueListenable<Duration> clock;
+  final Duration offset;
+  final double fontSize;
+
+  double get _bleed => fontSize * 0.25;
+
+  double get _glow => fontSize * 0.3;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final origin = Offset((size.width - base.width) / 2, 0);
+    if (line.cues.isEmpty) {
+      _paintGlowing(canvas, size, origin, null);
+      return;
+    }
+
+    base.paint(canvas, origin);
+    final clip = _sungClip();
+    if (clip != null) _paintGlowing(canvas, size, origin, clip);
+  }
+
+  Path? _sungClip() {
+    final progress = line.wordProgressAt(clock.value + offset);
+    if (progress == null) return null;
+
+    final wordStart = (progress.cue.position - leading).clamp(0, text.length);
+    var wordEnd = (progress.cue.endPosition - leading).clamp(
+      wordStart,
+      text.length,
+    );
+    while (wordEnd > wordStart && text[wordEnd - 1].trim().isEmpty) {
+      wordEnd--;
+    }
+
+    final clip = Path();
+    for (final box in sung.getBoxesForSelection(
+      TextSelection(baseOffset: 0, extentOffset: wordStart),
+    )) {
+      clip.addRect(_bled(box.toRect()));
+    }
+
+    final wordBoxes = sung.getBoxesForSelection(
+      TextSelection(baseOffset: wordStart, extentOffset: wordEnd),
+    );
+    var remaining =
+        wordBoxes.fold<double>(0, (sum, box) => sum + box.right - box.left) *
+        progress.fraction;
+    for (final box in wordBoxes) {
+      if (remaining <= 0) break;
+      final width = remaining.clamp(0.0, box.right - box.left);
+      remaining -= width;
+      final left = box.direction == TextDirection.rtl
+          ? box.right - width
+          : box.left;
+      clip.addRect(
+        _bled(Rect.fromLTWH(left, box.top, width, box.bottom - box.top)),
+      );
+    }
+    return clip;
+  }
+
+  void _paintGlowing(Canvas canvas, Size size, Offset origin, Path? clip) {
+    canvas.saveLayer(
+      (Offset.zero & size).inflate(_glow * 3),
+      Paint()
+        ..color = Colors.white.withValues(alpha: _glowOpacity)
+        ..imageFilter = ImageFilter.blur(sigmaX: _glow, sigmaY: _glow),
+    );
+    _paintSung(canvas, origin, clip);
+    canvas.restore();
+    _paintSung(canvas, origin, clip);
+  }
+
+  void _paintSung(Canvas canvas, Offset origin, Path? clip) {
+    canvas
+      ..save()
+      ..translate(origin.dx, origin.dy);
+    if (clip != null) canvas.clipPath(clip);
+    sung.paint(canvas, Offset.zero);
+    canvas.restore();
+  }
+
+  Rect _bled(Rect rect) => Rect.fromLTRB(
+    rect.left,
+    rect.top - _bleed,
+    rect.right,
+    rect.bottom + _bleed,
+  );
+
+  @override
+  bool shouldRepaint(_ActiveLinePainter old) => true;
 }
