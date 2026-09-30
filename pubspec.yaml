@@ -47,7 +47,7 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_spinkit: ^5.2.2
   modal_bottom_sheet: ^3.0.0-pre
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.5
   palette_generator:
   material_color_utilities: any
   responsive_builder: ^0.7.1
