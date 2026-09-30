@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/services.dart';
 
 class HomeScreenWidgets {
@@ -16,5 +18,15 @@ class HomeScreenWidgets {
   }) => _channel.invokeMethod('reload', {
     'androidProvider': androidProvider,
     'iosKind': iosKind,
+  });
+
+  Future<Int32List?> artwork({
+    required String source,
+    required String target,
+    required int size,
+  }) => _channel.invokeMethod<Int32List>('artwork', {
+    'source': source,
+    'target': target,
+    'size': size,
   });
 }

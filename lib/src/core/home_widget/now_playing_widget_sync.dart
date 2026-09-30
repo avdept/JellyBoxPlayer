@@ -23,6 +23,12 @@ abstract interface class WidgetHost {
   Future<String?> directory();
 
   Future<void> reload();
+
+  Future<List<int>?> artwork({
+    required String source,
+    required String target,
+    required int size,
+  });
 }
 
 class PluginWidgetHost implements WidgetHost {
@@ -40,27 +46,34 @@ class PluginWidgetHost implements WidgetHost {
   @override
   Future<void> reload() =>
       _plugin.reload(androidProvider: androidProvider, iosKind: iosKind);
+
+  @override
+  Future<List<int>?> artwork({
+    required String source,
+    required String target,
+    required int size,
+  }) => _plugin.artwork(source: source, target: target, size: size);
 }
 
-typedef WidgetArtworkLoader = Future<WidgetArtwork?> Function(MediaItem item);
+typedef ArtworkSourceResolver = Future<String?> Function(Uri? uri);
 
 typedef RecentAlbumsLoader = Future<List<LibraryItem>> Function();
 
-typedef WidgetThumbnailLoader = Future<Uint8List?> Function(LibraryItem album);
+typedef AlbumArtResolver = Uri? Function(LibraryItem album);
 
 typedef _Recent = ({String id, String title, String? cover});
 
 class NowPlayingWidgetSync {
   NowPlayingWidgetSync({
     WidgetHost host = const PluginWidgetHost(),
-    WidgetArtworkLoader artwork = loadWidgetArtwork,
+    ArtworkSourceResolver artworkSource = widgetArtworkSource,
     RecentAlbumsLoader? recentAlbums,
-    WidgetThumbnailLoader? thumbnail,
+    AlbumArtResolver? albumArt,
     Duration recentDelay = const Duration(seconds: 15),
   }) : _host = host,
-       _artwork = artwork,
+       _artworkSource = artworkSource,
        _recentAlbums = recentAlbums,
-       _thumbnail = thumbnail,
+       _albumArt = albumArt,
        _recentDelay = recentDelay;
 
   static const snapshotFile = 'now_playing.json';
@@ -68,9 +81,9 @@ class NowPlayingWidgetSync {
   static const recentCount = 4;
 
   final WidgetHost _host;
-  final WidgetArtworkLoader _artwork;
+  final ArtworkSourceResolver _artworkSource;
   final RecentAlbumsLoader? _recentAlbums;
-  final WidgetThumbnailLoader? _thumbnail;
+  final AlbumArtResolver? _albumArt;
   final Duration _recentDelay;
 
   Future<Directory?>? _directory;
@@ -100,8 +113,7 @@ class NowPlayingWidgetSync {
     }
     NowPlayingWidgetSync(
       recentAlbums: () => _loadRecentAlbums(ref),
-      thumbnail: (album) =>
-          loadWidgetThumbnail(ref.read(imageServiceProvider).itemUri(album)),
+      albumArt: (album) => ref.read(imageServiceProvider).itemUri(album),
     ).attach(ref);
   }
 
@@ -212,22 +224,16 @@ class NowPlayingWidgetSync {
 
     final recent = <_Recent>[];
     for (final (index, album) in albums.indexed) {
-      Uint8List? png;
-      try {
-        png = await _thumbnail?.call(album);
-      } on Object catch (error) {
-        debugPrint('[HomeWidget] recent cover failed: $error');
-      }
       final file = File(p.join(directory.path, 'recent_$index.png'));
-      if (png != null) {
-        await _replace(file, png);
-      } else if (file.existsSync()) {
-        await file.delete();
-      }
+      final written = await _writeArtwork(
+        _albumArt?.call(album),
+        file,
+        widgetThumbnailSize,
+      );
       recent.add((
         id: album.id,
         title: album.name,
-        cover: png == null ? null : file.path,
+        cover: written == null ? null : file.path,
       ));
     }
     if (_signedOut) return;
@@ -301,20 +307,42 @@ class NowPlayingWidgetSync {
   }
 
   Future<void> _refreshCover(Directory directory, MediaItem item) async {
-    WidgetArtwork? cover;
-    try {
-      cover = await _artwork(item);
-    } on Object catch (error) {
-      debugPrint('[HomeWidget] artwork failed: $error');
-    }
     final file = File(p.join(directory.path, coverFile));
-    if (cover == null) {
-      if (file.existsSync()) await file.delete();
-    } else {
-      await _replace(file, cover.png);
+    final pixels = await _writeArtwork(item.artUri, file, widgetCoverSize);
+    WidgetArtwork? cover;
+    if (pixels != null) {
+      try {
+        cover = await widgetArtworkColors(pixels);
+      } on Object catch (error) {
+        debugPrint('[HomeWidget] artwork colours failed: $error');
+      }
     }
     _coverId = item.id;
     _cover = cover;
+  }
+
+  Future<List<int>?> _writeArtwork(Uri? uri, File file, int size) async {
+    final temp = File('${file.path}.tmp');
+    List<int>? pixels;
+    try {
+      final source = await _artworkSource(uri);
+      if (source != null) {
+        pixels = await _host.artwork(
+          source: source,
+          target: temp.path,
+          size: size,
+        );
+      }
+      if (pixels != null && temp.existsSync()) {
+        await temp.rename(file.path);
+        return pixels;
+      }
+    } on Object catch (error) {
+      debugPrint('[HomeWidget] artwork failed: $error');
+    }
+    if (temp.existsSync()) await temp.delete();
+    if (file.existsSync()) await file.delete();
+    return null;
   }
 
   Future<void> _replace(File file, List<int> bytes) async {
