@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
 import 'package:jplayer/src/core/home_widget/widget_artwork.dart';
+import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:just_audio/just_audio.dart' show LoopMode;
 import 'package:path/path.dart' as p;
 
@@ -28,7 +28,10 @@ class _StubPlayback extends StateNotifier<PlaybackState>
 class _FakeHost implements WidgetHost {
   _FakeHost(this.path);
 
+  static const pixels = [0xFF203040, 0xFF203040, 0xFFE0E0F0];
+
   final String? path;
+  final artworkSources = <String>[];
   int reloads = 0;
 
   @override
@@ -36,6 +39,25 @@ class _FakeHost implements WidgetHost {
 
   @override
   Future<void> reload() async => reloads++;
+
+  @override
+  Future<List<int>?> artwork({
+    required String source,
+    required String target,
+    required int size,
+  }) async {
+    artworkSources.add(source);
+    File(target).writeAsBytesSync([if (size == widgetCoverSize) 1 else 9]);
+    return pixels;
+  }
+}
+
+class _FakeImages extends ImageService {
+  _FakeImages() : super(client: () => throw UnimplementedError());
+
+  @override
+  Uri? songArtUri(LibraryItem song, {LibraryItem? album, int? size}) =>
+      Uri.parse('art://${song.id}');
 }
 
 void main() {
@@ -44,15 +66,14 @@ void main() {
   late ProviderContainer container;
   late _FakeHost host;
   late NowPlayingWidgetSync sync;
-  late List<String> artworkLoads;
   late StreamController<LoopMode> loopModes;
   late StateProvider<AsyncValue<bool?>> signedIn;
 
-  final artwork = WidgetArtwork(
-    png: Uint8List.fromList([1, 2, 3]),
-    background: const Color(0xFF203040),
-    foreground: const Color(0xFFE0E0F0),
-  );
+  late WidgetArtwork artwork;
+
+  setUpAll(() async {
+    artwork = (await widgetArtworkColors(_FakeHost.pixels))!;
+  });
 
   LibraryItem song(String id, String name, {bool liked = false}) => LibraryItem(
     id: id,
@@ -82,12 +103,10 @@ void main() {
     host = _FakeHost(path);
     sync = NowPlayingWidgetSync(
       host: host,
-      artwork: (item) async {
-        artworkLoads.add(item.id);
-        return item.id == 'bare' ? null : artwork;
-      },
+      artworkSource: (uri) async =>
+          uri == null || uri.host == 'bare' ? null : uri.host,
       recentAlbums: recent == null ? null : () async => recent() ?? const [],
-      thumbnail: (album) async => Uint8List.fromList([9]),
+      albumArt: (album) => Uri.parse('art://${album.id}'),
       recentDelay: Duration.zero,
     )..attach(container, loopModes: loopModes.stream, signedIn: signedIn);
   }
@@ -113,13 +132,15 @@ void main() {
   setUp(() {
     root = Directory.systemTemp.createTempSync('widget_sync_');
     addTearDown(() => root.deleteSync(recursive: true));
-    artworkLoads = [];
     loopModes = StreamController<LoopMode>();
     signedIn = StateProvider((ref) => const AsyncData(true));
     addTearDown(loopModes.close);
     playback = _StubPlayback();
     container = ProviderContainer(
-      overrides: [playbackProvider.overrideWith((ref) => playback)],
+      overrides: [
+        playbackProvider.overrideWith((ref) => playback),
+        imageServiceProvider.overrideWithValue(_FakeImages()),
+      ],
     );
     addTearDown(container.dispose);
   });
@@ -144,10 +165,10 @@ void main() {
       'shuffle': false,
       'repeat': 'off',
       'cover': file(NowPlayingWidgetSync.coverFile).path,
-      'background': 0xFF203040,
-      'foreground': 0xFFE0E0F0,
+      'background': artwork.background.toARGB32(),
+      'foreground': artwork.foreground.toARGB32(),
     });
-    expect(file(NowPlayingWidgetSync.coverFile).readAsBytesSync(), [1, 2, 3]);
+    expect(file(NowPlayingWidgetSync.coverFile).readAsBytesSync(), [1]);
     expect(host.reloads, 1);
   });
 
@@ -158,7 +179,7 @@ void main() {
     await emit(stateWith(songs, PlaybackStatus.paused));
 
     expect(snapshot()['playing'], isFalse);
-    expect(artworkLoads, ['1']);
+    expect(host.artworkSources, ['1']);
     expect(host.reloads, 2);
   });
 
@@ -185,7 +206,7 @@ void main() {
     expect(snapshot(), containsPair('liked', true));
     expect(snapshot(), containsPair('shuffle', true));
     expect(snapshot(), containsPair('repeat', 'all'));
-    expect(artworkLoads, ['1']);
+    expect(host.artworkSources, ['1']);
   });
 
   test('liking the playing song republishes it', () async {
