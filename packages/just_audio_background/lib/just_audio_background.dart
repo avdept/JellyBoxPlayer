@@ -121,6 +121,10 @@ class JustAudioBackground {
     _playerAudioHandler._broadcastStateIfActive();
   }
 
+  static set playHandler(Future<void> Function()? handler) {
+    _audioHandler.playHandler = handler;
+  }
+
   static set customActionHandler(
     Future<dynamic> Function(String name, Map<String, dynamic>? extras)?
         handler,
@@ -138,16 +142,20 @@ class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
 
   bool get _awaitingPlayer => !identical(inner, _playerAudioHandler);
 
+  Future<void> Function()? playHandler;
+
   @override
   Future<void> play() async {
     if (_awaitingPlayer) return JustAudioBackground.rememberPlay();
-    return super.play();
+    final handler = playHandler;
+    if (handler == null) return super.play();
+    return handler();
   }
 
   @override
   Future<void> click([MediaButton button = MediaButton.media]) async {
-    if (_awaitingPlayer && button == MediaButton.media) {
-      return JustAudioBackground.rememberPlay();
+    if (button == MediaButton.media && !_playerAudioHandler._playing) {
+      return play();
     }
     return super.click(button);
   }
@@ -381,7 +389,7 @@ class _JustAudioPlayer extends AudioPlayerPlatform {
 
   @override
   Future<PlayResponse> play(PlayRequest request) async {
-    await _audioHandler.play();
+    await _playerAudioHandler.play();
     return PlayResponse();
   }
 

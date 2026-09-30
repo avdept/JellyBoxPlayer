@@ -1,3 +1,15 @@
+## 0.0.1-beta.17+jellybox.5 (LOCAL FORK)
+
+* PATCH: `JustAudioBackground.playHandler` routes media-session play (Android
+  Auto, steering wheel, notification, lock screen, headset click) to the app's
+  `AudioPlayer.play()` instead of straight to the native player. Upstream's
+  path skipped `AudioSession.setActive`, so on Android those plays never took
+  audio focus: they played over other apps, and Android Auto could keep the car
+  silent while the progress bar ran. It also hung forever after
+  `AudioPlayer.stop()` had released the platform player, showing "playing" with
+  nothing loaded. `_JustAudioPlayer.play` now calls `_PlayerAudioHandler.play`
+  directly so the app's own play requests don't loop back through the handler.
+
 ## 0.0.1-beta.17+jellybox.3 (LOCAL FORK)
 
 * `JustAudioBackground.rememberPlay()` is public so the iOS home screen widget
