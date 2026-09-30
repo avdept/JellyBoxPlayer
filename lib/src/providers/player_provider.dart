@@ -4,6 +4,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/providers/audio_handler.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 var _audioServiceInitialized = false;
 
@@ -27,6 +28,10 @@ final playerProvider = Provider<AudioPlayer>((ref) {
   // mobile makes this second init override just_audio_background, which breaks
   // the notification icon (falls back to the opaque launcher icon).
   final isMobile = Platform.isIOS || Platform.isAndroid;
+  if (isMobile) {
+    JustAudioBackground.playHandler = player.play;
+    ref.onDispose(() => JustAudioBackground.playHandler = null);
+  }
   if (!isMobile && !_audioServiceInitialized) {
     _audioServiceInitialized = true;
     AudioService.init(
