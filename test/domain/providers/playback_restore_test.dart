@@ -145,12 +145,15 @@ void main() {
     when(() => client.reportPlaybackProgress(any())).thenAnswer((_) async {});
   });
 
-  ProviderContainer containerWith({required bool pendingPress}) {
+  ProviderContainer containerWith({
+    required bool pendingPress,
+    bool offline = false,
+  }) {
     final container = ProviderContainer(
       overrides: [
         localPlaybackTargetProvider.overrideWithValue(target),
         mediaServerClientProvider.overrideWith((_) => client),
-        isOfflineProvider.overrideWithValue(false),
+        isOfflineProvider.overrideWithValue(offline),
         pendingMediaPlayProvider.overrideWithValue(() {
           pendingTakes++;
           return pendingPress;
@@ -297,4 +300,44 @@ void main() {
       expect((await PlaybackStorage().load())?.sourceId, isNull);
     },
   );
+
+  group('offline at launch', () {
+    test('- restores the whole streamed queue paused', () async {
+      await saveQueue();
+      final container = containerWith(pendingPress: false, offline: true);
+
+      final restored = await container
+          .read(playbackProvider.notifier)
+          .tryRestore();
+
+      expect(restored, isTrue);
+      expect(
+        container.read(playbackProvider).songs.map((s) => s.id),
+        ['a', 'b', 'c'],
+      );
+      expect(target.loads.single.index, 1);
+      expect(target.loads.single.position, const Duration(seconds: 90));
+      expect(container.read(playbackProvider).status, PlaybackStatus.paused);
+    });
+
+    test('- still plays it for a press that woke the app', () async {
+      await saveQueue();
+      final container = containerWith(pendingPress: true, offline: true);
+
+      await container.read(playbackProvider.notifier).tryRestore();
+
+      expect(target.plays, 1);
+    });
+
+    test('- a fresh queue started offline still skips streams', () async {
+      final container = containerWith(pendingPress: false, offline: true);
+
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs.first, songs, album);
+
+      expect(target.loads, isEmpty);
+      expect(container.read(playbackProvider).status, PlaybackStatus.error);
+    });
+  });
 }

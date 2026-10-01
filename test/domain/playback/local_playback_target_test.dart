@@ -294,6 +294,53 @@ void main() {
       expect(attempts, 2);
       verify(player.stop).called(1);
     });
+
+    test(
+      '- leaves a paused queue to load on play when it cannot load',
+      () async {
+        when(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: any(named: 'initialIndex'),
+            initialPosition: any(named: 'initialPosition'),
+            preload: any(named: 'preload'),
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).thenThrow(Exception('no network'));
+
+        await target.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: false,
+        );
+
+        verify(player.stop).called(2);
+        verifyNever(player.play);
+      },
+    );
+
+    test('- still reports a failed load that was meant to play', () async {
+      when(
+        () => player.setAudioSources(
+          any(),
+          initialIndex: any(named: 'initialIndex'),
+          initialPosition: any(named: 'initialPosition'),
+          preload: any(named: 'preload'),
+          shuffleOrder: any(named: 'shuffleOrder'),
+        ),
+      ).thenThrow(Exception('no network'));
+
+      await expectLater(
+        target.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        ),
+        throwsException,
+      );
+    });
   });
 
   group('reorder', () {

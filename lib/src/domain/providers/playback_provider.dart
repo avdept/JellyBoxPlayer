@@ -522,6 +522,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     Duration? initialPosition,
     bool autoPlay = true,
     bool reshuffle = true,
+    bool keepStreamsOffline = false,
   }) async {
     final generation = ++_queueGeneration;
     try {
@@ -538,6 +539,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             album,
             sessionIds[song.id]!,
             cachedPath: cachedPaths[song.id],
+            keepStreamOffline: keepStreamsOffline,
           ),
         ),
       );
@@ -697,6 +699,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     LibraryItem album,
     String playSessionId, {
     String? cachedPath,
+    bool keepStreamOffline = false,
   }) async {
     final isDownloaded = await _ref
         .read(downloadManagerProvider.notifier)
@@ -709,7 +712,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final localPath =
         downloadedPath ?? (_target.supportsLocalFiles ? cachedPath : null);
 
-    if (localPath == null && _ref.read(isOfflineProvider)) return null;
+    if (localPath == null &&
+        !keepStreamOffline &&
+        _ref.read(isOfflineProvider)) {
+      return null;
+    }
 
     final audioSource = song.audioSources.firstOrNull;
 
@@ -1417,6 +1424,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       initialPosition: Duration(milliseconds: snapshot.positionMs),
       autoPlay: false,
       reshuffle: false,
+      keepStreamsOffline: true,
     );
     final pendingPress = _ref.read(pendingMediaPlayProvider)();
     if (_queueGeneration != generation + 1) return false;
