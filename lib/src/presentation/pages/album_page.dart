@@ -363,7 +363,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             ),
           ],
         ),
-        _albumArtists(DefaultTextStyle.of(context).style),
+        Builder(
+          builder: (context) =>
+              _albumArtists(DefaultTextStyle.of(context).style),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
