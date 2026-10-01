@@ -210,6 +210,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     ..invalidate(favouriteAlbumsProvider)
     ..invalidate(favouritePlaylistsProvider);
 
+  Future<void> _reloadFavourites() {
+    _refreshFavourites();
+    return ref.read(homeFavouritesProvider.future);
+  }
+
   void _onFavouritesTap() =>
       context.pushNamed(branchAwareName(context, Routes.favourites));
 
@@ -271,6 +276,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               onPlayPressed: _onPlayAlbum,
               optionsBuilder: _cardOptions(recentlyAddedAlbumsProvider),
               onRetry: () => ref.invalidate(recentlyAddedAlbumsProvider),
+              onRefresh: () => ref.refresh(recentlyAddedAlbumsProvider.future),
             ),
           ),
           if (!ref.watch(
@@ -304,6 +310,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 optionsBuilder: _cardOptions(recentlyPlayedAlbumsProvider),
                 hasOptions: (item) => !isInstantMixId(item.id),
                 onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
+                onRefresh: () =>
+                    ref.refresh(recentlyPlayedAlbumsProvider.future),
               ),
             ),
           if (!ref.watch(settingProvider(AppSetting.favouritesHidden)))
@@ -318,6 +326,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onTitleTap: _onFavouritesTap,
                 optionsBuilder: _cardOptions(homeFavouritesProvider),
                 onRetry: _refreshFavourites,
+                onRefresh: _reloadFavourites,
               ),
             ),
           SliverToBoxAdapter(
@@ -334,6 +343,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               optionsBuilder: _cardOptions(recentlyUpdatedPlaylistsProvider),
               hasOptions: (item) => item.id != likedSongsPlaylistId,
               onRetry: () => ref.invalidate(recentlyUpdatedPlaylistsProvider),
+              onRefresh: () =>
+                  ref.refresh(recentlyUpdatedPlaylistsProvider.future),
             ),
           ),
           SliverToBoxAdapter(
@@ -346,6 +357,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               onPlayPressed: _onPlayAlbum,
               optionsBuilder: _cardOptions(frequentlyPlayedAlbumsProvider),
               onRetry: () => ref.invalidate(frequentlyPlayedAlbumsProvider),
+              onRefresh: () =>
+                  ref.refresh(frequentlyPlayedAlbumsProvider.future),
             ),
           ),
         ],
