@@ -12,6 +12,7 @@ import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
+import 'package:jplayer/src/presentation/widgets/vinyl_pull_to_refresh.dart';
 
 class ItemCarousel extends StatelessWidget {
   const ItemCarousel({
@@ -23,6 +24,7 @@ class ItemCarousel extends StatelessWidget {
     this.optionsBuilder,
     this.hasOptions,
     this.onRetry,
+    this.onRefresh,
     this.onTitleTap,
     this.trailing,
     this.coverBuilder,
@@ -39,6 +41,7 @@ class ItemCarousel extends StatelessWidget {
   optionsBuilder;
   final bool Function(LibraryItem)? hasOptions;
   final VoidCallback? onRetry;
+  final Future<void> Function()? onRefresh;
   final VoidCallback? onTitleTap;
   final Widget? trailing;
   final Widget? Function(LibraryItem)? coverBuilder;
@@ -126,9 +129,8 @@ class ItemCarousel extends StatelessWidget {
     );
   }
 
-  Widget _list(List<LibraryItem> list) => SizedBox(
-    height: AlbumCardMetrics.carouselHeight(device),
-    child: HorizontalScrollRegion(
+  Widget _list(List<LibraryItem> list) {
+    final region = HorizontalScrollRegion(
       controlsHeight: AlbumCardMetrics.carouselWidth(device),
       controlsInset: horizontalPadding / 2,
       builder: (context, controller) => _AnimatedCards(
@@ -138,8 +140,20 @@ class ItemCarousel extends StatelessWidget {
         horizontalPadding: horizontalPadding,
         cardBuilder: _card,
       ),
-    ),
-  );
+    );
+    final refresh = onRefresh;
+
+    return SizedBox(
+      height: AlbumCardMetrics.carouselHeight(device),
+      child: refresh == null
+          ? region
+          : VinylPullToRefresh(
+              onRefresh: refresh,
+              indicatorHeight: AlbumCardMetrics.carouselWidth(device),
+              child: region,
+            ),
+    );
+  }
 
   Widget _card(LibraryItem item) {
     final builder = optionsBuilder;

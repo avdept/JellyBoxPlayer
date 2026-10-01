@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +31,7 @@ void main() {
     required AsyncValue<List<LibraryItem>> items,
     void Function(LibraryItem)? onItemTap,
     VoidCallback? onRetry,
+    Future<void> Function()? onRefresh,
     Widget? trailing,
   }) {
     return createTestApp(
@@ -40,6 +43,7 @@ void main() {
           device: DeviceType.fromScreenSize(const Size(390, 844)),
           onItemTap: onItemTap ?? (_) {},
           onRetry: onRetry,
+          onRefresh: onRefresh,
           trailing: trailing,
         ),
       ),
@@ -173,6 +177,114 @@ void main() {
 
       await widgetTester.tap(find.text(albums.first.name));
       expect(tapped?.id, albums.first.id);
+    });
+
+    const platforms = TargetPlatformVariant({
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    });
+
+    testWidgets(
+      '- refreshes when pulled past the start of the row',
+      variant: platforms,
+      (widgetTester) async {
+        var refreshes = 0;
+        await widgetTester.pumpWidget(
+          getWidgetUT(
+            items: AsyncData(createAlbums(6)),
+            onRefresh: () async => refreshes++,
+          ),
+        );
+        await widgetTester.pump(Duration.zero);
+
+        await widgetTester.drag(
+          find.byType(AlbumView).first,
+          const Offset(400, 0),
+        );
+        await widgetTester.pumpAndSettle();
+
+        expect(refreshes, 1);
+      },
+    );
+
+    testWidgets(
+      '- does not refresh on a short pull',
+      variant: platforms,
+      (widgetTester) async {
+        var refreshes = 0;
+        await widgetTester.pumpWidget(
+          getWidgetUT(
+            items: AsyncData(createAlbums(6)),
+            onRefresh: () async => refreshes++,
+          ),
+        );
+        await widgetTester.pump(Duration.zero);
+
+        await widgetTester.drag(
+          find.byType(AlbumView).first,
+          const Offset(30, 0),
+        );
+        await widgetTester.pumpAndSettle();
+
+        expect(refreshes, 0);
+      },
+    );
+
+    testWidgets(
+      '- does not refresh when scrolling through the row',
+      variant: platforms,
+      (widgetTester) async {
+        var refreshes = 0;
+        await widgetTester.pumpWidget(
+          getWidgetUT(
+            items: AsyncData(createAlbums(6)),
+            onRefresh: () async => refreshes++,
+          ),
+        );
+        await widgetTester.pump(Duration.zero);
+
+        await widgetTester.drag(
+          find.byType(AlbumView).first,
+          const Offset(-300, 0),
+        );
+        await widgetTester.pumpAndSettle();
+        await widgetTester.drag(
+          find.byType(AlbumView).last,
+          const Offset(150, 0),
+        );
+        await widgetTester.pumpAndSettle();
+
+        expect(refreshes, 0);
+      },
+    );
+
+    testWidgets('- ignores pulls while a refresh is running', (
+      widgetTester,
+    ) async {
+      var refreshes = 0;
+      final pending = Completer<void>();
+      await widgetTester.pumpWidget(
+        getWidgetUT(
+          items: AsyncData(createAlbums(6)),
+          onRefresh: () {
+            refreshes++;
+            return pending.future;
+          },
+        ),
+      );
+      await widgetTester.pump(Duration.zero);
+
+      for (var i = 0; i < 2; i++) {
+        await widgetTester.drag(
+          find.byType(AlbumView).first,
+          const Offset(400, 0),
+        );
+        await widgetTester.pump(const Duration(seconds: 1));
+      }
+      expect(refreshes, 1);
+
+      pending.complete();
+      await widgetTester.pumpAndSettle();
     });
   });
 }

@@ -363,7 +363,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
             ),
           ],
         ),
-        Text(widget.album.albumArtist ?? ''),
+        _albumArtists(DefaultTextStyle.of(context).style),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -388,6 +388,31 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       ],
     ),
   );
+
+  Widget _albumArtists(TextStyle style) {
+    final artists = widget.album.albumArtists;
+    if (artists.isEmpty) {
+      return Text(widget.album.albumArtist ?? '', style: style);
+    }
+    return Wrap(
+      children: artists.map((a) {
+        return ClickableWidget(
+          onPressed: () async {
+            final item = await ref
+                .read(mediaServerClientProvider)
+                .getItem(a.id, kind: ItemKind.artist);
+            if (!mounted) return;
+            await context.pushNamed(
+              branchAwareName(context, Routes.artist),
+              extra: {'artist': item},
+            );
+          },
+          textStyle: style,
+          child: Text(a.name),
+        );
+      }).toList(),
+    );
+  }
 
   Widget _albumPanel() => IconTheme.merge(
     data: const IconThemeData(size: 24),
@@ -414,29 +439,10 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                   ),
                 ],
               ),
-              // Text(widget.album.albumArtist ?? ''),
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
-                child: Row(
-                  children: widget.album.albumArtists.map((a) {
-                    return ClickableWidget(
-                      onPressed: () async {
-                        final item = await ref
-                            .read(mediaServerClientProvider)
-                            .getItem(a.id, kind: ItemKind.artist);
-                        if (!mounted) return;
-                        await context.pushNamed(
-                          branchAwareName(context, Routes.artist),
-                          extra: {'artist': item},
-                        );
-                      },
-                      textStyle: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w300,
-                      ),
-                      child: Text(a.name),
-                    );
-                  }).toList(),
+                child: _albumArtists(
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
                 ),
               ),
               Row(
