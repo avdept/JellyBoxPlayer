@@ -3,6 +3,7 @@ import 'package:jplayer/src/core/android_auto/android_auto_handler.dart';
 import 'package:jplayer/src/core/android_auto/auto_media_id.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:just_audio/just_audio.dart' show LoopMode;
 import 'package:mocktail/mocktail.dart';
 
@@ -15,14 +16,18 @@ void main() {
     bool signedIn = true,
     bool offline = false,
     List<GeneratedPlaylist> mixes = const [],
+    List<LibraryItem> favouriteSongs = const [],
     List<DownloadedAlbum> downloads = const [],
+    List<DownloadedPlaylist> downloadedPlaylists = const [],
     PlaybackState? playback,
   }) {
     final env = CarTestEnv(
       signedIn: signedIn,
       offline: offline,
       mixes: mixes,
+      favouriteSongs: favouriteSongs,
       downloads: downloads,
+      downloadedPlaylists: downloadedPlaylists,
       playback: playback,
     );
     return (env, AndroidAutoHandler(env.container, CarContent(env.container)));
@@ -88,6 +93,48 @@ void main() {
         'playlist/p1',
       ]);
       expect(children.every((c) => c.playable != true), isTrue);
+    });
+
+    test('- lists Liked Songs first under playlists, not mixes', () async {
+      final liked = const AutoMediaId(
+        AutoMediaId.playlist,
+        id: likedSongsPlaylistId,
+      ).encode();
+      final (env, handler) = build(favouriteSongs: [song('s1')]);
+      env
+        ..stubLatestAlbums(const [])
+        ..stubPlaylists([playlist('p1')]);
+      when(
+        env.setPlayback.favouriteSongs,
+      ).thenAnswer((_) async => [song('s1')]);
+      await env.container.read(favouriteSongsProvider.future);
+
+      expect(await ids(handler, AutoMediaId.home), [
+        liked,
+        'playlist/p1',
+      ]);
+      expect(await ids(handler, AutoMediaId.playlists), [
+        liked,
+        'playlist/p1',
+      ]);
+      expect(await ids(handler, liked), [
+        '$liked/all',
+        AutoMediaId(
+          AutoMediaId.song,
+          id: 's1',
+          context: CarContent.setContext(
+            AutoMediaId.playlist,
+            likedSongsPlaylistId,
+          ),
+        ).encode(),
+      ]);
+
+      await handler.playFromMediaId('$liked/all');
+
+      verify(
+        () => env.setPlayback.playFavouriteSongs(likedSongsPlaylist),
+      ).called(1);
+      verifyNever(() => env.setPlayback.playPlaylist(any()));
     });
   });
 
@@ -171,6 +218,43 @@ void main() {
         'download/d1/all',
         'song/s1?ctx=download%3Ad1',
       ]);
+    });
+
+    test('- downloaded playlists are listed and play as playlists', () async {
+      final (env, handler) = build(
+        offline: true,
+        downloads: [
+          DownloadedAlbum(
+            item: album('d1'),
+            sizeInBytes: 1,
+            downloadDate: DateTime(2026),
+          ),
+        ],
+        downloadedPlaylists: [
+          DownloadedPlaylist(
+            item: playlist('dp1'),
+            sizeInBytes: 1,
+            downloadDate: DateTime(2026),
+          ),
+        ],
+      );
+      when(
+        () => env.setPlayback.playlistSongs('dp1'),
+      ).thenAnswer((_) async => [song('s1')]);
+
+      expect(await ids(handler, AutoMediaId.downloads), [
+        'download/d1',
+        'download/dp1',
+      ]);
+      expect(await ids(handler, 'download/dp1'), [
+        'download/dp1/all',
+        'song/s1?ctx=download%3Adp1',
+      ]);
+
+      await handler.playFromMediaId('download/dp1/all');
+
+      verify(() => env.setPlayback.playPlaylist(playlist('dp1'))).called(1);
+      verifyNever(() => env.setPlayback.playAlbum(any()));
     });
   });
 

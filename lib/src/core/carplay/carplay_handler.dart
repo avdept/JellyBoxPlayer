@@ -30,7 +30,11 @@ class CarPlayHandler {
         case 'getList':
           return _list(args);
         case 'getDownloads':
-          return {'items': _maps(await _content.downloads())};
+          final downloads = await _content.downloads();
+          return {
+            'albums': _maps(downloads.albums),
+            'playlists': _maps(downloads.playlists),
+          };
         case 'search':
           return _search(args);
         case 'getQueue':

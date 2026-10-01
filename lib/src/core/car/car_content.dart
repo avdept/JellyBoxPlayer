@@ -11,6 +11,7 @@ import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_albums_provider.dart';
+import 'package:jplayer/src/domain/providers/downloaded_playlists_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -68,6 +69,15 @@ class CarSearchResults {
       albums.isEmpty && artists.isEmpty && playlists.isEmpty && songs.isEmpty;
 }
 
+class CarDownloads {
+  const CarDownloads({this.albums = const [], this.playlists = const []});
+
+  final List<CarEntry> albums;
+  final List<CarEntry> playlists;
+
+  List<CarEntry> get all => [...albums, ...playlists];
+}
+
 class CarContent {
   CarContent(this._ref) {
     _ref
@@ -80,7 +90,11 @@ class CarContent {
       ..listen(currentLibraryProvider, (previous, next) => _notifyChanged())
       ..listen(carFilterProvider, (previous, next) => _notifyChanged())
       ..listen(isOfflineProvider, (previous, next) => _notifyChanged())
-      ..listen(downloadedAlbumsProvider, (previous, next) => _notifyChanged());
+      ..listen(downloadedAlbumsProvider, (previous, next) => _notifyChanged())
+      ..listen(
+        downloadedPlaylistsProvider,
+        (previous, next) => _notifyChanged(),
+      );
   }
 
   static const recentAlbumsLimit = 20;
@@ -138,7 +152,7 @@ class CarContent {
       );
       return resp.items;
     });
-    return items.take(limit).map(entry).toList();
+    return _withLikedSongs(items).take(limit).toList();
   }
 
   List<CarEntry> favouriteAlbums({required int limit}) {
@@ -152,25 +166,26 @@ class CarContent {
   }
 
   List<CarEntry> mixes() {
-    final entries = <CarEntry>[];
     if (_ref.read(settingProvider(AppSetting.generatedPlaylistsDisabled))) {
       _mixesSub?.close();
       _mixesSub = null;
-    } else {
-      _mixesSub ??= _ref.listen(
-        todaysPlaylistsProvider,
-        (previous, next) => _notifyChanged(),
-      );
-      final playlists = _ref.read(todaysPlaylistsProvider).valueOrNull;
-      for (final playlist in playlists ?? const <GeneratedPlaylist>[]) {
-        entries.add(_setEntry(playlist.item, playlist.coverSongs));
-      }
+      return const [];
     }
-
-    final liked = _likedSongs();
-    if (liked != null) entries.add(liked);
-    return entries;
+    _mixesSub ??= _ref.listen(
+      todaysPlaylistsProvider,
+      (previous, next) => _notifyChanged(),
+    );
+    final playlists = _ref.read(todaysPlaylistsProvider).valueOrNull;
+    return [
+      for (final playlist in playlists ?? const <GeneratedPlaylist>[])
+        _setEntry(playlist.item, playlist.coverSongs),
+    ];
   }
+
+  List<CarEntry> _withLikedSongs(List<LibraryItem> playlists) => [
+    ?_likedSongs(),
+    ...playlists.map(entry),
+  ];
 
   CarEntry? _likedSongs() {
     _likedSongsSub ??= _ref.listen(
@@ -288,8 +303,9 @@ class CarContent {
       _songLists[key] = startIndex == 0 ? items : [...previous, ...items];
       _lastSongsKey = key;
     }
+    final showLiked = type == 'playlists' && term.isEmpty && startIndex == 0;
     return CarPage(
-      entries: items.map(entry).toList(),
+      entries: showLiked ? _withLikedSongs(items) : items.map(entry).toList(),
       sort: filter,
       hasMore: items.length >= pageSize,
     );
@@ -341,14 +357,19 @@ class CarContent {
     );
   }
 
-  Future<List<CarEntry>> downloads() async {
+  Future<CarDownloads> downloads() async {
+    final manager = _ref.read(downloadManagerProvider.notifier);
     try {
-      final albums = await _ref
-          .read(downloadManagerProvider.notifier)
-          .getDownloadedAlbums();
-      return albums.map((e) => entry(e.item)).toList();
+      final (albums, playlists) = await (
+        manager.getDownloadedAlbums(),
+        manager.getDownloadedPlaylists(),
+      ).wait;
+      return CarDownloads(
+        albums: albums.map((e) => entry(e.item)).toList(),
+        playlists: playlists.map((e) => entry(e.item)).toList(),
+      );
     } on Object {
-      return const [];
+      return const CarDownloads();
     }
   }
 
@@ -366,24 +387,27 @@ class CarContent {
     final item = await _resolve(type, id);
     if (item == null) return;
     final playback = _ref.read(setPlaybackProvider.notifier);
-    switch (type) {
+    switch (_setType(type, item)) {
+      case 'liked':
+        await playback.playFavouriteSongs(item);
       case 'playlist':
         await playback.playPlaylist(item);
       case 'mix':
-        if (item.id == likedSongsPlaylistId) {
-          await playback.playFavouriteSongs(item);
-        } else {
-          await playback.playGeneratedPlaylist(item);
-        }
+        await playback.playGeneratedPlaylist(item);
       case 'artist':
         await playback.playArtist(item);
       case 'album':
-      case 'download':
         await playback.playAlbum(item);
       case 'song':
         await playSong(item, context: songContext);
     }
   }
+
+  static String _setType(String type, LibraryItem item) => switch (type) {
+    _ when item.id == likedSongsPlaylistId => 'liked',
+    'download' => item.kind == ItemKind.playlist ? 'playlist' : 'album',
+    _ => type,
+  };
 
   static String setContext(String type, String id) => '$type:$id';
 
@@ -392,10 +416,10 @@ class CarContent {
     if (set == null) return const [];
     final playback = _ref.read(setPlaybackProvider.notifier);
     final songs = await _fetch(
-      () => switch (type) {
-        'album' || 'download' => playback.albumSongs(id),
+      () => switch (_setType(type, set)) {
+        'liked' => playback.favouriteSongs(),
+        'album' => playback.albumSongs(id),
         'playlist' => playback.playlistSongs(id),
-        'mix' when id == likedSongsPlaylistId => playback.favouriteSongs(),
         'mix' => playback.generatedPlaylistSongs(id),
         _ => Future.value(const <LibraryItem>[]),
       },
@@ -433,14 +457,14 @@ class CarContent {
   Future<LibraryItem?> _resolve(String type, String id) async {
     final cached = _items[id];
     if (cached != null) return cached;
+    if (id == likedSongsPlaylistId) return likedSongsPlaylist;
     if (type == 'mix') {
-      if (id == likedSongsPlaylistId) return likedSongsPlaylist;
       final playlists = _ref.read(todaysPlaylistsProvider).valueOrNull;
       return playlists?.where((p) => p.item.id == id).firstOrNull?.item;
     }
     if (type == 'download') {
-      final albums = await downloads();
-      return albums.where((e) => e.id == id).firstOrNull?.item;
+      final downloaded = await downloads();
+      return downloaded.all.where((e) => e.id == id).firstOrNull?.item;
     }
     if (!isSignedIn) return null;
     final kind = switch (type) {

@@ -230,14 +230,12 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
       return;
     }
     final mix = _content.mixes().firstOrNull;
-    if (mix != null) await _content.play(AutoMediaId.mix, mix.id);
+    await _content.play(AutoMediaId.mix, mix?.id ?? likedSongsPlaylistId);
   }
 
   Future<void> _playSet(CarEntry entry) {
     final type = switch (entry.item.kind) {
       ItemKind.artist => AutoMediaId.artist,
-      ItemKind.playlist when entry.id == likedSongsPlaylistId =>
-        AutoMediaId.mix,
       ItemKind.playlist => AutoMediaId.playlist,
       _ => AutoMediaId.album,
     };
@@ -374,10 +372,15 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
   ];
 
   Future<List<MediaItem>> _downloads() async {
-    final entries = await _content.downloads();
+    final CarDownloads(:albums, :playlists) = await _content.downloads();
+    final grouped = albums.isNotEmpty && playlists.isNotEmpty;
     return [
-      for (final entry in entries)
-        _setFolder(AutoMediaId(AutoMediaId.download, id: entry.id), entry),
+      ..._folderGroup(grouped ? 'Albums' : null, AutoMediaId.download, albums),
+      ..._folderGroup(
+        grouped ? 'Playlists' : null,
+        AutoMediaId.download,
+        playlists,
+      ),
     ];
   }
 
@@ -500,7 +503,7 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
       );
 
   List<MediaItem> _folderGroup(
-    String group,
+    String? group,
     String type,
     Iterable<CarEntry> entries,
   ) => [

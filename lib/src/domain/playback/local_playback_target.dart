@@ -65,24 +65,26 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     required bool autoPlay,
   }) async {
     final sources = [for (final track in tracks) _audioSource(track)];
+    Future<void> setSources() => _player.setAudioSources(
+      sources,
+      initialIndex: initialIndex,
+      initialPosition: initialPosition,
+      preload: true,
+      shuffleOrder: _shuffleOrder,
+    );
     try {
-      await _player.setAudioSources(
-        sources,
-        initialIndex: initialIndex,
-        initialPosition: initialPosition,
-        preload: true,
-        shuffleOrder: _shuffleOrder,
-      );
+      await setSources();
     } on Object catch (error) {
       debugPrint('[LocalTarget] retrying after failed load: $error');
       await _player.stop();
-      await _player.setAudioSources(
-        sources,
-        initialIndex: initialIndex,
-        initialPosition: initialPosition,
-        preload: true,
-        shuffleOrder: _shuffleOrder,
-      );
+      try {
+        await setSources();
+      } on Object catch (error) {
+        if (autoPlay) rethrow;
+        debugPrint('[LocalTarget] queue loads on play after: $error');
+        await _player.stop();
+        return;
+      }
     }
     if (autoPlay) unawaited(_player.play());
   }

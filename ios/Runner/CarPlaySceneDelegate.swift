@@ -184,13 +184,26 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   private func reloadDownloads() {
     CarPlayBridge.shared.fetch("getDownloads") { [weak self] data in
       guard let self, let data else { return }
-      let entries = data["items"] as? [[String: Any]] ?? []
-      let pairs = entries.compactMap {
-        self.makeMediaItem(entry: $0, playType: "download")
+      let items = { (key: String) in
+        (data[key] as? [[String: Any]] ?? []).compactMap {
+          self.makeMediaItem(entry: $0, playType: "download")
+        }
       }
+      let albums = items("albums")
+      let playlists = items("playlists")
+      let grouped = !albums.isEmpty && !playlists.isEmpty
+      let sections = [("Albums", albums), ("Playlists", playlists)]
+        .filter { !$0.1.isEmpty }
+        .map {
+          CPListSection(
+            items: $0.1.map(\.item),
+            header: grouped ? $0.0 : nil,
+            sectionIndexTitle: nil
+          )
+        }
       self.downloadsTemplate.emptyViewTitleVariants = ["No downloads"]
-      self.downloadsTemplate.updateSections([CPListSection(items: pairs.map(\.item))])
-      self.trackedItems["downloads"] = pairs
+      self.downloadsTemplate.updateSections(sections)
+      self.trackedItems["downloads"] = albums + playlists
       self.applyPlaybackState()
     }
   }
@@ -576,7 +589,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   private func makeMixRow(entries: [[String: Any]]) -> CPListImageRowItem {
     let row: CPListImageRowItem
     if #available(iOS 26.0, *) {
-      let visible = mixEntries(entries, limit: cardsPerLine())
+      let visible = Array(entries.prefix(cardsPerLine()))
       row = CPListImageRowItem(
         text: "Made for You",
         gridElements: gridElements(for: visible, padTo: cardsPerLine()),
@@ -592,7 +605,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       }
     } else {
       row = makeCoverRow(
-        entries: mixEntries(entries, limit: 8),
+        entries: Array(entries.prefix(8)),
         playType: "mix",
         text: "Made for You"
       )
@@ -602,13 +615,6 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       completion()
     }
     return row
-  }
-
-  private func mixEntries(_ entries: [[String: Any]], limit: Int) -> [[String: Any]] {
-    guard entries.count > limit, limit > 1, let last = entries.last else {
-      return Array(entries.prefix(limit))
-    }
-    return Array(entries.prefix(limit - 1)) + [last]
   }
 
   private func makeRecentRow(entries: [[String: Any]]) -> CPListImageRowItem {
