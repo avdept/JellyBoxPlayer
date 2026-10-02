@@ -41,6 +41,10 @@ dependencies:
   media_kit_native_event_loop: any
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
+  # Vendored, trimmed fork of flutter_chrome_cast 1.4.8 with Android and iOS
+  # fixes. See packages/flutter_chrome_cast/CHANGELOG.md.
+  flutter_chrome_cast:
+    path: ./packages/flutter_chrome_cast
   go_router: ^17.1.0
   intl: ^0.20.2
   crypto: ^3.0.7

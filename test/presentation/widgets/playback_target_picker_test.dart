@@ -13,6 +13,8 @@ import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
+import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/output_route_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
@@ -31,6 +33,21 @@ class _FakeRenderersNotifier extends UpnpRenderersNotifier {
 
   @override
   Future<void> refresh({Duration timeout = const Duration(seconds: 4)}) async {}
+}
+
+class _FakeCastNotifier extends CastDevicesNotifier {
+  _FakeCastNotifier(List<GoogleCastDevice> devices) {
+    state = CastDiscoveryState(devices: devices);
+  }
+
+  @override
+  void start() {}
+
+  @override
+  void stop() {}
+
+  @override
+  void refresh() {}
 }
 
 class _RecordingDiagnostics extends Diagnostics {
@@ -126,9 +143,23 @@ void main() {
     );
   }
 
+  GoogleCastDevice castNamed(String name, {String? model, String? ip}) =>
+      GoogleCastDevice(
+        deviceID: 'cast-$name',
+        friendlyName: name,
+        modelName: model,
+        statusText: null,
+        deviceVersion: '1.0',
+        isOnLocalNetwork: true,
+        category: '',
+        uniqueID: 'cast-$name',
+        ipAddress: ip,
+      );
+
   Future<void> pumpPicker(
     WidgetTester tester, {
     required List<UpnpRenderer> renderers,
+    List<GoogleCastDevice> castDevices = const [],
     PlaybackTarget? activeTarget,
     ControlPointHost host = ControlPointHost.sustained,
     CloudState? cloud,
@@ -143,6 +174,9 @@ void main() {
           currentOutputRouteProvider.overrideWith((ref) => Stream.value(route)),
           upnpRenderersProvider.overrideWith(
             (ref) => _FakeRenderersNotifier(renderers),
+          ),
+          castDevicesProvider.overrideWith(
+            (ref) => _FakeCastNotifier(castDevices),
           ),
           if (activeTarget != null)
             playbackTargetProvider.overrideWith(
@@ -579,6 +613,68 @@ void main() {
     expect(target.name, 'Kitchen');
   });
 
+  testWidgets('- plays on a Cast device when one is picked', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        upnpRenderersProvider.overrideWith(
+          (ref) => _FakeRenderersNotifier(const []),
+        ),
+        castDevicesProvider.overrideWith(
+          (ref) => _FakeCastNotifier([castNamed('Kitchen', model: 'Nest')]),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Kitchen'));
+    await tester.pump();
+
+    final target = container.read(playbackTargetProvider);
+    expect(target.kind, PlaybackTargetKind.cast);
+    expect(target.id, 'cast:cast-Kitchen');
+    expect(target.name, 'Kitchen');
+  });
+
+  testWidgets('- marks which protocol each device speaks', (tester) async {
+    await pumpPicker(
+      tester,
+      renderers: [rendererNamed('Lounge TV', model: 'QE85')],
+      castDevices: [castNamed('Kitchen', model: 'Nest Audio')],
+    );
+
+    Finder tile(String title) =>
+        find.ancestor(of: find.text(title), matching: find.byType(ListTile));
+
+    expect(
+      find.descendant(of: tile('Kitchen'), matching: find.byIcon(Icons.cast)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tile('Lounge TV'),
+        matching: find.byIcon(Icons.settings_input_antenna),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: tile('This device'),
+        matching: find.byIcon(Icons.settings_input_antenna),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('- tells three identical speakers apart by address', (
     tester,
   ) async {
@@ -766,6 +862,111 @@ void main() {
       find.text('Needs a speaker that holds its own queue'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('- hides a queueless renderer when the speaker also does Cast', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed(
+          'Kitchen',
+          model: 'LSX II LT',
+          host: '10.0.0.20',
+          hasQueue: false,
+        ),
+        rendererNamed('Lounge TV', model: 'QE85', hasQueue: false),
+      ],
+      castDevices: [
+        castNamed('Kitchen', model: 'KEF LSX II LT', ip: '10.0.0.20'),
+      ],
+    );
+
+    expect(find.text('Kitchen'), findsOneWidget);
+    expect(find.byIcon(Icons.cast), findsOneWidget);
+    expect(find.text('10.0.0.20 · LSX II LT'), findsNothing);
+    expect(find.text('Lounge TV'), findsOneWidget);
+    expect(
+      find.text('Needs a speaker that holds its own queue'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('- shows both sides of a speaker when DLNA is playable', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      renderers: [
+        rendererNamed('Kitchen', model: 'LSX II LT', host: '10.0.0.20'),
+      ],
+      castDevices: [castNamed('Kitchen', ip: '10.0.0.20')],
+    );
+
+    expect(find.text('Kitchen'), findsNWidgets(2));
+    expect(find.byIcon(Icons.cast), findsOneWidget);
+    expect(find.byIcon(Icons.settings_input_antenna), findsOneWidget);
+  });
+
+  testWidgets('- matches the Cast twin by name when it has no address', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed('Living Room', model: 'LSX II LT', hasQueue: false),
+      ],
+      castDevices: [castNamed('Living room', model: 'KEF LSX II LT')],
+    );
+
+    expect(find.byIcon(Icons.settings_input_antenna), findsNothing);
+    expect(find.text('Living room'), findsOneWidget);
+  });
+
+  testWidgets('- keeps a queueless namesake at another address', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed(
+          'Kitchen',
+          model: 'Sonos One',
+          host: '10.0.0.9',
+          hasQueue: false,
+        ),
+      ],
+      castDevices: [castNamed('Kitchen', model: 'Nest Audio', ip: '10.0.0.30')],
+    );
+
+    expect(find.text('Kitchen'), findsNWidgets(2));
+    expect(find.byIcon(Icons.settings_input_antenna), findsOneWidget);
+  });
+
+  testWidgets('- keeps the renderer it is playing on even with a twin', (
+    tester,
+  ) async {
+    final kef = rendererNamed(
+      'Kitchen',
+      model: 'LSX II LT',
+      host: '10.0.0.20',
+      hasQueue: false,
+    );
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [kef],
+      castDevices: [castNamed('Kitchen', ip: '10.0.0.20')],
+      activeTarget: _FakeTarget(kef.id, kef.name, PlaybackTargetKind.upnp),
+    );
+
+    expect(find.text('Kitchen'), findsNWidgets(2));
+    expect(find.byIcon(Icons.settings_input_antenna), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
   testWidgets('- keeps a queueless renderer usable on a desktop', (

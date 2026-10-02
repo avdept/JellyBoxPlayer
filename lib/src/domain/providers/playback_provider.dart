@@ -212,7 +212,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         ? state.currentMediaIndex
         : targetState.currentIndex;
 
-    if (!_preparingQueue && index != _reportedIndex) {
+    if (targetState.status == PlaybackStatus.error) {
+      _onTargetFailure();
+      return;
+    }
+
+    if (_preparingQueue) return;
+
+    if (index != _reportedIndex) {
       _reportTrackChange(index);
       final nextSong = index != null
           ? state.songs.elementAtOrNull(index)
@@ -222,20 +229,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
     }
 
-    if (!_preparingQueue &&
-        index == _reportedIndex &&
-        targetState.position > Duration.zero) {
+    if (index == _reportedIndex && targetState.position > Duration.zero) {
       _reportedPositionMs = targetState.position.inMilliseconds;
     }
 
-    if (!_preparingQueue) {
-      state = state.copyWith(
-        position: targetState.position,
-        cacheProgress: targetState.bufferedPosition ?? Duration.zero,
-        totalDuration: _durationFor(index),
-        currentMediaIndex: index,
-      );
-    }
+    state = state.copyWith(
+      position: targetState.position,
+      cacheProgress: targetState.bufferedPosition ?? Duration.zero,
+      totalDuration: _durationFor(index),
+      currentMediaIndex: index,
+    );
 
     final now = DateTime.now();
     if (state.status.isPlaying &&
@@ -256,11 +259,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
 
     _checkForStall(targetState);
-
-    if (targetState.status == PlaybackStatus.error) {
-      _onTargetFailure();
-      return;
-    }
 
     if (targetState.completed && state.status.isPlaying) {
       _reportStopped();
@@ -330,7 +328,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (from.id == to.id) return;
     final songs = state.songs;
     final album = state.album;
-    final wasPlaying = state.status.isPlaying;
+    final wasPlaying = state.status.isPlaying && !_fallingBack;
     final index = state.currentMediaIndex ?? 0;
     final position = state.position;
 
@@ -752,7 +750,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (_target.kind == PlaybackTargetKind.upnp) {
       uri = await rendererUriResolver.resolve(uri);
       if (artUri != null) artUri = await rendererUriResolver.resolve(artUri);
-    } else {
+    } else if (_target.kind == PlaybackTargetKind.local) {
       final proxy = _ref.read(streamProxyProvider);
       uri = await proxy.resolve(uri);
       if (artUri != null) artUri = await proxy.resolve(artUri);
