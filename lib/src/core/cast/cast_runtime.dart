@@ -6,15 +6,25 @@ import 'package:jplayer/src/core/cast/cast_media_feed.dart';
 
 var _castReady = false;
 
-bool get castSupported => Platform.isAndroid && _castReady;
+bool get _castPlatform => Platform.isAndroid || Platform.isIOS;
+
+bool get castSupported => _castPlatform && _castReady;
 
 Future<void> initializeCast() async {
-  if (!Platform.isAndroid) return;
+  if (!_castPlatform) return;
   try {
     await GoogleCastContext.instance.setSharedInstanceWithOptions(
-      GoogleCastOptionsAndroid(
-        appId: GoogleCastDiscoveryCriteria.kDefaultApplicationId,
-      ),
+      Platform.isIOS
+          ? IOSGoogleCastOptions(
+              GoogleCastDiscoveryCriteriaInitialize.initWithApplicationID(
+                GoogleCastDiscoveryCriteria.kDefaultApplicationId,
+              ),
+              disableDiscoveryAutostart: true,
+              startDiscoveryAfterFirstTapOnCastButton: false,
+            )
+          : GoogleCastOptionsAndroid(
+              appId: GoogleCastDiscoveryCriteria.kDefaultApplicationId,
+            ),
     );
     GoogleCastRemoteMediaClient.instance;
     CastChannelFeed.instance.claimChannel();

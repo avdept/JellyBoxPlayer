@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/core/cast/cast_discovery.dart';
 import 'package:jplayer/src/core/cast/cast_media_feed.dart';
 import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -32,6 +33,7 @@ class CastPlaybackTarget implements PlaybackTarget {
     this.attemptTimeout = _attemptTimeout,
     this.pollInterval = _pollInterval,
     this.discoverySettle = _discoverySettle,
+    this.sessionGrace = _sessionGrace,
     GoogleCastRemoteMediaClientPlatformInterface? client,
     GoogleCastSessionManagerPlatformInterface? sessions,
     GoogleCastDiscoveryManagerPlatformInterface? discovery,
@@ -49,12 +51,14 @@ class CastPlaybackTarget implements PlaybackTarget {
   static const _pollInterval = Duration(milliseconds: 200);
   static const _connectAttempts = 3;
   static const _restartThreshold = Duration(seconds: 3);
+  static const _sessionGrace = Duration(seconds: 20);
 
   final GoogleCastDevice device;
   final Diagnostics diagnostics;
   final Duration attemptTimeout;
   final Duration pollInterval;
   final Duration discoverySettle;
+  final Duration sessionGrace;
 
   final _controller = StreamController<TargetPlaybackState>.broadcast();
   final _tracks = <TargetTrack>[];
@@ -67,7 +71,8 @@ class CastPlaybackTarget implements PlaybackTarget {
   var _loaded = false;
   var _startedDiscovery = false;
   var _sawSession = false;
-  var _pauseWhenReady = false;
+  double? _pendingVolume;
+  Timer? _sessionLoss;
   TargetPlaybackState _state = TargetPlaybackState.idle;
   CastReceiverStatus? _status;
   Future<void>? _session;
@@ -122,7 +127,6 @@ class CastPlaybackTarget implements PlaybackTarget {
     _loaded = false;
     _index = tracks.isEmpty ? 0 : initialIndex.clamp(0, tracks.length - 1);
     _position = initialPosition;
-    _pauseWhenReady = !autoPlay;
 
     _emit(
       status: autoPlay ? PlaybackStatus.buffering : PlaybackStatus.paused,
@@ -132,11 +136,17 @@ class CastPlaybackTarget implements PlaybackTarget {
 
     try {
       await _ensureSession();
+      final pendingVolume = _pendingVolume;
+      if (pendingVolume != null) {
+        _pendingVolume = null;
+        _sessions.setDeviceVolume(pendingVolume);
+      }
       await _client.queueLoadItems(
         [for (final track in tracks) _queueItem(track)],
         options: GoogleCastQueueLoadOptions(
           startIndex: _index,
           playPosition: initialPosition,
+          autoPlay: autoPlay,
         ),
       );
     } on Object catch (error, stackTrace) {
@@ -159,7 +169,6 @@ class CastPlaybackTarget implements PlaybackTarget {
       'autoPlay=$autoPlay',
       category: 'cast',
     );
-    if (!autoPlay) await _client.pause();
   }
 
   Future<void> _ensureSession() async {
@@ -183,7 +192,7 @@ class CastPlaybackTarget implements PlaybackTarget {
         );
         if (!_startedDiscovery) {
           _startedDiscovery = true;
-          await discovery.startDiscovery();
+          await CastDiscovery.of(discovery).hold();
           await Future<void>.delayed(discoverySettle);
         }
 
@@ -305,12 +314,6 @@ class CastPlaybackTarget implements PlaybackTarget {
     final index = _indexOfCurrentItem(status);
     if (index != null) _index = index;
 
-    if (_pauseWhenReady && status.status == PlaybackStatus.playing) {
-      _pauseWhenReady = false;
-      unawaited(_client.pause());
-      return;
-    }
-
     _emit(
       status: status.status,
       duration: status.duration ?? _currentTrack?.duration,
@@ -327,9 +330,9 @@ class CastPlaybackTarget implements PlaybackTarget {
   void _onQueueItems(List<CastQueueEntry> items) {
     if (_disposed || !_loaded) return;
 
-    final ids = [for (final item in items) item.itemId];
-    final contents = [for (final item in items) item.contentId];
-    _itemIds = _mirrorsQueue(contents) ? ids : const [];
+    _itemIds = _mirrorsQueue(items)
+        ? [for (final item in items) item.itemId]
+        : const [];
 
     final status = _status;
     final index = status != null ? _indexOfCurrentItem(status) : null;
@@ -340,24 +343,50 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   void _onSession(GoogleCastSession? session) {
     if (_disposed || !_sawSession) return;
-    if (_ourSession(session) &&
-        session!.connectionState != GoogleCastConnectState.disconnected) {
+    if (_liveSession(session)) {
+      if (_sessionLoss != null) {
+        diagnostics.trail('cast session with $name is back', category: 'cast');
+      }
+      _sessionLoss?.cancel();
+      _sessionLoss = null;
       return;
     }
-    if (session == null && _sessions.currentSession != null) return;
+    if (_ourSession(session) &&
+        session!.connectionState == GoogleCastConnectState.disconnecting) {
+      return;
+    }
+    if (_sessionLoss != null) return;
     diagnostics.trail(
-      'cast session with $name ended from the device side',
+      'cast session with $name dropped; waiting for it to resume',
       category: 'cast',
     );
-    _emit(status: PlaybackStatus.error);
+    _sessionLoss = Timer(sessionGrace, () {
+      _sessionLoss = null;
+      if (_disposed) return;
+      diagnostics.trail(
+        'cast session with $name did not come back',
+        category: 'cast',
+      );
+      _emit(status: PlaybackStatus.error);
+    });
   }
 
-  bool _mirrorsQueue(List<String> contents) {
-    if (contents.length != _tracks.length) return false;
-    for (var index = 0; index < contents.length; index++) {
-      if (contents[index] != _tracks[index].itemId) return false;
+  bool _mirrorsQueue(List<CastQueueEntry> items) {
+    if (items.length != _tracks.length) return false;
+    for (var index = 0; index < items.length; index++) {
+      final item = items[index];
+      if (!_matches(_tracks[index], item.contentId, item.contentUrl)) {
+        return false;
+      }
     }
     return true;
+  }
+
+  bool _matches(TargetTrack track, String? contentId, String? contentUrl) {
+    if (contentId != null && contentId.isNotEmpty) {
+      return track.itemId == contentId || track.uri.toString() == contentId;
+    }
+    return contentUrl != null && track.uri.toString() == contentUrl;
   }
 
   int? _indexOfCurrentItem(CastReceiverStatus status) {
@@ -366,30 +395,30 @@ class CastPlaybackTarget implements PlaybackTarget {
       final index = _itemIds.indexOf(itemId);
       if (index >= 0) return index;
     }
-    final contentId = status.contentId;
-    if (contentId == null || contentId.isEmpty) return null;
-    final index = _tracks.indexWhere((track) => track.itemId == contentId);
+    final index = _tracks.indexWhere(
+      (track) => _matches(track, status.contentId, status.contentUrl),
+    );
     return index >= 0 ? index : null;
   }
+
+  Future<void> _reload({Duration? position}) => load(
+    [..._tracks],
+    initialIndex: _index,
+    initialPosition: position ?? _position,
+    autoPlay: _state.status.isPlaying,
+  );
 
   bool _finishedQueue(CastReceiverStatus status) =>
       status.finished && _index >= _tracks.length - 1;
 
   @override
-  Future<void> play() async {
-    _pauseWhenReady = false;
-    await _client.play();
-  }
+  Future<void> play() => _client.play();
 
   @override
-  Future<void> pause() async {
-    _pauseWhenReady = false;
-    await _client.pause();
-  }
+  Future<void> pause() => _client.pause();
 
   @override
   Future<void> stop() async {
-    _pauseWhenReady = false;
     await _client.stop();
     _position = Duration.zero;
     _emit(status: PlaybackStatus.stopped, position: Duration.zero);
@@ -397,7 +426,12 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   @override
   Future<void> seek(Duration position) async {
-    await _client.seek(GoogleCastMediaSeekOption(position: position));
+    await _client.seek(
+      GoogleCastMediaSeekOption(
+        position: position,
+        resumeState: GoogleCastMediaResumeState.unchanged,
+      ),
+    );
     _position = position;
     _emit();
   }
@@ -420,31 +454,51 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   @override
   Future<void> move(int from, int to) async {
+    if (from < 0 || to < 0 || from >= _tracks.length || to >= _tracks.length) {
+      return;
+    }
     final itemId = _itemIdAt(from);
-    if (itemId == null || _itemIdAt(to) == null) return;
+    final inStep = itemId != null && _itemIdAt(to) != null;
 
+    _tracks.insert(to, _tracks.removeAt(from));
+    if (_index == from) {
+      _index = to;
+    } else if (from < _index && to >= _index) {
+      _index--;
+    } else if (from > _index && to <= _index) {
+      _index++;
+    }
+
+    if (!inStep) {
+      await _reload();
+      return;
+    }
+    final before = to > from ? to + 1 : to;
     await _client.queueReorderItems(
       itemsIds: [itemId],
-      beforeItemWithId: _itemIdAt(to > from ? to + 1 : to),
+      beforeItemWithId: _itemIdAt(before),
     );
-
     _itemIds = [..._itemIds]
       ..removeAt(from)
       ..insert(to, itemId);
-    if (from < _tracks.length && to < _tracks.length) {
-      _tracks.insert(to, _tracks.removeAt(from));
-    }
   }
 
   @override
   Future<void> remove(int index) async {
+    if (index < 0 || index >= _tracks.length) return;
     final itemId = _itemIdAt(index);
-    if (itemId == null) return;
+    final wasCurrent = index == _index;
 
+    _tracks.removeAt(index);
+    if (index < _index) _index--;
+    if (_tracks.isNotEmpty) _index = _index.clamp(0, _tracks.length - 1);
+
+    if (itemId == null) {
+      await _reload(position: wasCurrent ? Duration.zero : null);
+      return;
+    }
     await _client.queueRemoveItemsWithIds([itemId]);
-
     _itemIds = [..._itemIds]..removeAt(index);
-    if (index < _tracks.length) _tracks.removeAt(index);
   }
 
   @override
@@ -453,11 +507,20 @@ class CastPlaybackTarget implements PlaybackTarget {
     TargetTrack track, {
     bool playNext = false,
   }) async {
-    await _client.queueInsertItems(
-      [_queueItem(track)],
-      beforeItemWithId: _itemIdAt(index),
-    );
-    _tracks.insert(index.clamp(0, _tracks.length), track);
+    final at = index.clamp(0, _tracks.length);
+    final inStep = _itemIds.length == _tracks.length;
+    final beforeId = _itemIdAt(at);
+
+    _tracks.insert(at, track);
+    if (at <= _index) _index++;
+
+    if (!inStep) {
+      await _reload();
+      return;
+    }
+    await _client.queueInsertItems([
+      _queueItem(track),
+    ], beforeItemWithId: beforeId);
   }
 
   @override
@@ -465,12 +528,19 @@ class CastPlaybackTarget implements PlaybackTarget {
     int currentIndex,
     List<TargetTrack> upcoming,
   ) async {
+    if (currentIndex < 0 || currentIndex >= _tracks.length) return;
     final currentId = _itemIdAt(currentIndex);
-    if (currentId == null || currentIndex >= _tracks.length) {
-      diagnostics.trail(
-        'cast queue is out of step; leaving it alone',
-        category: 'cast',
-      );
+
+    final current = _tracks[currentIndex];
+    _index = 0;
+    _tracks
+      ..clear()
+      ..add(current)
+      ..addAll(upcoming);
+    _emit(duration: current.duration);
+
+    if (currentId == null) {
+      await _reload();
       return;
     }
 
@@ -479,15 +549,7 @@ class CastPlaybackTarget implements PlaybackTarget {
         if (id != currentId) id,
     ];
     if (others.isNotEmpty) await _client.queueRemoveItemsWithIds(others);
-
-    final current = _tracks[currentIndex];
     _itemIds = [currentId];
-    _index = 0;
-    _tracks
-      ..clear()
-      ..add(current)
-      ..addAll(upcoming);
-    _emit(duration: current.duration);
 
     if (upcoming.isEmpty) return;
     await _client.queueInsertItems([
@@ -501,22 +563,20 @@ class CastPlaybackTarget implements PlaybackTarget {
     required List<int> order,
     required int currentIndex,
   }) async {
-    if (order.length != _itemIds.length) {
-      diagnostics.trail(
-        'cast queue is out of step; leaving its order alone',
-        category: 'cast',
-      );
-      return;
-    }
+    final inStep = order.length == _itemIds.length;
+    final ids = inStep ? [for (final from in order) _itemIds[from]] : null;
 
-    final ids = [for (final from in order) _itemIds[from]];
-    await _client.queueReorderItems(itemsIds: ids, beforeItemWithId: null);
-
-    _itemIds = ids;
     _index = currentIndex;
     _tracks
       ..clear()
       ..addAll(tracks);
+
+    if (ids == null) {
+      await _reload();
+      return;
+    }
+    await _client.queueReorderItems(itemsIds: ids, beforeItemWithId: null);
+    _itemIds = ids;
   }
 
   @override
@@ -533,6 +593,10 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   @override
   Future<void> setVolume(double level) async {
+    if (_session == null) {
+      _pendingVolume = level;
+      return;
+    }
     try {
       await _ensureSession();
     } on Object {
@@ -556,6 +620,8 @@ class CastPlaybackTarget implements PlaybackTarget {
     if (_disposed) return;
     _disposed = true;
     _loaded = false;
+    _sessionLoss?.cancel();
+    _sessionLoss = null;
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
@@ -563,7 +629,9 @@ class CastPlaybackTarget implements PlaybackTarget {
     if (_startedDiscovery) {
       _startedDiscovery = false;
       unawaited(
-        (_discovery ?? GoogleCastDiscoveryManager.instance).stopDiscovery(),
+        CastDiscovery.of(
+          _discovery ?? GoogleCastDiscoveryManager.instance,
+        ).release(),
       );
     }
     try {

@@ -25,6 +25,7 @@ class _StaleTarget implements PlaybackTarget {
 
   final int staleIndex;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
+  final loads = <bool>[];
 
   TargetPlaybackState _state = TargetPlaybackState.idle;
 
@@ -57,19 +58,85 @@ class _StaleTarget implements PlaybackTarget {
     required Duration initialPosition,
     required bool autoPlay,
   }) async {
-    _emit(staleIndex);
+    loads.add(autoPlay);
+    _emit(staleIndex, playing: autoPlay);
     await Future<void>.delayed(Duration.zero);
-    _emit(initialIndex);
+    _emit(initialIndex, playing: autoPlay);
   }
 
-  void _emit(int index) {
+  void _emit(int index, {bool playing = true}) {
     _state = TargetPlaybackState(
-      status: PlaybackStatus.playing,
+      status: playing ? PlaybackStatus.playing : PlaybackStatus.paused,
       position: Duration.zero,
       currentIndex: index,
     );
     _controller.add(_state);
   }
+
+  @override
+  Future<void> stop() async {}
+
+  @override
+  Future<void> setVolume(double level) async {}
+
+  @override
+  Future<void> dispose() async => _controller.close();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _SpeakerTarget implements PlaybackTarget {
+  final _controller = StreamController<TargetPlaybackState>.broadcast();
+  TargetPlaybackState _state = TargetPlaybackState.idle;
+
+  @override
+  PlaybackTargetKind get kind => PlaybackTargetKind.cast;
+
+  @override
+  String get id => 'cast:kitchen';
+
+  @override
+  String get name => 'Kitchen';
+
+  @override
+  StreamTargetProfile get streamProfile =>
+      StreamTargetProfile.renderer(sinkMimeTypes: const {'audio/flac'});
+
+  @override
+  bool get supportsLocalFiles => false;
+
+  @override
+  TargetPlaybackState get state => _state;
+
+  @override
+  Stream<TargetPlaybackState> get stateStream => _controller.stream;
+
+  @override
+  Future<void> load(
+    List<TargetTrack> tracks, {
+    required int initialIndex,
+    required Duration initialPosition,
+    required bool autoPlay,
+  }) async {
+    _state = TargetPlaybackState(
+      status: PlaybackStatus.playing,
+      position: initialPosition,
+      currentIndex: initialIndex,
+    );
+    _controller.add(_state);
+  }
+
+  void drop() {
+    _state = const TargetPlaybackState(
+      status: PlaybackStatus.error,
+      position: Duration.zero,
+    );
+    _controller.add(_state);
+  }
+
+  @override
+  Future<void> setVolume(double level) async {}
 
   @override
   Future<void> stop() async {}
@@ -168,5 +235,26 @@ void main() {
 
     expect(container.read(playbackProvider).currentMediaIndex, 2);
     expect(seen, isNot(contains(0)));
+  });
+
+  test('- a lost speaker comes back to this device paused', () async {
+    final notifier = container.read(playbackProvider.notifier);
+    await notifier.play(songs[1], songs, album);
+    await Future<void>.delayed(Duration.zero);
+
+    final speaker = _SpeakerTarget();
+    await notifier.switchTarget(speaker);
+    await Future<void>.delayed(Duration.zero);
+    expect(notifier.target.id, speaker.id);
+    expect(container.read(playbackProvider).status, PlaybackStatus.playing);
+
+    target.loads.clear();
+    speaker.drop();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    expect(notifier.target.kind, PlaybackTargetKind.local);
+    expect(target.loads, [false]);
+    expect(container.read(playbackProvider).status, PlaybackStatus.paused);
+    expect(container.read(playbackProvider).currentMediaIndex, 1);
   });
 }

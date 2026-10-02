@@ -328,7 +328,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (from.id == to.id) return;
     final songs = state.songs;
     final album = state.album;
-    final wasPlaying = state.status.isPlaying;
+    final wasPlaying = state.status.isPlaying && !_fallingBack;
     final index = state.currentMediaIndex ?? 0;
     final position = state.position;
 

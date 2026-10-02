@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/cast/cast_discovery.dart';
 import 'package:jplayer/src/core/cast/cast_runtime.dart';
 
 class CastDiscoveryState {
@@ -16,6 +17,7 @@ class CastDevicesNotifier extends StateNotifier<CastDiscoveryState> {
 
   static const _settleDelay = Duration(seconds: 6);
 
+  late final _discovery = CastDiscovery.of(GoogleCastDiscoveryManager.instance);
   StreamSubscription<List<GoogleCastDevice>>? _subscription;
   Timer? _settle;
 
@@ -32,7 +34,7 @@ class CastDevicesNotifier extends StateNotifier<CastDiscoveryState> {
         );
       },
     );
-    unawaited(GoogleCastDiscoveryManager.instance.startDiscovery());
+    unawaited(_discovery.hold());
 
     _settle?.cancel();
     _settle = Timer(_settleDelay, () {
@@ -47,7 +49,7 @@ class CastDevicesNotifier extends StateNotifier<CastDiscoveryState> {
     _settle = null;
     unawaited(_subscription?.cancel());
     _subscription = null;
-    unawaited(GoogleCastDiscoveryManager.instance.stopDiscovery());
+    unawaited(_discovery.release());
   }
 
   void refresh() {
@@ -57,7 +59,7 @@ class CastDevicesNotifier extends StateNotifier<CastDiscoveryState> {
     }
     if (!mounted) return;
     state = CastDiscoveryState(devices: state.devices, scanning: true);
-    unawaited(GoogleCastDiscoveryManager.instance.startDiscovery());
+    unawaited(_discovery.rescan());
     _settle?.cancel();
     _settle = Timer(_settleDelay, () {
       if (!mounted) return;
@@ -75,9 +77,7 @@ class CastDevicesNotifier extends StateNotifier<CastDiscoveryState> {
   void dispose() {
     _settle?.cancel();
     unawaited(_subscription?.cancel());
-    if (_subscription != null) {
-      unawaited(GoogleCastDiscoveryManager.instance.stopDiscovery());
-    }
+    if (_subscription != null) unawaited(_discovery.release());
     super.dispose();
   }
 }

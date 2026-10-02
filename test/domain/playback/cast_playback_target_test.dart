@@ -156,6 +156,7 @@ void main() {
       attemptTimeout: const Duration(milliseconds: 200),
       pollInterval: Duration.zero,
       discoverySettle: Duration.zero,
+      sessionGrace: const Duration(milliseconds: 150),
     );
   });
 
@@ -406,14 +407,97 @@ void main() {
     expect(target.state.status, PlaybackStatus.error);
   });
 
-  test('fails over when the session is taken away', () async {
+  test('waits for a dropped session to resume before failing over', () async {
     await load();
     await reportQueue();
 
     emitSession(null);
     await pumpEventQueue();
+    expect(target.state.status, isNot(PlaybackStatus.error));
 
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     expect(target.state.status, PlaybackStatus.error);
+  });
+
+  test('carries on when the session comes back within the grace', () async {
+    await load();
+    await reportQueue();
+
+    emitSession(null);
+    await pumpEventQueue();
+    emitSession(FakeSession(device, GoogleCastConnectState.connecting));
+    emitSession(FakeSession(device, GoogleCastConnectState.connected));
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+
+    expect(target.state.status, isNot(PlaybackStatus.error));
+  });
+
+  test(
+    'sets a volume asked for before connecting ahead of the queue',
+    () async {
+      await target.setVolume(0.1);
+      verifyNever(() => sessions.setDeviceVolume(any()));
+      verifyNever(() => sessions.startSessionWithDevice(any()));
+
+      await load();
+
+      verifyInOrder([
+        () => sessions.setDeviceVolume(0.1),
+        () => client.queueLoadItems(any(), options: any(named: 'options')),
+      ]);
+    },
+  );
+
+  test(
+    'reloads the queue when the receiver has not listed its items',
+    () async {
+      await load();
+
+      await target.reorder(
+        [tracks[2], tracks[1], tracks[0]],
+        order: [2, 1, 0],
+        currentIndex: 2,
+      );
+
+      verifyNever(
+        () => client.queueReorderItems(
+          itemsIds: any(named: 'itemsIds'),
+          beforeItemWithId: any(named: 'beforeItemWithId'),
+        ),
+      );
+      final captured = verify(
+        () => client.queueLoadItems(
+          captureAny(),
+          options: captureAny(named: 'options'),
+        ),
+      ).captured;
+      final items = captured[2] as List<GoogleCastQueueItem>;
+      final options = captured[3] as GoogleCastQueueLoadOptions;
+      expect(
+        [for (final item in items) item.mediaInformation.contentId],
+        ['c', 'b', 'a'],
+      );
+      expect(options.startIndex, 2);
+    },
+  );
+
+  test('follows the receiver by stream URL when it drops the id', () async {
+    await load();
+    feed.queueEvents.add([
+      CastQueueEntry(itemId: 10, contentUrl: tracks[0].uri.toString()),
+      CastQueueEntry(itemId: 11, contentUrl: tracks[1].uri.toString()),
+      CastQueueEntry(itemId: 12, contentUrl: tracks[2].uri.toString()),
+    ]);
+    await pumpEventQueue();
+
+    feed.statusEvents.add(
+      _status(status: PlaybackStatus.playing, currentItemId: 11),
+    );
+    await pumpEventQueue();
+
+    expect(target.state.currentIndex, 1);
+    await target.remove(2);
+    verify(() => client.queueRemoveItemsWithIds([12])).called(1);
   });
 
   test('moves a queue item in front of the item it lands on', () async {
@@ -504,17 +588,32 @@ void main() {
     verify(() => client.queuePrevItem()).called(1);
   });
 
-  test('holds playback when it is handed a paused queue', () async {
-    await load(autoPlay: false);
-    await reportQueue();
+  test('loads a paused queue without starting it', () async {
+    await load(autoPlay: false, initialPosition: const Duration(seconds: 3));
 
-    feed.statusEvents.add(
-      _status(status: PlaybackStatus.playing, currentItemId: 10),
-    );
-    await pumpEventQueue();
+    final options =
+        verify(
+              () => client.queueLoadItems(
+                any(),
+                options: captureAny(named: 'options'),
+              ),
+            ).captured.single
+            as GoogleCastQueueLoadOptions;
+    expect(options.autoPlay, isFalse);
+    expect(options.playPosition, const Duration(seconds: 3));
+    verifyNever(() => client.pause());
+    expect(target.state.status, PlaybackStatus.paused);
+  });
 
-    verify(() => client.pause()).called(2);
-    expect(target.state.status, isNot(PlaybackStatus.playing));
+  test('seeks without changing whether it plays', () async {
+    await load();
+    await target.seek(const Duration(milliseconds: 61500));
+
+    final option =
+        verify(() => client.seek(captureAny())).captured.single
+            as GoogleCastMediaSeekOption;
+    expect(option.position, const Duration(milliseconds: 61500));
+    expect(option.resumeState, GoogleCastMediaResumeState.unchanged);
   });
 
   test('ends the session when it is disposed', () async {
