@@ -34,6 +34,10 @@ Both platforms:
 
 iOS:
 
+* The SPM manifest declares iOS 16, which the `google-cast-sdk` 4.8.4 SPM
+  wrapper requires (upstream said 15 and failed Xcode's target integrity
+  check). The stale `ios/Package.swift` pointing at a non-existent `Classes`
+  directory is removed; Flutter uses `ios/flutter_chrome_cast/Package.swift`.
 * `queueLoadItems` loads through `GCKMediaLoadRequestDataBuilder` and honours
   `autoPlay`.
 * `queueRemoveItemsWithIds` had no native handler and did nothing.
