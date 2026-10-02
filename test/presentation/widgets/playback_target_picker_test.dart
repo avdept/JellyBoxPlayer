@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ import 'package:optional_features/jellybox_cloud.dart';
 import 'package:optional_features/upnp_quirks.dart';
 import 'package:jplayer/src/core/diagnostics/diagnostics.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
+import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
@@ -33,6 +35,20 @@ class _FakeRenderersNotifier extends UpnpRenderersNotifier {
 
   @override
   Future<void> refresh({Duration timeout = const Duration(seconds: 4)}) async {}
+}
+
+class _FakeOutputs implements OutputController {
+  final connected = Completer<void>();
+  PlaybackTarget? target;
+
+  @override
+  Future<void> playOn(PlaybackTarget target) {
+    this.target = target;
+    return connected.future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeCastNotifier extends CastDevicesNotifier {
@@ -645,6 +661,101 @@ void main() {
     expect(target.name, 'Kitchen');
   });
 
+  testWidgets('- spins on a Cast device until it is connected', (tester) async {
+    final outputs = _FakeOutputs();
+    var closed = false;
+    final container = ProviderContainer(
+      overrides: [
+        outputControllerProvider.overrideWithValue(outputs),
+        upnpRenderersProvider.overrideWith(
+          (ref) => _FakeRenderersNotifier(const []),
+        ),
+        castDevicesProvider.overrideWith(
+          (ref) => _FakeCastNotifier([castNamed('Kitchen', model: 'Nest')]),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            body: PlaybackTargetMenu(onDone: () => closed = true),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Kitchen'));
+    await tester.pump();
+
+    final tile = find.ancestor(
+      of: find.text('Kitchen'),
+      matching: find.byType(ListTile),
+    );
+    expect(
+      find.descendant(
+        of: tile,
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(closed, isFalse);
+    expect(outputs.target?.id, 'cast:cast-Kitchen');
+
+    container.read(playbackTargetProvider.notifier).select(outputs.target!);
+    outputs.connected.complete();
+    await tester.pump();
+
+    expect(closed, isTrue);
+  });
+
+  testWidgets('- stays open when the Cast device could not be reached', (
+    tester,
+  ) async {
+    final outputs = _FakeOutputs();
+    var closed = false;
+    final container = ProviderContainer(
+      overrides: [
+        outputControllerProvider.overrideWithValue(outputs),
+        upnpRenderersProvider.overrideWith(
+          (ref) => _FakeRenderersNotifier(const []),
+        ),
+        castDevicesProvider.overrideWith(
+          (ref) => _FakeCastNotifier([castNamed('Kitchen', model: 'Nest')]),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            body: PlaybackTargetMenu(onDone: () => closed = true),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Kitchen'));
+    await tester.pump();
+    outputs.connected.complete();
+    await tester.pump();
+
+    expect(closed, isFalse);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    final tile = tester.widget<ListTile>(
+      find.ancestor(of: find.text('Kitchen'), matching: find.byType(ListTile)),
+    );
+    expect(tile.onTap, isNotNull);
+  });
+
   testWidgets('- marks which protocol each device speaks', (tester) async {
     await pumpPicker(
       tester,
@@ -1111,16 +1222,40 @@ void main() {
       expect(menuRect.left, greaterThanOrEqualTo(0));
     });
 
-    testWidgets('- closes when the target is picked', (tester) async {
-      await pumpBody(
-        tester,
-        Center(child: PlaybackTargetButton()),
-        renderers: [rendererNamed('Kitchen', model: 'Sonos One')],
+    testWidgets('- closes once the picked target is connected', (
+      tester,
+    ) async {
+      final outputs = _FakeOutputs();
+      final container = ProviderContainer(
+        overrides: [
+          outputControllerProvider.overrideWithValue(outputs),
+          upnpRenderersProvider.overrideWith(
+            (ref) => _FakeRenderersNotifier([
+              rendererNamed('Kitchen', model: 'Sonos One'),
+            ]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(body: Center(child: PlaybackTargetButton())),
+          ),
+        ),
       );
 
       await tester.tap(find.byType(IconButton));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Kitchen'));
+      await tester.pump();
+
+      expect(find.text('Play on'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      container.read(playbackTargetProvider.notifier).select(outputs.target!);
+      outputs.connected.complete();
       await tester.pumpAndSettle();
 
       expect(find.text('Play on'), findsNothing);

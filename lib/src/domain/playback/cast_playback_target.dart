@@ -47,6 +47,7 @@ class CastPlaybackTarget implements PlaybackTarget {
   static const _attemptTimeout = Duration(seconds: 6);
   static const _routeTimeout = Duration(seconds: 4);
   static const _connectRetryDelay = Duration(milliseconds: 500);
+  static const _windDownTimeout = Duration(seconds: 3);
   static const _discoverySettle = Duration(milliseconds: 300);
   static const _pollInterval = Duration(milliseconds: 200);
   static const _connectAttempts = 3;
@@ -246,13 +247,38 @@ class CastPlaybackTarget implements PlaybackTarget {
       devices.any((found) => found.deviceID == device.deviceID);
 
   Future<void> _selectRoute() async {
-    final current = _sessions.currentSession;
+    var current = _sessions.currentSession;
     if (_liveSession(current)) return;
     if (current != null && _connectingOrConnected(current)) {
       await _sessions.endSessionAndStopCasting();
       await Future<void>.delayed(_connectRetryDelay);
+      current = _sessions.currentSession;
     }
+    if (current != null &&
+        current.connectionState == GoogleCastConnectState.disconnecting) {
+      await _waitForWindDown();
+    }
+    final started = await _sessions.startSessionWithDevice(device);
+    if (started) return;
+    diagnostics.trail(
+      'cast sdk refused to start a session with $name; resetting',
+      category: 'cast',
+    );
+    await _sessions.resetSession();
+    await Future<void>.delayed(_connectRetryDelay);
     await _sessions.startSessionWithDevice(device);
+  }
+
+  Future<void> _waitForWindDown() async {
+    final deadline = DateTime.now().add(_windDownTimeout);
+    while (!_disposed && DateTime.now().isBefore(deadline)) {
+      final session = _sessions.currentSession;
+      if (session == null ||
+          session.connectionState == GoogleCastConnectState.disconnected) {
+        return;
+      }
+      await Future<void>.delayed(pollInterval);
+    }
   }
 
   void _trailSession(GoogleCastSession? session) => diagnostics.trail(
@@ -260,7 +286,8 @@ class CastPlaybackTarget implements PlaybackTarget {
         ? 'cast session gone'
         : 'cast session ${session.connectionState.name} '
               'device=${session.device?.deviceID ?? 'none'} '
-              'id=${session.sessionID ?? 'none'}',
+              'id=${session.sessionID ?? 'none'}'
+              '${session.error == null ? '' : ' error=${session.error}'}',
     category: 'cast',
   );
 

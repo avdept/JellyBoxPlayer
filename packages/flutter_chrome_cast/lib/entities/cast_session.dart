@@ -21,6 +21,9 @@ abstract class GoogleCastSession {
   /// The device status text.
   final String deviceStatusText;
 
+  /// Why the session failed to start, when the platform reports it.
+  final String? error;
+
   /// Creates a new [GoogleCastSession].
   GoogleCastSession({
     required this.device,
@@ -29,5 +32,6 @@ abstract class GoogleCastSession {
     required this.currentDeviceMuted,
     required this.currentDeviceVolume,
     required this.deviceStatusText,
+    this.error,
   });
 }

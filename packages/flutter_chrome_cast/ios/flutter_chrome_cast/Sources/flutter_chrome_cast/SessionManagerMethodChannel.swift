@@ -77,6 +77,10 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     /// and GCKCastSession) with the same connection state in rapid succession,
     /// causing event spam on the Flutter side.
     private var _lastEmittedConnectionState: GCKConnectionState?
+    /// Identity of the last session event sent to Flutter: state plus the
+    /// session it belonged to, so a second session that fails the same way
+    /// the first one ended is not mistaken for a repeat.
+    private var _lastEmittedKey: String?
     
     /// Reference to the Google Cast session manager
     /// - Returns: The session manager from the shared Cast context
@@ -268,7 +272,7 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     ///   - session: The Cast session that failed to start
     ///   - error: The error that caused the failure
     public func sessionManager(_ sessionManager: GCKSessionManager, didFailToStart session: GCKCastSession, withError error: Error) {
-        onSessionChanged(session)
+        emitStartFailure(session, error: error)
     }
     
     /// Called when a session is about to end
@@ -336,7 +340,7 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     ///   - session: The session that failed to start
     ///   - error: The error that caused the failure
     public func sessionManager(_ sessionManager: GCKSessionManager, didFailToStart session: GCKSession, withError error: Error) {
-        onSessionChanged(session)
+        emitStartFailure(session, error: error)
     }
     
     /// Called when a session is suspended
@@ -512,6 +516,7 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
 
         // Reset dedup state — the next session will be tracked from scratch
         _lastEmittedConnectionState = nil
+        _lastEmittedKey = nil
 
         // Explicitly notify Flutter that the session is gone. We bypass
         // onSessionChanged(nil) because its dedup check would silently skip
@@ -539,6 +544,7 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     /// as `connectionState` 4 (`GoogleCastConnectState.suspended`).
     private func emitSuspended(_ session: GCKSession) {
         _lastEmittedConnectionState = nil
+        _lastEmittedKey = eventKey(session, state: 4)
         var dict = session.toDict()
         dict["connectionState"] = 4
         channel?.invokeMethod("onCurrentSessionChanged", arguments: dict)
@@ -546,8 +552,10 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
 
     private func emitDisconnecting(_ session: GCKSession) {
         let disconnecting: GCKConnectionState = .disconnecting
-        if disconnecting == _lastEmittedConnectionState { return }
+        let key = eventKey(session, state: disconnecting.rawValue)
+        if key == _lastEmittedKey { return }
         _lastEmittedConnectionState = disconnecting
+        _lastEmittedKey = key
         
         var dict = session.toDict()
         dict["connectionState"] = GCKConnectionState.disconnecting.rawValue
@@ -567,14 +575,31 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     /// - Parameter session: The session that changed, or nil if session ended
     private func onSessionChanged(_ session : GCKSession?){
         let currentState = session?.connectionState
-        
-        // Skip if the connection state hasn't changed
-        if currentState == _lastEmittedConnectionState {
+        let key = eventKey(session, state: currentState?.rawValue ?? -1)
+        if key == _lastEmittedKey {
             return
         }
         _lastEmittedConnectionState = currentState
-        
+        _lastEmittedKey = key
+
         channel?.invokeMethod("onCurrentSessionChanged", arguments: session?.toDict())
+    }
+
+    private func eventKey(_ session: GCKSession?, state: Int) -> String {
+        guard let session = session else { return "nil" }
+        return "\(state)|\(session.sessionID ?? "")|\(session.device.deviceID)"
+    }
+
+    /// A session that never got going. Always reported, as `disconnected`
+    /// with the SDK's reason, so Flutter can tell it from the previous
+    /// session winding down.
+    private func emitStartFailure(_ session: GCKSession, error: Error) {
+        _lastEmittedConnectionState = .disconnected
+        _lastEmittedKey = nil
+        var dict = session.toDict()
+        dict["connectionState"] = GCKConnectionState.disconnected.rawValue
+        dict["error"] = "\((error as NSError).code): \(error.localizedDescription)"
+        channel?.invokeMethod("onCurrentSessionChanged", arguments: dict)
     }
     
 }
