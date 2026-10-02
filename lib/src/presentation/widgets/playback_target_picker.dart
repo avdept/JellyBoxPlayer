@@ -395,6 +395,12 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final conductor = ref.watch(cloudProvider);
     final host = ref.watch(controlPointHostProvider);
     final scanning = discovery.scanning || cast.scanning;
+    final renderers = visibleRenderers(
+      discovery.renderers,
+      castDevices: cast.devices,
+      host: host,
+      activeId: active.id,
+    );
     final width = math.min(_menuWidth, MediaQuery.sizeOf(context).width - 24);
     final elsewhere = ref.watch(remoteRendererProvider);
     final onThisDevice =
@@ -479,7 +485,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             if (elsewhere == null && active.id == 'cast:${device.deviceID}')
               _volume,
           ],
-          for (final renderer in discovery.renderers) ...[
+          for (final renderer in renderers) ...[
             _rendererTile(
               renderer,
               selected: elsewhere == null && active.id == renderer.id,
@@ -487,7 +493,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             ),
             if (elsewhere == null && active.id == renderer.id) _volume,
           ],
-          if (discovery.renderers.isEmpty &&
+          if (renderers.isEmpty &&
               cast.devices.isEmpty &&
               conductor.targets.isEmpty &&
               !scanning)
@@ -618,6 +624,32 @@ IconData outputRouteIcon(OutputRouteKind kind) => switch (kind) {
   OutputRouteKind.car => Icons.directions_car,
   OutputRouteKind.builtIn || OutputRouteKind.other => Icons.speaker,
 };
+
+List<UpnpRenderer> visibleRenderers(
+  List<UpnpRenderer> renderers, {
+  required List<GoogleCastDevice> castDevices,
+  required ControlPointHost host,
+  String? activeId,
+}) => [
+  for (final renderer in renderers)
+    if (renderer.id == activeId ||
+        castingBlockedReason(
+              deviceHoldsQueue: renderer.holdsQueue,
+              host: host,
+            ) ==
+            null ||
+        !castDevices.any((device) => _sameEndDevice(device, renderer)))
+      renderer,
+];
+
+bool _sameEndDevice(GoogleCastDevice device, UpnpRenderer renderer) {
+  final ip = device.ipAddress;
+  if (ip != null && ip.isNotEmpty) return ip == renderer.host;
+  return _plainName(device.friendlyName) == _plainName(renderer.name);
+}
+
+String _plainName(String name) =>
+    name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
 IconData castDeviceIcon(GoogleCastDevice device) {
   final haystack = [

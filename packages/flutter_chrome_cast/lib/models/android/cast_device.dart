@@ -22,6 +22,7 @@ class GoogleCastAndroidDevice extends GoogleCastDevice {
     required super.isOnLocalNetwork,
     required super.category,
     required super.uniqueID,
+    super.ipAddress,
   });
 
   /// Creates a [GoogleCastAndroidDevice] from a map.
@@ -35,6 +36,7 @@ class GoogleCastAndroidDevice extends GoogleCastDevice {
       isOnLocalNetwork: map['is_on_local_network'],
       statusText: null,
       uniqueID: map['id'],
+      ipAddress: map['ip_address'],
     );
   }
 }

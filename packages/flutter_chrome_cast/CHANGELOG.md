@@ -26,6 +26,9 @@ Android:
 
 Both platforms:
 
+* `GoogleCastDevice.ipAddress` carries the device's network address
+  (`CastDevice.inetAddress` / `GCKDevice.networkAddress`).
+
 * `playPosition`, seek positions, media durations and item start times are
   sent with millisecond precision instead of whole seconds.
 

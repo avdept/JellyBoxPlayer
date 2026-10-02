@@ -50,5 +50,6 @@ fun CastDevice.toMap(): Map<*, *> {
         "model_name" to this.modelName,
         "device_version" to this.deviceVersion,
         "is_on_local_network" to this.isOnLocalNetwork,
+        "ip_address" to this.inetAddress?.hostAddress,
     )
 }

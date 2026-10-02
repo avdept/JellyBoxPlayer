@@ -21,6 +21,7 @@ class GoogleCastIosDevice extends GoogleCastDevice {
     required super.category,
     required super.uniqueID,
     required this.index,
+    super.ipAddress,
   });
 
   /// Creates a [GoogleCastIosDevice] from a map, typically from platform channel data.
@@ -35,6 +36,7 @@ class GoogleCastIosDevice extends GoogleCastDevice {
       category: map['category'] as String,
       uniqueID: map['uniqueID'] as String,
       index: map['index'],
+      ipAddress: map['networkAddress'],
     );
   }
 }

@@ -143,16 +143,18 @@ void main() {
     );
   }
 
-  GoogleCastDevice castNamed(String name, {String? model}) => GoogleCastDevice(
-    deviceID: 'cast-$name',
-    friendlyName: name,
-    modelName: model,
-    statusText: null,
-    deviceVersion: '1.0',
-    isOnLocalNetwork: true,
-    category: '',
-    uniqueID: 'cast-$name',
-  );
+  GoogleCastDevice castNamed(String name, {String? model, String? ip}) =>
+      GoogleCastDevice(
+        deviceID: 'cast-$name',
+        friendlyName: name,
+        modelName: model,
+        statusText: null,
+        deviceVersion: '1.0',
+        isOnLocalNetwork: true,
+        category: '',
+        uniqueID: 'cast-$name',
+        ipAddress: ip,
+      );
 
   Future<void> pumpPicker(
     WidgetTester tester, {
@@ -860,6 +862,111 @@ void main() {
       find.text('Needs a speaker that holds its own queue'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('- hides a queueless renderer when the speaker also does Cast', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed(
+          'Kitchen',
+          model: 'LSX II LT',
+          host: '10.0.0.20',
+          hasQueue: false,
+        ),
+        rendererNamed('Lounge TV', model: 'QE85', hasQueue: false),
+      ],
+      castDevices: [
+        castNamed('Kitchen', model: 'KEF LSX II LT', ip: '10.0.0.20'),
+      ],
+    );
+
+    expect(find.text('Kitchen'), findsOneWidget);
+    expect(find.byIcon(Icons.cast), findsOneWidget);
+    expect(find.text('10.0.0.20 · LSX II LT'), findsNothing);
+    expect(find.text('Lounge TV'), findsOneWidget);
+    expect(
+      find.text('Needs a speaker that holds its own queue'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('- shows both sides of a speaker when DLNA is playable', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      renderers: [
+        rendererNamed('Kitchen', model: 'LSX II LT', host: '10.0.0.20'),
+      ],
+      castDevices: [castNamed('Kitchen', ip: '10.0.0.20')],
+    );
+
+    expect(find.text('Kitchen'), findsNWidgets(2));
+    expect(find.byIcon(Icons.cast), findsOneWidget);
+    expect(find.byIcon(Icons.settings_input_antenna), findsOneWidget);
+  });
+
+  testWidgets('- matches the Cast twin by name when it has no address', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed('Living Room', model: 'LSX II LT', hasQueue: false),
+      ],
+      castDevices: [castNamed('Living room', model: 'KEF LSX II LT')],
+    );
+
+    expect(find.byIcon(Icons.settings_input_antenna), findsNothing);
+    expect(find.text('Living room'), findsOneWidget);
+  });
+
+  testWidgets('- keeps a queueless namesake at another address', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [
+        rendererNamed(
+          'Kitchen',
+          model: 'Sonos One',
+          host: '10.0.0.9',
+          hasQueue: false,
+        ),
+      ],
+      castDevices: [castNamed('Kitchen', model: 'Nest Audio', ip: '10.0.0.30')],
+    );
+
+    expect(find.text('Kitchen'), findsNWidgets(2));
+    expect(find.byIcon(Icons.settings_input_antenna), findsOneWidget);
+  });
+
+  testWidgets('- keeps the renderer it is playing on even with a twin', (
+    tester,
+  ) async {
+    final kef = rendererNamed(
+      'Kitchen',
+      model: 'LSX II LT',
+      host: '10.0.0.20',
+      hasQueue: false,
+    );
+    await pumpPicker(
+      tester,
+      host: ControlPointHost.suspending,
+      renderers: [kef],
+      castDevices: [castNamed('Kitchen', ip: '10.0.0.20')],
+      activeTarget: _FakeTarget(kef.id, kef.name, PlaybackTargetKind.upnp),
+    );
+
+    expect(find.text('Kitchen'), findsNWidgets(2));
+    expect(find.byIcon(Icons.settings_input_antenna), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
   testWidgets('- keeps a queueless renderer usable on a desktop', (

@@ -27,6 +27,10 @@ class GoogleCastDevice {
   /// Globally unique identifier for the device.
   final String uniqueID;
 
+  /// The device's IPv4 address on the local network, when the platform
+  /// reports one.
+  final String? ipAddress;
+
   /// Creates a new Google Cast device instance.
   ///
   /// All parameters except [modelName] and [statusText] are required.
@@ -39,6 +43,7 @@ class GoogleCastDevice {
     required this.isOnLocalNetwork,
     required this.category,
     required this.uniqueID,
+    this.ipAddress,
   });
 
   @override
