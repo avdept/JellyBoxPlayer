@@ -42,6 +42,7 @@ class TargetPlaybackState {
     this.bufferedPosition,
     this.canSeek = true,
     this.completed = false,
+    this.takenOver = false,
   });
 
   static const idle = TargetPlaybackState(
@@ -56,6 +57,7 @@ class TargetPlaybackState {
   final Duration? bufferedPosition;
   final bool canSeek;
   final bool completed;
+  final bool takenOver;
 
   TargetPlaybackState copyWith({
     PlaybackStatus? status,
@@ -65,6 +67,7 @@ class TargetPlaybackState {
     Duration? bufferedPosition,
     bool? canSeek,
     bool? completed,
+    bool? takenOver,
   }) => TargetPlaybackState(
     status: status ?? this.status,
     position: position ?? this.position,
@@ -73,6 +76,7 @@ class TargetPlaybackState {
     bufferedPosition: bufferedPosition ?? this.bufferedPosition,
     canSeek: canSeek ?? this.canSeek,
     completed: completed ?? this.completed,
+    takenOver: takenOver ?? this.takenOver,
   );
 }
 

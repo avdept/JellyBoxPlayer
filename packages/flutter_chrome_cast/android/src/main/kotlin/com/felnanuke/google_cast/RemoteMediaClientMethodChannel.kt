@@ -446,6 +446,10 @@ class RemoteMediaClientMethodChannel : FlutterPlugin, MethodChannel.MethodCallHa
         currentRemoteMediaClient?.addProgressListener(this, 500)
     }
 
+    fun requestStatus() {
+        currentRemoteMediaClient?.requestStatus()
+    }
+
     fun endListen() {
         currentRemoteMediaClient?.removeProgressListener(this)
         currentRemoteMediaClient?.unregisterCallback(this)

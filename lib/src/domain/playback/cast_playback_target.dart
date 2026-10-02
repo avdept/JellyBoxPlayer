@@ -71,6 +71,8 @@ class CastPlaybackTarget implements PlaybackTarget {
   var _loaded = false;
   var _startedDiscovery = false;
   var _sawSession = false;
+  var _takenOver = false;
+  int? _ownMediaSession;
   double? _pendingVolume;
   Timer? _sessionLoss;
   TargetPlaybackState _state = TargetPlaybackState.idle;
@@ -125,6 +127,7 @@ class CastPlaybackTarget implements PlaybackTarget {
     _itemIds = const [];
     _status = null;
     _loaded = false;
+    _ownMediaSession = null;
     _index = tracks.isEmpty ? 0 : initialIndex.clamp(0, tracks.length - 1);
     _position = initialPosition;
 
@@ -309,6 +312,19 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   void _onStatus(CastReceiverStatus status) {
     if (_disposed || !_loaded) return;
+    if (status.hasMedia) {
+      final ours = _tracks.any(
+        (track) => _matches(track, status.contentId, status.contentUrl),
+      );
+      if (ours) {
+        _ownMediaSession = status.mediaSessionId ?? _ownMediaSession;
+      } else if (_ownMediaSession != null &&
+          status.mediaSessionId != null &&
+          status.mediaSessionId != _ownMediaSession) {
+        _takeover(status);
+        return;
+      }
+    }
     _status = status;
 
     final index = _indexOfCurrentItem(status);
@@ -355,6 +371,16 @@ class CastPlaybackTarget implements PlaybackTarget {
         session!.connectionState == GoogleCastConnectState.disconnecting) {
       return;
     }
+    if (_ourSession(session) &&
+        session!.connectionState == GoogleCastConnectState.suspended) {
+      _sessionLoss?.cancel();
+      _sessionLoss = null;
+      diagnostics.trail(
+        'cast session with $name parked; the receiver plays on',
+        category: 'cast',
+      );
+      return;
+    }
     if (_sessionLoss != null) return;
     diagnostics.trail(
       'cast session with $name dropped; waiting for it to resume',
@@ -369,6 +395,19 @@ class CastPlaybackTarget implements PlaybackTarget {
       );
       _emit(status: PlaybackStatus.error);
     });
+  }
+
+  void _takeover(CastReceiverStatus status) {
+    _takenOver = true;
+    _loaded = false;
+    _sessionLoss?.cancel();
+    _sessionLoss = null;
+    diagnostics.trail(
+      'another sender loaded ${status.contentId ?? status.contentUrl} on '
+      '$name; letting go of it',
+      category: 'cast',
+    );
+    _emit(status: PlaybackStatus.error, takenOver: true);
   }
 
   bool _mirrorsQueue(List<CastQueueEntry> items) {
@@ -419,7 +458,7 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   @override
   Future<void> stop() async {
-    await _client.stop();
+    if (!_takenOver) await _client.stop();
     _position = Duration.zero;
     _emit(status: PlaybackStatus.stopped, position: Duration.zero);
   }
@@ -635,7 +674,11 @@ class CastPlaybackTarget implements PlaybackTarget {
       );
     }
     try {
-      await _sessions.endSessionAndStopCasting();
+      if (_takenOver) {
+        await _sessions.endSession();
+      } else {
+        await _sessions.endSessionAndStopCasting();
+      }
     } on Object catch (error) {
       diagnostics.trail(
         'ending the Cast session failed: $error',
@@ -667,6 +710,7 @@ class CastPlaybackTarget implements PlaybackTarget {
     Duration? position,
     Duration? duration,
     bool completed = false,
+    bool takenOver = false,
   }) {
     if (_disposed || _controller.isClosed) return;
     _state = TargetPlaybackState(
@@ -675,6 +719,7 @@ class CastPlaybackTarget implements PlaybackTarget {
       currentIndex: _index,
       duration: duration ?? _state.duration,
       completed: completed,
+      takenOver: takenOver,
     );
     _controller.add(_state);
   }

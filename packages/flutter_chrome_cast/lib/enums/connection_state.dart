@@ -14,4 +14,8 @@ enum GoogleCastConnectState {
 
   ///Disconnecting from the device.
   disconnecting,
+
+  /// The session is parked by the SDK (app backgrounded, network blip) and
+  /// will be resumed; the receiver keeps playing meanwhile.
+  suspended,
 }

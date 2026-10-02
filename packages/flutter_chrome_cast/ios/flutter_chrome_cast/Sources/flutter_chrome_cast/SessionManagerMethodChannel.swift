@@ -349,7 +349,7 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     ///   - session: The session that was suspended
     ///   - reason: The reason for the suspension
     public func sessionManager(_ sessionManager: GCKSessionManager, didSuspend session: GCKSession, with reason: GCKConnectionSuspendReason) {
-            onSessionChanged(nil)
+            emitSuspended(session)
     }
     
     /// Called when a Cast session is suspended
@@ -362,7 +362,7 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     ///   - session: The Cast session that was suspended
     ///   - reason: The reason for the suspension
     public func sessionManager(_ sessionManager: GCKSessionManager, didSuspend session: GCKCastSession, with reason: GCKConnectionSuspendReason) {
-            onSessionChanged(nil)
+            emitSuspended(session)
     }
     
     /// Called when a session is about to resume
@@ -534,6 +534,16 @@ public class FGCSessionManagerMethodChannel : UIResponder, FlutterPlugin, GCKSes
     /// `connected` → `disconnecting` → `disconnected` → `nil`.
     ///
     /// - Parameter session: The session that is about to end
+    /// A suspended session is parked, not ended: the receiver keeps playing
+    /// and the SDK resumes the connection when the app returns. Dart gets it
+    /// as `connectionState` 4 (`GoogleCastConnectState.suspended`).
+    private func emitSuspended(_ session: GCKSession) {
+        _lastEmittedConnectionState = nil
+        var dict = session.toDict()
+        dict["connectionState"] = 4
+        channel?.invokeMethod("onCurrentSessionChanged", arguments: dict)
+    }
+
     private func emitDisconnecting(_ session: GCKSession) {
         let disconnecting: GCKConnectionState = .disconnecting
         if disconnecting == _lastEmittedConnectionState { return }

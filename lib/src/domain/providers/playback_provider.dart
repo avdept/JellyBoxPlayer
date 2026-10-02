@@ -123,7 +123,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
     if (_fallingBack) return;
     _fallingBack = true;
-    _ref.read(castFailureProvider.notifier).report(_target.name);
+    _ref
+        .read(castFailureProvider.notifier)
+        .report(_target.name, takenOver: _targetState.takenOver);
     _ref.read(playbackTargetProvider.notifier).useLocal();
   }
 
