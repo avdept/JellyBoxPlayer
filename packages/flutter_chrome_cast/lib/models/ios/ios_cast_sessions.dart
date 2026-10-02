@@ -18,6 +18,7 @@ class IOSGoogleCastSessions extends GoogleCastSession {
     required super.currentDeviceMuted,
     required super.currentDeviceVolume,
     required super.deviceStatusText,
+    super.error,
   });
 
   /// Creates an [IOSGoogleCastSessions] instance from a [Map] (e.g., JSON).
@@ -34,6 +35,7 @@ class IOSGoogleCastSessions extends GoogleCastSession {
       currentDeviceMuted: json['currentDeviceMuted'],
       currentDeviceVolume: json['currentDeviceVolume'],
       deviceStatusText: json['deviceStatusText'] ?? '',
+      error: json['error'],
     );
   }
 }

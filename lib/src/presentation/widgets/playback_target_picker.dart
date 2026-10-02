@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/cast/cast_runtime.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/domain/playback/cast_playback_target.dart';
@@ -319,6 +320,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   OutputController get _outputs => ref.read(outputControllerProvider);
 
   String? _failedHandoff;
+  String? _connecting;
 
   void _selectLocal() {
     unawaited(_outputs.playHere());
@@ -353,14 +355,22 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     return device.isOnline ? 'Your device' : 'Asleep';
   }
 
-  void _selectRenderer(UpnpRenderer renderer) {
-    unawaited(_outputs.playOn(UpnpPlaybackTarget(renderer)));
-    widget.onDone();
-  }
+  void _selectRenderer(UpnpRenderer renderer) =>
+      unawaited(_connectTo(UpnpPlaybackTarget(renderer)));
 
-  void _selectCastDevice(GoogleCastDevice device) {
-    unawaited(_outputs.playOn(CastPlaybackTarget(device)));
-    widget.onDone();
+  void _selectCastDevice(GoogleCastDevice device) =>
+      unawaited(_connectTo(CastPlaybackTarget(device)));
+
+  Future<void> _connectTo(PlaybackTarget target) async {
+    setState(() => _connecting = target.id);
+    await _outputs.playOn(target);
+    if (!mounted) return;
+    final active = ref.read(playbackTargetProvider);
+    if (active.id == target.id && active.state.status != PlaybackStatus.error) {
+      widget.onDone();
+      return;
+    }
+    setState(() => _connecting = null);
   }
 
   void _rescan() {
@@ -480,7 +490,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               subtitle: device.modelName,
               selected:
                   elsewhere == null && active.id == 'cast:${device.deviceID}',
-              onTap: () => _selectCastDevice(device),
+              busy: _connecting == 'cast:${device.deviceID}',
+              onTap: _connecting != null
+                  ? null
+                  : () => _selectCastDevice(device),
             ),
             if (elsewhere == null && active.id == 'cast:${device.deviceID}')
               _volume,
@@ -597,7 +610,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
       title: renderer.name,
       subtitle: blocked ?? [renderer.host, ?renderer.model].join(' · '),
       selected: selected,
-      onTap: blocked == null ? () => _selectRenderer(renderer) : null,
+      busy: _connecting == renderer.id,
+      onTap: blocked == null && _connecting == null
+          ? () => _selectRenderer(renderer)
+          : null,
     );
   }
 

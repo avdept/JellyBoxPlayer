@@ -263,6 +263,47 @@ void main() {
     ).called(1);
   });
 
+  test('resets the SDK when it refuses to start a session', () async {
+    var refusals = 1;
+    when(() => sessions.startSessionWithDevice(any())).thenAnswer((_) async {
+      if (refusals > 0) {
+        refusals--;
+        return false;
+      }
+      return true;
+    });
+    when(() => sessions.resetSession()).thenAnswer((_) async => true);
+
+    await load();
+
+    verifyInOrder([
+      () => sessions.startSessionWithDevice(device),
+      () => sessions.resetSession(),
+      () => sessions.startSessionWithDevice(device),
+    ]);
+  });
+
+  test('lets the previous session wind down before starting', () async {
+    currentSession = FakeSession(device, GoogleCastConnectState.disconnecting);
+
+    final loading = target.load(
+      tracks,
+      initialIndex: 0,
+      initialPosition: Duration.zero,
+      autoPlay: true,
+    );
+    await pumpEventQueue();
+    verifyNever(() => sessions.startSessionWithDevice(any()));
+
+    emitSession(null);
+    await pumpEventQueue();
+    emitSession(FakeSession(device, GoogleCastConnectState.connected));
+    await loading;
+
+    verify(() => sessions.startSessionWithDevice(device)).called(1);
+    verifyNever(() => sessions.endSessionAndStopCasting());
+  });
+
   test('starts a fresh session when the old one is dead', () async {
     currentSession = FakeSession(device, GoogleCastConnectState.disconnected);
 

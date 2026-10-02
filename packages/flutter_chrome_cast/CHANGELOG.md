@@ -38,6 +38,11 @@ Both platforms:
 
 iOS:
 
+* Session events were deduplicated by connection state alone, so a new
+  session that failed to start right after the previous one wound down was
+  never reported to Dart. Dedup now keys on state plus session identity, and
+  `didFailToStart` is always forwarded, as `disconnected` with the SDK's
+  error in `GoogleCastSession.error`.
 * The SPM manifest declares iOS 16, which the `google-cast-sdk` 4.8.4 SPM
   wrapper requires (upstream said 15 and failed Xcode's target integrity
   check). The stale `ios/Package.swift` pointing at a non-existent `Classes`
