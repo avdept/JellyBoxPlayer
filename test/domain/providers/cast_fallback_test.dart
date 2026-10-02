@@ -27,10 +27,11 @@ class _FakeTarget implements PlaybackTarget {
   final volumes = <double>[];
   TargetPlaybackState _state = TargetPlaybackState.idle;
 
-  void fail() {
-    _state = const TargetPlaybackState(
+  void fail({bool takenOver = false}) {
+    _state = TargetPlaybackState(
       status: PlaybackStatus.error,
       position: Duration.zero,
+      takenOver: takenOver,
     );
     _controller.add(_state);
   }
@@ -162,6 +163,21 @@ void main() {
     expect(failure?.deviceName, 'LSX II LT');
     expect(failure?.message, contains('Unable to cast to LSX II LT'));
     expect(failure?.message, contains('switched back to this device'));
+  });
+
+  test('- says so when another sender takes the speaker', () async {
+    await castTo(speaker);
+    speaker.fail(takenOver: true);
+    await Future<void>.delayed(Duration.zero);
+
+    final failure = container.read(castFailureProvider);
+    expect(container.read(playbackTargetProvider).id, 'local');
+    expect(failure?.takenOver, isTrue);
+    expect(
+      failure?.message,
+      contains('LSX II LT is now playing something else'),
+    );
+    expect(failure?.message, isNot(contains('error report')));
   });
 
   test('- falls back once, however many errors the device emits', () async {

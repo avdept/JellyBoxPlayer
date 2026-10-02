@@ -7,6 +7,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 class CastReceiverStatus {
   const CastReceiverStatus({
     required this.status,
+    this.mediaSessionId,
     this.itemId,
     this.contentId,
     this.contentUrl,
@@ -16,9 +17,13 @@ class CastReceiverStatus {
   });
 
   final PlaybackStatus status;
+  final int? mediaSessionId;
   final int? itemId;
   final String? contentId;
   final String? contentUrl;
+
+  bool get hasMedia =>
+      (contentId?.isNotEmpty ?? false) || (contentUrl?.isNotEmpty ?? false);
   final Duration? duration;
   final bool finished;
   final bool failed;
@@ -123,6 +128,7 @@ class CastChannelFeed implements CastMediaFeed {
             PlaybackStatus.paused,
           _ => PlaybackStatus.stopped,
         },
+        mediaSessionId: (decoded['mediaSessionId'] as num?)?.toInt(),
         itemId: (decoded['currentItemId'] as num?)?.toInt(),
         contentId: media is Map ? media['contentId'] as String? : null,
         contentUrl: media is Map ? media['contentUrl'] as String? : null,
@@ -190,6 +196,7 @@ class CastChannelFeed implements CastMediaFeed {
             PlaybackStatus.paused,
           _ => PlaybackStatus.stopped,
         },
+        mediaSessionId: (arguments['mediaSessionID'] as num?)?.toInt(),
         itemId: itemId == null || itemId == 0 ? null : itemId,
         contentId: media is Map ? media['contentID'] as String? : null,
         contentUrl: media is Map ? media['contentURL'] as String? : null,

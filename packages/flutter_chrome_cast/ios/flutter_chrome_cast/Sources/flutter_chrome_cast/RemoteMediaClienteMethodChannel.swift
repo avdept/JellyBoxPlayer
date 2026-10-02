@@ -496,6 +496,7 @@ class RemoteMediaClienteMethodChannel :UIResponder, FlutterPlugin, GCKRemoteMedi
     
     
     public func resumeSession(){
+        currentRemoteMediaCliente?.requestStatus()
         currentRemoteMediaCliente?.queueFetchItemIDs();
     }
     

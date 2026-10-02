@@ -17,8 +17,9 @@ fun CastSession.toMap(): Map<String, Any?> {
 
 fun CastSession.connectState(): Int {
     return when (true) {
+        this.isSuspended -> 4
         this.isDisconnected -> 0
-        this.isConnecting -> 1
+        this.isConnecting, this.isResuming -> 1
         this.isConnected -> 2
         this.isDisconnecting -> 3
         else -> 0

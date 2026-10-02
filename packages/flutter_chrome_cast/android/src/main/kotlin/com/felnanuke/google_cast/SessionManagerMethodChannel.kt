@@ -194,6 +194,7 @@ class SessionManagerMethodChannel(discoveryManager: DiscoveryManagerMethodChanne
 
     override fun onSessionResumed(p0: Session, p1: Boolean) {
         remoteMediaClientMethodChannel.startListen()
+        remoteMediaClientMethodChannel.requestStatus()
         onSessionChanged()
     }
 

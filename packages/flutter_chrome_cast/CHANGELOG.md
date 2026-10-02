@@ -26,6 +26,10 @@ Android:
 
 Both platforms:
 
+* A suspended session (app backgrounded, network blip) is reported as
+  `GoogleCastConnectState.suspended` instead of as gone; upstream sent `null`
+  on iOS and `disconnected` on Android, indistinguishable from a real end.
+  On resume both sides ask the receiver for a fresh media status.
 * `GoogleCastDevice.ipAddress` carries the device's network address
   (`CastDevice.inetAddress` / `GCKDevice.networkAddress`).
 

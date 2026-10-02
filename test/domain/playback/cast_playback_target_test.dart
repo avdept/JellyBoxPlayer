@@ -57,10 +57,14 @@ class FakeSeekOption extends Fake implements GoogleCastMediaSeekOption {}
 CastReceiverStatus _status({
   required PlaybackStatus status,
   int? currentItemId,
+  String? contentId,
+  int? mediaSessionId,
   bool finished = false,
 }) => CastReceiverStatus(
   status: status,
   itemId: currentItemId,
+  contentId: contentId,
+  mediaSessionId: mediaSessionId,
   finished: finished,
 );
 
@@ -419,6 +423,25 @@ void main() {
     expect(target.state.status, PlaybackStatus.error);
   });
 
+  test('keeps a parked session for as long as it takes', () async {
+    await load();
+    await reportQueue();
+
+    emitSession(FakeSession(device, GoogleCastConnectState.suspended));
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    expect(target.state.status, isNot(PlaybackStatus.error));
+
+    emitSession(FakeSession(device, GoogleCastConnectState.connecting));
+    emitSession(FakeSession(device, GoogleCastConnectState.connected));
+    feed.statusEvents.add(
+      _status(status: PlaybackStatus.playing, currentItemId: 12),
+    );
+    await pumpEventQueue();
+
+    expect(target.state.status, PlaybackStatus.playing);
+    expect(target.state.currentIndex, 2);
+  });
+
   test('carries on when the session comes back within the grace', () async {
     await load();
     await reportQueue();
@@ -614,6 +637,84 @@ void main() {
             as GoogleCastMediaSeekOption;
     expect(option.position, const Duration(milliseconds: 61500));
     expect(option.resumeState, GoogleCastMediaResumeState.unchanged);
+  });
+
+  test('lets go of the speaker when another sender loads it', () async {
+    when(() => sessions.endSession()).thenAnswer((_) async => true);
+    await load();
+    await reportQueue();
+    feed.statusEvents.add(
+      _status(
+        status: PlaybackStatus.playing,
+        currentItemId: 10,
+        contentId: 'a',
+        mediaSessionId: 7,
+      ),
+    );
+    await pumpEventQueue();
+
+    feed.statusEvents.add(
+      _status(
+        status: PlaybackStatus.playing,
+        currentItemId: 1,
+        contentId: 'somebody-elses-song',
+        mediaSessionId: 8,
+      ),
+    );
+    await pumpEventQueue();
+
+    expect(target.state.status, PlaybackStatus.error);
+    expect(target.state.takenOver, isTrue);
+
+    await target.stop();
+    verifyNever(() => client.stop());
+    await target.dispose();
+    verify(() => sessions.endSession()).called(1);
+    verifyNever(() => sessions.endSessionAndStopCasting());
+  });
+
+  test('does not mistake a late report for a takeover', () async {
+    await load();
+    await reportQueue();
+    feed.statusEvents.add(
+      _status(
+        status: PlaybackStatus.playing,
+        currentItemId: 11,
+        contentId: 'b',
+        mediaSessionId: 7,
+      ),
+    );
+    await pumpEventQueue();
+
+    await target.remove(1);
+    feed.statusEvents.add(
+      _status(
+        status: PlaybackStatus.playing,
+        currentItemId: 11,
+        contentId: 'b',
+        mediaSessionId: 7,
+      ),
+    );
+    await pumpEventQueue();
+
+    expect(target.state.status, PlaybackStatus.playing);
+    expect(target.state.takenOver, isFalse);
+  });
+
+  test('ignores what the receiver played before its own queue', () async {
+    await load();
+    feed.statusEvents.add(
+      _status(
+        status: PlaybackStatus.playing,
+        currentItemId: 3,
+        contentId: 'left-over-from-before',
+        mediaSessionId: 2,
+      ),
+    );
+    await pumpEventQueue();
+
+    expect(target.state.takenOver, isFalse);
+    expect(target.state.status, isNot(PlaybackStatus.error));
   });
 
   test('ends the session when it is disposed', () async {

@@ -46,6 +46,7 @@ void main() {
 
     final status = statuses.single;
     expect(status.status, PlaybackStatus.playing);
+    expect(status.mediaSessionId, 1);
     expect(status.itemId, 7);
     expect(status.contentId, 'song-a');
     expect(status.duration, const Duration(milliseconds: 253400));
@@ -168,6 +169,7 @@ void main() {
       });
 
       expect(statuses[0].status, PlaybackStatus.playing);
+      expect(statuses[0].mediaSessionId, 3);
       expect(statuses[0].itemId, 7);
       expect(statuses[0].contentId, 'song-a');
       expect(statuses[0].duration, const Duration(milliseconds: 253400));
