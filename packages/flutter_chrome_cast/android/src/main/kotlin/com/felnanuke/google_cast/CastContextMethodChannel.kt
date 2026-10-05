@@ -183,7 +183,7 @@ class CastContextMethodChannel : FlutterPlugin, MethodChannel.MethodCallHandler 
             optionsBuilder.setReceiverApplicationId(map["appId"] as String)
             val launcherOptions = LaunchOptions.Builder().setAndroidReceiverCompatible(true).build()
             optionsBuilder.setLaunchOptions(launcherOptions)
-            optionsBuilder.setResumeSavedSession(true)
+            optionsBuilder.setResumeSavedSession(false)
             optionsBuilder.setEnableReconnectionService(true)
             optionsBuilder.setCastMediaOptions(mediaOptions())
             GoogleCastOptionsProvider.options = optionsBuilder.build()

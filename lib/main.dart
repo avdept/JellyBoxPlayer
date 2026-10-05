@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show HttpOverrides, Platform;
 import 'dart:math' show max;
 
@@ -88,7 +89,7 @@ Future<void> main() async {
     );
   }
 
-  await initializeCast();
+  unawaited(initializeCast());
 
   if (Platform.isIOS) {
     final session = await AudioSession.instance;
