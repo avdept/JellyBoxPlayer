@@ -567,4 +567,56 @@ void main() {
       expect(songs.first.kind, ItemKind.song);
     });
   });
+
+  group('remoteAccessUrl', () {
+    late MockHttpClientAdapter adapter;
+    late JellyfinClient remoteClient;
+
+    setUp(() {
+      adapter = MockHttpClientAdapter();
+      remoteClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        baseUrl: 'http://jelly.local:8096/jf',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+    });
+
+    void respond(int status, Object body) {
+      when(() => adapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode(body),
+          status,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    }
+
+    test('- reads the address the plugin publishes', () async {
+      respond(200, {
+        'Url': 'https://cloud.jellybox.app/r/abc',
+        'Connected': true,
+      });
+
+      expect(
+        await remoteClient.remoteAccessUrl(),
+        'https://cloud.jellybox.app/r/abc',
+      );
+      final request =
+          verify(
+                () => adapter.fetch(captureAny(), any(), any()),
+              ).captured.single
+              as RequestOptions;
+      expect(request.uri.path, '/jf/JellyboxRemote/Info');
+    });
+
+    test('- is null on a server without the plugin', () async {
+      respond(404, {'error': 'not found'});
+
+      expect(await remoteClient.remoteAccessUrl(), isNull);
+    });
+  });
 }

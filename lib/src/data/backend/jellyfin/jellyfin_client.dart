@@ -27,6 +27,7 @@ class JellyfinClient implements MediaServerClient {
     required this.token,
     required this.deviceId,
   }) : _api = JellyfinApi(dio, baseUrl: baseUrl),
+       _dio = dio,
        _baseUrl = baseUrl;
 
   static const _defaultImageSize = 420;
@@ -42,6 +43,7 @@ class JellyfinClient implements MediaServerClient {
   Future<MediaServerCapabilities> resolveCapabilities() async => capabilities;
 
   final JellyfinApi _api;
+  final Dio _dio;
   final String _baseUrl;
   final String userId;
   final String token;
@@ -525,6 +527,19 @@ class JellyfinClient implements MediaServerClient {
       return SessionStatus.unreachable;
     } on Object {
       return SessionStatus.unreachable;
+    }
+  }
+
+  @override
+  Future<String?> remoteAccessUrl() async {
+    try {
+      final response = await _dio.getUri<Map<String, dynamic>>(
+        _resolve('JellyboxRemote/Info', const {}),
+      );
+      final url = response.data?['Url'];
+      return url is String && url.isNotEmpty ? url : null;
+    } on DioException {
+      return null;
     }
   }
 

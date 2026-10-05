@@ -538,6 +538,9 @@ class EmbyClient implements MediaServerClient {
   }
 
   @override
+  Future<String?> remoteAccessUrl() async => null;
+
+  @override
   Future<void> signOut() async {
     await _api.signOut();
   }

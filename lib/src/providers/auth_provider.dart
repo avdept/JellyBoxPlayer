@@ -25,6 +25,7 @@ import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/current_server_type_provider.dart';
+import 'package:jplayer/src/providers/server_addresses_provider.dart';
 import 'package:jplayer/src/providers/session_providers.dart';
 
 class AuthNotifier extends AsyncNotifier<bool?> {
@@ -89,6 +90,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     final serverUrl = await _keychain.readSessionKey(_serverUrlKey);
     ref.read(baseUrlProvider.notifier).state = serverUrl;
     if (serverUrl == null) return false;
+    ref.read(serverAddressesProvider.notifier).state = ServerAddresses(
+      home: serverUrl,
+      relay: await _storage.read(key: relayUrlStorageKey),
+    );
 
     final serverType = _parseServerType(
       await _storage.read(key: _serverTypeKey),
@@ -175,8 +180,12 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     await _storage.write(key: _serverUrlKey, value: serverUrl);
     await _storage.write(key: _serverIdKey, value: serverId);
     await _storage.write(key: _serverTypeKey, value: serverType.name);
+    await _storage.delete(key: relayUrlStorageKey);
 
     ref.read(currentServerIdProvider.notifier).state = serverId;
+    ref.read(serverAddressesProvider.notifier).state = ServerAddresses(
+      home: serverUrl,
+    );
     ref.read(baseUrlProvider.notifier).state = serverUrl;
     ref.read(currentServerTypeProvider.notifier).state = serverType;
     ref.read(currentUserProvider.notifier).state = User(
@@ -356,6 +365,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   void _clearSession() {
     ref.read(currentUserProvider.notifier).state = null;
     ref.read(baseUrlProvider.notifier).state = null;
+    ref.read(serverAddressesProvider.notifier).state = null;
     ref.read(currentServerTypeProvider.notifier).state = null;
     ref.read(currentServerIdProvider.notifier).state = null;
     sessionScopedProviders.forEach(ref.invalidate);

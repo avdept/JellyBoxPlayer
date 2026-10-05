@@ -18,6 +18,7 @@ import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -117,6 +118,7 @@ void main() {
   String? gatedSong;
   Completer<void>? resolveGate;
   late Directory filesDir;
+  late String host;
 
   const album = LibraryItem(id: 'album', name: 'Album', kind: ItemKind.album);
   final songs = [
@@ -169,6 +171,7 @@ void main() {
     onResolve = null;
     gatedSong = null;
     resolveGate = null;
+    host = 'server';
     client = _MockMediaServerClient();
     when(
       () => client.resolveStreamSource(
@@ -186,7 +189,7 @@ void main() {
       if (song.id == gatedSong) await resolveGate?.future;
       return StreamSource(
         uri: Uri.parse(
-          'http://server/audio/${song.id}?cap=${kbps ?? 0}'
+          'http://$host/audio/${song.id}?cap=${kbps ?? 0}'
           '&session=${invocation.namedArguments[#playSessionId]}',
         ),
         isHls: false,
@@ -266,6 +269,27 @@ void main() {
       expect(
         bitRatesOf([for (final entry in target.replaced) entry.$2]),
         everyElement(128000),
+      );
+    },
+  );
+
+  test(
+    '- moves queued streams to the new address when the server is reached '
+    'another way',
+    () async {
+      container.read(baseUrlProvider.notifier).state = 'http://home';
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs.first, songs, album);
+
+      host = 'relay';
+      container.read(baseUrlProvider.notifier).state = 'https://relay/r/key';
+      await pumpUntil(() => target.replaced.length == 3);
+
+      expect([for (final entry in target.replaced) entry.$1], [1, 2, 3]);
+      expect(
+        [for (final entry in target.replaced) entry.$2.uri.host],
+        everyElement('relay'),
       );
     },
   );

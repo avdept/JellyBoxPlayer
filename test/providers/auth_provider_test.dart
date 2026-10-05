@@ -96,6 +96,9 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(mockStorage.deleteAll).thenAnswer((_) async {});
+    when(
+      () => mockStorage.delete(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
   });
 
   group('AuthNotifier.login', () {

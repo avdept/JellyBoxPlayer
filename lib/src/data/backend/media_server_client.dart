@@ -111,5 +111,7 @@ abstract class MediaServerClient {
 
   Future<SessionStatus> validateSession();
 
+  Future<String?> remoteAccessUrl();
+
   Future<void> signOut();
 }
