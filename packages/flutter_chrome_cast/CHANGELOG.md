@@ -14,6 +14,9 @@ Android:
 * `queueRemoveItemsWithIds` and `queueReorderItems` cast the ids to
   `IntArray`, but a Dart `List<int>` arrives as `ArrayList<Integer>`, so both
   threw `ClassCastException`.
+* `resumeSavedSession` is off: the SDK no longer reconnects to the last
+  speaker by itself on a cold start, where nothing in the app can adopt it
+  and its empty media session would be what a car head unit shows.
 * `CastOptions` now carry `CastMediaOptions` with `NotificationOptions`, so the
   Cast SDK shows its media notification with lock-screen controls and keeps a
   foreground service alive for the session.
