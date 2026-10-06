@@ -13,6 +13,7 @@ import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -267,6 +268,69 @@ void main() {
   });
 
   group('AuthNotifier.build', () {
+    Future<ProviderContainer> restoreWith({
+      required Future<ResponseBody> Function(Uri uri) answer,
+    }) async {
+      final stored = {
+        'serverUrl': 'http://jelly.local',
+        'relayUrl': 'https://relay.test/r/key',
+        'userId': 'user-1',
+        'authToken': 'token-1',
+        'serverId': 'server-1',
+      };
+      for (final entry in stored.entries) {
+        when(
+          () => mockStorage.read(key: entry.key),
+        ).thenAnswer((_) async => entry.value);
+      }
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        (invocation) => answer(
+          (invocation.positionalArguments.first as RequestOptions).uri,
+        ),
+      );
+
+      final container = createProviderContainer(
+        overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+      );
+      container.read(dioProvider).httpClientAdapter = mockAdapter;
+      expect(await container.read(authProvider.future), isTrue);
+      return container;
+    }
+
+    ResponseBody artists() => ResponseBody.fromString(
+      jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0}),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+
+    test('- starts on the tunnel when home does not answer', () async {
+      final container = await restoreWith(
+        answer: (uri) async => uri.host == 'jelly.local'
+            ? throw DioException.connectionError(
+                requestOptions: RequestOptions(path: uri.toString()),
+                reason: 'unreachable',
+              )
+            : artists(),
+      );
+
+      expect(container.read(baseUrlProvider), 'https://relay.test/r/key');
+    });
+
+    test('- starts at home when home answers first', () async {
+      final container = await restoreWith(
+        answer: (uri) async {
+          if (uri.host != 'jelly.local') {
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+          }
+          return artists();
+        },
+      );
+
+      expect(container.read(baseUrlProvider), 'http://jelly.local');
+    });
+
     test(
       '- migrates a token stored under the pre-refactor key name so '
       'upgrading does not force a re-login',

@@ -90,9 +90,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     final serverUrl = await _keychain.readSessionKey(_serverUrlKey);
     ref.read(baseUrlProvider.notifier).state = serverUrl;
     if (serverUrl == null) return false;
+    final relayUrl = await _storage.read(key: relayUrlStorageKey);
     ref.read(serverAddressesProvider.notifier).state = ServerAddresses(
       home: serverUrl,
-      relay: await _storage.read(key: relayUrlStorageKey),
+      relay: relayUrl,
     );
 
     final serverType = _parseServerType(
@@ -104,13 +105,13 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     final serverId = await _resolveServerId(serverUrl);
     ref.read(currentServerIdProvider.notifier).state = serverId;
     final token = await _migrateAuthToken();
-    final client = _clientFor(
+    final (activeUrl, status) = await _validateFirst(
+      [serverUrl, ?relayUrl],
       serverType,
-      serverUrl: serverUrl,
       userId: userId,
       token: token,
     );
-    final status = await _validateSession(client, token, serverType);
+    ref.read(baseUrlProvider.notifier).state = activeUrl;
     final sessionUsable = status != SessionStatus.invalid;
 
     if (sessionUsable) {
@@ -425,6 +426,50 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     if (token == null || token.isEmpty) return SessionStatus.invalid;
     try {
       _setAuthHeader(serverType, token);
+      return await _sessionStatus(client);
+    } finally {
+      _removeAuthHeader();
+    }
+  }
+
+  Future<(String, SessionStatus)> _validateFirst(
+    List<String> urls,
+    ServerType serverType, {
+    required String userId,
+    required String token,
+  }) async {
+    if (token.isEmpty) return (urls.first, SessionStatus.invalid);
+    _setAuthHeader(serverType, token);
+    try {
+      final answered = Completer<(String, SessionStatus)>();
+      var left = urls.length;
+      for (final url in urls) {
+        final client = _clientFor(
+          serverType,
+          serverUrl: url,
+          userId: userId,
+          token: token,
+        );
+        unawaited(
+          _sessionStatus(client).then((status) {
+            left--;
+            if (answered.isCompleted) return;
+            if (status != SessionStatus.unreachable) {
+              answered.complete((url, status));
+            } else if (left == 0) {
+              answered.complete((urls.first, status));
+            }
+          }),
+        );
+      }
+      return await answered.future;
+    } finally {
+      _removeAuthHeader();
+    }
+  }
+
+  Future<SessionStatus> _sessionStatus(MediaServerClient client) async {
+    try {
       return await client.validateSession().timeout(
         _sessionValidationTimeout,
         onTimeout: () => SessionStatus.unreachable,
@@ -432,8 +477,6 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     } on Object catch (e) {
       log('Session validation failed: $e', name: 'Auth');
       return SessionStatus.unreachable;
-    } finally {
-      _removeAuthHeader();
     }
   }
 

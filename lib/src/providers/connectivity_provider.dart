@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/dio_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/server_addresses_provider.dart';
@@ -25,13 +26,16 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     _failover = InterceptorsWrapper(onError: _onRequestError);
     _dio.interceptors.add(_failover);
     _ref.listen<String?>(baseUrlProvider, (previous, next) {
+      _routeArtwork();
       if (next != null && next.isNotEmpty && next != previous) {
         if (next != _selected) unawaited(refresh());
       }
     });
     _ref.listen<ServerAddresses?>(serverAddressesProvider, (previous, next) {
+      _routeArtwork();
       if (next != null && next != previous) unawaited(refresh());
     });
+    _routeArtwork();
     _ref.listen<User?>(currentUserProvider, (previous, next) {
       if (previous == null && next != null) unawaited(refresh());
     });
@@ -238,6 +242,14 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     } on Object catch (error) {
       debugPrint('[Connectivity] relay lookup failed: $error');
     }
+  }
+
+  void _routeArtwork() {
+    final addresses = _ref.read(serverAddressesProvider);
+    ArtworkCache.route = ArtworkRoute(
+      addresses: [?addresses?.home, ?addresses?.relay],
+      active: _ref.read(baseUrlProvider),
+    );
   }
 
   void _setOnline(bool online) {
