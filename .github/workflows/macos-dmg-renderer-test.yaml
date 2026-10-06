@@ -1,0 +1,180 @@
+name: macOS DMG renderer test (notarized)
+
+# Manual-only build for diagnosing GPU rendering issues on user machines.
+# Same signing and notarization as macos-dmg.yaml, but the FLTEnableImpeller
+# Info.plist key is set from the input, so a user can try the Skia backend.
+
+on:
+  workflow_dispatch:
+    inputs:
+      impeller:
+        description: Keep the Impeller renderer (unchecked = Skia)
+        required: false
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Release to attach the DMG to: a tag, "latest", or blank to only build'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: macos
+    env:
+      APP_IDENTIFIER: ${{ vars.APP_IDENTIFIER }}
+      APPLE_ID: ${{ vars.APPLE_ID }}
+      ITC_TEAM_ID: ${{ vars.ITC_TEAM_ID }}
+      TEAM_ID: ${{ vars.TEAM_ID }}
+      APPSTORE_P8_KEY_CONTENT: ${{ secrets.APPSTORE_P8_KEY_CONTENT }}
+      APPSTORE_KEY_ISSUER_ID: ${{ secrets.APPSTORE_KEY_ISSUER_ID }}
+      APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+      GIT_USERNAME: ${{ vars.GIT_USERNAME }}
+      GIT_AUTHORIZATION: ${{ secrets.GIT_AUTHORIZATION }}
+      GIT_REPOSITORY: ${{ vars.GIT_REPOSITORY }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version and renderer
+        id: version
+        working-directory: .
+        env:
+          IMPELLER: ${{ inputs.impeller }}
+        run: |
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+          if [ "$IMPELLER" = "true" ]; then RENDERER=impeller; else RENDERER=skia; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "renderer=$RENDERER" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Private package
+        uses: ./.github/actions/optional-features
+        with:
+          deploy-key: ${{ secrets.OPTIONAL_FEATURES_DEPLOY_KEY }}
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: macos
+
+      - name: Install Developer ID certificate (fastlane match)
+        run: bundle exec fastlane mac certificates
+
+      - name: Build macOS app
+        run: |
+          flutter pub get
+          flutter build macos --release \
+            --dart-define=JELLYBOX_DIRECT_DOWNLOAD=true \
+            --build-name=${{ steps.version.outputs.version }} \
+            --build-number=${{ steps.version.outputs.build_number }}
+
+      - name: Set renderer in Info.plist
+        working-directory: .
+        env:
+          IMPELLER: ${{ inputs.impeller }}
+        run: |
+          set -euo pipefail
+          APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
+          PLIST="$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Delete :FLTEnableImpeller" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :FLTEnableImpeller bool $IMPELLER" "$PLIST"
+          echo "FLTEnableImpeller = $(/usr/libexec/PlistBuddy -c 'Print :FLTEnableImpeller' "$PLIST")"
+
+      - name: Sign app with Developer ID + hardened runtime
+        working-directory: .
+        run: |
+          set -euo pipefail
+          APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
+          IDENTITY="Developer ID Application"
+
+          ENTITLEMENTS="$RUNNER_TEMP/dmg-entitlements.plist"
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0"><dict></dict></plist>' > "$ENTITLEMENTS"
+          plutil -lint "$ENTITLEMENTS"
+
+          find "$APP/Contents/Frameworks" -type f -name "*.dylib" \
+            -exec codesign --force --timestamp --options runtime -s "$IDENTITY" {} +
+          find "$APP/Contents/Frameworks" -type d -name "*.framework" \
+            -exec codesign --force --timestamp --options runtime -s "$IDENTITY" {} +
+
+          codesign --force --timestamp --options runtime \
+            --entitlements "$ENTITLEMENTS" -s "$IDENTITY" "$APP"
+
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Install create-dmg
+        run: |
+          brew untap aws/tap || true
+          brew install create-dmg
+
+      - name: Create DMG
+        working-directory: .
+        run: |
+          set -euo pipefail
+          APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
+          APP_NAME="$(basename "$APP")"
+          DMG="JellyBox-${{ steps.version.outputs.version }}-${{ steps.version.outputs.renderer }}-test.dmg"
+
+          STAGING="$(mktemp -d)"
+          cp -R "$APP" "$STAGING/"
+
+          create-dmg \
+            --volname "JellyBox" \
+            --window-pos 200 120 \
+            --window-size 660 420 \
+            --icon-size 120 \
+            --icon "$APP_NAME" 165 250 \
+            --hide-extension "$APP_NAME" \
+            --app-drop-link 495 250 \
+            "$DMG" \
+            "$STAGING" || true
+          test -f "$DMG"
+
+          codesign --force --timestamp --options runtime \
+            -s "Developer ID Application" "$DMG"
+          echo "DMG=$DMG" >> "$GITHUB_ENV"
+
+      - name: Notarize DMG
+        working-directory: .
+        run: |
+          set -euo pipefail
+          KEY="$RUNNER_TEMP/AuthKey.p8"
+          echo "$APPSTORE_P8_KEY_CONTENT" | base64 --decode > "$KEY"
+
+          xcrun notarytool submit "$DMG" \
+            --key "$KEY" \
+            --key-id "$APPSTORE_KEY_ID" \
+            --issuer "$APPSTORE_KEY_ISSUER_ID" \
+            --wait
+
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jellybox-macos-dmg-${{ steps.version.outputs.renderer }}-test
+          path: ${{ env.DMG }}
+
+      - name: Attach to release
+        if: ${{ inputs.release_tag != '' }}
+        uses: ./.github/actions/release-assets
+        with:
+          release-tag: ${{ inputs.release_tag }}
+          files: ${{ env.DMG }}
+          token: ${{ secrets.GITHUB_TOKEN }}
