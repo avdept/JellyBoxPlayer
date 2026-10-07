@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,11 +15,6 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
-import 'package:window_manager/window_manager.dart';
-
-final bool _isHyprland =
-    Platform.environment.containsKey('HYPRLAND_INSTANCE_SIGNATURE') ||
-    (Platform.environment['XDG_CURRENT_DESKTOP']?.toLowerCase() == 'hyprland');
 
 class MainPage extends ConsumerStatefulWidget {
   const MainPage({
@@ -216,16 +210,12 @@ class _MainPageState extends ConsumerState<MainPage> {
             ],
           ),
           if (_device.isDesktop) const Positioned.fill(child: QueueSidebar()),
-          Visibility(
-            visible: Platform.isLinux && !_isHyprland,
-            child: const _WindowTitleBar(),
-          ),
-          if (Platform.isWindows)
+          if (showsDesktopTitleBar)
             const Positioned(
               top: 0,
               left: 0,
               right: 0,
-              child: WindowsTitleBar(),
+              child: DesktopTitleBar(),
             ),
         ],
       ),
@@ -258,133 +248,6 @@ class _MainPageState extends ConsumerState<MainPage> {
       ],
     );
 
-    if (Platform.isLinux && !_isHyprland) {
-      return _WindowResizeFrame(child: content);
-    }
-    return content;
-  }
-}
-
-class _WindowResizeFrame extends StatefulWidget {
-  const _WindowResizeFrame({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_WindowResizeFrame> createState() => _WindowResizeFrameState();
-}
-
-class _WindowResizeFrameState extends State<_WindowResizeFrame>
-    with WindowListener {
-  bool _isMaximized = false;
-  bool _isFullScreen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    windowManager.addListener(this);
-    unawaited(_syncWindowState());
-  }
-
-  Future<void> _syncWindowState() async {
-    final isMaximized = await windowManager.isMaximized();
-    final isFullScreen = await windowManager.isFullScreen();
-    if (!mounted) return;
-    setState(() {
-      _isMaximized = isMaximized;
-      _isFullScreen = isFullScreen;
-    });
-  }
-
-  @override
-  void onWindowMaximize() => setState(() => _isMaximized = true);
-
-  @override
-  void onWindowUnmaximize() => setState(() => _isMaximized = false);
-
-  @override
-  void onWindowEnterFullScreen() => setState(() => _isFullScreen = true);
-
-  @override
-  void onWindowLeaveFullScreen() => setState(() => _isFullScreen = false);
-
-  @override
-  Widget build(BuildContext context) {
-    return DragToResizeArea(
-      enableResizeEdges: _isMaximized || _isFullScreen ? const [] : null,
-      child: widget.child,
-    );
-  }
-
-  @override
-  void dispose() {
-    windowManager.removeListener(this);
-    super.dispose();
-  }
-}
-
-class _WindowTitleBar extends StatefulWidget {
-  const _WindowTitleBar();
-
-  @override
-  State<_WindowTitleBar> createState() => _WindowTitleBarState();
-}
-
-class _WindowTitleBarState extends State<_WindowTitleBar> with WindowListener {
-  bool _isMaximized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    windowManager.addListener(this);
-    unawaited(
-      windowManager.isMaximized().then((value) {
-        if (mounted) setState(() => _isMaximized = value);
-      }),
-    );
-  }
-
-  @override
-  void onWindowMaximize() => setState(() => _isMaximized = true);
-
-  @override
-  void onWindowUnmaximize() => setState(() => _isMaximized = false);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: kWindowCaptionHeight,
-      child: Row(
-        children: [
-          const Expanded(
-            child: DragToMoveArea(child: SizedBox.expand()),
-          ),
-          WindowCaptionButton.minimize(
-            brightness: Brightness.dark,
-            onPressed: windowManager.minimize,
-          ),
-          if (_isMaximized)
-            WindowCaptionButton.unmaximize(
-              brightness: Brightness.dark,
-              onPressed: windowManager.unmaximize,
-            )
-          else
-            WindowCaptionButton.maximize(
-              brightness: Brightness.dark,
-              onPressed: windowManager.maximize,
-            ),
-          WindowCaptionButton.close(
-            brightness: Brightness.dark,
-            onPressed: windowManager.close,
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    windowManager.removeListener(this);
-    super.dispose();
+    return WindowResizeFrame(child: content);
   }
 }

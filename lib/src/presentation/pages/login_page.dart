@@ -281,48 +281,65 @@ class LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     ref.listen(serverDiscoveryProvider, (_, next) => _onDiscoveryChanged(next));
-    return Scaffold(
-      body: SafeArea(
-        minimum: const EdgeInsets.symmetric(vertical: 36, horizontal: 48),
-        child: Center(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                  maxWidth: 440,
-                ),
-                child: IntrinsicHeight(
-                  child: KeyboardListener(
-                    focusNode: FocusNode(),
-                    onKeyEvent: (event) {
-                      if (event.logicalKey == LogicalKeyboardKey.enter) {
-                        signIn();
-                      }
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        LoginLogo(
-                          serverType: _resolvedServerType,
-                          productName: _serverProductName,
-                        ),
-                        const SizedBox(height: 63),
-                        _serverURLField(),
-                        const SizedBox(height: 8),
-                        _loginField(),
-                        const SizedBox(height: 8),
-                        _passwordField(),
-                        if (error != null) ...[
-                          const SizedBox(height: 12),
-                          _errorText(error!),
-                        ],
-                        const SizedBox(height: 63),
-                        _signInButton(),
+    return WindowResizeFrame(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            _form(),
+            if (showsDesktopTitleBar)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: DesktopTitleBar(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _form() {
+    return SafeArea(
+      minimum: const EdgeInsets.symmetric(vertical: 36, horizontal: 48),
+      child: Center(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+                maxWidth: 440,
+              ),
+              child: IntrinsicHeight(
+                child: KeyboardListener(
+                  focusNode: FocusNode(),
+                  onKeyEvent: (event) {
+                    if (event.logicalKey == LogicalKeyboardKey.enter) {
+                      signIn();
+                    }
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      LoginLogo(
+                        serverType: _resolvedServerType,
+                        productName: _serverProductName,
+                      ),
+                      const SizedBox(height: 63),
+                      _serverURLField(),
+                      const SizedBox(height: 8),
+                      _loginField(),
+                      const SizedBox(height: 8),
+                      _passwordField(),
+                      if (error != null) ...[
+                        const SizedBox(height: 12),
+                        _errorText(error!),
                       ],
-                    ),
+                      const SizedBox(height: 63),
+                      _signInButton(),
+                    ],
                   ),
                 ),
               ),
