@@ -170,6 +170,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   ) async {
     final addresses = _ref.read(serverAddressesProvider);
     final relay = addresses?.relay;
+    if (relay != null && _tunnelDown(error, relay)) unawaited(refresh());
     final retry = relay != null && _worthRetrying(error)
         ? _onRelay(error.requestOptions, addresses!.home, relay)
         : null;
@@ -188,6 +189,20 @@ class ConnectivityNotifier extends StateNotifier<bool> {
       handler.next(relayError);
     }
   }
+
+  static bool _tunnelDown(DioException error, String relay) =>
+      error.requestOptions.uri.toString().startsWith(relay) &&
+      switch (error.type) {
+        DioExceptionType.badResponse => const {
+          502,
+          503,
+          504,
+        }.contains(error.response?.statusCode),
+        DioExceptionType.connectionError ||
+        DioExceptionType.connectionTimeout => true,
+        DioExceptionType.unknown => error.error is SocketException,
+        _ => false,
+      };
 
   bool _worthRetrying(DioException error) =>
       error.requestOptions.extra[_retriedOnRelay] != true &&
@@ -235,10 +250,8 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     }
     _relayCheckedAt = DateTime.now();
     try {
-      final relay = await _ref
-          .read(mediaServerClientProvider)
-          .remoteAccessUrl();
-      if (relay != null && mounted) await rememberRelayUrl(_ref, relay);
+      final access = await _ref.read(mediaServerClientProvider).remoteAccess();
+      if (mounted) await rememberRelay(_ref, access);
     } on Object catch (error) {
       debugPrint('[Connectivity] relay lookup failed: $error');
     }

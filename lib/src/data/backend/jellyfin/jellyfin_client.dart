@@ -15,6 +15,7 @@ import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_home.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -531,15 +532,28 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<String?> remoteAccessUrl() async {
+  Future<RemoteAccessResult?> remoteAccess() async {
     try {
       final response = await _dio.getUri<Map<String, dynamic>>(
         _resolve('JellyboxRemote/Info', const {}),
       );
       final url = response.data?['Url'];
-      return url is String && url.isNotEmpty ? url : null;
-    } on DioException {
-      return null;
+      final fingerprint = response.data?['Fingerprint'];
+      final reason = response.data?['Reason'];
+      final access =
+          url is String &&
+              url.isNotEmpty &&
+              fingerprint is String &&
+              fingerprint.isNotEmpty
+          ? RemoteAccess(url: url, fingerprint: fingerprint.toLowerCase())
+          : null;
+      return RemoteAccessResult(
+        access: access,
+        denied: access == null && reason is String ? reason : null,
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) return null;
+      rethrow;
     }
   }
 

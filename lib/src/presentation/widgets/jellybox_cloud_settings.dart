@@ -54,7 +54,8 @@ class _ServerConnectionRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connection = ref.watch(serverConnectionProvider);
-    final hasTunnel = ref.watch(serverAddressesProvider)?.relay != null;
+    final addresses = ref.watch(serverAddressesProvider);
+    final hasTunnel = addresses?.relay != null;
     final tunnelUp = ref.watch(relayReachableProvider);
     final muted = Theme.of(
       context,
@@ -79,7 +80,14 @@ class _ServerConnectionRow extends ConsumerWidget {
             padding: const EdgeInsets.only(left: 26, top: 2),
             child: Text(
               switch ((hasTunnel, tunnelUp)) {
-                (false, _) => 'No remote access address for this server yet.',
+                (false, _) => switch (addresses?.relayDenied) {
+                  'plan_full' =>
+                    "This server's Jellybox Cloud plan has no free seat for "
+                        'your user. Ask the owner to make room.',
+                  'no_password' =>
+                    'Remote access needs a password on your Jellyfin user.',
+                  _ => 'No remote access address for this server yet.',
+                },
                 (true, false) =>
                   'Remote access is set up, but the tunnel '
                       'is not answering.',

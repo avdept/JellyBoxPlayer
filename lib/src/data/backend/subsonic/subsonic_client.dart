@@ -10,6 +10,7 @@ import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/backend/subsonic/mappers/subsonic_item_mapper.dart';
 import 'package:jplayer/src/data/backend/subsonic/mappers/subsonic_lyrics_mapper.dart';
@@ -839,7 +840,7 @@ class SubsonicClient implements MediaServerClient {
   }
 
   @override
-  Future<String?> remoteAccessUrl() async => null;
+  Future<RemoteAccessResult?> remoteAccess() async => null;
 
   @override
   Future<void> signOut() async {}
