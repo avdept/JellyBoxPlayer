@@ -6,4 +6,5 @@ Exec=jellybox
 Icon=jellybox
 Categories=AudioVideo;Player;Network;
 Terminal=false
+StartupWMClass=jellybox
 X-AppImage-Version=@VERSION@
