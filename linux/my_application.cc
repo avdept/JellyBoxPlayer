@@ -31,11 +31,11 @@ static void my_application_activate(GApplication* application) {
 #ifdef GDK_WINDOWING_WAYLAND
   if (GDK_IS_WAYLAND_DISPLAY(gtk_widget_get_display(GTK_WIDGET(window)))) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
-    gtk_header_bar_set_title(header_bar, "jplayer");
+    gtk_header_bar_set_title(header_bar, "JellyBox");
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   }
 #endif
-  gtk_window_set_title(window, "jplayer");
+  gtk_window_set_title(window, "JellyBox");
 
   // Keep the window hidden until window_manager's waitUntilReadyToShow
   // applies the stored size and calls show() from Dart.
