@@ -30,6 +30,7 @@ class SongRowView extends ConsumerWidget {
     this.position,
     this.showDownloadState = false,
     this.secondaryTextColor,
+    this.playingColor,
     this.trailing,
     this.edgePadding,
     this.testKeys,
@@ -38,6 +39,7 @@ class SongRowView extends ConsumerWidget {
 
   final LibraryItem song;
   final bool isPlaying;
+  final Color? playingColor;
   final void Function(LibraryItem)? onTap;
   final void Function(LibraryItem)? onLikePressed;
   final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
@@ -106,7 +108,8 @@ class SongRowView extends ConsumerWidget {
         onTap: onTap != null ? () => onTap!(song) : null,
         hoverColor: theme.colorScheme.onPrimary.withOpacity(0.06),
         backgroundColor: isPlaying
-            ? theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
+            ? playingColor ??
+                  theme.bottomSheetTheme.backgroundColor?.withOpacity(0.75)
             : Colors.transparent,
         padding: EdgeInsets.fromLTRB(
           horizontal,

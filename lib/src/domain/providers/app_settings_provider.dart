@@ -10,6 +10,7 @@ enum AppSetting {
   sidebarCollapsed('sidebar_collapsed', defaultValue: true),
   studioModeFullscreen('studio_mode_fullscreen'),
   nowPlayingHalo('now_playing_halo'),
+  albumArtTint('album_art_tint', defaultValue: true),
   animationSpeed('animation_speed', defaultValue: 'medium'),
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),
