@@ -12,6 +12,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
+import 'package:jplayer/src/presentation/widgets/desktop_window_chrome.dart';
 import 'package:jplayer/src/presentation/widgets/flip_panel.dart';
 import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
@@ -270,6 +271,14 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                       front: _nowPlayingFace(),
                       left: _lyricsFace(),
                     ),
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: WindowDragStrip(
+                    onDragStart: () => _activePointers = 0,
                   ),
                 ),
                 Positioned(
