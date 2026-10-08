@@ -82,6 +82,71 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
   }
 }
 
+class WindowDragStrip extends StatefulWidget {
+  const WindowDragStrip({this.onDragStart, super.key});
+
+  final VoidCallback? onDragStart;
+
+  @override
+  State<WindowDragStrip> createState() => _WindowDragStripState();
+}
+
+class _WindowDragStripState extends State<WindowDragStrip> with WindowListener {
+  bool _isFullScreen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!showsDesktopTitleBar) return;
+    windowManager.addListener(this);
+    unawaited(_syncFullScreenState());
+  }
+
+  @override
+  void dispose() {
+    if (showsDesktopTitleBar) windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  Future<void> _syncFullScreenState() async {
+    final isFullScreen = await windowManager.isFullScreen();
+    if (mounted && isFullScreen != _isFullScreen) {
+      setState(() => _isFullScreen = isFullScreen);
+    }
+  }
+
+  @override
+  void onWindowEnterFullScreen() => setState(() => _isFullScreen = true);
+
+  @override
+  void onWindowLeaveFullScreen() => setState(() => _isFullScreen = false);
+
+  Future<void> _toggleMaximized() async {
+    if (await windowManager.isMaximized()) {
+      await windowManager.unmaximize();
+    } else {
+      await windowManager.maximize();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showsDesktopTitleBar || _isFullScreen) return const SizedBox.shrink();
+    return SizedBox(
+      height: kWindowCaptionHeight,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanStart: (_) {
+          widget.onDragStart?.call();
+          unawaited(windowManager.startDragging());
+        },
+        onDoubleTap: () => unawaited(_toggleMaximized()),
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+}
+
 class WindowResizeFrame extends StatefulWidget {
   const WindowResizeFrame({required this.child, super.key});
 
