@@ -85,6 +85,7 @@ dependencies:
   in_app_review: ^2.0.12
   web_socket_channel: ^3.0.3
   flutter_volume_controller: ^2.0.2
+  video_player: ^2.14.1
 
 dev_dependencies:
   flutter_test:

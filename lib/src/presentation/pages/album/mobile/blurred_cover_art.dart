@@ -7,6 +7,7 @@ class BlurredCoverArt extends StatelessWidget {
     required this.image,
     required this.width,
     required this.height,
+    this.overlay,
     this.background,
     this.blurStart = 0.35,
     this.sigma = 40,
@@ -16,6 +17,7 @@ class BlurredCoverArt extends StatelessWidget {
   final ImageProvider image;
   final double width;
   final double height;
+  final Widget? overlay;
   final Color? background;
   final double blurStart;
   final double sigma;
@@ -33,6 +35,7 @@ class BlurredCoverArt extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               Image(image: image, fit: BoxFit.cover),
+              if (overlay != null) overlay!,
               ShaderMask(
                 shaderCallback: (bounds) => LinearGradient(
                   begin: Alignment.topCenter,

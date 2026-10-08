@@ -8,9 +8,11 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page_state.dart';
+import 'package:jplayer/src/presentation/pages/album/mobile/animated_cover_video.dart';
 import 'package:jplayer/src/presentation/pages/album/mobile/blurred_cover_art.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
+import 'package:jplayer/src/providers/network_type_provider.dart';
 
 class MobileAlbumPage extends ConsumerStatefulWidget {
   const MobileAlbumPage({
@@ -102,6 +104,11 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
     });
   }
 
+  Uri? _animatedCover() {
+    if (ref.watch(networkTypeProvider) != NetworkType.wifi) return null;
+    return ref.watch(animatedCoverProvider(album)).valueOrNull;
+  }
+
   Color? _coverTint() {
     if (!_tintEnabled) return null;
     final color = ref.watch(coverEdgeColorProvider(album)).valueOrNull;
@@ -182,31 +189,35 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
     );
   }
 
-  Widget _cover(Color background) => ListenableBuilder(
-    listenable: scrollController,
-    builder: (context, child) {
-      final offset = scrollController.hasClients
-          ? scrollController.offset
-          : 0.0;
-      final stretch = max(-offset, 0);
-      final travel = _coverExtent - _panelOverlap - _navBarHeight;
-      final progress = (offset / travel).clamp(0.0, 1.0);
-      return Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        child: Opacity(
-          opacity: 1 - progress,
-          child: BlurredCoverArt(
-            image: albumCover,
-            width: _coverExtent,
-            height: _coverExtent + stretch,
-            background: background,
+  Widget _cover(Color background) {
+    final video = _animatedCover();
+    return ListenableBuilder(
+      listenable: scrollController,
+      builder: (context, child) {
+        final offset = scrollController.hasClients
+            ? scrollController.offset
+            : 0.0;
+        final stretch = max(-offset, 0);
+        final travel = _coverExtent - _panelOverlap - _navBarHeight;
+        final progress = (offset / travel).clamp(0.0, 1.0);
+        return Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Opacity(
+            opacity: 1 - progress,
+            child: BlurredCoverArt(
+              image: albumCover,
+              width: _coverExtent,
+              height: _coverExtent + stretch,
+              background: background,
+              overlay: video == null ? null : AnimatedCoverVideo(url: video),
+            ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
+  }
 
   Widget _floatingNavBar(Color background) => ValueListenableBuilder(
     valueListenable: _barOpacity,
