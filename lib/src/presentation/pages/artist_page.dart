@@ -91,7 +91,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         .read(mediaServerClientProvider)
         .getAlbums(
           LibraryQuery(
-            sort: ItemSort.dateCreated,
+            sort: ItemSort.releaseDate,
             direction: SortDirection.descending,
             appearsOnArtistId: widget.artist.id,
           ),
@@ -106,7 +106,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         .read(mediaServerClientProvider)
         .getAlbums(
           LibraryQuery(
-            sort: ItemSort.dateCreated,
+            sort: ItemSort.releaseDate,
             direction: SortDirection.descending,
             artistIds: [widget.artist.id],
           ),
@@ -419,6 +419,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             itemBuilder: (context, index) => AlbumView(
               showArtist: false,
               album: _albums[index],
+              subtitle: _albums[index].productionYear?.toString(),
+              alignTextStart: true,
               optionsBuilder: (context) => contextMenuActions(
                 context,
                 ref,
@@ -467,6 +469,8 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           itemBuilder: (context, index) => AlbumView(
             showArtist: false,
             album: _appearsOn[index],
+            subtitle: _appearsOn[index].productionYear?.toString(),
+            alignTextStart: true,
             optionsBuilder: (context) => contextMenuActions(
               context,
               ref,
