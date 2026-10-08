@@ -1,4 +1,4 @@
-export 'album_page.dart';
+export 'album/album_page.dart';
 export 'artist_page.dart';
 export 'browse_page.dart';
 export 'color_pallete_page.dart';

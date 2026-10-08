@@ -256,6 +256,20 @@ class SettingsPage extends ConsumerWidget {
                       setting: AppSetting.nowPlayingHalo,
                       label: 'Enable halo effect for currently playing media',
                     ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.albumArtTint,
+                      label: 'Tint album pages with cover art colours',
+                    ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.animatedCovers,
+                      label: 'Animated album covers',
+                    ),
+                    _settingNote(
+                      context,
+                      'Looks up for animated covers and plays them on Wi-Fi only.',
+                    ),
                     _sectionHeader('Streaming'),
                     _settingDropdown<StreamQuality>(
                       context: context,

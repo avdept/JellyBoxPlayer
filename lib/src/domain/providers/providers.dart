@@ -37,3 +37,4 @@ export 'studio_mode_provider.dart';
 export 'todays_playlists_provider.dart';
 export 'upnp_renderers_provider.dart';
 export 'volume_provider.dart';
+export 'animated_cover_provider.dart';

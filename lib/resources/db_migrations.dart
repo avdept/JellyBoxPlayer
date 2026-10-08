@@ -20,4 +20,6 @@ class DbMigrations {
       'assets/db/migrations/generated_playlist_items.sql';
   static const String instantMixesV8 =
       'assets/db/migrations/instant_mixes_v8.sql';
+  static const String animatedCoversV9 =
+      'assets/db/migrations/animated_covers_v9.sql';
 }

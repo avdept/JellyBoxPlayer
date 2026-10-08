@@ -11,7 +11,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
-import 'package:jplayer/src/presentation/pages/album_page.dart';
+import 'package:jplayer/src/presentation/pages/album/album_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';

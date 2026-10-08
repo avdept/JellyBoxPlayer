@@ -14,3 +14,4 @@ export 'server_discovery_provider.dart';
 export 'server_probe_provider.dart';
 export 'shared_preferences_provider.dart';
 export 'stream_proxy_provider.dart';
+export 'animated_cover_database_provider.dart';
