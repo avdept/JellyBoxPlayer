@@ -257,6 +257,7 @@ class CarContent {
         ),
         'artists' => client.getArtists(
           LibraryQuery(
+            libraryId: libraryId,
             sort: itemSort,
             direction: direction,
             startIndex: startIndex,

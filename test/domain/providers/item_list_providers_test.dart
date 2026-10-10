@@ -122,6 +122,39 @@ void main() {
       expect(queries.single.limit, ItemListNotifier.pageSize);
     });
 
+    test('- artists are scoped to the selected library', () async {
+      when(() => mockApi.getArtists(any())).thenAnswer(
+        (_) async => const LibraryPage(),
+      );
+      final library = MockCurrentLibraryNotifier();
+      when(library.build).thenReturn(
+        const LibraryItem(id: 'lib-1', name: 'Music', kind: ItemKind.library),
+      );
+      final container = createProviderContainer(
+        overrides: [
+          mediaServerClientProvider.overrideWithValue(mockApi),
+          currentUserProvider.overrideWith(
+            (_) => const User(userId: 'user-1', token: 'token'),
+          ),
+          isOfflineProvider.overrideWithValue(false),
+          currentLibraryProvider.overrideWith(() => library),
+          serverCapabilitiesProvider.overrideWithValue(
+            const MediaServerCapabilities(
+              artistScopes: {ArtistScope.allArtists},
+            ),
+          ),
+          artistBrowseScopeProvider.overrideWithValue(ArtistScope.allArtists),
+        ],
+      );
+
+      await container.read(itemListProvider(ItemList.artists).future);
+
+      final query =
+          verify(() => mockApi.getArtists(captureAny())).captured.single
+              as LibraryQuery;
+      expect(query.libraryId, 'lib-1');
+    });
+
     test('- loadMore stops once every page is loaded', () async {
       serveAlbums(total: 150);
       final container = containerWith(isOffline: false);

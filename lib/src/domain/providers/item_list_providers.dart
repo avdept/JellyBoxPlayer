@@ -74,6 +74,7 @@ class ItemListNotifier
       limit: pageSize,
     ),
     ItemList.artists => LibraryQuery(
+      libraryId: _libraryId,
       sort: _filterState.orderBy.itemSort,
       direction: _direction,
       startIndex: startIndex,
