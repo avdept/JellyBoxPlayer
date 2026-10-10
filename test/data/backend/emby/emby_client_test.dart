@@ -407,6 +407,10 @@ void main() {
   });
 
   group('artist scope', () {
+    setUpAll(() {
+      registerFallbackValue(RequestOptions(path: '/'));
+    });
+
     late MockHttpClientAdapter mockAdapter;
     late EmbyClient scopedClient;
 
@@ -451,6 +455,22 @@ void main() {
       );
 
       expect(requestedPath(), '/Artists');
+    });
+
+    test('- scopes artists to the selected library', () async {
+      await scopedClient.getArtists(
+        const LibraryQuery(
+          libraryId: 'lib-1',
+          artistScope: ArtistScope.albumArtists,
+        ),
+      );
+
+      final captured = verify(
+        () => mockAdapter.fetch(captureAny(), any(), any()),
+      ).captured.single;
+      final uri = (captured as RequestOptions).uri;
+      expect(uri.path, '/Artists/AlbumArtists');
+      expect(uri.queryParameters['ParentId'], 'lib-1');
     });
 
     test(

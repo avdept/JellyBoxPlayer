@@ -929,6 +929,7 @@ class _EmbyApi implements EmbyApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getArtists({
     required String userId,
+    String? libraryId,
     List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
@@ -941,6 +942,7 @@ class _EmbyApi implements EmbyApi {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'UserId': userId,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'StartIndex': startIndex,
       r'Limit': limit,
@@ -978,6 +980,7 @@ class _EmbyApi implements EmbyApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     required String userId,
+    String? libraryId,
     List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
@@ -990,6 +993,7 @@ class _EmbyApi implements EmbyApi {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'UserId': userId,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'StartIndex': startIndex,
       r'Limit': limit,

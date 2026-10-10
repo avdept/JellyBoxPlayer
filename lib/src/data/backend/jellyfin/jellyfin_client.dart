@@ -102,6 +102,7 @@ class JellyfinClient implements MediaServerClient {
   }) => switch (query.artistScope) {
     ArtistScope.albumArtists => _api.getAlbumArtists(
       userId: userId,
+      libraryId: query.libraryId,
       startIndex: '${query.startIndex}',
       limit: '${query.limit}',
       sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
@@ -111,6 +112,7 @@ class JellyfinClient implements MediaServerClient {
     ),
     ArtistScope.allArtists => _api.getArtists(
       userId: userId,
+      libraryId: query.libraryId,
       startIndex: '${query.startIndex}',
       limit: '${query.limit}',
       sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),

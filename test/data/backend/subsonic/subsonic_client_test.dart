@@ -377,6 +377,30 @@ void main() {
       await client.getArtists(const LibraryQuery());
       expect(server.calls('getArtists'), hasLength(2));
     });
+
+    test('- index is fetched and cached per library', () async {
+      server.ok('getArtists', {
+        'artists': {
+          'index': [
+            {
+              'name': 'A',
+              'artist': [
+                {'id': 'ar1', 'name': 'Alice'},
+              ],
+            },
+          ],
+        },
+      });
+
+      await client.getArtists(const LibraryQuery(libraryId: '1'));
+      await client.getArtists(const LibraryQuery(libraryId: '1'));
+      await client.getArtists(const LibraryQuery(libraryId: '2'));
+
+      final calls = server.calls('getArtists');
+      expect(calls, hasLength(2));
+      expect(calls.first.queryParameters['musicFolderId'], '1');
+      expect(calls.last.queryParameters['musicFolderId'], '2');
+    });
   });
 
   group('songs', () {

@@ -250,6 +250,7 @@ abstract class EmbyApi {
   @GET('/Artists')
   Future<HttpResponse<ItemsWrapper>> getArtists({
     @Query('UserId') required String userId,
+    @Query('ParentId') String? libraryId,
     @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
@@ -263,6 +264,7 @@ abstract class EmbyApi {
   @GET('/Artists/AlbumArtists')
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     @Query('UserId') required String userId,
+    @Query('ParentId') String? libraryId,
     @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',

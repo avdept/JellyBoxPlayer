@@ -1036,6 +1036,7 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getArtists({
     required String userId,
+    String? libraryId,
     List<String> fields = const [
       'BackdropImageTags',
       'Overview',
@@ -1054,6 +1055,7 @@ class _JellyfinApi implements JellyfinApi {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'IncludeArtists': includeArtists,
       r'IncludeItemTypes': type,
@@ -1093,6 +1095,7 @@ class _JellyfinApi implements JellyfinApi {
   @override
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     required String userId,
+    String? libraryId,
     List<String> fields = const [
       'BackdropImageTags',
       'Overview',
@@ -1111,6 +1114,7 @@ class _JellyfinApi implements JellyfinApi {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'IncludeArtists': includeArtists,
       r'IncludeItemTypes': type,
