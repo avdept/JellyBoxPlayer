@@ -114,6 +114,12 @@ class _FakeTarget implements PlaybackTarget {
   Future<void> setVolume(double level) async => volume = level;
 
   @override
+  TargetPlaybackState get state => TargetPlaybackState.idle;
+
+  @override
+  Stream<TargetPlaybackState> get stateStream => const Stream.empty();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

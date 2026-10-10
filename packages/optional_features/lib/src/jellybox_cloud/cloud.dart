@@ -88,6 +88,30 @@ class JellyboxCloud<S> {
 
   Future<void> sendCommand(PlayerCommand command, {Object? value}) async {}
 
+  bool get observing => false;
+
+  Future<bool> playOnRenderer({
+    required List<String> itemIds,
+    required int index,
+    String? albumId,
+    String? sourceId,
+  }) async => false;
+
+  Future<bool> enqueueOnRenderer({
+    required List<String> itemIds,
+    required bool playNext,
+  }) async => false;
+
+  Future<bool> replaceUpcomingOnRenderer({
+    required List<String> itemIds,
+    String? albumId,
+    String? sourceId,
+  }) async => false;
+
+  Future<bool> moveOnRenderer(int from, int to) async => false;
+
+  Future<bool> removeOnRenderer(int index) async => false;
+
   Future<bool> claimHere() async => false;
 
   Future<void> dispose() async {}

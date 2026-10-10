@@ -15,6 +15,7 @@ import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/upnp/renderer_uri.dart';
+import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
@@ -92,6 +93,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Timer? _progressTimer;
   Timer? _requalifyDebounce;
   var _requalifyGeneration = 0;
+
+  RemotePlayback? remote;
 
   PlaybackTarget get target => _target;
 
@@ -530,6 +533,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool reshuffle = true,
     bool keepStreamsOffline = false,
   }) async {
+    final elsewhere = remote;
+    if (elsewhere != null && autoPlay && initialPosition == null) {
+      final request = PlayRequest(
+        song: playSong,
+        songs: songs,
+        album: album,
+        sourceId: sourceId,
+      );
+      if (await elsewhere.play(request)) return;
+    }
     final generation = ++_queueGeneration;
     try {
       final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
@@ -986,6 +999,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> moveInQueue(int from, int to) async {
     if (from == to) return;
+    if (await remote?.move(from, to) ?? false) return;
     final songs = [...state.songs];
     if (from < 0 || from >= songs.length) return;
     if (to < 0 || to >= songs.length) return;
@@ -1022,6 +1036,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     LibraryItem album, {
     String? sourceId,
   }) async {
+    final elsewhere = remote;
+    if (elsewhere != null &&
+        await elsewhere.replaceUpcoming(songs, album, sourceId: sourceId)) {
+      return true;
+    }
     final startIndex = state.currentMediaIndex;
     final playing = startIndex != null
         ? state.songs.elementAtOrNull(startIndex)
@@ -1133,6 +1152,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     LibraryItem? set,
   }) async {
     if (songs.isEmpty) return false;
+    if (await remote?.enqueue(songs, playNext: playNext) ?? false) return true;
 
     if (state.songs.isEmpty) {
       await play(
@@ -1191,6 +1211,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   Future<void> removeFromQueue(int index) async {
+    if (await remote?.remove(index) ?? false) return;
     final songs = [...state.songs];
     if (index < 0 || index >= songs.length) return;
     if (songs.length == 1) return clear();

@@ -3,7 +3,6 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -102,7 +101,6 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
 
   @override
   Widget build(BuildContext context) {
-    final remote = ref.watch(playingElsewhereProvider);
     final songs = ref.watch(barQueueProvider);
     final currentIndex = ref.watch(barQueueIndexProvider);
 
@@ -138,7 +136,6 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
         child: child,
       ),
       onReorder: (from, to) {
-        if (remote) return;
         ref
             .read(playbackProvider.notifier)
             .moveInQueue(from, to > from ? to - 1 : to);
@@ -153,7 +150,6 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
           isPlaying: index == currentIndex,
           isDesktop: isDesktop,
           onTap: () => ref.read(barControlsProvider).skipTo(index),
-          editable: !remote,
           onLikePressed: () => _toggleFavourite(song),
           onRemove: () =>
               ref.read(playbackProvider.notifier).removeFromQueue(index),
@@ -169,7 +165,6 @@ class _QueueRow extends ConsumerStatefulWidget {
     required this.position,
     required this.isPlaying,
     required this.isDesktop,
-    required this.editable,
     required this.onTap,
     required this.onLikePressed,
     required this.onRemove,
@@ -180,7 +175,6 @@ class _QueueRow extends ConsumerStatefulWidget {
   final int position;
   final bool isPlaying;
   final bool isDesktop;
-  final bool editable;
   final VoidCallback onTap;
   final VoidCallback onLikePressed;
   final Future<void> Function() onRemove;
@@ -208,9 +202,7 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
         position: details.globalPosition,
         actions: _menuActions(context),
       ),
-      child: !widget.editable
-          ? row
-          : widget.isDesktop
+      child: widget.isDesktop
           ? ReorderableDragStartListener(
               index: widget.position,
               child: row,
@@ -223,13 +215,12 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
   }
 
   List<ContextMenuAction> _menuActions(BuildContext context) => [
-    if (widget.editable)
-      ContextMenuAction(
-        entry: ContextMenuEntry.removeFromQueue,
-        icon: const Icon(Icons.remove_circle_outline),
-        label: const Text('Remove from queue'),
-        run: widget.onRemove,
-      ),
+    ContextMenuAction(
+      entry: ContextMenuEntry.removeFromQueue,
+      icon: const Icon(Icons.remove_circle_outline),
+      label: const Text('Remove from queue'),
+      run: widget.onRemove,
+    ),
     ...contextMenuActions(
       context,
       ref,
