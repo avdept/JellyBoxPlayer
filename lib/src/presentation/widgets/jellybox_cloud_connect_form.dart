@@ -7,6 +7,7 @@ import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/labeled_text_field.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class JellyboxCloudConnectForm extends ConsumerStatefulWidget {
   const JellyboxCloudConnectForm({
@@ -61,6 +62,19 @@ class _JellyboxCloudConnectFormState
       return;
     }
     setState(() => _submitting = false);
+  }
+
+  Future<void> _forgotPassword() async {
+    final cloud = Uri.parse(
+      kDebugMode ? _address.text : ref.read(conductorUrlProvider),
+    );
+    await launchUrl(
+      cloud.replace(
+        path: '/users/reset-password',
+        queryParameters: {if (_email.text.isNotEmpty) 'email': _email.text},
+      ),
+      mode: LaunchMode.externalApplication,
+    );
   }
 
   Future<void> _disconnect() async {
@@ -151,6 +165,14 @@ class _JellyboxCloudConnectFormState
               label: 'Password',
               obscureText: true,
               textInputAction: TextInputAction.done,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => unawaited(_forgotPassword()),
+                style: ModalFormActions.buttonStyle(context),
+                child: const Text('Forgot password?'),
+              ),
             ),
             if (state.error case final error?)
               Padding(

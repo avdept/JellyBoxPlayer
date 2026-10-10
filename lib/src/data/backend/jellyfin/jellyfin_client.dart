@@ -15,6 +15,7 @@ import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_home.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -27,6 +28,7 @@ class JellyfinClient implements MediaServerClient {
     required this.token,
     required this.deviceId,
   }) : _api = JellyfinApi(dio, baseUrl: baseUrl),
+       _dio = dio,
        _baseUrl = baseUrl;
 
   static const _defaultImageSize = 420;
@@ -42,6 +44,7 @@ class JellyfinClient implements MediaServerClient {
   Future<MediaServerCapabilities> resolveCapabilities() async => capabilities;
 
   final JellyfinApi _api;
+  final Dio _dio;
   final String _baseUrl;
   final String userId;
   final String token;
@@ -525,6 +528,32 @@ class JellyfinClient implements MediaServerClient {
       return SessionStatus.unreachable;
     } on Object {
       return SessionStatus.unreachable;
+    }
+  }
+
+  @override
+  Future<RemoteAccessResult?> remoteAccess() async {
+    try {
+      final response = await _dio.getUri<Map<String, dynamic>>(
+        _resolve('JellyboxRemote/Info', const {}),
+      );
+      final url = response.data?['Url'];
+      final fingerprint = response.data?['Fingerprint'];
+      final reason = response.data?['Reason'];
+      final access =
+          url is String &&
+              url.isNotEmpty &&
+              fingerprint is String &&
+              fingerprint.isNotEmpty
+          ? RemoteAccess(url: url, fingerprint: fingerprint.toLowerCase())
+          : null;
+      return RemoteAccessResult(
+        access: access,
+        denied: access == null && reason is String ? reason : null,
+      );
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) return null;
+      rethrow;
     }
   }
 

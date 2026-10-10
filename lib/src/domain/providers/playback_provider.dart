@@ -24,6 +24,7 @@ import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
 import 'package:jplayer/src/domain/providers/stream_preference_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
+import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
@@ -40,6 +41,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       next,
     ) {
       if (previous != next) _scheduleRequalify();
+    });
+    _ref.listen<String?>(baseUrlProvider, (previous, next) {
+      if (previous != null && next != null && previous != next) {
+        _scheduleRequalify();
+      }
     });
   }
 
@@ -1361,6 +1367,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   bool _sameStream(TargetTrack a, TargetTrack b) =>
+      a.uri == b.uri &&
       a.isLocalFile == b.isLocalFile &&
       a.mimeType == b.mimeType &&
       a.isHls == b.isHls &&

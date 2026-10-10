@@ -7,6 +7,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
 class ImageService {
@@ -71,8 +72,10 @@ class ImageService {
   ImageProvider? _imageOf(Uri? uri) {
     if (uri == null) return null;
     if (uri.isScheme('file')) return FileImage(File.fromUri(uri));
+    final url = uri.toString();
     return CachedNetworkImageProvider(
-      uri.toString(),
+      url,
+      cacheKey: ArtworkCache.cacheKeyFor(url),
       cacheManager: _cacheManager?.call(),
     );
   }

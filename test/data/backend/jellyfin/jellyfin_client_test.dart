@@ -9,6 +9,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
 import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
+import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -565,6 +566,96 @@ void main() {
       ]);
       expect(songs.map((song) => song.id), ['song-1', 'song-2']);
       expect(songs.first.kind, ItemKind.song);
+    });
+  });
+
+  group('remoteAccess', () {
+    late MockHttpClientAdapter adapter;
+    late JellyfinClient remoteClient;
+
+    setUp(() {
+      adapter = MockHttpClientAdapter();
+      remoteClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        baseUrl: 'http://jelly.local:8096/jf',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+    });
+
+    void respond(int status, Object body) {
+      when(() => adapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode(body),
+          status,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    }
+
+    test('- reads the address the plugin publishes', () async {
+      respond(200, {
+        'Url': 'https://abc.tunnel.jellybox.app',
+        'Fingerprint': 'AB12',
+        'Connected': true,
+      });
+
+      expect(
+        await remoteClient.remoteAccess(),
+        const RemoteAccessResult(
+          access: RemoteAccess(
+            url: 'https://abc.tunnel.jellybox.app',
+            fingerprint: 'ab12',
+          ),
+        ),
+      );
+      final request =
+          verify(
+                () => adapter.fetch(captureAny(), any(), any()),
+              ).captured.single
+              as RequestOptions;
+      expect(request.uri.path, '/jf/JellyboxRemote/Info');
+    });
+
+    test(
+      '- does not mistake a network failure for having no address',
+      () async {
+        when(() => adapter.fetch(any(), any(), any())).thenThrow(
+          DioException.connectionError(
+            requestOptions: RequestOptions(path: '/'),
+            reason: 'unreachable',
+          ),
+        );
+
+        await expectLater(
+          remoteClient.remoteAccess(),
+          throwsA(isA<DioException>()),
+        );
+      },
+    );
+
+    test('- has no address without a fingerprint to pin', () async {
+      respond(200, {'Url': 'https://abc.tunnel.jellybox.app'});
+
+      expect((await remoteClient.remoteAccess())?.access, isNull);
+    });
+
+    test('- carries the reason when this user gets no seat', () async {
+      respond(200, {'Url': null, 'Fingerprint': 'ab12', 'Reason': 'plan_full'});
+
+      expect(
+        await remoteClient.remoteAccess(),
+        const RemoteAccessResult(denied: 'plan_full'),
+      );
+    });
+
+    test('- is null on a server without the plugin', () async {
+      respond(404, {'error': 'not found'});
+
+      expect(await remoteClient.remoteAccess(), isNull);
     });
   });
 }
