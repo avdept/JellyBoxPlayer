@@ -22,6 +22,7 @@ import 'package:jplayer/src/core/scrobbling/scrobble_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
@@ -31,6 +32,7 @@ import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
+import 'package:jplayer/src/presentation/tv/tv_screen_factory.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
@@ -59,6 +61,7 @@ Future<void> main() async {
 
   deviceId = (await FlutterUdid.udid).trim();
   appInfo = await PackageInfo.fromPlatform();
+  await TvMode.init();
 
   await DownloadPaths.init();
 
@@ -193,7 +196,11 @@ Future<void> main() async {
     appRunner: () => runApp(
       UncontrolledProviderScope(
         container: container,
-        child: const App(screenFactory: ScreenFactory()),
+        child: App(
+          screenFactory: TvMode.isTv
+              ? const TvScreenFactory()
+              : const ScreenFactory(),
+        ),
       ),
     ),
   );

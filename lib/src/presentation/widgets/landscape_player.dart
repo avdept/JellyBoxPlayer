@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -41,7 +42,7 @@ const List<DeviceOrientation> _phoneOrientations = [
 const List<DeviceOrientation> _systemOrientations = [];
 
 bool get supportsLandscapePlayer =>
-    !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    !kIsWeb && !TvMode.isTv && (Platform.isAndroid || Platform.isIOS);
 
 bool isPhoneSize(Size size) => DeviceType.fromScreenSize(size).isMobile;
 

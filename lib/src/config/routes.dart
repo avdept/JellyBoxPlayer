@@ -6,6 +6,7 @@ enum Routes {
   library('/library'),
   settings('/settings'),
   downloads('/downloads'),
+  nowPlaying('/now-playing'),
   home('/home'),
   browse('/browse'),
   album('album'),

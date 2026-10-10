@@ -3,9 +3,19 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/presentation/pages/pages.dart';
+import 'package:jplayer/src/presentation/tv/pages/tv_now_playing_page.dart';
 
 class ScreenFactory {
   const ScreenFactory();
+
+  @protected
+  LibraryItem itemParam(GoRouterState router, String key) {
+    final params = router.extra! as Map<String, dynamic>;
+    final value = params[key];
+    return value is LibraryItem
+        ? value
+        : LibraryItem.fromJson(value as Map<String, dynamic>);
+  }
 
   Page<void> albumPage(
     BuildContext context,
@@ -146,6 +156,15 @@ class ScreenFactory {
   ) {
     return const CupertinoPage(
       child: LoginPage(),
+    );
+  }
+
+  Page<void> nowPlayingPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: TvNowPlayingPage(),
     );
   }
 

@@ -161,7 +161,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   List<LibraryItem> _sortedByIndex(List<LibraryItem> items) =>
       [...items]..sort(LibraryItem.compareAlbumOrder);
 
-  Future<void> _retryLoad() async {
+  Future<void> retryLoad() async {
     setState(() {
       isLoadingSongs = true;
       loadFailed = false;
@@ -222,13 +222,13 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
                 showDownloadState: true,
                 edgePadding: edgePadding,
                 playingColor: playingRowColor,
-                onLikePressed: _onSongLikePressed,
+                onLikePressed: onSongLikePressed,
                 optionsBuilder: (context) => contextMenuActions(
                   context,
                   ref,
                   song,
                   scope: ContextMenuScope.albumPage,
-                  onLike: _onSongLikePressed,
+                  onLike: onSongLikePressed,
                 ),
               );
             },
@@ -271,7 +271,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       message: ref.watch(isOfflineProvider)
           ? "You're offline and this album isn't downloaded."
           : 'Could not load this album.',
-      onRetry: _retryLoad,
+      onRetry: retryLoad,
     );
   }
 
@@ -358,10 +358,10 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   Widget playAlbumButton() => PlayButton(
     isLoading: ref.watch(setPlaybackProvider) == album.id,
-    onPressed: _onPlayAlbumPressed,
+    onPressed: onPlayAlbumPressed,
   );
 
-  Future<void> _onPlayAlbumPressed() async {
+  Future<void> onPlayAlbumPressed() async {
     try {
       final result = await ref
           .read(setPlaybackProvider.notifier)
@@ -381,7 +381,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   Widget likeAlbumButton() => IconButton(
-    onPressed: _onLikeAlbumPressed,
+    onPressed: onLikeAlbumPressed,
     icon: Icon(CupertinoIcons.heart, color: theme.colorScheme.onPrimary),
     selectedIcon: Icon(
       CupertinoIcons.heart_fill,
@@ -390,7 +390,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     isSelected: isFavorite,
   );
 
-  Future<void> _onLikeAlbumPressed() async {
+  Future<void> onLikeAlbumPressed() async {
     if (ref.read(isOfflineProvider)) {
       showOfflineSnackBar();
       return;
@@ -594,7 +594,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (key != null) ref.invalidate(moreFromArtistProvider(key));
   }
 
-  Future<void> _onSongLikePressed(LibraryItem song) async {
+  Future<void> onSongLikePressed(LibraryItem song) async {
     if (ref.read(isOfflineProvider)) {
       showOfflineSnackBar();
       return;
