@@ -4,9 +4,10 @@ import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
-import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const _setSongsLimit = 300;
@@ -95,11 +96,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       );
 
   Future<List<LibraryItem>> generatedPlaylistSongs(String playlistId) =>
-      loadGeneratedPlaylistSongs(
-        _ref,
-        playlistId: playlistId,
-        isOffline: _ref.read(isOfflineProvider),
-      );
+      _ref.read(playlistSongsSourceProvider).songsOf(playlistId);
 
   Future<SetPlaybackResult> playPlaylist(LibraryItem playlist) => _play(
     setItem: playlist,
@@ -107,34 +104,36 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
   );
 
   Future<List<LibraryItem>> playlistSongs(String playlistId) async {
+    final source = _ref.read(playlistSongsSourceProvider);
     if (!_ref.read(isOfflineProvider)) {
       try {
-        final resp = await _ref
-            .read(mediaServerClientProvider)
-            .getPlaylistSongs(playlistId);
-        return resp.items;
+        return await source.songsOf(playlistId);
       } on Object {}
     }
-    final downloaded = await _ref
-        .read(downloadDatabaseProvider)
-        .getDownloadedPlaylistSongs(playlistId);
-    return downloaded.map((s) => s.item).toList();
+    return source.downloadedSnapshot(playlistId);
   }
 
   Future<SetPlaybackResult> playFavouriteSongs(LibraryItem placeholder) =>
       _play(setItem: placeholder, fetchSongs: favouriteSongs);
 
   Future<List<LibraryItem>> favouriteSongs() async {
-    final resp = await _ref
-        .read(mediaServerClientProvider)
-        .getAllSongs(
-          LibraryQuery(
-            libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
-            filters: const {ItemFilterFlag.favorite},
-            limit: _favouriteSongsLimit,
-          ),
-        );
-    return resp.items;
+    if (!_ref.read(isOfflineProvider)) {
+      try {
+        final resp = await _ref
+            .read(mediaServerClientProvider)
+            .getAllSongs(
+              LibraryQuery(
+                libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+                filters: const {ItemFilterFlag.favorite},
+                limit: _favouriteSongsLimit,
+              ),
+            );
+        return resp.items;
+      } on Object {}
+    }
+    final liked = _ref.read(likedSongsPlaylistProvider);
+    if (liked == null) return const [];
+    return _ref.read(playlistSongsSourceProvider).downloadedSnapshot(liked.id);
   }
 
   Future<SetPlaybackResult> _play({

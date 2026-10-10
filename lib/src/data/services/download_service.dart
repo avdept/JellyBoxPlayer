@@ -9,9 +9,43 @@ import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/services/album_cover_store.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 
+const _secretQueryKeys = {'ApiKey', 'api_key', 'X-Emby-Token', 't', 's', 'p'};
+
 class DownloadService extends ChangeNotifier {
+  DownloadService() {
+    _forwardDownloaderLogs();
+  }
+
+  static var _forwardingLogs = false;
+
+  static void _forwardDownloaderLogs() {
+    if (_forwardingLogs || !kDebugMode) return;
+    _forwardingLogs = true;
+    hierarchicalLoggingEnabled = true;
+    for (final name in const ['FileDownloader', 'DesktopDownloader']) {
+      Logger(name)
+        ..level = Level.ALL
+        ..onRecord.listen(
+          (record) => debugPrint('[Download] ${record.message}'),
+        );
+    }
+  }
+
+  static String _redacted(String url) {
+    final uri = Uri.parse(url);
+    return uri
+        .replace(
+          queryParameters: {
+            for (final MapEntry(:key, :value) in uri.queryParameters.entries)
+              key: _secretQueryKeys.contains(key) ? '***' : value,
+          },
+        )
+        .toString();
+  }
+
   final _covers = AlbumCoverStore();
   final _tasks = <String, DownloadTask>{};
   final _bdTasks = <String, bd.DownloadTask>{};
@@ -74,7 +108,9 @@ class DownloadService extends ChangeNotifier {
 
     _bdTasks[task.id] = bdTask;
 
-    debugPrint('[Download] Starting "${task.name}" → $fileName');
+    debugPrint(
+      '[Download] Starting "${task.name}" → $fileName from ${_redacted(task.url)}',
+    );
 
     final result = await bd.FileDownloader().download(
       bdTask,

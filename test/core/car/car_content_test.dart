@@ -66,12 +66,13 @@ void main() {
 
       await content.play('playlist', 'p1');
       await content.play('album', 'a9');
-      await content.play('mix', likedSongsPlaylistId);
+      await content.play('mix', likedSongsPlaylistFor('user-1').id);
 
       verify(() => env.setPlayback.playPlaylist(playlist('p1'))).called(1);
       verify(() => env.setPlayback.playAlbum(album('a9'))).called(1);
       verify(
-        () => env.setPlayback.playFavouriteSongs(likedSongsPlaylist),
+        () =>
+            env.setPlayback.playFavouriteSongs(likedSongsPlaylistFor('user-1')),
       ).called(1);
     });
 

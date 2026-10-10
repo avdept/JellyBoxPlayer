@@ -117,8 +117,19 @@ void main() {
     for (final id in ['a', 'b', 'c', 'd']) _song(id),
   ];
 
+  var tick = 0;
+  DateTime nextMoment() =>
+      DateTime.fromMillisecondsSinceEpoch(1700000000000 + 1000 * tick++);
+
   ProviderContainer newContainer({String? userId}) => ProviderContainer(
     overrides: [
+      instantMixesProvider.overrideWith(
+        (ref) => InstantMixesNotifier(
+          ref,
+          ref.watch(instantMixDatabaseProvider),
+          now: nextMoment,
+        ),
+      ),
       localPlaybackTargetProvider.overrideWithValue(target),
       mediaServerClientProvider.overrideWith((_) => client),
       isOfflineProvider.overrideWithValue(false),
@@ -230,7 +241,22 @@ void main() {
       expect(container.read(instantMixesProvider), isEmpty);
     });
 
-    test('- recents are newest first, deduplicated and capped', () async {
+    test('- every mix gets its own timestamped id', () async {
+      final notifier = container.read(instantMixesProvider.notifier);
+      mixReturns('seed', [_song('x')]);
+
+      final first = await notifier.create(_song('seed'));
+      final second = await notifier.create(_song('seed'));
+
+      expect(first!.item.id, isNot(second!.item.id));
+      final parsed = EphemeralPlaylistId.parse(second.item.id)!;
+      expect(parsed.kind, EphemeralPlaylistKind.instantMix);
+      expect(parsed.key, 'seed');
+      expect(parsed.createdAt, isNotNull);
+      expect(container.read(instantMixesProvider), hasLength(2));
+    });
+
+    test('- recents are newest first and capped', () async {
       final notifier = container.read(instantMixesProvider.notifier);
       for (var i = 0; i < recentInstantMixesLimit + 1; i++) {
         mixReturns('s$i', [_song('x')]);
@@ -242,7 +268,44 @@ void main() {
       final seeds = [
         for (final mix in container.read(instantMixesProvider)) mix.seed.id,
       ];
-      expect(seeds, ['s2', 's5', 's4', 's3', 's1']);
+      expect(seeds, ['s2', 's5', 's4', 's3', 's2']);
+    });
+  });
+
+  group('- a mix from a sound search', () {
+    test('- is named after the query and keeps the match order', () {
+      final mix = container.read(instantMixesProvider.notifier).createSoundMix(
+        'calm piano',
+        [_song('b'), _song('a')],
+      );
+
+      expect(mix!.item.name, 'Calm piano Mix');
+      expect(mix.item.id, startsWith('instant-mix:sound:calm piano:'));
+      final parsed = EphemeralPlaylistId.parse(mix.item.id)!;
+      expect(parsed.kind, EphemeralPlaylistKind.soundMix);
+      expect(parsed.key, 'calm piano');
+      expect(_ids(mix.songs), ['b', 'a']);
+      expect(container.read(instantMixesProvider).single.item.id, mix.item.id);
+    });
+
+    test('- asking again for the same query makes a new mix', () {
+      final notifier = container.read(instantMixesProvider.notifier);
+      notifier.createSoundMix('Calm Piano', [_song('a')]);
+      notifier.createSoundMix('calm piano', [_song('b')]);
+
+      final mixes = container.read(instantMixesProvider);
+      expect(mixes, hasLength(2));
+      expect(_ids(mixes.first.songs), ['b']);
+      expect(mixes.first.item.id, isNot(mixes.last.item.id));
+    });
+
+    test('- nothing is created without matches', () {
+      final mix = container
+          .read(instantMixesProvider.notifier)
+          .createSoundMix('silence', const []);
+
+      expect(mix, isNull);
+      expect(container.read(instantMixesProvider), isEmpty);
     });
   });
 
@@ -367,7 +430,11 @@ void main() {
       await flush(session);
     }
 
-    String mixId(String seed) => instantMixItem(_song(seed)).id;
+    String mixId(String seed) => restarted
+        .expand((session) => session.read(instantMixesProvider))
+        .firstWhere((mix) => mix.seed.id == seed)
+        .item
+        .id;
 
     test(
       '- mixes come back with their songs without asking the server',
@@ -385,6 +452,22 @@ void main() {
         verifyNever(() => client.getItem(any(), kind: any(named: 'kind')));
       },
     );
+
+    test('- a sound mix comes back under its query name', () async {
+      final session = await signedIn('user-1');
+      session.read(instantMixesProvider.notifier).createSoundMix('calm piano', [
+        _song('a'),
+        _song('b'),
+      ]);
+      await flush(session);
+
+      final restartedSession = await signedIn('user-1');
+
+      final mix = restartedSession.read(instantMixesProvider).single;
+      expect(mix.item.name, 'Calm piano Mix');
+      expect(mix.item.id, startsWith('instant-mix:sound:calm piano:'));
+      expect(_ids(mix.songs), ['a', 'b']);
+    });
 
     test('- opening a restored mix swaps in the server songs', () async {
       final session = await signedIn('user-1');

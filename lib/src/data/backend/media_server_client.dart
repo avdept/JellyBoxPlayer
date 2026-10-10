@@ -1,4 +1,5 @@
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
@@ -23,6 +24,12 @@ abstract class MediaServerClient {
   Future<LibraryPage> getPlaylists(LibraryQuery query);
 
   Future<LibraryPage> getAllSongs(LibraryQuery query);
+
+  Future<LetterOffset?> letterOffset(
+    ItemKind kind,
+    LibraryQuery query,
+    String letter,
+  );
 
   Future<LibraryPage> getSongsOfSet(LibraryQuery query);
 
@@ -69,6 +76,8 @@ abstract class MediaServerClient {
   Future<LibraryPage> searchSongs(SearchQuery query);
 
   Future<LibraryPage> searchPlaylists(SearchQuery query);
+
+  Future<List<LibraryItem>> searchBySound(String query, {int limit = 50});
 
   Future<void> setFavorite(String itemId, {required bool favorite});
 

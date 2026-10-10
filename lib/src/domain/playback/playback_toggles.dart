@@ -37,6 +37,7 @@ class PlaybackToggles {
       return;
     }
     _ref.invalidate(favouriteSongsProvider);
+    _ref.read(favouritesChangedProvider.notifier).state++;
     _ref
         .read(playbackProvider.notifier)
         .updateSong(

@@ -229,8 +229,11 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
       await _ref.read(playbackProvider.notifier).resume();
       return;
     }
-    final mix = _content.mixes().firstOrNull;
-    await _content.play(AutoMediaId.mix, mix?.id ?? likedSongsPlaylistId);
+    final setId =
+        _content.mixes().firstOrNull?.id ??
+        _ref.read(likedSongsPlaylistProvider)?.id;
+    if (setId == null) return;
+    await _content.play(AutoMediaId.mix, setId);
   }
 
   Future<void> _playSet(CarEntry entry) {

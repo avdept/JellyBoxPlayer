@@ -206,6 +206,7 @@ class _EmbyApi implements EmbyApi {
     List<String> filters = const [],
     bool recursive = true,
     List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    String? nameLessThan,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -218,6 +219,7 @@ class _EmbyApi implements EmbyApi {
       r'Filters': filters,
       r'Recursive': recursive,
       r'Fields': fields,
+      r'NameLessThan': nameLessThan,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -314,6 +316,7 @@ class _EmbyApi implements EmbyApi {
     List<String> ids = const [],
     bool recursive = true,
     List<String> fields = const ['ProviderIds'],
+    String? nameLessThan,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -330,6 +333,7 @@ class _EmbyApi implements EmbyApi {
       r'Ids': ids,
       r'Recursive': recursive,
       r'Fields': fields,
+      r'NameLessThan': nameLessThan,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -483,6 +487,7 @@ class _EmbyApi implements EmbyApi {
     String sortBy = 'SortName',
     String sortOrder = 'Ascending',
     bool recursive = true,
+    String? nameLessThan,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -493,6 +498,7 @@ class _EmbyApi implements EmbyApi {
       r'SortBy': sortBy,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
+      r'NameLessThan': nameLessThan,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -627,6 +633,7 @@ class _EmbyApi implements EmbyApi {
     List<String> artistIds = const [],
     bool recursive = true,
     List<String> filters = const [],
+    String? nameLessThan,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -639,6 +646,7 @@ class _EmbyApi implements EmbyApi {
       r'AlbumArtistIds': artistIds,
       r'Recursive': recursive,
       r'Filters': filters,
+      r'NameLessThan': nameLessThan,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -928,6 +936,7 @@ class _EmbyApi implements EmbyApi {
     String sortOrder = 'Descending',
     bool recursive = true,
     List<String> filters = const [],
+    String? nameLessThan,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -939,7 +948,9 @@ class _EmbyApi implements EmbyApi {
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
       r'Filters': filters,
+      r'NameLessThan': nameLessThan,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
@@ -974,6 +985,7 @@ class _EmbyApi implements EmbyApi {
     String sortOrder = 'Descending',
     bool recursive = true,
     List<String> filters = const [],
+    String? nameLessThan,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
@@ -985,7 +997,9 @@ class _EmbyApi implements EmbyApi {
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
       r'Filters': filters,
+      r'NameLessThan': nameLessThan,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemsWrapper>>(

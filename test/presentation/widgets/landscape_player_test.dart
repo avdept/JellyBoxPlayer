@@ -72,6 +72,7 @@ void main() {
       overrides: [
         playbackProvider.overrideWith((_) => playback),
         mediaServerClientProvider.overrideWith((_) => client),
+        isSongDownloadedProvider.overrideWith((_, _) => false),
         lyricsProvider(_song.id).overrideWith(
           (_) async => const Lyrics(lines: [LyricLine(text: 'a line')]),
         ),
@@ -122,6 +123,8 @@ void main() {
         overrides: [
           playbackProvider.overrideWith((_) => FakePlaybackNotifier(state)),
           mediaServerClientProvider.overrideWith((_) => client),
+          isSongDownloadedProvider.overrideWith((_, _) => false),
+          isSongDownloadedProvider.overrideWith((_, _) => false),
         ],
       );
 

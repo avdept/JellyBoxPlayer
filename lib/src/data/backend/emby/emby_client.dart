@@ -7,6 +7,7 @@ import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/emby/mappers/emby_item_mapper.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/genre_playlists.dart';
+import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/mappers/subtitle_track_mapper.dart';
@@ -18,8 +19,10 @@ import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:retrofit/retrofit.dart';
 
 class EmbyClient implements MediaServerClient {
   EmbyClient({
@@ -50,86 +53,161 @@ class EmbyClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> getAlbums(LibraryQuery query) async {
-    final response = await _api.getAlbums(
-      userId: userId,
-      libraryId: query.libraryId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort),
-      contributingArtistIds: query.appearsOnArtistId,
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      artistIds: query.artistIds,
-      genreIds: query.genreIds,
-      filters: mediaBrowserFilters(query.filters),
-      ids: query.ids,
-    );
+    final response = await _albumsResponse(query);
     return response.data.toEmbyLibraryPage();
   }
+
+  Future<HttpResponse<ItemsWrapper>> _albumsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getAlbums(
+    userId: userId,
+    libraryId: query.libraryId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort),
+    contributingArtistIds: query.appearsOnArtistId,
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    artistIds: query.artistIds,
+    genreIds: query.genreIds,
+    filters: mediaBrowserFilters(query.filters),
+    ids: query.ids,
+    nameLessThan: nameLessThan,
+  );
 
   @override
   Future<LibraryPage> getArtists(LibraryQuery query) async {
-    final response = switch (query.artistScope) {
-      ArtistScope.albumArtists => await _api.getAlbumArtists(
-        userId: userId,
-        startIndex: '${query.startIndex}',
-        limit: '${query.limit}',
-        sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
-        sortOrder: mediaBrowserSortOrder(query.direction),
-        filters: mediaBrowserFilters(query.filters),
-      ),
-      ArtistScope.allArtists => await _api.getArtists(
-        userId: userId,
-        startIndex: '${query.startIndex}',
-        limit: '${query.limit}',
-        sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
-        sortOrder: mediaBrowserSortOrder(query.direction),
-        filters: mediaBrowserFilters(query.filters),
-      ),
-    };
+    final response = await _artistsResponse(query);
     return response.data.toEmbyLibraryPage();
   }
+
+  Future<HttpResponse<ItemsWrapper>> _artistsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => switch (query.artistScope) {
+    ArtistScope.albumArtists => _api.getAlbumArtists(
+      userId: userId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      filters: mediaBrowserFilters(query.filters),
+      nameLessThan: nameLessThan,
+    ),
+    ArtistScope.allArtists => _api.getArtists(
+      userId: userId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      filters: mediaBrowserFilters(query.filters),
+      nameLessThan: nameLessThan,
+    ),
+  };
 
   @override
   Future<LibraryPage> getGenres(LibraryQuery query) async {
-    final response = await _api.getGenres(
-      userId: userId,
-      libraryId: query.libraryId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.genre),
-      sortOrder: mediaBrowserSortOrder(query.direction),
-    );
+    final response = await _genresResponse(query);
     return response.data.toEmbyLibraryPage();
   }
+
+  Future<HttpResponse<ItemsWrapper>> _genresResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getGenres(
+    userId: userId,
+    libraryId: query.libraryId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort, target: ItemKind.genre),
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    nameLessThan: nameLessThan,
+  );
 
   @override
   Future<LibraryPage> getPlaylists(LibraryQuery query) async {
-    final response = await _api.getPlaylists(
-      userId: userId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.playlist),
-      contributingArtistIds: query.appearsOnArtistId,
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      artistIds: query.artistIds,
-      filters: mediaBrowserFilters(query.filters),
-    );
+    final response = await _playlistsResponse(query);
     return response.data.toEmbyLibraryPage();
   }
 
+  Future<HttpResponse<ItemsWrapper>> _playlistsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getPlaylists(
+    userId: userId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort, target: ItemKind.playlist),
+    contributingArtistIds: query.appearsOnArtistId,
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    artistIds: query.artistIds,
+    filters: mediaBrowserFilters(query.filters),
+    nameLessThan: nameLessThan,
+  );
+
   @override
   Future<LibraryPage> getAllSongs(LibraryQuery query) async {
-    final response = await _api.getAllSongs(
-      userId: userId,
-      libraryId: query.libraryId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      filters: mediaBrowserFilters(query.filters),
-      fields: mediaBrowserFields(query.fields),
-    );
+    final response = await _songsResponse(query);
     return response.data.toEmbyLibraryPage();
+  }
+
+  Future<HttpResponse<ItemsWrapper>> _songsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getAllSongs(
+    userId: userId,
+    libraryId: query.libraryId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    filters: mediaBrowserFilters(query.filters),
+    fields: mediaBrowserFields(query.fields),
+    nameLessThan: nameLessThan,
+  );
+
+  @override
+  Future<LetterOffset?> letterOffset(
+    ItemKind kind,
+    LibraryQuery query,
+    String letter,
+  ) {
+    if (query.sort != ItemSort.name || !_countableKinds.contains(kind)) {
+      return Future.value();
+    }
+    final probe = query.copyWith(startIndex: 0, limit: 1);
+    return letterOffsetWith(
+      letter: letter,
+      direction: query.direction,
+      countBefore: (bound) => _countItems(kind, probe, nameLessThan: bound),
+      total: () => _countItems(kind, probe),
+    );
+  }
+
+  static const _countableKinds = {
+    ItemKind.album,
+    ItemKind.artist,
+    ItemKind.genre,
+    ItemKind.playlist,
+    ItemKind.song,
+  };
+
+  Future<int> _countItems(
+    ItemKind kind,
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) async {
+    final response = await switch (kind) {
+      ItemKind.album => _albumsResponse(query, nameLessThan: nameLessThan),
+      ItemKind.artist => _artistsResponse(query, nameLessThan: nameLessThan),
+      ItemKind.genre => _genresResponse(query, nameLessThan: nameLessThan),
+      ItemKind.playlist => _playlistsResponse(
+        query,
+        nameLessThan: nameLessThan,
+      ),
+      _ => _songsResponse(query, nameLessThan: nameLessThan),
+    };
+    return response.data.totalRecordCount;
   }
 
   @override
@@ -173,6 +251,12 @@ class EmbyClient implements MediaServerClient {
     );
     return response.data.toEmbyLibraryPage();
   }
+
+  @override
+  Future<List<LibraryItem>> searchBySound(
+    String query, {
+    int limit = 50,
+  }) async => const [];
 
   @override
   Future<List<LibraryItem>> getInstantMix(

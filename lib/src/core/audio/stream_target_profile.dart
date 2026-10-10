@@ -90,7 +90,9 @@ class StreamTargetProfile {
         const DirectPlayRule('aac'),
         DirectPlayRule(
           'm4a',
-          codecs: android ? const {'aac'} : const {'aac', 'alac'},
+          codecs: android
+              ? const {'aac'}
+              : const {'aac', 'alac', 'ac3', 'eac3'},
           aliases: const {'m4b'},
         ),
         const DirectPlayRule('flac'),

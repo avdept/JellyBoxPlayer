@@ -18,11 +18,16 @@ class GeneratedPlaylistSpec<S> {
 }
 
 class GenrePlaylistGenerator<S> {
-  GenrePlaylistGenerator(this.source, {Random? random})
-    : random = random ?? Random();
+  GenrePlaylistGenerator(
+    this.source, {
+    Random? random,
+    DateTime Function()? now,
+  }) : random = random ?? Random(),
+       now = now ?? DateTime.now;
 
   final GenrePlaylistSource<S> source;
   final Random random;
+  final DateTime Function() now;
 
   Future<List<GeneratedPlaylistSpec<S>>> generate({
     bool includeDiscovery = false,

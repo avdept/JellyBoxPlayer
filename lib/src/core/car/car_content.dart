@@ -193,8 +193,9 @@ class CarContent {
       (previous, next) => _notifyChanged(),
     );
     final page = _ref.read(favouriteSongsProvider).valueOrNull;
-    if (page == null || page.items.isEmpty) return null;
-    return _setEntry(likedSongsPlaylist, _ref.read(likedSongsCoversProvider));
+    final liked = _ref.read(likedSongsPlaylistProvider);
+    if (page == null || page.items.isEmpty || liked == null) return null;
+    return _setEntry(liked, _ref.read(likedSongsCoversProvider));
   }
 
   Future<CarPage> list({
@@ -404,7 +405,7 @@ class CarContent {
   }
 
   static String _setType(String type, LibraryItem item) => switch (type) {
-    _ when item.id == likedSongsPlaylistId => 'liked',
+    _ when isLikedSongsId(item.id) => 'liked',
     'download' => item.kind == ItemKind.playlist ? 'playlist' : 'album',
     _ => type,
   };
@@ -457,7 +458,7 @@ class CarContent {
   Future<LibraryItem?> _resolve(String type, String id) async {
     final cached = _items[id];
     if (cached != null) return cached;
-    if (id == likedSongsPlaylistId) return likedSongsPlaylist;
+    if (isLikedSongsId(id)) return _ref.read(likedSongsPlaylistProvider);
     if (type == 'mix') {
       final playlists = _ref.read(todaysPlaylistsProvider).valueOrNull;
       return playlists?.where((p) => p.item.id == id).firstOrNull?.item;

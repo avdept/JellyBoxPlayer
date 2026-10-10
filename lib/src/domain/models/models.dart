@@ -1,5 +1,6 @@
 export 'download_task/download_task.dart';
 export 'filter/filter.dart';
+export 'ephemeral_playlist/ephemeral_playlist_id.dart';
 export 'generated_playlist/generated_playlist.dart';
 export 'instant_mix/instant_mix.dart';
 export 'items_page/items_page.dart';
@@ -14,4 +15,5 @@ export 'library_item/library_page.dart';
 export 'library_item/metadata_link.dart';
 export 'library_item/playback_user_data.dart';
 export 'lyrics/lyrics.dart';
+export 'paged_items/paged_items.dart';
 export 'playback_state/playback_state.dart';

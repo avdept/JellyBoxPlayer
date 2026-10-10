@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -11,6 +12,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class BrowsePage extends ConsumerStatefulWidget {
@@ -38,7 +40,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   final _searchQuery = ValueNotifier<String>('');
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
+  final _scrollController = ScrollController();
+  final GlobalKey _listKey = GlobalKey();
   Timer? _searchDebounce;
+  Timer? _letterDebounce;
+  int _jumpSequence = 0;
   double _scrolledSinceSearchOpened = 0;
 
   late final AnimationController _searchAnimation = AnimationController(
@@ -150,6 +156,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     await ref
         .read(mediaServerClientProvider)
         .setFavorite(item.id, favorite: !isFavorite);
+    ref.read(favouritesChangedProvider.notifier).state++;
     ref
         .read(itemListProvider(view).notifier)
         .updateItem(
@@ -210,6 +217,62 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
 
   double get _searchTrailingWidth =>
       _device.isMobile ? _searchButtonWidth + 40 : 40 + 12 + 40;
+
+  double get _rowExtent => (_device.isMobile ? 46.0 : 56.0) + 16;
+
+  void _onLetterSelected(String letter) {
+    _letterDebounce?.cancel();
+    _letterDebounce = Timer(
+      const Duration(milliseconds: 80),
+      () => unawaited(_jumpToLetter(letter)),
+    );
+  }
+
+  Future<void> _jumpToLetter(String letter) async {
+    final view = _currentView.value;
+    final sequence = ++_jumpSequence;
+    final index = await ref
+        .read(itemListProvider(view).notifier)
+        .indexOfLetter(letter);
+    if (index == null ||
+        !mounted ||
+        sequence != _jumpSequence ||
+        _currentView.value != view) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && sequence == _jumpSequence) _scrollToIndex(index);
+    });
+  }
+
+  void _scrollToIndex(int index) {
+    final sliver = _listKey.currentContext?.findRenderObject();
+    if (sliver is! RenderSliver || !_scrollController.hasClients) return;
+    final constraints = sliver.constraints;
+    final double offset;
+    if (sliver is RenderSliverFixedExtentBoxAdaptor) {
+      final extent = sliver.itemExtent;
+      if (extent == null) return;
+      offset = index * extent;
+    } else if (sliver is RenderSliverGrid) {
+      offset = sliver.gridDelegate
+          .getLayout(constraints)
+          .getGeometryForChildIndex(index)
+          .scrollOffset;
+    } else {
+      return;
+    }
+    final target =
+        constraints.precedingScrollExtent + offset - _navigationBarHeight;
+    _scrollController.jumpTo(
+      target.clamp(0.0, _scrollController.position.maxScrollExtent),
+    );
+  }
+
+  LibraryItem? _itemAt(ItemList view, PagedItems list, int index) {
+    ref.read(itemListProvider(view).notifier).touchPage(index ~/ list.pageSize);
+    return list.itemAt(index);
+  }
 
   void _openSearch() {
     _searchOpened.value = true;
@@ -350,48 +413,91 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     );
     return Scaffold(
       key: _scaffoldKey,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _onScrollNotification,
-        child: ScrollablePageScaffold(
-          useGradientBackground: true,
-          navigationBar: PreferredSize(
-            preferredSize: Size.fromHeight(_navigationBarHeight),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: _device.isMobile ? 16 : 30,
-              ),
-              child: _navigationBarContent(),
-            ),
+      body: ValueListenableBuilder(
+        valueListenable: _currentView,
+        builder: (context, view, child) => ValueListenableBuilder(
+          valueListenable: _searchQuery,
+          builder: (context, query, child) => Consumer(
+            builder: (context, ref, child) {
+              final rulerVisible =
+                  query.isEmpty &&
+                  (ref.watch(letterIndexAvailableProvider(view)).valueOrNull ??
+                      false);
+              final reversed = ref.watch(
+                filterProvider.select((filter) => filter.desc),
+              );
+              return Stack(
+                children: [
+                  _pageScaffold(rulerVisible: rulerVisible),
+                  if (rulerVisible)
+                    Positioned(
+                      right: _device.isMobile ? 0 : 4,
+                      top:
+                          MediaQuery.paddingOf(context).top +
+                          _navigationBarHeight +
+                          8,
+                      bottom: 8,
+                      child: LetterRuler(
+                        reversed: reversed,
+                        haptics: _device.isMobile,
+                        colorScheme: ref
+                            .watch(artworkSchemeProvider)
+                            .valueOrNull,
+                        onLetterSelected: _onLetterSelected,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
-          loadMoreData: () => _searchQuery.value.isNotEmpty
-              ? Future<void>.value()
-              : ref
-                    .read(itemListProvider(_currentView.value).notifier)
-                    .loadMore(),
-          contentPadding: EdgeInsets.only(
-            left: _device.isMobile ? 16 : 30,
-            right: _device.isMobile ? 16 : 30,
-            bottom: 30,
-          ),
-          slivers: [
-            ValueListenableBuilder(
-              valueListenable: _searchQuery,
-              builder: (context, query, child) {
-                if (query.isEmpty) return _libraryList();
-
-                return Consumer(
-                  builder: (context, ref, child) => SearchResultsSliver(
-                    isPending:
-                        query != (ref.watch(searchProvider)?.trim() ?? ''),
-                  ),
-                );
-              },
-            ),
-          ],
         ),
       ),
     );
   }
+
+  Widget _pageScaffold({
+    required bool rulerVisible,
+  }) => NotificationListener<ScrollNotification>(
+    onNotification: _onScrollNotification,
+    child: ScrollablePageScaffold(
+      controller: _scrollController,
+      useGradientBackground: true,
+      showScrollbar: !rulerVisible,
+      navigationBar: PreferredSize(
+        preferredSize: Size.fromHeight(_navigationBarHeight),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: _device.isMobile ? 16 : 30,
+          ),
+          child: _navigationBarContent(),
+        ),
+      ),
+      loadMoreData: () => _searchQuery.value.isNotEmpty
+          ? Future<void>.value()
+          : ref.read(itemListProvider(_currentView.value).notifier).loadMore(),
+      contentPadding: EdgeInsets.only(
+        left: _device.isMobile ? 16 : 30,
+        right: _device.isMobile
+            ? (rulerVisible ? 16 + LetterRuler.defaultWidth : 16)
+            : (rulerVisible ? 38 : 30),
+        bottom: 30,
+      ),
+      slivers: [
+        ValueListenableBuilder(
+          valueListenable: _searchQuery,
+          builder: (context, query, child) {
+            if (query.isEmpty) return _libraryList();
+
+            return Consumer(
+              builder: (context, ref, child) => SearchResultsSliver(
+                isPending: query != (ref.watch(searchProvider)?.trim() ?? ''),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+  );
 
   Widget _libraryList() => ValueListenableBuilder(
     valueListenable: _currentView,
@@ -407,9 +513,12 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                   return idx != null ? s.songs.elementAtOrNull(idx)?.id : null;
                 }),
               );
-              return SliverList.builder(
+              return SliverFixedExtentList.builder(
+                key: _listKey,
+                itemExtent: _rowExtent,
                 itemBuilder: (context, index) {
-                  final song = list.items[index];
+                  final song = _itemAt(value, list, index);
+                  if (song == null) return SongRowShimmer(device: _device);
                   return SongRowView(
                     song: song,
                     isPlaying: currentSongId == song.id,
@@ -424,7 +533,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     ),
                   );
                 },
-                itemCount: list.items.length,
+                itemCount: list.length,
               );
             }
             void onItemTap(LibraryItem item) => switch (value) {
@@ -455,9 +564,12 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
             ];
 
             if (ref.watch(browseLayoutProvider) == BrowseLayout.rows) {
-              return SliverList.builder(
+              return SliverFixedExtentList.builder(
+                key: _listKey,
+                itemExtent: _rowExtent,
                 itemBuilder: (context, index) {
-                  final item = list.items[index];
+                  final item = _itemAt(value, list, index);
+                  if (item == null) return SongRowShimmer(device: _device);
                   return ItemRowView(
                     item: item,
                     onTap: onItemTap,
@@ -465,14 +577,21 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     optionsBuilder: (context) => optionsFor(context, item),
                   );
                 },
-                itemCount: list.items.length,
+                itemCount: list.length,
               );
             }
 
             return SliverGrid.builder(
+              key: _listKey,
               gridDelegate: AlbumCardMetrics.gridDelegate(_device),
               itemBuilder: (context, index) {
-                final item = list.items[index];
+                final item = _itemAt(value, list, index);
+                if (item == null) {
+                  return AlbumCardShimmer(
+                    width: AlbumCardMetrics.width(_device),
+                    device: _device,
+                  );
+                }
                 return AlbumView(
                   album: item,
                   onTap: (item) => switch (value) {
@@ -488,7 +607,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                   optionsBuilder: (context) => optionsFor(context, item),
                 );
               },
-              itemCount: list.items.length,
+              itemCount: list.length,
             );
           },
           error: (error, stackTrace) => SliverToBoxAdapter(
@@ -519,6 +638,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     _currentView.dispose();
     _appliedFilter.dispose();
     _searchDebounce?.cancel();
+    _letterDebounce?.cancel();
+    _scrollController.dispose();
     _searchAnimation.dispose();
     _iconsReveal.dispose();
     _searchOpened.dispose();

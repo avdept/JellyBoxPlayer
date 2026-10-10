@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -17,6 +15,7 @@ class SongListSliver extends ConsumerStatefulWidget {
     this.limit,
     this.edgePadding,
     this.set,
+    this.showPosition = false,
     super.key,
   });
 
@@ -25,6 +24,7 @@ class SongListSliver extends ConsumerStatefulWidget {
   final int? limit;
   final double? edgePadding;
   final LibraryItem? set;
+  final bool showPosition;
 
   @override
   ConsumerState<SongListSliver> createState() => _SongListSliverState();
@@ -57,6 +57,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
     await ref
         .read(mediaServerClientProvider)
         .setFavorite(song.id, favorite: !isFavorite);
+    ref.read(favouritesChangedProvider.notifier).state++;
     widget.onItemUpdated(
       song.copyWith(
         userData: song.userData.copyWith(isFavorite: !isFavorite),
@@ -89,6 +90,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
           isPlaying: currentSongId == song.id,
           onTap: (song) => _onSongTap(song, visible),
           onLikePressed: _onLikePressed,
+          position: widget.showPosition ? index + 1 : null,
           edgePadding: widget.edgePadding,
           optionsBuilder: (context) => contextMenuActions(
             context,

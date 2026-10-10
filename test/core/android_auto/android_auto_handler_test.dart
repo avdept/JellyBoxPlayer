@@ -96,9 +96,10 @@ void main() {
     });
 
     test('- lists Liked Songs first under playlists, not mixes', () async {
-      final liked = const AutoMediaId(
+      final likedPlaylist = likedSongsPlaylistFor('user-1');
+      final liked = AutoMediaId(
         AutoMediaId.playlist,
-        id: likedSongsPlaylistId,
+        id: likedPlaylist.id,
       ).encode();
       final (env, handler) = build(favouriteSongs: [song('s1')]);
       env
@@ -124,7 +125,7 @@ void main() {
           id: 's1',
           context: CarContent.setContext(
             AutoMediaId.playlist,
-            likedSongsPlaylistId,
+            likedPlaylist.id,
           ),
         ).encode(),
       ]);
@@ -132,7 +133,7 @@ void main() {
       await handler.playFromMediaId('$liked/all');
 
       verify(
-        () => env.setPlayback.playFavouriteSongs(likedSongsPlaylist),
+        () => env.setPlayback.playFavouriteSongs(likedPlaylist),
       ).called(1);
       verifyNever(() => env.setPlayback.playPlaylist(any()));
     });

@@ -21,6 +21,16 @@ void main() {
       );
     });
 
+    test('- direct-plays Dolby Digital in m4a everywhere but Android', () {
+      final android = StreamTargetProfile.localPlayer(isAndroid: true);
+      final desktop = StreamTargetProfile.localPlayer(isAndroid: false);
+
+      expect(android.canDirectPlay(container: 'm4a', codec: 'eac3'), isFalse);
+      expect(desktop.canDirectPlay(container: 'm4a', codec: 'eac3'), isTrue);
+      expect(desktop.canDirectPlay(container: 'm4a', codec: 'ac3'), isTrue);
+      expect(desktop.directPlayContainers, contains('m4a|eac3'));
+    });
+
     test('- offers AIFF direct play everywhere but Android', () {
       expect(
         StreamTargetProfile.localPlayer(

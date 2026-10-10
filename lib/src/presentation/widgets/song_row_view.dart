@@ -28,7 +28,6 @@ class SongRowView extends ConsumerWidget {
     this.onLikePressed,
     this.optionsBuilder,
     this.position,
-    this.showDownloadState = false,
     this.secondaryTextColor,
     this.playingColor,
     this.trailing,
@@ -45,8 +44,6 @@ class SongRowView extends ConsumerWidget {
   final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
 
   final int? position;
-
-  final bool showDownloadState;
 
   final Color? secondaryTextColor;
 
@@ -77,12 +74,8 @@ class SongRowView extends ConsumerWidget {
     final isDesktop = deviceType == DeviceScreenType.desktop;
     final imageSize = isMobile ? 46.0 : 56.0;
     final horizontal = edgePadding ?? 0;
-    final isDownloaded = showDownloadState
-        ? ref.watch(isSongDownloadedProvider(song)).valueOrNull
-        : null;
-    final currentTask = showDownloadState
-        ? ref.watch(downloadServiceProvider).getTask(song.id)
-        : null;
+    final isDownloaded = ref.watch(isSongDownloadedProvider(song)).valueOrNull;
+    final currentTask = ref.watch(downloadServiceProvider).getTask(song.id);
     final quality = song.audioSources.firstOrNull;
     final secondaryColor =
         secondaryTextColor ?? theme.colorScheme.onPrimary.withOpacity(0.6);
@@ -207,7 +200,8 @@ class SongRowView extends ConsumerWidget {
               ValueListenableBuilder<DownloadStatus>(
                 valueListenable: currentTask.status,
                 builder: (context, status, _) {
-                  if (isDownloaded ?? false) {
+                  if ((isDownloaded ?? false) ||
+                      status == DownloadStatus.completed) {
                     return Icon(
                       Icons.check_circle,
                       key: testKeys?.downloadedIcon,
@@ -217,18 +211,21 @@ class SongRowView extends ConsumerWidget {
                   if (!currentTask.isDownloadingNow) {
                     return const SizedBox.shrink();
                   }
-                  return SizedBox.square(
-                    dimension: 30,
-                    child: ValueListenableBuilder<double?>(
-                      valueListenable: currentTask.progress,
-                      builder: (context, progress, _) =>
-                          CircularProgressIndicator(
-                            key: testKeys?.downloadProgressIndicator,
-                            value: progress,
-                            color: const Color(0xFF0066FF),
-                            backgroundColor: theme.colorScheme.onPrimary,
-                            strokeWidth: 2,
-                          ),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: SizedBox.square(
+                      dimension: 16,
+                      child: ValueListenableBuilder<double?>(
+                        valueListenable: currentTask.progress,
+                        builder: (context, progress, _) =>
+                            CircularProgressIndicator(
+                              key: testKeys?.downloadProgressIndicator,
+                              value: progress,
+                              backgroundColor: theme.colorScheme.onPrimary
+                                  .withValues(alpha: 0.24),
+                              strokeWidth: 2,
+                            ),
+                      ),
                     ),
                   );
                 },

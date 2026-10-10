@@ -12,15 +12,79 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const favouritesLimit = 100;
 
-const likedSongsPlaylistId = 'jellybox:liked-songs';
+const likedSongsName = 'Liked songs';
 
-const likedSongsPlaylist = LibraryItem(
-  id: likedSongsPlaylistId,
-  name: 'Liked songs',
+LibraryItem likedSongsPlaylistFor(String userId) => LibraryItem(
+  id: EphemeralPlaylistId.likedSongs(userId),
+  name: likedSongsName,
   kind: ItemKind.playlist,
 );
 
+bool isLikedSongsId(String id) => EphemeralPlaylistId.isLikedSongs(id);
+
+final favouritesChangedProvider = StateProvider<int>((ref) => 0);
+
+void markFavouritesChanged(Ref ref) =>
+    ref.read(favouritesChangedProvider.notifier).state++;
+
+final Provider<LibraryItem?> likedSongsPlaylistProvider = Provider((ref) {
+  final userId = ref.watch(currentUserProvider)?.userId;
+  return userId == null ? null : likedSongsPlaylistFor(userId);
+});
+
 const _favouriteFilter = {ItemFilterFlag.favorite};
+const allFavouritesPageSize = 200;
+
+Future<List<LibraryItem>> fetchAllFavouriteSongs(
+  MediaServerClient client, {
+  String? libraryId,
+  ItemSort sort = ItemSort.dateCreated,
+  SortDirection direction = SortDirection.descending,
+}) async {
+  final stable = sort != ItemSort.random;
+  final songs = <LibraryItem>[];
+  final seen = <String>{};
+  var startIndex = 0;
+  while (true) {
+    final page = await client.getAllSongs(
+      LibraryQuery(
+        libraryId: libraryId,
+        sort: stable ? sort : ItemSort.dateCreated,
+        direction: stable ? direction : SortDirection.descending,
+        filters: _favouriteFilter,
+        startIndex: startIndex,
+        limit: allFavouritesPageSize,
+      ),
+    );
+    var added = 0;
+    for (final song in page.items) {
+      if (seen.add(song.id)) {
+        songs.add(song);
+        added++;
+      }
+    }
+    startIndex += page.items.length;
+    if (added == 0 || page.items.length < allFavouritesPageSize) break;
+    if (page.totalRecordCount > 0 && startIndex >= page.totalRecordCount) {
+      break;
+    }
+  }
+  return songs;
+}
+
+List<LibraryItem> mergeLikedOrder(
+  List<String> localIds,
+  List<LibraryItem> songs,
+) {
+  final local = localIds.toSet();
+  final byId = {for (final song in songs) song.id: song};
+  return [
+    for (final song in songs)
+      if (!local.contains(song.id)) song,
+    for (final id in localIds)
+      if (byId[id] case final song?) song,
+  ];
+}
 
 final AutoDisposeFutureProvider<List<LibraryItem>> favouriteAlbumsProvider =
     FutureProvider.autoDispose((ref) async {

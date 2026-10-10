@@ -35,6 +35,16 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
+  Widget _error(WidgetRef ref, Object error) => SliverToBoxAdapter(
+    child: ref.watch(isOfflineProvider)
+        ? OfflineNotice(
+            message: "You're offline, so search needs a connection.",
+            onRetry: () => ref.invalidate(searchItemsProvider(widget.category)),
+            showDownloadsLink: true,
+          )
+        : Text(error.toString()),
+  );
+
   @override
   Widget build(BuildContext context) {
     final query = ref.watch(searchProvider)?.trim() ?? '';
@@ -124,19 +134,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
                         },
                         itemCount: list.items.length,
                       ),
-                error: (error, stackTrace) => SliverToBoxAdapter(
-                  child: ref.watch(isOfflineProvider)
-                      ? OfflineNotice(
-                          message:
-                              "You're offline, so search needs a "
-                              'connection.',
-                          onRetry: () => ref.invalidate(
-                            searchItemsProvider(widget.category),
-                          ),
-                          showDownloadsLink: true,
-                        )
-                      : Text(error.toString()),
-                ),
+                error: (error, stackTrace) => _error(ref, error),
                 loading: () => widget.category == ItemList.songs
                     ? SliverToBoxAdapter(
                         child: SongRowsShimmer(device: _device, count: 8),

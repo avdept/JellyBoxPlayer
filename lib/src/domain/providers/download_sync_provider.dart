@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
 
@@ -28,6 +29,9 @@ class DownloadSync {
       })
       ..listen<User?>(currentUserProvider, (previous, next) {
         if (next != null && next.userId != previous?.userId) syncAll();
+      })
+      ..listen<int>(favouritesChangedProvider, (previous, next) {
+        if (previous != next) syncLikedSongs();
       })
       ..listen<ContentUpdateInterval>(
         contentUpdateIntervalProvider,
@@ -74,6 +78,11 @@ class DownloadSync {
     unawaited(_drain());
   }
 
+  void syncLikedSongs() {
+    final liked = _ref.read(likedSongsPlaylistProvider);
+    if (liked != null) syncPlaylist(liked.id);
+  }
+
   Future<void> _drain() async {
     if (_draining) return;
     _draining = true;
@@ -114,12 +123,22 @@ class DownloadSync {
     DownloadManagerNotifier manager,
     LibraryItem playlist,
   ) async {
+    final kind = EphemeralPlaylistId.parse(playlist.id)?.kind;
+    if (kind == EphemeralPlaylistKind.likedSongs &&
+        EphemeralPlaylistId.parse(playlist.id)!.key !=
+            _ref.read(currentUserProvider)?.userId) {
+      return;
+    }
     try {
-      final page = await _ref
-          .read(mediaServerClientProvider)
-          .getPlaylistSongs(playlist.id);
-      if (page.items.isEmpty) return;
-      final changed = await manager.syncPlaylist(playlist, page.items);
+      final songs = await _ref
+          .read(playlistSongsSourceProvider)
+          .songsOf(playlist.id);
+      if (songs.isEmpty) return;
+      final changed = await manager.syncPlaylist(
+        playlist,
+        songs,
+        keepLocalOrder: kind == EphemeralPlaylistKind.likedSongs,
+      );
       if (changed) debugPrint('[DownloadSync] updated "${playlist.name}"');
     } on Object catch (error) {
       debugPrint('[DownloadSync] "${playlist.name}" failed: $error');
