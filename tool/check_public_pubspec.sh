@@ -21,6 +21,14 @@ for package in optional_features; do
   fi
 done
 
+# The private package is a plugin, so a pod install with the override in
+# place writes it into the iOS lock file too.
+if grep -q "optional_features" "$root/ios/Podfile.lock"; then
+  echo "ios/Podfile.lock lists the private optional_features pod;" >&2
+  echo "restore it with: git checkout ios/Podfile.lock (or pod install without the override)" >&2
+  status=1
+fi
+
 if [[ $status -eq 0 ]]; then
   echo "pubspec.lock is buildable without the private package"
 fi

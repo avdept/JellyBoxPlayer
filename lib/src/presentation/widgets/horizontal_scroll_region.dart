@@ -1,6 +1,4 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 typedef HorizontalScrollBuilder =
     Widget Function(BuildContext context, ScrollController controller);
@@ -52,28 +50,6 @@ class _HorizontalScrollRegionState extends State<HorizontalScrollRegion> {
     return false;
   }
 
-  void _onPointerSignal(PointerSignalEvent event) {
-    if (event is! PointerScrollEvent) return;
-    if (event.kind != PointerDeviceKind.mouse) return;
-    if (HardwareKeyboard.instance.isShiftPressed) return;
-    final delta = event.scrollDelta;
-    if (delta.dy == 0 || delta.dx != 0) return;
-    if (!_controller.hasClients) return;
-
-    final position = _controller.position;
-    if (!position.hasContentDimensions) return;
-    final target = (position.pixels + delta.dy).clamp(
-      position.minScrollExtent,
-      position.maxScrollExtent,
-    );
-    if (target == position.pixels) return;
-
-    GestureBinding.instance.pointerSignalResolver.register(
-      event,
-      (_) => position.pointerScroll(delta.dy),
-    );
-  }
-
   void _page(int direction) {
     if (!_controller.hasClients) return;
     final position = _controller.position;
@@ -91,31 +67,28 @@ class _HorizontalScrollRegionState extends State<HorizontalScrollRegion> {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerSignal: _onPointerSignal,
-      child: MouseRegion(
-        onEnter: (_) => _hovered.value = true,
-        onExit: (_) => _hovered.value = false,
-        child: NotificationListener<ScrollMetricsNotification>(
-          onNotification: _onMetrics,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              widget.builder(context, _controller),
-              _control(
-                alignment: Alignment.centerLeft,
-                enabled: _canScrollBack,
-                icon: Icons.chevron_left,
-                onPressed: () => _page(-1),
-              ),
-              _control(
-                alignment: Alignment.centerRight,
-                enabled: _canScrollForward,
-                icon: Icons.chevron_right,
-                onPressed: () => _page(1),
-              ),
-            ],
-          ),
+    return MouseRegion(
+      onEnter: (_) => _hovered.value = true,
+      onExit: (_) => _hovered.value = false,
+      child: NotificationListener<ScrollMetricsNotification>(
+        onNotification: _onMetrics,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            widget.builder(context, _controller),
+            _control(
+              alignment: Alignment.centerLeft,
+              enabled: _canScrollBack,
+              icon: Icons.chevron_left,
+              onPressed: () => _page(-1),
+            ),
+            _control(
+              alignment: Alignment.centerRight,
+              enabled: _canScrollForward,
+              icon: Icons.chevron_right,
+              onPressed: () => _page(1),
+            ),
+          ],
         ),
       ),
     );
