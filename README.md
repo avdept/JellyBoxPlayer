@@ -178,7 +178,7 @@ Install from [Google Play](https://play.google.com/store/apps/details?id=com.pro
 The release bundle expects a few shared libraries. On Debian/Ubuntu:
 
 ```bash
-sudo apt-get install libmpv-dev mpv libsecret-1-dev libsqlite3-dev libjsoncpp-dev libcurl4-openssl-dev libdbus-1-dev
+sudo apt-get install libmpv-dev mpv libasound2-dev libsecret-1-dev libsqlite3-dev libjsoncpp-dev libcurl4-openssl-dev libdbus-1-dev
 ```
 
 Note: Recently I bundled libs with app, but I need more folks to actually test it on different distros.
