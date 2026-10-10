@@ -135,6 +135,20 @@ class JustAudioBackground {
   static void refreshPlaybackState() {
     _playerAudioHandler._broadcastStateIfActive();
   }
+
+  /// Keeps the session, notification and foreground service alive while the
+  /// app retries a queue that failed to load. The session reports "buffering"
+  /// until the app reloads or the user pauses; a pause from the notification
+  /// or a car calls [onCancelled] so the app can stop retrying.
+  static void holdPlayback({required void Function() onCancelled}) {
+    _playerAudioHandler.hold(onCancelled);
+  }
+
+  /// Drops the playing state the handler has been holding since a playback
+  /// error, so the session and notification go away as on a normal stop.
+  static void cancelPendingPlayback() {
+    _playerAudioHandler.cancelHold();
+  }
 }
 
 class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
@@ -544,6 +558,16 @@ class _PlayerAudioHandler extends BaseAudioHandler
   );
   AudioSourceMessage? _source;
   bool _playing = false;
+  // Set when the native player failed while playback was wanted. The player
+  // is disposed afterwards, but the session keeps reporting "buffering"
+  // instead of idle so the foreground service, notification and metadata
+  // survive until the app has reloaded or the user has paused.
+  bool _holding = false;
+  void Function()? _onHoldCancelled;
+  // Whether the current native player has been told to play. A held session
+  // reports playing before any player exists, so the real play that follows
+  // a successful reload must still reach the player.
+  bool _playerPlaying = false;
   double _speed = 1.0;
   _Seeker? _seeker;
   AudioServiceRepeatMode _repeatMode = AudioServiceRepeatMode.none;
@@ -556,6 +580,7 @@ class _PlayerAudioHandler extends BaseAudioHandler
     _reportedShuffleMode = mode;
     _broadcastStateIfActive();
   }
+
   List<int> _shuffleIndices = [];
   List<int> _shuffleIndicesInv = [];
   List<int> _effectiveIndices = [];
@@ -573,12 +598,18 @@ class _PlayerAudioHandler extends BaseAudioHandler
 
   Future<void> _initPlayer(InitRequest initRequest) =>
       _lock.synchronized(() async {
+        _playerPlaying = false;
         final player = await _platform.init(initRequest);
         _playerCompleter.complete(player);
         final playbackEventMessageStream = player.playbackEventMessageStream;
         _trackInfoSubscription = playbackEventMessageStream
             .map((event) {
               index = event.currentIndex ?? _justAudioEvent.currentIndex;
+              if (event.errorCode != null) {
+                if (_playing) _holding = true;
+              } else if (event.processingState != ProcessingStateMessage.idle) {
+                _holding = false;
+              }
               _justAudioEvent = event;
               customEvent.add(event);
               _broadcastState();
@@ -840,10 +871,11 @@ class _PlayerAudioHandler extends BaseAudioHandler
     if (_justAudioEvent.processingState == ProcessingStateMessage.completed) {
       await skipToQueueItem(0);
     }
-    if (!_playing) {
+    if (!_playing || !_playerPlaying) {
       _updatePosition();
-      customEvent.add(_PlayingEvent(_playing = true));
+      if (!_playing) customEvent.add(_PlayingEvent(_playing = true));
       _broadcastState();
+      _playerPlaying = true;
       await (await _player).play(PlayRequest());
     }
   }
@@ -851,9 +883,31 @@ class _PlayerAudioHandler extends BaseAudioHandler
   @override
   Future<void> pause() async {
     _updatePosition();
+    final cancelled = _onHoldCancelled;
+    _holding = false;
+    _onHoldCancelled = null;
+    customEvent.add(_PlayingEvent(_playing = false));
+    _playerPlaying = false;
+    _broadcastState();
+    final player = _playerCompleter.value;
+    if (player != null) await player.pause(PauseRequest());
+    cancelled?.call();
+  }
+
+  void hold(void Function() onCancelled) {
+    _onHoldCancelled = onCancelled;
+    if (_holding && _playing) return;
+    _holding = true;
+    if (!_playing) customEvent.add(_PlayingEvent(_playing = true));
+    _broadcastState();
+  }
+
+  void cancelHold() {
+    if (!_holding) return;
+    _holding = false;
+    _onHoldCancelled = null;
     customEvent.add(_PlayingEvent(_playing = false));
     _broadcastState();
-    await (await _player).pause(PauseRequest());
   }
 
   void _updatePosition() {
@@ -910,7 +964,8 @@ class _PlayerAudioHandler extends BaseAudioHandler
         final player = _playerCompleter.value;
         if (player == null) return;
         _updatePosition();
-        customEvent.add(_PlayingEvent(_playing = false));
+        if (!_holding) customEvent.add(_PlayingEvent(_playing = false));
+        _playerPlaying = false;
         _justAudioEvent = _justAudioEvent.copyWith(
           processingState: ProcessingStateMessage.idle,
         );
@@ -965,6 +1020,9 @@ class _PlayerAudioHandler extends BaseAudioHandler
 
   /// Broadcasts the current state to all clients.
   void _broadcastState() {
+    final held = _holding &&
+        (_justAudioEvent.errorCode != null ||
+            _justAudioEvent.processingState == ProcessingStateMessage.idle);
     final transport = [
       MediaControl.skipToPrevious,
       if (_playing) MediaControl.pause else MediaControl.play,
@@ -982,23 +1040,26 @@ class _PlayerAudioHandler extends BaseAudioHandler
       },
       repeatMode: _repeatMode,
       shuffleMode: _reportedShuffleMode ?? _shuffleMode,
-      androidCompactActionIndices:
-          List.generate(transport.length, (i) => i),
-      processingState: _justAudioEvent.errorCode != null
-          ? AudioProcessingState.error
-          : const {
-                ProcessingStateMessage.idle: AudioProcessingState.idle,
-                ProcessingStateMessage.loading: AudioProcessingState.loading,
-                ProcessingStateMessage.buffering:
-                    AudioProcessingState.buffering,
-                ProcessingStateMessage.ready: AudioProcessingState.ready,
-                ProcessingStateMessage.completed:
-                    AudioProcessingState.completed,
-              }[_justAudioEvent.processingState] ??
-              AudioProcessingState.idle,
-      playing: _playing &&
-          !{ProcessingStateMessage.idle, ProcessingStateMessage.completed}
-              .contains(_justAudioEvent.processingState),
+      androidCompactActionIndices: List.generate(transport.length, (i) => i),
+      processingState: held
+          ? AudioProcessingState.buffering
+          : _justAudioEvent.errorCode != null
+              ? AudioProcessingState.error
+              : const {
+                    ProcessingStateMessage.idle: AudioProcessingState.idle,
+                    ProcessingStateMessage.loading:
+                        AudioProcessingState.loading,
+                    ProcessingStateMessage.buffering:
+                        AudioProcessingState.buffering,
+                    ProcessingStateMessage.ready: AudioProcessingState.ready,
+                    ProcessingStateMessage.completed:
+                        AudioProcessingState.completed,
+                  }[_justAudioEvent.processingState] ??
+                  AudioProcessingState.idle,
+      playing: held ||
+          _playing &&
+              !{ProcessingStateMessage.idle, ProcessingStateMessage.completed}
+                  .contains(_justAudioEvent.processingState),
       updatePosition: currentPosition,
       bufferedPosition: _justAudioEvent.bufferedPosition,
       speed: _speed,

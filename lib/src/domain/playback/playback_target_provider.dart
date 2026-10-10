@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/playback/local_playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 
 final localPlaybackTargetProvider = Provider<PlaybackTarget>((ref) {
@@ -11,6 +12,8 @@ final localPlaybackTargetProvider = Provider<PlaybackTarget>((ref) {
     idleStopAfter: Platform.isAndroid
         ? LocalPlaybackTarget.androidIdleStop
         : null,
+    isOnline: () => ref.read(connectivityProvider),
+    onlineChanges: () => ref.read(connectivityProvider.notifier).stream,
   );
   ref.onDispose(target.dispose);
   return target;
