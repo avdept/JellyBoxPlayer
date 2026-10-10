@@ -6,6 +6,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
 import 'package:jplayer/src/data/backend/genre_playlists.dart';
+import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/jellyfin/mappers/jellyfin_item_mapper.dart';
 import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
@@ -17,8 +18,10 @@ import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:retrofit/retrofit.dart';
 
 class JellyfinClient implements MediaServerClient {
   JellyfinClient({
@@ -41,7 +44,20 @@ class JellyfinClient implements MediaServerClient {
   );
 
   @override
-  Future<MediaServerCapabilities> resolveCapabilities() async => capabilities;
+  Future<MediaServerCapabilities> resolveCapabilities() async {
+    final cached = _resolved;
+    if (cached != null) return cached;
+    try {
+      await _dio.get<Object?>('$_baseUrl/$_audioMusePath/info');
+      return _resolved = capabilities.copyWith(soundSearch: true);
+    } on DioException {
+      return _resolved = capabilities;
+    }
+  }
+
+  static const _audioMusePath = 'AudioMuseAI';
+
+  MediaServerCapabilities? _resolved;
 
   final JellyfinApi _api;
   final Dio _dio;
@@ -52,86 +68,161 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> getAlbums(LibraryQuery query) async {
-    final response = await _api.getAlbums(
-      userId: userId,
-      libraryId: query.libraryId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort),
-      contributingArtistIds: query.appearsOnArtistId,
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      artistIds: query.artistIds,
-      genreIds: query.genreIds,
-      filters: mediaBrowserFilters(query.filters),
-      ids: query.ids,
-    );
+    final response = await _albumsResponse(query);
     return response.data.toJellyfinLibraryPage();
   }
+
+  Future<HttpResponse<ItemsWrapper>> _albumsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getAlbums(
+    userId: userId,
+    libraryId: query.libraryId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort),
+    contributingArtistIds: query.appearsOnArtistId,
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    artistIds: query.artistIds,
+    genreIds: query.genreIds,
+    filters: mediaBrowserFilters(query.filters),
+    ids: query.ids,
+    nameLessThan: nameLessThan,
+  );
 
   @override
   Future<LibraryPage> getArtists(LibraryQuery query) async {
-    final response = switch (query.artistScope) {
-      ArtistScope.albumArtists => await _api.getAlbumArtists(
-        userId: userId,
-        startIndex: '${query.startIndex}',
-        limit: '${query.limit}',
-        sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
-        sortOrder: mediaBrowserSortOrder(query.direction),
-        filters: mediaBrowserFilters(query.filters),
-      ),
-      ArtistScope.allArtists => await _api.getArtists(
-        userId: userId,
-        startIndex: '${query.startIndex}',
-        limit: '${query.limit}',
-        sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
-        sortOrder: mediaBrowserSortOrder(query.direction),
-        filters: mediaBrowserFilters(query.filters),
-      ),
-    };
+    final response = await _artistsResponse(query);
     return response.data.toJellyfinLibraryPage();
   }
+
+  Future<HttpResponse<ItemsWrapper>> _artistsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => switch (query.artistScope) {
+    ArtistScope.albumArtists => _api.getAlbumArtists(
+      userId: userId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      filters: mediaBrowserFilters(query.filters),
+      nameLessThan: nameLessThan,
+    ),
+    ArtistScope.allArtists => _api.getArtists(
+      userId: userId,
+      startIndex: '${query.startIndex}',
+      limit: '${query.limit}',
+      sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
+      sortOrder: mediaBrowserSortOrder(query.direction),
+      filters: mediaBrowserFilters(query.filters),
+      nameLessThan: nameLessThan,
+    ),
+  };
 
   @override
   Future<LibraryPage> getGenres(LibraryQuery query) async {
-    final response = await _api.getGenres(
-      userId: userId,
-      libraryId: query.libraryId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.genre),
-      sortOrder: mediaBrowserSortOrder(query.direction),
-    );
+    final response = await _genresResponse(query);
     return response.data.toJellyfinLibraryPage();
   }
+
+  Future<HttpResponse<ItemsWrapper>> _genresResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getGenres(
+    userId: userId,
+    libraryId: query.libraryId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort, target: ItemKind.genre),
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    nameLessThan: nameLessThan,
+  );
 
   @override
   Future<LibraryPage> getPlaylists(LibraryQuery query) async {
-    final response = await _api.getPlaylists(
-      userId: userId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.playlist),
-      contributingArtistIds: query.appearsOnArtistId,
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      artistIds: query.artistIds,
-      filters: mediaBrowserFilters(query.filters),
-    );
+    final response = await _playlistsResponse(query);
     return response.data.toJellyfinLibraryPage();
   }
 
+  Future<HttpResponse<ItemsWrapper>> _playlistsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getPlaylists(
+    userId: userId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort, target: ItemKind.playlist),
+    contributingArtistIds: query.appearsOnArtistId,
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    artistIds: query.artistIds,
+    filters: mediaBrowserFilters(query.filters),
+    nameLessThan: nameLessThan,
+  );
+
   @override
   Future<LibraryPage> getAllSongs(LibraryQuery query) async {
-    final response = await _api.getAllSongs(
-      userId: userId,
-      libraryId: query.libraryId,
-      startIndex: '${query.startIndex}',
-      limit: '${query.limit}',
-      sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
-      sortOrder: mediaBrowserSortOrder(query.direction),
-      filters: mediaBrowserFilters(query.filters),
-      fields: mediaBrowserFields(query.fields),
-    );
+    final response = await _songsResponse(query);
     return response.data.toJellyfinLibraryPage();
+  }
+
+  Future<HttpResponse<ItemsWrapper>> _songsResponse(
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) => _api.getAllSongs(
+    userId: userId,
+    libraryId: query.libraryId,
+    startIndex: '${query.startIndex}',
+    limit: '${query.limit}',
+    sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
+    sortOrder: mediaBrowserSortOrder(query.direction),
+    filters: mediaBrowserFilters(query.filters),
+    fields: mediaBrowserFields(query.fields),
+    nameLessThan: nameLessThan,
+  );
+
+  @override
+  Future<LetterOffset?> letterOffset(
+    ItemKind kind,
+    LibraryQuery query,
+    String letter,
+  ) {
+    if (query.sort != ItemSort.name || !_countableKinds.contains(kind)) {
+      return Future.value();
+    }
+    final probe = query.copyWith(startIndex: 0, limit: 1);
+    return letterOffsetWith(
+      letter: letter,
+      direction: query.direction,
+      countBefore: (bound) => _countItems(kind, probe, nameLessThan: bound),
+      total: () => _countItems(kind, probe),
+    );
+  }
+
+  static const _countableKinds = {
+    ItemKind.album,
+    ItemKind.artist,
+    ItemKind.genre,
+    ItemKind.playlist,
+    ItemKind.song,
+  };
+
+  Future<int> _countItems(
+    ItemKind kind,
+    LibraryQuery query, {
+    String? nameLessThan,
+  }) async {
+    final response = await switch (kind) {
+      ItemKind.album => _albumsResponse(query, nameLessThan: nameLessThan),
+      ItemKind.artist => _artistsResponse(query, nameLessThan: nameLessThan),
+      ItemKind.genre => _genresResponse(query, nameLessThan: nameLessThan),
+      ItemKind.playlist => _playlistsResponse(
+        query,
+        nameLessThan: nameLessThan,
+      ),
+      _ => _songsResponse(query, nameLessThan: nameLessThan),
+    };
+    return response.data.totalRecordCount;
   }
 
   @override
@@ -333,6 +424,34 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> searchBySound(
+    String query, {
+    int limit = 50,
+  }) async {
+    final Response<Object?> response;
+    try {
+      response = await _dio.post<Object?>(
+        '$_baseUrl/$_audioMusePath/clap/search',
+        data: {'query': query, 'limit': limit},
+      );
+    } on DioException catch (error) {
+      if (const {400, 503}.contains(error.response?.statusCode)) {
+        return const [];
+      }
+      rethrow;
+    }
+    final body = response.data;
+    if (body is! Map) return const [];
+    final results = body['results'];
+    if (results is! List) return const [];
+    final ids = [
+      for (final result in results)
+        if (result case {'item_id': final String id}) id,
+    ];
+    return getItemsByIds(ids);
+  }
+
+  @override
   Future<void> setFavorite(String itemId, {required bool favorite}) async {
     if (favorite) {
       await _api.saveFavorite(userId: userId, itemId: itemId);
@@ -401,8 +520,11 @@ class JellyfinClient implements MediaServerClient {
 
     final useHls = target.supportsHls && (forceTranscode || profile.useHls);
     final transcodes = forceTranscode || profile.requiresTranscode;
-    final outputContainer = transcodes
+    final transcodingContainer = useHls
         ? profile.transcodingContainer
+        : _progressiveContainer(profile.transcodingContainer);
+    final outputContainer = transcodes
+        ? transcodingContainer
         : profile.outputContainer;
 
     final uri = _resolve(
@@ -425,10 +547,16 @@ class JellyfinClient implements MediaServerClient {
             'StartTimeTicks': '${startPosition.inMicroseconds * 10}',
         } else ...{
           'TranscodingProtocol': 'http',
-          'TranscodingContainer': profile.transcodingContainer,
+          'TranscodingContainer': transcodingContainer,
           if (!forceTranscode) 'Container': profile.directPlayContainers,
         },
       },
+    );
+
+    final delivered = profile.deliveredQuality(
+      audioSource,
+      transcodes: transcodes,
+      bitRateCeiling: _lossyBitRateCeiling,
     );
 
     return StreamSource(
@@ -439,13 +567,14 @@ class JellyfinClient implements MediaServerClient {
           ? mimeTypeForContainer('m3u8')
           : mimeTypeForContainer(outputContainer),
       requiresTranscode: transcodes,
-      delivered: profile.deliveredQuality(
-        audioSource,
-        transcodes: transcodes,
-        bitRateCeiling: _lossyBitRateCeiling,
-      ),
+      delivered: transcodes && !useHls
+          ? delivered.copyWith(container: outputContainer)
+          : delivered,
     );
   }
+
+  static String _progressiveContainer(String container) =>
+      container == 'm4a' ? 'aac' : container;
 
   @override
   Uri? imageUri(

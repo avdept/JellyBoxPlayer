@@ -25,7 +25,7 @@ import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
 class MockItemListNotifier
-    extends AutoDisposeFamilyAsyncNotifier<ItemsPage, ItemList>
+    extends AutoDisposeFamilyAsyncNotifier<PagedItems, ItemList>
     with Mock
     implements ItemListNotifier {}
 
@@ -68,8 +68,8 @@ void main() {
   late User mockUser;
 
   final faker = Faker.instance;
-  final mockAlbums = ItemsPage(
-    items: List.generate(
+  final mockAlbums = PagedItems.of(
+    List.generate(
       5,
       (_) => LibraryItem(
         id: faker.datatype.uuid(),
@@ -80,8 +80,8 @@ void main() {
       ),
     ),
   );
-  final mockArtists = ItemsPage(
-    items: List.generate(
+  final mockArtists = PagedItems.of(
+    List.generate(
       5,
       (_) => LibraryItem(
         id: faker.datatype.uuid(),
@@ -92,8 +92,8 @@ void main() {
       ),
     ),
   );
-  final mockPlaylists = ItemsPage(
-    items: List.generate(
+  final mockPlaylists = PagedItems.of(
+    List.generate(
       5,
       (_) => LibraryItem(
         id: faker.datatype.uuid(),
@@ -104,8 +104,8 @@ void main() {
       ),
     ),
   );
-  final mockGenres = ItemsPage(
-    items: List.generate(
+  final mockGenres = PagedItems.of(
+    List.generate(
       5,
       (index) => LibraryItem(
         id: faker.datatype.uuid(),
@@ -114,8 +114,8 @@ void main() {
       ),
     ),
   );
-  final mockSongs = ItemsPage(
-    items: List.generate(
+  final mockSongs = PagedItems.of(
+    List.generate(
       5,
       (_) => LibraryItem(
         id: faker.datatype.uuid(),
@@ -139,7 +139,7 @@ void main() {
     for (final list in ItemList.values) {
       when(
         () => mock.build(list),
-      ).thenAnswer((_) => Completer<ItemsPage>().future);
+      ).thenAnswer((_) => Completer<PagedItems>().future);
     }
     return mock;
   }

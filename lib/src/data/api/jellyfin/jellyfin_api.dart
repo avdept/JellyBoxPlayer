@@ -77,6 +77,7 @@ abstract class JellyfinApi {
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
     List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    @Query('NameLessThan') String? nameLessThan,
   });
 
   @GET('/Users/{userId}/Items')
@@ -113,6 +114,7 @@ abstract class JellyfinApi {
     @Query('Ids') List<String> ids = const [],
     @Query('Recursive') bool recursive = true,
     @Query('Fields') List<String> fields = const ['ProviderIds'],
+    @Query('NameLessThan') String? nameLessThan,
   });
 
   @GET('/Users/{userId}/Items/Latest')
@@ -151,6 +153,7 @@ abstract class JellyfinApi {
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Ascending',
     @Query('Recursive') bool recursive = true,
+    @Query('NameLessThan') String? nameLessThan,
   });
 
   @GET('/Users/{userId}/Items')
@@ -192,6 +195,7 @@ abstract class JellyfinApi {
     @Query('AlbumArtistIds') List<String> artistIds = const [],
     @Query('Recursive') bool recursive = true,
     @Query('Filters') List<String> filters = const [],
+    @Query('NameLessThan') String? nameLessThan,
   });
 
   @GET('/Users/{userId}/Items')
@@ -272,6 +276,7 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
     @Query('Filters') List<String> filters = const [],
+    @Query('NameLessThan') String? nameLessThan,
   });
 
   @GET('/Artists/AlbumArtists')
@@ -291,6 +296,7 @@ abstract class JellyfinApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
     @Query('Filters') List<String> filters = const [],
+    @Query('NameLessThan') String? nameLessThan,
   });
 
   @GET('/Artists')

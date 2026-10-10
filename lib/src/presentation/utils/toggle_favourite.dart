@@ -20,6 +20,7 @@ Future<LibraryItem> toggleFavourite(WidgetRef ref, LibraryItem item) async {
     case _:
       break;
   }
+  ref.read(favouritesChangedProvider.notifier).state++;
   return item.copyWith(
     userData: item.userData.copyWith(isFavorite: favorite),
   );

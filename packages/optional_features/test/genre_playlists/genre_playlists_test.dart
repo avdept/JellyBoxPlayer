@@ -57,6 +57,17 @@ void main() {
       );
       expect(isGeneratedPlaylistId('jellybox:liked-songs'), isFalse);
     });
+
+    test('- carry the moment they were made and still yield their genres', () {
+      final at = DateTime.fromMillisecondsSinceEpoch(1700000000000);
+      final stamped = genreMixId(['rock-id', '1990'], at: at);
+
+      expect(stamped, 'jellybox:genre-mix:rock-id,1990:1700000000000');
+      expect(genreIdsOf(stamped), ['rock-id', '1990']);
+      expect(generatedPlaylistCreatedAt(stamped), at);
+      expect(genreIdsOf(genreMixId(['1990'])), ['1990']);
+      expect(generatedPlaylistCreatedAt(genreMixId(['1990'])), isNull);
+    });
   });
 
   group('stub generator', () {

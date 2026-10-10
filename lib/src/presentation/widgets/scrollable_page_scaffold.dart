@@ -11,11 +11,13 @@ class ScrollablePageScaffold extends StatefulWidget {
     this.loadMoreData,
     this.contentPadding = EdgeInsets.zero,
     this.slivers = const [],
+    this.showScrollbar = true,
     super.key,
   });
 
   final ScrollController? controller;
   final bool useGradientBackground;
+  final bool showScrollbar;
   final Future<void> Function()? loadMoreData;
   final PreferredSizeWidget? navigationBar;
   final EdgeInsets contentPadding;
@@ -114,6 +116,7 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
           ),
           child: CustomScrollbar(
             controller: _effectiveScrollController,
+            enabled: widget.showScrollbar,
             child: CustomScrollView(
               controller: _effectiveScrollController,
               slivers: [

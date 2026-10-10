@@ -253,6 +253,11 @@ class SettingsPage extends ConsumerWidget {
                     ),
                     _settingCheckbox(
                       ref: ref,
+                      setting: AppSetting.letterRuler,
+                      label: 'Show A–Z index on browse lists sorted by name',
+                    ),
+                    _settingCheckbox(
+                      ref: ref,
                       setting: AppSetting.nowPlayingHalo,
                       label: 'Enable halo effect for currently playing media',
                     ),

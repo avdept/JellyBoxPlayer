@@ -69,10 +69,15 @@ class InstantMixDatabase {
 
   static InstantMix _mixFromRow(Map<String, Object?> row) {
     final libraryId = row['LibraryId']! as String;
+    final seed = LibraryItem.fromJson(
+      jsonDecode(row['Seed']! as String) as Map<String, dynamic>,
+    );
     return InstantMix(
-      seed: LibraryItem.fromJson(
-        jsonDecode(row['Seed']! as String) as Map<String, dynamic>,
-      ),
+      item: instantMixItem(
+        seed,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      ).copyWith(id: row['Id']! as String),
+      seed: seed,
       songs: [
         for (final song in jsonDecode(row['Songs']! as String) as List)
           LibraryItem.fromJson(song as Map<String, dynamic>),

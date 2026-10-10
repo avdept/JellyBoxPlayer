@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/audio_container_mime.dart';
 import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
@@ -1025,5 +1026,115 @@ void main() {
 
       expect(await client.getInstantMix('song-1'), isEmpty);
     });
+  });
+
+  group('letterOffset', () {
+    test('- artists come from the cached index', () async {
+      server.ok('getArtists', {
+        'artists': {
+          'index': [
+            {
+              'name': 'A',
+              'artist': [
+                {'id': 'ar2', 'name': 'Bob'},
+                {'id': 'ar1', 'name': 'Alice'},
+                {'id': 'ar4', 'name': 'The Cure', 'sortName': 'cure'},
+              ],
+            },
+            {
+              'name': 'Z',
+              'artist': [
+                {'id': 'ar3', 'name': 'Zed'},
+              ],
+            },
+          ],
+        },
+      });
+
+      await client.getArtists(const LibraryQuery());
+      final ascending = await client.letterOffset(
+        ItemKind.artist,
+        const LibraryQuery(),
+        'C',
+      );
+      final descending = await client.letterOffset(
+        ItemKind.artist,
+        const LibraryQuery(direction: SortDirection.descending),
+        'B',
+      );
+
+      expect(ascending, const LetterOffset(2, total: 4));
+      expect(descending, const LetterOffset(2, total: 4));
+      expect(server.calls('getArtists'), hasLength(1));
+    });
+
+    test('- albums are found by probing the alphabetical list', () async {
+      const names = [
+        '1999',
+        'Abbey Road',
+        'Aja',
+        'Blue',
+        'Kid A',
+        'Rumours',
+        'Zen Arcade',
+      ];
+      server.on('getAlbumList2', (uri) {
+        final offset = int.parse(uri.queryParameters['offset'] ?? '0');
+        final size = int.parse(uri.queryParameters['size'] ?? '10');
+        return subsonicOk({
+          'albumList2': {
+            'album': [
+              for (var i = offset; i < offset + size && i < names.length; i++)
+                albumJson('al-$i', name: names[i]),
+            ],
+          },
+        });
+      });
+
+      final offset = await client.letterOffset(
+        ItemKind.album,
+        const LibraryQuery(libraryId: '1'),
+        'K',
+      );
+
+      expect(offset, const LetterOffset(4, total: 7));
+      final calls = server.calls('getAlbumList2');
+      expect(calls.length, lessThanOrEqualTo(10));
+      for (final call in calls) {
+        expect(call.queryParameters['type'], 'alphabeticalByName');
+        expect(call.queryParameters['size'], '1');
+        expect(call.queryParameters['musicFolderId'], '1');
+      }
+
+      final again = await client.letterOffset(
+        ItemKind.album,
+        const LibraryQuery(libraryId: '1'),
+        'Z',
+      );
+      expect(again, const LetterOffset(6, total: 7));
+      expect(
+        server.calls('getAlbumList2').length - calls.length,
+        lessThanOrEqualTo(3),
+      );
+    });
+
+    test(
+      '- albums have no index when the server order is not by name',
+      () async {
+        expect(
+          await client.letterOffset(
+            ItemKind.album,
+            const LibraryQuery(direction: SortDirection.descending),
+            'K',
+          ),
+          isNull,
+        );
+        expect(
+          await client.letterOffset(ItemKind.song, const LibraryQuery(), 'K'),
+          isNull,
+        );
+        expect(server.requests, isEmpty);
+      },
+    );
   });
 }

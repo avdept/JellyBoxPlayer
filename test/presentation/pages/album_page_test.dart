@@ -117,6 +117,9 @@ void main() {
           ),
           downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
           isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
+          downloadBadgeProvider.overrideWith(
+            (_, _) => isAlbumDownloaded ? DownloadBadge.downloaded : null,
+          ),
           isOfflineProvider.overrideWithValue(isOffline),
         ],
       ),

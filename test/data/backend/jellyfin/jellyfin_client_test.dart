@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/jellyfin/jellyfin_client.dart';
 import 'package:jplayer/src/data/backend/mappers/item_dto_mapper.dart';
@@ -294,9 +295,38 @@ void main() {
 
         expect(source.isHls, isFalse);
         expect(source.uri.path, '/Audio/song-1/universal');
-        expect(source.uri.queryParameters['TranscodingContainer'], 'm4a');
+        expect(source.uri.queryParameters['TranscodingContainer'], 'aac');
+        expect(source.outputContainer, 'aac');
+        expect(source.mimeType, 'audio/aac');
+        expect(source.delivered?.container, 'aac');
       },
     );
+
+    test('- downloads Dolby Digital in m4a on Android as ADTS', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'm4a', codec: 'eac3', bitRate: 768000),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.download(isAndroid: true),
+      );
+
+      expect(source.isHls, isFalse);
+      expect(source.requiresTranscode, isTrue);
+      expect(source.uri.queryParameters['AudioCodec'], 'aac');
+      expect(source.uri.queryParameters['TranscodingContainer'], 'aac');
+      expect(source.outputContainer, 'aac');
+    });
+
+    test('- direct-plays Dolby Digital in m4a off Android', () async {
+      final source = await client.resolveStreamSource(
+        songWith(container: 'm4a', codec: 'eac3', bitRate: 768000),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.download(isAndroid: false),
+      );
+
+      expect(source.requiresTranscode, isFalse);
+      expect(source.outputContainer, 'm4a');
+      expect(source.uri.queryParameters['Container'], contains('m4a|eac3'));
+    });
     test(
       '- routes ALAC on Android through a lossless HLS transcode',
       () async {
@@ -566,6 +596,265 @@ void main() {
       ]);
       expect(songs.map((song) => song.id), ['song-1', 'song-2']);
       expect(songs.first.kind, ItemKind.song);
+    });
+  });
+
+  group('searchBySound', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient soundClient;
+    final requests = <RequestOptions>[];
+
+    ResponseBody json(Object body, [int status = 200]) =>
+        ResponseBody.fromString(
+          jsonEncode(body),
+          status,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+
+    setUp(() {
+      requests.clear();
+      mockAdapter = MockHttpClientAdapter();
+      soundClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+    });
+
+    void answer(ResponseBody Function(RequestOptions options) respond) {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        requests.add(options);
+        return respond(options);
+      });
+    }
+
+    test('- posts the query and hydrates ids in similarity order', () async {
+      answer(
+        (options) => options.path.endsWith('/AudioMuseAI/clap/search')
+            ? json({
+                'query': 'calm piano',
+                'count': 2,
+                'results': [
+                  {
+                    'item_id': 'song-2',
+                    'title': 'Glory Box',
+                    'similarity': 0.9,
+                  },
+                  {'item_id': 'song-1', 'title': 'Roads', 'similarity': 0.7},
+                ],
+              })
+            : json({
+                'Items': [
+                  {'Id': 'song-1', 'Name': 'Roads', 'Type': 'Audio'},
+                  {'Id': 'song-2', 'Name': 'Glory Box', 'Type': 'Audio'},
+                ],
+                'TotalRecordCount': 2,
+              }),
+      );
+
+      final songs = await soundClient.searchBySound('calm piano', limit: 30);
+
+      final search = requests.first;
+      expect(search.method, 'POST');
+      expect(
+        search.uri.toString(),
+        'http://jelly.local:8096/AudioMuseAI/clap/search',
+      );
+      expect(search.data, {'query': 'calm piano', 'limit': 30});
+      final hydrate = requests.last;
+      expect(hydrate.uri.path, '/Users/user-1/Items');
+      expect(hydrate.uri.queryParameters['Ids'], 'song-2,song-1');
+      expect(songs.map((song) => song.id), ['song-2', 'song-1']);
+    });
+
+    test('- treats a disabled or unready index as no matches', () async {
+      for (final status in [400, 503]) {
+        answer((_) => json({'error': 'not ready'}, status));
+
+        expect(await soundClient.searchBySound('calm piano'), isEmpty);
+      }
+      expect(requests, hasLength(2));
+    });
+
+    test('- surfaces any other failure', () async {
+      answer((_) => json({'error': 'boom'}, 500));
+
+      await expectLater(
+        soundClient.searchBySound('calm piano'),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
+
+  group('resolveCapabilities', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient probeClient;
+
+    setUp(() {
+      mockAdapter = MockHttpClientAdapter();
+      probeClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+    });
+
+    void respondWith(int statusCode) {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode({'version': '0.1.52'}),
+          statusCode,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    }
+
+    test('- enables sound search when the AudioMuse plugin answers', () async {
+      respondWith(200);
+
+      final capabilities = await probeClient.resolveCapabilities();
+
+      final probe =
+          verify(
+                () => mockAdapter.fetch(captureAny(), any(), any()),
+              ).captured.single
+              as RequestOptions;
+      expect(probe.uri.path, '/AudioMuseAI/info');
+      expect(capabilities.soundSearch, isTrue);
+      expect(capabilities.artistScopes, probeClient.capabilities.artistScopes);
+    });
+
+    test('- keeps the defaults when the plugin is absent', () async {
+      respondWith(404);
+
+      expect((await probeClient.resolveCapabilities()).soundSearch, isFalse);
+    });
+
+    test('- probes once', () async {
+      respondWith(200);
+
+      await probeClient.resolveCapabilities();
+      await probeClient.resolveCapabilities();
+
+      verify(() => mockAdapter.fetch(any(), any(), any())).called(1);
+    });
+  });
+
+  group('letterOffset', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient countingClient;
+    final requests = <Uri>[];
+
+    setUp(() {
+      requests.clear();
+      mockAdapter = MockHttpClientAdapter();
+      countingClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final uri =
+            (invocation.positionalArguments.first as RequestOptions).uri;
+        requests.add(uri);
+        final filtered = uri.queryParameters.containsKey('NameLessThan');
+        return ResponseBody.fromString(
+          jsonEncode({
+            'Items': <Object>[],
+            'TotalRecordCount': filtered ? 420 : 1200,
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+    });
+
+    test('- ascending counts the names below the letter once', () async {
+      final offset = await countingClient.letterOffset(
+        ItemKind.album,
+        const LibraryQuery(libraryId: 'lib-1'),
+        'M',
+      );
+
+      expect(offset, const LetterOffset(420));
+      final uri = requests.single;
+      expect(uri.path, '/Users/user-1/Items');
+      expect(uri.queryParameters['IncludeItemTypes'], 'MusicAlbum');
+      expect(uri.queryParameters['ParentId'], 'lib-1');
+      expect(uri.queryParameters['SortBy'], 'SortName');
+      expect(uri.queryParameters['NameLessThan'], 'm');
+      expect(uri.queryParameters['Limit'], '1');
+    });
+
+    test('- # needs no request', () async {
+      expect(
+        await countingClient.letterOffset(
+          ItemKind.album,
+          const LibraryQuery(),
+          '#',
+        ),
+        const LetterOffset(0),
+      );
+      expect(requests, isEmpty);
+    });
+
+    test('- descending subtracts the next letter from the total', () async {
+      final offset = await countingClient.letterOffset(
+        ItemKind.artist,
+        const LibraryQuery(direction: SortDirection.descending),
+        'M',
+      );
+
+      expect(offset, const LetterOffset(780, total: 1200));
+      expect(requests.map((uri) => uri.path), ['/Artists', '/Artists']);
+      expect(
+        requests.map((uri) => uri.queryParameters['NameLessThan']),
+        [isNull, 'n'],
+      );
+    });
+
+    test('- songs count by the same SortName they are listed by', () async {
+      await countingClient.getAllSongs(const LibraryQuery());
+      await countingClient.letterOffset(
+        ItemKind.song,
+        const LibraryQuery(),
+        'B',
+      );
+
+      expect(
+        requests.map((uri) => uri.queryParameters['SortBy']),
+        ['SortName', 'SortName'],
+      );
+      expect(requests.last.queryParameters['IncludeItemTypes'], 'Audio');
+    });
+
+    test('- is unavailable for other sort orders', () async {
+      expect(
+        await countingClient.letterOffset(
+          ItemKind.album,
+          const LibraryQuery(sort: ItemSort.dateCreated),
+          'M',
+        ),
+        isNull,
+      );
+      expect(requests, isEmpty);
     });
   });
 

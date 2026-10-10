@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -179,6 +179,7 @@ class BarControls {
       return false;
     }
     _ref.invalidate(favouriteSongsProvider);
+    markFavouritesChanged(_ref);
     if (_remote) _ref.invalidate(remoteQueueProvider);
     _local.updateSong(
       song.copyWith(userData: song.userData.copyWith(isFavorite: favorite)),

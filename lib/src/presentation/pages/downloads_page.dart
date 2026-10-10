@@ -40,11 +40,24 @@ class DownloadsPage extends StatelessWidget {
         extra: {'album': album.item},
       );
 
-  void _onPlaylistTap(BuildContext context, DownloadedPlaylist playlist) =>
-      context.pushNamed(
-        Routes.playlist.name,
-        extra: {'playlist': playlist.item},
-      );
+  void _onPlaylistTap(BuildContext context, DownloadedPlaylist playlist) {
+    final item = playlist.item;
+    switch (EphemeralPlaylistId.parse(item.id)?.kind) {
+      case EphemeralPlaylistKind.likedSongs:
+        context.pushNamed(Routes.homeFavouriteSongs.name);
+      case EphemeralPlaylistKind.instantMix:
+      case EphemeralPlaylistKind.soundMix:
+        context.pushNamed(Routes.homeInstantMix.name, extra: {'mix': item});
+      case EphemeralPlaylistKind.genreMix:
+      case EphemeralPlaylistKind.genreDiscovery:
+        context.pushNamed(
+          Routes.homeGeneratedPlaylist.name,
+          extra: {'playlist': item},
+        );
+      case null:
+        context.pushNamed(Routes.playlist.name, extra: {'playlist': item});
+    }
+  }
 
   Future<void> _play(
     BuildContext context,

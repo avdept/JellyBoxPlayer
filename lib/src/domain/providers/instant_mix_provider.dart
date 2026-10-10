@@ -8,12 +8,15 @@ import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 const recentInstantMixesLimit = 5;
 
 class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
-  InstantMixesNotifier(this._ref, this._database) : super(const []) {
+  InstantMixesNotifier(this._ref, this._database, {DateTime Function()? now})
+    : _now = now ?? DateTime.now,
+      super(const []) {
     restored = _restore();
   }
 
   final Ref _ref;
   final InstantMixDatabase _database;
+  final DateTime Function() _now;
   final _fresh = <String>{};
 
   late final Future<void> restored;
@@ -58,9 +61,19 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
           ]
         : fetched;
 
-    final mix = InstantMix(
+    return _register(seed, songs);
+  }
+
+  InstantMix? createSoundMix(String query, List<LibraryItem> songs) {
+    if (songs.isEmpty) return null;
+    return _register(soundMixSeed(query), songs);
+  }
+
+  InstantMix _register(LibraryItem seed, List<LibraryItem> songs) {
+    final mix = InstantMix.create(
       seed: seed,
       songs: songs,
+      createdAt: _now(),
       libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
     );
     _fresh.add(mix.item.id);

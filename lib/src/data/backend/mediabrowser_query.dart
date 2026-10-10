@@ -3,7 +3,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 
 String mediaBrowserSort(ItemSort sort, {ItemKind target = ItemKind.album}) =>
     switch (sort) {
-      ItemSort.name => target == ItemKind.song ? 'Name' : 'SortName',
+      ItemSort.name => 'SortName',
       ItemSort.albumArtist => 'AlbumArtist',
       ItemSort.dateCreated => 'DateCreated,SortName',
       ItemSort.releaseDate => 'PremiereDate,ProductionYear,SortName',

@@ -15,6 +15,8 @@ const searchCategories = [
 
 int searchSongsPreviewLimit({required bool isMobile}) => isMobile ? 8 : 20;
 
+const soundSearchLabel = 'Sounds like';
+
 String searchCategoryLabel(ItemList category) => switch (category) {
   ItemList.albums => 'Albums',
   ItemList.artists => 'Artists',

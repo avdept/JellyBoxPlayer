@@ -8,9 +8,8 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/download_sync_provider.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -108,13 +107,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
       songs = downloaded.map((s) => s.item).toList();
       _songsLoaded = true;
     });
-  }
-
-  void _showOfflineSnackBar() {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Not available offline')),
-    );
   }
 
   @override
@@ -230,7 +222,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                     sourceId: widget.playlist.id,
                                   ),
                               position: index + 1,
-                              showDownloadState: true,
                               edgePadding: _device.isMobile ? 16 : 30,
                               onLikePressed: _onSongLikePressed,
                               optionsBuilder: (context) => [
@@ -268,6 +259,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     await ref
         .read(mediaServerClientProvider)
         .setFavorite(song.id, favorite: !song.userData.isFavorite);
+    ref.read(favouritesChangedProvider.notifier).state++;
     unawaited(_getSongs());
   }
 
@@ -466,84 +458,9 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     }
   }
 
-  Widget _downloadAlbumButton() => Consumer(
-    builder: (context, ref, child) {
-      final playlist = widget.playlist;
-      final badge = ref.watch(
-        downloadBadgeProvider((playlist.kind, playlist.id)),
-      );
-      if (badge == null && ref.watch(isOfflineProvider)) {
-        return const SizedBox.shrink();
-      }
-      return IconButton(
-        onPressed: () => badge == null ? _onDownload() : _onRemoveDownload(),
-        tooltip: badge == null ? 'Download' : 'Remove download',
-        icon: switch (badge) {
-          null => const Icon(JPlayer.download),
-          DownloadBadge.downloaded => const Icon(JPlayer.trash_2),
-          DownloadBadge.downloading => SizedBox.square(
-            dimension: 20,
-            child: CircularProgressIndicator(
-              value: ref.watch(downloadProgressProvider(playlist.id)),
-              strokeWidth: 2,
-            ),
-          ),
-        },
-      );
-    },
-  );
-
-  Future<void> _onDownload() async {
-    if (songs.isEmpty) {
-      _showOfflineSnackBar();
-      return;
-    }
-    await ref
-        .read(downloadManagerProvider.notifier)
-        .downloadPlaylist(widget.playlist, songs);
-  }
-
-  Future<void> _onRemoveDownload() async {
-    final shouldDelete = await _confirmDeleteDownload();
-    if (!(shouldDelete ?? false) || !mounted) return;
-    await ref
-        .read(downloadManagerProvider.notifier)
-        .deletePlaylist(widget.playlist.id);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Successfully deleted playlist')),
-      );
-    }
-  }
-
-  Future<bool?> _confirmDeleteDownload() => showAdaptiveDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog.adaptive(
-      title: Text.rich(
-        TextSpan(
-          text: 'Delete downloaded ',
-          children: [
-            TextSpan(
-              text: '"${widget.playlist.name}"',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextSpan(text: '?'),
-          ],
-        ),
-        textAlign: TextAlign.center,
-      ),
-      actions: [
-        AdaptiveDialogAction(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('No'),
-        ),
-        AdaptiveDialogAction(
-          onPressed: () => Navigator.of(context).pop(true),
-          isDestructiveAction: true,
-          child: const Text('Yes'),
-        ),
-      ],
-    ),
+  Widget _downloadAlbumButton() => CollectionDownloadButton(
+    item: widget.playlist,
+    songs: () async => songs,
   );
 
   Widget _albumDetails({

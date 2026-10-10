@@ -13,6 +13,7 @@ import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
 class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
@@ -110,16 +111,18 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
 
   Future<bool> syncPlaylist(
     LibraryItem playlist,
-    List<LibraryItem> songs,
-  ) async {
+    List<LibraryItem> songs, {
+    bool keepLocalOrder = false,
+  }) async {
     final database = _database;
     final localIds = await database.getPlaylistSongIds(playlist.id);
-    final serverIds = [for (final song in songs) song.id];
-    if (listEquals(localIds, serverIds)) return false;
+    final ordered = keepLocalOrder ? mergeLikedOrder(localIds, songs) : songs;
+    final wantedIds = [for (final song in ordered) song.id];
+    if (listEquals(localIds, wantedIds)) return false;
 
-    await _storePlaylist(playlist, songs);
+    await _storePlaylist(playlist, ordered);
 
-    final wanted = serverIds.toSet();
+    final wanted = wantedIds.toSet();
     await database.pruneSongs(localIds.where((id) => !wanted.contains(id)));
     ref.invalidateSelf();
     return true;
@@ -169,6 +172,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
         if (_cancelled.contains(id)) break;
         _currentSong[id] = song.id;
         final existing = await _existingDownload(song);
+        if (existing == null && _cancelled.contains(id)) break;
         final file =
             existing ??
             await _downloadSongFile(
@@ -189,6 +193,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
 
       if (_cancelled.contains(id)) {
         await database.pruneSongs(inserted);
+        ref.invalidateSelf();
         return;
       }
       await save(stored);

@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
+import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/search_songs_sliver.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class SearchResultsSliver extends ConsumerWidget {
   const SearchResultsSliver({this.isPending = false, super.key});
@@ -37,13 +40,19 @@ class SearchResultsSliver extends ConsumerWidget {
       for (final category in searchCategories)
         category: ref.watch(searchItemsProvider(category)),
     };
-    final hasItems = sections.values.any(
-      (section) => section.valueOrNull?.items.isNotEmpty ?? false,
-    );
+    final soundMatches = ref.watch(soundSearchProvider);
+    final soundItems = soundMatches.valueOrNull ?? const <LibraryItem>[];
+    final hasItems =
+        soundItems.isNotEmpty ||
+        sections.values.any(
+          (section) => section.valueOrNull?.items.isNotEmpty ?? false,
+        );
 
     if (!hasItems) {
       final isSearching =
-          isPending || sections.values.any((section) => section.isLoading);
+          isPending ||
+          soundMatches.isLoading ||
+          sections.values.any((section) => section.isLoading);
       if (isSearching) {
         return SliverToBoxAdapter(child: SectionsShimmer(device: device));
       }
@@ -67,6 +76,7 @@ class SearchResultsSliver extends ConsumerWidget {
 
     return SliverMainAxisGroup(
       slivers: [
+        ..._soundMixSection(context, ref, device, soundItems),
         for (final entry in sections.entries)
           ..._section(
             context: context,
@@ -77,6 +87,74 @@ class SearchResultsSliver extends ConsumerWidget {
           ),
       ],
     );
+  }
+
+  List<Widget> _soundMixSection(
+    BuildContext context,
+    WidgetRef ref,
+    DeviceType device,
+    List<LibraryItem> songs,
+  ) {
+    if (songs.isEmpty) return const [];
+
+    final query = ref.watch(searchProvider)?.trim() ?? '';
+    final seed = soundMixSeed(query);
+    final mixItem = seed.copyWith(name: '${seed.name} Mix');
+    final imageService = ref.read(imageServiceProvider);
+    final cardWidth = AlbumCardMetrics.width(device);
+
+    InstantMix? register() => ref.read(soundSearchProvider.notifier).mix();
+
+    return [
+      _header(
+        context,
+        ItemList.songs,
+        label: soundSearchLabel,
+        showChevron: false,
+      ),
+      SliverToBoxAdapter(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: cardWidth,
+            height: AlbumCardMetrics.height(
+              cardWidth,
+              isTablet: device.isTablet,
+            ),
+            child: AlbumView(
+              album: mixItem,
+              showArtist: false,
+              showDownloadBadge: false,
+              subtitle: '${songs.length} songs',
+              coverOverride: CoverMosaic(
+                images: [
+                  for (final song in songs.take(4))
+                    imageService.itemImage(song),
+                ],
+              ),
+              onTap: (_) {
+                final mix = register();
+                if (mix == null) return;
+                context.pushNamed(
+                  branchAwareName(context, Routes.instantMix),
+                  extra: {'mix': mix.item},
+                );
+              },
+              onPlayPressed: (_) async {
+                final mix = register();
+                if (mix == null) return;
+                await ref
+                    .read(setPlaybackProvider.notifier)
+                    .playInstantMix(mix);
+              },
+            ),
+          ),
+        ),
+      ),
+      SliverToBoxAdapter(
+        child: SizedBox(height: device.isMobile ? 16 : 24),
+      ),
+    ];
   }
 
   List<Widget> _section({
@@ -108,6 +186,7 @@ class SearchResultsSliver extends ConsumerWidget {
     BuildContext context,
     ItemList category, {
     required bool showChevron,
+    String? label,
   }) => SliverToBoxAdapter(
     child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -124,7 +203,7 @@ class SearchResultsSliver extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                searchCategoryLabel(category),
+                label ?? searchCategoryLabel(category),
                 style: const TextStyle(fontSize: 18),
               ),
               if (showChevron) const Icon(Icons.chevron_right, size: 22),

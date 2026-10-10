@@ -5,6 +5,7 @@ import 'package:jplayer/src/core/audio/audio_container_mime.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/api/subsonic/subsonic_api.dart';
+import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -51,6 +52,7 @@ class SubsonicClient implements MediaServerClient {
   static const losslessTranscodeFormat = 'flac';
   static const transcodeBitRate = 320;
   static const artistIndexTtl = Duration(seconds: 60);
+  static const albumIndexTtl = Duration(minutes: 10);
   static const extensionRetryInterval = Duration(minutes: 5);
   static const playedAlbumsScanLimit = 25;
   static const genreSetScanLimit = 500;
@@ -76,6 +78,7 @@ class SubsonicClient implements MediaServerClient {
   MediaServerCapabilities? _resolved;
   final _artistIndex =
       <String?, ({DateTime fetchedAt, List<SubsonicArtistDTO> artists})>{};
+  final _albumIndex = <String?, _SubsonicAlbumIndex>{};
   final _startedAt = <String, DateTime>{};
 
   @override
@@ -318,6 +321,145 @@ class SubsonicClient implements MediaServerClient {
   }
 
   @override
+  Future<LetterOffset?> letterOffset(
+    ItemKind kind,
+    LibraryQuery query,
+    String letter,
+  ) async {
+    if (query.sort != ItemSort.name) return null;
+    switch (kind) {
+      case ItemKind.artist:
+        final artists = query.filters.contains(ItemFilterFlag.favorite)
+            ? (await _api.getStarred2(musicFolderId: query.libraryId)).artist
+            : await _artistsIndex(query.libraryId);
+        return letterOffsetInKeys(
+          [
+            for (final artist in artists)
+              letterSortKey(artist.sortName ?? artist.name),
+          ],
+          letter: letter,
+          direction: query.direction,
+        );
+      case ItemKind.genre:
+        final genres = await _api.getGenres();
+        return letterOffsetInKeys(
+          [for (final genre in genres) letterSortKey(genre.value)],
+          letter: letter,
+          direction: query.direction,
+        );
+      case ItemKind.playlist:
+        if (query.artistIds.isNotEmpty ||
+            query.appearsOnArtistId != null ||
+            query.filters.contains(ItemFilterFlag.favorite)) {
+          return null;
+        }
+        final playlists = await _api.getPlaylists();
+        return letterOffsetInKeys(
+          [for (final playlist in playlists) letterSortKey(playlist.name)],
+          letter: letter,
+          direction: query.direction,
+        );
+      case ItemKind.album:
+        return _albumLetterOffset(query, letter);
+      case ItemKind.song:
+      case ItemKind.library:
+      case ItemKind.unknown:
+        return null;
+    }
+  }
+
+  Future<LetterOffset?> _albumLetterOffset(
+    LibraryQuery query,
+    String letter,
+  ) async {
+    if (query.appearsOnArtistId != null ||
+        query.ids.isNotEmpty ||
+        query.genreIds.isNotEmpty) {
+      return null;
+    }
+    if (query.artistIds.isNotEmpty ||
+        query.filters.contains(ItemFilterFlag.favorite)) {
+      final albums = <SubsonicAlbumDTO>[];
+      if (query.artistIds.isNotEmpty) {
+        for (final artistId in query.artistIds) {
+          albums.addAll((await _api.getArtist(artistId)).album);
+        }
+      } else {
+        albums.addAll(
+          (await _api.getStarred2(musicFolderId: query.libraryId)).album,
+        );
+      }
+      return letterOffsetInKeys(
+        [
+          for (final album in albums)
+            letterSortKey(album.sortName ?? album.name),
+        ],
+        letter: letter,
+        direction: query.direction,
+      );
+    }
+    if (query.direction != SortDirection.ascending) return null;
+
+    final index = _albumIndexFor(query.libraryId);
+    final total = await _albumTotal(index);
+    final lower = letterLowerBound(letter);
+    if (lower == null) return LetterOffset(0, total: total);
+    var lo = 0;
+    var hi = total;
+    while (lo < hi) {
+      final mid = (lo + hi) ~/ 2;
+      final key = await _albumKeyAt(index, mid);
+      if (key != null && key.compareTo(lower) < 0) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return LetterOffset(lo, total: total);
+  }
+
+  _SubsonicAlbumIndex _albumIndexFor(String? libraryId) {
+    final cached = _albumIndex[libraryId];
+    if (cached != null && _now().difference(cached.fetchedAt) < albumIndexTtl) {
+      return cached;
+    }
+    return _albumIndex[libraryId] = _SubsonicAlbumIndex(libraryId, _now());
+  }
+
+  Future<int> _albumTotal(_SubsonicAlbumIndex index) async {
+    final known = index.total;
+    if (known != null) return known;
+    var hi = 1;
+    while (await _albumKeyAt(index, hi - 1) != null) {
+      hi *= 2;
+    }
+    var lo = hi ~/ 2;
+    while (lo < hi) {
+      final mid = (lo + hi) ~/ 2;
+      if (await _albumKeyAt(index, mid) != null) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return index.total = lo;
+  }
+
+  Future<String?> _albumKeyAt(_SubsonicAlbumIndex index, int offset) async {
+    if (index.keys.containsKey(offset)) return index.keys[offset];
+    final albums = await _api.getAlbumList2(
+      type: subsonicAlbumListType(ItemSort.name),
+      size: 1,
+      offset: offset,
+      musicFolderId: index.libraryId,
+    );
+    final key = albums.isEmpty
+        ? null
+        : letterSortKey(albums.first.sortName ?? albums.first.name);
+    return index.keys[offset] = key;
+  }
+
+  @override
   Future<LibraryPage> getSongsOfSet(LibraryQuery query) async {
     if (query.artistIds.isNotEmpty) {
       final songs = <SubsonicChildDTO>[];
@@ -437,6 +579,12 @@ class SubsonicClient implements MediaServerClient {
     String itemId, {
     int limit = 100,
   }) async => _songItems(await _api.getSimilarSongs(id: itemId, count: limit));
+
+  @override
+  Future<List<LibraryItem>> searchBySound(
+    String query, {
+    int limit = 50,
+  }) async => const [];
 
   Future<List<LibraryItem>> _albumList(
     String type, {
@@ -844,4 +992,13 @@ class SubsonicClient implements MediaServerClient {
 
   @override
   Future<void> signOut() async {}
+}
+
+class _SubsonicAlbumIndex {
+  _SubsonicAlbumIndex(this.libraryId, this.fetchedAt);
+
+  final String? libraryId;
+  final DateTime fetchedAt;
+  int? total;
+  final keys = <int, String?>{};
 }

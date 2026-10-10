@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -94,6 +95,9 @@ void main() {
     return createTestApp(
       providerContainer: createProviderContainer(
         overrides: [
+          currentUserProvider.overrideWith(
+            (_) => const User(userId: 'user-1', token: 't'),
+          ),
           isOfflineProvider.overrideWith((_) => isOffline),
           if (updateInterval != null)
             contentUpdateIntervalProvider.overrideWithValue(updateInterval),

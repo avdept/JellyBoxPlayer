@@ -55,7 +55,6 @@ void main() {
       ),
       home: Center(
         child: SongRowView(
-          showDownloadState: true,
           song: song,
           position: position,
           isPlaying: isPlaying,

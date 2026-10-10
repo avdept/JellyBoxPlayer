@@ -70,6 +70,8 @@ void main() {
     registerFallbackValue(mockSong);
     registerFallbackValue(mockAlbum);
     registerFallbackValue(FakeFile());
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(MockMediaServerClient());
   });
 
   setUp(() {
@@ -226,6 +228,84 @@ void main() {
     );
 
     test(
+      '- a liked-songs sync keeps the local order and puts new likes first',
+      () async {
+        const liked = LibraryItem(
+          id: 'jellybox:liked-songs:user-1',
+          name: 'Liked songs',
+          kind: ItemKind.playlist,
+        );
+        LibraryItem song(String id) =>
+            LibraryItem(id: id, name: id, kind: ItemKind.song);
+        when(
+          () => mockDownloadDatabase.getDownloadedSongs(),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDownloadDatabase.getPlaylistSongIds(liked.id),
+        ).thenAnswer((_) async => ['c', 'a', 'gone']);
+        when(
+          () => mockDownloadDatabase.getDownloadedSongPath(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDownloadDatabase.insertDownloadedSong(
+            any(),
+            file: any(named: 'file'),
+          ),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDownloadDatabase.insertDownloadedPlaylist(
+            any(),
+            songs: any(named: 'songs'),
+            files: any(named: 'files'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDownloadDatabase.pruneSongs(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDownloadService.downloadSong(
+            any(),
+            mockMediaServerClient,
+            deviceId: any(named: 'deviceId'),
+          ),
+        ).thenAnswer((invocation) async {
+          final item = invocation.positionalArguments.first as LibraryItem;
+          return createDownloadTask(
+            id: item.id,
+            status: DownloadStatus.completed,
+          );
+        });
+        when(
+          () => mockDownloadService.downloadAlbumCover(any(), any()),
+        ).thenAnswer((_) async => null);
+
+        final changed = await providerContainer
+            .read(downloadManagerProvider.notifier)
+            .syncPlaylist(
+              liked,
+              [song('a'), song('new'), song('c')],
+              keepLocalOrder: true,
+            );
+
+        expect(changed, isTrue);
+        final stored =
+            verify(
+                  () => mockDownloadDatabase.insertDownloadedPlaylist(
+                    any(),
+                    songs: captureAny(named: 'songs'),
+                    files: any(named: 'files'),
+                  ),
+                ).captured.single
+                as List<LibraryItem>;
+        expect(stored.map((s) => s.id), ['new', 'c', 'a']);
+        final pruned = verify(
+          () => mockDownloadDatabase.pruneSongs(captureAny()),
+        ).captured.single;
+        expect(pruned, ['gone']);
+      },
+    );
+
+    test(
       '- can delete a song from database',
       () async {
         when(
@@ -358,5 +438,92 @@ void main() {
         verify(() => mockDownloadDatabase.getDownloadedAlbums()).called(1);
       },
     );
+    test('- stopping a playlist download prunes what it fetched', () async {
+      final first = mockSong.copyWith(id: 'song-a');
+      final second = mockSong.copyWith(id: 'song-b');
+      final playlist = LibraryItem(
+        id: 'playlist-1',
+        name: 'Mix',
+        kind: ItemKind.playlist,
+      );
+      final firstTask = createDownloadTask(
+        id: first.id,
+        status: DownloadStatus.completed,
+      );
+      final secondTask = createDownloadTask(
+        id: second.id,
+        status: DownloadStatus.downloading,
+      );
+      when(
+        () => mockDownloadDatabase.getDownloadedSongs(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDownloadDatabase.getDownloadedSongPath(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDownloadDatabase.insertDownloadedSong(
+          any(),
+          file: any(named: 'file'),
+        ),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDownloadDatabase.pruneSongs(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDownloadDatabase.deleteDownloadedPlaylist(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDownloadService.downloadSong(
+          first,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenAnswer((_) async => firstTask);
+      when(
+        () => mockDownloadService.downloadSong(
+          second,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenAnswer((_) async => secondTask);
+      when(() => mockDownloadService.cancelDownload(second.id)).thenAnswer((
+        _,
+      ) async {
+        secondTask.status.value = DownloadStatus.canceled;
+      });
+
+      final notifier = providerContainer.read(downloadManagerProvider.notifier);
+      final download = notifier.downloadPlaylist(playlist, [first, second]);
+      await untilCalled(
+        () => mockDownloadService.downloadSong(
+          second,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
+      await notifier.deletePlaylist(playlist.id);
+      await download;
+
+      verify(() => mockDownloadService.cancelDownload(second.id)).called(1);
+      final pruned =
+          verify(
+                () => mockDownloadDatabase.pruneSongs(captureAny()),
+              ).captured.single
+              as Iterable<String>;
+      expect(pruned, [first.id]);
+      verifyNever(
+        () => mockDownloadDatabase.insertDownloadedPlaylist(
+          any(),
+          songs: any(named: 'songs'),
+          files: any(named: 'files'),
+        ),
+      );
+      expect(
+        providerContainer
+            .read(activeDownloadsProvider)
+            .containsKey(playlist.id),
+        isFalse,
+      );
+    });
   });
 }

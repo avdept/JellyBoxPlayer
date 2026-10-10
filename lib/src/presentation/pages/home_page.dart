@@ -88,7 +88,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _onPlaylistTap(LibraryItem playlist) {
-    if (playlist.id == likedSongsPlaylistId) {
+    if (isLikedSongsId(playlist.id)) {
       context.pushNamed(branchAwareName(context, Routes.favouriteSongs));
       return;
     }
@@ -106,7 +106,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<void> _onPlayPlaylist(LibraryItem playlist) => _play(
     playlist,
-    () => playlist.id == likedSongsPlaylistId
+    () => isLikedSongsId(playlist.id)
         ? ref.read(setPlaybackProvider.notifier).playFavouriteSongs(playlist)
         : ref.read(setPlaybackProvider.notifier).playPlaylist(playlist),
   );
@@ -124,7 +124,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget? _playlistCover(LibraryItem playlist) {
-    if (playlist.id != likedSongsPlaylistId) return null;
+    if (!isLikedSongsId(playlist.id)) return null;
     final covers = ref.watch(likedSongsCoversProvider);
     if (covers.isEmpty) return null;
 
@@ -334,14 +334,16 @@ class _HomePageState extends ConsumerState<HomePage> {
               title: 'Playlists',
               items: ref
                   .watch(recentlyUpdatedPlaylistsProvider)
-                  .whenData((list) => [likedSongsPlaylist, ...list]),
+                  .whenData(
+                    (list) => [?ref.watch(likedSongsPlaylistProvider), ...list],
+                  ),
               device: _device,
               horizontalPadding: _horizontalPadding,
               onItemTap: _onPlaylistTap,
               onPlayPressed: _onPlayPlaylist,
               coverBuilder: _playlistCover,
               optionsBuilder: _cardOptions(recentlyUpdatedPlaylistsProvider),
-              hasOptions: (item) => item.id != likedSongsPlaylistId,
+              hasOptions: (item) => !isLikedSongsId(item.id),
               onRetry: () => ref.invalidate(recentlyUpdatedPlaylistsProvider),
               onRefresh: () =>
                   ref.refresh(recentlyUpdatedPlaylistsProvider.future),

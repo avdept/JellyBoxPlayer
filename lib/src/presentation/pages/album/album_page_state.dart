@@ -38,7 +38,6 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   List<LibraryItem> songs = [];
   bool isLoadingSongs = true;
   bool loadFailed = false;
-  bool _isDownloadBusy = false;
   late bool isFavorite;
   late final ImageService imageService;
   late ThemeData theme;
@@ -219,7 +218,6 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
                     .read(playbackProvider.notifier)
                     .play(song, songs, album, sourceId: album.id),
                 position: index + 1,
-                showDownloadState: true,
                 edgePadding: edgePadding,
                 playingColor: playingRowColor,
                 onLikePressed: _onSongLikePressed,
@@ -401,6 +399,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       await ref
           .read(mediaServerClientProvider)
           .setFavorite(album.id, favorite: next);
+      ref.read(favouritesChangedProvider.notifier).state++;
     } on Object {
       if (mounted) setState(() => isFavorite = !next);
       showOfflineSnackBar();
@@ -409,79 +408,18 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     ref.invalidate(favouriteAlbumsProvider);
   }
 
-  Widget downloadAlbumButton() => Consumer(
-    builder: (context, ref, child) {
-      final isDownloaded = ref
-          .watch(isAlbumDownloadedProvider(album))
-          .valueOrNull;
-      if (isDownloaded == null) return const SizedBox.shrink();
-      if (!isDownloaded && ref.watch(isOfflineProvider)) {
-        return const SizedBox.shrink();
-      }
-      return IgnorePointer(
-        ignoring: _isDownloadBusy,
-        child: IconButton(
-          key: isDownloaded ? testKeys?.deleteButton : testKeys?.downloadButton,
-          onPressed: () => _onDownloadPressed(isDownloaded: isDownloaded),
-          icon: Icon(isDownloaded ? JPlayer.trash_2 : JPlayer.download),
-        ),
-      );
+  Widget downloadAlbumButton() => CollectionDownloadButton(
+    item: album,
+    songs: () async => songs,
+    testKeys: switch (testKeys) {
+      final keys? => CollectionDownloadButtonKeys(
+        download: keys.downloadButton,
+        delete: keys.deleteButton,
+        confirmationDialog: keys.confirmationDialog,
+      ),
+      null => null,
     },
   );
-
-  Future<void> _onDownloadPressed({required bool isDownloaded}) async {
-    if (!isDownloaded && songs.isEmpty) {
-      showOfflineSnackBar();
-      return;
-    }
-    setState(() => _isDownloadBusy = true);
-    if (!isDownloaded) {
-      await ref
-          .read(downloadManagerProvider.notifier)
-          .downloadAlbum(album, songs);
-    } else {
-      final shouldDelete = await showAdaptiveDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog.adaptive(
-          key: testKeys?.confirmationDialog,
-          title: Text.rich(
-            TextSpan(
-              text: 'Delete ',
-              children: [
-                TextSpan(
-                  text: '"${album.name}"',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const TextSpan(text: '?'),
-              ],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            AdaptiveDialogAction(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('No'),
-            ),
-            AdaptiveDialogAction(
-              onPressed: () => Navigator.of(context).pop(true),
-              isDestructiveAction: true,
-              child: const Text('Yes'),
-            ),
-          ],
-        ),
-      );
-      if ((shouldDelete ?? false) && mounted) {
-        await ref.read(downloadManagerProvider.notifier).deleteAlbum(album.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Successfully deleted album')),
-          );
-        }
-      }
-    }
-    _isDownloadBusy = false;
-    if (mounted) setState(() {});
-  }
 
   MoreFromArtistKey? get _moreFromArtistKey {
     final artist = album.albumArtists.firstOrNull;
@@ -603,6 +541,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       await ref
           .read(mediaServerClientProvider)
           .setFavorite(song.id, favorite: !song.userData.isFavorite);
+      ref.read(favouritesChangedProvider.notifier).state++;
     } on Object {
       showOfflineSnackBar();
       return;
