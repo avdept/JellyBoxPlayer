@@ -96,4 +96,45 @@ abstract class Themes {
       waitDuration: tooltipDelay,
     ),
   );
+
+  static final ThemeData tv = red.copyWith(
+    visualDensity: VisualDensity.standard,
+    focusColor: Colors.white24,
+    splashFactory: NoSplash.splashFactory,
+    dialogTheme: const DialogThemeData(
+      backgroundColor: Color(0xFF1C1518),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+      titleTextStyle: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+      contentTextStyle: TextStyle(fontSize: 16, color: Colors.white),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style:
+          TextButton.styleFrom(
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ).copyWith(
+            backgroundColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.focused)
+                  ? Colors.white
+                  : Colors.white10,
+            ),
+            foregroundColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.focused)
+                  ? Colors.black
+                  : Colors.white,
+            ),
+          ),
+    ),
+  );
 }

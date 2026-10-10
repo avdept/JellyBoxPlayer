@@ -3,10 +3,20 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/presentation/pages/pages.dart';
+import 'package:jplayer/src/presentation/tv/pages/tv_now_playing_page.dart';
 import 'package:optional_features/catalog.dart';
 
 class ScreenFactory {
   const ScreenFactory();
+
+  @protected
+  LibraryItem itemParam(GoRouterState router, String key) {
+    final params = router.extra! as Map<String, dynamic>;
+    final value = params[key];
+    return value is LibraryItem
+        ? value
+        : LibraryItem.fromJson(value as Map<String, dynamic>);
+  }
 
   static LocalKey _pageKey(GoRouterState router, String kind, String id) =>
       ValueKey('${router.pageKey.value}:$kind:$id');
@@ -193,6 +203,15 @@ class ScreenFactory {
   ) {
     return const CupertinoPage(
       child: LoginPage(addingServer: true),
+    );
+  }
+
+  Page<void> nowPlayingPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: TvNowPlayingPage(),
     );
   }
 

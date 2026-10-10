@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class DeviceType {
@@ -13,4 +14,6 @@ class DeviceType {
   bool get isTablet => screenType == DeviceScreenType.tablet;
   bool get isMobile => screenType == DeviceScreenType.mobile;
   bool get isWatch => screenType == DeviceScreenType.watch;
+
+  bool get isTv => TvMode.isTv;
 }
