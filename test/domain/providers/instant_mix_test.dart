@@ -13,6 +13,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -131,6 +132,7 @@ void main() {
         ),
       ),
       localPlaybackTargetProvider.overrideWithValue(target),
+      remoteRendererProvider.overrideWithValue(null),
       mediaServerClientProvider.overrideWith((_) => client),
       isOfflineProvider.overrideWithValue(false),
       if (userId != null)

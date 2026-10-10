@@ -7,6 +7,7 @@ import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -163,11 +164,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     }
   }
 
-  String? _currentSongId() {
-    final playback = _ref.read(playbackProvider);
-    final index = playback.currentMediaIndex;
-    return index != null ? playback.songs.elementAtOrNull(index)?.id : null;
-  }
+  String? _currentSongId() => _ref.read(barSongProvider)?.id;
 }
 
 final setPlaybackProvider = StateNotifierProvider<SetPlaybackNotifier, String?>(

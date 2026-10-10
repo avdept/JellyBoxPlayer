@@ -17,6 +17,8 @@ void main() {
   late StreamController<Duration> positions;
   late StreamController<Duration?> durations;
   late StreamController<PlayerState> playerStates;
+  late StreamController<PlayerException> errors;
+  late StreamController<bool> online;
   late LocalPlaybackTarget target;
 
   setUpAll(() {
@@ -50,8 +52,17 @@ void main() {
     positions = StreamController<Duration>.broadcast();
     durations = StreamController<Duration?>.broadcast();
     playerStates = StreamController<PlayerState>.broadcast();
+    errors = StreamController<PlayerException>.broadcast();
+    online = StreamController<bool>.broadcast();
 
     when(() => player.bufferedPosition).thenReturn(Duration.zero);
+    when(() => player.errorStream).thenAnswer((_) => errors.stream);
+    when(() => player.sequence).thenReturn([
+      AudioSource.uri(Uri.parse('http://jelly.local/a')),
+      AudioSource.uri(Uri.parse('http://jelly.local/b')),
+    ]);
+    when(() => player.effectiveIndices).thenReturn([0, 1]);
+    when(player.pause).thenAnswer((_) async {});
     when(() => player.currentIndexStream).thenAnswer((_) => indexes.stream);
     when(() => player.positionStream).thenAnswer((_) => positions.stream);
     when(() => player.durationStream).thenAnswer((_) => durations.stream);
@@ -82,6 +93,8 @@ void main() {
     await positions.close();
     await durations.close();
     await playerStates.close();
+    await errors.close();
+    await online.close();
   });
 
   TargetTrack trackWith({bool isHls = false}) => TargetTrack(
@@ -169,6 +182,13 @@ void main() {
       expect(state.position, const Duration(seconds: 3));
       expect(state.duration, const Duration(minutes: 4));
       expect(state.completed, isFalse);
+    });
+
+    test('- maps a player that is still activating to buffering', () async {
+      final states = target.stateStream.take(1).toList();
+      reportPlayer(playing: true, processingState: ProcessingState.idle);
+
+      expect((await states).single.status, PlaybackStatus.buffering);
     });
 
     test('- maps a ready but idle player to paused', () async {
@@ -268,36 +288,16 @@ void main() {
       verifyNever(player.play);
     });
 
-    test('- stops and retries once when the first load throws', () async {
-      var attempts = 0;
-      when(
-        () => player.setAudioSources(
-          any(),
-          initialIndex: any(named: 'initialIndex'),
-          initialPosition: any(named: 'initialPosition'),
-          preload: any(named: 'preload'),
-          shuffleOrder: any(named: 'shuffleOrder'),
-        ),
-      ).thenAnswer((_) async {
-        attempts++;
-        if (attempts == 1) throw Exception('load failed');
-        return null;
-      });
+    group('when the stream cannot be loaded', () {
+      const soon = Duration(milliseconds: 10);
+      const later = Duration(milliseconds: 60);
+      late int attempts;
+      late int failures;
 
-      await target.load(
-        [trackWith()],
-        initialIndex: 0,
-        initialPosition: Duration.zero,
-        autoPlay: false,
-      );
-
-      expect(attempts, 2);
-      verify(player.stop).called(1);
-    });
-
-    test(
-      '- leaves a paused queue to load on play when it cannot load',
-      () async {
+      setUp(() async {
+        await target.dispose();
+        attempts = 0;
+        failures = 1;
         when(
           () => player.setAudioSources(
             any(),
@@ -306,39 +306,324 @@ void main() {
             preload: any(named: 'preload'),
             shuffleOrder: any(named: 'shuffleOrder'),
           ),
-        ).thenThrow(Exception('no network'));
+        ).thenAnswer((_) async {
+          attempts++;
+          if (attempts <= failures) throw Exception('no network');
+          return null;
+        });
+      });
 
-        await target.load(
+      LocalPlaybackTarget targetThatRetries({
+        bool isOnline = true,
+        Duration offlineRetryEvery = const Duration(seconds: 30),
+        int skipAfter = 10,
+        Duration retryDelay = soon,
+      }) {
+        final retrying = LocalPlaybackTarget(
+          player,
+          isOnline: () => isOnline,
+          onlineChanges: () => online.stream,
+          retryDelays: [retryDelay],
+          offlineRetryEvery: offlineRetryEvery,
+          skipAfter: skipAfter,
+        );
+        addTearDown(retrying.dispose);
+        return retrying;
+      }
+
+      test('- keeps retrying a queue that was meant to play', () async {
+        failures = 3;
+        final retrying = targetThatRetries();
+
+        await retrying.load(
           [trackWith()],
           initialIndex: 0,
-          initialPosition: Duration.zero,
-          autoPlay: false,
+          initialPosition: const Duration(seconds: 12),
+          autoPlay: true,
         );
 
-        verify(player.stop).called(2);
+        expect(retrying.state.status, PlaybackStatus.buffering);
+        expect(retrying.state.position, const Duration(seconds: 12));
         verifyNever(player.play);
-      },
-    );
 
-    test('- still reports a failed load that was meant to play', () async {
-      when(
-        () => player.setAudioSources(
-          any(),
-          initialIndex: any(named: 'initialIndex'),
-          initialPosition: any(named: 'initialPosition'),
-          preload: any(named: 'preload'),
-          shuffleOrder: any(named: 'shuffleOrder'),
-        ),
-      ).thenThrow(Exception('no network'));
+        await Future<void>.delayed(later);
 
-      await expectLater(
-        target.load(
+        expect(attempts, 4);
+        expect(retrying.retryPending, isFalse);
+        verify(player.play).called(1);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 0,
+            initialPosition: const Duration(seconds: 12),
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(4);
+      });
+
+      test('- waits for the connection instead of polling offline', () async {
+        final retrying = targetThatRetries(isOnline: false);
+
+        await retrying.load(
           [trackWith()],
           initialIndex: 0,
           initialPosition: Duration.zero,
           autoPlay: true,
-        ),
-        throwsException,
+        );
+        await Future<void>.delayed(later);
+
+        expect(attempts, 1);
+
+        online.add(true);
+        await Future<void>.delayed(soon);
+
+        expect(attempts, 2);
+        verify(player.play).called(1);
+      });
+
+      test('- leaves a paused queue to reload on play', () async {
+        when(() => player.sequence).thenReturn([
+          for (final name in ['a', 'b', 'c'])
+            AudioSource.uri(Uri.parse('http://jelly.local/$name')),
+        ]);
+        final retrying = targetThatRetries();
+
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 2,
+          initialPosition: const Duration(seconds: 40),
+          autoPlay: false,
+        );
+        await Future<void>.delayed(later);
+
+        expect(attempts, 1);
+        expect(retrying.state.status, PlaybackStatus.paused);
+        expect(retrying.state.currentIndex, 2);
+        verifyNever(player.play);
+
+        await retrying.play();
+
+        expect(attempts, 2);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 2,
+            initialPosition: const Duration(seconds: 40),
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(2);
+        verify(player.play).called(1);
+      });
+
+      test('- a play that bypassed the target still gets retried', () async {
+        failures = 2;
+        final retrying = targetThatRetries();
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 1,
+          initialPosition: const Duration(seconds: 5),
+          autoPlay: false,
+        );
+        expect(retrying.state.status, PlaybackStatus.paused);
+
+        reportPlayer(playing: true, processingState: ProcessingState.idle);
+        errors.add(PlayerException(1, 'Source error', 1));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(retrying.state.status, PlaybackStatus.buffering);
+
+        await Future<void>.delayed(later);
+
+        expect(attempts, 3);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 1,
+            initialPosition: const Duration(seconds: 5),
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(3);
+        verify(player.play).called(1);
+      });
+
+      test('- skips a track that keeps failing while online', () async {
+        when(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: any(named: 'initialIndex'),
+            initialPosition: any(named: 'initialPosition'),
+            preload: any(named: 'preload'),
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).thenAnswer((invocation) async {
+          attempts++;
+          if (invocation.namedArguments[#initialIndex] == 0) {
+            throw Exception('gone from the server');
+          }
+          return null;
+        });
+        final retrying = targetThatRetries(skipAfter: 2);
+
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 0,
+          initialPosition: const Duration(seconds: 12),
+          autoPlay: true,
+        );
+        await Future<void>.delayed(later);
+
+        expect(retrying.state.status, isNot(PlaybackStatus.error));
+        expect(retrying.retryPending, isFalse);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 1,
+            initialPosition: Duration.zero,
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(1);
+        verify(player.play).called(1);
+      });
+
+      test('- never skips while offline', () async {
+        failures = 100;
+        final retrying = targetThatRetries(
+          isOnline: false,
+          offlineRetryEvery: soon,
+          skipAfter: 2,
+        );
+
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        await Future<void>.delayed(later);
+
+        expect(attempts, greaterThan(3));
+        expect(retrying.state.currentIndex, 0);
+        expect(retrying.state.status, PlaybackStatus.buffering);
+        verifyNever(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 1,
+            initialPosition: any(named: 'initialPosition'),
+            preload: any(named: 'preload'),
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        );
+      });
+
+      test('- gives up with an error when no track is left', () async {
+        failures = 100;
+        final retrying = targetThatRetries(skipAfter: 1);
+
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        await Future<void>.delayed(later);
+
+        expect(retrying.state.status, PlaybackStatus.error);
+        expect(retrying.retryPending, isFalse);
+        final before = attempts;
+        await Future<void>.delayed(later);
+        expect(attempts, before);
+        verifyNever(player.play);
+      });
+
+      test('- follows the pending track when the queue shifts', () async {
+        final a = AudioSource.uri(Uri.parse('http://jelly.local/a'));
+        final b = AudioSource.uri(Uri.parse('http://jelly.local/b'));
+        final added = AudioSource.uri(Uri.parse('http://jelly.local/new'));
+        when(() => player.sequence).thenReturn([a, b]);
+        failures = 1;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+        );
+
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 1,
+          initialPosition: const Duration(seconds: 20),
+          autoPlay: true,
+        );
+        expect(retrying.state.currentIndex, 1);
+
+        when(() => player.sequence).thenReturn([added, a, b]);
+        when(() => player.effectiveIndices).thenReturn([0, 1, 2]);
+        await retrying.play();
+
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 2,
+            initialPosition: const Duration(seconds: 20),
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(1);
+        expect(retrying.retryPending, isFalse);
+      });
+
+      test('- pausing calls the retries off', () async {
+        failures = 10;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+        );
+
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        await retrying.pause();
+        await Future<void>.delayed(later);
+
+        expect(attempts, 1);
+        expect(retrying.state.status, PlaybackStatus.paused);
+      });
+
+      test(
+        '- a stream that drops while playing resumes where it was',
+        () async {
+          failures = 0;
+          final retrying = targetThatRetries();
+          reportPlayer(
+            playing: true,
+            processingState: ProcessingState.ready,
+            index: 1,
+            position: const Duration(seconds: 30),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          errors.add(PlayerException(1, 'Source error', 1));
+          await Future<void>.delayed(Duration.zero);
+
+          expect(retrying.state.status, PlaybackStatus.buffering);
+          verify(player.stop).called(1);
+
+          await Future<void>.delayed(later);
+
+          verify(
+            () => player.setAudioSources(
+              any(),
+              initialIndex: 1,
+              initialPosition: const Duration(seconds: 30),
+              preload: true,
+              shuffleOrder: any(named: 'shuffleOrder'),
+            ),
+          ).called(1);
+          verify(player.play).called(1);
+        },
       );
     });
   });

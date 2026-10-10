@@ -58,6 +58,25 @@ abstract class CloudHost<S> {
     required bool shuffle,
   });
 
+  Future<void> playQueue({
+    required List<S> songs,
+    required int index,
+    required S? album,
+    required String? sourceId,
+  });
+
+  Future<bool> enqueue({required List<S> songs, required bool playNext});
+
+  Future<bool> replaceUpcoming({
+    required List<S> songs,
+    required S? album,
+    required String? sourceId,
+  });
+
+  Future<void> moveInQueue(int from, int to);
+
+  Future<void> removeFromQueue(int index);
+
   Future<void> pause();
 
   Future<void> resume();

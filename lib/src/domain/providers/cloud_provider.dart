@@ -9,7 +9,9 @@ import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/data/cloud/cloud_host_adapter.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final conductorUrlProvider =
@@ -63,6 +65,8 @@ class CloudNotifier extends StateNotifier<CloudState> {
       });
 
     _watchNetwork();
+    _remote = _RemotePlayback(_cloud);
+    _playback = _ref.read(playbackProvider.notifier)..remote = _remote;
 
     unawaited(_cloud.start(benchUrl: _benchUrl()));
   }
@@ -71,6 +75,8 @@ class CloudNotifier extends StateNotifier<CloudState> {
 
   late final CloudHostAdapter _host;
   late final JellyboxCloud<LibraryItem> _cloud;
+  late final _RemotePlayback _remote;
+  late final PlaybackNotifier _playback;
   late final StreamSubscription<CloudState> _states;
   StreamSubscription<List<ConnectivityResult>>? _network;
   AppLifecycleListener? _lifecycle;
@@ -94,6 +100,7 @@ class CloudNotifier extends StateNotifier<CloudState> {
 
   Future<void> shutdown() async {
     _lifecycle?.dispose();
+    if (_playback.remote == _remote) _playback.remote = null;
     await _network?.cancel();
     await _states.cancel();
     await _cloud.dispose();
@@ -130,6 +137,44 @@ class CloudNotifier extends StateNotifier<CloudState> {
     final url = _ref.read(conductorUrlProvider);
     return url.isEmpty || url == jellyboxCloudUrl ? null : url;
   }
+}
+
+class _RemotePlayback implements RemotePlayback {
+  _RemotePlayback(this._cloud);
+
+  final JellyboxCloud<LibraryItem> _cloud;
+
+  @override
+  Future<bool> play(PlayRequest request) => _cloud.playOnRenderer(
+    itemIds: request.itemIds,
+    index: request.index,
+    albumId: request.album.id,
+    sourceId: request.sourceId,
+  );
+
+  @override
+  Future<bool> enqueue(List<LibraryItem> songs, {required bool playNext}) =>
+      _cloud.enqueueOnRenderer(
+        itemIds: [for (final song in songs) song.id],
+        playNext: playNext,
+      );
+
+  @override
+  Future<bool> replaceUpcoming(
+    List<LibraryItem> songs,
+    LibraryItem album, {
+    String? sourceId,
+  }) => _cloud.replaceUpcomingOnRenderer(
+    itemIds: [for (final song in songs) song.id],
+    albumId: album.id,
+    sourceId: sourceId,
+  );
+
+  @override
+  Future<bool> move(int from, int to) => _cloud.moveOnRenderer(from, to);
+
+  @override
+  Future<bool> remove(int index) => _cloud.removeOnRenderer(index);
 }
 
 final cloudAvailableProvider = Provider<bool>(

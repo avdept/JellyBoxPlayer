@@ -135,6 +135,53 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   }
 
   @override
+  Future<void> playQueue({
+    required List<LibraryItem> songs,
+    required int index,
+    required LibraryItem? album,
+    required String? sourceId,
+  }) => _ref
+      .read(playbackProvider.notifier)
+      .play(
+        songs[index],
+        songs,
+        album ?? placeholderAlbumFor(songs[index]),
+        sourceId: sourceId,
+      );
+
+  @override
+  Future<bool> enqueue({
+    required List<LibraryItem> songs,
+    required bool playNext,
+  }) {
+    final playback = _ref.read(playbackProvider.notifier);
+    return playNext
+        ? playback.playNextAll(songs)
+        : playback.addAllToQueue(songs);
+  }
+
+  @override
+  Future<bool> replaceUpcoming({
+    required List<LibraryItem> songs,
+    required LibraryItem? album,
+    required String? sourceId,
+  }) => _ref
+      .read(playbackProvider.notifier)
+      .replaceUpcoming(
+        songs,
+        album ?? placeholderAlbumFor(songs.first),
+        sourceId: sourceId,
+      );
+
+  @override
+  Future<void> moveInQueue(int from, int to) =>
+      _ref.read(playbackProvider.notifier).moveInQueue(from, to);
+
+  @override
+  Future<void> removeFromQueue(int index) =>
+      _ref.read(playbackProvider.notifier).removeFromQueue(index);
+
+  @override
   Future<void> pause() => _ref.read(playbackProvider.notifier).pause();
 
   @override

@@ -1,3 +1,20 @@
+## 0.0.1-beta.17+jellybox.6 (LOCAL FORK)
+
+* PATCH: a playback error while playing no longer tears the session down. The
+  handler keeps reporting "buffering" (not idle) through the native player's
+  disposal, so the foreground service, notification and metadata survive while
+  the app retries the queue — Android 17 mutes background audio that starts
+  without a foreground service, and a car head unit drops play presses sent to
+  an inactive session. The app asks for it with
+  `JustAudioBackground.holdPlayback(onCancelled:)` when it defers a load that
+  was meant to play; a pause from the notification or a car runs `onCancelled`
+  so the app stops retrying, and `cancelPendingPlayback()` releases the hold
+  when the app gives up itself. A held session already reports playing, so the
+  handler tracks whether the *current* native player was told to play and
+  always forwards the first play after a reload (otherwise the reload came up
+  silent with the progress bar running). `pause()` no longer awaits a player
+  that was disposed.
+
 ## 0.0.1-beta.17+jellybox.5 (LOCAL FORK)
 
 * PATCH: `JustAudioBackground.playHandler` routes media-session play (Android

@@ -33,7 +33,22 @@ class Telemetry {
     }
 
     unawaited(_sendLaunchEvents());
-    await SentryFlutter.init(_configureSentry, appRunner: appRunner);
+    await SentryFlutter.init(
+      _configureSentry,
+      appRunner: () {
+        _keepConsoleLogging();
+        return appRunner();
+      },
+    );
+  }
+
+  static void _keepConsoleLogging() {
+    final sentryPrint = debugPrint;
+    if (identical(sentryPrint, debugPrintThrottled)) return;
+    debugPrint = (String? message, {int? wrapWidth}) {
+      sentryPrint(message, wrapWidth: wrapWidth);
+      debugPrintThrottled(message, wrapWidth: wrapWidth);
+    };
   }
 
   static void watch(ProviderContainer container) {
@@ -59,6 +74,7 @@ class Telemetry {
     } else {
       unawaited(_sendLaunchEvents());
       await SentryFlutter.init(_configureSentry);
+      _keepConsoleLogging();
     }
   }
 
