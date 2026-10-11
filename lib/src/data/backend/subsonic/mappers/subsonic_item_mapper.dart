@@ -90,10 +90,12 @@ Map<String, String> _externalIds(String key, String? musicBrainzId) {
 PlaybackUserData _userData({
   required int playCount,
   required String? starred,
+  int? userRating,
 }) => PlaybackUserData(
   playCount: playCount,
   played: playCount > 0,
   isFavorite: _presence(starred) != null,
+  rating: (userRating ?? 0).clamp(0, 5),
 );
 
 extension SubsonicChildMapping on SubsonicChildDTO {
@@ -134,7 +136,11 @@ extension SubsonicChildMapping on SubsonicChildDTO {
             : '$subsonicAlbumArtPrefix$resolvedAlbumId',
       ),
       hasLyrics: lyricsAvailable,
-      userData: _userData(playCount: playCount, starred: starred),
+      userData: _userData(
+        playCount: playCount,
+        starred: starred,
+        userRating: userRating,
+      ),
       audioSources: [
         AudioSourceInfo(
           container: container,
@@ -175,7 +181,11 @@ extension SubsonicAlbumMapping on SubsonicAlbumDTO {
       images: ImageRefs(
         primary: _presence(coverArt) ?? '$subsonicAlbumArtPrefix$id',
       ),
-      userData: _userData(playCount: playCount, starred: starred),
+      userData: _userData(
+        playCount: playCount,
+        starred: starred,
+        userRating: userRating,
+      ),
       externalIds: _externalIds(
         ExternalIdProvider.musicBrainzAlbum,
         musicBrainzId,
@@ -193,7 +203,7 @@ extension SubsonicArtistMapping on SubsonicArtistDTO {
       primary: _presence(coverArt) ?? '$subsonicArtistArtPrefix$id',
       backdrops: [?_presence(artistImageUrl)],
     ),
-    userData: _userData(playCount: 0, starred: starred),
+    userData: _userData(playCount: 0, starred: starred, userRating: userRating),
     externalIds: _externalIds(
       ExternalIdProvider.musicBrainzArtist,
       musicBrainzId,

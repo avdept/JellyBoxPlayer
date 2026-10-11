@@ -123,17 +123,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
-  Widget? _playlistCover(LibraryItem playlist) {
-    if (!isLikedSongsId(playlist.id)) return null;
-    final covers = ref.watch(likedSongsCoversProvider);
-    if (covers.isEmpty) return null;
-
-    final imageService = ref.read(imageServiceProvider);
-    return CoverMosaic(
-      images: [for (final song in covers) imageService.itemImage(song)],
-    );
-  }
-
   void _onGeneratedPlaylistTap(LibraryItem playlist) => context.pushNamed(
     Routes.homeGeneratedPlaylist.name,
     extra: {'playlist': playlist},
@@ -341,7 +330,6 @@ class _HomePageState extends ConsumerState<HomePage> {
               horizontalPadding: _horizontalPadding,
               onItemTap: _onPlaylistTap,
               onPlayPressed: _onPlayPlaylist,
-              coverBuilder: _playlistCover,
               optionsBuilder: _cardOptions(recentlyUpdatedPlaylistsProvider),
               hasOptions: (item) => !isLikedSongsId(item.id),
               onRetry: () => ref.invalidate(recentlyUpdatedPlaylistsProvider),

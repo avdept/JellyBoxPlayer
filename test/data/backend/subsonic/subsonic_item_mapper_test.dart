@@ -45,6 +45,7 @@ void main() {
     'playCount': 3,
     'played': '2026-09-18T14:53:19Z',
     'starred': '2026-09-18T14:52:59.655054214Z',
+    'userRating': 4,
   };
 
   group('SubsonicChildDTO.toLibraryItem', () {
@@ -70,6 +71,7 @@ void main() {
       expect(song.userData.playCount, 3);
       expect(song.userData.played, isTrue);
       expect(song.userData.isFavorite, isTrue);
+      expect(song.userData.rating, 4);
       expect(song.externalIds, {
         ExternalIdProvider.musicBrainzRecording:
             '37ac48b6-dc4d-4b5e-a19b-e43ddda26bf9',
@@ -82,6 +84,18 @@ void main() {
       expect(source.sampleRate, 44100);
       expect(source.channels, 2);
       expect(source.bitDepth, isNull);
+    });
+
+    test('- treats a missing or out-of-range user rating as unrated', () {
+      LibraryItem songWith(Object? userRating) => SubsonicChildDTO.fromJson({
+        'id': 's1',
+        'title': 'Song',
+        if (userRating != null) 'userRating': userRating,
+      }).toLibraryItem();
+
+      expect(songWith(null).userData.rating, 0);
+      expect(songWith(0).userData.rating, 0);
+      expect(songWith(9).userData.rating, 5);
     });
 
     test('- falls back to legacy single-valued fields', () {

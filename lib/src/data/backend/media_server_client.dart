@@ -81,6 +81,8 @@ abstract class MediaServerClient {
 
   Future<void> setFavorite(String itemId, {required bool favorite});
 
+  Future<void> setRating(String itemId, int rating);
+
   Future<void> createPlaylist(PlaylistData values);
 
   Future<void> deletePlaylist(String playlistId);

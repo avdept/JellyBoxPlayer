@@ -195,7 +195,7 @@ class CarContent {
     final page = _ref.read(favouriteSongsProvider).valueOrNull;
     final liked = _ref.read(likedSongsPlaylistProvider);
     if (page == null || page.items.isEmpty || liked == null) return null;
-    return _setEntry(liked, _ref.read(likedSongsCoversProvider));
+    return _setEntry(liked, const []);
   }
 
   Future<CarPage> list({

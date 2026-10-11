@@ -11,6 +11,7 @@ abstract class PlaybackUserData with _$PlaybackUserData {
     @Default(0) int playCount,
     @Default(false) bool isFavorite,
     @Default(false) bool played,
+    @Default(0) int rating,
   }) = _PlaybackUserData;
 
   factory PlaybackUserData.fromJson(Map<String, dynamic> json) =>

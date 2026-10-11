@@ -16,6 +16,7 @@ _PlaybackUserData _$PlaybackUserDataFromJson(Map<String, dynamic> json) =>
       playCount: (json['playCount'] as num?)?.toInt() ?? 0,
       isFavorite: json['isFavorite'] as bool? ?? false,
       played: json['played'] as bool? ?? false,
+      rating: (json['rating'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$PlaybackUserDataToJson(_PlaybackUserData instance) =>
@@ -24,4 +25,5 @@ Map<String, dynamic> _$PlaybackUserDataToJson(_PlaybackUserData instance) =>
       'playCount': instance.playCount,
       'isFavorite': instance.isFavorite,
       'played': instance.played,
+      'rating': instance.rating,
     };

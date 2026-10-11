@@ -203,6 +203,23 @@ void main() {
   );
 
   test(
+    'ratings round-trip on a song',
+    () async {
+      final songs = await client.getAllSongs(const LibraryQuery(limit: 1));
+      final song = songs.items.single;
+
+      await client.setRating(song.id, 4);
+      final rated = await client.getItem(song.id, kind: ItemKind.song);
+      await client.setRating(song.id, 0);
+      final cleared = await client.getItem(song.id, kind: ItemKind.song);
+
+      expect(rated.userData.rating, 4);
+      expect(cleared.userData.rating, 0);
+    },
+    skip: configured ? false : 'set SUBSONIC_USER/SUBSONIC_PASS',
+  );
+
+  test(
     'playlists can be created, filled, trimmed and deleted',
     () async {
       final songs = await client.getAllSongs(const LibraryQuery(limit: 3));

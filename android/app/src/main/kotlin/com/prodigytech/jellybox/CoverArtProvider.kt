@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import com.ryanheise.audioservice.AudioServicePlugin
+import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -22,6 +23,7 @@ class CoverArtProvider : ContentProvider() {
         if (mode != "r") throw FileNotFoundException("Read-only provider")
         val segments = uri.pathSegments
         if (segments.size == 2 && segments[0] == REMOTE) return remoteCover(segments[1])
+        if (segments.size == 2 && segments[0] == ASSET) return assetCover(segments[1])
         val albumId = segments.singleOrNull()
             ?: throw FileNotFoundException(uri.toString())
         val context = context ?: throw FileNotFoundException("No context")
@@ -30,6 +32,18 @@ class CoverArtProvider : ContentProvider() {
         val insideRoot = cover.parentFile?.parentFile == musicRoot
         if (!insideRoot || !cover.isFile) throw FileNotFoundException(uri.toString())
         return ParcelFileDescriptor.open(cover, ParcelFileDescriptor.MODE_READ_ONLY)
+    }
+
+    private fun assetCover(name: String): ParcelFileDescriptor {
+        if (!ASSET_NAME.matches(name)) throw FileNotFoundException(name)
+        val context = context ?: throw FileNotFoundException("No context")
+        val copy = File(File(context.cacheDir, "cover_assets"), name)
+        if (!copy.isFile) {
+            val key = FlutterInjector.instance().flutterLoader().getLookupKeyForAsset("assets/images/$name")
+            copy.parentFile?.mkdirs()
+            context.assets.open(key).use { input -> copy.outputStream().use { input.copyTo(it) } }
+        }
+        return ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)
     }
 
     private fun remoteCover(key: String): ParcelFileDescriptor {
@@ -86,6 +100,8 @@ class CoverArtProvider : ContentProvider() {
 
     private companion object {
         const val REMOTE = "remote"
+        const val ASSET = "asset"
+        val ASSET_NAME = Regex("[A-Za-z0-9_.-]+")
         const val CHANNEL = "com.prodigytech.jellybox/cover_art"
         const val TIMEOUT_SECONDS = 10L
     }

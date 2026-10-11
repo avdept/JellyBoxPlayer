@@ -221,6 +221,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
                 edgePadding: edgePadding,
                 playingColor: playingRowColor,
                 onLikePressed: _onSongLikePressed,
+                onRatingChanged: _onSongRated,
                 optionsBuilder: (context) => contextMenuActions(
                   context,
                   ref,
@@ -547,6 +548,20 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
     ref.invalidate(favouriteSongsProvider);
+    unawaited(_getSongs());
+  }
+
+  Future<void> _onSongRated(LibraryItem song, int rating) async {
+    if (ref.read(isOfflineProvider)) {
+      showOfflineSnackBar();
+      return;
+    }
+    try {
+      await rateItem(ref, song, rating);
+    } on Object {
+      showOfflineSnackBar();
+      return;
+    }
     unawaited(_getSongs());
   }
 }

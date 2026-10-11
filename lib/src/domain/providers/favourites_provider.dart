@@ -158,22 +158,6 @@ final AutoDisposeFutureProvider<LibraryPage> favouriteSongsProvider =
       );
     });
 
-final AutoDisposeProvider<List<LibraryItem>> likedSongsCoversProvider =
-    Provider.autoDispose((ref) {
-      final page = ref.watch(favouriteSongsProvider).valueOrNull;
-      if (page == null) return const [];
-
-      final seenAlbums = <String>{};
-      final picks = <LibraryItem>[];
-      for (final song in page.items) {
-        if (!song.images.hasCover) continue;
-        if (!seenAlbums.add(song.albumId ?? song.id)) continue;
-        picks.add(song);
-        if (picks.length == 4) break;
-      }
-      return picks;
-    });
-
 class FavouriteSongsNotifier
     extends AutoDisposeFamilyAsyncNotifier<ItemsPage, Filter> {
   late MediaServerClient _api;

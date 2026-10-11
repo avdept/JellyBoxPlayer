@@ -63,6 +63,7 @@ class SubsonicClient implements MediaServerClient {
   static const _baseCapabilities = MediaServerCapabilities(
     similarAlbums: false,
     playlistFavourites: false,
+    ratings: true,
   );
 
   final SubsonicApi _api;
@@ -772,6 +773,10 @@ class SubsonicClient implements MediaServerClient {
   @override
   Future<void> setFavorite(String itemId, {required bool favorite}) =>
       favorite ? _api.star(itemId) : _api.unstar(itemId);
+
+  @override
+  Future<void> setRating(String itemId, int rating) =>
+      _api.setRating(itemId, rating.clamp(0, 5));
 
   @override
   Future<void> createPlaylist(PlaylistData values) async {

@@ -112,6 +112,31 @@ void main() {
       expect(imageService.itemUri(song), isNull);
     });
 
+    test('- gives the liked songs playlist its bundled cover', () {
+      stubImageUri(Uri.parse('http://server.local/never'));
+      final liked = LibraryItem(
+        id: EphemeralPlaylistId.likedSongs('user-1'),
+        name: 'Liked songs',
+        kind: ItemKind.playlist,
+      );
+
+      expect(
+        imageService.itemUri(liked),
+        Uri.parse('asset:///${Images.likedSongs}'),
+      );
+      expect(
+        imageService.itemImage(liked),
+        const AssetImage(Images.likedSongs),
+      );
+      verifyNever(
+        () => mockClient.imageUri(
+          any(),
+          kind: any(named: 'kind'),
+          size: any(named: 'size'),
+        ),
+      );
+    });
+
     test('- does not ask the backend for an item carrying no image refs', () {
       stubImageUri(Uri.parse('http://server.local/never'));
 

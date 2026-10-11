@@ -30,6 +30,9 @@ class ImageService {
       return _client().imageUri(item, kind: kind, size: size);
     }
 
+    if (EphemeralPlaylistId.isLikedSongs(item.id)) {
+      return assetUri(Images.likedSongs);
+    }
     final downloaded = DownloadPaths.coverFile(item.albumId ?? item.id);
     if (downloaded != null) return downloaded.uri;
     if (!item.images.hasCover) return null;
@@ -56,8 +59,13 @@ class ImageService {
           ? itemUri(album, size: size)
           : null);
 
+  static Uri assetUri(String asset) =>
+      Uri(scheme: 'asset', host: '', path: '/$asset');
+
   ImageProvider? artworkImageOrNull(Uri? uri, {int? size}) {
-    if (uri == null || uri.isScheme('file') || size == null) {
+    if (uri == null ||
+        !uri.isScheme('http') && !uri.isScheme('https') ||
+        size == null) {
       return _imageOf(uri);
     }
     return _imageOf(_client().resizedImageUri(uri, size));
@@ -72,6 +80,7 @@ class ImageService {
   ImageProvider? _imageOf(Uri? uri) {
     if (uri == null) return null;
     if (uri.isScheme('file')) return FileImage(File.fromUri(uri));
+    if (uri.isScheme('asset')) return AssetImage(uri.path.substring(1));
     final url = uri.toString();
     return CachedNetworkImageProvider(
       url,
