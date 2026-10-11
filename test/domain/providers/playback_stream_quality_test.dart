@@ -31,6 +31,10 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
 
   final loaded = <List<TargetTrack>>[];
   final replaced = <(int, TargetTrack)>[];
+  var holdsCurrent = true;
+
+  @override
+  bool get holdsCurrentTrack => holdsCurrent;
 
   @override
   Future<void> insert(int index, TargetTrack track, {bool playNext = false}) =>
@@ -401,6 +405,21 @@ void main() {
 
     expect([for (final entry in target.replaced) entry.$1], [3, 0, 1]);
   });
+
+  test(
+    '- includes the current track when the target is not holding it',
+    () async {
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs[2], songs, album);
+      target.holdsCurrent = false;
+
+      network.use(NetworkType.cellular);
+      await pumpUntil(() => target.replaced.length == 4);
+
+      expect([for (final entry in target.replaced) entry.$1], [2, 3, 0, 1]);
+    },
+  );
 
   test('- leaves a stream alone when nothing about it changed', () async {
     final playback = container.read(playbackProvider.notifier);

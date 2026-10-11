@@ -14,6 +14,7 @@ final localPlaybackTargetProvider = Provider<PlaybackTarget>((ref) {
         : null,
     isOnline: () => ref.read(connectivityProvider),
     onlineChanges: () => ref.read(connectivityProvider.notifier).stream,
+    recheckConnection: () => ref.read(connectivityProvider.notifier).refresh(),
   );
   ref.onDispose(target.dispose);
   return target;

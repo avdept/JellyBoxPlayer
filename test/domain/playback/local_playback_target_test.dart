@@ -573,6 +573,66 @@ void main() {
         expect(retrying.retryPending, isFalse);
       });
 
+      test('- asks for a connection check when a load is deferred', () async {
+        var checks = 0;
+        final retrying = LocalPlaybackTarget(
+          player,
+          recheckConnection: () async => checks++,
+          retryDelays: const [Duration(seconds: 5)],
+        );
+        addTearDown(retrying.dispose);
+
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+
+        expect(checks, 1);
+        expect(retrying.holdsCurrentTrack, isFalse);
+      });
+
+      test('- a replaced pending track is retried at once', () async {
+        final stale = AudioSource.uri(Uri.parse('http://home/a'));
+        final fresh = AudioSource.uri(Uri.parse('http://tunnel/a'));
+        when(() => player.sequence).thenReturn([stale]);
+        when(() => player.removeAudioSourceAt(any())).thenAnswer((_) async {});
+        when(
+          () => player.insertAudioSource(any(), any()),
+        ).thenAnswer((_) async {});
+        failures = 1;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+          skipAfter: 1,
+        );
+
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: const Duration(seconds: 42),
+          autoPlay: true,
+        );
+        expect(attempts, 1);
+
+        when(() => player.sequence).thenReturn([fresh]);
+        await retrying.replace(0, trackWith());
+        await Future<void>.delayed(soon);
+
+        expect(attempts, 2);
+        expect(retrying.retryPending, isFalse);
+        verify(
+          () => player.setAudioSources(
+            [fresh],
+            initialIndex: 0,
+            initialPosition: const Duration(seconds: 42),
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(1);
+        verify(player.play).called(1);
+      });
+
       test('- pausing calls the retries off', () async {
         failures = 10;
         final retrying = targetThatRetries(

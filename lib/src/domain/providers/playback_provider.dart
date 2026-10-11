@@ -1340,7 +1340,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     final songs = state.songs;
     final queueIds = [for (final song in songs) song.id];
-    final start = (state.currentMediaIndex ?? -1) + 1;
+    final keepCurrent = target.holdsCurrentTrack;
+    final start = (state.currentMediaIndex ?? -1) + (keepCurrent ? 1 : 0);
     var swapped = 0;
     var interrupted = false;
 
@@ -1356,7 +1357,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         final song = songs[index];
         await _queueEditsToSettle();
         if (!proceed()) return;
-        if (index == state.currentMediaIndex) continue;
+        if (keepCurrent && index == state.currentMediaIndex) continue;
         final sessionId = _playSessionIds[song.id];
         if (sessionId == null) continue;
 
@@ -1364,7 +1365,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         if (track == null) continue;
         await _queueEditsToSettle();
         if (!proceed()) return;
-        if (index == state.currentMediaIndex) continue;
+        if (keepCurrent && index == state.currentMediaIndex) continue;
         if (index < _tracks.length && _sameStream(_tracks[index], track)) {
           continue;
         }
