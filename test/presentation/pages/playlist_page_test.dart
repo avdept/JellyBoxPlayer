@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -88,6 +89,9 @@ void main() {
     mockMediaServerClient = MockMediaServerClient();
     mockUser = MockUser();
     mockDownloadManagerNotifier = MockDownloadManagerNotifier();
+    when(
+      () => mockMediaServerClient.capabilities,
+    ).thenReturn(const MediaServerCapabilities());
     when(
       () => mockMediaServerClient.imageUri(
         any(),

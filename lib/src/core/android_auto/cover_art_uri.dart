@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 const coverArtAuthority = 'com.prodigytech.jellybox.covers';
 const coverArtChannel = 'com.prodigytech.jellybox/cover_art';
 const remoteCoverSegment = 'remote';
+const assetCoverSegment = 'asset';
 
 class RemoteCoverArt {
   RemoteCoverArt({this.capacity = 2000});
@@ -35,6 +36,13 @@ Uri? androidCoverArtUri(Uri? uri, {RemoteCoverArt? remote}) {
   if (uri == null) return null;
   if (remote != null && (uri.isScheme('http') || uri.isScheme('https'))) {
     return remote.register(uri);
+  }
+  if (uri.isScheme('asset')) {
+    return Uri(
+      scheme: 'content',
+      host: coverArtAuthority,
+      pathSegments: [assetCoverSegment, uri.pathSegments.last],
+    );
   }
   if (!uri.isScheme('file')) return uri;
   final segments = uri.pathSegments;

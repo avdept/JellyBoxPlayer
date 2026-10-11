@@ -81,6 +81,11 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
     if (!saved) _showOfflineNotice();
   }
 
+  Future<void> _rate(LibraryItem song, int rating) async {
+    final saved = await ref.read(barControlsProvider).rate(song, rating);
+    if (!saved) _showOfflineNotice();
+  }
+
   void _showOfflineNotice() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -151,6 +156,7 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
           isDesktop: isDesktop,
           onTap: () => ref.read(barControlsProvider).skipTo(index),
           onLikePressed: () => _toggleFavourite(song),
+          onRatingChanged: (rating) => _rate(song, rating),
           onRemove: () =>
               ref.read(playbackProvider.notifier).removeFromQueue(index),
         );
@@ -167,6 +173,7 @@ class _QueueRow extends ConsumerStatefulWidget {
     required this.isDesktop,
     required this.onTap,
     required this.onLikePressed,
+    required this.onRatingChanged,
     required this.onRemove,
     super.key,
   });
@@ -177,6 +184,7 @@ class _QueueRow extends ConsumerStatefulWidget {
   final bool isDesktop;
   final VoidCallback onTap;
   final VoidCallback onLikePressed;
+  final ValueChanged<int> onRatingChanged;
   final Future<void> Function() onRemove;
 
   @override
@@ -193,6 +201,7 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
       edgePadding: 16,
       onTap: (_) => widget.onTap(),
       onLikePressed: (_) => widget.onLikePressed(),
+      onRatingChanged: (_, rating) => widget.onRatingChanged(rating),
       trailing: widget.isDesktop ? null : _optionsButton(),
     );
 

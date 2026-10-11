@@ -224,6 +224,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                               position: index + 1,
                               edgePadding: _device.isMobile ? 16 : 30,
                               onLikePressed: _onSongLikePressed,
+                              onRatingChanged: _onSongRated,
                               optionsBuilder: (context) => [
                                 ContextMenuAction(
                                   entry: ContextMenuEntry.removeFromPlaylist,
@@ -260,6 +261,11 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
         .read(mediaServerClientProvider)
         .setFavorite(song.id, favorite: !song.userData.isFavorite);
     ref.read(favouritesChangedProvider.notifier).state++;
+    unawaited(_getSongs());
+  }
+
+  Future<void> _onSongRated(LibraryItem song, int rating) async {
+    await rateItem(ref, song, rating);
     unawaited(_getSongs());
   }
 

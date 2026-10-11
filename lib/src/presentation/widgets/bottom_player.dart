@@ -10,6 +10,8 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -262,7 +264,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             ),
           ],
         ),
-        SizedBox(height: _isMobile ? 12 : 20),
+        SizedBox(height: _isMobile ? 16 : 20),
+        _ratingStars(),
         const PositionSlider.bar(),
         PositionLabels.bar(fontSize: _isMobile ? 12 : 13),
         SizedBox(height: _isMobile ? 8 : 12),
@@ -569,6 +572,41 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   );
 
   LibraryItem? get _currentQueueSong => ref.read(barSongProvider);
+
+  Widget _ratingStars() => Consumer(
+    builder: (context, ref, _) {
+      if (!ref.watch(serverCapabilitiesProvider).ratings) {
+        return const SizedBox.shrink();
+      }
+      final song = ref.watch(barSongProvider);
+      final isOffline = ref.watch(isOfflineProvider);
+      return Padding(
+        padding: EdgeInsets.only(bottom: 16),
+        child: Align(
+          alignment: _isMobile ? Alignment.center : Alignment.centerLeft,
+          child: RatingStars(
+            rating: song?.userData.rating ?? 0,
+            size: 30,
+            spacing: _isMobile ? 8 : 4,
+            color: _theme.colorScheme.primary,
+            emptyColor: _theme.colorScheme.onPrimary.withValues(alpha: 0.35),
+            onChanged: song == null || isOffline
+                ? null
+                : (rating) => _onRateCurrent(song, rating),
+          ),
+        ),
+      );
+    },
+  );
+
+  Future<void> _onRateCurrent(LibraryItem song, int rating) async {
+    final saved = await ref.read(barControlsProvider).rate(song, rating);
+    if (!saved && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This action needs a connection')),
+      );
+    }
+  }
 
   Future<void> _onLikeCurrent(LibraryItem song) async {
     final saved = await ref.read(barControlsProvider).toggleFavourite(song);

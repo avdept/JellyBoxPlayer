@@ -71,3 +71,4 @@ export 'studio_mode.dart';
 export 'swipeable_artwork.dart';
 export 'updatify_bell.dart';
 export 'volume_control.dart';
+export 'rating_stars.dart';

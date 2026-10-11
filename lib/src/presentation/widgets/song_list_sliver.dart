@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 
@@ -65,6 +66,9 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
     );
   }
 
+  Future<void> _onRatingChanged(LibraryItem song, int rating) async =>
+      widget.onItemUpdated(await rateItem(ref, song, rating));
+
   @override
   Widget build(BuildContext context) {
     final songs = widget.songs;
@@ -90,6 +94,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
           isPlaying: currentSongId == song.id,
           onTap: (song) => _onSongTap(song, visible),
           onLikePressed: _onLikePressed,
+          onRatingChanged: _onRatingChanged,
           position: widget.showPosition ? index + 1 : null,
           edgePadding: widget.edgePadding,
           optionsBuilder: (context) => contextMenuActions(

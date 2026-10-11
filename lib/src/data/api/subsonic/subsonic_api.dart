@@ -241,6 +241,9 @@ class SubsonicApi {
 
   Future<void> unstar(String id) => call('unstar', {'id': id});
 
+  Future<void> setRating(String id, int rating) =>
+      call('setRating', {'id': id, 'rating': rating});
+
   Future<void> scrobble({
     required String id,
     required bool submission,

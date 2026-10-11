@@ -7,6 +7,7 @@ class MediaServerCapabilities {
     this.playlistSearch = true,
     this.playlistFavourites = true,
     this.soundSearch = false,
+    this.ratings = false,
     this.artistScopes = const {ArtistScope.albumArtists},
   });
 
@@ -15,6 +16,7 @@ class MediaServerCapabilities {
   final bool playlistSearch;
   final bool playlistFavourites;
   final bool soundSearch;
+  final bool ratings;
   final Set<ArtistScope> artistScopes;
 
   MediaServerCapabilities copyWith({
@@ -23,6 +25,7 @@ class MediaServerCapabilities {
     bool? playlistSearch,
     bool? playlistFavourites,
     bool? soundSearch,
+    bool? ratings,
     Set<ArtistScope>? artistScopes,
   }) => MediaServerCapabilities(
     lyrics: lyrics ?? this.lyrics,
@@ -30,6 +33,7 @@ class MediaServerCapabilities {
     playlistSearch: playlistSearch ?? this.playlistSearch,
     playlistFavourites: playlistFavourites ?? this.playlistFavourites,
     soundSearch: soundSearch ?? this.soundSearch,
+    ratings: ratings ?? this.ratings,
     artistScopes: artistScopes ?? this.artistScopes,
   );
 }

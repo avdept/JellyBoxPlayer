@@ -166,7 +166,6 @@ class CarTestEnv {
         favouriteSongsProvider.overrideWith(
           (_) async => LibraryPage(items: favouriteSongs),
         ),
-        likedSongsCoversProvider.overrideWithValue(const []),
         favouriteAlbumsProvider.overrideWith((_) async => favouriteAlbums),
         downloadManagerProvider.overrideWith(
           () => FakeDownloadManager(downloads, downloadedPlaylists),

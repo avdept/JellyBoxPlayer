@@ -62,9 +62,7 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
       name: likedSongsName,
       songs: items,
       songCount: total,
-      coverImages: [
-        for (final song in items.take(4)) imageService.itemImage(song),
-      ],
+      coverImages: [if (liked != null) imageService.itemImage(liked)],
       isPlayLoading:
           liked != null && ref.watch(setPlaybackProvider) == liked.id,
       onPlay: () {

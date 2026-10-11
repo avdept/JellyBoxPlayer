@@ -41,6 +41,15 @@ void main() {
     expect(androidCoverArtUri(server), same(server));
   });
 
+  test('routes bundled assets through the provider by file name', () {
+    final asset = Uri.parse('asset:///assets/images/liked_songs.jpg');
+
+    expect(
+      androidCoverArtUri(asset, remote: RemoteCoverArt()),
+      Uri.parse('content://$coverArtAuthority/asset/liked_songs.jpg'),
+    );
+  });
+
   test('keeps non-network uris as they are', () {
     final resource = Uri.parse('android.resource://app/drawable/icon');
 

@@ -187,6 +187,20 @@ class BarControls {
     return true;
   }
 
+  Future<bool> rate(LibraryItem song, int rating) async {
+    if (_ref.read(isOfflineProvider)) return false;
+    try {
+      await _ref.read(mediaServerClientProvider).setRating(song.id, rating);
+    } on Object {
+      return false;
+    }
+    if (_remote) _ref.invalidate(remoteQueueProvider);
+    _local.updateSong(
+      song.copyWith(userData: song.userData.copyWith(rating: rating)),
+    );
+    return true;
+  }
+
   Future<void> skipTo(int index, {bool autoPlay = true}) => _remote
       ? _send(PlayerCommand.skipTo, index)
       : _local.skipTo(index, autoPlay: autoPlay);

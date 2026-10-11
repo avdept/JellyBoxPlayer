@@ -424,6 +424,9 @@ class EmbyClient implements MediaServerClient {
   }
 
   @override
+  Future<void> setRating(String itemId, int rating) async {}
+
+  @override
   Future<void> createPlaylist(PlaylistData values) async {
     await _api.createPlaylist(values: values);
   }

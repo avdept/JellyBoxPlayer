@@ -168,6 +168,56 @@ void main() {
     });
   });
 
+  group('rate', () {
+    ProviderContainer localWith({required bool offline}) =>
+        createProviderContainer(
+          overrides: [
+            mediaServerClientProvider.overrideWithValue(client),
+            cloudProvider.overrideWith((_) => cloud),
+            playbackProvider.overrideWith((_) => playback),
+            remoteRendererProvider.overrideWithValue(null),
+            isOfflineProvider.overrideWithValue(offline),
+          ],
+        );
+
+    test('saves the rating and updates the track', () async {
+      when(() => client.setRating('a', 3)).thenAnswer((_) async {});
+      final container = localWith(offline: false);
+
+      final saved = await container
+          .read(barControlsProvider)
+          .rate(_song('a'), 3);
+
+      expect(saved, isTrue);
+      verify(() => client.setRating('a', 3)).called(1);
+      expect(playback.updated.single.userData.rating, 3);
+    });
+
+    test('reports failure without calling the server when offline', () async {
+      final container = localWith(offline: true);
+
+      final saved = await container
+          .read(barControlsProvider)
+          .rate(_song('a'), 3);
+
+      expect(saved, isFalse);
+      verifyNever(() => client.setRating(any(), any()));
+      expect(playback.updated, isEmpty);
+    });
+
+    test('reports failure when the server refuses', () async {
+      when(() => client.setRating('a', 3)).thenThrow(Exception('offline'));
+      final container = localWith(offline: false);
+
+      final saved = await container
+          .read(barControlsProvider)
+          .rate(_song('a'), 3);
+
+      expect(saved, isFalse);
+      expect(playback.updated, isEmpty);
+    });
+  });
+
   test('the remote repeat mode is read from the session', () {
     final container = containerWith(
       const SessionDoc(itemIds: ['a'], repeat: 'one'),

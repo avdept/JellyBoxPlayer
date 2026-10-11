@@ -151,6 +151,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   Future<void> _onLikePressed(LibraryItem song) =>
       _onItemLikePressed(song, ItemList.songs);
 
+  Future<void> _onSongRated(LibraryItem song, int rating) async {
+    final updated = await rateItem(ref, song, rating);
+    ref.read(itemListProvider(ItemList.songs).notifier).updateItem(updated);
+  }
+
   Future<void> _onItemLikePressed(LibraryItem item, ItemList view) async {
     final isFavorite = item.userData.isFavorite;
     await ref
@@ -524,6 +529,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     isPlaying: currentSongId == song.id,
                     onTap: (song) => _onSongTap(song, list.items),
                     onLikePressed: _onLikePressed,
+                    onRatingChanged: _onSongRated,
                     optionsBuilder: (context) => contextMenuActions(
                       context,
                       ref,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
+import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -26,6 +27,7 @@ class SongRowView extends ConsumerWidget {
     this.isPlaying = false,
     this.onTap,
     this.onLikePressed,
+    this.onRatingChanged,
     this.optionsBuilder,
     this.position,
     this.secondaryTextColor,
@@ -41,6 +43,7 @@ class SongRowView extends ConsumerWidget {
   final Color? playingColor;
   final void Function(LibraryItem)? onTap;
   final void Function(LibraryItem)? onLikePressed;
+  final void Function(LibraryItem, int)? onRatingChanged;
   final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
 
   final int? position;
@@ -82,6 +85,12 @@ class SongRowView extends ConsumerWidget {
     final isCached = ref.watch(
       forwardCacheProvider.select((ids) => ids.contains(song.id)),
     );
+    final ratingsSupported = ref.watch(
+      serverCapabilitiesProvider.select((c) => c.ratings),
+    );
+    final canRate = isDesktop && onRatingChanged != null;
+    final showRating =
+        ratingsSupported && (canRate || song.userData.rating > 0);
 
     return GestureDetector(
       onLongPress: (!isDesktop && optionsBuilder != null)
@@ -148,6 +157,17 @@ class SongRowView extends ConsumerWidget {
                 maxLines: 1,
               ),
             ),
+            if (showRating) ...[
+              const SizedBox(width: 8),
+              RatingStars(
+                rating: song.userData.rating,
+                size: isDesktop ? 14 : 12,
+                emptyColor: theme.colorScheme.onPrimary.withValues(alpha: 0.3),
+                onChanged: canRate
+                    ? (rating) => onRatingChanged!(song, rating)
+                    : null,
+              ),
+            ],
             if (isCached) ...[
               const SizedBox(width: 6),
               _CachedBadge(size: isTablet ? 15 : 13),

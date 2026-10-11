@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -50,6 +51,7 @@ void main() {
   setUp(() {
     playback = FakePlaybackNotifier(_state);
     client = MockMediaServerClient();
+    when(() => client.capabilities).thenReturn(const MediaServerCapabilities());
     when(
       () => client.setFavorite(any(), favorite: any(named: 'favorite')),
     ).thenAnswer((_) async {});

@@ -977,6 +977,20 @@ void main() {
     expect(page.items.single.collectionType, 'music');
   });
 
+  test('ratings are advertised and sent as setRating', () async {
+    server.ok('setRating', {});
+
+    expect(client.capabilities.ratings, isTrue);
+
+    await client.setRating('s-1', 4);
+    await client.setRating('s-1', 0);
+    await client.setRating('s-1', 9);
+
+    final calls = server.calls('setRating');
+    expect(calls.map((c) => c.queryParameters['id']), ['s-1', 's-1', 's-1']);
+    expect(calls.map((c) => c.queryParameters['rating']), ['4', '0', '5']);
+  });
+
   test('favourites star and unstar by id', () async {
     server.ok('star', {});
     server.ok('unstar', {});
