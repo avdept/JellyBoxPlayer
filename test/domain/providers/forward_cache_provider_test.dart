@@ -27,6 +27,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class _FakeTarget implements PlaybackTarget, SwappableQueue {
+  @override
+  bool get holdsCurrentTrack => true;
+
   _FakeTarget({this.kind = PlaybackTargetKind.local});
 
   final _controller = StreamController<TargetPlaybackState>.broadcast();
@@ -122,8 +125,7 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
   Future<void> dispose() async => _controller.close();
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeDownloader implements CacheDownloader {
@@ -171,7 +173,6 @@ class _FakeDownloader implements CacheDownloader {
 }
 
 class _HookedDownloadDatabase extends DownloadDatabase {
-
   Future<void> Function()? onNextLookup;
 
   @override
@@ -416,9 +417,9 @@ void main() {
         name: 'song d',
         kind: ItemKind.song,
       );
-      await container
-          .read(playbackProvider.notifier)
-          .play(other, const [other], album);
+      await container.read(playbackProvider.notifier).play(other, const [
+        other,
+      ], album);
       await pumpUntilAsync(() async => (await database.cachedIds()).isEmpty);
 
       expect(await database.cachedIds(), isEmpty);
@@ -435,9 +436,9 @@ void main() {
       await pumpUntil(() => container.read(forwardCacheProvider).length == 2);
 
       const next = LibraryItem(id: 'd', name: 'song d', kind: ItemKind.song);
-      await container
-          .read(playbackProvider.notifier)
-          .play(next, const [next], album);
+      await container.read(playbackProvider.notifier).play(next, const [
+        next,
+      ], album);
       await pumpUntil(
         () => container.read(forwardCacheProvider).contains('d'),
       );
@@ -560,8 +561,10 @@ void main() {
       await settle();
 
       expect(downloader.cancelled, contains('b'));
-      expect(await container.read(queueCacheDatabaseProvider).cachedIds(),
-          isEmpty);
+      expect(
+        await container.read(queueCacheDatabaseProvider).cachedIds(),
+        isEmpty,
+      );
       expect(downloader.requested, hasLength(requested));
     });
 

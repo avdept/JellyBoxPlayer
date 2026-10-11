@@ -22,12 +22,14 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     Duration? idleStopAfter,
     bool Function()? isOnline,
     Stream<bool> Function()? onlineChanges,
+    Future<void> Function()? recheckConnection,
     List<Duration> retryDelays = defaultRetryDelays,
     Duration offlineRetryEvery = const Duration(seconds: 30),
     int skipAfter = 3,
   }) : _idleStopAfter = idleStopAfter,
        _isOnline = isOnline,
        _onlineChanges = onlineChanges,
+       _recheckConnection = recheckConnection,
        _retryDelays = retryDelays,
        _offlineRetryEvery = offlineRetryEvery,
        _skipAfter = skipAfter {
@@ -57,6 +59,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   final Duration? _idleStopAfter;
   final bool Function()? _isOnline;
   final Stream<bool> Function()? _onlineChanges;
+  final Future<void> Function()? _recheckConnection;
   StreamSubscription<bool>? _onlineSubscription;
   final List<Duration> _retryDelays;
   final Duration _offlineRetryEvery;
@@ -77,6 +80,11 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   _PendingLoad? _pending;
 
   bool get retryPending => _pending != null;
+
+  @override
+  bool get holdsCurrentTrack =>
+      _pending == null &&
+      _player.playerState.processingState != ProcessingState.idle;
 
   @override
   String get id => 'local';
@@ -166,6 +174,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     });
     if (_wantsPlay) {
       JustAudioBackground.holdPlayback(onCancelled: _onHoldCancelled);
+      unawaited(_recheckConnection?.call());
       _scheduleRetry();
     } else {
       JustAudioBackground.cancelPendingPlayback();
@@ -410,9 +419,18 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     }
 
     final position = _shuffleOrder.positionOfIndex(index);
+    final pending = _pending;
+    final replacesPending = pending != null && index == _indexOf(pending);
     await _player.removeAudioSourceAt(index);
     _shuffleOrder.nextInsertPosition = position;
     await _player.insertAudioSource(index, _audioSource(track));
+    if (!replacesPending) return;
+    _pending = (
+      track: _player.sequence.elementAtOrNull(index),
+      index: index,
+      position: pending.position,
+    );
+    _retrySoon();
   }
 
   @override

@@ -142,4 +142,6 @@ abstract class PlaybackTarget {
 
 mixin SwappableQueue implements PlaybackTarget {
   Future<void> replace(int index, TargetTrack track);
+
+  bool get holdsCurrentTrack => true;
 }
