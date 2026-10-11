@@ -265,7 +265,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           ],
         ),
         SizedBox(height: _isMobile ? 16 : 20),
-        _ratingStars(),
+        _sheetRatingStars(),
         const PositionSlider.bar(),
         PositionLabels.bar(fontSize: _isMobile ? 12 : 13),
         SizedBox(height: _isMobile ? 8 : 12),
@@ -452,6 +452,12 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                     AudioQualityBadge.heard(
                                       currentSong?.extras,
                                     ),
+                                  if (_isDesktop)
+                                    _ratingStars(
+                                      size: 16,
+                                      spacing: 2,
+                                      padding: const EdgeInsets.only(left: 8),
+                                    ),
                                 ],
                               ),
                         subtitle: device != null
@@ -573,28 +579,40 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   LibraryItem? get _currentQueueSong => ref.read(barSongProvider);
 
-  Widget _ratingStars() => Consumer(
+  Widget _sheetRatingStars() => _ratingStars(
+    size: 30,
+    spacing: _isMobile ? 8 : 4,
+    padding: const EdgeInsets.only(bottom: 16),
+    alignment: _isMobile ? Alignment.center : Alignment.centerLeft,
+  );
+
+  Widget _ratingStars({
+    required double size,
+    required double spacing,
+    required EdgeInsets padding,
+    Alignment? alignment,
+  }) => Consumer(
     builder: (context, ref, _) {
       if (!ref.watch(serverCapabilitiesProvider).ratings) {
         return const SizedBox.shrink();
       }
       final song = ref.watch(barSongProvider);
       final isOffline = ref.watch(isOfflineProvider);
+      final stars = RatingStars(
+        rating: song?.userData.rating ?? 0,
+        size: size,
+        spacing: spacing,
+        color: _theme.colorScheme.primary,
+        emptyColor: _theme.colorScheme.onPrimary.withValues(alpha: 0.35),
+        onChanged: song == null || isOffline
+            ? null
+            : (rating) => _onRateCurrent(song, rating),
+      );
       return Padding(
-        padding: EdgeInsets.only(bottom: 16),
-        child: Align(
-          alignment: _isMobile ? Alignment.center : Alignment.centerLeft,
-          child: RatingStars(
-            rating: song?.userData.rating ?? 0,
-            size: 30,
-            spacing: _isMobile ? 8 : 4,
-            color: _theme.colorScheme.primary,
-            emptyColor: _theme.colorScheme.onPrimary.withValues(alpha: 0.35),
-            onChanged: song == null || isOffline
-                ? null
-                : (rating) => _onRateCurrent(song, rating),
-          ),
-        ),
+        padding: padding,
+        child: alignment == null
+            ? stars
+            : Align(alignment: alignment, child: stars),
       );
     },
   );
