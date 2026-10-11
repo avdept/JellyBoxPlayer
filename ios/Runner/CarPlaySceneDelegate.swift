@@ -859,6 +859,14 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       return
     }
     guard let url = URL(string: urlString) else { return }
+    if url.scheme == "asset" {
+      let key = FlutterDartProject.lookupKey(forAsset: String(url.path.dropFirst()))
+      guard let path = Bundle.main.path(forResource: key, ofType: nil),
+            let image = UIImage(contentsOfFile: path) else { return }
+      artworkCache[urlString] = image
+      completion(image)
+      return
+    }
     if url.isFileURL {
       guard let image = UIImage(contentsOfFile: url.path) else { return }
       artworkCache[urlString] = image
