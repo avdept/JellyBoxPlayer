@@ -170,6 +170,8 @@ class SettingsPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 4,
                   children: [
+                    _sectionHeader('Server'),
+                    const ServerAddressSettings(),
                     if (ref.watch(cloudAvailableProvider)) ...[
                       _sectionHeader('Jellybox Cloud'),
                       const JellyboxCloudSettings(),

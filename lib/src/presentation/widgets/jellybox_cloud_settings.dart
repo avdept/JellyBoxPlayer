@@ -63,6 +63,7 @@ class _ServerConnectionRow extends ConsumerWidget {
 
     final (icon, label) = switch (connection) {
       ServerConnection.direct => (Icons.lan_outlined, 'Direct'),
+      ServerConnection.remote => (Icons.public_outlined, 'Remote address'),
       ServerConnection.tunnel => (Icons.vpn_lock_outlined, 'Tunnel'),
       ServerConnection.offline => (Icons.cloud_off_outlined, 'Offline'),
     };

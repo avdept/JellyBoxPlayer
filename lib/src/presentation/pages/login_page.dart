@@ -45,6 +45,15 @@ class LoginPageState extends ConsumerState<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(ref.read(serverDiscoveryProvider.notifier).scan());
     });
+    unawaited(_prefillLastServer());
+  }
+
+  Future<void> _prefillLastServer() async {
+    final url = await ref.read(lastServerUrlProvider.future);
+    if (!mounted || url == null || url.isEmpty) return;
+    if (_manualEntry || _serverUrlInputController.text.isNotEmpty) return;
+    _serverUrlInputController.text = url;
+    unawaited(_probeServer());
   }
 
   @override

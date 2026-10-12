@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
@@ -44,7 +45,6 @@ class ConnectivityNotifier extends StateNotifier<bool> {
 
   static const _probeTimeout = Duration(seconds: 4);
   static const _relayRecheck = Duration(minutes: 10);
-  static const _retriedOnRelay = 'jellyboxRetriedOnRelay';
 
   final Ref _ref;
   final Dio Function()? _probeClient;
@@ -56,6 +56,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   AppLifecycleListener? _lifecycleListener;
   Future<bool>? _pending;
   String? _selected;
+  Set<String> _down = const {};
   DateTime? _relayCheckedAt;
 
   static bool get _bindingReady {
@@ -95,12 +96,14 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     return _pending ??= _probe().whenComplete(() => _pending = null);
   }
 
+  Future<void> setRemote(String? url) => rememberRemote(_ref, url);
+
   Future<bool> _probe() async {
-    final addresses = _ref.read(serverAddressesProvider);
-    final home = addresses?.home ?? _ref.read(baseUrlProvider);
-    if (home == null || home.isEmpty) return state;
-    final relay = addresses?.relay;
-    _keepBeating(relay != null);
+    final addresses = _addresses;
+    if (addresses == null) return state;
+    final candidates = addresses.candidates;
+    final relay = addresses.relay;
+    _keepBeating(addresses.fallbacks.isNotEmpty);
 
     final client =
         _probeClient?.call() ??
@@ -113,26 +116,26 @@ class ConnectivityNotifier extends StateNotifier<bool> {
           ),
         );
     try {
-      final (homeUp, relayUp) = await (
-        _answers(client, home),
-        relay == null
-            ? Future.value(false)
-            : _answers(client, relay, relayed: true),
-      ).wait;
+      final answers = await Future.wait([
+        for (final url in candidates)
+          _answers(client, url, relayed: url == relay),
+      ]);
       if (!mounted) return false;
+      _down = {
+        for (final (i, url) in candidates.indexed)
+          if (!answers[i]) url,
+      };
       _ref.read(relayReachableProvider.notifier).state = relay == null
           ? null
-          : relayUp;
+          : !_down.contains(relay);
 
-      if (homeUp) {
-        _select(home);
-        _setOnline(true);
-        unawaited(_learnRelay());
-      } else if (relayUp) {
-        _select(relay!);
-        _setOnline(true);
-      } else {
+      final up = candidates.firstWhereOrNull((url) => !_down.contains(url));
+      if (up == null) {
         _setOnline(false);
+      } else {
+        _select(up);
+        _setOnline(true);
+        if (up != relay) unawaited(_learnRelay());
       }
     } finally {
       client.close(force: true);
@@ -164,6 +167,13 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     }
   }
 
+  ServerAddresses? get _addresses {
+    final addresses = _ref.read(serverAddressesProvider);
+    if (addresses != null) return addresses;
+    final home = _ref.read(baseUrlProvider);
+    return home == null || home.isEmpty ? null : ServerAddresses(home: home);
+  }
+
   Future<void> _onRequestError(
     DioException error,
     ErrorInterceptorHandler handler,
@@ -171,22 +181,23 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     final addresses = _ref.read(serverAddressesProvider);
     final relay = addresses?.relay;
     if (relay != null && _tunnelDown(error, relay)) unawaited(refresh());
-    final retry = relay != null && _worthRetrying(error)
-        ? _onRelay(error.requestOptions, addresses!.home, relay)
+    final retry = addresses != null && _worthRetrying(error)
+        ? _rerouted(error.requestOptions, addresses.candidates)
         : null;
     if (retry == null) {
       handler.next(error);
       return;
     }
 
-    debugPrint('[Connectivity] home unreachable, retrying on the tunnel');
-    _select(relay!);
+    final (next, options) = retry;
+    debugPrint('[Connectivity] server unreachable, retrying on $next');
+    _select(next);
     _setOnline(true);
     unawaited(refresh());
     try {
-      handler.resolve(await _dio.fetch<dynamic>(retry));
-    } on DioException catch (relayError) {
-      handler.next(relayError);
+      handler.resolve(await _dio.fetch<dynamic>(options));
+    } on DioException catch (retryError) {
+      handler.next(retryError);
     }
   }
 
@@ -204,32 +215,37 @@ class ConnectivityNotifier extends StateNotifier<bool> {
         _ => false,
       };
 
-  bool _worthRetrying(DioException error) =>
-      error.requestOptions.extra[_retriedOnRelay] != true &&
-      _ref.read(relayReachableProvider) != false &&
-      switch (error.type) {
-        DioExceptionType.connectionError ||
-        DioExceptionType.connectionTimeout => true,
-        DioExceptionType.unknown => error.error is SocketException,
-        _ => false,
-      };
+  static bool _worthRetrying(DioException error) => switch (error.type) {
+    DioExceptionType.connectionError ||
+    DioExceptionType.connectionTimeout => true,
+    DioExceptionType.unknown => error.error is SocketException,
+    _ => false,
+  };
 
-  static RequestOptions? _onRelay(
+  (String, RequestOptions)? _rerouted(
     RequestOptions options,
-    String home,
-    String relay,
+    List<String> candidates,
   ) {
-    final extra = {...options.extra, _retriedOnRelay: true};
-    if (options.path.startsWith(home)) {
-      return options.copyWith(
-        path: relay + options.path.substring(home.length),
-        extra: extra,
+    final request = options.uri.toString();
+    final current = candidates.indexWhere(request.startsWith);
+    if (current < 0) return null;
+    final from = candidates[current];
+    final next = candidates
+        .skip(current + 1)
+        .firstWhereOrNull((url) => !_down.contains(url));
+    if (next == null) return null;
+    if (options.path.startsWith(from)) {
+      return (
+        next,
+        options.copyWith(path: next + options.path.substring(from.length)),
       );
     }
-    if (options.baseUrl.startsWith(home)) {
-      return options.copyWith(
-        baseUrl: relay + options.baseUrl.substring(home.length),
-        extra: extra,
+    if (options.baseUrl.startsWith(from)) {
+      return (
+        next,
+        options.copyWith(
+          baseUrl: next + options.baseUrl.substring(from.length),
+        ),
       );
     }
     return null;
@@ -258,9 +274,8 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   }
 
   void _routeArtwork() {
-    final addresses = _ref.read(serverAddressesProvider);
     ArtworkCache.route = ArtworkRoute(
-      addresses: [?addresses?.home, ?addresses?.relay],
+      addresses: _ref.read(serverAddressesProvider)?.candidates ?? const [],
       active: _ref.read(baseUrlProvider),
     );
   }
@@ -290,12 +305,14 @@ final isOfflineProvider = Provider<bool>(
 
 final relayReachableProvider = StateProvider<bool?>((ref) => null);
 
-enum ServerConnection { direct, tunnel, offline }
+enum ServerConnection { direct, remote, tunnel, offline }
 
 final serverConnectionProvider = Provider<ServerConnection>((ref) {
   if (ref.watch(isOfflineProvider)) return ServerConnection.offline;
-  final relay = ref.watch(serverAddressesProvider)?.relay;
-  return relay != null && ref.watch(baseUrlProvider) == relay
-      ? ServerConnection.tunnel
-      : ServerConnection.direct;
+  final addresses = ref.watch(serverAddressesProvider);
+  final active = ref.watch(baseUrlProvider);
+  if (addresses == null || active == null) return ServerConnection.direct;
+  if (active == addresses.relay) return ServerConnection.tunnel;
+  if (active == addresses.remote) return ServerConnection.remote;
+  return ServerConnection.direct;
 });
