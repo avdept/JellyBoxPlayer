@@ -13,7 +13,7 @@ import 'package:logging/logging.dart';
 
 const _secretQueryKeys = {'ApiKey', 'api_key', 'X-Emby-Token', 't', 's', 'p'};
 
-class DownloadService extends ChangeNotifier {
+class DownloadService {
   DownloadService() {
     _forwardDownloaderLogs();
   }
@@ -89,7 +89,6 @@ class DownloadService extends ChangeNotifier {
     );
 
     _tasks[song.id] = task;
-    notifyListeners();
     unawaited(_startDownload(task, albumSubdir, fileName));
 
     return task;
@@ -190,8 +189,4 @@ class DownloadService extends ChangeNotifier {
       _tasks.remove(id);
     }
   }
-
-  DownloadTask? getTask(String id) => _tasks[id];
-
-  List<DownloadTask> getAllTasks() => _tasks.values.toList();
 }

@@ -6,7 +6,9 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -36,9 +38,9 @@ class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>>
 
 class MockMediaServerClient extends Mock implements MediaServerClient {}
 
-class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>>
-    with Mock
-    implements DownloadManagerNotifier {}
+class MockDownloadManager extends Mock implements DownloadManager {}
+
+class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
 class FakeTodaysPlaylistsNotifier extends TodaysPlaylistsNotifier {
   FakeTodaysPlaylistsNotifier(this.playlists);
@@ -60,7 +62,8 @@ void main() {
   late LibrariesNotifier mockLibrariesNotifier;
   late FakeTodaysPlaylistsNotifier fakeTodaysPlaylists;
   late MockMediaServerClient mockClient;
-  late MockDownloadManagerNotifier mockDownloadManager;
+  late MockDownloadManager mockDownloadManager;
+  late MockDownloadDatabase mockDownloadDatabase;
 
   final faker = Faker.instance;
 
@@ -146,7 +149,8 @@ void main() {
           currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
           librariesProvider.overrideWith(() => mockLibrariesNotifier),
           mediaServerClientProvider.overrideWith((_) => mockClient),
-          downloadManagerProvider.overrideWith(() => mockDownloadManager),
+          downloadManagerProvider.overrideWithValue(mockDownloadManager),
+          downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
           downloadedCollectionsProvider.overrideWith(
             (_) async => (albums: <String>{}, playlists: <String>{}),
           ),
@@ -201,10 +205,10 @@ void main() {
     mockCurrentLibraryNotifier = MockCurrentLibraryNotifier();
     mockLibrariesNotifier = MockLibrariesNotifier();
     mockClient = MockMediaServerClient();
-    mockDownloadManager = MockDownloadManagerNotifier();
+    mockDownloadManager = MockDownloadManager();
+    mockDownloadDatabase = MockDownloadDatabase();
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
-    when(mockDownloadManager.build).thenAnswer((_) async => const []);
     when(
       () => mockClient.capabilities,
     ).thenReturn(const MediaServerCapabilities());
@@ -364,7 +368,7 @@ void main() {
         () => mockClient.getAllSongs(any()),
       ).thenAnswer((_) async => LibraryPage(items: songs));
       when(
-        () => mockDownloadManager.isPlaylistDownloaded(liked.id),
+        () => mockDownloadDatabase.isPlaylistDownloaded(liked.id),
       ).thenAnswer((_) async => false);
       when(
         () => mockDownloadManager.downloadPlaylist(any(), any()),

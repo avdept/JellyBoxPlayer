@@ -15,7 +15,6 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
-import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/player_time.dart';
@@ -844,11 +843,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       if (currentSong == null) return const SizedBox.shrink();
 
       final isDownloaded = ref
-          .watch(isSongDownloadedProvider(currentSong))
+          .watch(isSongDownloadedProvider(currentSong.id))
           .valueOrNull;
-      final currentTask = ref
-          .watch(downloadServiceProvider)
-          .getTask(currentSong.id);
+      final currentTask = ref.watch(songDownloadTaskProvider(currentSong.id));
 
       if (isDownloaded == true) {
         return Icon(Icons.check_circle, color: Colors.green);
@@ -860,9 +857,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           builder: (context, status, _) {
             if (!currentTask.isDownloadingNow) {
               return IconButton(
-                onPressed: () => ref
-                    .read(downloadManagerProvider.notifier)
-                    .downloadSong(currentSong),
+                onPressed: () =>
+                    ref.read(downloadManagerProvider).downloadSong(currentSong),
                 color: _theme.colorScheme.onPrimary,
                 icon: const Icon(JPlayer.download),
               );
@@ -883,9 +879,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       }
 
       return IconButton(
-        onPressed: () => ref
-            .read(downloadManagerProvider.notifier)
-            .downloadSong(currentSong),
+        onPressed: () =>
+            ref.read(downloadManagerProvider).downloadSong(currentSong),
         color: _theme.colorScheme.onPrimary,
         icon: const Icon(JPlayer.download),
       );

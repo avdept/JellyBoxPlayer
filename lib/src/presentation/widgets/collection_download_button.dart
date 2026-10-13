@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
@@ -103,7 +104,7 @@ class _CollectionDownloadButtonState
       }
       return;
     }
-    final manager = ref.read(downloadManagerProvider.notifier);
+    final manager = ref.read(downloadManagerProvider);
     final download = _isAlbum
         ? manager.downloadAlbum(item, list)
         : manager.downloadPlaylist(item, list);
@@ -150,7 +151,7 @@ class _CollectionDownloadButtonState
   }
 
   Future<void> _delete() {
-    final manager = ref.read(downloadManagerProvider.notifier);
+    final manager = ref.read(downloadManagerProvider);
     return _isAlbum
         ? manager.deleteAlbum(item.id)
         : manager.deletePlaylist(item.id);

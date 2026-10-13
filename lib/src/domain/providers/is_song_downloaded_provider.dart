@@ -1,12 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/data/providers/download_database_provider.dart';
+import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 
-final isSongDownloadedProvider = FutureProviderFamily<bool, LibraryItem>(
-  (ref, arg) {
-    ref.listen(downloadManagerProvider, (prev, now) {
-      if (prev?.value != now.value) ref.invalidateSelf();
-    });
-    return ref.read(downloadManagerProvider.notifier).isSongDownloaded(arg.id);
-  },
-);
+final isSongDownloadedProvider = FutureProvider.family<bool, String>((
+  ref,
+  id,
+) {
+  ref.watch(downloadsRevisionProvider);
+  return ref.watch(downloadDatabaseProvider).isSongDownloaded(id);
+});

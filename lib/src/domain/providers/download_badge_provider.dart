@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
+import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 
 enum DownloadBadge { downloaded, downloading }
 
@@ -10,9 +11,7 @@ typedef DownloadedCollections = ({Set<String> albums, Set<String> playlists});
 final downloadedCollectionsProvider = FutureProvider<DownloadedCollections>((
   ref,
 ) async {
-  ref.listen(downloadManagerProvider, (prev, now) {
-    if (prev?.valueOrNull != now.valueOrNull) ref.invalidateSelf();
-  });
+  ref.watch(downloadsRevisionProvider);
   final database = ref.watch(downloadDatabaseProvider);
   final (albums, playlists) = await (
     database.albumIds(),
@@ -25,9 +24,7 @@ final ProviderFamily<DownloadBadge?, (ItemKind, String)> downloadBadgeProvider =
     Provider.family<DownloadBadge?, (ItemKind, String)>((ref, key) {
       final (kind, id) = key;
       if (kind != ItemKind.album && kind != ItemKind.playlist) return null;
-      if (ref.watch(
-        activeDownloadsProvider.select((active) => active.containsKey(id)),
-      )) {
+      if (ref.watch(downloadProgressProvider(id)) != null) {
         return DownloadBadge.downloading;
       }
       final downloaded = ref.watch(
@@ -40,10 +37,3 @@ final ProviderFamily<DownloadBadge?, (ItemKind, String)> downloadBadgeProvider =
       );
       return downloaded ? DownloadBadge.downloaded : null;
     });
-
-final ProviderFamily<double?, String> downloadProgressProvider =
-    Provider.family<double?, String>(
-      (ref, id) => ref.watch(
-        activeDownloadsProvider.select((active) => active[id]),
-      ),
-    );

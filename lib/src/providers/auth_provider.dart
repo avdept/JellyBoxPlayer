@@ -108,6 +108,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     final userId = await _storage.read(key: _userIdKey) ?? '';
     final serverId = await _resolveServerId(serverUrl);
     ref.read(currentServerIdProvider.notifier).state = serverId;
+    await _pruneAbandonedDownloads();
     final token = await _migrateAuthToken();
     final (activeUrl, status) = await _validateFirst(
       [serverUrl, ?remoteUrl, ?relayUrl],
@@ -190,6 +191,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     await _storage.delete(key: relayUrlStorageKey);
 
     ref.read(currentServerIdProvider.notifier).state = serverId;
+    await _pruneAbandonedDownloads();
     ref.read(serverAddressesProvider.notifier).state = ServerAddresses(
       home: serverUrl,
     );
@@ -371,6 +373,17 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   Future<void> _adoptLegacyDownloads() async {
     try {
       await ref.read(downloadDatabaseProvider).adoptLegacyDownloads();
+    } on Object {
+      return;
+    }
+  }
+
+  Future<void> _pruneAbandonedDownloads() async {
+    try {
+      final pruned = await ref
+          .read(downloadDatabaseProvider)
+          .pruneAbandonedSongs();
+      if (pruned > 0) debugPrint('[Downloads] pruned $pruned abandoned songs');
     } on Object {
       return;
     }

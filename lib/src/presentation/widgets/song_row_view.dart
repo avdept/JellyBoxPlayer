@@ -7,7 +7,6 @@ import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -77,8 +76,10 @@ class SongRowView extends ConsumerWidget {
     final isDesktop = deviceType == DeviceScreenType.desktop;
     final imageSize = isMobile ? 46.0 : 56.0;
     final horizontal = edgePadding ?? 0;
-    final isDownloaded = ref.watch(isSongDownloadedProvider(song)).valueOrNull;
-    final currentTask = ref.watch(downloadServiceProvider).getTask(song.id);
+    final isDownloaded = ref
+        .watch(isSongDownloadedProvider(song.id))
+        .valueOrNull;
+    final currentTask = ref.watch(songDownloadTaskProvider(song.id));
     final quality = song.audioSources.firstOrNull;
     final secondaryColor =
         secondaryTextColor ?? theme.colorScheme.onPrimary.withOpacity(0.6);

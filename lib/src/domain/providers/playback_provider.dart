@@ -20,7 +20,6 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
 import 'package:jplayer/src/domain/providers/stream_preference_provider.dart';
@@ -721,7 +720,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool keepStreamOffline = false,
   }) async {
     final isDownloaded = await _ref
-        .read(downloadManagerProvider.notifier)
+        .read(downloadDatabaseProvider)
         .isSongDownloaded(song.id);
     final downloadedPath = isDownloaded && _target.supportsLocalFiles
         ? await _ref

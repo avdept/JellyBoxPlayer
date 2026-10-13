@@ -1,6 +1,5 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
@@ -21,16 +20,14 @@ class MockMediaServerClient extends Mock implements MediaServerClient {}
 
 class MockUser extends Mock implements User {}
 
-class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>>
-    with Mock
-    implements DownloadManagerNotifier {}
+class MockDownloadManager extends Mock implements DownloadManager {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MediaServerClient mockMediaServerClient;
   late User mockUser;
-  late DownloadManagerNotifier mockDownloadManagerNotifier;
+  late DownloadManager mockDownloadManager;
 
   final faker = Faker.instance;
   final mockBaseUrl = faker.internet.url();
@@ -69,7 +66,7 @@ void main() {
         mediaServerClientProvider.overrideWith((_) => mockMediaServerClient),
         baseUrlProvider.overrideWith((_) => mockBaseUrl),
         currentUserProvider.overrideWith((_) => mockUser),
-        downloadManagerProvider.overrideWith(() => mockDownloadManagerNotifier),
+        downloadManagerProvider.overrideWithValue(mockDownloadManager),
       ],
     ),
     home: PlaylistPage(playlist: playlist),
@@ -88,7 +85,7 @@ void main() {
   setUp(() {
     mockMediaServerClient = MockMediaServerClient();
     mockUser = MockUser();
-    mockDownloadManagerNotifier = MockDownloadManagerNotifier();
+    mockDownloadManager = MockDownloadManager();
     when(
       () => mockMediaServerClient.capabilities,
     ).thenReturn(const MediaServerCapabilities());

@@ -1,12 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
-import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 
-final downloadedAlbumsProvider = FutureProvider<List<DownloadedAlbum>>(
-  (ref) {
-    ref.listen(downloadManagerProvider, (prev, now) {
-      if (prev?.value != now.value) ref.invalidateSelf();
-    });
-    return ref.read(downloadManagerProvider.notifier).getDownloadedAlbums();
-  },
-);
+final downloadedAlbumsProvider = FutureProvider<List<DownloadedAlbum>>((ref) {
+  ref.watch(downloadsRevisionProvider);
+  return ref.watch(downloadDatabaseProvider).getDownloadedAlbums();
+});

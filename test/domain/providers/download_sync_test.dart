@@ -129,7 +129,7 @@ void main() {
     List<String> ids,
   ) async {
     await container
-        .read(downloadManagerProvider.notifier)
+        .read(downloadManagerProvider)
         .downloadPlaylist(playlist, ids.map(_song).toList());
     fetched.clear();
   }
@@ -139,13 +139,13 @@ void main() {
       song.item.id,
   ];
 
-  group('DownloadManagerNotifier.syncPlaylist', () {
+  group('DownloadManager.syncPlaylist', () {
     test('- downloads only the songs added on the server', () async {
       final container = createContainer();
       await downloadPlaylist(container, ['a', 'b']);
 
       final changed = await container
-          .read(downloadManagerProvider.notifier)
+          .read(downloadManagerProvider)
           .syncPlaylist(playlist, ['a', 'c', 'b'].map(_song).toList());
 
       expect(changed, isTrue);
@@ -158,7 +158,7 @@ void main() {
       await downloadPlaylist(container, ['a', 'b']);
       final removedFile = await database.getDownloadedSongPath('b');
 
-      await container.read(downloadManagerProvider.notifier).syncPlaylist(
+      await container.read(downloadManagerProvider).syncPlaylist(
         playlist,
         [_song('a')],
       );
@@ -172,12 +172,12 @@ void main() {
       final container = createContainer();
       await downloadPlaylist(container, ['a', 'b']);
       final other = playlist.copyWith(id: 'other');
-      await container.read(downloadManagerProvider.notifier).downloadPlaylist(
+      await container.read(downloadManagerProvider).downloadPlaylist(
         other,
         [_song('b')],
       );
 
-      await container.read(downloadManagerProvider.notifier).syncPlaylist(
+      await container.read(downloadManagerProvider).syncPlaylist(
         playlist,
         [_song('a')],
       );
@@ -191,7 +191,7 @@ void main() {
       await downloadPlaylist(container, ['a', 'b']);
 
       final changed = await container
-          .read(downloadManagerProvider.notifier)
+          .read(downloadManagerProvider)
           .syncPlaylist(playlist, ['a', 'b'].map(_song).toList());
 
       expect(changed, isFalse);
@@ -200,7 +200,7 @@ void main() {
 
     test('- stops a download when the playlist is removed', () async {
       final container = createContainer();
-      final manager = container.read(downloadManagerProvider.notifier);
+      final manager = container.read(downloadManagerProvider);
       onDownload = (song) async {
         if (song.id == 'b') await manager.deletePlaylist(playlist.id);
       };
@@ -224,7 +224,7 @@ void main() {
     test('- stops a sync when the playlist is removed', () async {
       final container = createContainer();
       await downloadPlaylist(container, ['a']);
-      final manager = container.read(downloadManagerProvider.notifier);
+      final manager = container.read(downloadManagerProvider);
       onDownload = (song) async {
         if (song.id == 'b') await manager.deletePlaylist(playlist.id);
       };
