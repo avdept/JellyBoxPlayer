@@ -1,3 +1,12 @@
+## 0.0.1-beta.17+jellybox.7 (LOCAL FORK)
+
+* PATCH: `[Session]` log lines (via `debugPrint`, so they reach the app's
+  on-device log) at every point the session can diverge from the player: a
+  media-session play or media button and which path it took, handler
+  play/pause/stop with the `_playing`/`_playerPlaying`/`_holding` flags and
+  whether a native player exists, hold/release, and native player errors. No
+  behaviour change.
+
 ## 0.0.1-beta.17+jellybox.6 (LOCAL FORK)
 
 * PATCH: a playback error while playing no longer tears the session down. The

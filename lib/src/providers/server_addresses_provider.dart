@@ -4,27 +4,51 @@ import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/providers/certificate_trust_provider.dart';
 import 'package:jplayer/src/data/providers/secure_storage_provider.dart';
+import 'package:jplayer/src/data/services/server_probe_service.dart';
 
 @immutable
 class ServerAddresses {
-  const ServerAddresses({required this.home, this.relay, this.relayDenied});
+  const ServerAddresses({
+    required this.home,
+    this.remote,
+    this.relay,
+    this.relayDenied,
+  });
 
   final String home;
+  final String? remote;
   final String? relay;
   final String? relayDenied;
+
+  List<String> get fallbacks => [?remote, ?relay];
+
+  List<String> get candidates => [home, ...fallbacks];
+
+  ServerAddresses copyWith({
+    String? Function()? remote,
+    String? Function()? relay,
+    String? Function()? relayDenied,
+  }) => ServerAddresses(
+    home: home,
+    remote: remote == null ? this.remote : remote(),
+    relay: relay == null ? this.relay : relay(),
+    relayDenied: relayDenied == null ? this.relayDenied : relayDenied(),
+  );
 
   @override
   bool operator ==(Object other) =>
       other is ServerAddresses &&
       other.home == home &&
+      other.remote == remote &&
       other.relay == relay &&
       other.relayDenied == relayDenied;
 
   @override
-  int get hashCode => Object.hash(home, relay, relayDenied);
+  int get hashCode => Object.hash(home, remote, relay, relayDenied);
 }
 
 const relayUrlStorageKey = 'relayUrl';
+const remoteUrlStorageKey = 'remoteUrl';
 
 final serverAddressesProvider = StateProvider<ServerAddresses?>((ref) => null);
 
@@ -58,9 +82,26 @@ Future<void> rememberRelay(Ref ref, RemoteAccessResult? result) async {
   } else {
     await storage.write(key: relayUrlStorageKey, value: relay.url);
   }
-  ref.read(serverAddressesProvider.notifier).state = ServerAddresses(
-    home: addresses.home,
-    relay: relay?.url,
-    relayDenied: denied,
+  ref.read(serverAddressesProvider.notifier).state = addresses.copyWith(
+    relay: () => relay?.url,
+    relayDenied: () => denied,
+  );
+}
+
+Future<void> rememberRemote(Ref ref, String? url) async {
+  final addresses = ref.read(serverAddressesProvider);
+  if (addresses == null) return;
+  final remote = url == null || url.trim().isEmpty
+      ? null
+      : normalizeServerUrl(url);
+  if (remote == addresses.remote) return;
+  final storage = ref.read(secureStorageProvider);
+  if (remote == null) {
+    await storage.delete(key: remoteUrlStorageKey);
+  } else {
+    await storage.write(key: remoteUrlStorageKey, value: remote);
+  }
+  ref.read(serverAddressesProvider.notifier).state = addresses.copyWith(
+    remote: () => remote,
   );
 }

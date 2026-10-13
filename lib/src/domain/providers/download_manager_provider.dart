@@ -24,7 +24,7 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
 
   @override
   FutureOr<List<DownloadedSong>> build() async {
-    _downloadService = ref.watch(downloadServiceProvider);
+    _downloadService = ref.watch(downloadServiceProvider.notifier);
     _database = ref.watch(downloadDatabaseProvider);
     state = const AsyncValue.loading();
     return _database.getDownloadedSongs();

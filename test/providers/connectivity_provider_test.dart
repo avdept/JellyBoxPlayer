@@ -48,6 +48,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const home = 'http://192.168.1.10:8096';
+  const remote = 'http://100.64.0.5:8096';
   const relay = 'https://abc.tunnel.jellybox.app';
   const access = RemoteAccessResult(
     access: RemoteAccess(url: relay, fingerprint: 'ab12'),
@@ -77,6 +78,7 @@ void main() {
 
   ProviderContainer start({
     String? knownRelay,
+    String? knownRemote,
     bool signedIn = true,
     Duration heartbeat = const Duration(hours: 1),
   }) {
@@ -103,6 +105,7 @@ void main() {
     container.read(baseUrlProvider.notifier).state = home;
     container.read(serverAddressesProvider.notifier).state = ServerAddresses(
       home: home,
+      remote: knownRemote,
       relay: knownRelay,
     );
     container.read(dioProvider).httpClientAdapter = hosts;
@@ -324,6 +327,127 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test(
+    '- falls back to the remote address when home does not answer',
+    () async {
+      hosts.status['100.64.0.5'] = 200;
+      final container = start(knownRemote: remote);
+
+      expect(await probe(container), isTrue);
+      expect(container.read(baseUrlProvider), remote);
+    },
+  );
+
+  test('- prefers the remote address over the tunnel', () async {
+    hosts.status['100.64.0.5'] = 200;
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    final container = start(knownRemote: remote, knownRelay: relay);
+
+    await probe(container);
+
+    expect(container.read(baseUrlProvider), remote);
+    expect(container.read(relayReachableProvider), isTrue);
+  });
+
+  test('- takes the tunnel when the remote address is down too', () async {
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    final container = start(knownRemote: remote, knownRelay: relay);
+
+    await probe(container);
+
+    expect(container.read(baseUrlProvider), relay);
+  });
+
+  test('- tells a remote connection apart from a direct one', () async {
+    hosts.status['100.64.0.5'] = 200;
+    final container = start(knownRemote: remote)
+      ..listen(serverConnectionProvider, (_, _) {});
+
+    await probe(container);
+    expect(container.read(serverConnectionProvider), ServerConnection.remote);
+
+    hosts.status['192.168.1.10'] = 200;
+    await probe(container);
+    expect(container.read(serverConnectionProvider), ServerConnection.direct);
+  });
+
+  test('- walks a failed request from home to remote to tunnel', () async {
+    hosts.status['192.168.1.10'] = 200;
+    hosts.status['100.64.0.5'] = 200;
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    final container = start(knownRemote: remote, knownRelay: relay);
+    await probe(container);
+    hosts.status.remove('192.168.1.10');
+
+    final viaRemote = await container
+        .read(dioProvider)
+        .getUri<void>(Uri.parse('$home/Items?limit=5'));
+    expect(viaRemote.realUri.toString(), '$remote/Items?limit=5');
+    expect(container.read(baseUrlProvider), remote);
+
+    await probe(container);
+    hosts.status.remove('100.64.0.5');
+    final viaTunnel = await container
+        .read(dioProvider)
+        .getUri<void>(Uri.parse('$home/Items?limit=5'));
+    expect(viaTunnel.realUri.toString(), '$relay/Items?limit=5');
+    expect(container.read(baseUrlProvider), relay);
+  });
+
+  test('- skips a fallback the last probe found down', () async {
+    hosts.status['192.168.1.10'] = 200;
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    final container = start(knownRemote: remote, knownRelay: relay);
+    await probe(container);
+    hosts.status.remove('192.168.1.10');
+
+    final response = await container
+        .read(dioProvider)
+        .getUri<void>(Uri.parse('$home/Items'));
+
+    expect(response.realUri.toString(), '$relay/Items');
+  });
+
+  test('- leaves the remote address alone when home answers', () async {
+    hosts.status['192.168.1.10'] = 200;
+    hosts.status['100.64.0.5'] = 200;
+    final container = start(knownRemote: remote);
+
+    final response = await container
+        .read(dioProvider)
+        .getUri<void>(Uri.parse('$home/Items'));
+
+    expect(response.realUri.toString(), '$home/Items');
+  });
+
+  test('- stores the remote address and probes it at once', () async {
+    hosts.status['100.64.0.5'] = 200;
+    final container = start();
+    await probe(container);
+    expect(container.read(connectivityProvider), isFalse);
+
+    await container
+        .read(connectivityProvider.notifier)
+        .setRemote('100.64.0.5:8096');
+    await pumpEventQueue();
+
+    verify(
+      () => storage.write(key: remoteUrlStorageKey, value: remote),
+    ).called(1);
+    expect(container.read(serverAddressesProvider)?.remote, remote);
+    expect(container.read(baseUrlProvider), remote);
+    expect(container.read(connectivityProvider), isTrue);
+  });
+
+  test('- forgets the remote address on request', () async {
+    final container = start(knownRemote: remote);
+
+    await container.read(connectivityProvider.notifier).setRemote(null);
+
+    verify(() => storage.delete(key: remoteUrlStorageKey)).called(1);
+    expect(container.read(serverAddressesProvider)?.remote, isNull);
   });
 
   test('- remembers why this user was refused a seat', () async {

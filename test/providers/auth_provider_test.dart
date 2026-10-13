@@ -273,6 +273,7 @@ void main() {
     }) async {
       final stored = {
         'serverUrl': 'http://jelly.local',
+        'remoteUrl': 'http://100.64.0.5:8096',
         'relayUrl': 'https://relay.test/r/key',
         'userId': 'user-1',
         'authToken': 'token-1',
@@ -305,7 +306,18 @@ void main() {
       },
     );
 
-    test('- starts on the tunnel when home does not answer', () async {
+    test('- keeps the last server address for the next login', () async {
+      await restoreWith(answer: (uri) async => artists());
+
+      verify(
+        () => mockStorage.write(
+          key: 'lastServerUrl',
+          value: 'http://jelly.local',
+        ),
+      ).called(1);
+    });
+
+    test('- starts on the remote address when home does not answer', () async {
       final container = await restoreWith(
         answer: (uri) async => uri.host == 'jelly.local'
             ? throw DioException.connectionError(
@@ -313,6 +325,19 @@ void main() {
                 reason: 'unreachable',
               )
             : artists(),
+      );
+
+      expect(container.read(baseUrlProvider), 'http://100.64.0.5:8096');
+    });
+
+    test('- starts on the tunnel when only the tunnel answers', () async {
+      final container = await restoreWith(
+        answer: (uri) async => uri.host == 'relay.test'
+            ? artists()
+            : throw DioException.connectionError(
+                requestOptions: RequestOptions(path: uri.toString()),
+                reason: 'unreachable',
+              ),
       );
 
       expect(container.read(baseUrlProvider), 'https://relay.test/r/key');
