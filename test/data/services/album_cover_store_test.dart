@@ -46,6 +46,28 @@ void main() {
       expect(requested, [artwork]);
     });
 
+    test('- keeps a hostile album id inside the root', () async {
+      final sibling = Directory(join(root.parent.path, 'escape'));
+      final victim = File(join(sibling.path, DownloadPaths.coverFileName));
+      addTearDown(() async {
+        if (sibling.existsSync()) await sibling.delete(recursive: true);
+      });
+
+      for (final albumId in ['../escape', '../../escape', '..', '.']) {
+        final file = await store.ensure(albumId, artwork);
+
+        expect(file, isNotNull, reason: albumId);
+        expect(isWithin(root.path, file!.path), isTrue, reason: albumId);
+        expect(victim.existsSync(), isFalse, reason: albumId);
+      }
+      expect(root.listSync().whereType<File>(), isEmpty);
+    });
+
+    test('- refuses an empty album id', () async {
+      expect(await store.ensure('', artwork), isNull);
+      expect(requested, isEmpty);
+    });
+
     test('- fetches a cover only once', () async {
       await store.ensure('album-1', artwork);
       await store.ensure('album-1', artwork);
