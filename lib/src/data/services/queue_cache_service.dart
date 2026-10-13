@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/downloads/cache_downloader.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/services/album_cover_store.dart';
@@ -46,7 +47,7 @@ class QueueCacheService {
       final path = await _downloader.fetch(
         id: song.id,
         url: resolved.uri.toString(),
-        fileName: '${song.id}.${resolved.outputContainer}',
+        fileName: DownloadPaths.fileName(song.id, resolved.outputContainer),
       );
       if (path == null) return null;
       final file = File(path);

@@ -35,6 +35,9 @@ class BackgroundCacheDownloader implements CacheDownloader {
     required String url,
     required String fileName,
   }) async {
+    if (fileName.isEmpty || p.basename(fileName) != fileName) {
+      throw ArgumentError.value(fileName, 'fileName', 'must be a bare name');
+    }
     final task = bd.DownloadTask(
       taskId: taskIdFor(id),
       url: url,

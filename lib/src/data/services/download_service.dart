@@ -10,7 +10,6 @@ import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/services/album_cover_store.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:logging/logging.dart';
-import 'package:path_provider/path_provider.dart';
 
 const _secretQueryKeys = {'ApiKey', 'api_key', 'X-Emby-Token', 't', 's', 'p'};
 
@@ -57,8 +56,11 @@ class DownloadService extends ChangeNotifier {
     MediaServerClient client, {
     required String deviceId,
   }) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final albumSubdir = song.albumId ?? 'unknown';
+    await getDownloadDirectory();
+    final albumId = song.albumId;
+    final albumSubdir = DownloadPaths.segment(
+      albumId == null || albumId.isEmpty ? 'unknown' : albumId,
+    );
 
     // Download through the same transcoding endpoint the player streams from,
     // so codecs the local player can't decode (e.g. ALAC on Android/ExoPlayer)
@@ -71,9 +73,13 @@ class DownloadService extends ChangeNotifier {
       target: StreamTargetProfile.download(),
     );
 
-    final fileName =
-        '${song.name.replaceAll('/', '_')}.${resolved.outputContainer}';
-    final destination = '${dir.path}/music/$albumSubdir/$fileName';
+    final fileName = DownloadPaths.fileName(song.id, resolved.outputContainer);
+    final destination = DownloadPaths.songPath(albumSubdir, fileName)!;
+    final albumDirectory = Directory(destination).parent;
+    await albumDirectory.create(recursive: true);
+    if (!await DownloadPaths.isResolvedWithinRoot(albumDirectory.path)) {
+      throw UnsafePathException(destination, DownloadPaths.root!);
+    }
 
     final task = DownloadTask(
       id: song.id,

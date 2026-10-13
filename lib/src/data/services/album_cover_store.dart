@@ -13,7 +13,13 @@ class AlbumCoverStore {
   Future<File?> ensure(String albumId, Uri? uri) async {
     if (uri == null) return null;
     await DownloadPaths.init();
-    final path = DownloadPaths.coverPath(albumId);
+    final String? path;
+    try {
+      path = DownloadPaths.coverPath(albumId);
+    } on Object catch (error) {
+      debugPrint('[Covers] cover for $albumId refused: $error');
+      return null;
+    }
     if (path == null) return null;
 
     final file = File(path);
@@ -23,6 +29,10 @@ class AlbumCoverStore {
       final bytes = await _fetch(uri);
       if (bytes == null || bytes.isEmpty) return null;
       await file.parent.create(recursive: true);
+      if (!await DownloadPaths.isResolvedWithinRoot(file.parent.path)) {
+        debugPrint('[Covers] cover for $albumId refused: $path escapes root');
+        return null;
+      }
       await file.writeAsBytes(bytes);
       return file;
     } on Object catch (error) {
