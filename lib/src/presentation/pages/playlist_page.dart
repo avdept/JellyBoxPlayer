@@ -400,38 +400,18 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           ),
         ),
         SizedBox(width: _device.isDesktop ? 35 : 32),
-        if (_device.isDesktop)
-          Container()
-        // StreamBuilder<PlayerState>(
-        //   stream: ref.read(playerProvider).playerStateStream,
-        //   builder: (context, snapshot) {
-        //     return Expanded(
-        //       child: Row(
-        //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //         children: [
-        //           SizedBox.square(
-        //             dimension: 65,
-        //             child: _playAlbumButton(),
-        //           ),
-        //           _downloadAlbumButton(),
-        //         ],
-        //       ),
-        //     );
-        //   },
-        // )
-        else
-          Wrap(
-            spacing: _device.isMobile ? 6 : 32,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _downloadAlbumButton(),
-              const RandomQueueButton(),
-              SizedBox.square(
-                dimension: _device.isMobile ? 40 : 48,
-                child: _playAlbumButton(),
-              ),
-            ],
-          ),
+        Wrap(
+          spacing: _device.isMobile ? 6 : 32,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _downloadAlbumButton(),
+            const RandomQueueButton(),
+            SizedBox.square(
+              dimension: _device.isMobile ? 40 : 48,
+              child: _playAlbumButton(),
+            ),
+          ],
+        ),
       ],
     ),
   );

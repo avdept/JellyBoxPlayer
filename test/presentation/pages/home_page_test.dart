@@ -3,9 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/providers/download_database_provider.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
+import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/home_sections_provider.dart';
@@ -28,6 +36,12 @@ class MockLibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>>
     with Mock
     implements LibrariesNotifier {}
 
+class MockMediaServerClient extends Mock implements MediaServerClient {}
+
+class MockDownloadManager extends Mock implements DownloadManager {}
+
+class MockDownloadDatabase extends Mock implements DownloadDatabase {}
+
 class FakeTodaysPlaylistsNotifier extends TodaysPlaylistsNotifier {
   FakeTodaysPlaylistsNotifier(this.playlists);
 
@@ -47,6 +61,9 @@ void main() {
   late CurrentLibraryNotifier mockCurrentLibraryNotifier;
   late LibrariesNotifier mockLibrariesNotifier;
   late FakeTodaysPlaylistsNotifier fakeTodaysPlaylists;
+  late MockMediaServerClient mockClient;
+  late MockDownloadManager mockDownloadManager;
+  late MockDownloadDatabase mockDownloadDatabase;
 
   final faker = Faker.instance;
 
@@ -131,6 +148,12 @@ void main() {
           }),
           currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
           librariesProvider.overrideWith(() => mockLibrariesNotifier),
+          mediaServerClientProvider.overrideWith((_) => mockClient),
+          downloadManagerProvider.overrideWithValue(mockDownloadManager),
+          downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
+          downloadedCollectionsProvider.overrideWith(
+            (_) async => (albums: <String>{}, playlists: <String>{}),
+          ),
         ],
       ),
       home: const HomePage(),
@@ -173,12 +196,33 @@ void main() {
     await widgetTester.pump(Duration.zero);
   }
 
+  setUpAll(() {
+    registerFallbackValue(const LibraryQuery());
+    registerFallbackValue(likedSongsPlaylistFor('user-1'));
+  });
+
   setUp(() {
     mockCurrentLibraryNotifier = MockCurrentLibraryNotifier();
     mockLibrariesNotifier = MockLibrariesNotifier();
+    mockClient = MockMediaServerClient();
+    mockDownloadManager = MockDownloadManager();
+    mockDownloadDatabase = MockDownloadDatabase();
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
+    when(
+      () => mockClient.capabilities,
+    ).thenReturn(const MediaServerCapabilities());
+    when(
+      mockClient.resolveCapabilities,
+    ).thenAnswer((_) async => const MediaServerCapabilities());
   });
+
+  Future<void> openCardMenu(WidgetTester widgetTester, String name) async {
+    await widgetTester.longPress(
+      find.ancestor(of: find.text(name), matching: find.byType(AlbumView)),
+    );
+    await widgetTester.pumpAndSettle();
+  }
 
   group('HomePage', () {
     testWidgets('- shows every section that has content', (
@@ -302,6 +346,54 @@ void main() {
           widgetTester.getTopLeft(find.text(realPlaylists.first.name)).dx,
         ),
       );
+    });
+
+    testWidgets('- offers play and download on the Liked songs card', (
+      widgetTester,
+    ) async {
+      await pumpHome(widgetTester);
+      await openCardMenu(widgetTester, 'Liked songs');
+
+      expect(find.text('Play playlist'), findsOneWidget);
+      expect(find.text('Download'), findsOneWidget);
+      expect(find.text('Add to favourites'), findsNothing);
+    });
+
+    testWidgets('- downloads Liked songs from the card menu', (
+      widgetTester,
+    ) async {
+      final liked = likedSongsPlaylistFor('user-1');
+      final songs = createItems(2, ItemKind.song);
+      when(
+        () => mockClient.getAllSongs(any()),
+      ).thenAnswer((_) async => LibraryPage(items: songs));
+      when(
+        () => mockDownloadDatabase.isPlaylistDownloaded(liked.id),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockDownloadManager.downloadPlaylist(any(), any()),
+      ).thenAnswer((_) async {});
+      await pumpHome(widgetTester);
+      await openCardMenu(widgetTester, 'Liked songs');
+
+      await widgetTester.tap(find.text('Download'));
+      await widgetTester.pumpAndSettle();
+
+      verify(
+        () => mockDownloadManager.downloadPlaylist(liked, songs),
+      ).called(1);
+      verifyNever(() => mockClient.getPlaylistSongs(any()));
+    });
+
+    testWidgets('- offers play and download on a Made for you card', (
+      widgetTester,
+    ) async {
+      final generated = createGenerated(2);
+      await pumpHome(widgetTester, generated: generated);
+      await openCardMenu(widgetTester, generated.first.item.name);
+
+      expect(find.text('Play playlist'), findsOneWidget);
+      expect(find.text('Download'), findsOneWidget);
     });
 
     testWidgets('- replaces the sections with a notice when offline', (

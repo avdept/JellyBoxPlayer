@@ -66,6 +66,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   static const _quickConnectTimeout = Duration(minutes: 5);
 
   static const _serverUrlKey = 'serverUrl';
+  static const _lastServerUrlKey = 'lastServerUrl';
   static const _serverTypeKey = 'serverType';
   static const _serverIdKey = 'serverId';
   static const _userIdKey = 'userId';
@@ -90,9 +91,12 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     final serverUrl = await _keychain.readSessionKey(_serverUrlKey);
     ref.read(baseUrlProvider.notifier).state = serverUrl;
     if (serverUrl == null) return false;
+    await _rememberServerUrl(serverUrl);
+    final remoteUrl = await _storage.read(key: remoteUrlStorageKey);
     final relayUrl = await _storage.read(key: relayUrlStorageKey);
     ref.read(serverAddressesProvider.notifier).state = ServerAddresses(
       home: serverUrl,
+      remote: remoteUrl,
       relay: relayUrl,
     );
 
@@ -107,7 +111,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     await _pruneAbandonedDownloads();
     final token = await _migrateAuthToken();
     final (activeUrl, status) = await _validateFirst(
-      [serverUrl, ?relayUrl],
+      [serverUrl, ?remoteUrl, ?relayUrl],
       serverType,
       userId: userId,
       token: token,
@@ -180,8 +184,10 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     await _storage.write(key: _authTokenKey, value: token);
     await _storage.write(key: _userIdKey, value: userId);
     await _storage.write(key: _serverUrlKey, value: serverUrl);
+    await _rememberServerUrl(serverUrl);
     await _storage.write(key: _serverIdKey, value: serverId);
     await _storage.write(key: _serverTypeKey, value: serverType.name);
+    await _storage.delete(key: remoteUrlStorageKey);
     await _storage.delete(key: relayUrlStorageKey);
 
     ref.read(currentServerIdProvider.notifier).state = serverId;
@@ -308,6 +314,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       await _stopPlayback();
       await _purgeQueueCache();
       PaintingBinding.instance.imageCache.clear();
+      final lastServerUrl = await _storage.read(key: _lastServerUrlKey);
       await Future.wait([
         ref.read(sharedPreferencesProvider).requireValue.clear(),
         _storage.deleteAll(),
@@ -315,12 +322,18 @@ class AuthNotifier extends AsyncNotifier<bool?> {
         ArtworkCache.instance.emptyCache(),
         _signOutQuietly(),
       ]);
+      if (lastServerUrl != null) await _rememberServerUrl(lastServerUrl);
     } finally {
       _clearSession();
       _removeAuthHeader();
       state = const AsyncData(false);
       _loggingOut = false;
     }
+  }
+
+  Future<void> _rememberServerUrl(String serverUrl) async {
+    await _storage.write(key: _lastServerUrlKey, value: serverUrl);
+    ref.invalidate(lastServerUrlProvider);
   }
 
   Future<void> _stopPlayback() async {
@@ -550,3 +563,13 @@ class _QuickConnectSession {
 final authProvider = AsyncNotifierProvider<AuthNotifier, bool?>(
   AuthNotifier.new,
 );
+
+final lastServerUrlProvider = FutureProvider<String?>((ref) async {
+  try {
+    return await ref
+        .read(secureStorageProvider)
+        .read(key: AuthNotifier._lastServerUrlKey);
+  } on Object {
+    return null;
+  }
+});

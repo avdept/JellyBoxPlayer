@@ -79,6 +79,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         },
       );
 
+  List<ContextMenuAction> _setOptions(BuildContext context, LibraryItem item) =>
+      contextMenuActions(context, ref, item, scope: ContextMenuScope.browse);
+
   void _onAlbumTap(LibraryItem album) {
     ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
@@ -280,6 +283,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onItemTap: _onGeneratedPlaylistTap,
                 onPlayPressed: _onPlayGeneratedPlaylist,
                 coverBuilder: _generatedPlaylistCover,
+                optionsBuilder: _setOptions,
                 onRetry: () => ref.invalidate(todaysPlaylistsProvider),
                 trailing: ref.watch(devToolsEnabledProvider)
                     ? _regenerateButton()
@@ -331,7 +335,6 @@ class _HomePageState extends ConsumerState<HomePage> {
               onItemTap: _onPlaylistTap,
               onPlayPressed: _onPlayPlaylist,
               optionsBuilder: _cardOptions(recentlyUpdatedPlaylistsProvider),
-              hasOptions: (item) => !isLikedSongsId(item.id),
               onRetry: () => ref.invalidate(recentlyUpdatedPlaylistsProvider),
               onRefresh: () =>
                   ref.refresh(recentlyUpdatedPlaylistsProvider.future),

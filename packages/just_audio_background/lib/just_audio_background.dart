@@ -160,14 +160,27 @@ class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
 
   @override
   Future<void> play() async {
-    if (_awaitingPlayer) return JustAudioBackground.rememberPlay();
+    if (_awaitingPlayer) {
+      debugPrint('[Session] play arrived before the player; remembered');
+      return JustAudioBackground.rememberPlay();
+    }
     final handler = playHandler;
+    debugPrint(
+      '[Session] play via ${handler == null ? 'handler' : 'app'} '
+      '(playing=${_playerAudioHandler._playing}, '
+      'holding=${_playerAudioHandler._holding})',
+    );
     if (handler == null) return super.play();
     return handler();
   }
 
   @override
   Future<void> click([MediaButton button = MediaButton.media]) async {
+    debugPrint(
+      '[Session] media button $button '
+      '(playing=${_playerAudioHandler._playing}, '
+      'awaitingPlayer=$_awaitingPlayer)',
+    );
     if (button == MediaButton.media && !_playerAudioHandler._playing) {
       return play();
     }
@@ -606,6 +619,10 @@ class _PlayerAudioHandler extends BaseAudioHandler
             .map((event) {
               index = event.currentIndex ?? _justAudioEvent.currentIndex;
               if (event.errorCode != null) {
+                debugPrint(
+                  '[Session] player error ${event.errorCode}: '
+                  '${event.errorMessage} (playing=$_playing)',
+                );
                 if (_playing) _holding = true;
               } else if (event.processingState != ProcessingStateMessage.idle) {
                 _holding = false;
@@ -871,6 +888,11 @@ class _PlayerAudioHandler extends BaseAudioHandler
     if (_justAudioEvent.processingState == ProcessingStateMessage.completed) {
       await skipToQueueItem(0);
     }
+    debugPrint(
+      '[Session] handler play (playing=$_playing, '
+      'playerPlaying=$_playerPlaying, holding=$_holding, '
+      'player=${_playerCompleter.value != null})',
+    );
     if (!_playing || !_playerPlaying) {
       _updatePosition();
       if (!_playing) customEvent.add(_PlayingEvent(_playing = true));
@@ -882,6 +904,10 @@ class _PlayerAudioHandler extends BaseAudioHandler
 
   @override
   Future<void> pause() async {
+    debugPrint(
+      '[Session] handler pause (holding=$_holding, '
+      'player=${_playerCompleter.value != null})',
+    );
     _updatePosition();
     final cancelled = _onHoldCancelled;
     _holding = false;
@@ -897,6 +923,7 @@ class _PlayerAudioHandler extends BaseAudioHandler
   void hold(void Function() onCancelled) {
     _onHoldCancelled = onCancelled;
     if (_holding && _playing) return;
+    debugPrint('[Session] holding the session (playing=$_playing)');
     _holding = true;
     if (!_playing) customEvent.add(_PlayingEvent(_playing = true));
     _broadcastState();
@@ -904,6 +931,7 @@ class _PlayerAudioHandler extends BaseAudioHandler
 
   void cancelHold() {
     if (!_holding) return;
+    debugPrint('[Session] releasing the held session');
     _holding = false;
     _onHoldCancelled = null;
     customEvent.add(_PlayingEvent(_playing = false));
@@ -962,6 +990,10 @@ class _PlayerAudioHandler extends BaseAudioHandler
   @override
   Future<void> stop() => _lock.synchronized(() async {
         final player = _playerCompleter.value;
+        debugPrint(
+          '[Session] handler stop (player=${player != null}, '
+          'holding=$_holding)',
+        );
         if (player == null) return;
         _updatePosition();
         if (!_holding) customEvent.add(_PlayingEvent(_playing = false));

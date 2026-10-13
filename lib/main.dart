@@ -14,6 +14,7 @@ import 'package:jplayer/src/core/android_auto/android_auto_handler.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/core/carplay/carplay_handler.dart';
 import 'package:jplayer/src/core/cast/cast_runtime.dart';
+import 'package:jplayer/src/core/diagnostics/device_log.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
 import 'package:jplayer/src/core/home_widget/widget_commands.dart';
@@ -59,6 +60,19 @@ Future<void> main() async {
 
   deviceId = (await FlutterUdid.udid).trim();
   appInfo = await PackageInfo.fromPlatform();
+
+  DeviceLog.configure(
+    DeviceLog(
+      directory: Platform.isAndroid
+          ? () async =>
+                await getExternalStorageDirectory() ??
+                await getApplicationSupportDirectory()
+          : getApplicationSupportDirectory,
+      adoptFrom: Platform.isAndroid ? getApplicationSupportDirectory : null,
+    ),
+    header: 'JellyBox ${appInfo.version}+${appInfo.buildNumber} starting',
+  );
+  DeviceLog.install();
 
   await DownloadPaths.init();
 
