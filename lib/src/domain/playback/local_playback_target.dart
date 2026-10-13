@@ -30,6 +30,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     Duration stopTimeout = defaultStopTimeout,
   }) : _idleStopAfter = idleStopAfter,
        _isOnline = isOnline,
+       _onlineChanges = onlineChanges,
        _recheckConnection = recheckConnection,
        _retryDelays = retryDelays,
        _offlineRetryEvery = offlineRetryEvery,
@@ -45,10 +46,6 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
         _emit();
       }),
       _player.errorStream.listen(_onPlayerError),
-      if (onlineChanges != null)
-        onlineChanges().listen((online) {
-          if (online) _restart();
-        }),
     ];
   }
 
@@ -67,7 +64,9 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   final AudioPlayer _player;
   final Duration? _idleStopAfter;
   final bool Function()? _isOnline;
+  final Stream<bool> Function()? _onlineChanges;
   final Future<void> Function()? _recheckConnection;
+  StreamSubscription<bool>? _onlineSubscription;
   final List<Duration> _retryDelays;
   final Duration _offlineRetryEvery;
   final int _skipAfter;
@@ -214,6 +213,9 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       'wantsPlay=$_wantsPlay online=${_isOnline?.call()} attempt=$_attempt',
     );
     _syncHold();
+    _onlineSubscription ??= _onlineChanges?.call().listen((online) {
+      if (online) _restart();
+    });
     if (_wantsPlay) unawaited(_recheckConnection?.call());
     _emit();
     _scheduleRetry();
@@ -236,7 +238,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     _emit();
   }
 
-  void _onPlayerError(PlayerException error) {
+  Future<void> _onPlayerError(PlayerException error) async {
     if (_loading) return;
     debugPrint(
       '[LocalTarget] player error: ${error.message} '
@@ -251,7 +253,8 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     }
     final index = _state.currentIndex ?? _player.currentIndex ?? 0;
     final position = _state.position;
-    unawaited(_stopPlayer());
+    await _stopPlayer();
+    if (_loading || _pending != null) return;
     _needsLoad(index, position);
   }
 
@@ -576,6 +579,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     _disposed = true;
     _idleStop?.cancel();
     _cancelRetry();
+    await _onlineSubscription?.cancel();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
