@@ -493,6 +493,38 @@ void main() {
         verify(player.play).called(1);
       });
 
+      test('- play presses do not restart the skip count', () async {
+        failures = 10;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+          skipAfter: 2,
+        );
+
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        expect(attempts, 1);
+
+        await retrying.play();
+        expect(attempts, 2);
+        await retrying.play();
+        await Future<void>.delayed(soon);
+
+        expect(retrying.state.currentIndex, 1);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 1,
+            initialPosition: Duration.zero,
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(1);
+      });
+
       test('- never skips while offline', () async {
         failures = 100;
         final retrying = targetThatRetries(

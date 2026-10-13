@@ -30,7 +30,6 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     Duration stopTimeout = defaultStopTimeout,
   }) : _idleStopAfter = idleStopAfter,
        _isOnline = isOnline,
-       _onlineChanges = onlineChanges,
        _recheckConnection = recheckConnection,
        _retryDelays = retryDelays,
        _offlineRetryEvery = offlineRetryEvery,
@@ -46,6 +45,10 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
         _emit();
       }),
       _player.errorStream.listen(_onPlayerError),
+      if (onlineChanges != null)
+        onlineChanges().listen((online) {
+          if (online) _restart();
+        }),
     ];
   }
 
@@ -64,17 +67,12 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   final AudioPlayer _player;
   final Duration? _idleStopAfter;
   final bool Function()? _isOnline;
-  final Stream<bool> Function()? _onlineChanges;
   final Future<void> Function()? _recheckConnection;
-  StreamSubscription<bool>? _onlineSubscription;
   final List<Duration> _retryDelays;
   final Duration _offlineRetryEvery;
   final int _skipAfter;
   final Duration _loadTimeout;
   final Duration _stopTimeout;
-  var _loadGeneration = 0;
-  Timer? _idleStop;
-  Timer? _retryTimer;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
   final _shuffleOrder = QueueShuffleOrder();
 
@@ -82,13 +80,18 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
 
   var _state = TargetPlaybackState.idle;
   var _wantsPlay = false;
-  var _loading = false;
+  var _generation = 0;
+  int? _inFlight;
   var _attempt = 0;
-  var _failed = false;
+  var _exhausted = false;
   var _disposed = false;
   _PendingLoad? _pending;
+  Timer? _retry;
+  Timer? _idleStop;
 
   bool get retryPending => _pending != null;
+
+  bool get _loading => _inFlight == _generation;
 
   @override
   bool get holdsCurrentTrack =>
@@ -124,8 +127,9 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     required bool autoPlay,
   }) async {
     _cancelRetry();
-    _settle();
-    _failed = false;
+    _pending = null;
+    _attempt = 0;
+    _exhausted = false;
     _wantsPlay = autoPlay;
     debugPrint(
       '[LocalTarget] loading ${tracks.length} tracks at $initialIndex '
@@ -138,8 +142,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       index: initialIndex,
       position: initialPosition,
     );
-    if (!loaded) return;
-    if (autoPlay) unawaited(_player.play());
+    if (loaded && autoPlay) unawaited(_player.play());
   }
 
   Future<bool> _setSources(
@@ -147,9 +150,10 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     required int index,
     required Duration position,
   }) async {
-    final generation = ++_loadGeneration;
+    final generation = ++_generation;
+    _inFlight = generation;
+    bool current() => generation == _generation;
     final clock = Stopwatch()..start();
-    _loading = true;
     try {
       await _player
           .setAudioSources(
@@ -160,33 +164,29 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
             shuffleOrder: _shuffleOrder,
           )
           .timeout(_loadTimeout);
-      if (generation != _loadGeneration) return false;
+      if (!current()) return false;
       debugPrint(
         '[LocalTarget] loaded index $index in ${clock.elapsedMilliseconds}ms',
       );
+      _pending = null;
       _attempt = 0;
-      _settle();
       return true;
-    } on TimeoutException {
-      if (generation != _loadGeneration) return false;
-      debugPrint(
-        '[LocalTarget] load gave no answer in ${_loadTimeout.inSeconds}s; '
-        'stopping the player',
-      );
-      await _stopPlayer();
-      _deferLoad(index: index, position: position);
-      return false;
     } on Object catch (error) {
-      if (generation != _loadGeneration) return false;
+      if (!current()) return false;
       debugPrint(
-        '[LocalTarget] load of index $index failed after '
-        '${clock.elapsedMilliseconds}ms: $error',
+        error is TimeoutException
+            ? '[LocalTarget] load of index $index gave no answer in '
+                  '${_loadTimeout.inSeconds}s; stopping the player'
+            : '[LocalTarget] load of index $index failed after '
+                  '${clock.elapsedMilliseconds}ms: $error',
       );
       await _stopPlayer();
-      _deferLoad(index: index, position: position);
+      if (!current()) return false;
+      _attempt++;
+      _needsLoad(index, position);
       return false;
     } finally {
-      if (generation == _loadGeneration) _loading = false;
+      if (current()) _inFlight = null;
     }
   }
 
@@ -203,35 +203,29 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     }
   }
 
-  int _indexOf(_PendingLoad pending) {
-    final sequence = _player.sequence;
-    final track = pending.track;
-    final at = track == null ? -1 : sequence.indexOf(track);
-    if (at >= 0) return at;
-    return sequence.isEmpty ? 0 : pending.index.clamp(0, sequence.length - 1);
-  }
-
-  void _deferLoad({required int index, required Duration position}) {
-    debugPrint(
-      '[LocalTarget] keeping index $index (${position.inSeconds}s) pending; '
-      'wantsPlay=$_wantsPlay online=${_isOnline?.call()} attempt=$_attempt',
-    );
+  void _needsLoad(int index, Duration position) {
     _pending = (
       track: _player.sequence.elementAtOrNull(index),
       index: index,
       position: position,
     );
-    _onlineSubscription ??= _onlineChanges?.call().listen((online) {
-      if (online) _retrySoon();
-    });
+    debugPrint(
+      '[LocalTarget] keeping index $index (${position.inSeconds}s) pending; '
+      'wantsPlay=$_wantsPlay online=${_isOnline?.call()} attempt=$_attempt',
+    );
+    _syncHold();
+    if (_wantsPlay) unawaited(_recheckConnection?.call());
+    _emit();
+    _scheduleRetry();
+  }
+
+  void _syncHold() {
+    if (_pending == null) return;
     if (_wantsPlay) {
       JustAudioBackground.holdPlayback(onCancelled: _onHoldCancelled);
-      unawaited(_recheckConnection?.call());
-      _scheduleRetry();
     } else {
       JustAudioBackground.cancelPendingPlayback();
     }
-    _emit();
   }
 
   void _onHoldCancelled() {
@@ -249,52 +243,50 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       '(player ${_player.playerState}, pending=${_pending != null})',
     );
     if (_player.playing) _wantsPlay = true;
-    final pending = _pending;
-    if (pending != null) {
-      if (_wantsPlay && _retryTimer == null) {
-        _deferLoad(index: _indexOf(pending), position: pending.position);
-      }
+    if (_pending != null) {
+      _syncHold();
+      _emit();
+      if (_retry == null) _scheduleRetry();
       return;
     }
     final index = _state.currentIndex ?? _player.currentIndex ?? 0;
     final position = _state.position;
-    unawaited(_player.stop());
-    _deferLoad(index: index, position: position);
+    unawaited(_stopPlayer());
+    _needsLoad(index, position);
   }
 
   void _scheduleRetry() {
-    _retryTimer?.cancel();
-    if (_disposed) return;
+    _cancelRetry();
+    if (_disposed || _pending == null || !_wantsPlay) return;
     final online = _isOnline?.call() ?? true;
-    if (online && _attempt >= _skipAfter) {
-      _skipBadTrack();
-      return;
-    }
-    final step = _retryDelays[_attempt.clamp(0, _retryDelays.length - 1)];
-    final delay = online ? step : _offlineRetryEvery;
-    _attempt++;
+    if (online && _attempt > _skipAfter && !_skipTrack()) return;
+    final delay = _attempt == 0
+        ? Duration.zero
+        : online
+        ? _retryDelays[(_attempt - 1).clamp(0, _retryDelays.length - 1)]
+        : _offlineRetryEvery;
     debugPrint(
-      '[LocalTarget] retry $_attempt in ${delay.inSeconds}s '
-      '(${online ? 'online' : 'offline'})',
+      '[LocalTarget] retry in ${delay.inSeconds}s after $_attempt '
+      'failed attempt(s) (${online ? 'online' : 'offline'})',
     );
-    _retryTimer = Timer(delay, () => unawaited(_retryNow()));
+    _retry = Timer(delay, () {
+      _retry = null;
+      unawaited(_attemptLoad());
+    });
   }
 
-  void _skipBadTrack() {
-    final pending = _pending;
-    if (pending == null) return;
-    final order = _player.effectiveIndices;
-    final at = order.indexOf(_indexOf(pending));
-    final next = at >= 0 && at + 1 < order.length ? order[at + 1] : null;
+  bool _skipTrack() {
+    final pending = _pending!;
+    final next = _neighbour(pending, 1);
     _attempt = 0;
     if (next == null) {
       debugPrint('[LocalTarget] giving up: no playable track left');
-      _settle();
-      _failed = true;
       _wantsPlay = false;
-      JustAudioBackground.cancelPendingPlayback();
+      _syncHold();
+      _pending = null;
+      _exhausted = true;
       _emit();
-      return;
+      return false;
     }
     debugPrint('[LocalTarget] skipping track ${pending.index}, trying $next');
     _pending = (
@@ -303,27 +295,26 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       position: Duration.zero,
     );
     _emit();
-    _retryTimer = Timer(Duration.zero, () => unawaited(_retryNow()));
+    return true;
   }
 
-  void _retrySoon() {
-    if (_disposed || _pending == null || !_wantsPlay || _loading) return;
+  void _restart({bool interrupt = false}) {
     _attempt = 0;
-    _retryTimer?.cancel();
-    _retryTimer = Timer(Duration.zero, () => unawaited(_retryNow()));
+    if (interrupt) _generation++;
+    unawaited(_attemptLoad());
   }
 
-  Future<void> _retryNow({bool force = false}) async {
+  Future<void> _attemptLoad() async {
     final pending = _pending;
-    if (_disposed || pending == null || !_wantsPlay) return;
-    if (_loading && !force) return;
+    if (_disposed || pending == null || !_wantsPlay || _loading) return;
+    _cancelRetry();
     final sources = [..._player.sequence];
     if (sources.isEmpty) {
-      _settle();
+      _pending = null;
       _emit();
       return;
     }
-    debugPrint('[LocalTarget] retrying the queue, attempt $_attempt');
+    debugPrint('[LocalTarget] retrying the queue after $_attempt failure(s)');
     final loaded = await _setSources(
       sources,
       index: _indexOf(pending),
@@ -335,14 +326,38 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   }
 
   void _cancelRetry() {
-    _retryTimer?.cancel();
-    _retryTimer = null;
+    _retry?.cancel();
+    _retry = null;
   }
 
-  void _settle() {
-    _pending = null;
-    unawaited(_onlineSubscription?.cancel());
-    _onlineSubscription = null;
+  int _indexOf(_PendingLoad pending) {
+    final sequence = _player.sequence;
+    final track = pending.track;
+    final at = track == null ? -1 : sequence.indexOf(track);
+    if (at >= 0) return at;
+    return sequence.isEmpty ? 0 : pending.index.clamp(0, sequence.length - 1);
+  }
+
+  int? _neighbour(_PendingLoad pending, int offset) {
+    final order = _player.effectiveIndices;
+    final at = order.indexOf(_indexOf(pending));
+    final slot = at + offset;
+    if (at < 0 || slot < 0 || slot >= order.length) return null;
+    return order[slot];
+  }
+
+  void _repoint(int index, Duration position, String reason) {
+    debugPrint(
+      '[LocalTarget] $reason while a load is pending: '
+      'now index $index at ${position.inSeconds}s',
+    );
+    _pending = (
+      track: _player.sequence.elementAtOrNull(index),
+      index: index,
+      position: position,
+    );
+    _emit();
+    if (_wantsPlay) _restart(interrupt: true);
   }
 
   AudioSource _audioSource(TargetTrack track) {
@@ -364,16 +379,14 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   @override
   Future<void> play() async {
     _wantsPlay = true;
-    _failed = false;
+    _exhausted = false;
     debugPrint(
       '[LocalTarget] play (pending=${_pending != null}, '
       'player ${_player.playerState})',
     );
     if (_pending != null) {
-      JustAudioBackground.holdPlayback(onCancelled: _onHoldCancelled);
-      _attempt = 0;
-      _cancelRetry();
-      await _retryNow();
+      _syncHold();
+      await _attemptLoad();
       return;
     }
     final playerState = _player.playerState;
@@ -393,10 +406,8 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     debugPrint('[LocalTarget] pause (pending=${_pending != null})');
     _wantsPlay = false;
     _cancelRetry();
-    if (_pending != null) {
-      JustAudioBackground.cancelPendingPlayback();
-      _emit();
-    }
+    _syncHold();
+    if (_pending != null) _emit();
     await _player.pause();
   }
 
@@ -405,10 +416,8 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     debugPrint('[LocalTarget] stop (pending=${_pending != null})');
     _wantsPlay = false;
     _cancelRetry();
-    if (_pending != null) {
-      _settle();
-      JustAudioBackground.cancelPendingPlayback();
-    }
+    _syncHold();
+    _pending = null;
     await _player.stop();
   }
 
@@ -431,29 +440,32 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     await _player.seek(Duration.zero, index: index);
   }
 
-  int? _neighbour(_PendingLoad pending, int offset) {
-    final order = _player.effectiveIndices;
-    final at = order.indexOf(_indexOf(pending));
-    final slot = at + offset;
-    if (at < 0 || slot < 0 || slot >= order.length) return null;
-    return order[slot];
+  @override
+  Future<void> seekToNext() async {
+    final pending = _pending;
+    if (pending != null) {
+      final next = _neighbour(pending, 1);
+      if (next != null) _repoint(next, Duration.zero, 'next');
+      return;
+    }
+    await _player.seekToNext();
   }
 
-  void _repoint(int index, Duration position, String reason) {
-    debugPrint(
-      '[LocalTarget] $reason while a load is pending: '
-      'now index $index at ${position.inSeconds}s',
-    );
-    _pending = (
-      track: _player.sequence.elementAtOrNull(index),
-      index: index,
-      position: position,
-    );
-    _attempt = 0;
-    _emit();
-    if (!_wantsPlay) return;
-    _cancelRetry();
-    _retryTimer = Timer(Duration.zero, () => unawaited(_retryNow(force: true)));
+  @override
+  Future<void> seekToPrevious() async {
+    final pending = _pending;
+    if (pending != null) {
+      final previous = _neighbour(pending, -1);
+      final restart =
+          previous == null || pending.position > const Duration(seconds: 3);
+      _repoint(
+        restart ? _indexOf(pending) : previous,
+        Duration.zero,
+        'previous',
+      );
+      return;
+    }
+    await _player.smartSeekToPrevious();
   }
 
   @override
@@ -544,42 +556,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       index: index,
       position: pending.position,
     );
-    _retrySoon();
-  }
-
-  @override
-  Future<void> seekToNext() async {
-    final pending = _pending;
-    if (pending != null) {
-      final next = _neighbour(pending, 1);
-      if (next != null) _repoint(next, Duration.zero, 'next');
-      return;
-    }
-    await _player.seekToNext();
-  }
-
-  @override
-  Future<void> seekToPrevious() async {
-    final pending = _pending;
-    if (pending != null) {
-      final previous = _neighbour(pending, -1);
-      final restart =
-          previous == null || pending.position > const Duration(seconds: 3);
-      _repoint(
-        restart ? _indexOf(pending) : previous,
-        Duration.zero,
-        'previous',
-      );
-      return;
-    }
-    await _player.smartSeekToPrevious();
-  }
-
-  String _originOf(TargetTrack? track) {
-    final uri = track?.uri;
-    if (uri == null) return 'nothing';
-    if (track!.isLocalFile) return 'a local file';
-    return uri.host.isEmpty ? uri.scheme : uri.host;
+    _restart();
   }
 
   @override
@@ -599,7 +576,6 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     _disposed = true;
     _idleStop?.cancel();
     _cancelRetry();
-    await _onlineSubscription?.cancel();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
@@ -622,6 +598,13 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       _idleStop = null;
       if (!_player.playing) unawaited(_player.stop());
     });
+  }
+
+  String _originOf(TargetTrack? track) {
+    final uri = track?.uri;
+    if (uri == null) return 'nothing';
+    if (track!.isLocalFile) return 'a local file';
+    return uri.host.isEmpty ? uri.scheme : uri.host;
   }
 
   void _emit() {
@@ -648,7 +631,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   }
 
   PlaybackStatus _statusOf(PlayerState playerState) {
-    if (_failed) return PlaybackStatus.error;
+    if (_exhausted) return PlaybackStatus.error;
     if (playerState.playing) {
       return playerState.processingState == ProcessingState.idle
           ? PlaybackStatus.buffering

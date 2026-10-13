@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:faker_dart/faker_dart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
@@ -19,6 +20,10 @@ import '../../mock_listener.dart';
 import '../../provider_container.dart';
 
 class MockDownloadService extends Mock implements DownloadService {}
+
+class NotifyingDownloadService extends ChangeNotifier
+    with Mock
+    implements DownloadService {}
 
 class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
@@ -524,6 +529,82 @@ void main() {
             .containsKey(playlist.id),
         isFalse,
       );
+    });
+
+    test('- keeps reporting progress after the service notifies', () async {
+      final service = NotifyingDownloadService();
+      final container = createProviderContainer(
+        overrides: [
+          downloadServiceProvider.overrideWith((_) => service),
+          downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
+          mediaServerClientProvider.overrideWith((_) => mockMediaServerClient),
+        ],
+      );
+      const playlist = LibraryItem(
+        id: 'playlist-1',
+        name: 'Liked songs',
+        kind: ItemKind.playlist,
+      );
+      final task = createDownloadTask(status: DownloadStatus.downloading);
+      when(
+        () => mockDownloadDatabase.getDownloadedSongs(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDownloadDatabase.getDownloadedSongPath(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDownloadDatabase.insertDownloadedSong(
+          any(),
+          file: any(named: 'file'),
+        ),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDownloadDatabase.insertDownloadedPlaylist(
+          any(),
+          songs: any(named: 'songs'),
+          files: any(named: 'files'),
+        ),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => service.downloadAlbumCover(any(), any()),
+      ).thenAnswer((_) async => FakeFile());
+      when(
+        () => service.downloadSong(
+          mockSong,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenAnswer((_) async {
+        service.notifyListeners();
+        return task;
+      });
+      container.listen(
+        downloadManagerProvider,
+        mockListener.call,
+        fireImmediately: true,
+      );
+
+      final notifier = container.read(downloadManagerProvider.notifier);
+      final download = notifier.downloadPlaylist(playlist, [mockSong]);
+      await untilCalled(
+        () => service.downloadSong(
+          mockSong,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
+      for (var i = 0; i < 10; i++) {
+        await Future<void>.microtask(() {});
+      }
+      task.progress.value = 0.5;
+
+      expect(container.read(activeDownloadsProvider)[playlist.id], 0.5);
+
+      task.status.value = DownloadStatus.completed;
+      await download;
+
+      expect(container.read(activeDownloadsProvider), isEmpty);
+      expect(container.read(downloadManagerProvider).hasError, isFalse);
     });
   });
 }

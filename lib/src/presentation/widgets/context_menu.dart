@@ -311,7 +311,8 @@ List<ContextMenuAction> contextMenuActions(
       scope != ContextMenuScope.nowPlaying;
   final canLike =
       item.kind != ItemKind.playlist ||
-      ref.read(serverCapabilitiesProvider).playlistFavourites;
+      ref.read(serverCapabilitiesProvider).playlistFavourites &&
+          !EphemeralPlaylistId.isEphemeral(item.id);
   final actions = _ContextMenuActions(context, ref, item, scope);
 
   return [
@@ -776,8 +777,10 @@ class _ContextMenuActions {
             await manager.deletePlaylist(item.id);
           } else {
             if (_guardOffline()) return;
-            final page = await client.getPlaylistSongs(item.id);
-            await manager.downloadPlaylist(item, page.items);
+            final songs = await ref
+                .read(playlistSongsSourceProvider)
+                .songsOf(item.id);
+            await manager.downloadPlaylist(item, songs);
           }
         case _:
           return;

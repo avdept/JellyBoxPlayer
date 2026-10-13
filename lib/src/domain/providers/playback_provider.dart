@@ -1298,7 +1298,13 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       'requalified',
       (song, album, sessionId) async {
         if (_localSongIds.contains(song.id)) return null;
-        return (await _resolveTrack(song, album, sessionId))?.track;
+        final resolved = await _resolveTrack(
+          song,
+          album,
+          sessionId,
+          keepStreamOffline: true,
+        );
+        return resolved?.track;
       },
       cancelled: () => generation != _requalifyGeneration,
       retryWhenInterrupted: true,

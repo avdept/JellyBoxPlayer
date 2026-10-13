@@ -226,10 +226,21 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
             ],
           ),
         ),
-        if (widget.actions.isNotEmpty) ...[
-          const SizedBox(width: 35),
-          Row(mainAxisSize: MainAxisSize.min, children: widget.actions),
-        ],
+        const SizedBox(width: 35),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...widget.actions,
+            const RandomQueueButton(),
+            SizedBox.square(
+              dimension: 48,
+              child: PlayButton(
+                isLoading: widget.isPlayLoading,
+                onPressed: widget.onPlay,
+              ),
+            ),
+          ],
+        ),
       ],
     ),
   );
