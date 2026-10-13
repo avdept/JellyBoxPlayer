@@ -9,7 +9,6 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_albums_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_playlists_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
@@ -360,11 +359,10 @@ class CarContent {
   }
 
   Future<CarDownloads> downloads() async {
-    final manager = _ref.read(downloadManagerProvider.notifier);
     try {
       final (albums, playlists) = await (
-        manager.getDownloadedAlbums(),
-        manager.getDownloadedPlaylists(),
+        _ref.read(downloadedAlbumsProvider.future),
+        _ref.read(downloadedPlaylistsProvider.future),
       ).wait;
       return CarDownloads(
         albums: albums.map((e) => entry(e.item)).toList(),

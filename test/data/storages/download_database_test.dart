@@ -329,29 +329,31 @@ void main() {
       expect(songs.map((s) => s.item.id), [first.id, second.id]);
     });
 
-    test('- re-downloading a playlist replaces its previous track list',
-        () async {
-      final db = DownloadDatabase();
-      final playlist = buildPlaylist();
-      final removed = buildSong();
-      final kept = buildSong();
+    test(
+      '- re-downloading a playlist replaces its previous track list',
+      () async {
+        final db = DownloadDatabase();
+        final playlist = buildPlaylist();
+        final removed = buildSong();
+        final kept = buildSong();
 
-      await db.insertDownloadedPlaylist(
-        playlist,
-        songs: [removed],
-        files: [newSongFile()],
-      );
-      await db.insertDownloadedSong(kept, file: newSongFile());
-      await db.insertDownloadedPlaylist(
-        playlist,
-        songs: [kept],
-        files: [newSongFile()],
-      );
+        await db.insertDownloadedPlaylist(
+          playlist,
+          songs: [removed],
+          files: [newSongFile()],
+        );
+        await db.insertDownloadedSong(kept, file: newSongFile());
+        await db.insertDownloadedPlaylist(
+          playlist,
+          songs: [kept],
+          files: [newSongFile()],
+        );
 
-      expect(await db.getDownloadedPlaylists(), hasLength(1));
-      final songs = await db.getDownloadedPlaylistSongs(playlist.id);
-      expect(songs.map((s) => s.item.id), [kept.id]);
-    });
+        expect(await db.getDownloadedPlaylists(), hasLength(1));
+        final songs = await db.getDownloadedPlaylistSongs(playlist.id);
+        expect(songs.map((s) => s.item.id), [kept.id]);
+      },
+    );
 
     test('- deletes a playlist along with its songs and files', () async {
       final db = DownloadDatabase();
@@ -439,6 +441,67 @@ void main() {
       expect(await emby.getDownloadedPlaylists(), isEmpty);
       expect(await emby.isPlaylistDownloaded(playlist.id), isFalse);
       expect(await emby.getDownloadedPlaylistSongs(playlist.id), isEmpty);
+    });
+  });
+
+  group('DownloadDatabase (abandoned songs)', () {
+    test('- prunes pending songs no collection ever saved', () async {
+      final db = DownloadDatabase();
+      final abandoned = buildSong();
+      final standalone = buildSong();
+      final abandonedFile = newSongFile();
+      await db.insertDownloadedSong(
+        abandoned,
+        file: abandonedFile,
+        pending: true,
+      );
+      await db.insertDownloadedSong(standalone, file: newSongFile());
+
+      expect(await db.pruneAbandonedSongs(), 1);
+
+      expect(await db.isSongDownloaded(abandoned.id), isFalse);
+      expect(abandonedFile.existsSync(), isFalse);
+      expect(await db.isSongDownloaded(standalone.id), isTrue);
+    });
+
+    test('- saving an album settles its pending songs', () async {
+      final db = DownloadDatabase();
+      final album = buildAlbum();
+      final song = buildSong(albumId: album.id);
+      final file = newSongFile();
+      await db.insertDownloadedSong(song, file: file, pending: true);
+      await db.insertDownloadedAlbum(album, files: [file]);
+
+      expect(await db.pruneAbandonedSongs(), 0);
+      expect(await db.pendingSongIds(), isEmpty);
+      expect(await db.isSongDownloaded(song.id), isTrue);
+    });
+
+    test('- saving a playlist settles its pending songs', () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final song = buildSong();
+      final file = newSongFile();
+      await db.insertDownloadedSong(song, file: file, pending: true);
+      await db.insertDownloadedPlaylist(playlist, songs: [song], files: [file]);
+
+      expect(await db.pruneAbandonedSongs(), 0);
+      expect(await db.pendingSongIds(), isEmpty);
+      expect(await db.isSongDownloaded(song.id), isTrue);
+    });
+
+    test('- a pending song picked up by another collection is kept', () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final song = buildSong();
+      final file = newSongFile();
+      await db.insertDownloadedSong(song, file: file, pending: true);
+      await db.insertDownloadedPlaylist(playlist, songs: [song], files: [file]);
+      await db.insertDownloadedSong(song, file: file, pending: true);
+
+      expect(await db.pruneAbandonedSongs(), 0);
+      expect(await db.pendingSongIds(), isEmpty);
+      expect(await db.isSongDownloaded(song.id), isTrue);
     });
   });
 

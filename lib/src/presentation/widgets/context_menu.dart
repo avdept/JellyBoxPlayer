@@ -751,20 +751,19 @@ class _ContextMenuActions {
     icon: _DownloadState(item: item, builder: _downloadIcon),
     label: _DownloadState(item: item, builder: _downloadLabel),
     run: () async {
-      final manager = ref.read(downloadManagerProvider.notifier);
+      final manager = ref.read(downloadManagerProvider);
+      final database = ref.read(downloadDatabaseProvider);
       final client = ref.read(mediaServerClientProvider);
-      final downloading = ref
-          .read(activeDownloadsProvider)
-          .containsKey(item.id);
+      final downloading = ref.read(downloadProgressProvider(item.id)) != null;
       switch (item.kind) {
         case ItemKind.song:
-          if (await manager.isSongDownloaded(item.id)) {
+          if (await database.isSongDownloaded(item.id)) {
             await manager.deleteSong(item.id);
           } else {
             await manager.downloadSong(item);
           }
         case ItemKind.album:
-          if (downloading || await manager.isAlbumDownloaded(item.id)) {
+          if (downloading || await database.isAlbumDownloaded(item.id)) {
             await manager.deleteAlbum(item.id);
           } else {
             if (_guardOffline()) return;
@@ -772,7 +771,7 @@ class _ContextMenuActions {
             await manager.downloadAlbum(item, page.items);
           }
         case ItemKind.playlist:
-          if (downloading || await manager.isPlaylistDownloaded(item.id)) {
+          if (downloading || await database.isPlaylistDownloaded(item.id)) {
             await manager.deletePlaylist(item.id);
           } else {
             if (_guardOffline()) return;
@@ -891,7 +890,7 @@ class _DownloadState extends ConsumerWidget {
       return builder(badge != null);
     }
     return builder(
-      ref.watch(isSongDownloadedProvider(item)).valueOrNull ?? false,
+      ref.watch(isSongDownloadedProvider(item.id)).valueOrNull ?? false,
     );
   }
 }

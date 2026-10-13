@@ -13,109 +13,73 @@ import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
+import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
-class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
-  late DownloadService _downloadService;
-  late DownloadDatabase _database;
+class DownloadManager {
+  DownloadManager({
+    required DownloadService service,
+    required DownloadDatabase database,
+    required DownloadActivityNotifier activity,
+    required DownloadsRevision revision,
+    required MediaServerClient Function() client,
+  }) : _service = service,
+       _database = database,
+       _activity = activity,
+       _revision = revision,
+       _client = client;
+
+  final DownloadService _service;
+  final DownloadDatabase _database;
+  final DownloadActivityNotifier _activity;
+  final DownloadsRevision _revision;
+  final MediaServerClient Function() _client;
+  final _active = <String>{};
   final _cancelled = <String>{};
   final _currentSong = <String, String>{};
 
-  @override
-  FutureOr<List<DownloadedSong>> build() async {
-    _downloadService = ref.watch(downloadServiceProvider);
-    _database = ref.watch(downloadDatabaseProvider);
-    state = const AsyncValue.loading();
-    return _database.getDownloadedSongs();
-  }
-
-  Future<void> downloadSong(LibraryItem song) async {
-    final client = ref.read(mediaServerClientProvider);
-
-    try {
-      // Start download
-      final task = await _downloadService.downloadSong(
-        song,
-        client,
-        deviceId: deviceId,
-      );
-
-      // Wait for download to complete
-      await _waitForDownloadCompletion(task);
-
-      // If download completed successfully, add to database
-      if (task.status.value == DownloadStatus.completed) {
-        final file = File(task.destination);
-
-        // Add to database
+  Future<void> downloadSong(LibraryItem song) =>
+      _attempt('downloadSong', () async {
+        final client = _client();
+        final file = await _downloadSongFile(song, client);
+        if (file == null) return;
         await _database.insertDownloadedSong(song, file: file);
-
         final albumId = song.albumId;
         if (albumId != null) {
-          await _downloadService.downloadAlbumCover(
+          await _service.downloadAlbumCover(
             albumId,
             client.imageUri(song, kind: ImageKind.album),
           );
         }
-
-        // Refresh state
-        ref.invalidateSelf();
-      }
-    } catch (error, stackTrace) {
-      print(
-        'Error in downloadSong: type=${error.runtimeType}, message=$error\n$stackTrace',
-      );
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> downloadAlbum(LibraryItem album, List<LibraryItem> songs) async {
-    final client = ref.read(mediaServerClientProvider);
-
-    try {
-      await _downloadCollection(album.id, songs, (stored) async {
-        if (stored.isEmpty) return;
-        await _database.insertDownloadedAlbum(
-          album,
-          files: [for (final (_, file) in stored) file],
-        );
-        await _downloadService.downloadAlbumCover(
-          album.id,
-          client.imageUri(album),
-        );
+        _revision.bump();
       });
-      ref.invalidateSelf();
-    } catch (error, stackTrace) {
-      print(
-        'Error in downloadAlbum: type=${error.runtimeType}, message=$error\n$stackTrace',
-      );
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
+
+  Future<void> downloadAlbum(LibraryItem album, List<LibraryItem> songs) =>
+      _attempt('downloadAlbum', () async {
+        final client = _client();
+        await _downloadCollection(album.id, songs, (stored) async {
+          if (stored.isEmpty) return;
+          await _database.insertDownloadedAlbum(
+            album,
+            files: [for (final (_, file) in stored) file],
+          );
+          await _service.downloadAlbumCover(album.id, client.imageUri(album));
+        });
+      });
 
   Future<void> downloadPlaylist(
     LibraryItem playlist,
     List<LibraryItem> songs,
-  ) async {
-    try {
-      await _storePlaylist(playlist, songs);
-      ref.invalidateSelf();
-    } catch (error, stackTrace) {
-      print(
-        'Error in downloadPlaylist: type=${error.runtimeType}, message=$error\n$stackTrace',
-      );
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
+  ) => _attempt('downloadPlaylist', () => _storePlaylist(playlist, songs));
 
   Future<bool> syncPlaylist(
     LibraryItem playlist,
     List<LibraryItem> songs, {
     bool keepLocalOrder = false,
   }) async {
-    final database = _database;
-    final localIds = await database.getPlaylistSongIds(playlist.id);
+    final localIds = await _database.getPlaylistSongIds(playlist.id);
     final ordered = keepLocalOrder ? mergeLikedOrder(localIds, songs) : songs;
     final wantedIds = [for (final song in ordered) song.id];
     if (listEquals(localIds, wantedIds)) return false;
@@ -123,16 +87,44 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     await _storePlaylist(playlist, ordered);
 
     final wanted = wantedIds.toSet();
-    await database.pruneSongs(localIds.where((id) => !wanted.contains(id)));
-    ref.invalidateSelf();
+    await _database.pruneSongs(localIds.where((id) => !wanted.contains(id)));
+    _revision.bump();
     return true;
   }
 
-  Future<void> _storePlaylist(
-    LibraryItem playlist,
-    List<LibraryItem> songs,
-  ) {
-    final client = ref.read(mediaServerClientProvider);
+  Future<void> deleteSong(String id) => _attempt('deleteSong', () async {
+    await _database.deleteDownloadedSong(id);
+    _activity.untrackSong(id);
+    _revision.bump();
+  });
+
+  Future<void> deleteAlbum(String albumId) => _attempt('deleteAlbum', () async {
+    await _cancelCollection(albumId);
+    await _database.deleteDownloadedAlbum(albumId);
+    await DownloadPaths.deleteAlbumDirectory(albumId);
+    _activity.pruneSettled();
+    _revision.bump();
+  });
+
+  Future<void> deletePlaylist(String playlistId) =>
+      _attempt('deletePlaylist', () async {
+        await _cancelCollection(playlistId);
+        await _database.deleteDownloadedPlaylist(playlistId);
+        await DownloadPaths.deleteAlbumDirectory(playlistId);
+        _activity.pruneSettled();
+        _revision.bump();
+      });
+
+  Future<void> _attempt(String operation, Future<void> Function() body) async {
+    try {
+      await body();
+    } on Object catch (error, stackTrace) {
+      debugPrint('[Downloads] $operation failed: $error\n$stackTrace');
+    }
+  }
+
+  Future<void> _storePlaylist(LibraryItem playlist, List<LibraryItem> songs) {
+    final client = _client();
     return _downloadCollection(playlist.id, songs, (stored) async {
       if (stored.isEmpty) return;
       await _database.insertDownloadedPlaylist(
@@ -144,15 +136,12 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
         for (final (song, _) in stored) ?song.albumId: song,
       };
       for (final MapEntry(key: albumId, value: song) in covers.entries) {
-        await _downloadService.downloadAlbumCover(
+        await _service.downloadAlbumCover(
           albumId,
           client.imageUri(song, kind: ImageKind.album),
         );
       }
-      await _downloadService.downloadAlbumCover(
-        playlist.id,
-        client.imageUri(playlist),
-      );
+      await _service.downloadAlbumCover(playlist.id, client.imageUri(playlist));
     });
   }
 
@@ -161,11 +150,12 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     List<LibraryItem> songs,
     Future<void> Function(List<(LibraryItem, File)> stored) save,
   ) async {
-    final client = ref.read(mediaServerClientProvider);
-    final database = _database;
+    final client = _client();
     final stored = <(LibraryItem, File)>[];
     final inserted = <String>[];
-    _setProgress(id, 0);
+    var saved = false;
+    _active.add(id);
+    _activity.setCollectionProgress(id, 0);
 
     try {
       for (final (index, song) in songs.indexed) {
@@ -178,44 +168,41 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
             await _downloadSongFile(
               song,
               client,
-              onProgress: (value) =>
-                  _setProgress(id, (index + value) / songs.length),
+              onProgress: (value) => _activity.setCollectionProgress(
+                id,
+                (index + value) / songs.length,
+              ),
+              isCancelled: () => _cancelled.contains(id),
             );
-        _setProgress(id, (index + 1) / songs.length);
+        _activity.setCollectionProgress(id, (index + 1) / songs.length);
         if (file == null) continue;
 
         stored.add((song, file));
         if (existing == null) {
-          await database.insertDownloadedSong(song, file: file);
+          await _database.insertDownloadedSong(song, file: file, pending: true);
           inserted.add(song.id);
         }
       }
 
-      if (_cancelled.contains(id)) {
-        await database.pruneSongs(inserted);
-        ref.invalidateSelf();
-        return;
+      if (!_cancelled.contains(id)) {
+        await save(stored);
+        saved = true;
       }
-      await save(stored);
     } finally {
+      if (!saved) await _database.pruneSongs(inserted);
+      _revision.bump();
+      _active.remove(id);
       _cancelled.remove(id);
       _currentSong.remove(id);
-      _setProgress(id, null);
+      _activity.setCollectionProgress(id, null);
     }
   }
 
   Future<void> _cancelCollection(String id) async {
-    if (!ref.read(activeDownloadsProvider).containsKey(id)) return;
+    if (!_active.contains(id)) return;
     _cancelled.add(id);
     final songId = _currentSong[id];
-    if (songId != null) await _downloadService.cancelDownload(songId);
-  }
-
-  void _setProgress(String id, double? progress) {
-    final notifier = ref.read(activeDownloadsProvider.notifier);
-    notifier.state = progress == null
-        ? ({...notifier.state}..remove(id))
-        : {...notifier.state, id: progress};
+    if (songId != null) await _service.cancelDownload(songId);
   }
 
   Future<File?> _existingDownload(LibraryItem song) async {
@@ -229,12 +216,20 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     LibraryItem song,
     MediaServerClient client, {
     void Function(double progress)? onProgress,
+    bool Function()? isCancelled,
   }) async {
-    final task = await _downloadService.downloadSong(
+    final task = await _service.downloadSong(
       song,
       client,
       deviceId: deviceId,
     );
+    _activity
+      ..pruneSettled()
+      ..trackSong(task);
+    if ((isCancelled?.call() ?? false) &&
+        task.status.value != DownloadStatus.canceled) {
+      await _service.cancelDownload(task.id);
+    }
     void report() =>
         onProgress?.call((task.progress.value ?? 0).clamp(0.0, 1.0));
     task.progress.addListener(report);
@@ -243,99 +238,40 @@ class DownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>> {
     } finally {
       task.progress.removeListener(report);
     }
-    if (task.status.value != DownloadStatus.completed) return null;
+    if (task.status.value != DownloadStatus.completed) {
+      _activity.untrackSong(task.id);
+      return null;
+    }
     return File(task.destination);
   }
 
-  Future<void> _waitForDownloadCompletion(DownloadTask task) async {
+  Future<void> _waitForDownloadCompletion(DownloadTask task) {
+    const settled = {
+      DownloadStatus.completed,
+      DownloadStatus.failed,
+      DownloadStatus.canceled,
+    };
     final completer = Completer<void>();
 
     void listener() {
-      const completedStatuses = {
-        DownloadStatus.completed,
-        DownloadStatus.failed,
-        DownloadStatus.canceled,
-      };
-
-      if (completedStatuses.contains(task.status.value)) {
+      if (settled.contains(task.status.value)) {
         task.status.removeListener(listener);
         completer.complete();
       }
     }
 
     task.status.addListener(listener);
-
-    // In case the status is already completed
     listener();
-
     return completer.future;
   }
-
-  Future<void> deleteSong(String id) async {
-    try {
-      await _database.deleteDownloadedSong(id);
-
-      // Refresh state
-      ref.invalidateSelf();
-    } catch (error, stackTrace) {
-      print(
-        'Error in deleteSong: type=${error.runtimeType}, message=$error\n$stackTrace',
-      );
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> deleteAlbum(String albumId) async {
-    try {
-      await _cancelCollection(albumId);
-      await _database.deleteDownloadedAlbum(albumId);
-      await DownloadPaths.deleteAlbumDirectory(albumId);
-
-      // Refresh state
-      ref.invalidateSelf();
-    } catch (error, stackTrace) {
-      print(
-        'Error in deleteAlbum: type=${error.runtimeType}, message=$error\n$stackTrace',
-      );
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> deletePlaylist(String playlistId) async {
-    try {
-      await _cancelCollection(playlistId);
-      await _database.deleteDownloadedPlaylist(playlistId);
-      await DownloadPaths.deleteAlbumDirectory(playlistId);
-
-      ref.invalidateSelf();
-    } catch (error, stackTrace) {
-      print(
-        'Error in deletePlaylist: type=${error.runtimeType}, message=$error\n$stackTrace',
-      );
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<bool> isSongDownloaded(String id) => _database.isSongDownloaded(id);
-
-  Future<bool> isAlbumDownloaded(String albumId) =>
-      _database.isAlbumDownloaded(albumId);
-
-  Future<bool> isPlaylistDownloaded(String playlistId) =>
-      _database.isPlaylistDownloaded(playlistId);
-
-  Future<List<DownloadedAlbum>> getDownloadedAlbums() =>
-      _database.getDownloadedAlbums();
-
-  Future<List<DownloadedPlaylist>> getDownloadedPlaylists() =>
-      _database.getDownloadedPlaylists();
 }
 
-final activeDownloadsProvider = StateProvider<Map<String, double>>(
-  (ref) => const {},
+final downloadManagerProvider = Provider<DownloadManager>(
+  (ref) => DownloadManager(
+    service: ref.watch(downloadServiceProvider),
+    database: ref.watch(downloadDatabaseProvider),
+    activity: ref.watch(downloadActivityProvider.notifier),
+    revision: ref.watch(downloadsRevisionProvider.notifier),
+    client: () => ref.read(mediaServerClientProvider),
+  ),
 );
-
-final downloadManagerProvider =
-    AsyncNotifierProvider<DownloadManagerNotifier, List<DownloadedSong>>(
-      DownloadManagerNotifier.new,
-    );

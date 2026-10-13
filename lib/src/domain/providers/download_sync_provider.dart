@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -89,8 +90,10 @@ class DownloadSync {
     try {
       while (_all || _requested.isNotEmpty) {
         if (!await _canSync()) return;
-        final manager = _ref.read(downloadManagerProvider.notifier);
-        final downloaded = await manager.getDownloadedPlaylists();
+        final manager = _ref.read(downloadManagerProvider);
+        final downloaded = await _ref
+            .read(downloadDatabaseProvider)
+            .getDownloadedPlaylists();
         final everything = _all;
         final requested = {..._requested};
         _all = false;
@@ -120,7 +123,7 @@ class DownloadSync {
   }
 
   Future<void> _syncOne(
-    DownloadManagerNotifier manager,
+    DownloadManager manager,
     LibraryItem playlist,
   ) async {
     final kind = EphemeralPlaylistId.parse(playlist.id)?.kind;

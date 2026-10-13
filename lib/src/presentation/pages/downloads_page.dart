@@ -206,7 +206,7 @@ class DownloadsPage extends StatelessWidget {
                             .playPlaylist(playlist.item),
                       ),
                       onDelete: (playlist) => ref
-                          .read(downloadManagerProvider.notifier)
+                          .read(downloadManagerProvider)
                           .deletePlaylist(playlist.item.id),
                     ),
                     itemCount: playlistItems.length,
@@ -228,7 +228,7 @@ class DownloadsPage extends StatelessWidget {
                             .playAlbum(album.item),
                       ),
                       onDelete: (album) => ref
-                          .read(downloadManagerProvider.notifier)
+                          .read(downloadManagerProvider)
                           .deleteAlbum(album.item.id),
                     ),
                     itemCount: albumItems.length,

@@ -15,7 +15,6 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mock_listener.dart';
 import '../../provider_container.dart';
 
 class MockDownloadService extends Mock implements DownloadService {}
@@ -29,30 +28,32 @@ class FakeFile extends Fake implements File {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late ProviderContainer providerContainer;
-  late DownloadService mockDownloadService;
-  late DownloadDatabase mockDownloadDatabase;
-  late MediaServerClient mockMediaServerClient;
-  late MockListener<AsyncValue<List<DownloadedSong>>> mockListener;
+  late ProviderContainer container;
+  late DownloadService service;
+  late DownloadDatabase database;
+  late MediaServerClient client;
 
   final faker = Faker.instance;
   final mockDeviceId = faker.datatype.uuid();
   final mockSong = LibraryItem(
     id: faker.datatype.uuid(),
     name: faker.lorem.sentence(),
-    userData: PlaybackUserData(
-      position: Duration(milliseconds: faker.datatype.number()),
-      playCount: faker.datatype.number(),
-      isFavorite: faker.datatype.boolean(),
-      played: faker.datatype.boolean(),
-    ),
     kind: ItemKind.song,
+    albumId: 'album-1',
   );
-  final mockAlbum = LibraryItem(
-    id: faker.datatype.uuid(),
-    name: faker.lorem.sentence(),
+  const mockAlbum = LibraryItem(
+    id: 'album-1',
+    name: 'Album',
     kind: ItemKind.album,
   );
+  const playlist = LibraryItem(
+    id: 'playlist-1',
+    name: 'Mix',
+    kind: ItemKind.playlist,
+  );
+
+  LibraryItem song(String id) =>
+      LibraryItem(id: id, name: id, kind: ItemKind.song);
 
   DownloadTask createDownloadTask({
     String? id,
@@ -66,166 +67,166 @@ void main() {
     )..status.value = status;
   }
 
+  DownloadManager manager() => container.read(downloadManagerProvider);
+
+  int revision() => container.read(downloadsRevisionProvider);
+
+  Map<String, DownloadTask> trackedSongs() =>
+      container.read(downloadActivityProvider).songs;
+
+  void stubDownloads(DownloadStatus status) {
+    when(
+      () =>
+          service.downloadSong(any(), any(), deviceId: any(named: 'deviceId')),
+    ).thenAnswer((invocation) async {
+      final item = invocation.positionalArguments.first as LibraryItem;
+      return createDownloadTask(id: item.id, status: status);
+    });
+  }
+
   setUpAll(() {
     registerFallbackValue(mockSong);
-    registerFallbackValue(mockAlbum);
     registerFallbackValue(FakeFile());
     registerFallbackValue(<String>[]);
     registerFallbackValue(MockMediaServerClient());
   });
 
   setUp(() {
-    mockDownloadService = MockDownloadService();
-    mockDownloadDatabase = MockDownloadDatabase();
-    mockMediaServerClient = MockMediaServerClient();
-    mockListener = MockListener();
-    providerContainer = createProviderContainer(
+    service = MockDownloadService();
+    database = MockDownloadDatabase();
+    client = MockMediaServerClient();
+    container = createProviderContainer(
       overrides: [
-        downloadServiceProvider.overrideWith((_) => mockDownloadService),
-        downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
-        mediaServerClientProvider.overrideWith((_) => mockMediaServerClient),
+        downloadServiceProvider.overrideWith((_) => service),
+        downloadDatabaseProvider.overrideWithValue(database),
+        mediaServerClientProvider.overrideWith((_) => client),
       ],
     );
-    // downloadSong reads the deviceId global (set in main() at app startup,
-    // which doesn't run under tests), so seed it here.
     deviceId = mockDeviceId;
+    when(
+      () => database.insertDownloadedSong(
+        any(),
+        file: any(named: 'file'),
+        pending: any(named: 'pending'),
+      ),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => database.insertDownloadedAlbum(any(), files: any(named: 'files')),
+    ).thenAnswer((_) async => 1);
+    when(
+      () => database.insertDownloadedPlaylist(
+        any(),
+        songs: any(named: 'songs'),
+        files: any(named: 'files'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => database.getDownloadedSongPath(any()),
+    ).thenAnswer((_) async => null);
+    when(() => database.pruneSongs(any())).thenAnswer((_) async {});
+    when(
+      () => service.downloadAlbumCover(any(), any()),
+    ).thenAnswer((_) async => FakeFile());
   });
 
-  group('DownloadManagerNotifier', () {
-    test(
-      '- fetches downloaded songs from a database on initialization',
-      () {
-        when(
-          () => mockDownloadDatabase.getDownloadedSongs(),
-        ).thenAnswer((_) async => []);
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // Check if downloaded songs are fetched from database
-        verify(() => mockDownloadDatabase.getDownloadedSongs()).called(1);
-      },
-    );
+  group('DownloadManager', () {
+    test('- downloads a song, stores it and announces the change', () async {
+      stubDownloads(DownloadStatus.completed);
 
-    test(
-      '- can fetch a song and save it into database',
-      () async {
-        final mockTask = createDownloadTask(status: DownloadStatus.completed);
-        when(
-          () => mockDownloadService.downloadSong(
-            any(),
-            mockMediaServerClient,
-            deviceId: any(named: 'deviceId'),
-          ),
-        ).thenAnswer((_) async => mockTask);
-        when(
-          () => mockDownloadDatabase.insertDownloadedSong(
-            any(),
-            file: any(named: 'file'),
-          ),
-        ).thenAnswer((_) async => faker.datatype.number());
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .downloadSong(mockSong),
-          completes,
-        );
-        mockTask.dispose();
-        // Check if song is fetched from backend
-        verify(
-          () => mockDownloadService.downloadSong(
-            mockSong,
-            mockMediaServerClient,
-            deviceId: mockDeviceId,
-          ),
-        ).called(1);
-        // Check if song is saved to database
-        verify(
-          () => mockDownloadDatabase.insertDownloadedSong(
-            mockSong,
-            file: any(named: 'file'),
-          ),
-        ).called(1);
-      },
-    );
+      await manager().downloadSong(mockSong);
 
-    test(
-      '- can fetch an album and save it into database',
-      () async {
-        final mockSongs = List.generate(
-          faker.datatype.number(min: 1, max: 3),
-          (i) => mockSong,
-        );
-        when(
-          () => mockDownloadService.downloadSong(
-            any(),
-            mockMediaServerClient,
-            deviceId: any(named: 'deviceId'),
-          ),
-        ).thenAnswer(
-          (_) async => createDownloadTask(status: DownloadStatus.completed),
-        );
-        when(
-          () => mockDownloadDatabase.insertDownloadedSong(
-            any(),
+      verify(
+        () => service.downloadSong(mockSong, client, deviceId: mockDeviceId),
+      ).called(1);
+      verify(
+        () => database.insertDownloadedSong(
+          mockSong,
+          file: any(named: 'file'),
+          pending: false,
+        ),
+      ).called(1);
+      verify(() => service.downloadAlbumCover(mockAlbum.id, any())).called(1);
+      expect(revision(), 1);
+    });
+
+    test('- stores nothing when the song download fails', () async {
+      stubDownloads(DownloadStatus.failed);
+
+      await manager().downloadSong(mockSong);
+
+      verifyNever(
+        () => database.insertDownloadedSong(
+          any(),
+          file: any(named: 'file'),
+          pending: any(named: 'pending'),
+        ),
+      );
+      expect(revision(), 0);
+      expect(trackedSongs(), isEmpty);
+    });
+
+    test('- downloads every song of an album and then the album', () async {
+      final songs = [song('a'), song('b'), song('c')];
+      stubDownloads(DownloadStatus.completed);
+
+      await manager().downloadAlbum(mockAlbum, songs);
+
+      for (final item in songs) {
+        verify(
+          () => service.downloadSong(item, client, deviceId: mockDeviceId),
+        ).called(1);
+        verify(
+          () => database.insertDownloadedSong(
+            item,
             file: any(named: 'file'),
-          ),
-        ).thenAnswer((_) async => faker.datatype.number());
-        when(
-          () => mockDownloadDatabase.insertDownloadedAlbum(
-            any(),
-            files: any(named: 'files'),
-          ),
-        ).thenAnswer((_) async => faker.datatype.number());
-        when(
-          () => mockDownloadDatabase.getDownloadedSongPath(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDownloadService.downloadAlbumCover(any(), any()),
-        ).thenAnswer((_) async => FakeFile());
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .downloadAlbum(mockAlbum, mockSongs),
-          completes,
-        );
-        // Check if each song is fetched from backend individually
-        verify(
-          () => mockDownloadService.downloadSong(
-            mockSong,
-            mockMediaServerClient,
-            deviceId: mockDeviceId,
-          ),
-        ).called(mockSongs.length);
-        // Check if each song is saved to database
-        verify(
-          () => mockDownloadDatabase.insertDownloadedSong(
-            mockSong,
-            file: any(named: 'file'),
-          ),
-        ).called(mockSongs.length);
-        // Check if album is saved to database
-        verify(
-          () => mockDownloadDatabase.insertDownloadedAlbum(
-            mockAlbum,
-            files: any(named: 'files'),
+            pending: true,
           ),
         ).called(1);
-      },
-    );
+      }
+      verify(
+        () => database.insertDownloadedAlbum(
+          mockAlbum,
+          files: any(named: 'files'),
+        ),
+      ).called(1);
+      expect(revision(), 1);
+    });
+
+    test('- skips songs that are already on disk', () async {
+      final existing = File('${Directory.systemTemp.path}/existing.flac')
+        ..writeAsBytesSync([1]);
+      addTearDown(existing.delete);
+      when(
+        () => database.getDownloadedSongPath('a'),
+      ).thenAnswer((_) async => existing.path);
+      stubDownloads(DownloadStatus.completed);
+
+      await manager().downloadAlbum(mockAlbum, [song('a'), song('b')]);
+
+      verifyNever(
+        () => service.downloadSong(
+          song('a'),
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
+      verify(
+        () => service.downloadSong(
+          song('b'),
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).called(1);
+      final files =
+          verify(
+                () => database.insertDownloadedAlbum(
+                  any(),
+                  files: captureAny(named: 'files'),
+                ),
+              ).captured.single
+              as List<File>;
+      expect(files, hasLength(2));
+    });
 
     test(
       '- a liked-songs sync keeps the local order and puts new likes first',
@@ -235,62 +236,21 @@ void main() {
           name: 'Liked songs',
           kind: ItemKind.playlist,
         );
-        LibraryItem song(String id) =>
-            LibraryItem(id: id, name: id, kind: ItemKind.song);
         when(
-          () => mockDownloadDatabase.getDownloadedSongs(),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockDownloadDatabase.getPlaylistSongIds(liked.id),
+          () => database.getPlaylistSongIds(liked.id),
         ).thenAnswer((_) async => ['c', 'a', 'gone']);
-        when(
-          () => mockDownloadDatabase.getDownloadedSongPath(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDownloadDatabase.insertDownloadedSong(
-            any(),
-            file: any(named: 'file'),
-          ),
-        ).thenAnswer((_) async => 1);
-        when(
-          () => mockDownloadDatabase.insertDownloadedPlaylist(
-            any(),
-            songs: any(named: 'songs'),
-            files: any(named: 'files'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDownloadDatabase.pruneSongs(any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDownloadService.downloadSong(
-            any(),
-            mockMediaServerClient,
-            deviceId: any(named: 'deviceId'),
-          ),
-        ).thenAnswer((invocation) async {
-          final item = invocation.positionalArguments.first as LibraryItem;
-          return createDownloadTask(
-            id: item.id,
-            status: DownloadStatus.completed,
-          );
-        });
-        when(
-          () => mockDownloadService.downloadAlbumCover(any(), any()),
-        ).thenAnswer((_) async => null);
+        stubDownloads(DownloadStatus.completed);
 
-        final changed = await providerContainer
-            .read(downloadManagerProvider.notifier)
-            .syncPlaylist(
-              liked,
-              [song('a'), song('new'), song('c')],
-              keepLocalOrder: true,
-            );
+        final changed = await manager().syncPlaylist(
+          liked,
+          [song('a'), song('new'), song('c')],
+          keepLocalOrder: true,
+        );
 
         expect(changed, isTrue);
         final stored =
             verify(
-                  () => mockDownloadDatabase.insertDownloadedPlaylist(
+                  () => database.insertDownloadedPlaylist(
                     any(),
                     songs: captureAny(named: 'songs'),
                     files: any(named: 'files'),
@@ -299,153 +259,208 @@ void main() {
                 as List<LibraryItem>;
         expect(stored.map((s) => s.id), ['new', 'c', 'a']);
         final pruned = verify(
-          () => mockDownloadDatabase.pruneSongs(captureAny()),
+          () => database.pruneSongs(captureAny()),
         ).captured.single;
         expect(pruned, ['gone']);
       },
     );
 
-    test(
-      '- can delete a song from database',
-      () async {
-        when(
-          () => mockDownloadDatabase.deleteDownloadedSong(any()),
-        ).thenAnswer((_) async => faker.datatype.number());
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .deleteSong(mockSong.id),
-          completes,
-        );
-        // Check if song is deleted from database
-        verify(
-          () => mockDownloadDatabase.deleteDownloadedSong(mockSong.id),
-        ).called(1);
-      },
-    );
+    test('- a sync with nothing new leaves the store alone', () async {
+      when(
+        () => database.getPlaylistSongIds(playlist.id),
+      ).thenAnswer((_) async => ['a', 'b']);
+
+      final changed = await manager().syncPlaylist(playlist, [
+        song('a'),
+        song('b'),
+      ]);
+
+      expect(changed, isFalse);
+      verifyNever(
+        () => service.downloadSong(
+          any(),
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
+      expect(revision(), 0);
+    });
+
+    test('- deletes a song and announces the change', () async {
+      when(
+        () => database.deleteDownloadedSong(mockSong.id),
+      ).thenAnswer((_) async => 1);
+
+      await manager().deleteSong(mockSong.id);
+
+      verify(() => database.deleteDownloadedSong(mockSong.id)).called(1);
+      expect(revision(), 1);
+    });
+
+    test('- deletes an album and announces the change', () async {
+      when(
+        () => database.deleteDownloadedAlbum(mockAlbum.id),
+      ).thenAnswer((_) async {});
+
+      await manager().deleteAlbum(mockAlbum.id);
+
+      verify(() => database.deleteDownloadedAlbum(mockAlbum.id)).called(1);
+      expect(revision(), 1);
+    });
 
     test(
-      '- can delete an album from database',
+      '- keeps a finished song task until the next download starts',
       () async {
+        final tasks = <String, DownloadTask>{};
         when(
-          () => mockDownloadDatabase.deleteDownloadedAlbum(any()),
-        ).thenAnswer((_) async => faker.datatype.number());
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .deleteAlbum(mockAlbum.id),
-          completes,
-        );
-        // Check if album is deleted from database
-        verify(
-          () => mockDownloadDatabase.deleteDownloadedAlbum(mockAlbum.id),
-        ).called(1);
-      },
-    );
+          () => service.downloadSong(
+            any(),
+            any(),
+            deviceId: any(named: 'deviceId'),
+          ),
+        ).thenAnswer((invocation) async {
+          final item = invocation.positionalArguments.first as LibraryItem;
+          return tasks[item.id] = createDownloadTask(
+            id: item.id,
+            status: DownloadStatus.downloading,
+          );
+        });
 
-    test(
-      '- can check whether song is fetched',
-      () async {
-        final randomBool = faker.datatype.boolean();
-        when(
-          () => mockDownloadDatabase.isSongDownloaded(any()),
-        ).thenAnswer((_) async => randomBool);
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .isSongDownloaded(mockSong.id),
-          completion(randomBool),
-        );
-        verify(
-          () => mockDownloadDatabase.isSongDownloaded(mockSong.id),
-        ).called(1);
-      },
-    );
-
-    test(
-      '- can check whether album is fetched',
-      () async {
-        final randomBool = faker.datatype.boolean();
-        when(
-          () => mockDownloadDatabase.isAlbumDownloaded(any()),
-        ).thenAnswer((_) async => randomBool);
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
-        );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .isAlbumDownloaded(mockAlbum.id),
-          completion(randomBool),
-        );
-        verify(
-          () => mockDownloadDatabase.isAlbumDownloaded(mockAlbum.id),
-        ).called(1);
-      },
-    );
-
-    test(
-      '- returns list of fetched albums',
-      () async {
-        final mockAlbums = List.generate(
-          faker.datatype.number(min: 1, max: 3),
-          (i) => DownloadedAlbum(
-            item: LibraryItem(
-              id: faker.datatype.uuid(),
-              name: faker.lorem.sentence(),
-              kind: ItemKind.album,
-            ),
-            sizeInBytes: faker.datatype.number(),
-            downloadDate: DateTime.now(),
+        final first = manager().downloadSong(song('a'));
+        await untilCalled(
+          () => service.downloadSong(
+            song('a'),
+            any(),
+            deviceId: any(named: 'deviceId'),
           ),
         );
-        when(
-          () => mockDownloadDatabase.getDownloadedAlbums(),
-        ).thenAnswer((_) async => mockAlbums);
-        providerContainer.listen(
-          downloadManagerProvider,
-          mockListener.call,
-          fireImmediately: true,
+        await pumpEventQueue();
+        expect(trackedSongs().keys, ['a']);
+
+        tasks['a']!.status.value = DownloadStatus.completed;
+        await first;
+        expect(trackedSongs().keys, ['a']);
+
+        final second = manager().downloadSong(song('b'));
+        await untilCalled(
+          () => service.downloadSong(
+            song('b'),
+            any(),
+            deviceId: any(named: 'deviceId'),
+          ),
         );
-        // ACTION
-        await expectLater(
-          providerContainer
-              .read(downloadManagerProvider.notifier)
-              .getDownloadedAlbums(),
-          completion(mockAlbums),
-        );
-        verify(() => mockDownloadDatabase.getDownloadedAlbums()).called(1);
+        await pumpEventQueue();
+        expect(trackedSongs().keys, ['b']);
+
+        tasks['b']!.status.value = DownloadStatus.completed;
+        await second;
       },
     );
-    test('- stopping a playlist download prunes what it fetched', () async {
-      final first = mockSong.copyWith(id: 'song-a');
-      final second = mockSong.copyWith(id: 'song-b');
-      final playlist = LibraryItem(
-        id: 'playlist-1',
-        name: 'Mix',
-        kind: ItemKind.playlist,
+
+    test('- forgets a deleted song task', () async {
+      stubDownloads(DownloadStatus.completed);
+      when(
+        () => database.deleteDownloadedSong(mockSong.id),
+      ).thenAnswer((_) async => 1);
+      await manager().downloadSong(mockSong);
+      expect(trackedSongs().keys, [mockSong.id]);
+
+      await manager().deleteSong(mockSong.id);
+
+      expect(trackedSongs(), isEmpty);
+    });
+
+    test('- prunes what it fetched when a song download throws', () async {
+      final first = song('song-a');
+      final second = song('song-b');
+      when(
+        () => service.downloadSong(
+          first,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            createDownloadTask(id: first.id, status: DownloadStatus.completed),
       );
+      when(
+        () => service.downloadSong(
+          second,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenThrow(const SocketException('offline'));
+
+      await manager().downloadPlaylist(playlist, [first, second]);
+
+      final pruned =
+          verify(() => database.pruneSongs(captureAny())).captured.single
+              as Iterable<String>;
+      expect(pruned, [first.id]);
+      verifyNever(
+        () => database.insertDownloadedPlaylist(
+          any(),
+          songs: any(named: 'songs'),
+          files: any(named: 'files'),
+        ),
+      );
+      expect(container.read(downloadActivityProvider).collections, isEmpty);
+      expect(revision(), 1);
+    });
+
+    test('- a stop during song preparation still cancels that song', () async {
+      final first = song('song-a');
+      final second = song('song-b');
+      final secondTask = createDownloadTask(
+        id: second.id,
+        status: DownloadStatus.downloading,
+      );
+      when(
+        () => database.deleteDownloadedPlaylist(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => service.downloadSong(
+          first,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            createDownloadTask(id: first.id, status: DownloadStatus.completed),
+      );
+      when(
+        () => service.downloadSong(
+          second,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      ).thenAnswer((_) async {
+        await manager().deletePlaylist(playlist.id);
+        return secondTask;
+      });
+      when(() => service.cancelDownload(second.id)).thenAnswer((_) async {
+        secondTask.status.value = DownloadStatus.canceled;
+      });
+
+      await manager().downloadPlaylist(playlist, [first, second]);
+
+      verify(() => service.cancelDownload(second.id)).called(1);
+      final pruned =
+          verify(() => database.pruneSongs(captureAny())).captured.single
+              as Iterable<String>;
+      expect(pruned, [first.id]);
+      verifyNever(
+        () => database.insertDownloadedSong(
+          second,
+          file: any(named: 'file'),
+          pending: any(named: 'pending'),
+        ),
+      );
+    });
+
+    test('- stopping a playlist download prunes what it fetched', () async {
+      final first = song('song-a');
+      final second = song('song-b');
       final firstTask = createDownloadTask(
         id: first.id,
         status: DownloadStatus.completed,
@@ -455,74 +470,52 @@ void main() {
         status: DownloadStatus.downloading,
       );
       when(
-        () => mockDownloadDatabase.getDownloadedSongs(),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockDownloadDatabase.getDownloadedSongPath(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockDownloadDatabase.insertDownloadedSong(
-          any(),
-          file: any(named: 'file'),
-        ),
-      ).thenAnswer((_) async => 1);
-      when(
-        () => mockDownloadDatabase.pruneSongs(any()),
+        () => database.deleteDownloadedPlaylist(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockDownloadDatabase.deleteDownloadedPlaylist(any()),
-      ).thenAnswer((_) async => 1);
-      when(
-        () => mockDownloadService.downloadSong(
+        () => service.downloadSong(
           first,
           any(),
           deviceId: any(named: 'deviceId'),
         ),
       ).thenAnswer((_) async => firstTask);
       when(
-        () => mockDownloadService.downloadSong(
+        () => service.downloadSong(
           second,
           any(),
           deviceId: any(named: 'deviceId'),
         ),
       ).thenAnswer((_) async => secondTask);
-      when(() => mockDownloadService.cancelDownload(second.id)).thenAnswer((
-        _,
-      ) async {
+      when(() => service.cancelDownload(second.id)).thenAnswer((_) async {
         secondTask.status.value = DownloadStatus.canceled;
       });
 
-      final notifier = providerContainer.read(downloadManagerProvider.notifier);
-      final download = notifier.downloadPlaylist(playlist, [first, second]);
+      final download = manager().downloadPlaylist(playlist, [first, second]);
       await untilCalled(
-        () => mockDownloadService.downloadSong(
+        () => service.downloadSong(
           second,
           any(),
           deviceId: any(named: 'deviceId'),
         ),
       );
-      await notifier.deletePlaylist(playlist.id);
+      await manager().deletePlaylist(playlist.id);
       await download;
 
-      verify(() => mockDownloadService.cancelDownload(second.id)).called(1);
+      verify(() => service.cancelDownload(second.id)).called(1);
       final pruned =
-          verify(
-                () => mockDownloadDatabase.pruneSongs(captureAny()),
-              ).captured.single
+          verify(() => database.pruneSongs(captureAny())).captured.single
               as Iterable<String>;
       expect(pruned, [first.id]);
       verifyNever(
-        () => mockDownloadDatabase.insertDownloadedPlaylist(
+        () => database.insertDownloadedPlaylist(
           any(),
           songs: any(named: 'songs'),
           files: any(named: 'files'),
         ),
       );
       expect(
-        providerContainer
-            .read(activeDownloadsProvider)
-            .containsKey(playlist.id),
-        isFalse,
+        container.read(downloadActivityProvider).collections,
+        isEmpty,
       );
     });
   });

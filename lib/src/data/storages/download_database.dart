@@ -16,7 +16,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 9;
+  static const _schemaVersion = 10;
 
   static String? databaseDirectory;
 
@@ -82,6 +82,7 @@ class DownloadDatabase {
     await _migrateToV7(db);
     await _migrateToV8(db);
     await _migrateToV9(db);
+    await _migrateToV10(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -93,6 +94,16 @@ class DownloadDatabase {
     if (oldVersion < 7) await _migrateToV7(db);
     if (oldVersion < 8) await _migrateToV8(db);
     if (oldVersion < 9) await _migrateToV9(db);
+    if (oldVersion < 10) await _migrateToV10(db);
+  }
+
+  Future<void> _migrateToV10(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info(Downloads)');
+    if (columns.isEmpty) return;
+    if (columns.any((column) => column['name'] == 'Pending')) return;
+    await db.execute(
+      'ALTER TABLE Downloads ADD COLUMN Pending INTEGER NOT NULL DEFAULT 0',
+    );
   }
 
   Future<void> _migrateToV9(Database db) async {
@@ -195,6 +206,7 @@ class DownloadDatabase {
   Future<int> insertDownloadedSong(
     LibraryItem song, {
     required File file,
+    bool pending = false,
   }) async {
     final db = await database;
     return db.insert('Downloads', {
@@ -205,7 +217,34 @@ class DownloadDatabase {
       'SizeInBytes': file.lengthSync(),
       'DownloadDate': DateTime.now().millisecondsSinceEpoch,
       'Data': jsonEncode(song.toJson()),
+      'Pending': pending ? 1 : 0,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<String>> pendingSongIds() async {
+    final db = await database;
+    final rows = await db.query(
+      'Downloads',
+      columns: ['Id'],
+      where: 'Pending = 1 AND ServerId = ?',
+      whereArgs: [serverId],
+    );
+    return [for (final row in rows) row['Id']! as String];
+  }
+
+  Future<int> pruneAbandonedSongs() async {
+    final abandoned = await pendingSongIds();
+    if (abandoned.isEmpty) return 0;
+    await pruneSongs(abandoned);
+    final kept = await pendingSongIds();
+    final db = await database;
+    await db.update(
+      'Downloads',
+      {'Pending': 0},
+      where: 'Pending = 1 AND ServerId = ?',
+      whereArgs: [serverId],
+    );
+    return abandoned.length - kept.length;
   }
 
   Future<int> insertDownloadedAlbum(
@@ -213,6 +252,12 @@ class DownloadDatabase {
     required List<File> files,
   }) async {
     final db = await database;
+    await db.update(
+      'Downloads',
+      {'Pending': 0},
+      where: 'AlbumId = ? AND ServerId = ?',
+      whereArgs: [album.id, serverId],
+    );
     return db.insert('Albums', {
       'Id': album.id,
       'ServerId': serverId,
@@ -242,12 +287,19 @@ class DownloadDatabase {
         whereArgs: [playlist.id, serverId],
       );
     for (final (position, song) in songs.indexed) {
-      batch.insert('PlaylistSongs', {
-        'PlaylistId': playlist.id,
-        'SongId': song.id,
-        'ServerId': serverId,
-        'Position': position,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      batch
+        ..insert('PlaylistSongs', {
+          'PlaylistId': playlist.id,
+          'SongId': song.id,
+          'ServerId': serverId,
+          'Position': position,
+        }, conflictAlgorithm: ConflictAlgorithm.replace)
+        ..update(
+          'Downloads',
+          {'Pending': 0},
+          where: 'Id = ? AND ServerId = ?',
+          whereArgs: [song.id, serverId],
+        );
     }
     await batch.commit(noResult: true);
   }

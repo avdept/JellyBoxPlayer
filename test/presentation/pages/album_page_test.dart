@@ -1,6 +1,5 @@
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
@@ -26,16 +25,14 @@ class MockUser extends Mock implements User {}
 
 class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
-class MockDownloadManagerNotifier extends AsyncNotifier<List<DownloadedSong>>
-    with Mock
-    implements DownloadManagerNotifier {}
+class MockDownloadManager extends Mock implements DownloadManager {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MediaServerClient mockMediaServerClient;
   late User mockUser;
-  late DownloadManagerNotifier mockDownloadManagerNotifier;
+  late DownloadManager mockDownloadManager;
   late DownloadDatabase mockDownloadDatabase;
 
   final faker = Faker.instance;
@@ -112,11 +109,8 @@ void main() {
           mediaServerClientProvider.overrideWith((_) => mockMediaServerClient),
           baseUrlProvider.overrideWith((_) => mockBaseUrl),
           currentUserProvider.overrideWith((_) => mockUser),
-          downloadManagerProvider.overrideWith(
-            () => mockDownloadManagerNotifier,
-          ),
+          downloadManagerProvider.overrideWithValue(mockDownloadManager),
           downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
-          isAlbumDownloadedProvider.overrideWith((_, _) => isAlbumDownloaded),
           downloadBadgeProvider.overrideWith(
             (_, _) => isAlbumDownloaded ? DownloadBadge.downloaded : null,
           ),
@@ -170,7 +164,7 @@ void main() {
   setUp(() {
     mockMediaServerClient = MockMediaServerClient();
     mockUser = MockUser();
-    mockDownloadManagerNotifier = MockDownloadManagerNotifier();
+    mockDownloadManager = MockDownloadManager();
     mockDownloadDatabase = MockDownloadDatabase();
     when(
       () => mockMediaServerClient.capabilities,
@@ -237,7 +231,7 @@ void main() {
       "- displays download button when album isn't downloaded",
       (widgetTester) async {
         when(
-          () => mockDownloadManagerNotifier.downloadAlbum(any(), any()),
+          () => mockDownloadManager.downloadAlbum(any(), any()),
         ).thenAnswer((_) async {});
         await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
         await widgetTester.pump(Duration.zero);
@@ -248,7 +242,7 @@ void main() {
         await widgetTester.tap(downloadButtonFinder);
         await widgetTester.pumpAndSettle();
         verify(
-          () => mockDownloadManagerNotifier.downloadAlbum(
+          () => mockDownloadManager.downloadAlbum(
             mockAlbum,
             mockSongs.items,
           ),
@@ -260,7 +254,7 @@ void main() {
       '- displays delete button when album is downloaded',
       (widgetTester) async {
         when(
-          () => mockDownloadManagerNotifier.deleteAlbum(any()),
+          () => mockDownloadManager.deleteAlbum(any()),
         ).thenAnswer((_) async {});
         await widgetTester.pumpWidget(
           getWidgetUT(album: mockAlbum, isAlbumDownloaded: true),
@@ -283,7 +277,7 @@ void main() {
         );
         await widgetTester.pumpAndSettle();
         verify(
-          () => mockDownloadManagerNotifier.deleteAlbum(mockAlbum.id),
+          () => mockDownloadManager.deleteAlbum(mockAlbum.id),
         ).called(1);
       },
     );

@@ -93,15 +93,13 @@ void main() {
   Future<DownloadBadge?> badgeFor(LibraryItem item) async {
     final key = (item.kind, item.id);
     final sub = container.listen(downloadBadgeProvider(key), (_, _) {});
-    await container.read(downloadManagerProvider.future);
     await container.read(downloadedCollectionsProvider.future);
     final badge = container.read(downloadBadgeProvider(key));
     sub.close();
     return badge;
   }
 
-  DownloadManagerNotifier manager() =>
-      container.read(downloadManagerProvider.notifier);
+  DownloadManager manager() => container.read(downloadManagerProvider);
 
   test('- shows nothing for items that are not downloaded', () async {
     expect(await badgeFor(album), isNull);
@@ -150,7 +148,6 @@ void main() {
         destination: file.path,
       )..status.value = DownloadStatus.downloading;
     });
-    await container.read(downloadManagerProvider.future);
     double? progress() => container.read(downloadProgressProvider(album.id));
     Future<void> until(bool Function() done) async {
       final deadline = DateTime.now().add(const Duration(seconds: 5));

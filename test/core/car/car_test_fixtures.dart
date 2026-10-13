@@ -10,7 +10,6 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_albums_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_playlists_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
@@ -47,22 +46,6 @@ class FakeTodaysPlaylists extends TodaysPlaylistsNotifier {
 
   @override
   FutureOr<List<GeneratedPlaylist>> build() => playlists;
-}
-
-class FakeDownloadManager extends DownloadManagerNotifier {
-  FakeDownloadManager(this.albums, this.playlists);
-
-  final List<DownloadedAlbum> albums;
-  final List<DownloadedPlaylist> playlists;
-
-  @override
-  FutureOr<List<DownloadedSong>> build() => const [];
-
-  @override
-  Future<List<DownloadedAlbum>> getDownloadedAlbums() async => albums;
-
-  @override
-  Future<List<DownloadedPlaylist>> getDownloadedPlaylists() async => playlists;
 }
 
 class FakeSetPlayback extends StateNotifier<String?>
@@ -167,9 +150,6 @@ class CarTestEnv {
           (_) async => LibraryPage(items: favouriteSongs),
         ),
         favouriteAlbumsProvider.overrideWith((_) async => favouriteAlbums),
-        downloadManagerProvider.overrideWith(
-          () => FakeDownloadManager(downloads, downloadedPlaylists),
-        ),
         downloadedAlbumsProvider.overrideWith((_) async => downloads),
         downloadedPlaylistsProvider.overrideWith(
           (_) async => downloadedPlaylists,

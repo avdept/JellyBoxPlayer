@@ -6,7 +6,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
-import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
@@ -107,8 +107,6 @@ downloadedPlaylistSongsProvider = FutureProvider.autoDispose.family((
   ref,
   playlistId,
 ) {
-  ref.listen(downloadManagerProvider, (previous, next) {
-    if (previous?.valueOrNull != next.valueOrNull) ref.invalidateSelf();
-  });
+  ref.watch(downloadsRevisionProvider);
   return ref.watch(playlistSongsSourceProvider).downloadedSnapshot(playlistId);
 });

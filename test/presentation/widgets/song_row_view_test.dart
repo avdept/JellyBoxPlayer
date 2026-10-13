@@ -3,22 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
-import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:jplayer/src/providers/download_service_provider.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
 import '../../provider_container.dart';
 
-class MockDownloadService extends Mock implements DownloadService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  late DownloadService mockDownloadService;
 
   final faker = Faker.instance;
   final mockSong = LibraryItem(
@@ -45,11 +38,12 @@ void main() {
     required int position,
     bool isPlaying = false,
     bool isDownloaded = false,
+    DownloadTask? task,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(
         overrides: [
-          downloadServiceProvider.overrideWith((_) => mockDownloadService),
+          songDownloadTaskProvider.overrideWith((_, _) => task),
           isSongDownloadedProvider.overrideWith((_, _) async => isDownloaded),
         ],
       ),
@@ -81,10 +75,6 @@ void main() {
 
   setUpAll(() {
     deviceId = faker.datatype.uuid();
-  });
-
-  setUp(() {
-    mockDownloadService = MockDownloadService();
   });
 
   group('SongRowView', () {
@@ -126,9 +116,8 @@ void main() {
           status: DownloadStatus.downloading,
           progress: progress,
         );
-        when(() => mockDownloadService.getTask(any())).thenReturn(mockTask);
         await widgetTester.pumpWidget(
-          getWidgetUT(song: mockSong, position: 1),
+          getWidgetUT(song: mockSong, position: 1, task: mockTask),
         );
         await widgetTester.pump(Duration.zero);
         final downloadProgressFinder = find.byKey(
