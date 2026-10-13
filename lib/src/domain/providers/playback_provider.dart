@@ -1344,6 +1344,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final start = (state.currentMediaIndex ?? -1) + (keepCurrent ? 1 : 0);
     var swapped = 0;
     var interrupted = false;
+    debugPrint(
+      '[Playback] $label: walking ${songs.length} songs from $start, '
+      'current ${keepCurrent ? 'kept' : 'included'}',
+    );
 
     bool proceed() {
       if (cancelled?.call() ?? false) return false;
@@ -1382,8 +1386,12 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     } finally {
       if (swapped > 0 && mounted) {
         state = state.copyWith(deliveredQualities: _deliveredQualities());
-        debugPrint('[Playback] $label $swapped tracks');
       }
+      debugPrint(
+        '[Playback] $label $swapped tracks'
+        '${interrupted ? ', interrupted by a queue change' : ''}'
+        '${cancelled?.call() ?? false ? ', superseded' : ''}',
+      );
       if (interrupted && retryWhenInterrupted && mounted) _scheduleRequalify();
     }
   }
@@ -1436,6 +1444,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final generation = _queueGeneration;
     final snapshot = await PlaybackStorage().load();
     if (snapshot == null || generation != _queueGeneration) {
+      debugPrint(
+        '[Playback] restore: ${snapshot == null ? 'nothing saved' : 'a queue '
+                  'was started meanwhile'}',
+      );
       _ref.read(pendingMediaPlayProvider)();
       return false;
     }
@@ -1443,6 +1455,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final song = snapshot.songs.firstWhere(
       (s) => s.id == snapshot.songId,
       orElse: () => snapshot.songs.first,
+    );
+    debugPrint(
+      '[Playback] restore: ${snapshot.songs.length} songs, "${song.name}" at '
+      '${snapshot.positionMs ~/ 1000}s, offline=${_ref.read(isOfflineProvider)}',
     );
 
     await play(
@@ -1458,6 +1474,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final pendingPress = _ref.read(pendingMediaPlayProvider)();
     if (_queueGeneration != generation + 1) return false;
     final alreadyPlaying = _targetState.status.isPlaying;
+    debugPrint(
+      '[Playback] restore done: target ${_targetState.status.name}, '
+      'pendingPress=$pendingPress',
+    );
     if (pendingPress || alreadyPlaying) {
       await resume();
     }

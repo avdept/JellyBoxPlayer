@@ -130,6 +130,12 @@ class ConnectivityNotifier extends StateNotifier<bool> {
           : !_down.contains(relay);
 
       final up = candidates.firstWhereOrNull((url) => !_down.contains(url));
+      String verdict(String url) {
+        final host = Uri.tryParse(url)?.host ?? url;
+        return '$host ${_down.contains(url) ? 'down' : 'up'}';
+      }
+
+      debugPrint('[Connectivity] probe: ${candidates.map(verdict).join(', ')}');
       if (up == null) {
         _setOnline(false);
       } else {
@@ -282,6 +288,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
 
   void _setOnline(bool online) {
     if (!mounted || state == online) return;
+    debugPrint('[Connectivity] now ${online ? 'online' : 'offline'}');
     state = online;
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -21,7 +22,7 @@ class _AnimatedCoverVideoState extends State<AnimatedCoverVideo>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controller = VideoPlayerController.networkUrl(widget.url);
+    _controller = _controllerFor(widget.url);
     unawaited(_start());
   }
 
@@ -31,11 +32,19 @@ class _AnimatedCoverVideoState extends State<AnimatedCoverVideo>
     if (oldWidget.url != widget.url) {
       final previous = _controller;
       _ready = false;
-      _controller = VideoPlayerController.networkUrl(widget.url);
+      _controller = _controllerFor(widget.url);
       unawaited(previous.dispose());
       unawaited(_start());
     }
   }
+
+  static VideoPlayerController _controllerFor(Uri url) =>
+      VideoPlayerController.networkUrl(
+        url,
+        videoPlayerOptions: Platform.isAndroid
+            ? VideoPlayerOptions(mixWithOthers: true)
+            : null,
+      );
 
   Future<void> _start() async {
     final controller = _controller;

@@ -318,6 +318,8 @@ void main() {
         Duration offlineRetryEvery = const Duration(seconds: 30),
         int skipAfter = 10,
         Duration retryDelay = soon,
+        Duration loadTimeout = LocalPlaybackTarget.defaultLoadTimeout,
+        Duration stopTimeout = LocalPlaybackTarget.defaultStopTimeout,
       }) {
         final retrying = LocalPlaybackTarget(
           player,
@@ -326,6 +328,8 @@ void main() {
           retryDelays: [retryDelay],
           offlineRetryEvery: offlineRetryEvery,
           skipAfter: skipAfter,
+          loadTimeout: loadTimeout,
+          stopTimeout: stopTimeout,
         );
         addTearDown(retrying.dispose);
         return retrying;
@@ -652,6 +656,208 @@ void main() {
         expect(retrying.state.status, PlaybackStatus.paused);
       });
 
+      test('- stops a load that never answers and retries it', () async {
+        final stuck = Completer<Duration?>();
+        var calls = 0;
+        when(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: any(named: 'initialIndex'),
+            initialPosition: any(named: 'initialPosition'),
+            preload: any(named: 'preload'),
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).thenAnswer((_) {
+          calls++;
+          return calls == 1 ? stuck.future : Future.value();
+        });
+        final retrying = targetThatRetries(loadTimeout: soon);
+
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: const Duration(seconds: 7),
+          autoPlay: true,
+        );
+
+        expect(retrying.state.status, PlaybackStatus.buffering);
+        expect(retrying.retryPending, isTrue);
+        verify(player.stop).called(1);
+        verifyNever(player.play);
+
+        await Future<void>.delayed(later);
+
+        expect(calls, 2);
+        expect(retrying.retryPending, isFalse);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 0,
+            initialPosition: const Duration(seconds: 7),
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(2);
+        verify(player.play).called(1);
+      });
+
+      test('- a player that will not stop does not block the retry', () async {
+        when(player.stop).thenAnswer((_) => Completer<void>().future);
+        final retrying = targetThatRetries(stopTimeout: soon);
+
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+
+        expect(retrying.retryPending, isTrue);
+
+        await Future<void>.delayed(later);
+
+        expect(attempts, 2);
+        expect(retrying.retryPending, isFalse);
+        verify(player.play).called(1);
+      });
+
+      test('- next while a load is pending moves the retry along', () async {
+        failures = 10;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+        );
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 0,
+          initialPosition: const Duration(seconds: 30),
+          autoPlay: true,
+        );
+        expect(attempts, 1);
+
+        await retrying.seekToNext();
+        expect(retrying.state.currentIndex, 1);
+        expect(retrying.state.position, Duration.zero);
+        expect(retrying.state.status, PlaybackStatus.buffering);
+        await Future<void>.delayed(soon);
+
+        expect(attempts, 2);
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 1,
+            initialPosition: Duration.zero,
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(1);
+        verifyNever(() => player.seek(any(), index: any(named: 'index')));
+      });
+
+      test('- previous while pending restarts or steps back', () async {
+        failures = 10;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+        );
+        await retrying.load(
+          [trackWith(), trackWith()],
+          initialIndex: 1,
+          initialPosition: const Duration(seconds: 40),
+          autoPlay: true,
+        );
+
+        await retrying.seekToPrevious();
+        expect(retrying.state.currentIndex, 1);
+        expect(retrying.state.position, Duration.zero);
+
+        await retrying.seekToPrevious();
+        expect(retrying.state.currentIndex, 0);
+        await Future<void>.delayed(soon);
+
+        verify(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: 0,
+            initialPosition: Duration.zero,
+            preload: true,
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).called(1);
+      });
+
+      test(
+        '- a queue tap while paused and pending sets up the next play',
+        () async {
+          final retrying = targetThatRetries(
+            retryDelay: const Duration(seconds: 5),
+          );
+          await retrying.load(
+            [trackWith(), trackWith()],
+            initialIndex: 0,
+            initialPosition: Duration.zero,
+            autoPlay: false,
+          );
+          expect(attempts, 1);
+
+          await retrying.skipTo(1);
+          await Future<void>.delayed(soon);
+          expect(attempts, 1);
+          expect(retrying.state.currentIndex, 1);
+          expect(retrying.state.status, PlaybackStatus.paused);
+
+          await retrying.play();
+
+          expect(attempts, 2);
+          verify(
+            () => player.setAudioSources(
+              any(),
+              initialIndex: 1,
+              initialPosition: Duration.zero,
+              preload: true,
+              shuffleOrder: any(named: 'shuffleOrder'),
+            ),
+          ).called(1);
+          verify(player.play).called(1);
+        },
+      );
+
+      test('- a stale load cannot undo a newer one', () async {
+        final stuck = Completer<Duration?>();
+        var calls = 0;
+        when(
+          () => player.setAudioSources(
+            any(),
+            initialIndex: any(named: 'initialIndex'),
+            initialPosition: any(named: 'initialPosition'),
+            preload: any(named: 'preload'),
+            shuffleOrder: any(named: 'shuffleOrder'),
+          ),
+        ).thenAnswer((_) {
+          calls++;
+          return calls == 1 ? stuck.future : Future.value();
+        });
+        final retrying = targetThatRetries(loadTimeout: later);
+
+        final first = retrying.load(
+          [trackWith()],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        await retrying.load(
+          [trackWith()],
+          initialIndex: 1,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        await first;
+        await Future<void>.delayed(later + soon);
+
+        expect(calls, 2);
+        expect(retrying.retryPending, isFalse);
+        verifyNever(player.stop);
+        verify(player.play).called(1);
+      });
+
       test(
         '- a stream that drops while playing resumes where it was',
         () async {
@@ -685,6 +891,25 @@ void main() {
           verify(player.play).called(1);
         },
       );
+    });
+  });
+
+  group('play', () {
+    test('- clears a playing flag that has nothing loaded behind it', () async {
+      reportPlayer(playing: true, processingState: ProcessingState.idle);
+
+      await target.play();
+
+      verifyInOrder([player.pause, player.play]);
+    });
+
+    test('- leaves a player that is really playing alone', () async {
+      reportPlayer(playing: true, processingState: ProcessingState.ready);
+
+      await target.play();
+
+      verifyNever(player.pause);
+      verify(player.play).called(1);
     });
   });
 

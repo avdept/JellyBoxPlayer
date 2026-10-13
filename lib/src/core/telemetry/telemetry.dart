@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/diagnostics/device_log.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:plausible/plausible.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -28,6 +29,7 @@ class Telemetry {
     _optedOut = optedOut;
 
     if (optedOut) {
+      DeviceLog.install();
       await appRunner();
       return;
     }
@@ -44,11 +46,13 @@ class Telemetry {
 
   static void _keepConsoleLogging() {
     final sentryPrint = debugPrint;
-    if (identical(sentryPrint, debugPrintThrottled)) return;
-    debugPrint = (String? message, {int? wrapWidth}) {
-      sentryPrint(message, wrapWidth: wrapWidth);
-      debugPrintThrottled(message, wrapWidth: wrapWidth);
-    };
+    if (!identical(sentryPrint, debugPrintThrottled)) {
+      debugPrint = (String? message, {int? wrapWidth}) {
+        sentryPrint(message, wrapWidth: wrapWidth);
+        debugPrintThrottled(message, wrapWidth: wrapWidth);
+      };
+    }
+    DeviceLog.install();
   }
 
   static void watch(ProviderContainer container) {
@@ -71,6 +75,7 @@ class Telemetry {
     if (optedOut) {
       unawaited(_sendEvent('analytics-opted-out'));
       await Sentry.close();
+      DeviceLog.install();
     } else {
       unawaited(_sendLaunchEvents());
       await SentryFlutter.init(_configureSentry);
