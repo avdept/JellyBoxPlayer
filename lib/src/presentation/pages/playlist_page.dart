@@ -12,6 +12,7 @@ import 'package:jplayer/src/domain/providers/download_sync_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -118,8 +119,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
 
   ImageProvider get albumCover => _imageService.itemImage(widget.playlist);
 
+  PlaylistSongOrder get _order =>
+      ref.watch(playlistSongOrderProvider(widget.playlist.id));
+
   @override
   Widget build(BuildContext context) {
+    final shown = _order.apply(songs);
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -200,6 +205,15 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                           ),
                         ),
                       ],
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          _device.isMobile ? 16 : 30,
+                          _device.isMobile ? 12 : 4,
+                          _device.isMobile ? 16 : 30,
+                          8,
+                        ),
+                        sliver: SliverToBoxAdapter(child: _controls()),
+                      ),
                       if (_songsLoaded && songs.isEmpty)
                         const SliverFillRemaining(
                           hasScrollBody: false,
@@ -209,7 +223,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _currentSong,
                           builder: (context, item, other) {
-                            final song = songs[index];
+                            final song = shown[index];
                             return SongRowView(
                               song: song,
                               isPlaying: item != null && song.id == item.id,
@@ -217,7 +231,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   .read(playbackProvider.notifier)
                                   .play(
                                     song,
-                                    songs,
+                                    shown,
                                     widget.playlist,
                                     sourceId: widget.playlist.id,
                                   ),
@@ -243,7 +257,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                             );
                           },
                         ),
-                        itemCount: songs.length,
+                        itemCount: shown.length,
                       ),
                     ],
                   ),
@@ -319,7 +333,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
         ),
         Text(widget.playlist.albumArtist ?? ''),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _albumDetails(
               duration: widget.playlist.duration,
@@ -333,10 +346,6 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                   child: const Icon(Icons.circle, size: 4),
                 ),
               ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: _actionButtons(playSize: _device.isMobile ? 38 : 48),
             ),
           ],
         ),
@@ -392,43 +401,40 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
             ],
           ),
         ),
-        const SizedBox(width: 35),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: _actionButtons(playSize: 48),
-        ),
       ],
     ),
   );
 
-  List<Widget> _actionButtons({required double playSize}) => [
-    HoverZoom(builder: (context, hovered) => _downloadAlbumButton()),
-    HoverZoom(
-      builder: (context, hovered) => RandomQueueButton(
-        color: hovered ? Theme.of(context).colorScheme.primary : null,
-      ),
+  Widget _controls() => PlaylistControls(
+    onPlay: _onPlayPlaylistPressed,
+    onShuffle: () {
+      final playback = ref.read(setPlaybackProvider.notifier);
+      playback
+          .shufflePlay(
+            widget.playlist,
+            () => playback.playlistSongs(widget.playlist.id),
+          )
+          .ignore();
+    },
+    isPlayLoading: ref.watch(setPlaybackProvider) == widget.playlist.id,
+    download: _downloadAlbumButton(),
+    sort: PlaylistSortButton(
+      order: _order,
+      onChanged: (next) =>
+          ref
+                  .read(playlistSongOrderProvider(widget.playlist.id).notifier)
+                  .state =
+              next,
     ),
-    HoverZoom(
-      builder: (context, hovered) => SizedBox.square(
-        dimension: playSize,
-        child: _playAlbumButton(
-          color: hovered ? Theme.of(context).colorScheme.primary : null,
-        ),
-      ),
-    ),
-  ];
-
-  Widget _playAlbumButton({Color? color}) => PlayButton(
-    isLoading: ref.watch(setPlaybackProvider) == widget.playlist.id,
-    onPressed: _onPlayPlaylistPressed,
-    color: color,
   );
 
   Future<void> _onPlayPlaylistPressed() async {
     try {
-      final result = await ref
-          .read(setPlaybackProvider.notifier)
-          .playPlaylist(widget.playlist);
+      final playback = ref.read(setPlaybackProvider.notifier);
+      final order = ref.read(playlistSongOrderProvider(widget.playlist.id));
+      final result = order.isDefault
+          ? await playback.playPlaylist(widget.playlist)
+          : await playback.playSongs(widget.playlist, order.apply(songs));
       if (result == SetPlaybackResult.empty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

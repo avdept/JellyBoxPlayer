@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -22,9 +24,12 @@ enum SetPlaybackResult {
 }
 
 class SetPlaybackNotifier extends StateNotifier<String?> {
-  SetPlaybackNotifier(this._ref) : super(null);
+  SetPlaybackNotifier(this._ref, {Random? random})
+    : _random = random ?? Random(),
+      super(null);
 
   final Ref _ref;
+  final Random _random;
 
   Future<SetPlaybackResult> playAlbum(LibraryItem album) => _play(
     setItem: album,
@@ -115,6 +120,20 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     return source.downloadedSnapshot(playlistId);
   }
 
+  Future<SetPlaybackResult> playSongs(
+    LibraryItem setItem,
+    List<LibraryItem> songs,
+  ) => _play(setItem: setItem, fetchSongs: () async => songs);
+
+  Future<SetPlaybackResult> shufflePlay(
+    LibraryItem setItem,
+    Future<List<LibraryItem>> Function() fetchSongs,
+  ) => _play(
+    setItem: setItem,
+    fetchSongs: () async => [...await fetchSongs()]..shuffle(_random),
+    shuffleModeOff: true,
+  );
+
   Future<SetPlaybackResult> playFavouriteSongs(LibraryItem placeholder) =>
       _play(setItem: placeholder, fetchSongs: favouriteSongs);
 
@@ -146,6 +165,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     required LibraryItem setItem,
     required Future<List<LibraryItem>> Function() fetchSongs,
     String? keepPlaying,
+    bool shuffleModeOff = false,
   }) async {
     if (state != null) return SetPlaybackResult.busy;
     state = setItem.id;
@@ -153,6 +173,9 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       final songs = await fetchSongs();
       if (songs.isEmpty) return SetPlaybackResult.empty;
       final playback = _ref.read(playbackProvider.notifier);
+      if (shuffleModeOff && _ref.read(playbackProvider).shuffleEnabled) {
+        await playback.setShuffle(enabled: false);
+      }
       if (keepPlaying != null &&
           _currentSongId() == keepPlaying &&
           await playback.replaceUpcoming(

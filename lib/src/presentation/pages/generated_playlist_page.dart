@@ -2,12 +2,14 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/mix_page_scaffold.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
+import 'package:jplayer/src/presentation/widgets/playlist_controls.dart';
 import 'package:jplayer/src/presentation/widgets/collection_download_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
@@ -28,6 +30,8 @@ class GeneratedPlaylistPage extends ConsumerWidget {
     final downloaded = ref.watch(downloadedPlaylistSongsProvider(playlist.id));
     final items =
         today.valueOrNull ?? downloaded.valueOrNull ?? const <LibraryItem>[];
+    final order = ref.watch(playlistSongOrderProvider(playlist.id));
+    final shown = order.apply(items);
     final coverSongs = ref
         .watch(todaysPlaylistsProvider)
         .valueOrNull
@@ -44,10 +48,28 @@ class GeneratedPlaylistPage extends ConsumerWidget {
           imageService.itemImage(song),
       ],
       isPlayLoading: ref.watch(setPlaybackProvider) == playlist.id,
-      onPlay: () => ref
-          .read(setPlaybackProvider.notifier)
-          .playGeneratedPlaylist(playlist)
-          .ignore(),
+      onPlay: () {
+        final playback = ref.read(setPlaybackProvider.notifier);
+        (order.isDefault
+                ? playback.playGeneratedPlaylist(playlist)
+                : playback.playSongs(playlist, shown))
+            .ignore();
+      },
+      onShuffle: () {
+        final playback = ref.read(setPlaybackProvider.notifier);
+        playback
+            .shufflePlay(
+              playlist,
+              () => playback.generatedPlaylistSongs(playlist.id),
+            )
+            .ignore();
+      },
+      sort: PlaylistSortButton(
+        order: order,
+        onChanged: (next) =>
+            ref.read(playlistSongOrderProvider(playlist.id).notifier).state =
+                next,
+      ),
       actions: [
         CollectionDownloadButton(
           item: playlist,
@@ -58,7 +80,7 @@ class GeneratedPlaylistPage extends ConsumerWidget {
       slivers: [
         if (items.isNotEmpty)
           SongListSliver(
-            songs: items,
+            songs: shown,
             set: today.hasValue ? null : playlist,
             showPosition: true,
             edgePadding: edgePadding,

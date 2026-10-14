@@ -15,6 +15,7 @@ import 'package:jplayer/src/presentation/widgets/mix_page_scaffold.dart';
 import 'package:jplayer/src/presentation/widgets/collection_download_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
+import 'package:jplayer/src/presentation/widgets/sort_menu_button.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -92,12 +93,29 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
             .playFavouriteSongs(liked)
             .ignore();
       },
+      onShuffle: () {
+        if (liked == null) return;
+        final playback = ref.read(setPlaybackProvider.notifier);
+        playback.shufflePlay(liked, playback.favouriteSongs).ignore();
+      },
       onLoadMore: isOffline
           ? null
           : () => ref
                 .read(favouriteSongsListProvider(filter).notifier)
                 .loadMore(),
-      navTrailing: isOffline ? null : _sortButton(filter, capabilities),
+      sort: isOffline
+          ? null
+          : SortMenuButton<EntityFilter>(
+              options: {
+                for (final entry in _sortOptions.entries)
+                  if (entry.key != EntityFilter.dateLiked ||
+                      capabilities.likedTimestamp)
+                    entry.key: entry.value,
+              },
+              selected: filter.orderBy,
+              descending: filter.desc,
+              onSelected: (field) => _applySort(field, filter),
+            ),
       actions: [
         if (liked != null)
           CollectionDownloadButton(
@@ -158,30 +176,4 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
       ],
     );
   }
-
-  Widget _sortButton(
-    Filter filter,
-    MediaServerCapabilities capabilities,
-  ) => PopupMenuButton<EntityFilter>(
-    icon: Icon(Icons.sort, color: Theme.of(context).colorScheme.onPrimary),
-    tooltip: 'Sort',
-    onSelected: (field) => _applySort(field, filter),
-    itemBuilder: (context) => [
-      for (final entry in _sortOptions.entries)
-        if (entry.key != EntityFilter.dateLiked || capabilities.likedTimestamp)
-          PopupMenuItem(
-            value: entry.key,
-            child: Row(
-              children: [
-                Expanded(child: Text(entry.value)),
-                if (filter.orderBy == entry.key)
-                  Icon(
-                    filter.desc ? Icons.arrow_downward : Icons.arrow_upward,
-                    size: 18,
-                  ),
-              ],
-            ),
-          ),
-    ],
-  );
 }

@@ -29,6 +29,7 @@ export 'more_from_artist_provider.dart';
 export 'now_playing_provider.dart';
 export 'output_route_provider.dart';
 export 'playback_provider.dart';
+export 'playlist_song_order_provider.dart';
 export 'playlist_songs_source.dart';
 export 'queue_sidebar_provider.dart';
 export 'review_prompt_provider.dart';

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/mix_page_scaffold.dart';
+import 'package:jplayer/src/presentation/widgets/playlist_controls.dart';
 import 'package:jplayer/src/presentation/widgets/collection_download_button.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
@@ -42,6 +44,8 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
         mix?.songs ?? downloaded?.valueOrNull ?? const <LibraryItem>[];
     final imageService = ref.read(imageServiceProvider);
     final isLoading = mix == null && (downloaded?.isLoading ?? false);
+    final order = ref.watch(playlistSongOrderProvider(mixId));
+    final shown = order.apply(songs);
 
     return MixPageScaffold(
       name: widget.mix.name,
@@ -55,12 +59,24 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
       isPlayLoading: ref.watch(setPlaybackProvider) == mixId,
       onPlay: () {
         final playback = ref.read(setPlaybackProvider.notifier);
-        if (mix != null) {
+        if (!order.isDefault && shown.isNotEmpty) {
+          playback.playSongs(widget.mix, shown).ignore();
+        } else if (mix != null) {
           playback.playInstantMix(mix).ignore();
         } else if (songs.isNotEmpty) {
           playback.playPlaylist(widget.mix).ignore();
         }
       },
+      onShuffle: () => ref
+          .read(setPlaybackProvider.notifier)
+          .shufflePlay(widget.mix, () async => songs)
+          .ignore(),
+      sort: PlaylistSortButton(
+        order: order,
+        defaultLabel: 'Mix order',
+        onChanged: (next) =>
+            ref.read(playlistSongOrderProvider(mixId).notifier).state = next,
+      ),
       actions: [
         CollectionDownloadButton(
           item: widget.mix,
@@ -75,7 +91,7 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
           )
         else
           SongListSliver(
-            songs: songs,
+            songs: shown,
             set: widget.mix,
             showPosition: true,
             edgePadding: device.isMobile ? 16 : 30,

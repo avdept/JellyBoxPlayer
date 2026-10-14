@@ -16,6 +16,7 @@ import 'package:jplayer/src/data/services/metadata_link_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_picker_sheet.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -548,33 +549,38 @@ class ContextMenuButton extends StatelessWidget {
     required this.actionsBuilder,
     this.icon = Icons.more_vert,
     this.style,
+    this.hoverColor,
     super.key,
   });
 
   final List<ContextMenuAction> Function(BuildContext context) actionsBuilder;
   final IconData icon;
   final ButtonStyle? style;
+  final Color? hoverColor;
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = DeviceType.fromScreenSize(
       MediaQuery.sizeOf(context),
     ).isDesktop;
+    final accent = hoverColor ?? HoverIconButton.mutedAccent(context);
     if (!isDesktop) {
-      return IconButton(
+      return HoverIconButton(
         icon: Icon(icon),
         tooltip: 'More',
         style: style,
+        hoverColor: accent,
         onPressed: () =>
             showContextMenuSheet(context, actions: actionsBuilder(context)),
       );
     }
     return _AnimatedMenu(
       actions: actionsBuilder(context),
-      builder: (context, controller, _) => IconButton(
+      builder: (context, controller, _) => HoverIconButton(
         icon: Icon(icon),
         tooltip: 'More',
         style: style,
+        hoverColor: accent,
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
       ),

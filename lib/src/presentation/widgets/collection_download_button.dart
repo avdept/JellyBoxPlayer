@@ -6,6 +6,7 @@ import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class CollectionDownloadButtonKeys {
@@ -55,7 +56,7 @@ class _CollectionDownloadButtonState
     }
     final onPrimary = Theme.of(context).colorScheme.onPrimary;
     if (_preparing || badge == DownloadBadge.downloading) {
-      return IconButton(
+      return HoverIconButton(
         key: widget.testKeys?.delete,
         onPressed: _preparing ? null : _cancel,
         tooltip: 'Stop download',
@@ -77,7 +78,7 @@ class _CollectionDownloadButtonState
         ),
       );
     }
-    return IconButton(
+    return HoverIconButton(
       key: badge == null ? widget.testKeys?.download : widget.testKeys?.delete,
       onPressed: badge == null ? _download : _remove,
       tooltip: badge == null ? 'Download' : 'Remove download',
