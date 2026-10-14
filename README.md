@@ -20,6 +20,8 @@
 
 [Download](#download) · [Screenshots](#screenshots) · [Features](#features) · [Development](#development)
 
+<img src="./docs/screenshots/desktop-and-mobile.png" width="100%" alt="JellyBox on macOS and Android, showing the home page with recently added albums, mixes made for you and recently played">
+
 </div>
 
 ---
