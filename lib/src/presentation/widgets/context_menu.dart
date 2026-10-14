@@ -563,13 +563,13 @@ class ContextMenuButton extends StatelessWidget {
     final isDesktop = DeviceType.fromScreenSize(
       MediaQuery.sizeOf(context),
     ).isDesktop;
-    final accent = hoverColor ?? HoverIconButton.mutedAccent(context);
     if (!isDesktop) {
       return HoverIconButton(
         icon: Icon(icon),
         tooltip: 'More',
         style: style,
-        hoverColor: accent,
+        hoverColor: hoverColor,
+        mutedHover: true,
         onPressed: () =>
             showContextMenuSheet(context, actions: actionsBuilder(context)),
       );
@@ -580,7 +580,8 @@ class ContextMenuButton extends StatelessWidget {
         icon: Icon(icon),
         tooltip: 'More',
         style: style,
-        hoverColor: accent,
+        hoverColor: hoverColor,
+        mutedHover: true,
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
       ),

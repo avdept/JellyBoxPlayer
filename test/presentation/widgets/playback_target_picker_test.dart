@@ -1323,8 +1323,10 @@ void main() {
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.cast));
-      expect(icon.color, Colors.white);
+      expect(
+        IconTheme.of(tester.element(find.byIcon(Icons.cast))).color,
+        Colors.white,
+      );
 
       final label = tester.widget<Text>(find.text('BETA'));
       expect(label.style!.color, Colors.white);
@@ -1347,10 +1349,6 @@ void main() {
 
       final button = tester.widget<IconButton>(find.byType(IconButton));
       expect(button.iconSize, lessThan(28));
-      expect(
-        button.constraints,
-        BoxConstraints.tightFor(width: 44, height: 44),
-      );
 
       final box = tester.getSize(find.byType(IconButton));
       expect(box.width, lessThanOrEqualTo(48));

@@ -19,6 +19,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/audio_quality_badge.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
 import 'package:jplayer/src/presentation/widgets/flip_panel.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/keep_screen_awake.dart';
 import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/presentation/widgets/now_playing_queue_view.dart';
@@ -363,27 +364,26 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
   Widget _lyricsButton() => Consumer(
     builder: (context, ref, _) {
       final hasLyrics = ref.watch(currentSongHasLyricsProvider);
-      return IconButton(
+      return HoverIconButton(
         onPressed: hasLyrics ? () => _showPanel(_Panel.lyrics) : null,
         color: _foreground,
         disabledColor: _foreground.withValues(alpha: 0.3),
+        iconSize: 24,
         tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
         icon: const Icon(Icons.lyrics_outlined),
-        selectedIcon: Icon(Icons.lyrics, color: _theme.colorScheme.primary),
+        selectedIcon: const Icon(Icons.lyrics),
         isSelected: _panel == _Panel.lyrics,
       );
     },
   );
 
-  Widget _queueButton() => IconButton(
+  Widget _queueButton() => HoverIconButton(
     onPressed: () => _showPanel(_Panel.queue),
     color: _foreground,
+    iconSize: 24,
     tooltip: _panel == _Panel.queue ? 'Hide queue' : 'Queue',
     icon: const Icon(Icons.queue_music),
-    selectedIcon: Icon(
-      Icons.queue_music,
-      color: _theme.colorScheme.primary,
-    ),
+    selectedIcon: const Icon(Icons.queue_music),
     isSelected: _panel == _Panel.queue,
   );
 
@@ -393,15 +393,14 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
       if (song == null) return const SizedBox.shrink();
       final isOffline = ref.watch(isOfflineProvider);
 
-      return IconButton(
+      return HoverIconButton(
         onPressed: isOffline ? null : () => _toggleFavourite(song),
         iconSize: 26,
+        color: _foreground,
+        mutedHover: true,
         disabledColor: _foreground.withValues(alpha: 0.3),
-        icon: Icon(CupertinoIcons.heart, color: _foreground),
-        selectedIcon: Icon(
-          CupertinoIcons.heart_fill,
-          color: _theme.colorScheme.primary,
-        ),
+        icon: const Icon(CupertinoIcons.heart),
+        selectedIcon: const Icon(CupertinoIcons.heart_fill),
         isSelected: song.userData.isFavorite,
       );
     },
@@ -435,15 +434,17 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
     stateNotifier: _isPlaying,
   );
 
-  Widget _prevTrackButton() => IconButton(
+  Widget _prevTrackButton() => HoverIconButton(
     onPressed: ref.read(playbackProvider.notifier).prev,
     color: _foreground,
+    iconSize: 34,
     icon: const Icon(Entypo.fast_backward),
   );
 
-  Widget _nextTrackButton() => IconButton(
+  Widget _nextTrackButton() => HoverIconButton(
     onPressed: ref.read(playbackProvider.notifier).next,
     color: _foreground,
+    iconSize: 34,
     icon: const Icon(Entypo.fast_forward),
   );
 }

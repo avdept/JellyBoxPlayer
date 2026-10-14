@@ -185,12 +185,15 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
       subtitle: _subtitle,
       trailing: IgnorePointer(
         ignoring: _isBusy,
-        child: IconButton(
+        child: HoverIconButton(
           key: widget.testKeys?.deleteButton,
           onPressed: (widget.onDelete != null) ? _onDeletePressed : null,
-          padding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints(),
+          style: const ButtonStyle(
+            padding: WidgetStatePropertyAll(EdgeInsets.zero),
+            minimumSize: WidgetStatePropertyAll(Size.zero),
+            visualDensity: VisualDensity.compact,
+          ),
+          tooltip: 'Remove download',
           iconSize: isTablet ? 24 : 20,
           icon: const Icon(JPlayer.trash_2),
         ),

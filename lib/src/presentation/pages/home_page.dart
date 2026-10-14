@@ -237,7 +237,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 showName: true,
               ),
               const Spacer(),
-              UpdatifyBell(isDesktop: _device.isDesktop),
+              UpdatifyBell(
+                isDesktop: _device.isDesktop,
+                iconSize: _device.isDesktop ? 24 : 28,
+              ),
             ],
           ),
         ),

@@ -23,6 +23,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/anchored_dropdown.dart';
 import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_settings.dart';
 import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/volume_control.dart';
@@ -123,7 +124,8 @@ class _PlaybackTargetButtonState extends ConsumerState<PlaybackTargetButton> {
     final casting = target.kind != PlaybackTargetKind.local;
 
     final idleColor = widget.color ?? theme.colorScheme.onPrimary;
-    final activeColor = widget.activeColor ?? theme.colorScheme.primary;
+    final activeColor =
+        widget.activeColor ?? ref.watch<Color>(accentColorProvider);
 
     final box = widget.size;
     final glyph = box == null ? IconTheme.of(context).size ?? 24 : box * 0.55;
@@ -192,17 +194,21 @@ class _PlaybackTargetButtonState extends ConsumerState<PlaybackTargetButton> {
   }) => Stack(
     clipBehavior: Clip.none,
     children: [
-      IconButton(
+      HoverIconButton(
         tooltip: casting ? 'Playing on ${target.name}' : 'Play on a device',
-        padding: box == null ? null : EdgeInsets.zero,
-        constraints: box == null
+        style: box == null
             ? null
-            : BoxConstraints.tightFor(width: box, height: box),
+            : ButtonStyle(
+                padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+                minimumSize: WidgetStatePropertyAll(Size.square(box)),
+                maximumSize: WidgetStatePropertyAll(Size.square(box)),
+              ),
         iconSize: glyph,
-        icon: Icon(
-          casting ? Icons.cast_connected : Icons.cast,
-          color: casting ? activeColor : idleColor,
-        ),
+        color: idleColor,
+        selectedColor: activeColor,
+        icon: const Icon(Icons.cast),
+        selectedIcon: const Icon(Icons.cast_connected),
+        isSelected: casting,
         onPressed: open,
       ),
       Positioned(

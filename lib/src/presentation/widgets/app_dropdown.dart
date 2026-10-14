@@ -1,5 +1,8 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 class AppDropdownEntry<T> {
   const AppDropdownEntry({
@@ -22,6 +25,7 @@ class AppDropdown<T> extends StatefulWidget {
     required this.onChanged,
     this.icon,
     this.buttonBuilder,
+    this.iconSize,
     this.width = 150,
     super.key,
   }) : assert(
@@ -34,6 +38,7 @@ class AppDropdown<T> extends StatefulWidget {
   final ValueChanged<T> onChanged;
   final IconData? icon;
   final Widget Function(bool isOpened)? buttonBuilder;
+  final double? iconSize;
   final double width;
 
   @override
@@ -45,11 +50,18 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
 
   Widget _button(ThemeData theme) {
     if (widget.buttonBuilder case final builder?) return builder(_isOpened);
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Icon(
-        widget.icon,
-        color: _isOpened ? theme.colorScheme.primary : theme.iconTheme.color,
+    return HoverZoom(
+      builder: (context, hovered) => Consumer(
+        builder: (context, ref, _) => Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            widget.icon,
+            size: widget.iconSize,
+            color: _isOpened || hovered
+                ? ref.watch(accentColorProvider)
+                : theme.iconTheme.color,
+          ),
+        ),
       ),
     );
   }

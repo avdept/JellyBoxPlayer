@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 class PlayPauseButton extends StatefulWidget {
   const PlayPauseButton({
@@ -54,16 +57,21 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
 
   @override
   Widget build(BuildContext context) {
-    return MaterialButton(
-      onPressed: widget.onPressed,
-      color: widget.background,
-      shape: const CircleBorder(),
-      padding: const EdgeInsets.all(8),
-      minWidth: 0,
-      child: AnimatedIcon(
-        icon: AnimatedIcons.play_pause,
-        progress: _animationController,
-        color: widget.foreground,
+    return HoverZoom(
+      enabled: widget.onPressed != null,
+      builder: (context, hovered) => Consumer(
+        builder: (context, ref, _) => MaterialButton(
+          onPressed: widget.onPressed,
+          color: hovered ? ref.watch(accentColorProvider) : widget.background,
+          shape: const CircleBorder(),
+          padding: const EdgeInsets.all(8),
+          minWidth: 0,
+          child: AnimatedIcon(
+            icon: AnimatedIcons.play_pause,
+            progress: _animationController,
+            color: hovered ? Colors.white : widget.foreground,
+          ),
+        ),
       ),
     );
   }

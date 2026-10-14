@@ -11,6 +11,7 @@ enum AppSetting {
   studioModeFullscreen('studio_mode_fullscreen'),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
+  artworkAccent('artwork_accent', defaultValue: true),
   animatedCovers('animated_covers'),
   animationSpeed('animation_speed', defaultValue: 'medium'),
   generatedPlaylistsDisabled('disable_generated_playlists'),
