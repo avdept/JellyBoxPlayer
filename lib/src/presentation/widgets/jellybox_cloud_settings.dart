@@ -2,12 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/config/constants.dart';
+import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/widgets/continuity_intro.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_connect_form.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/current_server_type_provider.dart';
 import 'package:jplayer/src/providers/server_addresses_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 Future<void> connectJellyboxCloud(BuildContext context) async {
   final signedIn = await showFormModal<bool>(
@@ -57,6 +61,10 @@ class _ServerConnectionRow extends ConsumerWidget {
     final addresses = ref.watch(serverAddressesProvider);
     final hasTunnel = addresses?.relay != null;
     final tunnelUp = ref.watch(relayReachableProvider);
+    final notSetUp =
+        !hasTunnel &&
+        addresses?.relayDenied == null &&
+        ref.watch(currentServerTypeProvider) == ServerType.jellyfin;
     final muted = Theme.of(
       context,
     ).colorScheme.onPrimary.withValues(alpha: 0.5);
@@ -97,6 +105,28 @@ class _ServerConnectionRow extends ConsumerWidget {
               style: TextStyle(fontSize: 12, height: 1.3, color: muted),
             ),
           ),
+          if (notSetUp)
+            Padding(
+              padding: const EdgeInsets.only(left: 26, top: 4),
+              child: InkWell(
+                onTap: () => unawaited(
+                  launchUrl(
+                    Uri.parse(jellyfinRelayPluginUrl),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                ),
+                child: Text(
+                  'Set up the JellyBox Relay plugin',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.3,
+                    color: Theme.of(context).colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
