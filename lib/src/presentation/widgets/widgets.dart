@@ -42,6 +42,7 @@ export 'now_playing_glow.dart';
 export 'now_playing_queue_view.dart';
 export 'offline_banner.dart';
 export 'offline_notice.dart';
+export 'hover_zoom.dart';
 export 'play_button.dart';
 export 'collection_download_button.dart';
 export 'play_pause_button.dart';

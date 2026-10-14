@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
+import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -17,6 +19,7 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 const _sortOptions = <EntityFilter, String>{
+  EntityFilter.dateLiked: 'Date Liked',
   EntityFilter.sortName: 'Name',
   EntityFilter.dateCreated: 'Date Added',
   EntityFilter.albumArtist: 'Album Artist',
@@ -31,13 +34,28 @@ class FavouriteSongsPage extends ConsumerStatefulWidget {
 }
 
 class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
-  var _filter = const Filter(orderBy: EntityFilter.sortName);
+  Filter? _chosen;
 
-  void _applySort(EntityFilter field) {
+  Filter _filterFor(MediaServerCapabilities capabilities) {
+    final chosen = _chosen;
+    if (chosen == null) return defaultLikedSongsFilter(capabilities);
+    if (chosen.orderBy == EntityFilter.dateLiked &&
+        !capabilities.likedTimestamp) {
+      return defaultLikedSongsFilter(capabilities);
+    }
+    return chosen;
+  }
+
+  void _applySort(EntityFilter field, Filter current) {
     setState(() {
-      _filter = _filter.orderBy == field
-          ? _filter.copyWith(desc: !_filter.desc)
-          : Filter(orderBy: field, desc: field == EntityFilter.dateCreated);
+      _chosen = current.orderBy == field
+          ? current.copyWith(desc: !current.desc)
+          : Filter(
+              orderBy: field,
+              desc:
+                  field == EntityFilter.dateCreated ||
+                  field == EntityFilter.dateLiked,
+            );
     });
   }
 
@@ -45,12 +63,14 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
   Widget build(BuildContext context) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
     final edgePadding = device.isMobile ? 16.0 : 30.0;
+    final capabilities = ref.watch(serverCapabilitiesProvider);
+    final filter = _filterFor(capabilities);
     final isOffline = ref.watch(isOfflineProvider);
     final liked = ref.watch(likedSongsPlaylistProvider);
     final songs = isOffline && liked != null
         ? ref.watch(downloadedPlaylistSongsProvider(liked.id))
         : ref
-              .watch(favouriteSongsListProvider(_filter))
+              .watch(favouriteSongsListProvider(filter))
               .whenData((page) => page.items);
     final items = songs.valueOrNull ?? const <LibraryItem>[];
     final total = isOffline
@@ -75,9 +95,9 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
       onLoadMore: isOffline
           ? null
           : () => ref
-                .read(favouriteSongsListProvider(_filter).notifier)
+                .read(favouriteSongsListProvider(filter).notifier)
                 .loadMore(),
-      navTrailing: isOffline ? null : _sortButton(),
+      navTrailing: isOffline ? null : _sortButton(filter, capabilities),
       actions: [
         if (liked != null)
           CollectionDownloadButton(
@@ -85,8 +105,8 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
             songs: () => fetchAllFavouriteSongs(
               ref.read(mediaServerClientProvider),
               libraryId: ref.read(currentLibraryProvider).valueOrNull?.id,
-              sort: _filter.orderBy.itemSort,
-              direction: sortDirectionOf(descending: _filter.desc),
+              sort: filter.orderBy.itemSort,
+              direction: sortDirectionOf(descending: filter.desc),
             ),
           ),
       ],
@@ -113,7 +133,7 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
                 onItemUpdated: isOffline
                     ? (_) {}
                     : ref
-                          .read(favouriteSongsListProvider(_filter).notifier)
+                          .read(favouriteSongsListProvider(filter).notifier)
                           .updateItem,
               ),
           ],
@@ -139,25 +159,29 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
     );
   }
 
-  Widget _sortButton() => PopupMenuButton<EntityFilter>(
+  Widget _sortButton(
+    Filter filter,
+    MediaServerCapabilities capabilities,
+  ) => PopupMenuButton<EntityFilter>(
     icon: Icon(Icons.sort, color: Theme.of(context).colorScheme.onPrimary),
     tooltip: 'Sort',
-    onSelected: _applySort,
+    onSelected: (field) => _applySort(field, filter),
     itemBuilder: (context) => [
       for (final entry in _sortOptions.entries)
-        PopupMenuItem(
-          value: entry.key,
-          child: Row(
-            children: [
-              Expanded(child: Text(entry.value)),
-              if (_filter.orderBy == entry.key)
-                Icon(
-                  _filter.desc ? Icons.arrow_downward : Icons.arrow_upward,
-                  size: 18,
-                ),
-            ],
+        if (entry.key != EntityFilter.dateLiked || capabilities.likedTimestamp)
+          PopupMenuItem(
+            value: entry.key,
+            child: Row(
+              children: [
+                Expanded(child: Text(entry.value)),
+                if (filter.orderBy == entry.key)
+                  Icon(
+                    filter.desc ? Icons.arrow_downward : Icons.arrow_upward,
+                    size: 18,
+                  ),
+              ],
+            ),
           ),
-        ),
     ],
   );
 }

@@ -755,17 +755,23 @@ class _ContextMenuActions {
       final manager = ref.read(downloadManagerProvider);
       final database = ref.read(downloadDatabaseProvider);
       final client = ref.read(mediaServerClientProvider);
+      final messenger = ScaffoldMessenger.maybeOf(context);
       final downloading = ref.read(downloadProgressProvider(item.id)) != null;
+      void removed() => messenger?.showSnackBar(
+        SnackBar(content: Text('Removed "${item.name}" from downloads')),
+      );
       switch (item.kind) {
         case ItemKind.song:
           if (await database.isSongDownloaded(item.id)) {
             await manager.deleteSong(item.id);
+            removed();
           } else {
             await manager.downloadSong(item);
           }
         case ItemKind.album:
           if (downloading || await database.isAlbumDownloaded(item.id)) {
             await manager.deleteAlbum(item.id);
+            removed();
           } else {
             if (_guardOffline()) return;
             final page = await client.getSongs(item.id);
@@ -774,6 +780,7 @@ class _ContextMenuActions {
         case ItemKind.playlist:
           if (downloading || await database.isPlaylistDownloaded(item.id)) {
             await manager.deletePlaylist(item.id);
+            removed();
           } else {
             if (_guardOffline()) return;
             final songs = await ref

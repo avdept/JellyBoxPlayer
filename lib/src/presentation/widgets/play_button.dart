@@ -4,10 +4,14 @@ class PlayButton extends StatelessWidget {
   const PlayButton({
     this.onPressed,
     this.isLoading = false,
+    this.color,
     super.key,
   });
 
+  static const defaultColor = Color(0xFF0066FF);
+
   final VoidCallback? onPressed;
+  final Color? color;
 
   final bool isLoading;
 
@@ -15,8 +19,8 @@ class PlayButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialButton(
       onPressed: isLoading ? null : onPressed,
-      color: const Color(0xFF0066FF),
-      disabledColor: const Color(0xFF0066FF),
+      color: color ?? defaultColor,
+      disabledColor: color ?? defaultColor,
       shape: const CircleBorder(),
       padding: const EdgeInsets.all(8),
       child: LayoutBuilder(

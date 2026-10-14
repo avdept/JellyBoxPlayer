@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
@@ -125,6 +126,10 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
             .getAllSongs(
               LibraryQuery(
                 libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+                sort: likedSongsSortField(
+                  _ref.read(serverCapabilitiesProvider),
+                ).itemSort,
+                direction: SortDirection.descending,
                 filters: const {ItemFilterFlag.favorite},
                 limit: _favouriteSongsLimit,
               ),

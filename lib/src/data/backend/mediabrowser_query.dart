@@ -5,7 +5,7 @@ String mediaBrowserSort(ItemSort sort, {ItemKind target = ItemKind.album}) =>
     switch (sort) {
       ItemSort.name => 'SortName',
       ItemSort.albumArtist => 'AlbumArtist',
-      ItemSort.dateCreated => 'DateCreated,SortName',
+      ItemSort.dateCreated || ItemSort.dateLiked => 'DateCreated,SortName',
       ItemSort.releaseDate => 'PremiereDate,ProductionYear,SortName',
       ItemSort.datePlayed => 'DatePlayed',
       ItemSort.playCount => 'PlayCount',

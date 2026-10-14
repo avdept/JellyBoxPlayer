@@ -8,6 +8,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
 import 'package:jplayer/src/presentation/widgets/custom_scrollbar.dart';
 import 'package:jplayer/src/presentation/widgets/gradient_background.dart';
+import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
 import 'package:jplayer/src/presentation/widgets/play_button.dart';
 import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
 
@@ -229,17 +230,7 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
         const SizedBox(width: 35),
         Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            ...widget.actions,
-            const RandomQueueButton(),
-            SizedBox.square(
-              dimension: 48,
-              child: PlayButton(
-                isLoading: widget.isPlayLoading,
-                onPressed: widget.onPlay,
-              ),
-            ),
-          ],
+          children: _actionButtons(playSize: 48),
         ),
       ],
     ),
@@ -259,23 +250,33 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
             _details(),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ...widget.actions,
-                const RandomQueueButton(),
-                SizedBox.square(
-                  dimension: _device.isMobile ? 38 : 48,
-                  child: PlayButton(
-                    isLoading: widget.isPlayLoading,
-                    onPressed: widget.onPlay,
-                  ),
-                ),
-              ],
+              children: _actionButtons(playSize: _device.isMobile ? 38 : 48),
             ),
           ],
         ),
       ],
     ),
   );
+
+  List<Widget> _actionButtons({required double playSize}) => [
+    for (final action in widget.actions)
+      HoverZoom(builder: (context, hovered) => action),
+    HoverZoom(
+      builder: (context, hovered) => RandomQueueButton(
+        color: hovered ? Theme.of(context).colorScheme.primary : null,
+      ),
+    ),
+    HoverZoom(
+      builder: (context, hovered) => SizedBox.square(
+        dimension: playSize,
+        child: PlayButton(
+          isLoading: widget.isPlayLoading,
+          onPressed: widget.onPlay,
+          color: hovered ? Theme.of(context).colorScheme.primary : null,
+        ),
+      ),
+    ),
+  ];
 
   Widget _details() {
     final count = widget.songCount ?? widget.songs.length;

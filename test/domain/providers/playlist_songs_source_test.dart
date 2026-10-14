@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/generated_playlist_database_provider.dart';
@@ -69,6 +70,9 @@ void main() {
 
   setUp(() {
     client = _MockClient();
+    when(
+      () => client.capabilities,
+    ).thenReturn(const MediaServerCapabilities());
     downloads = _MockDownloads();
     generated = _MockGenerated();
     mixesDb = _MockMixes();

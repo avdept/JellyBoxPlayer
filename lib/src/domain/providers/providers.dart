@@ -12,6 +12,7 @@ export 'download_manager_provider.dart';
 export 'download_sync_provider.dart';
 export 'downloaded_albums_provider.dart';
 export 'downloaded_playlists_provider.dart';
+export 'downloaded_songs_provider.dart';
 export 'downloads_revision_provider.dart';
 export 'favourites_provider.dart';
 export 'forward_cache_provider.dart';

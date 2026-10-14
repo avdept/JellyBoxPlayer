@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/exceptions/exceptions.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -35,13 +37,22 @@ final Provider<LibraryItem?> likedSongsPlaylistProvider = Provider((ref) {
 const _favouriteFilter = {ItemFilterFlag.favorite};
 const allFavouritesPageSize = 200;
 
+EntityFilter likedSongsSortField(MediaServerCapabilities capabilities) =>
+    capabilities.likedTimestamp
+    ? EntityFilter.dateLiked
+    : EntityFilter.dateCreated;
+
+Filter defaultLikedSongsFilter(MediaServerCapabilities capabilities) =>
+    Filter(orderBy: likedSongsSortField(capabilities), desc: true);
+
 Future<List<LibraryItem>> fetchAllFavouriteSongs(
   MediaServerClient client, {
   String? libraryId,
-  ItemSort sort = ItemSort.dateCreated,
+  ItemSort? sort,
   SortDirection direction = SortDirection.descending,
 }) async {
-  final stable = sort != ItemSort.random;
+  final order = sort ?? likedSongsSortField(client.capabilities).itemSort;
+  final stable = order != ItemSort.random;
   final songs = <LibraryItem>[];
   final seen = <String>{};
   var startIndex = 0;
@@ -49,7 +60,7 @@ Future<List<LibraryItem>> fetchAllFavouriteSongs(
     final page = await client.getAllSongs(
       LibraryQuery(
         libraryId: libraryId,
-        sort: stable ? sort : ItemSort.dateCreated,
+        sort: stable ? order : ItemSort.dateCreated,
         direction: stable ? direction : SortDirection.descending,
         filters: _favouriteFilter,
         startIndex: startIndex,

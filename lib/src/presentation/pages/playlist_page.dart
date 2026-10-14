@@ -336,14 +336,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _downloadAlbumButton(),
-                const RandomQueueButton(),
-                SizedBox.square(
-                  dimension: _device.isMobile ? 38 : 48,
-                  child: _playAlbumButton(),
-                ),
-              ],
+              children: _actionButtons(playSize: _device.isMobile ? 38 : 48),
             ),
           ],
         ),
@@ -399,26 +392,36 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
             ],
           ),
         ),
-        SizedBox(width: _device.isDesktop ? 35 : 32),
-        Wrap(
-          spacing: _device.isMobile ? 6 : 32,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _downloadAlbumButton(),
-            const RandomQueueButton(),
-            SizedBox.square(
-              dimension: _device.isMobile ? 40 : 48,
-              child: _playAlbumButton(),
-            ),
-          ],
+        const SizedBox(width: 35),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _actionButtons(playSize: 48),
         ),
       ],
     ),
   );
 
-  Widget _playAlbumButton() => PlayButton(
+  List<Widget> _actionButtons({required double playSize}) => [
+    HoverZoom(builder: (context, hovered) => _downloadAlbumButton()),
+    HoverZoom(
+      builder: (context, hovered) => RandomQueueButton(
+        color: hovered ? Theme.of(context).colorScheme.primary : null,
+      ),
+    ),
+    HoverZoom(
+      builder: (context, hovered) => SizedBox.square(
+        dimension: playSize,
+        child: _playAlbumButton(
+          color: hovered ? Theme.of(context).colorScheme.primary : null,
+        ),
+      ),
+    ),
+  ];
+
+  Widget _playAlbumButton({Color? color}) => PlayButton(
     isLoading: ref.watch(setPlaybackProvider) == widget.playlist.id,
     onPressed: _onPlayPlaylistPressed,
+    color: color,
   );
 
   Future<void> _onPlayPlaylistPressed() async {

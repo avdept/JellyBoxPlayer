@@ -794,7 +794,12 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   }
 
   List<EntityFilter> getFilterItems() => switch (_currentView.value) {
-    ItemList.albums => EntityFilter.values.toList(),
+    ItemList.albums => const [
+      EntityFilter.sortName,
+      EntityFilter.albumArtist,
+      EntityFilter.dateCreated,
+      EntityFilter.random,
+    ],
     ItemList.artists => const [
       EntityFilter.sortName,
       EntityFilter.dateCreated,

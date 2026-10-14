@@ -505,6 +505,63 @@ void main() {
     });
   });
 
+  group('DownloadDatabase (standalone songs)', () {
+    test('- lists only songs no saved album or playlist holds', () async {
+      final db = DownloadDatabase();
+      final album = buildAlbum();
+      final playlist = buildPlaylist();
+      final albumSong = buildSong(albumId: album.id);
+      final playlistSong = buildSong();
+      final loose = buildSong();
+      final abandoned = buildSong();
+      final albumFile = newSongFile();
+      final playlistFile = newSongFile();
+
+      await db.insertDownloadedSong(albumSong, file: albumFile);
+      await db.insertDownloadedAlbum(album, files: [albumFile]);
+      await db.insertDownloadedSong(playlistSong, file: playlistFile);
+      await db.insertDownloadedPlaylist(
+        playlist,
+        songs: [playlistSong],
+        files: [playlistFile],
+      );
+      await db.insertDownloadedSong(loose, file: newSongFile());
+      await db.insertDownloadedSong(
+        abandoned,
+        file: newSongFile(),
+        pending: true,
+      );
+
+      final standalone = await db.getStandaloneSongs();
+      expect(standalone.map((s) => s.item.id), [loose.id]);
+    });
+
+    test('- lists the most recently downloaded songs first', () async {
+      final db = DownloadDatabase();
+      final older = buildSong();
+      final newer = buildSong();
+      await db.insertDownloadedSong(older, file: newSongFile());
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      await db.insertDownloadedSong(newer, file: newSongFile());
+
+      final standalone = await db.getStandaloneSongs();
+      expect(standalone.map((s) => s.item.id), [newer.id, older.id]);
+    });
+
+    test('- a song leaves the list once a playlist picks it up', () async {
+      final db = DownloadDatabase();
+      final playlist = buildPlaylist();
+      final song = buildSong();
+      final file = newSongFile();
+      await db.insertDownloadedSong(song, file: file);
+      expect(await db.getStandaloneSongs(), hasLength(1));
+
+      await db.insertDownloadedPlaylist(playlist, songs: [song], files: [file]);
+
+      expect(await db.getStandaloneSongs(), isEmpty);
+    });
+  });
+
   group('DownloadDatabase (v1 -> v2 migration)', () {
     Future<void> seedLegacyDatabase({
       required Map<String, Object?> songRow,

@@ -64,6 +64,7 @@ class SubsonicClient implements MediaServerClient {
     similarAlbums: false,
     playlistFavourites: false,
     ratings: true,
+    likedTimestamp: true,
   );
 
   final SubsonicApi _api;

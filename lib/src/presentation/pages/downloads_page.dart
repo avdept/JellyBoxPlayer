@@ -80,20 +80,25 @@ class DownloadsPage extends StatelessWidget {
     }
   }
 
-  String _counterLabel(int albumCount, int playlistCount) {
-    final albums = Intl.plural(
+  String _counterLabel(int albumCount, int playlistCount, int songCount) => [
+    Intl.plural(
       albumCount,
       one: '$albumCount album',
       other: '$albumCount albums',
-    );
-    if (playlistCount == 0) return albums;
-    final playlists = Intl.plural(
-      playlistCount,
-      one: '$playlistCount playlist',
-      other: '$playlistCount playlists',
-    );
-    return '$albums • $playlists';
-  }
+    ),
+    if (playlistCount > 0)
+      Intl.plural(
+        playlistCount,
+        one: '$playlistCount playlist',
+        other: '$playlistCount playlists',
+      ),
+    if (songCount > 0)
+      Intl.plural(
+        songCount,
+        one: '$songCount song',
+        other: '$songCount songs',
+      ),
+  ].join(' • ');
 
   Widget _sectionHeader(DeviceType device, String title) => SliverToBoxAdapter(
     child: Padding(
@@ -130,26 +135,37 @@ class DownloadsPage extends StatelessWidget {
                 ),
               ),
               SizedBox(width: device.isMobile ? 12 : 24),
-              Consumer(
-                builder: (context, ref, child) {
-                  final albumCount =
-                      ref.watch(downloadedAlbumsProvider).valueOrNull?.length ??
-                      0;
-                  final playlistCount =
-                      ref
-                          .watch(downloadedPlaylistsProvider)
-                          .valueOrNull
-                          ?.length ??
-                      0;
-                  return Text(
-                    _counterLabel(albumCount, playlistCount),
-                    key: testKeys?.counterText,
-                    style: TextStyle(
-                      fontSize: device.isMobile ? 12 : 16,
-                      height: 1.2,
-                    ),
-                  );
-                },
+              Flexible(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final albumCount =
+                        ref
+                            .watch(downloadedAlbumsProvider)
+                            .valueOrNull
+                            ?.length ??
+                        0;
+                    final playlistCount =
+                        ref
+                            .watch(downloadedPlaylistsProvider)
+                            .valueOrNull
+                            ?.length ??
+                        0;
+                    final songCount =
+                        ref
+                            .watch(standaloneDownloadedSongsProvider)
+                            .valueOrNull
+                            ?.length ??
+                        0;
+                    return Text(
+                      _counterLabel(albumCount, playlistCount, songCount),
+                      key: testKeys?.counterText,
+                      style: TextStyle(
+                        fontSize: device.isMobile ? 12 : 16,
+                        height: 1.2,
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -165,25 +181,34 @@ class DownloadsPage extends StatelessWidget {
           builder: (context, ref, child) {
             final albums = ref.watch(downloadedAlbumsProvider);
             final playlists = ref.watch(downloadedPlaylistsProvider);
+            final songs = ref.watch(standaloneDownloadedSongsProvider);
 
-            if (albums.isLoading || playlists.isLoading) {
+            if (!albums.hasValue || !playlists.hasValue || !songs.hasValue) {
+              final error = albums.error ?? playlists.error ?? songs.error;
+              if (error != null) {
+                return SliverToBoxAdapter(
+                  child: Center(child: Text('Error: $error')),
+                );
+              }
               return AlbumCardsGridShimmer(
                 device: device,
                 gridDelegate: _gridDelegate(device),
               );
             }
 
-            final error = albums.error ?? playlists.error;
-            if (error != null) {
-              return SliverToBoxAdapter(
-                child: Center(child: Text('Error: $error')),
-              );
-            }
-
             final albumItems = albums.valueOrNull ?? const [];
             final playlistItems = playlists.valueOrNull ?? const [];
+            final songItems = [
+              for (final song in songs.valueOrNull ?? const <DownloadedSong>[])
+                song.item,
+            ];
+            final sections = [
+              playlistItems,
+              albumItems,
+              songItems,
+            ].where((items) => items.isNotEmpty).length;
 
-            if (albumItems.isEmpty && playlistItems.isEmpty) {
+            if (sections == 0) {
               return const SliverToBoxAdapter(
                 child: Center(child: Text('No downloads yet')),
               );
@@ -192,7 +217,7 @@ class DownloadsPage extends StatelessWidget {
             return SliverMainAxisGroup(
               slivers: [
                 if (playlistItems.isNotEmpty) ...[
-                  _sectionHeader(device, 'Playlists'),
+                  if (sections > 1) _sectionHeader(device, 'Playlists'),
                   SliverGrid.builder(
                     gridDelegate: _gridDelegate(device),
                     itemBuilder: (context, index) => DownloadedPlaylistView(
@@ -213,8 +238,7 @@ class DownloadsPage extends StatelessWidget {
                   ),
                 ],
                 if (albumItems.isNotEmpty) ...[
-                  if (playlistItems.isNotEmpty)
-                    _sectionHeader(device, 'Albums'),
+                  if (sections > 1) _sectionHeader(device, 'Albums'),
                   SliverGrid.builder(
                     gridDelegate: _gridDelegate(device),
                     itemBuilder: (context, index) => DownloadedAlbumView(
@@ -232,6 +256,18 @@ class DownloadsPage extends StatelessWidget {
                           .deleteAlbum(album.item.id),
                     ),
                     itemCount: albumItems.length,
+                  ),
+                ],
+                if (songItems.isNotEmpty) ...[
+                  if (sections > 1)
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 24),
+                      sliver: _sectionHeader(device, 'Songs'),
+                    ),
+                  SongListSliver(
+                    songs: songItems,
+                    edgePadding: 0,
+                    onItemUpdated: (_) {},
                   ),
                 ],
               ],

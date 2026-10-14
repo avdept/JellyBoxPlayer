@@ -258,22 +258,31 @@ class SongRowView extends ConsumerWidget {
                 color: Colors.green,
               ),
             if (isDesktop)
-              IconButton(
-                onPressed: onLikePressed != null
-                    ? () => onLikePressed!(song)
-                    : null,
-                icon: Icon(
-                  CupertinoIcons.heart,
-                  color: theme.colorScheme.onPrimary,
+              HoverZoom(
+                color: HoverZoom.mutedAccent(context),
+                builder: (context, hovered) => IconButton(
+                  onPressed: onLikePressed != null
+                      ? () => onLikePressed!(song)
+                      : null,
+                  icon: Icon(
+                    CupertinoIcons.heart,
+                    color: hovered
+                        ? HoverZoom.mutedAccent(context)
+                        : theme.colorScheme.onPrimary,
+                  ),
+                  selectedIcon: Icon(
+                    CupertinoIcons.heart_fill,
+                    color: theme.colorScheme.primary,
+                  ),
+                  isSelected: song.userData.isFavorite,
                 ),
-                selectedIcon: Icon(
-                  CupertinoIcons.heart_fill,
-                  color: theme.colorScheme.primary,
-                ),
-                isSelected: song.userData.isFavorite,
               ),
             if (optionsBuilder != null)
-              ContextMenuButton(actionsBuilder: optionsBuilder!),
+              HoverZoom(
+                color: HoverZoom.mutedAccent(context),
+                builder: (context, hovered) =>
+                    ContextMenuButton(actionsBuilder: optionsBuilder!),
+              ),
             if (trailing case final trailing?) trailing,
           ],
         ),

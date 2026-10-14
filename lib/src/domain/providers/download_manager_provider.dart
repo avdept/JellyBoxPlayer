@@ -218,11 +218,7 @@ class DownloadManager {
     void Function(double progress)? onProgress,
     bool Function()? isCancelled,
   }) async {
-    final task = await _service.downloadSong(
-      song,
-      client,
-      deviceId: deviceId,
-    );
+    final task = await _service.downloadSong(song, client, deviceId: deviceId);
     _activity
       ..pruneSettled()
       ..trackSong(task);

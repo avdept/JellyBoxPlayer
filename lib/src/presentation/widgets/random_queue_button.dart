@@ -4,7 +4,9 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
 class RandomQueueButton extends ConsumerWidget {
-  const RandomQueueButton({super.key});
+  const RandomQueueButton({this.color, super.key});
+
+  final Color? color;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,7 +20,7 @@ class RandomQueueButton extends ConsumerWidget {
           ref.read(playbackProvider.notifier).setShuffle(enabled: !enabled),
       icon: Icon(
         JPlayer.mix,
-        color: theme.colorScheme.onPrimary,
+        color: color ?? theme.colorScheme.onPrimary,
       ),
       selectedIcon: Icon(
         JPlayer.mix,

@@ -33,14 +33,16 @@ void main() {
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(),
-      home: Center(
-        child: SizedBox(
-          width: 200,
-          height: 246,
-          child: DownloadedAlbumView(
-            album: album,
-            onDelete: onDelete,
-            testKeys: keys,
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 200,
+            height: 246,
+            child: DownloadedAlbumView(
+              album: album,
+              onDelete: onDelete,
+              testKeys: keys,
+            ),
           ),
         ),
       ),
@@ -86,6 +88,27 @@ void main() {
         );
         await widgetTester.pumpAndSettle();
         expect(deleteCounter, equals(1));
+      },
+    );
+
+    testWidgets(
+      '- confirms the removal with a message',
+      (widgetTester) async {
+        await widgetTester.pumpWidget(
+          getWidgetUT(album: mockAlbum, onDelete: (_) {}),
+        );
+        await widgetTester.pump(Duration.zero);
+        await widgetTester.tap(find.byKey(keys.deleteButton));
+        await widgetTester.pumpAndSettle();
+        await widgetTester.tap(
+          find.widgetWithText(AdaptiveDialogAction, 'Yes'),
+        );
+        await widgetTester.pumpAndSettle();
+
+        expect(
+          find.text('Removed "${mockAlbum.item.name}" from downloads'),
+          findsOneWidget,
+        );
       },
     );
   });
