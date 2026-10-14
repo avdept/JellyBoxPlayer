@@ -109,6 +109,30 @@ void main() {
       expect(sorted.map((p) => p.id), ['new', 'old']);
     });
 
+    test('- sorts songs by when they were liked, not by the raw text', () {
+      final songs = [
+        const SubsonicChildDTO(id: 'early', starred: '2026-03-01T10:00:00Z'),
+        const SubsonicChildDTO(id: 'later', starred: '2026-03-01T10:00:00.5Z'),
+        const SubsonicChildDTO(id: 'latest', starred: '2026-05-01T08:00:00Z'),
+      ];
+      expect(
+        subsonicSortSongs(
+          songs,
+          ItemSort.dateLiked,
+          SortDirection.descending,
+        ).map((s) => s.id),
+        ['latest', 'later', 'early'],
+      );
+      expect(
+        subsonicSortSongs(
+          songs,
+          ItemSort.dateLiked,
+          SortDirection.ascending,
+        ).map((s) => s.id),
+        ['early', 'later', 'latest'],
+      );
+    });
+
     test('- keeps album order for songs when asked for it', () {
       final songs = [
         const SubsonicChildDTO(id: 'z', title: 'Zed'),

@@ -8,8 +8,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
 import 'package:jplayer/src/presentation/widgets/custom_scrollbar.dart';
 import 'package:jplayer/src/presentation/widgets/gradient_background.dart';
-import 'package:jplayer/src/presentation/widgets/play_button.dart';
-import 'package:jplayer/src/presentation/widgets/random_queue_button.dart';
+import 'package:jplayer/src/presentation/widgets/playlist_controls.dart';
 
 class MixPageScaffold extends StatefulWidget {
   const MixPageScaffold({
@@ -17,13 +16,14 @@ class MixPageScaffold extends StatefulWidget {
     required this.songs,
     required this.coverImages,
     required this.onPlay,
+    required this.onShuffle,
     required this.slivers,
     this.subtitle,
     this.previousPageTitle,
     this.isPlayLoading = false,
     this.songCount,
     this.onLoadMore,
-    this.navTrailing,
+    this.sort,
     this.actions = const [],
     super.key,
   });
@@ -34,10 +34,11 @@ class MixPageScaffold extends StatefulWidget {
   final List<LibraryItem> songs;
   final List<ImageProvider> coverImages;
   final VoidCallback onPlay;
+  final VoidCallback onShuffle;
   final bool isPlayLoading;
   final int? songCount;
   final Future<void> Function()? onLoadMore;
-  final Widget? navTrailing;
+  final Widget? sort;
   final List<Widget> actions;
   final List<Widget> slivers;
 
@@ -116,7 +117,6 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
                 backgroundColor: Colors.transparent,
                 enableBackgroundFilterBlur: false,
                 padding: EdgeInsetsDirectional.symmetric(horizontal: _edge),
-                trailing: widget.navTrailing,
                 middle: ValueListenableBuilder(
                   valueListenable: _titleOpacity,
                   builder: (context, opacity, child) => Transform.translate(
@@ -143,6 +143,7 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
                         _desktopHeader()
                       else
                         ..._stackedHeader(),
+                      _controls(),
                       ...widget.slivers,
                     ],
                   ),
@@ -226,21 +227,6 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
             ],
           ),
         ),
-        const SizedBox(width: 35),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...widget.actions,
-            const RandomQueueButton(),
-            SizedBox.square(
-              dimension: 48,
-              child: PlayButton(
-                isLoading: widget.isPlayLoading,
-                onPressed: widget.onPlay,
-              ),
-            ),
-          ],
-        ),
       ],
     ),
   );
@@ -253,27 +239,23 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
       children: [
         _title(),
         Text(widget.subtitle ?? ''),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _details(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ...widget.actions,
-                const RandomQueueButton(),
-                SizedBox.square(
-                  dimension: _device.isMobile ? 38 : 48,
-                  child: PlayButton(
-                    isLoading: widget.isPlayLoading,
-                    onPressed: widget.onPlay,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        Row(children: [_details()]),
       ],
+    ),
+  );
+
+  Widget _controls() => SliverPadding(
+    padding: EdgeInsets.fromLTRB(_edge, _device.isMobile ? 12 : 4, _edge, 8),
+    sliver: SliverToBoxAdapter(
+      child: PlaylistControls(
+        onPlay: widget.onPlay,
+        onShuffle: widget.onShuffle,
+        isPlayLoading: widget.isPlayLoading,
+        download: widget.actions.isEmpty
+            ? null
+            : Row(mainAxisSize: MainAxisSize.min, children: widget.actions),
+        sort: widget.sort,
+      ),
     ),
   );
 

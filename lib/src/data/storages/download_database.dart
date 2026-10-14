@@ -415,6 +415,21 @@ class DownloadDatabase {
     return results.map(_downloadedSongFromRow).toList();
   }
 
+  Future<List<DownloadedSong>> getStandaloneSongs() async {
+    final db = await database;
+    final results = await db.rawQuery(
+      'SELECT d.* FROM Downloads d '
+      'WHERE d.ServerId = ? AND d.Pending = 0 '
+      'AND NOT EXISTS (SELECT 1 FROM PlaylistSongs ps '
+      'WHERE ps.SongId = d.Id AND ps.ServerId = d.ServerId) '
+      'AND NOT EXISTS (SELECT 1 FROM Albums a '
+      'WHERE a.Id = d.AlbumId AND a.ServerId = d.ServerId) '
+      'ORDER BY d.DownloadDate DESC',
+      [serverId],
+    );
+    return results.map(_downloadedSongFromRow).toList();
+  }
+
   Future<List<DownloadedAlbum>> getDownloadedAlbums() async {
     final db = await database;
     final results = await db.query(

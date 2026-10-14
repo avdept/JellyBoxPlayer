@@ -17,6 +17,7 @@ String subsonicAlbumListType(ItemSort sort) => switch (sort) {
   ItemSort.playCount => subsonicFrequentListType,
   ItemSort.random => 'random',
   ItemSort.releaseDate ||
+  ItemSort.dateLiked ||
   ItemSort.dateLastContentAdded ||
   ItemSort.albumOrder => 'alphabeticalByName',
 };
@@ -37,6 +38,9 @@ LibraryPage subsonicOpenPage(
 
 int subsonicCompareNames(String? a, String? b) =>
     (a ?? '').toLowerCase().compareTo((b ?? '').toLowerCase());
+
+DateTime? subsonicStarredAt(String? starred) =>
+    starred == null ? null : DateTime.tryParse(starred);
 
 int _compareNullable<T extends Comparable<T>>(T? a, T? b) {
   if (a == null && b == null) return 0;
@@ -149,6 +153,10 @@ Comparator<SubsonicAlbumDTO>? subsonicAlbumComparator(ItemSort sort) =>
       ),
       ItemSort.playCount => (a, b) => a.playCount.compareTo(b.playCount),
       ItemSort.datePlayed => (a, b) => _compareNullable(a.played, b.played),
+      ItemSort.dateLiked => (a, b) => _compareNullable(
+        subsonicStarredAt(a.starred),
+        subsonicStarredAt(b.starred),
+      ),
       ItemSort.name || ItemSort.albumOrder => (a, b) => subsonicCompareNames(
         a.sortName ?? a.name,
         b.sortName ?? b.name,
@@ -197,5 +205,9 @@ Comparator<SubsonicChildDTO>? subsonicSongComparator(ItemSort sort) =>
       ItemSort.playCount => (a, b) => a.playCount.compareTo(b.playCount),
       ItemSort.datePlayed => (a, b) => _compareNullable(a.played, b.played),
       ItemSort.releaseDate => (a, b) => _compareNullable(a.year, b.year),
+      ItemSort.dateLiked => (a, b) => _compareNullable(
+        subsonicStarredAt(a.starred),
+        subsonicStarredAt(b.starred),
+      ),
       ItemSort.dateLastContentAdded || ItemSort.albumOrder => null,
     };

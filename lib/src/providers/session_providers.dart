@@ -13,6 +13,7 @@ final sessionScopedProviders = <ProviderOrFamily>[
   forwardCacheProvider,
   downloadedAlbumsProvider,
   downloadedPlaylistsProvider,
+  standaloneDownloadedSongsProvider,
   currentDayProvider,
   filterProvider,
   carFilterProvider,

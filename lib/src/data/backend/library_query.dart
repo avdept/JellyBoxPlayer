@@ -6,6 +6,7 @@ enum ItemSort {
   dateCreated,
   releaseDate,
   datePlayed,
+  dateLiked,
   playCount,
   dateLastContentAdded,
   albumOrder,
@@ -92,6 +93,7 @@ extension EntityFilterSort on EntityFilter {
     EntityFilter.sortName => ItemSort.name,
     EntityFilter.albumArtist => ItemSort.albumArtist,
     EntityFilter.dateCreated => ItemSort.dateCreated,
+    EntityFilter.dateLiked => ItemSort.dateLiked,
     EntityFilter.random => ItemSort.random,
   };
 }

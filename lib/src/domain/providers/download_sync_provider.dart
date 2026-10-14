@@ -122,10 +122,7 @@ class DownloadSync {
     return _ref.read(networkTypeProvider) == NetworkType.wifi;
   }
 
-  Future<void> _syncOne(
-    DownloadManager manager,
-    LibraryItem playlist,
-  ) async {
+  Future<void> _syncOne(DownloadManager manager, LibraryItem playlist) async {
     final kind = EphemeralPlaylistId.parse(playlist.id)?.kind;
     if (kind == EphemeralPlaylistKind.likedSongs &&
         EphemeralPlaylistId.parse(playlist.id)!.key !=

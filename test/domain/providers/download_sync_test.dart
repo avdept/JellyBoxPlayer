@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -60,6 +62,7 @@ void main() {
     registerFallbackValue(_song('fallback'));
     registerFallbackValue(ImageKind.primary);
     registerFallbackValue(_MockMediaServerClient());
+    registerFallbackValue(const LibraryQuery());
   });
 
   setUp(() async {
@@ -316,6 +319,44 @@ void main() {
       await settle();
 
       expect(fetched, ['b']);
+    });
+
+    test('- downloads each new like into Liked songs in turn', () async {
+      final container = await signedIn();
+      final liked = likedSongsPlaylistFor('user');
+      var favourites = [_song('x')];
+      when(
+        () => client.capabilities,
+      ).thenReturn(const MediaServerCapabilities());
+      when(() => client.getAllSongs(any())).thenAnswer(
+        (_) async => LibraryPage(
+          items: favourites,
+          totalRecordCount: favourites.length,
+        ),
+      );
+      await container.read(downloadManagerProvider).downloadPlaylist(liked, [
+        _song('x'),
+      ]);
+      serverSongs = [_song('a')];
+      container.read(downloadSyncProvider);
+      await settle();
+      fetched.clear();
+
+      favourites = [_song('b'), _song('x')];
+      container.read(favouritesChangedProvider.notifier).state++;
+      await settle();
+      expect(fetched, ['b'], reason: 'first like');
+
+      favourites = [_song('c'), _song('b'), _song('x')];
+      container.read(favouritesChangedProvider.notifier).state++;
+      await settle();
+      expect(fetched, ['b', 'c'], reason: 'second like');
+
+      final ids = [
+        for (final s in await database.getDownloadedPlaylistSongs(liked.id))
+          s.item.id,
+      ];
+      expect(ids, ['c', 'b', 'x']);
     });
   });
 }

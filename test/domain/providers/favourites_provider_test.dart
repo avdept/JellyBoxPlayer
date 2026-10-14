@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -94,5 +95,47 @@ void main() {
 
       expect(items, [_playlist, album]);
     });
+  });
+
+  group('liked songs order', () {
+    test('- defaults to newest liked when the server knows like times', () {
+      final filter = defaultLikedSongsFilter(
+        const MediaServerCapabilities(likedTimestamp: true),
+      );
+      expect(filter.orderBy, EntityFilter.dateLiked);
+      expect(filter.desc, isTrue);
+    });
+
+    test('- falls back to newest added when it does not', () {
+      final filter = defaultLikedSongsFilter(const MediaServerCapabilities());
+      expect(filter.orderBy, EntityFilter.dateCreated);
+      expect(filter.desc, isTrue);
+    });
+
+    for (final (likedTimestamp, expected) in [
+      (true, ItemSort.dateLiked),
+      (false, ItemSort.dateCreated),
+    ]) {
+      test(
+        '- fetching every liked song uses the default order '
+        '(like times known: $likedTimestamp)',
+        () async {
+          when(() => client.capabilities).thenReturn(
+            MediaServerCapabilities(likedTimestamp: likedTimestamp),
+          );
+          when(() => client.getAllSongs(any())).thenAnswer(
+            (_) async => const LibraryPage(),
+          );
+
+          await fetchAllFavouriteSongs(client);
+
+          final query =
+              verify(() => client.getAllSongs(captureAny())).captured.single
+                  as LibraryQuery;
+          expect(query.sort, expected);
+          expect(query.direction, SortDirection.descending);
+        },
+      );
+    }
   });
 }

@@ -426,6 +426,29 @@ void main() {
       expect(uri.queryParameters['musicFolderId'], '1');
     });
 
+    test('- liked songs can be ordered by when they were liked', () async {
+      server.ok('getStarred2', {
+        'starred2': {
+          'song': [
+            {...childJson('old'), 'starred': '2026-01-05T09:00:00Z'},
+            {...childJson('new'), 'starred': '2026-04-10T21:30:00.123Z'},
+            {...childJson('mid'), 'starred': '2026-02-20T12:00:00Z'},
+          ],
+        },
+      });
+
+      final page = await client.getAllSongs(
+        const LibraryQuery(
+          filters: {ItemFilterFlag.favorite},
+          sort: ItemSort.dateLiked,
+          direction: SortDirection.descending,
+        ),
+      );
+
+      expect(client.capabilities.likedTimestamp, isTrue);
+      expect(page.items.map((s) => s.id), ['new', 'mid', 'old']);
+    });
+
     test('- random songs use getRandomSongs', () async {
       server.ok('getRandomSongs', {
         'randomSongs': {

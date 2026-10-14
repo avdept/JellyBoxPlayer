@@ -139,8 +139,12 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
       ),
     );
     if ((shouldDelete ?? false) && mounted) {
+      final messenger = ScaffoldMessenger.maybeOf(context);
       setState(() => _isBusy = true);
       await widget.onDelete?.call();
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Removed "${widget.item.name}" from downloads')),
+      );
       _isBusy = false;
       if (mounted) setState(() {});
     }

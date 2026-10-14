@@ -258,14 +258,13 @@ class SongRowView extends ConsumerWidget {
                 color: Colors.green,
               ),
             if (isDesktop)
-              IconButton(
+              HoverIconButton(
                 onPressed: onLikePressed != null
                     ? () => onLikePressed!(song)
                     : null,
-                icon: Icon(
-                  CupertinoIcons.heart,
-                  color: theme.colorScheme.onPrimary,
-                ),
+                icon: const Icon(CupertinoIcons.heart),
+                color: theme.colorScheme.onPrimary,
+                hoverColor: HoverIconButton.mutedAccent(context),
                 selectedIcon: Icon(
                   CupertinoIcons.heart_fill,
                   color: theme.colorScheme.primary,
