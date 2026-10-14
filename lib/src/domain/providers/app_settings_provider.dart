@@ -20,7 +20,7 @@ enum AppSetting {
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
-  letterRuler('letter_ruler'),
+  letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   playerVolume('player_volume', defaultValue: 1.0),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
