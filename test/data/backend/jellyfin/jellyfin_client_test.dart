@@ -906,6 +906,7 @@ void main() {
         'Url': 'https://abc.tunnel.jellybox.app',
         'Fingerprint': 'AB12',
         'Connected': true,
+        'PluginVersion': '0.12.0.0',
       });
 
       expect(
@@ -949,11 +950,45 @@ void main() {
     });
 
     test('- carries the reason when this user gets no seat', () async {
-      respond(200, {'Url': null, 'Fingerprint': 'ab12', 'Reason': 'plan_full'});
+      respond(200, {
+        'Url': null,
+        'Fingerprint': 'ab12',
+        'Reason': 'plan_full',
+        'PluginVersion': '0.12.0.0',
+      });
 
       expect(
         await remoteClient.remoteAccess(),
         const RemoteAccessResult(denied: 'plan_full'),
+      );
+    });
+
+    test('- passes on what the relay told the plugin', () async {
+      respond(200, {
+        'Url': null,
+        'PluginVersion': '0.12.0.0',
+        'Notice': {
+          'Code': 'update_available',
+          'Level': 'warning',
+          'Message': 'Update the plugin.',
+        },
+      });
+
+      expect(
+        (await remoteClient.remoteAccess())?.notice,
+        const PluginNotice(
+          code: 'update_available',
+          message: 'Update the plugin.',
+        ),
+      );
+    });
+
+    test('- takes a plugin that reports no version for outdated', () async {
+      respond(200, {'Url': null, 'Fingerprint': 'ab12'});
+
+      expect(
+        (await remoteClient.remoteAccess())?.notice,
+        PluginNotice.outdated,
       );
     });
 

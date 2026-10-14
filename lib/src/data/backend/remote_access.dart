@@ -18,18 +18,37 @@ class RemoteAccess {
 }
 
 @immutable
+class PluginNotice {
+  const PluginNotice({required this.code, this.message});
+
+  static const outdated = PluginNotice(code: 'plugin_outdated');
+
+  final String code;
+  final String? message;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PluginNotice && other.code == code && other.message == message;
+
+  @override
+  int get hashCode => Object.hash(code, message);
+}
+
+@immutable
 class RemoteAccessResult {
-  const RemoteAccessResult({this.access, this.denied});
+  const RemoteAccessResult({this.access, this.denied, this.notice});
 
   final RemoteAccess? access;
   final String? denied;
+  final PluginNotice? notice;
 
   @override
   bool operator ==(Object other) =>
       other is RemoteAccessResult &&
       other.access == access &&
-      other.denied == denied;
+      other.denied == denied &&
+      other.notice == notice;
 
   @override
-  int get hashCode => Object.hash(access, denied);
+  int get hashCode => Object.hash(access, denied, notice);
 }

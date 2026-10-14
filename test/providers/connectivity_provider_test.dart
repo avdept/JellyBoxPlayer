@@ -464,4 +464,25 @@ void main() {
     expect(addresses?.relay, isNull);
     expect(addresses?.relayDenied, 'plan_full');
   });
+
+  test('- holds the plugin notice until it is dismissed', () async {
+    hosts.status['192.168.1.10'] = 200;
+    when(() => client.remoteAccess()).thenAnswer(
+      (_) async => const RemoteAccessResult(
+        denied: 'plan_full',
+        notice: PluginNotice.outdated,
+      ),
+    );
+    final container = start(knownRelay: relay);
+
+    await probe(container);
+    await pumpEventQueue();
+
+    expect(container.read(visiblePluginNoticeProvider), PluginNotice.outdated);
+    expect(container.read(serverAddressesProvider)?.relayDenied, 'plan_full');
+
+    container.read(dismissedPluginNoticeProvider.notifier).state =
+        PluginNotice.outdated;
+    expect(container.read(visiblePluginNoticeProvider), isNull);
+  });
 }
