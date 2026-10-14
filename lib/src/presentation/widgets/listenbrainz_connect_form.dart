@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/listenbrainz/listenbrainz_client.dart';
 import 'package:jplayer/src/domain/providers/listenbrainz_account_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/labeled_text_field.dart';
@@ -27,12 +28,16 @@ class ListenBrainzConnectForm extends ConsumerStatefulWidget {
 class _ListenBrainzConnectFormState
     extends ConsumerState<ListenBrainzConnectForm> {
   final _tokenController = TextEditingController();
+  late final _apiUrlController = TextEditingController(
+    text: ref.read(listenBrainzAccountProvider).apiUrl,
+  );
   String? _error;
   var _submitting = false;
 
   @override
   void dispose() {
     _tokenController.dispose();
+    _apiUrlController.dispose();
     super.dispose();
   }
 
@@ -44,7 +49,7 @@ class _ListenBrainzConnectFormState
     });
     final connected = await ref
         .read(listenBrainzAccountProvider.notifier)
-        .connect(_tokenController.text);
+        .connect(_tokenController.text, apiUrl: _apiUrlController.text);
     if (!mounted) return;
     if (connected) {
       Navigator.of(context).pop();
@@ -77,7 +82,16 @@ class _ListenBrainzConnectFormState
           ),
           const SizedBox(height: 16),
           LabeledTextField(
+            controller: _apiUrlController,
+            label: 'API URL',
+            placeholder: ListenBrainzClient.defaultApiUrl,
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 12),
+          LabeledTextField(
             controller: _tokenController,
+            label: 'User token',
             placeholder: 'User token',
             obscureText: true,
             autofocus: true,
@@ -91,19 +105,30 @@ class _ListenBrainzConnectFormState
                 style: TextStyle(fontSize: 13, color: theme.colorScheme.error),
               ),
             ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: () => unawaited(
-                launchUrl(
-                  ListenBrainzConnectForm.tokenPageUri,
-                  mode: LaunchMode.externalApplication,
+          ValueListenableBuilder(
+            valueListenable: _apiUrlController,
+            builder: (context, value, _) {
+              if (ListenBrainzClient.normalizeApiUrl(value.text) !=
+                  ListenBrainzClient.defaultApiUrl) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => unawaited(
+                      launchUrl(
+                        ListenBrainzConnectForm.tokenPageUri,
+                        mode: LaunchMode.externalApplication,
+                      ),
+                    ),
+                    style: ModalFormActions.buttonStyle(context),
+                    child: const Text('Get your token from listenbrainz.org'),
+                  ),
                 ),
-              ),
-              style: ModalFormActions.buttonStyle(context),
-              child: const Text('Get your token from listenbrainz.org'),
-            ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           ModalFormActions(

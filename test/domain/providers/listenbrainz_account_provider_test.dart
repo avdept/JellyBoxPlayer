@@ -17,12 +17,20 @@ class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class _FakeClient extends ListenBrainzClient {
   final users = <String, String>{'good': 'alex'};
+  final apiUrls = <String>[];
   ScrobbleException? failWith;
   Future<String> Function(String token)? validate;
 
   @override
-  Future<String> validateToken(String token) async {
+  Future<String> validateToken(
+    String token, {
+    String apiUrl = ListenBrainzClient.defaultApiUrl,
+  }) async {
+    apiUrls.add(apiUrl);
     if (validate case final override?) return override(token);
+    if (apiUrl.contains('jellyfin')) {
+      throw NotListenBrainzServerException(apiUrl);
+    }
     if (failWith case final error?) throw error;
     final user = users[token];
     if (user == null) {
@@ -103,6 +111,62 @@ void main() {
     expect(settings.valueOf(AppSetting.listenBrainzUser), 'alex');
   });
 
+  test('connect validates against a custom API URL and remembers it', () async {
+    final container = build();
+    await settled(container);
+
+    final ok = await container
+        .read(listenBrainzAccountProvider.notifier)
+        .connect('good', apiUrl: 'lb.example.com/1/');
+
+    expect(ok, isTrue);
+    expect(client.apiUrls.single, 'https://lb.example.com');
+    expect(
+      container.read(listenBrainzAccountProvider).apiUrl,
+      'https://lb.example.com',
+    );
+    expect(
+      container
+          .read(appSettingsProvider.notifier)
+          .valueOf(AppSetting.listenBrainzApiUrl),
+      'https://lb.example.com',
+    );
+  });
+
+  test('connect rejects an invalid API URL without calling it', () async {
+    final container = build();
+    await settled(container);
+
+    final ok = await container
+        .read(listenBrainzAccountProvider.notifier)
+        .connect('good', apiUrl: 'ftp://lb.example.com');
+
+    expect(ok, isFalse);
+    expect(client.apiUrls, isEmpty);
+    expect(container.read(listenBrainzAccountProvider).error, isNotNull);
+  });
+
+  test('connect reports an address that is not ListenBrainz', () async {
+    final container = build();
+    await settled(container);
+
+    final ok = await container
+        .read(listenBrainzAccountProvider.notifier)
+        .connect('good', apiUrl: 'https://jellyfin.home');
+
+    expect(ok, isFalse);
+    expect(
+      container.read(listenBrainzAccountProvider).error,
+      'https://jellyfin.home is not a ListenBrainz server',
+    );
+    verifyNever(
+      () => storage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    );
+  });
+
   test('connect reports a rejected token without storing it', () async {
     final container = build();
     await settled(container);
@@ -146,6 +210,23 @@ void main() {
     expect(account.status, ListenBrainzStatus.connected);
     expect(account.userName, 'alex');
     expect(account.token, 'stored');
+    expect(account.apiUrl, ListenBrainzClient.defaultApiUrl);
+  });
+
+  test('restores a custom API URL', () async {
+    SharedPreferences.setMockInitialValues({
+      'app_settings':
+          '{"listenbrainz_user":"alex",'
+          '"listenbrainz_api_url":"https://lb.example.com"}',
+    });
+    when(
+      () => storage.read(key: ListenBrainzAccountNotifier.tokenKey),
+    ).thenAnswer((_) async => 'stored');
+
+    final account = await settled(build());
+
+    expect(account.status, ListenBrainzStatus.connected);
+    expect(account.apiUrl, 'https://lb.example.com');
   });
 
   test('disconnect forgets the token and the user', () async {
@@ -153,7 +234,9 @@ void main() {
       () => storage.read(key: ListenBrainzAccountNotifier.tokenKey),
     ).thenAnswer((_) async => 'stored');
     SharedPreferences.setMockInitialValues({
-      'app_settings': '{"listenbrainz_user":"alex"}',
+      'app_settings':
+          '{"listenbrainz_user":"alex",'
+          '"listenbrainz_api_url":"https://lb.example.com"}',
     });
     final container = build();
     await settled(container);
@@ -171,6 +254,12 @@ void main() {
       container
           .read(appSettingsProvider.notifier)
           .valueOf(AppSetting.listenBrainzUser),
+      isEmpty,
+    );
+    expect(
+      container
+          .read(appSettingsProvider.notifier)
+          .valueOf(AppSetting.listenBrainzApiUrl),
       isEmpty,
     );
   });

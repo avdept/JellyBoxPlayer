@@ -57,6 +57,55 @@ void main() {
     expect(request.headers['Authorization'], 'Token secret');
   });
 
+  test('validateToken uses a custom API URL', () async {
+    respond(200, {'code': 200, 'valid': true, 'user_name': 'alex'});
+
+    await client.validateToken('secret', apiUrl: 'http://lb.local:8100');
+
+    expect(
+      sentRequest().uri.toString(),
+      'http://lb.local:8100/1/validate-token',
+    );
+  });
+
+  test('validateToken flags a server that is not ListenBrainz', () async {
+    final notListenBrainz = throwsA(isA<NotListenBrainzServerException>());
+
+    respond(404, {'detail': 'Not Found'});
+    await expectLater(client.validateToken('secret'), notListenBrainz);
+
+    respond(200, {'status': 'ok'});
+    await expectLater(client.validateToken('secret'), notListenBrainz);
+
+    when(() => adapter.fetch(any(), any(), any())).thenAnswer(
+      (_) async => ResponseBody.fromString(
+        '<html></html>',
+        200,
+        headers: {
+          Headers.contentTypeHeader: ['text/html'],
+        },
+      ),
+    );
+    await expectLater(client.validateToken('secret'), notListenBrainz);
+  });
+
+  test('normalizeApiUrl defaults, adds a scheme and trims the version', () {
+    expect(
+      ListenBrainzClient.normalizeApiUrl('  '),
+      ListenBrainzClient.defaultApiUrl,
+    );
+    expect(
+      ListenBrainzClient.normalizeApiUrl('lb.example.com/'),
+      'https://lb.example.com',
+    );
+    expect(
+      ListenBrainzClient.normalizeApiUrl('http://lb.local:8100/1/'),
+      'http://lb.local:8100',
+    );
+    expect(ListenBrainzClient.normalizeApiUrl('ftp://lb.local'), isNull);
+    expect(ListenBrainzClient.normalizeApiUrl('https://'), isNull);
+  });
+
   test('validateToken rejects a token the server marks invalid', () async {
     respond(200, {'code': 200, 'valid': false, 'message': 'Invalid token.'});
 

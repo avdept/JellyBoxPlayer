@@ -72,6 +72,7 @@ class ListenBrainzScrobbler implements Scrobbler {
       token: token,
       listenType: listenType,
       payload: payload,
+      apiUrl: account.apiUrl,
     );
   }
 }

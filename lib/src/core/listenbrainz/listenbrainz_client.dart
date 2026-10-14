@@ -8,10 +8,19 @@ abstract final class ListenType {
   static const import = 'import';
 }
 
+class NotListenBrainzServerException implements Exception {
+  const NotListenBrainzServerException(this.apiUrl);
+
+  final String apiUrl;
+
+  @override
+  String toString() => 'NotListenBrainzServerException: $apiUrl';
+}
+
 class ListenBrainzClient {
   ListenBrainzClient();
 
-  static const apiUrl = 'https://api.listenbrainz.org';
+  static const defaultApiUrl = 'https://api.listenbrainz.org';
   static const _timeout = Duration(seconds: 15);
 
   final Dio _dio = Dio(
@@ -25,14 +34,43 @@ class ListenBrainzClient {
   @visibleForTesting
   Dio get dio => _dio;
 
-  Future<String> validateToken(String token) async {
-    final response = await _request(
-      () => _dio.get<Map<String, dynamic>>(
-        '$apiUrl/1/validate-token',
-        options: _options(token),
-      ),
-    );
-    final data = response.data ?? const <String, dynamic>{};
+  static String? normalizeApiUrl(String input) {
+    var value = input.trim();
+    if (value.isEmpty) return defaultApiUrl;
+    if (!value.contains('://')) value = 'https://$value';
+    value = value.replaceFirst(RegExp(r'/+$'), '');
+    value = value.replaceFirst(RegExp(r'/1$'), '');
+    final uri = Uri.tryParse(value);
+    if (uri == null ||
+        !(uri.scheme == 'http' || uri.scheme == 'https') ||
+        uri.host.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  Future<String> validateToken(
+    String token, {
+    String apiUrl = defaultApiUrl,
+  }) async {
+    final Response<Object?> response;
+    try {
+      response = await _request(
+        () => _dio.get<Object?>(
+          '$apiUrl/1/validate-token',
+          options: _options(token),
+        ),
+      );
+    } on ScrobbleException catch (error) {
+      if (error.statusCode == 404) {
+        throw NotListenBrainzServerException(apiUrl);
+      }
+      rethrow;
+    }
+    final data = response.data;
+    if (data is! Map || !data.containsKey('valid')) {
+      throw NotListenBrainzServerException(apiUrl);
+    }
     if (data['valid'] == true && data['user_name'] is String) {
       return data['user_name'] as String;
     }
@@ -46,6 +84,7 @@ class ListenBrainzClient {
     required String token,
     required String listenType,
     required List<Map<String, Object?>> payload,
+    String apiUrl = defaultApiUrl,
   }) async {
     await _request(
       () => _dio.post<void>(
