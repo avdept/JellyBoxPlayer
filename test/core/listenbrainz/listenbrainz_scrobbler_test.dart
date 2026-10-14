@@ -16,11 +16,12 @@ class _StubAccount extends ListenBrainzAccountNotifier {
 }
 
 class _Submission {
-  const _Submission(this.token, this.listenType, this.payload);
+  const _Submission(this.token, this.listenType, this.payload, this.apiUrl);
 
   final String token;
   final String listenType;
   final List<Map<String, Object?>> payload;
+  final String apiUrl;
 }
 
 class _FakeClient extends ListenBrainzClient {
@@ -31,8 +32,9 @@ class _FakeClient extends ListenBrainzClient {
     required String token,
     required String listenType,
     required List<Map<String, Object?>> payload,
+    String apiUrl = ListenBrainzClient.defaultApiUrl,
   }) async {
-    submissions.add(_Submission(token, listenType, payload));
+    submissions.add(_Submission(token, listenType, payload, apiUrl));
   }
 }
 
@@ -114,6 +116,20 @@ void main() {
     expect(client.submissions[0].payload.single['listened_at'], 1789905600);
     expect(client.submissions[1].listenType, ListenType.import);
     expect(client.submissions[1].payload, hasLength(2));
+  });
+
+  test('submits to the account API URL', () async {
+    build(
+      const ListenBrainzAccount(
+        status: ListenBrainzStatus.connected,
+        userName: 'alex',
+        token: 'secret',
+        apiUrl: 'https://lb.example.com',
+      ),
+    );
+    await scrobbler.scrobble([listen]);
+
+    expect(client.submissions.single.apiUrl, 'https://lb.example.com');
   });
 
   test('refuses to submit without a connected account', () async {
