@@ -331,7 +331,6 @@ class _FadeOutCoverDelegate extends SliverPersistentHeaderDelegate {
   ) => Opacity(
     opacity: max((maxExtent - shrinkOffset * 1.5) / maxExtent, 0),
     child: Align(
-      alignment: Alignment.centerLeft,
       child: SizedBox.square(
         dimension: max(maxExtent - shrinkOffset, 0),
         child: CoverMosaic(images: images),
