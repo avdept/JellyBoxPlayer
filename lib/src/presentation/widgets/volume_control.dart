@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/device_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
 const _buttonSize = 44.0;
 const _sliderLength = 150.0;
@@ -149,12 +150,12 @@ class _VolumeControlState extends ConsumerState<VolumeControl>
     ),
   );
 
-  Widget _muteButton(ThemeData theme, VolumeState volume) => IconButton(
+  Widget _muteButton(ThemeData theme, VolumeState volume) => HoverIconButton(
     onPressed: _toggleMute,
-    padding: EdgeInsets.zero,
-    constraints: BoxConstraints.tightFor(
-      width: widget.size,
-      height: widget.size,
+    style: ButtonStyle(
+      padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+      minimumSize: WidgetStatePropertyAll(Size.square(widget.size)),
+      maximumSize: WidgetStatePropertyAll(Size.square(widget.size)),
     ),
     color: _tint(theme),
     iconSize: widget.size * 0.55,
@@ -203,7 +204,7 @@ class _DeviceVolumeSliderState extends ConsumerState<DeviceVolumeSlider>
       padding: widget.padding,
       child: Row(
         children: [
-          IconButton(
+          HoverIconButton(
             onPressed: _toggleMute,
             tooltip: volume.isSilent ? 'Unmute' : 'Mute',
             iconSize: 20,

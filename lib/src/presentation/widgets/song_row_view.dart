@@ -264,11 +264,8 @@ class SongRowView extends ConsumerWidget {
                     : null,
                 icon: const Icon(CupertinoIcons.heart),
                 color: theme.colorScheme.onPrimary,
-                hoverColor: HoverIconButton.mutedAccent(context),
-                selectedIcon: Icon(
-                  CupertinoIcons.heart_fill,
-                  color: theme.colorScheme.primary,
-                ),
+                mutedHover: true,
+                selectedIcon: const Icon(CupertinoIcons.heart_fill),
                 isSelected: song.userData.isFavorite,
               ),
             if (optionsBuilder != null)

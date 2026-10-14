@@ -134,17 +134,6 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                         size: isTablet ? 28 : 22,
                       ),
                     ),
-                  if (widget.optionsBuilder != null)
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: ContextMenuButton(
-                        actionsBuilder: widget.optionsBuilder!,
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black45,
-                        ),
-                      ),
-                    ),
                   if (widget.onPlayPressed != null)
                     Positioned(
                       right: 8,

@@ -14,6 +14,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
 import 'package:jplayer/src/presentation/widgets/desktop_window_chrome.dart';
 import 'package:jplayer/src/presentation/widgets/flip_panel.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
@@ -290,9 +291,10 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                       children: [
                         _lyricsButton(),
                         const SizedBox(width: 4),
-                        IconButton(
+                        HoverIconButton(
                           onPressed: _close,
                           color: Colors.white,
+                          iconSize: 24,
                           tooltip: 'Exit studio mode',
                           icon: const Icon(Icons.fullscreen_exit),
                         ),
@@ -353,10 +355,11 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     builder: (context, ref, _) {
       final hasLyrics = ref.watch(currentSongHasLyricsProvider);
       final showLyrics = ref.watch(studioModeLyricsProvider);
-      return IconButton(
+      return HoverIconButton(
         onPressed: hasLyrics || showLyrics ? _toggleLyrics : null,
         color: Colors.white,
         disabledColor: Colors.white.withValues(alpha: 0.3),
+        iconSize: 24,
         tooltip: switch ((hasLyrics, showLyrics)) {
           (_, true) => 'Hide lyrics',
           (true, false) => 'Lyrics',
@@ -448,9 +451,10 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
+            HoverIconButton(
               onPressed: ref.read(playbackProvider.notifier).prev,
               color: Colors.white,
+              iconSize: 28,
               icon: const Icon(Entypo.fast_backward),
             ),
             const SizedBox(width: 16),
@@ -466,9 +470,10 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
               ),
             ),
             const SizedBox(width: 16),
-            IconButton(
+            HoverIconButton(
               onPressed: ref.read(playbackProvider.notifier).next,
               color: Colors.white,
+              iconSize: 28,
               icon: const Icon(Entypo.fast_forward),
             ),
           ],

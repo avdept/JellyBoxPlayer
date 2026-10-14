@@ -10,6 +10,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class LyricsView extends ConsumerWidget {
@@ -123,20 +124,22 @@ class _LyricsPanel extends ConsumerWidget {
                 ],
               ),
             ),
-            IconButton(
+            HoverIconButton(
               onPressed: () {
                 ref.read(lyricsVisibleProvider.notifier).state = false;
                 ref.read(studioModeLyricsProvider.notifier).state = true;
                 ref.read(studioModeVisibleProvider.notifier).state = true;
               },
               color: Colors.white,
+              iconSize: 24,
               tooltip: 'Studio mode',
               icon: const Icon(Icons.fullscreen),
             ),
-            IconButton(
+            HoverIconButton(
               onPressed: () =>
                   ref.read(lyricsVisibleProvider.notifier).state = false,
               color: Colors.white,
+              iconSize: 24,
               tooltip: 'Close lyrics',
               icon: const Icon(Icons.close),
             ),

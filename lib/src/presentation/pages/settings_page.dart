@@ -260,6 +260,11 @@ class SettingsPage extends ConsumerWidget {
                     ),
                     _settingCheckbox(
                       ref: ref,
+                      setting: AppSetting.artworkAccent,
+                      label: 'Match button colours to the current track',
+                    ),
+                    _settingCheckbox(
+                      ref: ref,
                       setting: AppSetting.nowPlayingHalo,
                       label: 'Enable halo effect for currently playing media',
                     ),

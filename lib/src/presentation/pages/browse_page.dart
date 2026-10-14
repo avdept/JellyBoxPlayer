@@ -839,6 +839,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         final filter = ref.watch(filterProvider);
         return AppDropdown<EntityFilter>(
           icon: Icons.sort,
+          iconSize: _headerIconSize,
           value: filter.orderBy,
           onChanged: _applyProviderFilter,
           entries: [
@@ -876,6 +877,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       final layout = ref.watch(browseLayoutProvider);
       return AppDropdown<BrowseLayout>(
         icon: _layoutIcon(layout),
+        iconSize: _headerIconSize,
         value: layout,
         onChanged: (value) => ref
             .read(appSettingsProvider.notifier)
@@ -961,7 +963,10 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       const SizedBox(width: 12),
       LibrarySelectorButton(size: _device.isMobile ? 32 : 40),
       const SizedBox(width: 12),
-      UpdatifyBell(isDesktop: _device.isDesktop),
+      UpdatifyBell(
+        isDesktop: _device.isDesktop,
+        iconSize: _device.isDesktop ? 24 : 28,
+      ),
     ],
   );
 
@@ -996,8 +1001,13 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     ],
   );
 
-  Widget _searchButton() => IconButton(
+  double? get _headerIconSize => _device.isDesktop ? 20 : null;
+
+  Widget _searchButton() => HoverIconButton(
     onPressed: _openSearch,
+    iconSize: _headerIconSize ?? 24,
+    color: Theme.of(context).colorScheme.onPrimary,
+    tooltip: 'Search',
     icon: const Icon(JPlayer.search),
   );
 
@@ -1051,8 +1061,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         child: child,
       ),
       child: switch (currentView) {
-        ItemList.playlists => IconButton(
+        ItemList.playlists => HoverIconButton(
           onPressed: _onCreateNewPlaylist,
+          iconSize: _headerIconSize ?? 24,
+          color: Theme.of(context).colorScheme.onPrimary,
+          tooltip: 'New playlist',
           icon: const Icon(Icons.add),
         ),
         _ => const SizedBox.shrink(),

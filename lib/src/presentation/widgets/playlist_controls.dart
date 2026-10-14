@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -6,6 +7,7 @@ import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
 import 'package:jplayer/src/presentation/widgets/play_button.dart';
 import 'package:jplayer/src/presentation/widgets/sort_menu_button.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 Map<PlaylistSongSort, String> playlistSortOptions(String defaultLabel) => {
   PlaylistSongSort.playlistOrder: defaultLabel,
@@ -40,10 +42,12 @@ class PlaylistControls extends StatelessWidget {
           HoverZoom(
             builder: (context, hovered) => SizedBox.square(
               dimension: device.isMobile ? 40 : 40,
-              child: PlayButton(
-                isLoading: isPlayLoading,
-                onPressed: onPlay,
-                color: hovered ? Theme.of(context).colorScheme.primary : null,
+              child: Consumer(
+                builder: (context, ref, _) => PlayButton(
+                  isLoading: isPlayLoading,
+                  onPressed: onPlay,
+                  color: hovered ? ref.watch(accentColorProvider) : null,
+                ),
               ),
             ),
           ),

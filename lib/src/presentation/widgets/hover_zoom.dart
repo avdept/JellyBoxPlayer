@@ -5,7 +5,7 @@ class HoverZoom extends StatefulWidget {
     required this.builder,
     this.enabled = true,
     this.scale = 1.12,
-    this.pressedScale = 0.9,
+    this.pressedScale = 0.95,
     super.key,
   });
 

@@ -180,16 +180,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   Widget _queueButton() => ValueListenableBuilder<bool>(
     valueListenable: _queueShown,
-    builder: (context, isShown, _) => IconButton(
+    builder: (context, isShown, _) => HoverIconButton(
       onPressed: () => _queueShown.value = !isShown,
       color: _theme.colorScheme.onPrimary,
       iconSize: _isMobile ? 26 : 24,
       tooltip: isShown ? 'Hide queue' : 'Queue',
       icon: const Icon(Icons.queue_music),
-      selectedIcon: Icon(
-        Icons.queue_music,
-        color: _theme.colorScheme.primary,
-      ),
+      selectedIcon: const Icon(Icons.queue_music),
       isSelected: isShown,
     ),
   );
@@ -276,14 +273,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _secondaryControl(_randomQueueButton()),
-              _prevTrackButton(),
+              _randomQueueButton(size: _isMobile ? 20 : 24),
+              _prevTrackButton(size: _isMobile ? 40 : 44),
               SizedBox.square(
                 dimension: 72,
                 child: _playPauseButton(),
               ),
-              _nextTrackButton(),
-              _secondaryControl(_repeatTrackButton()),
+              _nextTrackButton(size: _isMobile ? 40 : 44),
+              _repeatTrackButton(size: _isMobile ? 20 : 24),
             ],
           ),
         ),
@@ -310,9 +307,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                   child: _playbackTargetButton(showsDeviceName: true),
                 ),
               ),
-              _lyricsButton(),
+              _lyricsButton(size: _isMobile ? 26 : 24),
               if (!_isMobile && !playingElsewhere) _downloadTrackButton(),
-              _likeTrackButton(),
+              _likeTrackButton(size: _isMobile ? 26 : 24),
               _queueButton(),
             ],
           );
@@ -502,21 +499,26 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                         //   ),
                         // ),
                         trailing: Wrap(
-                          spacing: 8,
+                          spacing: _isDesktop ? 0 : 8,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             if (_isDesktop) const PlayerTime(),
-                            if (_isDesktop) _randomQueueButton(),
-                            _prevTrackButton(),
+                            if (_isDesktop)
+                              _randomQueueButton(size: _barIconSize),
+                            _prevTrackButton(size: _barIconSize),
                             SizedBox.square(
-                              dimension: 45,
-                              child: _playPauseButton(),
+                              dimension: _isDesktop ? 38 : 45,
+                              child: IconTheme.merge(
+                                data: IconThemeData(size: _barIconSize),
+                                child: _playPauseButton(),
+                              ),
                             ),
-                            _nextTrackButton(),
-                            if (_isDesktop) _repeatTrackButton(),
-                            if (_isDesktop) _lyricsButton(),
-                            if (_isDesktop) const VolumeControl(size: 44),
-                            if (_isDesktop) _playbackTargetButton(size: 44),
+                            _nextTrackButton(size: _barIconSize),
+                            if (_isDesktop)
+                              _repeatTrackButton(size: _barIconSize),
+                            if (_isDesktop) _lyricsButton(size: _barIconSize),
+                            if (_isDesktop) const VolumeControl(size: 36),
+                            if (_isDesktop) _playbackTargetButton(size: 36),
                             if (_isDesktop) _queueSidebarButton(),
                             if (!_isMobile && !playingElsewhere)
                               _studioModeButton(),
@@ -569,7 +571,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     );
   }
 
-  Widget _moreButton(MediaItem? currentSong) => IconButton(
+  Widget _moreButton(MediaItem? currentSong) => HoverIconButton(
     onPressed: () => _onMorePressed(currentSong),
     color: _theme.colorScheme.onPrimary,
     iconSize: _isMobile ? 26 : 24,
@@ -701,6 +703,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     ),
   );
 
+  double get _barIconSize => _isDesktop ? 20 : 24;
+
   Widget _playPauseButton() => PlayPauseButton(
     onPressed: ref.read(barControlsProvider).togglePlay,
     background: _theme.colorScheme.onPrimary,
@@ -708,15 +712,17 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     stateNotifier: _isPlaying,
   );
 
-  Widget _prevTrackButton() => IconButton(
+  Widget _prevTrackButton({double size = 24}) => HoverIconButton(
     onPressed: ref.read(barControlsProvider).previous,
     color: _theme.colorScheme.onPrimary,
+    iconSize: size,
     icon: const Icon(Entypo.fast_backward),
   );
 
-  Widget _nextTrackButton() => IconButton(
+  Widget _nextTrackButton({double size = 24}) => HoverIconButton(
     onPressed: ref.read(barControlsProvider).next,
     color: _theme.colorScheme.onPrimary,
+    iconSize: size,
     icon: const Icon(Entypo.fast_forward),
   );
 
@@ -724,75 +730,62 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     builder: (context, ref, _) {
       final isShown = ref.watch(queueSidebarVisibleProvider);
       return SizedBox.square(
-        dimension: 44,
-        child: IconButton(
+        dimension: 36,
+        child: HoverIconButton(
           onPressed: () =>
               ref.read(queueSidebarVisibleProvider.notifier).state = !isShown,
           color: _theme.colorScheme.onPrimary,
-          padding: EdgeInsets.zero,
-          iconSize: 24,
+          style: const ButtonStyle(
+            padding: WidgetStatePropertyAll(EdgeInsets.zero),
+          ),
+          iconSize: _barIconSize,
           tooltip: isShown ? 'Hide queue' : 'Queue',
           icon: const Icon(Icons.queue_music),
-          selectedIcon: Icon(
-            Icons.queue_music,
-            color: _theme.colorScheme.primary,
-          ),
+          selectedIcon: const Icon(Icons.queue_music),
           isSelected: isShown,
         ),
       );
     },
   );
 
-  Widget _studioModeButton() => IconButton(
+  Widget _studioModeButton() => HoverIconButton(
     onPressed: () {
       ref.read(lyricsVisibleProvider.notifier).state = false;
       ref.read(studioModeLyricsProvider.notifier).state = false;
       ref.read(studioModeVisibleProvider.notifier).state = true;
     },
     color: _theme.colorScheme.onPrimary,
+    iconSize: _barIconSize,
     tooltip: 'Studio mode',
     icon: const Icon(Icons.fullscreen),
   );
 
-  Widget _secondaryControl(Widget child) => IconTheme.merge(
-    data: IconThemeData(size: _isMobile ? 20 : 24),
-    child: child,
-  );
-
-  Widget _randomQueueButton() => Consumer(
+  Widget _randomQueueButton({double size = 24}) => Consumer(
     builder: (context, ref, child) {
       final enabled = ref.watch(barShuffleProvider);
-      return IconButton(
+      return HoverIconButton(
         onPressed: () =>
             ref.read(barControlsProvider).setShuffle(enabled: !enabled),
-        icon: Icon(
-          JPlayer.mix,
-          color: _theme.colorScheme.onPrimary,
-        ),
-        selectedIcon: Icon(
-          JPlayer.mix,
-          color: _theme.colorScheme.primary,
-        ),
+        color: _theme.colorScheme.onPrimary,
+        iconSize: size,
+        icon: const Icon(JPlayer.mix),
+        selectedIcon: const Icon(JPlayer.mix),
         isSelected: enabled,
       );
     },
   );
 
-  Widget _repeatTrackButton() => Consumer(
+  Widget _repeatTrackButton({double size = 24}) => Consumer(
     builder: (context, ref, _) {
       final mode = ref.watch(barRepeatProvider);
-      return IconButton(
+      return HoverIconButton(
         onPressed: () => ref
             .read(barControlsProvider)
             .setRepeat(mode == LoopMode.all ? LoopMode.off : LoopMode.all),
-        icon: Icon(
-          JPlayer.repeat,
-          color: _theme.colorScheme.onPrimary,
-        ),
-        selectedIcon: Icon(
-          JPlayer.repeat,
-          color: _theme.colorScheme.primary,
-        ),
+        color: _theme.colorScheme.onPrimary,
+        iconSize: size,
+        icon: const Icon(JPlayer.repeat),
+        selectedIcon: const Icon(JPlayer.repeat),
         isSelected: mode == LoopMode.all,
       );
     },
@@ -804,16 +797,15 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }) => PlaybackTargetButton(
     size: size,
     color: _theme.colorScheme.onPrimary,
-    activeColor: _theme.colorScheme.primary,
     showsDeviceName: showsDeviceName,
   );
 
-  Widget _lyricsButton() => Consumer(
+  Widget _lyricsButton({double size = 24}) => Consumer(
     builder: (context, ref, _) {
       final hasLyrics = ref.watch(currentSongHasLyricsProvider);
       final isShown = ref.watch(lyricsShownProvider);
 
-      return IconButton(
+      return HoverIconButton(
         onPressed: hasLyrics
             ? () {
                 _queueShown.value = false;
@@ -822,12 +814,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             : null,
         color: _theme.colorScheme.onPrimary,
         disabledColor: _theme.colorScheme.onPrimary.withOpacity(0.3),
+        iconSize: size,
         tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
         icon: const Icon(Icons.lyrics_outlined),
-        selectedIcon: Icon(
-          Icons.lyrics,
-          color: _theme.colorScheme.primary,
-        ),
+        selectedIcon: const Icon(Icons.lyrics),
         isSelected: isShown,
       );
     },
@@ -856,10 +846,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           valueListenable: currentTask.status,
           builder: (context, status, _) {
             if (!currentTask.isDownloadingNow) {
-              return IconButton(
+              return HoverIconButton(
                 onPressed: () =>
                     ref.read(downloadManagerProvider).downloadSong(currentSong),
                 color: _theme.colorScheme.onPrimary,
+                iconSize: _isMobile ? 26 : 24,
                 icon: const Icon(JPlayer.download),
               );
             }
@@ -878,28 +869,26 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         );
       }
 
-      return IconButton(
+      return HoverIconButton(
         onPressed: () =>
             ref.read(downloadManagerProvider).downloadSong(currentSong),
         color: _theme.colorScheme.onPrimary,
+        iconSize: _isMobile ? 26 : 24,
         icon: const Icon(JPlayer.download),
       );
     },
   );
 
-  Widget _likeTrackButton() => Consumer(
+  Widget _likeTrackButton({double size = 24}) => Consumer(
     builder: (context, ref, _) {
       final song = ref.watch(barSongProvider);
-      return IconButton(
+      return HoverIconButton(
         onPressed: song == null ? null : () => _onLikeCurrent(song),
-        icon: Icon(
-          CupertinoIcons.heart,
-          color: _theme.colorScheme.onPrimary,
-        ),
-        selectedIcon: Icon(
-          CupertinoIcons.heart_fill,
-          color: _theme.colorScheme.primary,
-        ),
+        color: _theme.colorScheme.onPrimary,
+        mutedHover: true,
+        iconSize: size,
+        icon: const Icon(CupertinoIcons.heart),
+        selectedIcon: const Icon(CupertinoIcons.heart_fill),
         isSelected: song?.userData.isFavorite ?? false,
       );
     },
