@@ -14,6 +14,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/server_addresses_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
 
 class MainPage extends ConsumerStatefulWidget {
@@ -126,6 +127,8 @@ class _MainPageState extends ConsumerState<MainPage> {
     });
     final currentIndex = widget.shell.currentIndex;
     final isOffline = ref.watch(isOfflineProvider);
+    final pluginNotice = ref.watch(visiblePluginNoticeProvider);
+    final hasBanner = isOffline || pluginNotice != null;
     final sidebarCollapsed = ref.watch(
       settingProvider(AppSetting.sidebarCollapsed),
     );
@@ -186,12 +189,15 @@ class _MainPageState extends ConsumerState<MainPage> {
               Expanded(
                 child: Column(
                   children: [
-                    if (isOffline) const OfflineBanner(),
+                    if (isOffline)
+                      const OfflineBanner()
+                    else if (pluginNotice != null)
+                      PluginNoticeBanner(notice: pluginNotice),
                     Expanded(
                       child: Builder(
                         builder: (context) => MediaQuery.removePadding(
                           context: context,
-                          removeTop: isOffline,
+                          removeTop: hasBanner,
                           child: Stack(
                             children: [
                               widget.shell,

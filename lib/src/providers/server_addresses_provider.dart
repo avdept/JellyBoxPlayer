@@ -13,12 +13,14 @@ class ServerAddresses {
     this.remote,
     this.relay,
     this.relayDenied,
+    this.pluginNotice,
   });
 
   final String home;
   final String? remote;
   final String? relay;
   final String? relayDenied;
+  final PluginNotice? pluginNotice;
 
   List<String> get fallbacks => [?remote, ?relay];
 
@@ -28,11 +30,13 @@ class ServerAddresses {
     String? Function()? remote,
     String? Function()? relay,
     String? Function()? relayDenied,
+    PluginNotice? Function()? pluginNotice,
   }) => ServerAddresses(
     home: home,
     remote: remote == null ? this.remote : remote(),
     relay: relay == null ? this.relay : relay(),
     relayDenied: relayDenied == null ? this.relayDenied : relayDenied(),
+    pluginNotice: pluginNotice == null ? this.pluginNotice : pluginNotice(),
   );
 
   @override
@@ -41,16 +45,30 @@ class ServerAddresses {
       other.home == home &&
       other.remote == remote &&
       other.relay == relay &&
-      other.relayDenied == relayDenied;
+      other.relayDenied == relayDenied &&
+      other.pluginNotice == pluginNotice;
 
   @override
-  int get hashCode => Object.hash(home, remote, relay, relayDenied);
+  int get hashCode =>
+      Object.hash(home, remote, relay, relayDenied, pluginNotice);
 }
 
 const relayUrlStorageKey = 'relayUrl';
 const remoteUrlStorageKey = 'remoteUrl';
 
 final serverAddressesProvider = StateProvider<ServerAddresses?>((ref) => null);
+
+final dismissedPluginNoticeProvider = StateProvider<PluginNotice?>(
+  (ref) => null,
+);
+
+final visiblePluginNoticeProvider = Provider<PluginNotice?>((ref) {
+  final notice = ref.watch(
+    serverAddressesProvider.select((addresses) => addresses?.pluginNotice),
+  );
+  final dismissed = ref.watch(dismissedPluginNoticeProvider);
+  return notice == dismissed ? null : notice;
+});
 
 bool isTunnelAddress(Uri uri, {bool anyHost = kDebugMode}) =>
     uri.isScheme('https') &&
@@ -75,6 +93,13 @@ Future<void> rememberRelay(Ref ref, RemoteAccessResult? result) async {
   }
 
   final denied = relay == null ? result?.denied : null;
+  final notice = result?.notice;
+  final current = ref.read(serverAddressesProvider);
+  if (current != null && current.pluginNotice != notice) {
+    ref.read(serverAddressesProvider.notifier).state = current.copyWith(
+      pluginNotice: () => notice,
+    );
+  }
   if (addresses.relay == relay?.url && addresses.relayDenied == denied) return;
   final storage = ref.read(secureStorageProvider);
   if (relay == null) {
@@ -82,10 +107,9 @@ Future<void> rememberRelay(Ref ref, RemoteAccessResult? result) async {
   } else {
     await storage.write(key: relayUrlStorageKey, value: relay.url);
   }
-  ref.read(serverAddressesProvider.notifier).state = addresses.copyWith(
-    relay: () => relay?.url,
-    relayDenied: () => denied,
-  );
+  ref.read(serverAddressesProvider.notifier).state = ref
+      .read(serverAddressesProvider)
+      ?.copyWith(relay: () => relay?.url, relayDenied: () => denied);
 }
 
 Future<void> rememberRemote(Ref ref, String? url) async {

@@ -684,11 +684,22 @@ class JellyfinClient implements MediaServerClient {
       return RemoteAccessResult(
         access: access,
         denied: access == null && reason is String ? reason : null,
+        notice: _pluginNotice(response.data),
       );
     } on DioException catch (error) {
       if (error.response?.statusCode == 404) return null;
       rethrow;
     }
+  }
+
+  PluginNotice? _pluginNotice(Map<String, dynamic>? info) {
+    if (info?['PluginVersion'] is! String) return PluginNotice.outdated;
+    final notice = info?['Notice'];
+    if (notice is! Map<String, dynamic>) return null;
+    final code = notice['Code'];
+    final message = notice['Message'];
+    if (code is! String || message is! String || message.isEmpty) return null;
+    return PluginNotice(code: code, message: message);
   }
 
   @override
