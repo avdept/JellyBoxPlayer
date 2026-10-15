@@ -12,6 +12,7 @@ abstract class UserData with _$UserData {
     @JsonKey(name: 'PlayCount') @Default(0) int playCount,
     @JsonKey(name: 'IsFavorite') @Default(false) bool isFavorite,
     @JsonKey(name: 'Played') @Default(false) bool played,
+    @JsonKey(name: 'Rating') double? rating,
   }) = _UserData;
 
   factory UserData.fromJson(Map<String, dynamic> json) =>

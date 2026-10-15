@@ -11,6 +11,7 @@ _UserData _$UserDataFromJson(Map<String, dynamic> json) => _UserData(
   playCount: (json['PlayCount'] as num?)?.toInt() ?? 0,
   isFavorite: json['IsFavorite'] as bool? ?? false,
   played: json['Played'] as bool? ?? false,
+  rating: (json['Rating'] as num?)?.toDouble(),
 );
 
 Map<String, dynamic> _$UserDataToJson(_UserData instance) => <String, dynamic>{
@@ -18,4 +19,5 @@ Map<String, dynamic> _$UserDataToJson(_UserData instance) => <String, dynamic>{
   'PlayCount': instance.playCount,
   'IsFavorite': instance.isFavorite,
   'Played': instance.played,
+  'Rating': instance.rating,
 };

@@ -13,10 +13,17 @@ const jellyfinExternalIdKeys = <String, String>{
   'AudioDbArtist': ExternalIdProvider.audioDbArtist,
 };
 
+int jellyfinStars(double? rating) => ((rating ?? 0) / 2).round().clamp(0, 5);
+
+double jellyfinRating(int stars) => stars.clamp(0, 5) * 2.0;
+
 extension JellyfinItemMapping on ItemDTO {
   LibraryItem toJellyfinLibraryItem() {
     final item = toLibraryItem();
     return item.copyWith(
+      userData: item.userData.copyWith(
+        rating: jellyfinStars(userData.rating),
+      ),
       externalIds: normalizeExternalIds(
         item.externalIds,
         jellyfinExternalIdKeys,

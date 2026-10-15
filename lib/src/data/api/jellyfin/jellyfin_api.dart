@@ -48,6 +48,19 @@ abstract class JellyfinApi {
     @Path('itemId') required String itemId,
   });
 
+  @POST('/UserItems/{itemId}/UserData')
+  Future<HttpResponse<void>> updateUserData({
+    @Path('itemId') required String itemId,
+    @Query('userId') required String userId,
+    @Body() required Map<String, dynamic> userData,
+  });
+
+  @DELETE('/UserItems/{itemId}/Rating')
+  Future<HttpResponse<void>> deleteRating({
+    @Path('itemId') required String itemId,
+    @Query('userId') required String userId,
+  });
+
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<ItemsWrapper>> getSongs({
     @Path('userId') required String userId,
