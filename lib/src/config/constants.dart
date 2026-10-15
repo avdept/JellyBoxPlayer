@@ -12,6 +12,8 @@ const bool kDirectDownloadBuild = bool.fromEnvironment(
   'JELLYBOX_DIRECT_DOWNLOAD',
 );
 
+const bool kSideloadBuild = bool.fromEnvironment('JELLYBOX_SIDELOAD');
+
 const String discordApplicationId = '1547587702344388712';
 
 const String jellyboxCloudUrl = 'https://cloud.jellybox.app';
