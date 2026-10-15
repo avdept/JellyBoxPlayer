@@ -28,6 +28,7 @@ class PlaylistSongsSource {
         );
       case EphemeralPlaylistKind.instantMix:
       case EphemeralPlaylistKind.soundMix:
+      case EphemeralPlaylistKind.genreInstantMix:
         final mix = _ref.read(instantMixesProvider.notifier).byId(playlistId);
         return refreshed(mix?.songs ?? await downloadedSnapshot(playlistId));
       case EphemeralPlaylistKind.genreMix:

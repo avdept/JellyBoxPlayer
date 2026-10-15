@@ -49,7 +49,11 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
 
     return MixPageScaffold(
       name: widget.mix.name,
-      subtitle: mix == null || isSoundMixSeed(mix.seed)
+      subtitle:
+          mix == null ||
+              isSoundMixSeed(mix.seed) ||
+              isGenreRadioSeed(mix.seed) ||
+              isGenreShuffleSeed(mix.seed)
           ? null
           : 'Based on ${mix.seed.name}',
       songs: songs,

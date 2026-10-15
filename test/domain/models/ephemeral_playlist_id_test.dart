@@ -54,6 +54,27 @@ void main() {
     expect(EphemeralPlaylistId.isInstantMix(id), isTrue);
   });
 
+  test('- genre radios and mixes keep the genre name', () {
+    final seed = EphemeralPlaylistId.genreRadioSeed(' Jazz ');
+    final id = EphemeralPlaylistId.instantMix(seed, at);
+
+    final parsed = EphemeralPlaylistId.parse(id)!;
+    expect(parsed.kind, EphemeralPlaylistKind.genreInstantMix);
+    expect(parsed.key, 'jazz');
+    expect(parsed.createdAt, at);
+    expect(EphemeralPlaylistId.isInstantMix(id), isTrue);
+
+    final shuffle = EphemeralPlaylistId.instantMix(
+      EphemeralPlaylistId.genreShuffleSeed('Jazz'),
+      at,
+    );
+    expect(
+      EphemeralPlaylistId.parse(shuffle)!.kind,
+      EphemeralPlaylistKind.genreInstantMix,
+    );
+    expect(EphemeralPlaylistId.parse(shuffle)!.key, 'jazz');
+  });
+
   test('- genre playlists come through with their genres and stamp', () {
     final mix = genreMixId(['rock-id', 'metal-id'], at: at);
     final discovery = genreDiscoveryId(['jazz-id'], at: at);

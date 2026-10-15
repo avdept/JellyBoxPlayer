@@ -4,6 +4,7 @@ enum EphemeralPlaylistKind {
   likedSongs,
   instantMix,
   soundMix,
+  genreInstantMix,
   genreMix,
   genreDiscovery,
 }
@@ -18,6 +19,8 @@ class EphemeralPlaylistId {
   static const likedSongsPrefix = 'jellybox:liked-songs:';
   static const instantMixPrefix = 'instant-mix:';
   static const soundSeedPrefix = 'sound:';
+  static const genreRadioSeedPrefix = 'radio:';
+  static const genreShuffleSeedPrefix = 'genre:';
 
   static final _stamp = RegExp(r':(\d+)$');
 
@@ -28,6 +31,12 @@ class EphemeralPlaylistId {
 
   static String soundSeed(String query) =>
       '$soundSeedPrefix${query.trim().toLowerCase()}';
+
+  static String genreRadioSeed(String genre) =>
+      '$genreRadioSeedPrefix${genre.trim().toLowerCase()}';
+
+  static String genreShuffleSeed(String genre) =>
+      '$genreShuffleSeedPrefix${genre.trim().toLowerCase()}';
 
   static EphemeralPlaylistId? parse(String id) {
     if (id.startsWith(likedSongsPrefix)) {
@@ -48,6 +57,15 @@ class EphemeralPlaylistId {
           body.substring(soundSeedPrefix.length),
           at,
         );
+      }
+      for (final prefix in [genreRadioSeedPrefix, genreShuffleSeedPrefix]) {
+        if (body.startsWith(prefix)) {
+          return EphemeralPlaylistId._(
+            EphemeralPlaylistKind.genreInstantMix,
+            body.substring(prefix.length),
+            at,
+          );
+        }
       }
       return EphemeralPlaylistId._(EphemeralPlaylistKind.instantMix, body, at);
     }
@@ -80,7 +98,9 @@ class EphemeralPlaylistId {
       parse(id)?.kind == EphemeralPlaylistKind.likedSongs;
 
   static bool isInstantMix(String id) => switch (parse(id)?.kind) {
-    EphemeralPlaylistKind.instantMix || EphemeralPlaylistKind.soundMix => true,
+    EphemeralPlaylistKind.instantMix ||
+    EphemeralPlaylistKind.soundMix ||
+    EphemeralPlaylistKind.genreInstantMix => true,
     _ => false,
   };
 

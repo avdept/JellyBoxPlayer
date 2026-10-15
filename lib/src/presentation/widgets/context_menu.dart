@@ -29,6 +29,7 @@ enum ContextMenuEntry {
   playNext,
   addToQueue,
   instantMix,
+  genreMix,
   download,
   like,
   goToArtist,
@@ -120,7 +121,10 @@ const contextMenuLayout =
         ],
       },
       ItemKind.genre: {
-        ContextMenuScope.browse: [ContextMenuEntry.play],
+        ContextMenuScope.browse: [
+          ContextMenuEntry.play,
+          ContextMenuEntry.genreMix,
+        ],
       },
     };
 
@@ -324,6 +328,7 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.playNext => actions.playNext(),
         ContextMenuEntry.addToQueue => actions.addToQueue(),
         ContextMenuEntry.instantMix => actions.instantMix(),
+        ContextMenuEntry.genreMix => actions.genreMix(),
         ContextMenuEntry.download => actions.download(),
         ContextMenuEntry.like =>
           onLike != null && !rowHasLike && canLike
@@ -750,6 +755,32 @@ class _ContextMenuActions {
         await ref.read(setPlaybackProvider.notifier).playInstantMix(mix);
       } on Object {
         _showSnackBar('Could not start an instant mix for "${item.name}"');
+      }
+    },
+  );
+
+  ContextMenuAction genreMix() => ContextMenuAction(
+    entry: ContextMenuEntry.genreMix,
+    icon: const _SvgIcon(SvgPictures.compassIcon),
+    label: Text(
+      ref.read(serverCapabilitiesProvider).soundSearch
+          ? 'Start genre radio'
+          : 'Start genre mix',
+    ),
+    run: () async {
+      if (_guardOffline()) return;
+      try {
+        final mix = await ref
+            .read(instantMixesProvider.notifier)
+            .createGenreMix(item);
+        if (mix == null) {
+          _showSnackBar('No songs found for "${item.name}"');
+          return;
+        }
+        _navigate(Routes.instantMix, 'mix', mix.item);
+        await ref.read(setPlaybackProvider.notifier).playInstantMix(mix);
+      } on Object {
+        _showSnackBar('Could not start a mix for "${item.name}"');
       }
     },
   );

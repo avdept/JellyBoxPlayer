@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/instant_mix_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/data/storages/instant_mix_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 
 const recentInstantMixesLimit = 5;
+const genreMixLimit = 100;
 
 class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
   InstantMixesNotifier(this._ref, this._database, {DateTime Function()? now})
@@ -62,6 +65,24 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
         : fetched;
 
     return _register(seed, songs);
+  }
+
+  Future<InstantMix?> createGenreMix(LibraryItem genre) async {
+    final client = _ref.read(mediaServerClientProvider);
+    if (_ref.read(serverCapabilitiesProvider).soundSearch) {
+      final matches = await client.searchBySound(genre.name);
+      if (matches.isNotEmpty) return _register(genreRadioSeed(genre), matches);
+    }
+    final page = await client.getSongsOfSet(
+      LibraryQuery(
+        libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
+        genreIds: [genre.id],
+        sort: ItemSort.random,
+        limit: genreMixLimit,
+      ),
+    );
+    if (page.items.isEmpty) return null;
+    return _register(genreShuffleSeed(genre), page.items);
   }
 
   InstantMix? createSoundMix(String query, List<LibraryItem> songs) {
