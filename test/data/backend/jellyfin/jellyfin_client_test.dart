@@ -998,4 +998,52 @@ void main() {
       expect(await remoteClient.remoteAccess(), isNull);
     });
   });
+
+  group('setRating', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient ratingClient;
+
+    setUp(() {
+      mockAdapter = MockHttpClientAdapter();
+      ratingClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+      when(
+        () => mockAdapter.fetch(any(), any(), any()),
+      ).thenAnswer((_) async => ResponseBody.fromString('', 204));
+    });
+
+    RequestOptions request() =>
+        verify(
+              () => mockAdapter.fetch(captureAny(), any(), any()),
+            ).captured.single
+            as RequestOptions;
+
+    test('- saves stars as the 0-10 user rating', () async {
+      await ratingClient.setRating('song-1', 4);
+
+      final options = request();
+      expect(options.method, 'POST');
+      expect(options.uri.path, '/UserItems/song-1/UserData');
+      expect(options.uri.queryParameters['userId'], 'user-1');
+      expect(options.data, {'Rating': 8.0});
+    });
+
+    test('- deletes the rating when cleared', () async {
+      await ratingClient.setRating('song-1', 0);
+
+      final options = request();
+      expect(options.method, 'DELETE');
+      expect(options.uri.path, '/UserItems/song-1/Rating');
+      expect(options.uri.queryParameters['userId'], 'user-1');
+    });
+  });
+
+  test('- advertises ratings', () {
+    expect(client.capabilities.ratings, isTrue);
+  });
 }

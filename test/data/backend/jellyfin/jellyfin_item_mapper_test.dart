@@ -76,4 +76,23 @@ void main() {
       expect(page.items.last.externalIds, isEmpty);
     });
   });
+
+  group('rating', () {
+    LibraryItem songWith(Map<String, Object?> userData) => ItemDTO.fromJson({
+      'Id': 'song-1',
+      'Name': 'Roads',
+      'Type': 'Audio',
+      'UserData': userData,
+    }).toJellyfinLibraryItem();
+
+    test('- maps the 0-10 user rating onto five stars', () {
+      expect(songWith({'Rating': 8.0}).userData.rating, 4);
+      expect(songWith({'Rating': 10}).userData.rating, 5);
+      expect(songWith({'Rating': 1.0}).userData.rating, 1);
+    });
+
+    test('- leaves an unrated song at zero', () {
+      expect(songWith({'IsFavorite': true}).userData.rating, 0);
+    });
+  });
 }

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UserData {
 
-@JsonKey(name: 'PlaybackPositionTicks') int get playbackPositionTicks;@JsonKey(name: 'PlayCount') int get playCount;@JsonKey(name: 'IsFavorite') bool get isFavorite;@JsonKey(name: 'Played') bool get played;
+@JsonKey(name: 'PlaybackPositionTicks') int get playbackPositionTicks;@JsonKey(name: 'PlayCount') int get playCount;@JsonKey(name: 'IsFavorite') bool get isFavorite;@JsonKey(name: 'Played') bool get played;@JsonKey(name: 'Rating') double? get rating;
 /// Create a copy of UserData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UserDataCopyWith<UserData> get copyWith => _$UserDataCopyWithImpl<UserData>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserData&&(identical(other.playbackPositionTicks, playbackPositionTicks) || other.playbackPositionTicks == playbackPositionTicks)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.played, played) || other.played == played));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserData&&(identical(other.playbackPositionTicks, playbackPositionTicks) || other.playbackPositionTicks == playbackPositionTicks)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.played, played) || other.played == played)&&(identical(other.rating, rating) || other.rating == rating));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,playbackPositionTicks,playCount,isFavorite,played);
+int get hashCode => Object.hash(runtimeType,playbackPositionTicks,playCount,isFavorite,played,rating);
 
 @override
 String toString() {
-  return 'UserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played)';
+  return 'UserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played, rating: $rating)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UserDataCopyWith<$Res>  {
   factory $UserDataCopyWith(UserData value, $Res Function(UserData) _then) = _$UserDataCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,@JsonKey(name: 'PlayCount') int playCount,@JsonKey(name: 'IsFavorite') bool isFavorite,@JsonKey(name: 'Played') bool played
+@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,@JsonKey(name: 'PlayCount') int playCount,@JsonKey(name: 'IsFavorite') bool isFavorite,@JsonKey(name: 'Played') bool played,@JsonKey(name: 'Rating') double? rating
 });
 
 
@@ -65,13 +65,14 @@ class _$UserDataCopyWithImpl<$Res>
 
 /// Create a copy of UserData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? playbackPositionTicks = null,Object? playCount = null,Object? isFavorite = null,Object? played = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? playbackPositionTicks = null,Object? playCount = null,Object? isFavorite = null,Object? played = null,Object? rating = freezed,}) {
   return _then(_self.copyWith(
 playbackPositionTicks: null == playbackPositionTicks ? _self.playbackPositionTicks : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
 as int,playCount: null == playCount ? _self.playCount : playCount // ignore: cast_nullable_to_non_nullable
 as int,isFavorite: null == isFavorite ? _self.isFavorite : isFavorite // ignore: cast_nullable_to_non_nullable
 as bool,played: null == played ? _self.played : played // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -156,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played, @JsonKey(name: 'Rating')  double? rating)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserData() when $default != null:
-return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played);case _:
+return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played,_that.rating);case _:
   return orElse();
 
 }
@@ -177,10 +178,10 @@ return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played, @JsonKey(name: 'Rating')  double? rating)  $default,) {final _that = this;
 switch (_that) {
 case _UserData():
-return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played);case _:
+return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played,_that.rating);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +198,10 @@ return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'PlaybackPositionTicks')  int playbackPositionTicks, @JsonKey(name: 'PlayCount')  int playCount, @JsonKey(name: 'IsFavorite')  bool isFavorite, @JsonKey(name: 'Played')  bool played, @JsonKey(name: 'Rating')  double? rating)?  $default,) {final _that = this;
 switch (_that) {
 case _UserData() when $default != null:
-return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played);case _:
+return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_that.played,_that.rating);case _:
   return null;
 
 }
@@ -212,13 +213,14 @@ return $default(_that.playbackPositionTicks,_that.playCount,_that.isFavorite,_th
 @JsonSerializable()
 
 class _UserData implements UserData {
-  const _UserData({@JsonKey(name: 'PlaybackPositionTicks') this.playbackPositionTicks = 0, @JsonKey(name: 'PlayCount') this.playCount = 0, @JsonKey(name: 'IsFavorite') this.isFavorite = false, @JsonKey(name: 'Played') this.played = false});
+  const _UserData({@JsonKey(name: 'PlaybackPositionTicks') this.playbackPositionTicks = 0, @JsonKey(name: 'PlayCount') this.playCount = 0, @JsonKey(name: 'IsFavorite') this.isFavorite = false, @JsonKey(name: 'Played') this.played = false, @JsonKey(name: 'Rating') this.rating});
   factory _UserData.fromJson(Map<String, dynamic> json) => _$UserDataFromJson(json);
 
 @override@JsonKey(name: 'PlaybackPositionTicks') final  int playbackPositionTicks;
 @override@JsonKey(name: 'PlayCount') final  int playCount;
 @override@JsonKey(name: 'IsFavorite') final  bool isFavorite;
 @override@JsonKey(name: 'Played') final  bool played;
+@override@JsonKey(name: 'Rating') final  double? rating;
 
 /// Create a copy of UserData
 /// with the given fields replaced by the non-null parameter values.
@@ -233,16 +235,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserData&&(identical(other.playbackPositionTicks, playbackPositionTicks) || other.playbackPositionTicks == playbackPositionTicks)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.played, played) || other.played == played));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserData&&(identical(other.playbackPositionTicks, playbackPositionTicks) || other.playbackPositionTicks == playbackPositionTicks)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.played, played) || other.played == played)&&(identical(other.rating, rating) || other.rating == rating));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,playbackPositionTicks,playCount,isFavorite,played);
+int get hashCode => Object.hash(runtimeType,playbackPositionTicks,playCount,isFavorite,played,rating);
 
 @override
 String toString() {
-  return 'UserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played)';
+  return 'UserData(playbackPositionTicks: $playbackPositionTicks, playCount: $playCount, isFavorite: $isFavorite, played: $played, rating: $rating)';
 }
 
 
@@ -253,7 +255,7 @@ abstract mixin class _$UserDataCopyWith<$Res> implements $UserDataCopyWith<$Res>
   factory _$UserDataCopyWith(_UserData value, $Res Function(_UserData) _then) = __$UserDataCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,@JsonKey(name: 'PlayCount') int playCount,@JsonKey(name: 'IsFavorite') bool isFavorite,@JsonKey(name: 'Played') bool played
+@JsonKey(name: 'PlaybackPositionTicks') int playbackPositionTicks,@JsonKey(name: 'PlayCount') int playCount,@JsonKey(name: 'IsFavorite') bool isFavorite,@JsonKey(name: 'Played') bool played,@JsonKey(name: 'Rating') double? rating
 });
 
 
@@ -270,13 +272,14 @@ class __$UserDataCopyWithImpl<$Res>
 
 /// Create a copy of UserData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? playbackPositionTicks = null,Object? playCount = null,Object? isFavorite = null,Object? played = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? playbackPositionTicks = null,Object? playCount = null,Object? isFavorite = null,Object? played = null,Object? rating = freezed,}) {
   return _then(_UserData(
 playbackPositionTicks: null == playbackPositionTicks ? _self.playbackPositionTicks : playbackPositionTicks // ignore: cast_nullable_to_non_nullable
 as int,playCount: null == playCount ? _self.playCount : playCount // ignore: cast_nullable_to_non_nullable
 as int,isFavorite: null == isFavorite ? _self.isFavorite : isFavorite // ignore: cast_nullable_to_non_nullable
 as bool,played: null == played ? _self.played : played // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

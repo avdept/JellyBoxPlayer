@@ -40,6 +40,7 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   MediaServerCapabilities get capabilities => const MediaServerCapabilities(
+    ratings: true,
     artistScopes: {ArtistScope.albumArtists, ArtistScope.allArtists},
   );
 
@@ -463,7 +464,17 @@ class JellyfinClient implements MediaServerClient {
   }
 
   @override
-  Future<void> setRating(String itemId, int rating) async {}
+  Future<void> setRating(String itemId, int rating) async {
+    if (rating <= 0) {
+      await _api.deleteRating(itemId: itemId, userId: userId);
+      return;
+    }
+    await _api.updateUserData(
+      itemId: itemId,
+      userId: userId,
+      userData: {'Rating': jellyfinRating(rating)},
+    );
+  }
 
   @override
   Future<void> createPlaylist(PlaylistData values) async {
