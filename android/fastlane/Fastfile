@@ -107,7 +107,7 @@ def build_universal_apk(version_code)
   create_upload_key
 
   Dir.chdir(PROJECT_ROOT) do
-    sh("flutter build apk --release #{version_args(version_code)}")
+    sh("flutter build apk --release --dart-define=JELLYBOX_SIDELOAD=true #{version_args(version_code)}")
   end
 
   UI.user_error!("Expected an APK at #{FLUTTER_APK_PATH}") unless File.exist?(FLUTTER_APK_PATH)

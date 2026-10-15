@@ -124,6 +124,7 @@ jobs:
           flutter precache --linux
           flutter pub get
           flutter build linux --release \
+            --dart-define=JELLYBOX_SIDELOAD=true \
             --build-name=${{ needs.version.outputs.version }} \
             --build-number=${{ needs.version.outputs.build_number }}
 

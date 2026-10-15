@@ -40,6 +40,7 @@ export 'similar_albums_provider.dart';
 export 'stream_preference_provider.dart';
 export 'studio_mode_provider.dart';
 export 'todays_playlists_provider.dart';
+export 'update_banner_provider.dart';
 export 'upnp_renderers_provider.dart';
 export 'volume_provider.dart';
 export 'animated_cover_provider.dart';
