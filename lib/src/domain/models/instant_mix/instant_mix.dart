@@ -7,6 +7,24 @@ bool isInstantMixId(String id) => EphemeralPlaylistId.isInstantMix(id);
 bool isSoundMixSeed(LibraryItem seed) =>
     seed.id.startsWith(EphemeralPlaylistId.soundSeedPrefix);
 
+bool isGenreRadioSeed(LibraryItem seed) =>
+    seed.id.startsWith(EphemeralPlaylistId.genreRadioSeedPrefix);
+
+bool isGenreShuffleSeed(LibraryItem seed) =>
+    seed.id.startsWith(EphemeralPlaylistId.genreShuffleSeedPrefix);
+
+LibraryItem genreRadioSeed(LibraryItem genre) => LibraryItem(
+  id: EphemeralPlaylistId.genreRadioSeed(genre.name),
+  name: genre.name.trim(),
+  kind: ItemKind.playlist,
+);
+
+LibraryItem genreShuffleSeed(LibraryItem genre) => LibraryItem(
+  id: EphemeralPlaylistId.genreShuffleSeed(genre.name),
+  name: genre.name.trim(),
+  kind: ItemKind.playlist,
+);
+
 LibraryItem soundMixSeed(String query) {
   final trimmed = query.trim();
   final name = trimmed.isEmpty
@@ -22,7 +40,11 @@ LibraryItem soundMixSeed(String query) {
 LibraryItem instantMixItem(LibraryItem seed, {required DateTime createdAt}) =>
     LibraryItem(
       id: EphemeralPlaylistId.instantMix(seed.id, createdAt),
-      name: isSoundMixSeed(seed) ? '${seed.name} Mix' : "${seed.name}'s mix",
+      name: isGenreRadioSeed(seed)
+          ? '${seed.name} Radio'
+          : isSoundMixSeed(seed) || isGenreShuffleSeed(seed)
+          ? '${seed.name} Mix'
+          : "${seed.name}'s mix",
       kind: ItemKind.playlist,
       images: seed.images,
     );

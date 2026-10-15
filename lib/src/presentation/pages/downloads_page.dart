@@ -47,6 +47,7 @@ class DownloadsPage extends StatelessWidget {
         context.pushNamed(Routes.homeFavouriteSongs.name);
       case EphemeralPlaylistKind.instantMix:
       case EphemeralPlaylistKind.soundMix:
+      case EphemeralPlaylistKind.genreInstantMix:
         context.pushNamed(Routes.homeInstantMix.name, extra: {'mix': item});
       case EphemeralPlaylistKind.genreMix:
       case EphemeralPlaylistKind.genreDiscovery:

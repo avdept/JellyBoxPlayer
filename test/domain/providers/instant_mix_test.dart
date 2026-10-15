@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -122,25 +124,29 @@ void main() {
   DateTime nextMoment() =>
       DateTime.fromMillisecondsSinceEpoch(1700000000000 + 1000 * tick++);
 
-  ProviderContainer newContainer({String? userId}) => ProviderContainer(
-    overrides: [
-      instantMixesProvider.overrideWith(
-        (ref) => InstantMixesNotifier(
-          ref,
-          ref.watch(instantMixDatabaseProvider),
-          now: nextMoment,
-        ),
-      ),
-      localPlaybackTargetProvider.overrideWithValue(target),
-      remoteRendererProvider.overrideWithValue(null),
-      mediaServerClientProvider.overrideWith((_) => client),
-      isOfflineProvider.overrideWithValue(false),
-      if (userId != null)
-        currentUserProvider.overrideWith(
-          (_) => User(userId: userId, token: 'token'),
-        ),
-    ],
-  );
+  ProviderContainer newContainer({String? userId, bool soundSearch = false}) =>
+      ProviderContainer(
+        overrides: [
+          instantMixesProvider.overrideWith(
+            (ref) => InstantMixesNotifier(
+              ref,
+              ref.watch(instantMixDatabaseProvider),
+              now: nextMoment,
+            ),
+          ),
+          localPlaybackTargetProvider.overrideWithValue(target),
+          remoteRendererProvider.overrideWithValue(null),
+          mediaServerClientProvider.overrideWith((_) => client),
+          serverCapabilitiesProvider.overrideWithValue(
+            MediaServerCapabilities(soundSearch: soundSearch),
+          ),
+          isOfflineProvider.overrideWithValue(false),
+          if (userId != null)
+            currentUserProvider.overrideWith(
+              (_) => User(userId: userId, token: 'token'),
+            ),
+        ],
+      );
 
   setUpAll(() async {
     final dbDir = await Directory.systemTemp.createTemp('instant_mix_db');
@@ -148,6 +154,7 @@ void main() {
     registerFallbackValue(queue.first);
     registerFallbackValue(ItemKind.song);
     registerFallbackValue(<String>[]);
+    registerFallbackValue(const LibraryQuery());
     registerFallbackValue(StreamTargetProfile.download(isAndroid: false));
     registerFallbackValue(
       const PlaybackReport(itemId: 'fallback', playSessionId: 'fallback'),
@@ -305,6 +312,90 @@ void main() {
       final mix = container
           .read(instantMixesProvider.notifier)
           .createSoundMix('silence', const []);
+
+      expect(mix, isNull);
+      expect(container.read(instantMixesProvider), isEmpty);
+    });
+  });
+
+  group('- a genre mix', () {
+    const jazz = LibraryItem(id: 'g1', name: 'Jazz', kind: ItemKind.genre);
+
+    void genreSongsReturn(List<LibraryItem> songs) => when(
+      () => client.getSongsOfSet(any()),
+    ).thenAnswer((_) async => LibraryPage(items: songs));
+
+    void soundMatchesReturn(List<LibraryItem> songs) => when(
+      () => client.searchBySound(any(), limit: any(named: 'limit')),
+    ).thenAnswer((_) async => songs);
+
+    test('- with AudioMuse is a radio of songs that sound like it', () async {
+      container.dispose();
+      container = newContainer(soundSearch: true);
+      soundMatchesReturn([_song('b'), _song('a')]);
+
+      final mix = await container
+          .read(instantMixesProvider.notifier)
+          .createGenreMix(jazz);
+
+      verify(
+        () => client.searchBySound('Jazz', limit: any(named: 'limit')),
+      ).called(1);
+      verifyNever(() => client.getSongsOfSet(any()));
+      expect(mix!.item.name, 'Jazz Radio');
+      expect(mix.item.id, startsWith('instant-mix:radio:jazz:'));
+      final parsed = EphemeralPlaylistId.parse(mix.item.id)!;
+      expect(parsed.kind, EphemeralPlaylistKind.genreInstantMix);
+      expect(parsed.key, 'jazz');
+      expect(EphemeralPlaylistId.isInstantMix(mix.item.id), isTrue);
+      expect(_ids(mix.songs), ['b', 'a']);
+      expect(container.read(instantMixesProvider).single.item.id, mix.item.id);
+    });
+
+    test('- without AudioMuse shuffles the songs tagged with it', () async {
+      genreSongsReturn([_song('y'), _song('x')]);
+
+      final mix = await container
+          .read(instantMixesProvider.notifier)
+          .createGenreMix(jazz);
+
+      verifyNever(
+        () => client.searchBySound(any(), limit: any(named: 'limit')),
+      );
+      final query =
+          verify(() => client.getSongsOfSet(captureAny())).captured.single
+              as LibraryQuery;
+      expect(query.genreIds, ['g1']);
+      expect(query.sort, ItemSort.random);
+      expect(mix!.item.name, 'Jazz Mix');
+      expect(mix.item.id, startsWith('instant-mix:genre:jazz:'));
+      expect(
+        EphemeralPlaylistId.parse(mix.item.id)!.kind,
+        EphemeralPlaylistKind.genreInstantMix,
+      );
+      expect(_ids(mix.songs), ['y', 'x']);
+    });
+
+    test('- with AudioMuse but no matches falls back to the shuffle', () async {
+      container.dispose();
+      container = newContainer(soundSearch: true);
+      soundMatchesReturn(const []);
+      genreSongsReturn([_song('x')]);
+
+      final mix = await container
+          .read(instantMixesProvider.notifier)
+          .createGenreMix(jazz);
+
+      expect(mix!.item.name, 'Jazz Mix');
+      expect(_ids(mix.songs), ['x']);
+    });
+
+    test('- nothing is created for an empty genre', () async {
+      genreSongsReturn(const []);
+
+      final mix = await container
+          .read(instantMixesProvider.notifier)
+          .createGenreMix(jazz);
 
       expect(mix, isNull);
       expect(container.read(instantMixesProvider), isEmpty);
