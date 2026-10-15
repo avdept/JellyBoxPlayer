@@ -826,6 +826,48 @@ void main() {
     });
   });
 
+  group('album details', () {
+    setUp(() {
+      server.ok('getAlbum', {
+        'album': {'id': 'al1', 'name': 'Shadows', 'coverArt': 'al-al1'},
+      });
+    });
+
+    test('- merge the notes from getAlbumInfo2', () async {
+      server.ok('getAlbumInfo2', {
+        'albumInfo': {
+          'notes':
+              'Recorded in <b>Helsinki</b>. <a href="https://last.fm/x">Read more on Last.fm</a> &amp; enjoy',
+        },
+      });
+
+      final album = await client.getItem('al1', kind: ItemKind.album);
+
+      expect(album.name, 'Shadows');
+      expect(
+        album.overview,
+        'Recorded in Helsinki. Read more on Last.fm & enjoy',
+      );
+      expect(
+        server.calls('getAlbumInfo2').single.queryParameters['id'],
+        'al1',
+      );
+    });
+
+    test('- keep the album when the info call fails or is empty', () async {
+      server.on('getAlbumInfo2', (_) => subsonicFailed(0, 'no agent'));
+      final failed = await client.getItem('al1', kind: ItemKind.album);
+      expect(failed.name, 'Shadows');
+      expect(failed.overview, isNull);
+
+      server.ok('getAlbumInfo2', {'albumInfo': <String, Object?>{}});
+      expect(
+        (await client.getItem('al1', kind: ItemKind.album)).overview,
+        isNull,
+      );
+    });
+  });
+
   test('artist images become the artist page backdrop', () async {
     server.ok('getArtist', {
       'artist': {

@@ -101,6 +101,11 @@ class SubsonicApi {
     ),
   );
 
+  Future<SubsonicAlbumInfoDTO> getAlbumInfo2(String id) async =>
+      SubsonicAlbumInfoDTO.fromJson(
+        _section(await call('getAlbumInfo2', {'id': id}), 'albumInfo'),
+      );
+
   Future<SubsonicAlbumDTO> getAlbum(String id) async =>
       SubsonicAlbumDTO.fromJson(
         _section(await call('getAlbum', {'id': id}), 'album'),
