@@ -278,6 +278,22 @@ Map<String, dynamic> _$SubsonicArtistInfoDTOToJson(
   'similarArtist': instance.similarArtist,
 };
 
+_SubsonicAlbumInfoDTO _$SubsonicAlbumInfoDTOFromJson(
+  Map<String, dynamic> json,
+) => _SubsonicAlbumInfoDTO(
+  notes: json['notes'] as String?,
+  musicBrainzId: json['musicBrainzId'] as String?,
+  lastFmUrl: json['lastFmUrl'] as String?,
+);
+
+Map<String, dynamic> _$SubsonicAlbumInfoDTOToJson(
+  _SubsonicAlbumInfoDTO instance,
+) => <String, dynamic>{
+  'notes': instance.notes,
+  'musicBrainzId': instance.musicBrainzId,
+  'lastFmUrl': instance.lastFmUrl,
+};
+
 _SubsonicIndexDTO _$SubsonicIndexDTOFromJson(Map<String, dynamic> json) =>
     _SubsonicIndexDTO(
       name: json['name'] as String? ?? '',

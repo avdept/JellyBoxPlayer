@@ -2423,6 +2423,275 @@ as List<SubsonicArtistDTO>,
 
 
 /// @nodoc
+mixin _$SubsonicAlbumInfoDTO {
+
+ String? get notes; String? get musicBrainzId; String? get lastFmUrl;
+/// Create a copy of SubsonicAlbumInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SubsonicAlbumInfoDTOCopyWith<SubsonicAlbumInfoDTO> get copyWith => _$SubsonicAlbumInfoDTOCopyWithImpl<SubsonicAlbumInfoDTO>(this as SubsonicAlbumInfoDTO, _$identity);
+
+  /// Serializes this SubsonicAlbumInfoDTO to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubsonicAlbumInfoDTO&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.lastFmUrl, lastFmUrl) || other.lastFmUrl == lastFmUrl));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,notes,musicBrainzId,lastFmUrl);
+
+@override
+String toString() {
+  return 'SubsonicAlbumInfoDTO(notes: $notes, musicBrainzId: $musicBrainzId, lastFmUrl: $lastFmUrl)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SubsonicAlbumInfoDTOCopyWith<$Res>  {
+  factory $SubsonicAlbumInfoDTOCopyWith(SubsonicAlbumInfoDTO value, $Res Function(SubsonicAlbumInfoDTO) _then) = _$SubsonicAlbumInfoDTOCopyWithImpl;
+@useResult
+$Res call({
+ String? notes, String? musicBrainzId, String? lastFmUrl
+});
+
+
+
+
+}
+/// @nodoc
+class _$SubsonicAlbumInfoDTOCopyWithImpl<$Res>
+    implements $SubsonicAlbumInfoDTOCopyWith<$Res> {
+  _$SubsonicAlbumInfoDTOCopyWithImpl(this._self, this._then);
+
+  final SubsonicAlbumInfoDTO _self;
+  final $Res Function(SubsonicAlbumInfoDTO) _then;
+
+/// Create a copy of SubsonicAlbumInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? notes = freezed,Object? musicBrainzId = freezed,Object? lastFmUrl = freezed,}) {
+  return _then(_self.copyWith(
+notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,musicBrainzId: freezed == musicBrainzId ? _self.musicBrainzId : musicBrainzId // ignore: cast_nullable_to_non_nullable
+as String?,lastFmUrl: freezed == lastFmUrl ? _self.lastFmUrl : lastFmUrl // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SubsonicAlbumInfoDTO].
+extension SubsonicAlbumInfoDTOPatterns on SubsonicAlbumInfoDTO {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SubsonicAlbumInfoDTO value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SubsonicAlbumInfoDTO() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SubsonicAlbumInfoDTO value)  $default,){
+final _that = this;
+switch (_that) {
+case _SubsonicAlbumInfoDTO():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SubsonicAlbumInfoDTO value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SubsonicAlbumInfoDTO() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? notes,  String? musicBrainzId,  String? lastFmUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SubsonicAlbumInfoDTO() when $default != null:
+return $default(_that.notes,_that.musicBrainzId,_that.lastFmUrl);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? notes,  String? musicBrainzId,  String? lastFmUrl)  $default,) {final _that = this;
+switch (_that) {
+case _SubsonicAlbumInfoDTO():
+return $default(_that.notes,_that.musicBrainzId,_that.lastFmUrl);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? notes,  String? musicBrainzId,  String? lastFmUrl)?  $default,) {final _that = this;
+switch (_that) {
+case _SubsonicAlbumInfoDTO() when $default != null:
+return $default(_that.notes,_that.musicBrainzId,_that.lastFmUrl);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SubsonicAlbumInfoDTO implements SubsonicAlbumInfoDTO {
+  const _SubsonicAlbumInfoDTO({this.notes, this.musicBrainzId, this.lastFmUrl});
+  factory _SubsonicAlbumInfoDTO.fromJson(Map<String, dynamic> json) => _$SubsonicAlbumInfoDTOFromJson(json);
+
+@override final  String? notes;
+@override final  String? musicBrainzId;
+@override final  String? lastFmUrl;
+
+/// Create a copy of SubsonicAlbumInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SubsonicAlbumInfoDTOCopyWith<_SubsonicAlbumInfoDTO> get copyWith => __$SubsonicAlbumInfoDTOCopyWithImpl<_SubsonicAlbumInfoDTO>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SubsonicAlbumInfoDTOToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubsonicAlbumInfoDTO&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.lastFmUrl, lastFmUrl) || other.lastFmUrl == lastFmUrl));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,notes,musicBrainzId,lastFmUrl);
+
+@override
+String toString() {
+  return 'SubsonicAlbumInfoDTO(notes: $notes, musicBrainzId: $musicBrainzId, lastFmUrl: $lastFmUrl)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SubsonicAlbumInfoDTOCopyWith<$Res> implements $SubsonicAlbumInfoDTOCopyWith<$Res> {
+  factory _$SubsonicAlbumInfoDTOCopyWith(_SubsonicAlbumInfoDTO value, $Res Function(_SubsonicAlbumInfoDTO) _then) = __$SubsonicAlbumInfoDTOCopyWithImpl;
+@override @useResult
+$Res call({
+ String? notes, String? musicBrainzId, String? lastFmUrl
+});
+
+
+
+
+}
+/// @nodoc
+class __$SubsonicAlbumInfoDTOCopyWithImpl<$Res>
+    implements _$SubsonicAlbumInfoDTOCopyWith<$Res> {
+  __$SubsonicAlbumInfoDTOCopyWithImpl(this._self, this._then);
+
+  final _SubsonicAlbumInfoDTO _self;
+  final $Res Function(_SubsonicAlbumInfoDTO) _then;
+
+/// Create a copy of SubsonicAlbumInfoDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? notes = freezed,Object? musicBrainzId = freezed,Object? lastFmUrl = freezed,}) {
+  return _then(_SubsonicAlbumInfoDTO(
+notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,musicBrainzId: freezed == musicBrainzId ? _self.musicBrainzId : musicBrainzId // ignore: cast_nullable_to_non_nullable
+as String?,lastFmUrl: freezed == lastFmUrl ? _self.lastFmUrl : lastFmUrl // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SubsonicIndexDTO {
 
  String get name; List<SubsonicArtistDTO> get artist;

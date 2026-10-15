@@ -38,6 +38,8 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   List<LibraryItem> songs = [];
   bool isLoadingSongs = true;
   bool loadFailed = false;
+  String? description;
+  bool descriptionExpanded = false;
   late bool isFavorite;
   late final ImageService imageService;
   late ThemeData theme;
@@ -49,8 +51,10 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   void initState() {
     super.initState();
     isFavorite = album.userData.isFavorite;
+    description = album.overview;
     imageService = ref.read(imageServiceProvider);
     unawaited(_loadSongs());
+    unawaited(_loadDescription());
     currentSong.value = ref.read(nowPlayingProvider);
     ref.listenManual<MediaItem?>(nowPlayingProvider, (_, song) {
       if (!mounted) return;
@@ -157,6 +161,21 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     }
   }
 
+  Future<void> _loadDescription() async {
+    if (ref.read(isOfflineProvider)) return;
+    final LibraryItem fresh;
+    try {
+      fresh = await ref
+          .read(mediaServerClientProvider)
+          .getItem(album.id, kind: ItemKind.album);
+    } on Object {
+      return;
+    }
+    final text = fresh.overview?.trim();
+    if (!mounted || text == null || text.isEmpty) return;
+    setState(() => description = text);
+  }
+
   List<LibraryItem> _sortedByIndex(List<LibraryItem> items) =>
       [...items]..sort(LibraryItem.compareAlbumOrder);
 
@@ -196,6 +215,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       SliverToBoxAdapter(child: _songsPlaceholder())
     else
       ..._songSlivers(),
+    ..._descriptionSlivers(),
     ..._moreFromArtistSlivers(),
     ..._suggestedAlbumsSlivers(),
   ];
@@ -426,6 +446,90 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final artist = album.albumArtists.firstOrNull;
     if (artist == null) return null;
     return (artistId: artist.id, albumId: album.id);
+  }
+
+  List<Widget> _descriptionSlivers() {
+    final text = description?.trim();
+    if (text == null || text.isEmpty) return const [];
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: edgePadding,
+            right: edgePadding,
+            top: 24,
+            bottom: 12,
+          ),
+          child: Text(
+            'About',
+            style: TextStyle(
+              fontSize: sectionTitleFontSize,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: edgePadding),
+          child: _descriptionText(text),
+        ),
+      ),
+    ];
+  }
+
+  Widget _descriptionText(String text) {
+    final style = TextStyle(
+      fontSize: 14,
+      height: 1.4,
+      color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+    );
+    const collapsedLines = 4;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: style),
+          maxLines: collapsedLines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        final overflows = painter.didExceedMaxLines;
+        painter.dispose();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              alignment: Alignment.topCenter,
+              child: Text(
+                text,
+                maxLines: descriptionExpanded ? null : collapsedLines,
+                overflow: descriptionExpanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+            if (overflows)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () =>
+                    setState(() => descriptionExpanded = !descriptionExpanded),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Text(
+                    descriptionExpanded ? 'Show less' : 'Read more',
+                    style: style.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   List<Widget> _moreFromArtistSlivers() {

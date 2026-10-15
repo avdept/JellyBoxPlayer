@@ -677,7 +677,7 @@ class SubsonicClient implements MediaServerClient {
         ItemKind.song => (await _api.getSong(
           itemId,
         )).toLibraryItem(lyricsAvailable: capabilities.lyrics),
-        ItemKind.album => (await _api.getAlbum(itemId)).toLibraryItem(),
+        ItemKind.album => await _albumWithInfo(itemId),
         ItemKind.artist => await _artistWithInfo(itemId),
         ItemKind.playlist => (await _api.getPlaylist(itemId)).toLibraryItem(),
         ItemKind.genre => LibraryItem(
@@ -695,6 +695,19 @@ class SubsonicClient implements MediaServerClient {
               )
               .toLibraryItem(),
       };
+
+  Future<LibraryItem> _albumWithInfo(String id) async {
+    final results = await Future.wait<Object?>([
+      _api.getAlbum(id),
+      _api
+          .getAlbumInfo2(id)
+          .then<Object?>((info) => info, onError: (_) => null),
+    ]);
+    final album = (results[0]! as SubsonicAlbumDTO).toLibraryItem();
+    final info = results[1] as SubsonicAlbumInfoDTO?;
+    final notes = subsonicPlainText(info?.notes);
+    return notes == null ? album : album.copyWith(overview: notes);
+  }
 
   Future<LibraryItem> _artistWithInfo(String id) async {
     final results = await Future.wait<Object?>([

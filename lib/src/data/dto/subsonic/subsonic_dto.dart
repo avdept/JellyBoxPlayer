@@ -169,6 +169,18 @@ abstract class SubsonicArtistInfoDTO with _$SubsonicArtistInfoDTO {
 }
 
 @freezed
+abstract class SubsonicAlbumInfoDTO with _$SubsonicAlbumInfoDTO {
+  const factory SubsonicAlbumInfoDTO({
+    String? notes,
+    String? musicBrainzId,
+    String? lastFmUrl,
+  }) = _SubsonicAlbumInfoDTO;
+
+  factory SubsonicAlbumInfoDTO.fromJson(Map<String, dynamic> json) =>
+      _$SubsonicAlbumInfoDTOFromJson(json);
+}
+
+@freezed
 abstract class SubsonicIndexDTO with _$SubsonicIndexDTO {
   const factory SubsonicIndexDTO({
     @Default('') String name,
