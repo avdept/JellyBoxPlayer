@@ -21,6 +21,7 @@ class _FakeFeed implements CastMediaFeed {
   final statusEvents = StreamController<CastReceiverStatus>.broadcast();
   final queueEvents = StreamController<List<CastQueueEntry>>.broadcast();
   final positionEvents = StreamController<Duration>.broadcast();
+  final failureEvents = StreamController<CastRequestFailure>.broadcast();
 
   @override
   Stream<CastReceiverStatus> get statuses => statusEvents.stream;
@@ -31,10 +32,14 @@ class _FakeFeed implements CastMediaFeed {
   @override
   Stream<Duration> get positions => positionEvents.stream;
 
+  @override
+  Stream<CastRequestFailure> get failures => failureEvents.stream;
+
   Future<void> close() async {
     await statusEvents.close();
     await queueEvents.close();
     await positionEvents.close();
+    await failureEvents.close();
   }
 }
 
@@ -449,6 +454,77 @@ void main() {
     );
     await pumpEventQueue();
 
+    expect(target.state.status, PlaybackStatus.error);
+  });
+
+  Future<void> skipThroughQueue() async {
+    for (final itemId in [10, 11, 12]) {
+      feed.statusEvents.add(
+        _status(status: PlaybackStatus.buffering, currentItemId: itemId),
+      );
+      await pumpEventQueue();
+    }
+  }
+
+  test('reloads once when the receiver skips tracks it never played', () async {
+    await load();
+    await reportQueue();
+
+    await skipThroughQueue();
+
+    final loads = verify(
+      () => client.queueLoadItems(
+        any(),
+        options: captureAny(named: 'options'),
+      ),
+    ).captured.cast<GoogleCastQueueLoadOptions>();
+    expect(loads, hasLength(2));
+    expect(loads.last.startIndex, 0);
+    expect(loads.last.autoPlay, isTrue);
+    expect(target.state.status, isNot(PlaybackStatus.error));
+  });
+
+  test('fails over when the reload skips through the queue too', () async {
+    await load();
+    await reportQueue();
+    await skipThroughQueue();
+    await reportQueue();
+
+    await skipThroughQueue();
+
+    expect(target.state.status, PlaybackStatus.error);
+  });
+
+  test('does not count tracks skipped from the app', () async {
+    await load();
+    await reportQueue();
+
+    for (final itemId in [11, 12]) {
+      await target.seekToNext();
+      feed.statusEvents.add(
+        _status(status: PlaybackStatus.buffering, currentItemId: itemId),
+      );
+      await pumpEventQueue();
+    }
+
+    verify(
+      () => client.queueLoadItems(any(), options: any(named: 'options')),
+    ).called(1);
+  });
+
+  test('fails when the receiver rejects the queue load', () async {
+    await load();
+
+    feed.failureEvents.add(
+      const CastRequestFailure(operation: 'load', code: 6, message: 'replaced'),
+    );
+    await pumpEventQueue();
+    expect(target.state.status, isNot(PlaybackStatus.error));
+
+    feed.failureEvents.add(
+      const CastRequestFailure(operation: 'load', code: 30, message: 'failed'),
+    );
+    await pumpEventQueue();
     expect(target.state.status, PlaybackStatus.error);
   });
 

@@ -41,8 +41,25 @@ class CastQueueEntry {
   final String? contentUrl;
 }
 
+class CastRequestFailure implements Exception {
+  const CastRequestFailure({
+    required this.operation,
+    required this.code,
+    required this.message,
+  });
+
+  final String operation;
+  final int code;
+  final String message;
+
+  @override
+  String toString() => '$operation failed ($code: $message)';
+}
+
 abstract class CastMediaFeed {
   Stream<CastReceiverStatus> get statuses;
+
+  Stream<CastRequestFailure> get failures;
 
   Stream<List<CastQueueEntry>> get queue;
 
@@ -79,6 +96,7 @@ class CastChannelFeed implements CastMediaFeed {
   final _statuses = StreamController<CastReceiverStatus>.broadcast();
   final _queue = StreamController<List<CastQueueEntry>>.broadcast();
   final _positions = StreamController<Duration>.broadcast();
+  final _failures = StreamController<CastRequestFailure>.broadcast();
 
   @override
   Stream<CastReceiverStatus> get statuses => _statuses.stream;
@@ -88,6 +106,9 @@ class CastChannelFeed implements CastMediaFeed {
 
   @override
   Stream<Duration> get positions => _positions.stream;
+
+  @override
+  Stream<CastRequestFailure> get failures => _failures.stream;
 
   Future<void> _onCall(MethodCall call) async {
     switch (call.method) {
@@ -103,6 +124,8 @@ class CastChannelFeed implements CastMediaFeed {
         _onIosQueue(call.arguments);
       case 'onUpdatePlayerPosition':
         _onIosPosition(call.arguments);
+      case 'onRequestFailed':
+        _onFailure(call.arguments);
     }
   }
 
@@ -237,6 +260,17 @@ class CastChannelFeed implements CastMediaFeed {
   void _onIosPosition(Object? arguments) {
     if (arguments is! num) return;
     _positions.add(Duration(milliseconds: arguments.toInt()));
+  }
+
+  void _onFailure(Object? arguments) {
+    if (arguments is! Map) return;
+    _failures.add(
+      CastRequestFailure(
+        operation: '${arguments['operation']}',
+        code: (arguments['code'] as num?)?.toInt() ?? -1,
+        message: '${arguments['message']}',
+      ),
+    );
   }
 
   Map<String, dynamic>? _decode(String source) {

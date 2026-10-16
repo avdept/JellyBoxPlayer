@@ -26,6 +26,17 @@ class CastSessionFailure implements Exception {
   String toString() => 'could not start a Cast session with $deviceName';
 }
 
+class CastReceiverSkipping implements Exception {
+  const CastReceiverSkipping(this.deviceName, this.skipped);
+
+  final String deviceName;
+  final int skipped;
+
+  @override
+  String toString() =>
+      '$deviceName skipped $skipped tracks in a row without playing any';
+}
+
 class CastPlaybackTarget implements PlaybackTarget {
   CastPlaybackTarget(
     this.device, {
@@ -53,6 +64,8 @@ class CastPlaybackTarget implements PlaybackTarget {
   static const _connectAttempts = 3;
   static const _restartThreshold = Duration(seconds: 3);
   static const _sessionGrace = Duration(seconds: 20);
+  static const _silentSkipLimit = 2;
+  static const _benignFailures = {5, 6};
 
   final GoogleCastDevice device;
   final Diagnostics diagnostics;
@@ -74,6 +87,11 @@ class CastPlaybackTarget implements PlaybackTarget {
   var _sawSession = false;
   var _takenOver = false;
   int? _ownMediaSession;
+  var _silentSkips = 0;
+  var _reachedPlay = false;
+  var _userSkip = false;
+  var _retriedSilentSkips = false;
+  String? _lastTrailedStatus;
   double? _pendingVolume;
   Timer? _sessionLoss;
   TargetPlaybackState _state = TargetPlaybackState.idle;
@@ -129,6 +147,10 @@ class CastPlaybackTarget implements PlaybackTarget {
     _status = null;
     _loaded = false;
     _ownMediaSession = null;
+    _silentSkips = 0;
+    _reachedPlay = false;
+    _userSkip = false;
+    _lastTrailedStatus = null;
     _index = tracks.isEmpty ? 0 : initialIndex.clamp(0, tracks.length - 1);
     _position = initialPosition;
 
@@ -313,6 +335,7 @@ class CastPlaybackTarget implements PlaybackTarget {
       _feed.statuses.listen(_onStatus),
       _feed.positions.listen(_onPosition),
       _feed.queue.listen(_onQueueItems),
+      _feed.failures.listen(_onFailure),
       _sessions.currentSessionStream.listen(_onSession),
     ]);
   }
@@ -353,15 +376,94 @@ class CastPlaybackTarget implements PlaybackTarget {
       }
     }
     _status = status;
+    _trailStatus(status);
 
     final index = _indexOfCurrentItem(status);
+    if (index != null && index != _index) _onAdvance(index);
     if (index != null) _index = index;
+
+    if (status.status == PlaybackStatus.playing) {
+      _reachedPlay = true;
+      _silentSkips = 0;
+      _retriedSilentSkips = false;
+    }
+
+    if (_silentSkips >= _silentSkipLimit) {
+      _onSilentSkips();
+      return;
+    }
 
     _emit(
       status: status.status,
       duration: status.duration ?? _currentTrack?.duration,
       completed: _finishedQueue(status),
     );
+  }
+
+  void _onAdvance(int index) {
+    final silent = index > _index && !_reachedPlay && !_userSkip;
+    _reachedPlay = false;
+    _userSkip = false;
+    _silentSkips = silent ? _silentSkips + 1 : 0;
+  }
+
+  void _onSilentSkips() {
+    final skipped = _silentSkips;
+    final from = (_index - skipped).clamp(0, _tracks.length - 1);
+    _silentSkips = 0;
+    if (!_retriedSilentSkips) {
+      _retriedSilentSkips = true;
+      diagnostics.trail(
+        '$name skipped $skipped tracks without playing; reloading at $from',
+        category: 'cast',
+      );
+      unawaited(
+        load(
+          [..._tracks],
+          initialIndex: from,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        ),
+      );
+      return;
+    }
+    _loaded = false;
+    unawaited(
+      diagnostics.capture(
+        CastReceiverSkipping(name, skipped),
+        operation: 'cast.receiver.skipping',
+        tags: _deviceTags,
+        extra: {'tracks': _tracks.length, ..._streamInfo(_tracks[from])},
+      ),
+    );
+    _emit(status: PlaybackStatus.error);
+  }
+
+  void _onFailure(CastRequestFailure failure) {
+    if (_disposed || _takenOver) return;
+    if (_benignFailures.contains(failure.code)) return;
+    diagnostics.trail('cast $failure on $name', category: 'cast');
+    if (!_loaded) return;
+    _loaded = false;
+    unawaited(
+      diagnostics.capture(
+        failure,
+        operation: 'cast.queue.load',
+        tags: _deviceTags,
+        extra: {'tracks': _tracks.length, ..._streamInfo(_currentTrack)},
+      ),
+    );
+    _emit(status: PlaybackStatus.error);
+  }
+
+  void _trailStatus(CastReceiverStatus status) {
+    final summary =
+        '${status.status.name} item=${status.itemId ?? 'none'}'
+        '${status.failed ? ' failed' : ''}'
+        '${status.finished ? ' finished' : ''}';
+    if (summary == _lastTrailedStatus) return;
+    _lastTrailedStatus = summary;
+    diagnostics.trail('cast receiver $summary', category: 'cast');
   }
 
   void _onPosition(Duration position) {
@@ -515,6 +617,7 @@ class CastPlaybackTarget implements PlaybackTarget {
       return;
     }
     _index = index;
+    _reachedPlay = false;
     await _client.queueJumpToItemWithId(itemId);
   }
 
@@ -646,11 +749,15 @@ class CastPlaybackTarget implements PlaybackTarget {
   }
 
   @override
-  Future<void> seekToNext() => _client.queueNextItem();
+  Future<void> seekToNext() {
+    _userSkip = true;
+    return _client.queueNextItem();
+  }
 
   @override
   Future<void> seekToPrevious() async {
     if (_index > 0 && _position <= _restartThreshold) {
+      _userSkip = true;
       await _client.queuePrevItem();
       return;
     }
