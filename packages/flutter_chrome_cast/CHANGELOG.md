@@ -27,6 +27,14 @@ Android:
 * `queueLoadItems` loads through `MediaLoadRequestData`, so the new
   `GoogleCastQueueLoadOptions.autoPlay` can load a queue paused.
 
+iOS:
+
+* Queue load failures were dropped: the request had no delegate, so a load
+  the receiver refused or never answered left the Dart side with nothing but
+  statuses. Failures now arrive on `google_cast.remote_media_client` as
+  `onRequestFailed` (`operation`, GCK error `code`, `message`), and a load with
+  no remote media client reports `NoMediaSession` (32) instead of doing nothing.
+
 Both platforms:
 
 * A suspended session (app backgrounded, network blip) is reported as

@@ -29,7 +29,7 @@ import GoogleCast
 ///
 /// - Author: LUIZ FELIPE ALVES LIMA
 /// - Since: iOS 10.0+
-class RemoteMediaClienteMethodChannel :UIResponder, FlutterPlugin, GCKRemoteMediaClientListener{
+class RemoteMediaClienteMethodChannel :UIResponder, FlutterPlugin, GCKRemoteMediaClientListener, GCKRequestDelegate{
     
     // MARK: - Singleton Implementation
     
@@ -251,8 +251,29 @@ class RemoteMediaClienteMethodChannel :UIResponder, FlutterPlugin, GCKRemoteMedi
         requestData.customData = options.customData
 
         lastLoadedContentID = nil
-        let request = currentRemoteMediaCliente?.loadMedia(with: requestData.build())
-        result(request?.toMap())
+        guard let client = currentRemoteMediaCliente else {
+            reportFailure("queueLoadItems", code: GCKErrorCode.noMediaSession.rawValue, message: "no remote media client")
+            result(nil)
+            return
+        }
+        let request = client.loadMedia(with: requestData.build())
+        request.delegate = self
+        result(request.toMap())
+    }
+
+    /// A load the receiver refused or never answered. Without this the
+    /// failure is silent: the Dart side only sees statuses, and a queue whose
+    /// items all fail just advances.
+    func request(_ request: GCKRequest, didFailWithError error: GCKError) {
+        reportFailure("load", code: error.code, message: error.localizedDescription)
+    }
+
+    private func reportFailure(_ operation: String, code: Int, message: String) {
+        channel?.invokeMethod("onRequestFailed", arguments: [
+            "operation": operation,
+            "code": code,
+            "message": message,
+        ])
     }
     
     private  func loadMedia(_ arguments : Dictionary<String,Any>, result : FlutterResult )  {
