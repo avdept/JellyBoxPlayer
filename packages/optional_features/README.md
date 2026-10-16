@@ -2,13 +2,13 @@
 
 The parts of JellyBox that are not open: per-manufacturer UPnP renderer
 behaviour, the genre-mix playlist policy, and cross-device continuity
-(the Jellybox Cloud account, session sync and handoff).
+(the Jellybox Link account, session sync and handoff).
 
 **This is the open stub.** It carries the API the app compiles against, with
 inert implementations — no quirk rules, no generator, and continuity reporting
 `available == false`. A build made from this repository alone is a complete
 music player; it just has no renderer workarounds, no generated mixes and no
-Jellybox Cloud row in settings.
+Jellybox Link row in settings.
 
 The working implementation is a private package swapped in through
 `pubspec_overrides.yaml`:

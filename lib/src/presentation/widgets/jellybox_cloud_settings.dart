@@ -91,7 +91,7 @@ class _ServerConnectionRow extends ConsumerWidget {
               switch ((hasTunnel, tunnelUp)) {
                 (false, _) => switch (addresses?.relayDenied) {
                   'plan_full' =>
-                    "This server's Jellybox Cloud plan has no free seat for "
+                    "This server's Jellybox Link plan has no free seat for "
                         'your user. Ask the owner to make room.',
                   'no_password' =>
                     'Remote access needs a password on your Jellyfin user.',

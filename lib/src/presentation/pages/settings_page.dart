@@ -173,7 +173,7 @@ class SettingsPage extends ConsumerWidget {
                     _sectionHeader('Server'),
                     const ServerAddressSettings(),
                     if (ref.watch(cloudAvailableProvider)) ...[
-                      _sectionHeader('Jellybox Cloud'),
+                      _sectionHeader('Jellybox Link'),
                       const JellyboxCloudSettings(),
                     ],
                     _sectionHeader('General'),

@@ -62,7 +62,7 @@ class ContinuityIntro extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('Jellybox Cloud'),
+          const ModalFormHeader('Jellybox Link'),
           const SizedBox(height: 8),
           Flexible(
             child: SingleChildScrollView(
