@@ -8,9 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?> {
   late SharedPreferences _prefs;
 
-  static const String _libraryIdStorageKey = 'library_id';
-  static const String _libraryPathStorageKey = 'library_path';
-  static const String _libraryNameStorageKey = 'library_name';
+  static const String libraryIdStorageKey = 'library_id';
+  static const String libraryPathStorageKey = 'library_path';
+  static const String libraryNameStorageKey = 'library_name';
 
   @override
   FutureOr<LibraryItem?> build() async {
@@ -20,9 +20,9 @@ class CurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?> {
 
     state = const AsyncLoading();
     final library = LibraryItem(
-      id: _prefs.getString(_libraryIdStorageKey) ?? '',
-      path: _prefs.getString(_libraryPathStorageKey),
-      name: _prefs.getString(_libraryNameStorageKey) ?? '',
+      id: _prefs.getString(libraryIdStorageKey) ?? '',
+      path: _prefs.getString(libraryPathStorageKey),
+      name: _prefs.getString(libraryNameStorageKey) ?? '',
       kind: ItemKind.library,
     );
 
@@ -34,9 +34,9 @@ class CurrentLibraryNotifier extends AutoDisposeAsyncNotifier<LibraryItem?> {
   Future<void> setLibrary(LibraryItem lib) async {
     state = AsyncData(lib);
     await Future.wait([
-      _prefs.setString(_libraryIdStorageKey, lib.id),
-      _prefs.setString(_libraryPathStorageKey, lib.path ?? ''),
-      _prefs.setString(_libraryNameStorageKey, lib.name),
+      _prefs.setString(libraryIdStorageKey, lib.id),
+      _prefs.setString(libraryPathStorageKey, lib.path ?? ''),
+      _prefs.setString(libraryNameStorageKey, lib.name),
     ]);
   }
 }

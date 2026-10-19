@@ -10,10 +10,21 @@ class AppDropdownEntry<T> {
     required this.label,
     this.leadingBuilder,
     this.trailingBuilder,
-  });
+    this.enabled = true,
+  }) : isHeader = false;
+
+  const AppDropdownEntry.header({
+    required this.value,
+    required this.label,
+    this.leadingBuilder,
+    this.trailingBuilder,
+  }) : enabled = false,
+       isHeader = true;
 
   final T value;
   final String label;
+  final bool enabled;
+  final bool isHeader;
   final Widget Function(Color color)? leadingBuilder;
   final Widget Function(Color color)? trailingBuilder;
 }
@@ -80,15 +91,19 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
           width: widget.width,
           padding: const EdgeInsets.all(8),
           offset: const Offset(0, -8),
+          maxHeight: 480,
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
         ),
         items: [
           for (final entry in widget.entries)
             DropdownMenuItem(
               value: entry.value,
+              enabled: entry.enabled,
               child: Builder(
                 builder: (context) {
-                  final color = entry.value == widget.value
+                  final color = entry.isHeader
+                      ? theme.colorScheme.onPrimary.withValues(alpha: 0.6)
+                      : entry.value == widget.value
                       ? theme.colorScheme.primary
                       : theme.colorScheme.onPrimary;
                   return Row(
@@ -103,7 +118,8 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: entry.isHeader ? 12 : 14,
+                            fontWeight: entry.isHeader ? FontWeight.w600 : null,
                             height: 1.2,
                             color: color,
                           ),

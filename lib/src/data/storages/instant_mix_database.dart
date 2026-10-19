@@ -64,6 +64,11 @@ class InstantMixDatabase {
     );
   }
 
+  Future<void> deleteAll() async {
+    final db = await _database;
+    await db.delete(_table, where: 'ServerId = ?', whereArgs: [_serverId]);
+  }
+
   static String _encodeSongs(List<LibraryItem> songs) =>
       jsonEncode([for (final song in songs) song.toJson()]);
 

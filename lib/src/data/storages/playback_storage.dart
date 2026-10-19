@@ -79,4 +79,22 @@ class PlaybackStorage {
       return null;
     }
   }
+
+  Future<void> clear() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        for (final key in const [
+          _songsKey,
+          _albumKey,
+          _songIdKey,
+          _positionMsKey,
+          _sourceIdKey,
+        ])
+          prefs.remove(key),
+      ]);
+    } on Object {
+      return;
+    }
+  }
 }

@@ -9,6 +9,15 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
+List<LibraryItem> musicLibraries(Iterable<LibraryItem> items) =>
+    List.unmodifiable(
+      items.where(
+        (element) =>
+            element.kind == ItemKind.library &&
+            element.collectionType == 'music',
+      ),
+    );
+
 class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>> {
   late MediaServerClient _client;
 
@@ -20,13 +29,7 @@ class LibrariesNotifier extends AutoDisposeAsyncNotifier<List<LibraryItem>> {
     state = const AsyncLoading();
     try {
       final libraries = await _client.getLibraries();
-      return List.unmodifiable(
-        libraries.items.where(
-          (element) =>
-              element.kind == ItemKind.library &&
-              element.collectionType == 'music',
-        ),
-      );
+      return musicLibraries(libraries.items);
     } catch (e) {
       print('Error in build: type=${e.runtimeType}, message=$e');
       return const [];

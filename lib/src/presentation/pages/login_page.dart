@@ -1,18 +1,24 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
+import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({this.addingServer = false, super.key});
+
+  final bool addingServer;
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => LoginPageState();
@@ -26,6 +32,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   final _serverUrlFocusNode = FocusNode();
 
   String? _resolvedServerUrl;
+  String? _resolvedServerId;
   ServerType? _resolvedServerType;
   String? _resolvedProductName;
   bool _resolvedQuickConnect = false;
@@ -45,7 +52,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(ref.read(serverDiscoveryProvider.notifier).scan());
     });
-    unawaited(_prefillLastServer());
+    if (!widget.addingServer) unawaited(_prefillLastServer());
   }
 
   Future<void> _prefillLastServer() async {
@@ -92,8 +99,11 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   void _onDiscoveryChanged(ServerDiscoveryState discovery) {
     if (_manualEntry) return;
-    if (discovery.servers.isNotEmpty) {
-      if (_selectedServer == null) _selectServer(discovery.servers.first);
+    final candidate = discovery.servers.firstWhereOrNull(
+      (server) => !widget.addingServer || !_isAdded(server.id),
+    );
+    if (candidate != null) {
+      if (_selectedServer == null) _selectServer(candidate);
       return;
     }
     if (discovery.finished && _mode == ServerUrlFieldMode.discovering) {
@@ -108,6 +118,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
       _mode = ServerUrlFieldMode.selected;
       _apiChoices = const [];
       _resolvedServerUrl = server.serverUrl;
+      _resolvedServerId = server.id;
       _resolvedServerType = server.serverType;
       _resolvedProductName = null;
       _resolvedQuickConnect = server.quickConnect;
@@ -126,6 +137,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   void _applyIdentity(ServerIdentity? identity) {
     _resolvedServerUrl = identity?.serverUrl;
+    _resolvedServerId = identity?.serverId;
     _resolvedServerType = identity?.serverType;
     _resolvedProductName = identity?.productName;
     _resolvedQuickConnect = identity?.quickConnect ?? false;
@@ -342,12 +354,20 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       _loginField(),
                       const SizedBox(height: 8),
                       _passwordField(),
-                      if (error != null) ...[
+                      if (_visibleError case final message?) ...[
                         const SizedBox(height: 12),
-                        _errorText(error!),
+                        _errorText(message),
                       ],
                       const SizedBox(height: 63),
                       _signInButton(),
+                      if (widget.addingServer) ...[
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: context.pop,
+                          child: const Text('Cancel'),
+                        ),
+                      ] else
+                        ?_savedServers(),
                     ],
                   ),
                 ),
@@ -357,6 +377,40 @@ class LoginPageState extends ConsumerState<LoginPage> {
         ),
       ),
     );
+  }
+
+  bool _isAdded(String? serverId) => ref
+      .read(accountsProvider)
+      .any((account) => account.serverId == serverId && !account.needsReauth);
+
+  String? get _visibleError {
+    if (error != null || !widget.addingServer) return error;
+    ref.watch(accountsProvider);
+    return _isAdded(_resolvedServerId) ? AuthNotifier.alreadyAddedError : null;
+  }
+
+  Widget? _savedServers() {
+    if (ref.watch(accountsProvider).isEmpty) return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
+      child: ServerAccountList(
+        removable: false,
+        showAdd: false,
+        onSelect: _useSavedServer,
+      ),
+    );
+  }
+
+  void _useSavedServer(ServerAccount account) {
+    if (!account.needsReauth) {
+      unawaited(ref.read(authProvider.notifier).switchTo(account.serverId));
+      return;
+    }
+    _startManualEntry();
+    _serverUrlInputController.text = account.url;
+    _emailInputController.text = account.userName ?? '';
+    _passwordInputController.clear();
+    unawaited(_probeServer());
   }
 
   Widget _errorText(String message) => Text(

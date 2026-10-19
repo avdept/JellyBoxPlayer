@@ -177,6 +177,12 @@ class DownloadService {
     }
   }
 
+  Future<void> cancelAll() async {
+    for (final id in [..._tasks.keys]) {
+      await cancelDownload(id);
+    }
+  }
+
   Future<void> cancelDownload(String id) async {
     final task = _tasks[id];
     if (task != null) {

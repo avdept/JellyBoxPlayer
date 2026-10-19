@@ -12,6 +12,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final conductorUrlProvider =
@@ -60,7 +61,9 @@ class CloudNotifier extends StateNotifier<CloudState> {
     _ref
       ..listen(conductorUrlProvider, (_, _) => unawaited(_refresh()))
       ..listen(currentUserProvider, (_, next) {
-        if (next == null) _cloud.forgetAccount();
+        if (next == null && _ref.read(accountsProvider).isEmpty) {
+          _cloud.forgetAccount();
+        }
         unawaited(_refresh());
       });
 
