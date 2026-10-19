@@ -98,6 +98,27 @@ class ConnectivityNotifier extends StateNotifier<bool> {
 
   Future<void> setRemote(String? url) => rememberRemote(_ref, url);
 
+  List<String> liveEndpoints() {
+    final addresses = _addresses;
+    if (addresses == null) return const [];
+    final selected = _selected ?? _ref.read(baseUrlProvider) ?? addresses.home;
+    final others = addresses.candidates.where((url) => url != selected);
+    return [
+      selected,
+      ...others.where((url) => !_down.contains(url)),
+      ...others.where(_down.contains),
+    ];
+  }
+
+  void adopt(String url) {
+    if (!mounted || !(_addresses?.candidates.contains(url) ?? false)) return;
+    if (url == _selected) return;
+    debugPrint('[Connectivity] a stream got through on $url');
+    _select(url);
+    _setOnline(true);
+    unawaited(refresh());
+  }
+
   Future<bool> _probe() async {
     final addresses = _addresses;
     if (addresses == null) return state;

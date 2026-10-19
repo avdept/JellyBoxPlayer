@@ -11,6 +11,7 @@ class TargetTrack {
     required this.isHls,
     required this.title,
     required this.duration,
+    this.location,
     this.artist,
     this.album,
     this.artUri,
@@ -20,6 +21,7 @@ class TargetTrack {
 
   final String itemId;
   final Uri uri;
+  final Uri? location;
   final String mimeType;
   final bool isHls;
   final String title;

@@ -43,6 +43,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (previous != next) _scheduleRequalify();
     });
     _ref.listen<String?>(baseUrlProvider, (previous, next) {
+      if (_target.kind == PlaybackTargetKind.local) return;
       if (previous != null && next != null && previous != next) {
         _scheduleRequalify();
       }
@@ -739,6 +740,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final audioSource = song.audioSources.firstOrNull;
 
     Uri uri;
+    Uri? location;
     var isHls = false;
     var transcoded = false;
     var mimeType = 'application/octet-stream';
@@ -760,6 +762,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
             target: _streamProfile,
           );
       uri = resolved.uri;
+      location = resolved.location;
       isHls = resolved.isHls;
       mimeType = resolved.mimeType;
       transcoded = resolved.requiresTranscode;
@@ -772,7 +775,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (artUri != null) artUri = await rendererUriResolver.resolve(artUri);
     } else if (_target.kind == PlaybackTargetKind.local) {
       final proxy = _ref.read(streamProxyProvider);
-      uri = await proxy.resolve(uri);
+      uri = location == null
+          ? await proxy.resolve(uri)
+          : await proxy.forLocation(location);
       if (artUri != null) artUri = await proxy.resolve(artUri);
       if (Platform.isAndroid) artUri = androidCoverArtUri(artUri);
     }
@@ -790,6 +795,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       track: TargetTrack(
         itemId: song.id,
         uri: uri,
+        location: location,
         mimeType: mimeType,
         isHls: isHls,
         title: song.name,

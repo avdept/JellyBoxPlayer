@@ -6,11 +6,13 @@ class StreamSource {
     required this.isHls,
     required this.outputContainer,
     required this.mimeType,
+    this.location,
     this.requiresTranscode = false,
     this.delivered,
   });
 
   final Uri uri;
+  final Uri? location;
   final bool isHls;
   final String outputContainer;
   final String mimeType;

@@ -608,6 +608,8 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     final uri = track?.uri;
     if (uri == null) return 'nothing';
     if (track!.isLocalFile) return 'a local file';
+    final location = track.location;
+    if (location != null) return 'the server (${location.path})';
     return uri.host.isEmpty ? uri.scheme : uri.host;
   }
 

@@ -3,12 +3,24 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:jplayer/src/core/network/server_location.dart';
+
+typedef _Upstream = ({String? base, Uri uri});
+
+typedef _Connection = ({String? base, Uri uri, HttpClientResponse response});
+
 class StreamProxyServer {
   StreamProxyServer({
     required bool Function(Uri uri) shouldProxy,
+    List<String> Function()? endpoints,
+    void Function(String endpoint)? onEndpointSwitched,
     HttpClient Function()? httpClientFactory,
+    Duration connectTimeout = const Duration(seconds: 5),
   }) : _shouldProxy = shouldProxy,
-       _httpClientFactory = httpClientFactory ?? HttpClient.new;
+       _endpoints = endpoints,
+       _onEndpointSwitched = onEndpointSwitched,
+       _httpClientFactory = httpClientFactory ?? HttpClient.new,
+       _connectTimeout = connectTimeout;
 
   static const _hopByHopHeaders = {
     'connection',
@@ -26,7 +38,10 @@ class StreamProxyServer {
   static final _uriAttribute = RegExp('URI="([^"]*)"');
 
   final bool Function(Uri uri) _shouldProxy;
+  final List<String> Function()? _endpoints;
+  final void Function(String endpoint)? _onEndpointSwitched;
   final HttpClient Function() _httpClientFactory;
+  final Duration _connectTimeout;
   final String _secret = _randomSecret();
 
   HttpClient? _client;
@@ -38,7 +53,12 @@ class StreamProxyServer {
   Future<Uri> resolve(Uri uri) async {
     if (!_shouldProxy(uri)) return uri;
     final server = await _start();
-    return _proxyUri(uri, server.port);
+    return _loopback(server.port, uri, 'u');
+  }
+
+  Future<Uri> forLocation(Uri location) async {
+    final server = await _start();
+    return _loopback(server.port, location, 'l');
   }
 
   Future<void> close() async {
@@ -66,7 +86,7 @@ class StreamProxyServer {
     return server;
   }
 
-  Uri _proxyUri(Uri target, int port) {
+  Uri _loopback(int port, Uri target, String key) {
     final name = target.pathSegments.isEmpty
         ? 'stream'
         : target.pathSegments.last;
@@ -75,50 +95,61 @@ class StreamProxyServer {
       host: InternetAddress.loopbackIPv4.address,
       port: port,
       pathSegments: [_secret, name],
-      queryParameters: {'u': base64Url.encode(utf8.encode(target.toString()))},
+      queryParameters: {key: base64Url.encode(utf8.encode(target.toString()))},
     );
   }
 
-  Uri? _targetOf(HttpRequest request) {
+  List<_Upstream>? _upstreamsOf(HttpRequest request) {
     final segments = request.uri.pathSegments;
     if (segments.isEmpty || segments.first != _secret) return null;
-    final encoded = request.uri.queryParameters['u'];
-    if (encoded == null) return null;
+    final absolute = request.uri.queryParameters['u'];
+    final relative = request.uri.queryParameters['l'];
     try {
-      final target = Uri.parse(utf8.decode(base64Url.decode(encoded)));
-      return _shouldProxy(target) ? target : null;
+      if (absolute != null) {
+        final target = Uri.parse(_decode(absolute));
+        return _shouldProxy(target) ? [(base: null, uri: target)] : null;
+      }
+      if (relative != null) {
+        final location = Uri.parse(_decode(relative));
+        if (location.hasScheme || location.hasAuthority) return null;
+        return [
+          for (final base in _endpoints?.call() ?? const <String>[])
+            (base: base, uri: joinServerLocation(base, location)),
+        ];
+      }
     } on FormatException {
       return null;
     }
+    return null;
   }
 
+  static String _decode(String encoded) =>
+      utf8.decode(base64Url.decode(encoded));
+
   Future<void> _handle(HttpRequest request) async {
-    final target = _targetOf(request);
-    if (target == null) {
+    final upstreams = _upstreamsOf(request);
+    if (upstreams == null || upstreams.isEmpty) {
       request.response.statusCode = HttpStatus.forbidden;
       await request.response.close().catchError((_) {});
       return;
     }
 
-    HttpClientResponse? upstream;
+    _Connection? connection;
     try {
-      final client = _client ??= (_httpClientFactory()..autoUncompress = false);
-      final outgoing = await client.openUrl(request.method, target);
-      outgoing.followRedirects = true;
-      _copyRequestHeaders(request, outgoing);
-      upstream = await outgoing.close();
+      connection = await _connect(request, upstreams);
+      final (:base, :uri, :response) = connection;
 
-      if (_isPlaylist(upstream, target)) {
-        await _servePlaylist(request, upstream, target);
+      if (_isPlaylist(response, uri)) {
+        await _servePlaylist(request, response, uri, base);
         return;
       }
 
-      request.response.statusCode = upstream.statusCode;
-      _copyResponseHeaders(upstream, request.response);
-      await request.response.addStream(upstream);
+      request.response.statusCode = response.statusCode;
+      _copyResponseHeaders(response, request.response);
+      await request.response.addStream(response);
       await request.response.close();
     } on Object {
-      unawaited(_abort(upstream));
+      unawaited(_abort(connection?.response));
       try {
         request.response.statusCode = HttpStatus.badGateway;
         await request.response.close();
@@ -128,13 +159,51 @@ class StreamProxyServer {
     }
   }
 
+  Future<_Connection> _connect(
+    HttpRequest request,
+    List<_Upstream> upstreams,
+  ) async {
+    final client = _client ??= (_httpClientFactory()
+      ..autoUncompress = false
+      ..connectionTimeout = _connectTimeout);
+    Object failure = const HttpException('no upstream answered');
+    for (final (index, upstream) in upstreams.indexed) {
+      final last = index == upstreams.length - 1;
+      try {
+        final outgoing = await client.openUrl(request.method, upstream.uri);
+        outgoing.followRedirects = true;
+        _copyRequestHeaders(request, outgoing);
+        final response = await outgoing.close();
+        if (!last && _gatewayDown(response.statusCode)) {
+          unawaited(_abort(response));
+          failure = HttpException(
+            'HTTP ${response.statusCode} from ${upstream.uri.host}',
+          );
+          continue;
+        }
+        final base = upstream.base;
+        if (index > 0 && base != null) _onEndpointSwitched?.call(base);
+        return (base: base, uri: upstream.uri, response: response);
+      } on Object catch (error) {
+        failure = error;
+      }
+    }
+    throw failure;
+  }
+
+  static bool _gatewayDown(int status) =>
+      status == HttpStatus.badGateway ||
+      status == HttpStatus.serviceUnavailable ||
+      status == HttpStatus.gatewayTimeout;
+
   Future<void> _servePlaylist(
     HttpRequest request,
     HttpClientResponse upstream,
     Uri target,
+    String? base,
   ) async {
     final body = await upstream.transform(utf8.decoder).join();
-    final bytes = utf8.encode(_rewritePlaylist(body, target));
+    final bytes = utf8.encode(_rewritePlaylist(body, target, base));
 
     request.response.statusCode = upstream.statusCode;
     _copyResponseHeaders(upstream, request.response);
@@ -147,14 +216,16 @@ class StreamProxyServer {
     await request.response.close();
   }
 
-  String _rewritePlaylist(String body, Uri base) {
+  String _rewritePlaylist(String body, Uri target, String? base) {
     final port = _server?.port;
     if (port == null) return body;
 
     String proxify(String reference) {
-      final resolved = base.resolve(reference);
+      final resolved = target.resolve(reference);
+      final location = base == null ? null : serverLocationOf(resolved, base);
+      if (location != null) return _loopback(port, location, 'l').toString();
       if (!_shouldProxy(resolved)) return reference;
-      return _proxyUri(resolved, port).toString();
+      return _loopback(port, resolved, 'u').toString();
     }
 
     final out = StringBuffer();

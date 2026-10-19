@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
+import 'package:jplayer/src/core/network/server_location.dart';
 import 'package:jplayer/src/core/network/stream_proxy_server.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,17 +11,20 @@ void main() {
   late HttpServer origin;
   late StreamProxyServer proxy;
   late List<HttpHeaders> received;
+  late List<Uri> requested;
   late Uri originBase;
 
   String? playlistBody;
 
   setUp(() async {
     received = [];
+    requested = [];
     playlistBody = null;
     origin = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     originBase = Uri.parse('http://127.0.0.1:${origin.port}');
     origin.listen((request) async {
       received.add(request.headers);
+      requested.add(request.uri);
       final response = request.response;
       if (request.uri.path.endsWith('.m3u8')) {
         response.headers.contentType = ContentType(
@@ -232,6 +236,164 @@ void main() {
 
       expect(resolved.host, '127.0.0.1');
       expect(resolved.port, server.port);
+    });
+  });
+
+  group('server locations', () {
+    late List<String> endpoints;
+    late List<String> switched;
+
+    setUp(() async {
+      endpoints = ['$originBase/jellyfin'];
+      switched = [];
+      await proxy.close();
+      proxy = StreamProxyServer(
+        shouldProxy: (_) => false,
+        endpoints: () => endpoints,
+        onEndpointSwitched: switched.add,
+        connectTimeout: const Duration(seconds: 2),
+      );
+    });
+
+    Future<String> deadEndpoint() async {
+      final closed = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final port = closed.port;
+      await closed.close(force: true);
+      return 'http://127.0.0.1:$port';
+    }
+
+    test('joins the location with the live endpoint per request', () async {
+      final uri = await proxy.forLocation(
+        Uri.parse('Audio/1/x.flac?ApiKey=k'),
+      );
+
+      expect(uri.host, '127.0.0.1');
+      expect(uri.toString(), isNot(contains(':${origin.port}')));
+
+      final response = await get(uri);
+
+      expect(response.statusCode, 200);
+      expect(await response.transform(utf8.decoder).join(), 'abcdefghi');
+      expect(requested.single.path, '/jellyfin/Audio/1/x.flac');
+      expect(requested.single.queryParameters['ApiKey'], 'k');
+      expect(switched, isEmpty);
+    });
+
+    test('follows the endpoint list between requests', () async {
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
+      await (await get(uri)).drain<void>();
+      endpoints = ['$originBase/elsewhere'];
+      await (await get(uri)).drain<void>();
+
+      expect(requested.map((request) => request.path), [
+        '/jellyfin/Audio/1/x.flac',
+        '/elsewhere/Audio/1/x.flac',
+      ]);
+    });
+
+    test('fails over to the next endpoint and reports the switch', () async {
+      endpoints = [await deadEndpoint(), '$originBase/jellyfin'];
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
+
+      final response = await get(uri);
+
+      expect(response.statusCode, 200);
+      expect(await response.transform(utf8.decoder).join(), 'abcdefghi');
+      expect(requested.single.path, '/jellyfin/Audio/1/x.flac');
+      expect(switched, ['$originBase/jellyfin']);
+    });
+
+    test('answers 502 when no endpoint reaches the server', () async {
+      endpoints = [await deadEndpoint()];
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
+
+      expect((await get(uri)).statusCode, HttpStatus.badGateway);
+      expect(switched, isEmpty);
+    });
+
+    test('refuses a location while no endpoint is known', () async {
+      endpoints = [];
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
+
+      expect((await get(uri)).statusCode, HttpStatus.forbidden);
+      expect(requested, isEmpty);
+    });
+
+    test('refuses an absolute url smuggled as a location', () async {
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
+      final smuggled = uri.replace(
+        queryParameters: {
+          'l': base64Url.encode(utf8.encode('http://example.com/secret')),
+        },
+      );
+
+      expect((await get(smuggled)).statusCode, HttpStatus.forbidden);
+      expect(requested, isEmpty);
+    });
+
+    test('keeps hls segments on the proxy as locations', () async {
+      playlistBody =
+          '#EXTM3U\n'
+          '#EXT-X-KEY:METHOD=AES-128,URI="$originBase/jellyfin/key?k=1"\n'
+          '#EXTINF:6.0,\n'
+          'hls1/main/0.mp4\n'
+          '#EXTINF:6.0,\n'
+          '$originBase/jellyfin/hls1/main/1.mp4\n'
+          '#EXT-X-ENDLIST\n';
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/main.m3u8'));
+
+      final body = await (await get(uri)).transform(utf8.decoder).join();
+      final lines = const LineSplitter().convert(body);
+      final segments = lines.where((line) => !line.startsWith('#')).toList();
+
+      String locationOf(String line) => utf8.decode(
+        base64Url.decode(Uri.parse(line).queryParameters['l']!),
+      );
+      expect(segments, hasLength(2));
+      expect(locationOf(segments[0]), 'Audio/1/hls1/main/0.mp4');
+      expect(locationOf(segments[1]), 'hls1/main/1.mp4');
+      expect(lines[1], contains('URI="http://127.0.0.1:${proxy.port}/'));
+
+      endpoints = ['$originBase/moved'];
+      await (await get(Uri.parse(segments[0]))).drain<void>();
+      expect(requested.last.path, '/moved/Audio/1/hls1/main/0.mp4');
+    });
+  });
+
+  group('server location helpers', () {
+    test('join honours a path prefix and keeps the query', () {
+      final joined = joinServerLocation(
+        'https://host:8920/jellyfin/',
+        Uri.parse('Audio/1/universal?ApiKey=k&Container=flac,mp3'),
+      );
+
+      expect(
+        joined.toString(),
+        'https://host:8920/jellyfin/Audio/1/universal?ApiKey=k&Container=flac,mp3',
+      );
+    });
+
+    test('strips the base back off a url under it', () {
+      final location = serverLocationOf(
+        Uri.parse('https://host:8920/jellyfin/Audio/1/universal?ApiKey=k'),
+        'https://host:8920/jellyfin',
+      );
+
+      expect(location.toString(), 'Audio/1/universal?ApiKey=k');
+      expect(
+        serverLocationOf(
+          Uri.parse('https://other/jellyfin/x'),
+          'https://host:8920/jellyfin',
+        ),
+        isNull,
+      );
+      expect(
+        serverLocationOf(
+          Uri.parse('https://host:8920/other/x'),
+          'https://host:8920/jellyfin',
+        ),
+        isNull,
+      );
     });
   });
 }

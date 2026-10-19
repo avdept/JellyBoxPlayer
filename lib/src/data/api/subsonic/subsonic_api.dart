@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:jplayer/src/core/network/server_location.dart';
 import 'package:jplayer/src/data/backend/subsonic/subsonic_credentials.dart';
 import 'package:jplayer/src/data/dto/subsonic/subsonic_dto.dart';
 
@@ -29,9 +30,12 @@ class SubsonicApi {
     return envelope is Map ? Map<String, dynamic>.from(envelope) : null;
   }
 
-  Uri uri(String method, [Map<String, Object?> params = const {}]) {
-    final base = Uri.parse(_baseUrl);
-    final prefix = base.path.replaceAll(RegExp(r'/+$'), '');
+  Uri uri(String method, [Map<String, Object?> params = const {}]) =>
+      resolve(location(method, params));
+
+  Uri resolve(Uri location) => joinServerLocation(_baseUrl, location);
+
+  Uri location(String method, [Map<String, Object?> params = const {}]) {
     final query = <String, dynamic>{
       ...?credentials?.queryParameters,
       'v': apiVersion,
@@ -48,7 +52,7 @@ class SubsonicApi {
         query[entry.key] = '$value';
       }
     }
-    return base.replace(path: '$prefix/rest/$method', queryParameters: query);
+    return Uri(path: 'rest/$method', queryParameters: query);
   }
 
   Future<Map<String, dynamic>> call(
@@ -275,12 +279,12 @@ class SubsonicApi {
         _section(await call('getLyricsBySongId', {'id': id}), 'lyricsList'),
       );
 
-  Uri streamUri(
+  Uri streamLocation(
     String id, {
     String? format,
     int? maxBitRate,
     bool estimateContentLength = true,
-  }) => uri('stream', {
+  }) => location('stream', {
     'id': id,
     'format': format,
     'maxBitRate': maxBitRate,
