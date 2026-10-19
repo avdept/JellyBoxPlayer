@@ -77,6 +77,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    packaging {
+        jniLibs {
+            excludes += '**/libdatastore_shared_counter.so'
+        }
+    }
 }
 
 flutter {
