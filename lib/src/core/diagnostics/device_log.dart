@@ -89,6 +89,7 @@ class DeviceLog {
         await _rotate(file);
       }
       await file.writeAsString(chunk, mode: FileMode.append, flush: true);
+      if (_size == 0) await _makeReadable(file);
       _size += chunk.length;
     } on Object {
       _broken = true;
@@ -103,7 +104,17 @@ class DeviceLog {
     final file = File('${dir.path}${Platform.pathSeparator}$fileName');
     if (!file.existsSync()) await _adopt(file);
     _size = file.existsSync() ? file.lengthSync() : 0;
+    if (_size > 0) await _makeReadable(file);
     return _file = file;
+  }
+
+  Future<void> _makeReadable(File file) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await Process.run('chmod', ['644', file.path]);
+    } on Object {
+      return;
+    }
   }
 
   Future<void> _adopt(File target) async {

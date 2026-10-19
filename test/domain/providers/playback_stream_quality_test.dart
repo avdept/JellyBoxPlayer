@@ -191,11 +191,13 @@ void main() {
       requestedCaps.add(kbps);
       onResolve?.call();
       if (song.id == gatedSong) await resolveGate?.future;
+      final location = Uri.parse(
+        'audio/${song.id}?cap=${kbps ?? 0}'
+        '&session=${invocation.namedArguments[#playSessionId]}',
+      );
       return StreamSource(
-        uri: Uri.parse(
-          'http://$host/audio/${song.id}?cap=${kbps ?? 0}'
-          '&session=${invocation.namedArguments[#playSessionId]}',
-        ),
+        uri: Uri.parse('http://$host/').resolveUri(location),
+        location: location,
         isHls: false,
         outputContainer: kbps == null ? 'flac' : 'm4a',
         mimeType: kbps == null ? 'audio/flac' : 'audio/mp4',
@@ -278,23 +280,27 @@ void main() {
   );
 
   test(
-    '- moves queued streams to the new address when the server is reached '
-    'another way',
+    '- hands the player address-free streams and ignores address changes',
     () async {
       container.read(baseUrlProvider.notifier).state = 'http://home';
       await container
           .read(playbackProvider.notifier)
           .play(songs.first, songs, album);
 
+      final tracks = target.loaded.single;
+      expect(tracks, hasLength(4));
+      for (final track in tracks) {
+        expect(track.uri.host, '127.0.0.1');
+        expect(track.uri.toString(), isNot(contains('home')));
+        expect(track.location?.path, 'audio/${track.itemId}');
+      }
+
       host = 'relay';
       container.read(baseUrlProvider.notifier).state = 'https://relay/r/key';
-      await pumpUntil(() => target.replaced.length == 3);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
-      expect([for (final entry in target.replaced) entry.$1], [1, 2, 3]);
-      expect(
-        [for (final entry in target.replaced) entry.$2.uri.host],
-        everyElement('relay'),
-      );
+      expect(target.replaced, isEmpty);
     },
   );
 
@@ -383,14 +389,14 @@ void main() {
     });
     final playback = container.read(playbackProvider.notifier);
     await playback.play(songs.first, songs, album);
-    final before = target.loaded.single[1].uri.queryParameters['session'];
+    final before = target.loaded.single[1].location!.queryParameters['session'];
 
     network.use(NetworkType.cellular);
     await pumpUntil(() => target.replaced.length == 3);
     target.moveTo(1);
     await pumpUntil(() => sessions.containsKey('b'));
 
-    final after = target.replaced.first.$2.uri.queryParameters['session'];
+    final after = target.replaced.first.$2.location!.queryParameters['session'];
     expect(after, before);
     expect(sessions['b'], [before]);
   });

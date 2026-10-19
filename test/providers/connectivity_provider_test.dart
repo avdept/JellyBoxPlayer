@@ -485,4 +485,32 @@ void main() {
         PluginNotice.outdated;
     expect(container.read(visiblePluginNoticeProvider), isNull);
   });
+
+  test(
+    '- orders stream endpoints: selected, then up, then known down',
+    () async {
+      hosts.status['100.64.0.5'] = 200;
+      hosts.status['abc.tunnel.jellybox.app'] = 200;
+      final container = start(knownRelay: relay, knownRemote: remote);
+      await probe(container);
+
+      expect(container.read(baseUrlProvider), remote);
+      expect(
+        container.read(connectivityProvider.notifier).liveEndpoints(),
+        [remote, relay, home],
+      );
+    },
+  );
+
+  test('- adopts the endpoint a stream got through on', () async {
+    final container = start(knownRelay: relay);
+    expect(await probe(container), isFalse);
+    expect(container.read(baseUrlProvider), home);
+
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    container.read(connectivityProvider.notifier).adopt(relay);
+
+    expect(container.read(baseUrlProvider), relay);
+    expect(container.read(connectivityProvider), isTrue);
+  });
 }

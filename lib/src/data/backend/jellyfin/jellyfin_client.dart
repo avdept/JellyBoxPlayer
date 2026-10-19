@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:jplayer/src/core/network/server_location.dart';
 import 'package:jplayer/src/core/audio/audio_container_mime.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
@@ -543,9 +544,11 @@ class JellyfinClient implements MediaServerClient {
         ? transcodingContainer
         : profile.outputContainer;
 
-    final uri = _resolve(
-      useHls ? 'Audio/${song.id}/main.m3u8' : 'Audio/${song.id}/universal',
-      {
+    final location = Uri(
+      path: useHls
+          ? 'Audio/${song.id}/main.m3u8'
+          : 'Audio/${song.id}/universal',
+      queryParameters: {
         'UserId': userId,
         'ApiKey': token,
         'DeviceId': deviceId,
@@ -568,6 +571,7 @@ class JellyfinClient implements MediaServerClient {
         },
       },
     );
+    final uri = joinServerLocation(_baseUrl, location);
 
     final delivered = profile.deliveredQuality(
       audioSource,
@@ -577,6 +581,7 @@ class JellyfinClient implements MediaServerClient {
 
     return StreamSource(
       uri: uri,
+      location: location,
       isHls: useHls,
       outputContainer: outputContainer,
       mimeType: useHls

@@ -111,7 +111,9 @@ void main() {
     });
 
     test('- builds stream and cover art URLs with credentials', () {
-      final stream = api.streamUri('s1', format: 'mp3', maxBitRate: 320);
+      final stream = api.resolve(
+        api.streamLocation('s1', format: 'mp3', maxBitRate: 320),
+      );
       expect(stream.path, '/rest/stream');
       expect(stream.queryParameters['id'], 's1');
       expect(stream.queryParameters['format'], 'mp3');
