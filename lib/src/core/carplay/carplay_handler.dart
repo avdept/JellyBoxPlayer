@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
@@ -14,6 +15,8 @@ class CarPlayHandler {
   static String? _lastSetId;
   static String? _lastSongId;
   static bool? _lastPlaying;
+  static String? _lastPlayedAlbumId;
+  static Timer? _homeRefresh;
 
   static void initialize(ProviderContainer ref, CarContent content) {
     if (!Platform.isIOS) return;
@@ -75,13 +78,15 @@ class CarPlayHandler {
         fireImmediately: true,
         (previous, next) {
           final index = next.currentMediaIndex;
+          final song = index != null
+              ? next.songs.elementAtOrNull(index)
+              : null;
           _notifyPlaybackState(
             setId: next.album?.id,
-            songId: index != null
-                ? next.songs.elementAtOrNull(index)?.id
-                : null,
+            songId: song?.id,
             playing: next.status.isPlaying,
           );
+          if (next.status.isPlaying) _notifyAlbumPlayed(song?.albumId);
         },
       );
     _notifyContentChanged();
@@ -89,6 +94,15 @@ class CarPlayHandler {
 
   static void _notifyContentChanged() {
     _channel.invokeMethod('contentChanged').ignore();
+  }
+
+  static void _notifyAlbumPlayed(String? albumId) {
+    if (albumId == null || albumId == _lastPlayedAlbumId) return;
+    _lastPlayedAlbumId = albumId;
+    _homeRefresh?.cancel();
+    _homeRefresh = Timer(const Duration(seconds: 5), () {
+      _channel.invokeMethod('homeChanged').ignore();
+    });
   }
 
   static void _notifyPlaybackState({
@@ -126,8 +140,15 @@ class CarPlayHandler {
   }
 
   static Future<Map<String, dynamic>> _home() async {
-    final recent = await _content.recentAlbums();
-    return {'recent': _maps(recent), 'mixes': _maps(_content.mixes())};
+    final (recent, played) = await (
+      _content.recentAlbums(),
+      _content.recentlyPlayedAlbums(),
+    ).wait;
+    return {
+      'recent': _maps(recent),
+      'played': _maps(played),
+      'mixes': _maps(_content.mixes()),
+    };
   }
 
   static Future<Map<String, dynamic>> _list(Map<String, dynamic> args) async {

@@ -162,6 +162,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       guard let self, let data else { return }
 
       let recentEntries = data["recent"] as? [[String: Any]] ?? []
+      let playedEntries = data["played"] as? [[String: Any]] ?? []
       let mixEntries = data["mixes"] as? [[String: Any]] ?? []
       var sections = [CPListSection(items: [self.makeBrowseRow()])]
       if !mixEntries.isEmpty {
@@ -172,6 +173,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       if !recentEntries.isEmpty {
         sections.append(
           CPListSection(items: [self.makeRecentRow(entries: recentEntries)])
+        )
+      }
+      if !playedEntries.isEmpty {
+        sections.append(
+          CPListSection(items: [self.makePlayedRow(entries: playedEntries)])
         )
       }
 
@@ -618,11 +624,30 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   }
 
   private func makeRecentRow(entries: [[String: Any]]) -> CPListImageRowItem {
-    let row: CPListImageRowItem
+    let row = makeAlbumRow(entries: entries, text: "Recently Added")
+    row.handler = { [weak self] _, completion in
+      self?.pushBrowseList(type: "albums", title: "Albums")
+      completion()
+    }
+    return row
+  }
+
+  private func makePlayedRow(entries: [[String: Any]]) -> CPListImageRowItem {
+    let row = makeAlbumRow(entries: entries, text: "Recently Played")
+    row.handler = { _, completion in
+      completion()
+    }
+    return row
+  }
+
+  private func makeAlbumRow(
+    entries: [[String: Any]],
+    text: String
+  ) -> CPListImageRowItem {
     if #available(iOS 26.0, *) {
       let visible = Array(entries.prefix(cardsPerLine()))
-      row = CPListImageRowItem(
-        text: "Recently Added",
+      let row = CPListImageRowItem(
+        text: text,
         gridElements: gridElements(for: visible, padTo: cardsPerLine()),
         allowsMultipleLines: false
       )
@@ -634,18 +659,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         self?.selectItem(playType: "album", entry: visible[index])
         completion()
       }
-    } else {
-      row = makeCoverRow(
-        entries: Array(entries.prefix(8)),
-        playType: "album",
-        text: "Recently Added"
-      )
+      return row
     }
-    row.handler = { [weak self] _, completion in
-      self?.pushBrowseList(type: "albums", title: "Albums")
-      completion()
-    }
-    return row
+    return makeCoverRow(
+      entries: Array(entries.prefix(8)),
+      playType: "album",
+      text: text
+    )
   }
 
   @available(iOS 26.0, *)
