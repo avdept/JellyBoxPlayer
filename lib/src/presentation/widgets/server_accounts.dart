@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/data/services/server_data_cleaner.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/presentation/pages/queue_cache_page.dart';
@@ -206,9 +206,15 @@ class ServerLogo extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) => SvgPicture.asset(
-    serverLogoAsset(account.serverType, productName: account.productName),
-    width: size,
-    height: size,
+  Widget build(BuildContext context) => ServerLogoPicture(
+    asset: serverLogoAsset(
+      account.serverType,
+      productName:
+          account.productName ??
+          (account.serverType == ServerType.subsonic
+              ? account.serverName
+              : null),
+    ),
+    size: size,
   );
 }

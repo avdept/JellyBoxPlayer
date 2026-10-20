@@ -513,4 +513,25 @@ void main() {
     expect(container.read(baseUrlProvider), relay);
     expect(container.read(connectivityProvider), isTrue);
   });
+
+  test(
+    '- streams from the new server right after switching accounts',
+    () async {
+      hosts.status['100.64.0.5'] = 200;
+      final container = start(knownRemote: remote);
+      await probe(container);
+      expect(container.read(baseUrlProvider), remote);
+
+      const other = 'http://192.168.1.20:4533';
+      container.read(serverAddressesProvider.notifier).state = null;
+      container.read(baseUrlProvider.notifier).state = other;
+      container.read(serverAddressesProvider.notifier).state =
+          const ServerAddresses(home: other);
+
+      expect(
+        container.read(connectivityProvider.notifier).liveEndpoints(),
+        [other],
+      );
+    },
+  );
 }

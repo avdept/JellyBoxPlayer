@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/src/data/backend/server_type.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 
 @immutable
 class ServerAccount {
@@ -20,6 +22,7 @@ class ServerAccount {
     this.libraryId,
     this.libraryPath,
     this.libraryName,
+    this.libraries = const [],
     this.needsReauth = false,
   });
 
@@ -39,6 +42,10 @@ class ServerAccount {
     libraryId: json['libraryId'] as String?,
     libraryPath: json['libraryPath'] as String?,
     libraryName: json['libraryName'] as String?,
+    libraries: [
+      for (final library in (json['libraries'] as List?) ?? const [])
+        SavedLibrary.fromJson((library as Map).cast()),
+    ],
     needsReauth: json['needsReauth'] as bool? ?? false,
   );
 
@@ -55,6 +62,7 @@ class ServerAccount {
   final String? libraryId;
   final String? libraryPath;
   final String? libraryName;
+  final List<SavedLibrary> libraries;
   final bool needsReauth;
 
   String get displayName {
@@ -76,6 +84,7 @@ class ServerAccount {
     String? Function()? libraryId,
     String? Function()? libraryPath,
     String? Function()? libraryName,
+    List<SavedLibrary>? libraries,
     bool? needsReauth,
   }) => ServerAccount(
     serverId: serverId,
@@ -91,6 +100,7 @@ class ServerAccount {
     libraryId: libraryId == null ? this.libraryId : libraryId(),
     libraryPath: libraryPath == null ? this.libraryPath : libraryPath(),
     libraryName: libraryName == null ? this.libraryName : libraryName(),
+    libraries: libraries ?? this.libraries,
     needsReauth: needsReauth ?? this.needsReauth,
   );
 
@@ -108,15 +118,62 @@ class ServerAccount {
     'libraryId': ?libraryId,
     'libraryPath': ?libraryPath,
     'libraryName': ?libraryName,
+    if (libraries.isNotEmpty)
+      'libraries': [for (final library in libraries) library.toJson()],
     if (needsReauth) 'needsReauth': true,
   };
 
   @override
   bool operator ==(Object other) =>
-      other is ServerAccount && mapEquals(other.toJson(), toJson());
+      other is ServerAccount &&
+      const DeepCollectionEquality().equals(other.toJson(), toJson());
 
   @override
-  int get hashCode => Object.hashAll(toJson().values);
+  int get hashCode => const DeepCollectionEquality().hash(toJson());
+}
+
+@immutable
+class SavedLibrary {
+  const SavedLibrary({
+    required this.id,
+    required this.name,
+    this.path,
+    this.imageUrl,
+    this.imageKey,
+  });
+
+  factory SavedLibrary.fromJson(Map<String, dynamic> json) => SavedLibrary(
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '',
+    path: json['path'] as String?,
+    imageUrl: json['imageUrl'] as String?,
+    imageKey: json['imageKey'] as String?,
+  );
+
+  final String id;
+  final String name;
+  final String? path;
+  final String? imageUrl;
+  final String? imageKey;
+
+  LibraryItem toItem() =>
+      LibraryItem(id: id, name: name, path: path, kind: ItemKind.library);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'path': ?path,
+    'imageUrl': ?imageUrl,
+    'imageKey': ?imageKey,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is SavedLibrary &&
+      const DeepCollectionEquality().equals(other.toJson(), toJson());
+
+  @override
+  int get hashCode => const DeepCollectionEquality().hash(toJson());
 }
 
 class AccountStore {
@@ -127,9 +184,9 @@ class AccountStore {
   final FlutterSecureStorage _storage;
 
   Future<List<ServerAccount>?> load() async {
-    final raw = await _storage.read(key: storageKey);
-    if (raw == null) return null;
     try {
+      final raw = await _storage.read(key: storageKey);
+      if (raw == null) return null;
       return (jsonDecode(raw) as List)
           .map((e) => ServerAccount.fromJson((e as Map).cast()))
           .toList();

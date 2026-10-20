@@ -113,8 +113,8 @@ class _LoginLogoState extends State<LoginLogo> {
   Widget _serverBadge() {
     final serverType = _lastServerType;
     if (serverType == null) return const SizedBox.shrink();
-    return _logo(
-      serverLogoAsset(serverType, productName: _lastProductName),
+    return ServerLogoPicture(
+      asset: serverLogoAsset(serverType, productName: _lastProductName),
     );
   }
 

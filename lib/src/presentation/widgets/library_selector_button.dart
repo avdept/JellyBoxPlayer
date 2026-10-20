@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -75,10 +77,9 @@ class LibrarySelectorButton extends ConsumerWidget {
     WidgetRef ref,
     ThemeData theme,
     LibraryItem? library,
-    double size, {
-    bool withImage = true,
-  }) {
-    final image = (library != null && withImage)
+    double size,
+  ) {
+    final image = (library != null)
         ? ref.read(imageServiceProvider).itemImageOrNull(library)
         : null;
     return CircleAvatar(
@@ -148,15 +149,19 @@ class LibrarySelectorButton extends ConsumerWidget {
     final fetched = ref
         .watch(accountLibrariesProvider(account.serverId))
         .valueOrNull;
-    final saved = account.libraryId == null
-        ? null
-        : LibraryItem(
-            id: account.libraryId!,
-            name: account.libraryName ?? '',
-            path: account.libraryPath,
-            kind: ItemKind.library,
-          );
-    final libraries = fetched == null || fetched.isEmpty ? [?saved] : fetched;
+    final known = fetched == null || fetched.isEmpty
+        ? account.libraries
+        : fetched;
+    final libraries = known.isNotEmpty
+        ? known
+        : [
+            if (account.libraryId case final id?)
+              SavedLibrary(
+                id: id,
+                name: account.libraryName ?? '',
+                path: account.libraryPath,
+              ),
+          ];
     if (libraries.isEmpty) {
       return [
         AppDropdownEntry(
@@ -170,12 +175,29 @@ class LibrarySelectorButton extends ConsumerWidget {
     return [
       for (final lib in libraries)
         AppDropdownEntry(
-          value: _Library(account.serverId, lib),
+          value: _Library(account.serverId, lib.toItem()),
           label: lib.name,
-          leadingBuilder: (color) =>
-              _avatar(ref, theme, lib, 28, withImage: false),
+          leadingBuilder: (color) => _savedAvatar(theme, lib, 28),
         ),
     ];
+  }
+
+  Widget _savedAvatar(ThemeData theme, SavedLibrary library, double size) {
+    final url = library.imageUrl;
+    final image = url == null
+        ? null
+        : CachedNetworkImageProvider(
+            url,
+            cacheKey: library.imageKey,
+            cacheManager: ArtworkCache.instance,
+          );
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: theme.colorScheme.surface,
+      backgroundImage: image,
+      onBackgroundImageError: image == null ? null : (_, _) {},
+      child: image == null ? Icon(Icons.library_music, size: size / 2) : null,
+    );
   }
 
   Widget _logoutButton(

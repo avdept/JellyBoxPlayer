@@ -24,9 +24,9 @@ import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
-import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
+import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
@@ -160,6 +160,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     UserCredentials credentials, {
     ServerType? serverType,
   }) async {
+    if (_authenticating) return null;
     final serverUrl = normalizeServerUrl(credentials.serverUrl);
     ref.read(certificateTrustProvider).clearRejections();
     _authenticating = true;
@@ -253,6 +254,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       libraryId: existing?.libraryId,
       libraryPath: existing?.libraryPath,
       libraryName: existing?.libraryName,
+      libraries: existing?.libraries ?? const [],
     );
     await _upsertAccount(account);
     if (_hasActiveSession) {
@@ -567,21 +569,26 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
   Future<void> _backfillIdentity(String serverId, String serverUrl) async {
     final account = _accountFor(serverId);
-    if (account == null ||
-        account.serverName != null ||
-        account.productName != null) {
-      return;
-    }
+    if (account == null || account.productName != null) return;
     final identity = await _identify(serverUrl);
     if (identity == null) return;
     final current = _accountFor(serverId);
     if (current == null) return;
     await _upsertAccount(
       current.copyWith(
-        serverName: () => identity.name,
+        serverName: () => identity.name ?? current.serverName,
         productName: () => identity.productName,
       ),
     );
+  }
+
+  Future<void> rememberLibraries(
+    String serverId,
+    List<SavedLibrary> libraries,
+  ) async {
+    final account = _accountFor(serverId);
+    if (account == null) return;
+    await _upsertAccount(account.copyWith(libraries: libraries));
   }
 
   Future<void> _deleteServerData(String serverId) async {
@@ -672,6 +679,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
         libraryName: prefs.getString(
           CurrentLibraryNotifier.libraryNameStorageKey,
         ),
+        libraries: existing?.libraries ?? const [],
         needsReauth: needsReauth ?? existing?.needsReauth ?? false,
       ),
     );

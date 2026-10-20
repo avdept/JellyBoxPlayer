@@ -63,6 +63,7 @@ class ConductorDevice {
     required this.id,
     required this.name,
     required this.platform,
+    this.backend,
     this.isRenderer = false,
     this.isSelf = false,
     this.isOnline = true,
@@ -71,6 +72,7 @@ class ConductorDevice {
   final String id;
   final String name;
   final String platform;
+  final String? backend;
   final bool isRenderer;
   final bool isSelf;
   final bool isOnline;

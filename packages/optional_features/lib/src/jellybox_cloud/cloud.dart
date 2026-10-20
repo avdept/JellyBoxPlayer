@@ -86,6 +86,8 @@ class JellyboxCloud<S> {
 
   Future<bool> handoffTo(String deviceId) async => false;
 
+  bool? sameBackend(ConductorDevice device) => null;
+
   Future<void> sendCommand(PlayerCommand command, {Object? value}) async {}
 
   bool get observing => false;

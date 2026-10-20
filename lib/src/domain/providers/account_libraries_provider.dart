@@ -6,14 +6,15 @@ import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_backends.dart';
 import 'package:jplayer/src/data/backend/server_auth_headers.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/services/library_artwork.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
-import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 
-final AutoDisposeFutureProviderFamily<List<LibraryItem>, String>
+final AutoDisposeFutureProviderFamily<List<SavedLibrary>, String>
 accountLibrariesProvider = FutureProvider.autoDispose
-    .family<List<LibraryItem>, String>((ref, serverId) async {
+    .family<List<SavedLibrary>, String>((ref, serverId) async {
       final link = ref.keepAlive();
       final expiry = Timer(const Duration(minutes: 10), link.close);
       ref.onDispose(expiry.cancel);
@@ -48,25 +49,38 @@ accountLibrariesProvider = FutureProvider.autoDispose
         ),
       )..httpClientAdapter = shared.httpClientAdapter;
 
-      Exception? failure;
-      for (final url in [
-        account.url,
-        ?account.remoteUrl,
-        ?account.relayUrl,
-      ]) {
+      final addresses = [account.url, ?account.remoteUrl, ?account.relayUrl];
+      for (final url in addresses) {
         try {
-          final page = await clientFor(
+          final client = clientFor(
             account.serverType,
             dio: dio,
             baseUrl: url,
             userId: account.userId,
             token: account.token,
             deviceId: deviceId,
-          ).getLibraries().timeout(const Duration(seconds: 8));
-          return musicLibraries(page.items);
-        } on Exception catch (e) {
-          failure = e;
+          );
+          final page = await client.getLibraries().timeout(
+            const Duration(seconds: 8),
+          );
+          final saved = savedLibraries(
+            musicLibraries(page.items),
+            imageOf: (library) =>
+                library.images.hasCover ? client.imageUri(library) : null,
+            addresses: addresses,
+          );
+          if (ref.exists(authProvider)) {
+            unawaited(
+              ref
+                  .read(authProvider.notifier)
+                  .rememberLibraries(serverId, saved)
+                  .then((_) => prefetchLibraryArtwork(saved)),
+            );
+          }
+          return saved;
+        } on Exception {
+          continue;
         }
       }
-      throw failure ?? Exception('No address for $serverId');
+      return account.libraries;
     });

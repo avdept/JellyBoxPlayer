@@ -198,6 +198,26 @@ void main() {
       expect(await storage.read(key: 'serverId'), 'A');
     });
 
+    test('- remembers a server\'s libraries across restarts', () async {
+      final container = await start(
+        signedInTo(accountA, accounts: [accountA, accountB]),
+      );
+
+      await container.read(authProvider.notifier).rememberLibraries('B', const [
+        SavedLibrary(
+          id: 'lib-b',
+          name: 'B music',
+          imageUrl: 'http://b.local/Items/lib-b/Images/Primary',
+          imageKey: '/Items/lib-b/Images/Primary',
+        ),
+      ]);
+      final stored = await AccountStore(storage).load();
+
+      final b = stored!.firstWhere((account) => account.serverId == 'B');
+      expect(b.libraries.single.name, 'B music');
+      expect(b.libraries.single.imageKey, '/Items/lib-b/Images/Primary');
+    });
+
     test('- switching restores the other server and its library', () async {
       final container = await start(
         signedInTo(accountA, accounts: [accountA, accountB]),
@@ -241,6 +261,47 @@ void main() {
       expect(prefs.getString('library_id'), 'lib-b2');
       expect(prefs.getString('library_name'), 'B audiobooks');
       expect(await storage.read(key: 'serverId'), 'B');
+    });
+
+    test(
+      '- a double-submitted login adds the server once, without an error',
+      () async {
+        final container = await start(
+          signedInTo(accountA, accounts: [accountA]),
+        );
+        const credentials = UserCredentials(
+          username: 'alex',
+          pw: 'pw',
+          serverUrl: 'http://b.local',
+        );
+
+        final auth = container.read(authProvider.notifier);
+        final results = await Future.wait([
+          auth.login(credentials, serverType: ServerType.jellyfin),
+          auth.login(credentials, serverType: ServerType.jellyfin),
+        ]);
+
+        expect(results, [null, null]);
+        expect(
+          container.read(accountsProvider).map((account) => account.serverId),
+          ['A', 'B'],
+        );
+        expect(container.read(authProvider).value, isTrue);
+      },
+    );
+
+    test('- editing the home address updates the saved account', () async {
+      final container = await start(
+        signedInTo(accountA, accounts: [accountA, accountB]),
+      );
+
+      await container
+          .read(authProvider.notifier)
+          .updateHomeUrl('http://a.fresh.local');
+
+      expect(accountOf(container, 'A').url, 'http://a.fresh.local');
+      expect(accountOf(container, 'B').url, 'http://b.local');
+      expect(await storage.read(key: 'serverUrl'), 'http://a.fresh.local');
     });
 
     test('- refuses to add a server that is already an account', () async {

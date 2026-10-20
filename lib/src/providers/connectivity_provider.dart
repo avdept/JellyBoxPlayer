@@ -33,6 +33,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
       }
     });
     _ref.listen<ServerAddresses?>(serverAddressesProvider, (previous, next) {
+      if (previous?.home != next?.home) _forgetServer();
       _routeArtwork();
       if (next != null && next != previous) unawaited(refresh());
     });
@@ -101,13 +102,23 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   List<String> liveEndpoints() {
     final addresses = _addresses;
     if (addresses == null) return const [];
-    final selected = _selected ?? _ref.read(baseUrlProvider) ?? addresses.home;
+    final candidates = addresses.candidates;
+    final selected = [
+      _selected,
+      _ref.read(baseUrlProvider),
+    ].firstWhere(candidates.contains, orElse: () => addresses.home)!;
     final others = addresses.candidates.where((url) => url != selected);
     return [
       selected,
       ...others.where((url) => !_down.contains(url)),
       ...others.where(_down.contains),
     ];
+  }
+
+  void _forgetServer() {
+    _selected = null;
+    _down = const {};
+    _relayCheckedAt = null;
   }
 
   void adopt(String url) {

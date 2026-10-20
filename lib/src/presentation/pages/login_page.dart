@@ -32,7 +32,6 @@ class LoginPageState extends ConsumerState<LoginPage> {
   final _serverUrlFocusNode = FocusNode();
 
   String? _resolvedServerUrl;
-  String? _resolvedServerId;
   ServerType? _resolvedServerType;
   String? _resolvedProductName;
   bool _resolvedQuickConnect = false;
@@ -43,6 +42,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   ServerUrlFieldMode _mode = ServerUrlFieldMode.discovering;
   DiscoveredServer? _selectedServer;
   bool _manualEntry = false;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -118,7 +118,6 @@ class LoginPageState extends ConsumerState<LoginPage> {
       _mode = ServerUrlFieldMode.selected;
       _apiChoices = const [];
       _resolvedServerUrl = server.serverUrl;
-      _resolvedServerId = server.id;
       _resolvedServerType = server.serverType;
       _resolvedProductName = null;
       _resolvedQuickConnect = server.quickConnect;
@@ -137,7 +136,6 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   void _applyIdentity(ServerIdentity? identity) {
     _resolvedServerUrl = identity?.serverUrl;
-    _resolvedServerId = identity?.serverId;
     _resolvedServerType = identity?.serverType;
     _resolvedProductName = identity?.productName;
     _resolvedQuickConnect = identity?.quickConnect ?? false;
@@ -233,7 +231,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> signIn({bool promptForCertificate = true}) async {
-    if (error != null) setState(() => error = null);
+    setState(() {
+      error = null;
+      _submitting = true;
+    });
 
     final credentials = UserCredentials(
       username: _emailInputController.text.trim(),
@@ -243,6 +244,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     if (credentials.serverUrl.isEmpty || credentials.username.isEmpty) {
       setState(() {
         error = 'Server URL and login are required';
+        _submitting = false;
       });
       return;
     }
@@ -253,6 +255,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         error =
             'Server URL is invalid. Try something like 192.168.1.10:8096 or '
             'jellyfin.example.com';
+        _submitting = false;
       });
       return;
     }
@@ -262,7 +265,11 @@ class LoginPageState extends ConsumerState<LoginPage> {
           credentials,
           serverType: _resolvedServerType,
         );
-    if (resp == null || !mounted) return;
+    if (!mounted) return;
+    if (resp == null) {
+      if (widget.addingServer) context.go('/');
+      return;
+    }
 
     if (promptForCertificate && await _trustServerCertificate(serverUri.host)) {
       if (!mounted) return;
@@ -275,6 +282,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
     setState(() {
       error = resp;
+      _submitting = false;
     });
   }
 
@@ -336,7 +344,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
                 child: KeyboardListener(
                   focusNode: FocusNode(),
                   onKeyEvent: (event) {
-                    if (event.logicalKey == LogicalKeyboardKey.enter) {
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.enter &&
+                        !_submitting) {
                       signIn();
                     }
                   },
@@ -354,7 +364,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       _loginField(),
                       const SizedBox(height: 8),
                       _passwordField(),
-                      if (_visibleError case final message?) ...[
+                      if (error case final message?) ...[
                         const SizedBox(height: 12),
                         _errorText(message),
                       ],
@@ -382,12 +392,6 @@ class LoginPageState extends ConsumerState<LoginPage> {
   bool _isAdded(String? serverId) => ref
       .read(accountsProvider)
       .any((account) => account.serverId == serverId && !account.needsReauth);
-
-  String? get _visibleError {
-    if (error != null || !widget.addingServer) return error;
-    ref.watch(accountsProvider);
-    return _isAdded(_resolvedServerId) ? AuthNotifier.alreadyAddedError : null;
-  }
 
   Widget? _savedServers() {
     if (ref.watch(accountsProvider).isEmpty) return null;
@@ -519,7 +523,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   );
 
   Widget _signInButton() => ShadowedButton(
-    onPressed: signIn,
+    onPressed: _submitting ? null : signIn,
     child: const Text(
       'Sign in',
       style: TextStyle(
