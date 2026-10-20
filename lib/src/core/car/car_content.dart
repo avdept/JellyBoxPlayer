@@ -138,6 +138,21 @@ class CarContent {
     return ordered.take(limit).map(entry).toList();
   }
 
+  Future<List<CarEntry>> recentlyPlayedAlbums({
+    int limit = recentAlbumsLimit,
+  }) async {
+    if (!isSignedIn) return const [];
+    if (_ref.read(settingProvider(AppSetting.recentlyPlayedHidden))) {
+      return const [];
+    }
+    final client = _ref.read(mediaServerClientProvider);
+    final libraryId = _ref.read(currentLibraryProvider).valueOrNull?.id;
+    final albums = await _fetch(
+      () => client.getRecentlyPlayedAlbums(libraryId: libraryId, limit: limit),
+    );
+    return albums.take(limit).map(entry).toList();
+  }
+
   Future<List<CarEntry>> playlists({required int limit}) async {
     if (!isSignedIn) return const [];
     final client = _ref.read(mediaServerClientProvider);
@@ -206,6 +221,12 @@ class CarContent {
     final filter = sort;
     if (!isSignedIn) return CarPage(entries: const [], sort: filter);
     if (type == 'mixes') return CarPage(entries: mixes(), sort: filter);
+    if (type == 'played') {
+      return CarPage(
+        entries: await recentlyPlayedAlbums(limit: pageSize),
+        sort: filter,
+      );
+    }
 
     final client = _ref.read(mediaServerClientProvider);
     final libraryId = _ref.read(currentLibraryProvider).valueOrNull?.id;
