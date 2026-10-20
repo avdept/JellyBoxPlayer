@@ -76,14 +76,21 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     CarPlayBridge.shared.onContentChanged = { [weak self] in
       self?.reload()
     }
+    CarPlayBridge.shared.onHomeChanged = { [weak self] in
+      self?.reloadHome()
+    }
     CarPlayBridge.shared.onPlaybackStateChanged = { [weak self] in
       self?.applyPlaybackState()
+    }
+    CarPlayBridge.shared.onModesChanged = { [weak self] in
+      self?.applyNowPlayingButtons()
     }
     CarPlayBridge.shared.onSearchChanged = { [weak self] query in
       self?.searchQueryChanged(query)
     }
     CPNowPlayingTemplate.shared.isUpNextButtonEnabled = true
     CPNowPlayingTemplate.shared.add(self)
+    applyNowPlayingButtons()
     reload()
   }
 
@@ -93,13 +100,52 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   ) {
     self.interfaceController = nil
     CarPlayBridge.shared.onContentChanged = nil
+    CarPlayBridge.shared.onHomeChanged = nil
     CarPlayBridge.shared.onPlaybackStateChanged = nil
+    CarPlayBridge.shared.onModesChanged = nil
     CarPlayBridge.shared.onSearchChanged = nil
     CPNowPlayingTemplate.shared.remove(self)
   }
 
   func nowPlayingTemplateUpNextButtonTapped(_ nowPlayingTemplate: CPNowPlayingTemplate) {
     pushQueue()
+  }
+
+  private static let accentColor = UIColor(
+    red: 0xFD / 255.0,
+    green: 0x2F / 255.0,
+    blue: 0x2F / 255.0,
+    alpha: 1
+  )
+
+  private func applyNowPlayingButtons() {
+    let repeatMode = CarPlayBridge.shared.repeatMode
+    let liked = CarPlayBridge.shared.likedCurrent
+    let shuffle = CPNowPlayingImageButton(
+      image: modeImage("shuffle", active: CarPlayBridge.shared.shuffleEnabled)
+    ) { _ in
+      CarPlayBridge.shared.toggleShuffle()
+    }
+    let repeatButton = CPNowPlayingImageButton(
+      image: modeImage(
+        repeatMode == "one" ? "repeat.1" : "repeat",
+        active: repeatMode != "off"
+      )
+    ) { _ in
+      CarPlayBridge.shared.toggleRepeat()
+    }
+    let like = CPNowPlayingImageButton(
+      image: modeImage(liked ? "heart.fill" : "heart", active: liked)
+    ) { _ in
+      CarPlayBridge.shared.toggleLike()
+    }
+    CPNowPlayingTemplate.shared.updateNowPlayingButtons([shuffle, repeatButton, like])
+  }
+
+  private func modeImage(_ symbol: String, active: Bool) -> UIImage {
+    let image = UIImage(systemName: symbol) ?? UIImage()
+    guard active else { return image }
+    return image.withTintColor(Self.accentColor, renderingMode: .alwaysOriginal)
   }
 
   private func pushQueue() {
@@ -296,7 +342,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     let playType = playType(for: type)
     var items = [CPListTemplateItem]()
 
-    if type == "albums" || type == "artists" {
+    if type == "albums" || type == "artists" || type == "played" {
       if #available(iOS 26.0, *) {
         let chunk = cardsPerLine()
         items = stride(from: 0, to: pushedEntries.count, by: chunk).map { start in
@@ -360,7 +406,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   private func cardsPerLine() -> Int {
     guard carScreenWidth > 0 else { return 4 }
     let sideChrome: CGFloat = 64
-    let renderedCardUnit: CGFloat = 96
+    let renderedCardUnit: CGFloat = 84
     return max(2, Int((carScreenWidth - sideChrome) / renderedCardUnit))
   }
 
@@ -379,7 +425,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
   private func playType(for type: String) -> String {
     switch type {
-    case "albums": return "album"
+    case "albums", "played": return "album"
     case "artists": return "artist"
     case "playlists": return "playlist"
     case "mixes": return "mix"
@@ -466,7 +512,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       let visible = Array(entries.prefix(cardsPerLine()))
       row = CPListImageRowItem(
         text: title,
-        gridElements: gridElements(for: visible, padTo: cardsPerLine()),
+        elements: rowElements(for: visible, padTo: cardsPerLine()),
         allowsMultipleLines: false
       )
       row.listImageRowHandler = { [weak self] _, index, completion in
@@ -598,7 +644,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       let visible = Array(entries.prefix(cardsPerLine()))
       row = CPListImageRowItem(
         text: "Made for You",
-        gridElements: gridElements(for: visible, padTo: cardsPerLine()),
+        elements: rowElements(for: visible, padTo: cardsPerLine()),
         allowsMultipleLines: false
       )
       row.listImageRowHandler = { [weak self] _, index, completion in
@@ -634,7 +680,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
   private func makePlayedRow(entries: [[String: Any]]) -> CPListImageRowItem {
     let row = makeAlbumRow(entries: entries, text: "Recently Played")
-    row.handler = { _, completion in
+    row.handler = { [weak self] _, completion in
+      self?.pushBrowseList(type: "played", title: "Recently Played")
       completion()
     }
     return row
@@ -648,7 +695,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       let visible = Array(entries.prefix(cardsPerLine()))
       let row = CPListImageRowItem(
         text: text,
-        gridElements: gridElements(for: visible, padTo: cardsPerLine()),
+        elements: rowElements(for: visible, padTo: cardsPerLine()),
         allowsMultipleLines: false
       )
       row.listImageRowHandler = { [weak self] _, index, completion in
@@ -669,17 +716,21 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   }
 
   @available(iOS 26.0, *)
-  private func gridElements(
+  private func rowElements(
     for entries: [[String: Any]],
     padTo: Int = 0
-  ) -> [CPListImageRowItemGridElement] {
-    var elements = makeGridElements(for: entries)
+  ) -> [CPListImageRowItemRowElement] {
+    var elements = makeRowElements(for: entries)
     if padTo > elements.count {
       let clear = UIGraphicsImageRenderer(
-        size: CPListImageRowItemGridElement.maximumImageSize
+        size: CPListImageRowItemRowElement.maximumImageSize
       ).image { _ in }
       while elements.count < padTo {
-        let filler = CPListImageRowItemGridElement(image: clear)
+        let filler = CPListImageRowItemRowElement(
+          image: clear,
+          title: nil,
+          subtitle: nil
+        )
         filler.isEnabled = false
         elements.append(filler)
       }
@@ -688,21 +739,18 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   }
 
   @available(iOS 26.0, *)
-  private func makeGridElements(for entries: [[String: Any]]) -> [CPListImageRowItemGridElement] {
-    entries.map { entry -> CPListImageRowItemGridElement in
-      let title = entry["title"] as? String ?? ""
+  private func makeRowElements(for entries: [[String: Any]]) -> [CPListImageRowItemRowElement] {
+    entries.map { entry -> CPListImageRowItemRowElement in
       let subtitle = entry["subtitle"] as? String
-      let element = CPListImageRowItemGridElement(
-        image: composeTile(
-          cover: placeholderImage ?? UIImage(),
-          title: title,
-          subtitle: subtitle
-        )
+      let element = CPListImageRowItemRowElement(
+        image: placeholderImage ?? UIImage(),
+        title: entry["title"] as? String,
+        subtitle: (subtitle?.isEmpty ?? true) ? nil : subtitle
       )
       if let artworkUrl = entry["artworkUrl"] as? String {
-        loadArtwork(from: artworkUrl) { [weak self] image in
-          guard let self, let image else { return }
-          element.image = self.composeTile(cover: image, title: title, subtitle: subtitle)
+        loadArtwork(from: artworkUrl) { image in
+          guard let image else { return }
+          element.image = image
         }
       }
       return element
@@ -716,7 +764,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
   ) -> CPListImageRowItem {
     let item = CPListImageRowItem(
       text: nil,
-      gridElements: gridElements(for: entries, padTo: cardsPerLine()),
+      elements: rowElements(for: entries, padTo: cardsPerLine()),
       allowsMultipleLines: true
     )
     item.listImageRowHandler = { [weak self] _, index, completion in
@@ -731,89 +779,6 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       completion()
     }
     return item
-  }
-
-  @available(iOS 26.0, *)
-  private func composeTile(cover: UIImage, title: String, subtitle: String?) -> UIImage {
-    let size = CPListImageRowItemGridElement.maximumImageSize
-    let hasSubtitle = !(subtitle?.isEmpty ?? true)
-    return UIGraphicsImageRenderer(size: size).image { context in
-      aspectFill(cover, to: size).draw(at: .zero)
-
-      let colorSpace = CGColorSpaceCreateDeviceRGB()
-      let colors = [
-        UIColor.black.withAlphaComponent(0).cgColor,
-        UIColor.black.withAlphaComponent(0.8).cgColor,
-      ]
-      if let gradient = CGGradient(
-        colorsSpace: colorSpace,
-        colors: colors as CFArray,
-        locations: [0, 1]
-      ) {
-        context.cgContext.drawLinearGradient(
-          gradient,
-          start: CGPoint(x: 0, y: size.height * 0.5),
-          end: CGPoint(x: 0, y: size.height),
-          options: []
-        )
-      }
-
-      let paragraph = NSMutableParagraphStyle()
-      paragraph.lineBreakMode = .byTruncatingTail
-      let titleFont = UIFont.systemFont(ofSize: 27, weight: .semibold)
-      let subtitleFont = UIFont.systemFont(ofSize: 21)
-      let padding: CGFloat = 14
-      let bottomPadding: CGFloat = 22
-      let textWidth = size.width - padding * 2
-      let subtitleHeight = hasSubtitle ? subtitleFont.lineHeight : 0
-      let titleY = size.height - bottomPadding - subtitleHeight - titleFont.lineHeight
-
-      (title as NSString).draw(
-        in: CGRect(x: padding, y: titleY, width: textWidth, height: titleFont.lineHeight),
-        withAttributes: [
-          .font: titleFont,
-          .foregroundColor: UIColor.white,
-          .paragraphStyle: paragraph,
-        ]
-      )
-      if hasSubtitle, let subtitle {
-        (subtitle as NSString).draw(
-          in: CGRect(
-            x: padding,
-            y: titleY + titleFont.lineHeight,
-            width: textWidth,
-            height: subtitleFont.lineHeight
-          ),
-          withAttributes: [
-            .font: subtitleFont,
-            .foregroundColor: UIColor.white.withAlphaComponent(0.75),
-            .paragraphStyle: paragraph,
-          ]
-        )
-      }
-    }
-  }
-
-  private func aspectFill(_ image: UIImage, to size: CGSize) -> UIImage {
-    guard size.width > 0, size.height > 0, image.size.width > 0, image.size.height > 0 else {
-      return image
-    }
-    return UIGraphicsImageRenderer(size: size).image { _ in
-      let scale = max(
-        size.width / image.size.width,
-        size.height / image.size.height
-      )
-      let width = image.size.width * scale
-      let height = image.size.height * scale
-      image.draw(
-        in: CGRect(
-          x: (size.width - width) / 2,
-          y: (size.height - height) / 2,
-          width: width,
-          height: height
-        )
-      )
-    }
   }
 
   private func makeCoverRow(

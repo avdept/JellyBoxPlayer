@@ -6,11 +6,16 @@ final class CarPlayBridge {
 
   private var channel: FlutterMethodChannel?
   var onContentChanged: (() -> Void)?
+  var onHomeChanged: (() -> Void)?
   var onPlaybackStateChanged: (() -> Void)?
+  var onModesChanged: (() -> Void)?
   var onSearchChanged: ((String) -> Void)?
   private(set) var playingSetId: String?
   private(set) var playingSongId: String?
   private(set) var isPlaying = false
+  private(set) var shuffleEnabled = false
+  private(set) var repeatMode = "off"
+  private(set) var likedCurrent = false
 
   private init() {}
 
@@ -26,6 +31,9 @@ final class CarPlayBridge {
       case "contentChanged":
         self?.onContentChanged?()
         result(nil)
+      case "homeChanged":
+        self?.onHomeChanged?()
+        result(nil)
       case "searchChanged":
         let args = call.arguments as? [String: Any]
         self?.onSearchChanged?(args?["query"] as? String ?? "")
@@ -36,6 +44,13 @@ final class CarPlayBridge {
         self?.playingSongId = args?["songId"] as? String
         self?.isPlaying = args?["playing"] as? Bool ?? false
         self?.onPlaybackStateChanged?()
+        result(nil)
+      case "modesChanged":
+        let args = call.arguments as? [String: Any]
+        self?.shuffleEnabled = args?["shuffle"] as? Bool ?? false
+        self?.repeatMode = args?["repeat"] as? String ?? "off"
+        self?.likedCurrent = args?["liked"] as? Bool ?? false
+        self?.onModesChanged?()
         result(nil)
       default:
         result(FlutterMethodNotImplemented)
@@ -81,6 +96,24 @@ final class CarPlayBridge {
   func setSort(field: String) {
     DispatchQueue.main.async {
       self.channel?.invokeMethod("setSort", arguments: ["field": field])
+    }
+  }
+
+  func toggleShuffle() {
+    DispatchQueue.main.async {
+      self.channel?.invokeMethod("toggleShuffle", arguments: nil)
+    }
+  }
+
+  func toggleRepeat() {
+    DispatchQueue.main.async {
+      self.channel?.invokeMethod("toggleRepeat", arguments: nil)
+    }
+  }
+
+  func toggleLike() {
+    DispatchQueue.main.async {
+      self.channel?.invokeMethod("toggleLike", arguments: nil)
     }
   }
 

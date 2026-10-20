@@ -221,6 +221,12 @@ class CarContent {
     final filter = sort;
     if (!isSignedIn) return CarPage(entries: const [], sort: filter);
     if (type == 'mixes') return CarPage(entries: mixes(), sort: filter);
+    if (type == 'played') {
+      return CarPage(
+        entries: await recentlyPlayedAlbums(limit: pageSize),
+        sort: filter,
+      );
+    }
 
     final client = _ref.read(mediaServerClientProvider);
     final libraryId = _ref.read(currentLibraryProvider).valueOrNull?.id;
