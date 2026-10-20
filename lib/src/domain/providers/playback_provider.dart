@@ -61,7 +61,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   @visibleForTesting
   static Duration requalifyDelay = const Duration(seconds: 2);
 
-  static const _progressInterval = Duration(seconds: 10);
+  @visibleForTesting
+  static Duration progressInterval = const Duration(seconds: 10);
   static const _stallSlack = Duration(seconds: 1);
   static const _stallGrace = Duration(seconds: 6);
 
@@ -291,11 +292,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
     } else if (targetState.status.isPlaying && !state.status.isPlaying) {
       state = state.copyWith(status: PlaybackStatus.playing);
+      _reportProgress();
+      _startProgressReports();
     } else if (targetState.status.isPaused && state.status.isPlaying) {
       state = state.copyWith(
         status: PlaybackStatus.paused,
         position: targetState.position,
       );
+      _stopProgressReports();
+      _reportProgress();
     }
   }
 
@@ -493,7 +498,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _startProgressReports() {
     _progressTimer ??= Timer.periodic(
-      _progressInterval,
+      progressInterval,
       (_) => _reportProgress(),
     );
   }
