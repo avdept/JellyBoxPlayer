@@ -18,9 +18,11 @@ class PlaybackToggles {
 
   Future<void> toggleRepeat() {
     final player = _ref.read(playerProvider);
-    return player.setLoopMode(
-      player.loopMode == LoopMode.off ? LoopMode.all : LoopMode.off,
-    );
+    return player.setLoopMode(switch (player.loopMode) {
+      LoopMode.off => LoopMode.all,
+      LoopMode.all => LoopMode.one,
+      LoopMode.one => LoopMode.off,
+    });
   }
 
   Future<void> toggleFavourite() async {

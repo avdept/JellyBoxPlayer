@@ -269,7 +269,11 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
           LoopMode.all => 'drawable/ic_auto_repeat_on',
           LoopMode.one => 'drawable/ic_auto_repeat_one_on',
         },
-        label: loop == LoopMode.off ? 'Repeat' : 'Repeat on',
+        label: switch (loop) {
+          LoopMode.off => 'Repeat',
+          LoopMode.all => 'Repeat all',
+          LoopMode.one => 'Repeat one',
+        },
         name: repeatAction,
       ),
       if (song != null)

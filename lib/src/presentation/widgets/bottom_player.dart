@@ -778,15 +778,22 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   Widget _repeatTrackButton({double size = 24}) => Consumer(
     builder: (context, ref, _) {
       final mode = ref.watch(barRepeatProvider);
+      final icon = mode == LoopMode.one
+          ? const _RepeatOneIcon()
+          : const Icon(JPlayer.repeat);
       return HoverIconButton(
-        onPressed: () => ref
-            .read(barControlsProvider)
-            .setRepeat(mode == LoopMode.all ? LoopMode.off : LoopMode.all),
+        onPressed: () => ref.read(barControlsProvider).setRepeat(
+          switch (mode) {
+            LoopMode.off => LoopMode.all,
+            LoopMode.all => LoopMode.one,
+            LoopMode.one => LoopMode.off,
+          },
+        ),
         color: _theme.colorScheme.onPrimary,
         iconSize: size,
-        icon: const Icon(JPlayer.repeat),
-        selectedIcon: const Icon(JPlayer.repeat),
-        isSelected: mode == LoopMode.all,
+        icon: icon,
+        selectedIcon: icon,
+        isSelected: mode != LoopMode.off,
       );
     },
   );
@@ -893,4 +900,32 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       );
     },
   );
+}
+
+class _RepeatOneIcon extends StatelessWidget {
+  const _RepeatOneIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final iconTheme = IconTheme.of(context);
+    final size = iconTheme.size ?? 24;
+    return SizedBox.square(
+      dimension: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Icon(JPlayer.repeat),
+          Text(
+            '1',
+            style: TextStyle(
+              color: iconTheme.color,
+              fontSize: size * 0.42,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
