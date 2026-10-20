@@ -359,10 +359,13 @@ void main() {
       await handler.customAction(AndroidAutoHandler.repeatAction, null);
       when(() => env.player.loopMode).thenReturn(LoopMode.all);
       await handler.customAction(AndroidAutoHandler.repeatAction, null);
+      when(() => env.player.loopMode).thenReturn(LoopMode.one);
+      await handler.customAction(AndroidAutoHandler.repeatAction, null);
 
       verify(() => env.playbackNotifier.setShuffle(enabled: true)).called(1);
       verifyInOrder([
         () => env.player.setLoopMode(LoopMode.all),
+        () => env.player.setLoopMode(LoopMode.one),
         () => env.player.setLoopMode(LoopMode.off),
       ]);
     });
