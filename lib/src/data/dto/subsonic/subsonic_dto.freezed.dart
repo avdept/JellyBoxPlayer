@@ -1501,7 +1501,7 @@ as List<SubsonicArtistRefDTO>,
 /// @nodoc
 mixin _$SubsonicAlbumDTO {
 
-@JsonKey(fromJson: subsonicIdFromJson) String get id; String get name; String? get artist;@JsonKey(fromJson: subsonicOptionalIdFromJson) String? get artistId;@JsonKey(fromJson: subsonicOptionalIdFromJson) String? get coverArt; int get songCount; int? get duration; int get playCount; DateTime? get created; String? get starred; int? get year; String? get genre; String? get played; int? get userRating; String? get musicBrainzId; String? get displayArtist; String? get sortName; bool? get isCompilation; List<SubsonicNamedDTO> get genres; List<SubsonicArtistRefDTO> get artists; List<SubsonicChildDTO> get song;
+@JsonKey(fromJson: subsonicIdFromJson) String get id; String get name; String? get artist;@JsonKey(fromJson: subsonicOptionalIdFromJson) String? get artistId;@JsonKey(fromJson: subsonicOptionalIdFromJson) String? get coverArt; int get songCount; int? get duration; int get playCount; DateTime? get created; String? get starred; int? get year; String? get genre; String? get played; int? get userRating; String? get musicBrainzId; String? get displayArtist; String? get sortName; bool? get isCompilation; List<String> get releaseTypes;@JsonKey(fromJson: subsonicItemDateFromJson) DateTime? get originalReleaseDate; List<SubsonicNamedDTO> get genres; List<SubsonicArtistRefDTO> get artists; List<SubsonicChildDTO> get song;
 /// Create a copy of SubsonicAlbumDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1514,16 +1514,16 @@ $SubsonicAlbumDTOCopyWith<SubsonicAlbumDTO> get copyWith => _$SubsonicAlbumDTOCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubsonicAlbumDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.artistId, artistId) || other.artistId == artistId)&&(identical(other.coverArt, coverArt) || other.coverArt == coverArt)&&(identical(other.songCount, songCount) || other.songCount == songCount)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.created, created) || other.created == created)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.year, year) || other.year == year)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.played, played) || other.played == played)&&(identical(other.userRating, userRating) || other.userRating == userRating)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.displayArtist, displayArtist) || other.displayArtist == displayArtist)&&(identical(other.sortName, sortName) || other.sortName == sortName)&&(identical(other.isCompilation, isCompilation) || other.isCompilation == isCompilation)&&const DeepCollectionEquality().equals(other.genres, genres)&&const DeepCollectionEquality().equals(other.artists, artists)&&const DeepCollectionEquality().equals(other.song, song));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubsonicAlbumDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.artistId, artistId) || other.artistId == artistId)&&(identical(other.coverArt, coverArt) || other.coverArt == coverArt)&&(identical(other.songCount, songCount) || other.songCount == songCount)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.created, created) || other.created == created)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.year, year) || other.year == year)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.played, played) || other.played == played)&&(identical(other.userRating, userRating) || other.userRating == userRating)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.displayArtist, displayArtist) || other.displayArtist == displayArtist)&&(identical(other.sortName, sortName) || other.sortName == sortName)&&(identical(other.isCompilation, isCompilation) || other.isCompilation == isCompilation)&&const DeepCollectionEquality().equals(other.releaseTypes, releaseTypes)&&(identical(other.originalReleaseDate, originalReleaseDate) || other.originalReleaseDate == originalReleaseDate)&&const DeepCollectionEquality().equals(other.genres, genres)&&const DeepCollectionEquality().equals(other.artists, artists)&&const DeepCollectionEquality().equals(other.song, song));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,artist,artistId,coverArt,songCount,duration,playCount,created,starred,year,genre,played,userRating,musicBrainzId,displayArtist,sortName,isCompilation,const DeepCollectionEquality().hash(genres),const DeepCollectionEquality().hash(artists),const DeepCollectionEquality().hash(song)]);
+int get hashCode => Object.hashAll([runtimeType,id,name,artist,artistId,coverArt,songCount,duration,playCount,created,starred,year,genre,played,userRating,musicBrainzId,displayArtist,sortName,isCompilation,const DeepCollectionEquality().hash(releaseTypes),originalReleaseDate,const DeepCollectionEquality().hash(genres),const DeepCollectionEquality().hash(artists),const DeepCollectionEquality().hash(song)]);
 
 @override
 String toString() {
-  return 'SubsonicAlbumDTO(id: $id, name: $name, artist: $artist, artistId: $artistId, coverArt: $coverArt, songCount: $songCount, duration: $duration, playCount: $playCount, created: $created, starred: $starred, year: $year, genre: $genre, played: $played, userRating: $userRating, musicBrainzId: $musicBrainzId, displayArtist: $displayArtist, sortName: $sortName, isCompilation: $isCompilation, genres: $genres, artists: $artists, song: $song)';
+  return 'SubsonicAlbumDTO(id: $id, name: $name, artist: $artist, artistId: $artistId, coverArt: $coverArt, songCount: $songCount, duration: $duration, playCount: $playCount, created: $created, starred: $starred, year: $year, genre: $genre, played: $played, userRating: $userRating, musicBrainzId: $musicBrainzId, displayArtist: $displayArtist, sortName: $sortName, isCompilation: $isCompilation, releaseTypes: $releaseTypes, originalReleaseDate: $originalReleaseDate, genres: $genres, artists: $artists, song: $song)';
 }
 
 
@@ -1534,7 +1534,7 @@ abstract mixin class $SubsonicAlbumDTOCopyWith<$Res>  {
   factory $SubsonicAlbumDTOCopyWith(SubsonicAlbumDTO value, $Res Function(SubsonicAlbumDTO) _then) = _$SubsonicAlbumDTOCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(fromJson: subsonicIdFromJson) String id, String name, String? artist,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? artistId,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? coverArt, int songCount, int? duration, int playCount, DateTime? created, String? starred, int? year, String? genre, String? played, int? userRating, String? musicBrainzId, String? displayArtist, String? sortName, bool? isCompilation, List<SubsonicNamedDTO> genres, List<SubsonicArtistRefDTO> artists, List<SubsonicChildDTO> song
+@JsonKey(fromJson: subsonicIdFromJson) String id, String name, String? artist,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? artistId,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? coverArt, int songCount, int? duration, int playCount, DateTime? created, String? starred, int? year, String? genre, String? played, int? userRating, String? musicBrainzId, String? displayArtist, String? sortName, bool? isCompilation, List<String> releaseTypes,@JsonKey(fromJson: subsonicItemDateFromJson) DateTime? originalReleaseDate, List<SubsonicNamedDTO> genres, List<SubsonicArtistRefDTO> artists, List<SubsonicChildDTO> song
 });
 
 
@@ -1551,7 +1551,7 @@ class _$SubsonicAlbumDTOCopyWithImpl<$Res>
 
 /// Create a copy of SubsonicAlbumDTO
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? artist = freezed,Object? artistId = freezed,Object? coverArt = freezed,Object? songCount = null,Object? duration = freezed,Object? playCount = null,Object? created = freezed,Object? starred = freezed,Object? year = freezed,Object? genre = freezed,Object? played = freezed,Object? userRating = freezed,Object? musicBrainzId = freezed,Object? displayArtist = freezed,Object? sortName = freezed,Object? isCompilation = freezed,Object? genres = null,Object? artists = null,Object? song = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? artist = freezed,Object? artistId = freezed,Object? coverArt = freezed,Object? songCount = null,Object? duration = freezed,Object? playCount = null,Object? created = freezed,Object? starred = freezed,Object? year = freezed,Object? genre = freezed,Object? played = freezed,Object? userRating = freezed,Object? musicBrainzId = freezed,Object? displayArtist = freezed,Object? sortName = freezed,Object? isCompilation = freezed,Object? releaseTypes = null,Object? originalReleaseDate = freezed,Object? genres = null,Object? artists = null,Object? song = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1571,7 +1571,9 @@ as int?,musicBrainzId: freezed == musicBrainzId ? _self.musicBrainzId : musicBra
 as String?,displayArtist: freezed == displayArtist ? _self.displayArtist : displayArtist // ignore: cast_nullable_to_non_nullable
 as String?,sortName: freezed == sortName ? _self.sortName : sortName // ignore: cast_nullable_to_non_nullable
 as String?,isCompilation: freezed == isCompilation ? _self.isCompilation : isCompilation // ignore: cast_nullable_to_non_nullable
-as bool?,genres: null == genres ? _self.genres : genres // ignore: cast_nullable_to_non_nullable
+as bool?,releaseTypes: null == releaseTypes ? _self.releaseTypes : releaseTypes // ignore: cast_nullable_to_non_nullable
+as List<String>,originalReleaseDate: freezed == originalReleaseDate ? _self.originalReleaseDate : originalReleaseDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,genres: null == genres ? _self.genres : genres // ignore: cast_nullable_to_non_nullable
 as List<SubsonicNamedDTO>,artists: null == artists ? _self.artists : artists // ignore: cast_nullable_to_non_nullable
 as List<SubsonicArtistRefDTO>,song: null == song ? _self.song : song // ignore: cast_nullable_to_non_nullable
 as List<SubsonicChildDTO>,
@@ -1659,10 +1661,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: subsonicIdFromJson)  String id,  String name,  String? artist, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? coverArt,  int songCount,  int? duration,  int playCount,  DateTime? created,  String? starred,  int? year,  String? genre,  String? played,  int? userRating,  String? musicBrainzId,  String? displayArtist,  String? sortName,  bool? isCompilation,  List<SubsonicNamedDTO> genres,  List<SubsonicArtistRefDTO> artists,  List<SubsonicChildDTO> song)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: subsonicIdFromJson)  String id,  String name,  String? artist, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? coverArt,  int songCount,  int? duration,  int playCount,  DateTime? created,  String? starred,  int? year,  String? genre,  String? played,  int? userRating,  String? musicBrainzId,  String? displayArtist,  String? sortName,  bool? isCompilation,  List<String> releaseTypes, @JsonKey(fromJson: subsonicItemDateFromJson)  DateTime? originalReleaseDate,  List<SubsonicNamedDTO> genres,  List<SubsonicArtistRefDTO> artists,  List<SubsonicChildDTO> song)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SubsonicAlbumDTO() when $default != null:
-return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_that.songCount,_that.duration,_that.playCount,_that.created,_that.starred,_that.year,_that.genre,_that.played,_that.userRating,_that.musicBrainzId,_that.displayArtist,_that.sortName,_that.isCompilation,_that.genres,_that.artists,_that.song);case _:
+return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_that.songCount,_that.duration,_that.playCount,_that.created,_that.starred,_that.year,_that.genre,_that.played,_that.userRating,_that.musicBrainzId,_that.displayArtist,_that.sortName,_that.isCompilation,_that.releaseTypes,_that.originalReleaseDate,_that.genres,_that.artists,_that.song);case _:
   return orElse();
 
 }
@@ -1680,10 +1682,10 @@ return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: subsonicIdFromJson)  String id,  String name,  String? artist, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? coverArt,  int songCount,  int? duration,  int playCount,  DateTime? created,  String? starred,  int? year,  String? genre,  String? played,  int? userRating,  String? musicBrainzId,  String? displayArtist,  String? sortName,  bool? isCompilation,  List<SubsonicNamedDTO> genres,  List<SubsonicArtistRefDTO> artists,  List<SubsonicChildDTO> song)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: subsonicIdFromJson)  String id,  String name,  String? artist, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? coverArt,  int songCount,  int? duration,  int playCount,  DateTime? created,  String? starred,  int? year,  String? genre,  String? played,  int? userRating,  String? musicBrainzId,  String? displayArtist,  String? sortName,  bool? isCompilation,  List<String> releaseTypes, @JsonKey(fromJson: subsonicItemDateFromJson)  DateTime? originalReleaseDate,  List<SubsonicNamedDTO> genres,  List<SubsonicArtistRefDTO> artists,  List<SubsonicChildDTO> song)  $default,) {final _that = this;
 switch (_that) {
 case _SubsonicAlbumDTO():
-return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_that.songCount,_that.duration,_that.playCount,_that.created,_that.starred,_that.year,_that.genre,_that.played,_that.userRating,_that.musicBrainzId,_that.displayArtist,_that.sortName,_that.isCompilation,_that.genres,_that.artists,_that.song);case _:
+return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_that.songCount,_that.duration,_that.playCount,_that.created,_that.starred,_that.year,_that.genre,_that.played,_that.userRating,_that.musicBrainzId,_that.displayArtist,_that.sortName,_that.isCompilation,_that.releaseTypes,_that.originalReleaseDate,_that.genres,_that.artists,_that.song);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1700,10 +1702,10 @@ return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: subsonicIdFromJson)  String id,  String name,  String? artist, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? coverArt,  int songCount,  int? duration,  int playCount,  DateTime? created,  String? starred,  int? year,  String? genre,  String? played,  int? userRating,  String? musicBrainzId,  String? displayArtist,  String? sortName,  bool? isCompilation,  List<SubsonicNamedDTO> genres,  List<SubsonicArtistRefDTO> artists,  List<SubsonicChildDTO> song)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: subsonicIdFromJson)  String id,  String name,  String? artist, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson)  String? coverArt,  int songCount,  int? duration,  int playCount,  DateTime? created,  String? starred,  int? year,  String? genre,  String? played,  int? userRating,  String? musicBrainzId,  String? displayArtist,  String? sortName,  bool? isCompilation,  List<String> releaseTypes, @JsonKey(fromJson: subsonicItemDateFromJson)  DateTime? originalReleaseDate,  List<SubsonicNamedDTO> genres,  List<SubsonicArtistRefDTO> artists,  List<SubsonicChildDTO> song)?  $default,) {final _that = this;
 switch (_that) {
 case _SubsonicAlbumDTO() when $default != null:
-return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_that.songCount,_that.duration,_that.playCount,_that.created,_that.starred,_that.year,_that.genre,_that.played,_that.userRating,_that.musicBrainzId,_that.displayArtist,_that.sortName,_that.isCompilation,_that.genres,_that.artists,_that.song);case _:
+return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_that.songCount,_that.duration,_that.playCount,_that.created,_that.starred,_that.year,_that.genre,_that.played,_that.userRating,_that.musicBrainzId,_that.displayArtist,_that.sortName,_that.isCompilation,_that.releaseTypes,_that.originalReleaseDate,_that.genres,_that.artists,_that.song);case _:
   return null;
 
 }
@@ -1715,7 +1717,7 @@ return $default(_that.id,_that.name,_that.artist,_that.artistId,_that.coverArt,_
 @JsonSerializable()
 
 class _SubsonicAlbumDTO implements SubsonicAlbumDTO {
-  const _SubsonicAlbumDTO({@JsonKey(fromJson: subsonicIdFromJson) required this.id, this.name = '', this.artist, @JsonKey(fromJson: subsonicOptionalIdFromJson) this.artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson) this.coverArt, this.songCount = 0, this.duration, this.playCount = 0, this.created, this.starred, this.year, this.genre, this.played, this.userRating, this.musicBrainzId, this.displayArtist, this.sortName, this.isCompilation, final  List<SubsonicNamedDTO> genres = const [], final  List<SubsonicArtistRefDTO> artists = const [], final  List<SubsonicChildDTO> song = const []}): _genres = genres,_artists = artists,_song = song;
+  const _SubsonicAlbumDTO({@JsonKey(fromJson: subsonicIdFromJson) required this.id, this.name = '', this.artist, @JsonKey(fromJson: subsonicOptionalIdFromJson) this.artistId, @JsonKey(fromJson: subsonicOptionalIdFromJson) this.coverArt, this.songCount = 0, this.duration, this.playCount = 0, this.created, this.starred, this.year, this.genre, this.played, this.userRating, this.musicBrainzId, this.displayArtist, this.sortName, this.isCompilation, final  List<String> releaseTypes = const [], @JsonKey(fromJson: subsonicItemDateFromJson) this.originalReleaseDate, final  List<SubsonicNamedDTO> genres = const [], final  List<SubsonicArtistRefDTO> artists = const [], final  List<SubsonicChildDTO> song = const []}): _releaseTypes = releaseTypes,_genres = genres,_artists = artists,_song = song;
   factory _SubsonicAlbumDTO.fromJson(Map<String, dynamic> json) => _$SubsonicAlbumDTOFromJson(json);
 
 @override@JsonKey(fromJson: subsonicIdFromJson) final  String id;
@@ -1736,6 +1738,14 @@ class _SubsonicAlbumDTO implements SubsonicAlbumDTO {
 @override final  String? displayArtist;
 @override final  String? sortName;
 @override final  bool? isCompilation;
+ final  List<String> _releaseTypes;
+@override@JsonKey() List<String> get releaseTypes {
+  if (_releaseTypes is EqualUnmodifiableListView) return _releaseTypes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_releaseTypes);
+}
+
+@override@JsonKey(fromJson: subsonicItemDateFromJson) final  DateTime? originalReleaseDate;
  final  List<SubsonicNamedDTO> _genres;
 @override@JsonKey() List<SubsonicNamedDTO> get genres {
   if (_genres is EqualUnmodifiableListView) return _genres;
@@ -1771,16 +1781,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubsonicAlbumDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.artistId, artistId) || other.artistId == artistId)&&(identical(other.coverArt, coverArt) || other.coverArt == coverArt)&&(identical(other.songCount, songCount) || other.songCount == songCount)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.created, created) || other.created == created)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.year, year) || other.year == year)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.played, played) || other.played == played)&&(identical(other.userRating, userRating) || other.userRating == userRating)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.displayArtist, displayArtist) || other.displayArtist == displayArtist)&&(identical(other.sortName, sortName) || other.sortName == sortName)&&(identical(other.isCompilation, isCompilation) || other.isCompilation == isCompilation)&&const DeepCollectionEquality().equals(other._genres, _genres)&&const DeepCollectionEquality().equals(other._artists, _artists)&&const DeepCollectionEquality().equals(other._song, _song));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubsonicAlbumDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.artistId, artistId) || other.artistId == artistId)&&(identical(other.coverArt, coverArt) || other.coverArt == coverArt)&&(identical(other.songCount, songCount) || other.songCount == songCount)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.playCount, playCount) || other.playCount == playCount)&&(identical(other.created, created) || other.created == created)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.year, year) || other.year == year)&&(identical(other.genre, genre) || other.genre == genre)&&(identical(other.played, played) || other.played == played)&&(identical(other.userRating, userRating) || other.userRating == userRating)&&(identical(other.musicBrainzId, musicBrainzId) || other.musicBrainzId == musicBrainzId)&&(identical(other.displayArtist, displayArtist) || other.displayArtist == displayArtist)&&(identical(other.sortName, sortName) || other.sortName == sortName)&&(identical(other.isCompilation, isCompilation) || other.isCompilation == isCompilation)&&const DeepCollectionEquality().equals(other._releaseTypes, _releaseTypes)&&(identical(other.originalReleaseDate, originalReleaseDate) || other.originalReleaseDate == originalReleaseDate)&&const DeepCollectionEquality().equals(other._genres, _genres)&&const DeepCollectionEquality().equals(other._artists, _artists)&&const DeepCollectionEquality().equals(other._song, _song));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,artist,artistId,coverArt,songCount,duration,playCount,created,starred,year,genre,played,userRating,musicBrainzId,displayArtist,sortName,isCompilation,const DeepCollectionEquality().hash(_genres),const DeepCollectionEquality().hash(_artists),const DeepCollectionEquality().hash(_song)]);
+int get hashCode => Object.hashAll([runtimeType,id,name,artist,artistId,coverArt,songCount,duration,playCount,created,starred,year,genre,played,userRating,musicBrainzId,displayArtist,sortName,isCompilation,const DeepCollectionEquality().hash(_releaseTypes),originalReleaseDate,const DeepCollectionEquality().hash(_genres),const DeepCollectionEquality().hash(_artists),const DeepCollectionEquality().hash(_song)]);
 
 @override
 String toString() {
-  return 'SubsonicAlbumDTO(id: $id, name: $name, artist: $artist, artistId: $artistId, coverArt: $coverArt, songCount: $songCount, duration: $duration, playCount: $playCount, created: $created, starred: $starred, year: $year, genre: $genre, played: $played, userRating: $userRating, musicBrainzId: $musicBrainzId, displayArtist: $displayArtist, sortName: $sortName, isCompilation: $isCompilation, genres: $genres, artists: $artists, song: $song)';
+  return 'SubsonicAlbumDTO(id: $id, name: $name, artist: $artist, artistId: $artistId, coverArt: $coverArt, songCount: $songCount, duration: $duration, playCount: $playCount, created: $created, starred: $starred, year: $year, genre: $genre, played: $played, userRating: $userRating, musicBrainzId: $musicBrainzId, displayArtist: $displayArtist, sortName: $sortName, isCompilation: $isCompilation, releaseTypes: $releaseTypes, originalReleaseDate: $originalReleaseDate, genres: $genres, artists: $artists, song: $song)';
 }
 
 
@@ -1791,7 +1801,7 @@ abstract mixin class _$SubsonicAlbumDTOCopyWith<$Res> implements $SubsonicAlbumD
   factory _$SubsonicAlbumDTOCopyWith(_SubsonicAlbumDTO value, $Res Function(_SubsonicAlbumDTO) _then) = __$SubsonicAlbumDTOCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(fromJson: subsonicIdFromJson) String id, String name, String? artist,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? artistId,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? coverArt, int songCount, int? duration, int playCount, DateTime? created, String? starred, int? year, String? genre, String? played, int? userRating, String? musicBrainzId, String? displayArtist, String? sortName, bool? isCompilation, List<SubsonicNamedDTO> genres, List<SubsonicArtistRefDTO> artists, List<SubsonicChildDTO> song
+@JsonKey(fromJson: subsonicIdFromJson) String id, String name, String? artist,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? artistId,@JsonKey(fromJson: subsonicOptionalIdFromJson) String? coverArt, int songCount, int? duration, int playCount, DateTime? created, String? starred, int? year, String? genre, String? played, int? userRating, String? musicBrainzId, String? displayArtist, String? sortName, bool? isCompilation, List<String> releaseTypes,@JsonKey(fromJson: subsonicItemDateFromJson) DateTime? originalReleaseDate, List<SubsonicNamedDTO> genres, List<SubsonicArtistRefDTO> artists, List<SubsonicChildDTO> song
 });
 
 
@@ -1808,7 +1818,7 @@ class __$SubsonicAlbumDTOCopyWithImpl<$Res>
 
 /// Create a copy of SubsonicAlbumDTO
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? artist = freezed,Object? artistId = freezed,Object? coverArt = freezed,Object? songCount = null,Object? duration = freezed,Object? playCount = null,Object? created = freezed,Object? starred = freezed,Object? year = freezed,Object? genre = freezed,Object? played = freezed,Object? userRating = freezed,Object? musicBrainzId = freezed,Object? displayArtist = freezed,Object? sortName = freezed,Object? isCompilation = freezed,Object? genres = null,Object? artists = null,Object? song = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? artist = freezed,Object? artistId = freezed,Object? coverArt = freezed,Object? songCount = null,Object? duration = freezed,Object? playCount = null,Object? created = freezed,Object? starred = freezed,Object? year = freezed,Object? genre = freezed,Object? played = freezed,Object? userRating = freezed,Object? musicBrainzId = freezed,Object? displayArtist = freezed,Object? sortName = freezed,Object? isCompilation = freezed,Object? releaseTypes = null,Object? originalReleaseDate = freezed,Object? genres = null,Object? artists = null,Object? song = null,}) {
   return _then(_SubsonicAlbumDTO(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -1828,7 +1838,9 @@ as int?,musicBrainzId: freezed == musicBrainzId ? _self.musicBrainzId : musicBra
 as String?,displayArtist: freezed == displayArtist ? _self.displayArtist : displayArtist // ignore: cast_nullable_to_non_nullable
 as String?,sortName: freezed == sortName ? _self.sortName : sortName // ignore: cast_nullable_to_non_nullable
 as String?,isCompilation: freezed == isCompilation ? _self.isCompilation : isCompilation // ignore: cast_nullable_to_non_nullable
-as bool?,genres: null == genres ? _self._genres : genres // ignore: cast_nullable_to_non_nullable
+as bool?,releaseTypes: null == releaseTypes ? _self._releaseTypes : releaseTypes // ignore: cast_nullable_to_non_nullable
+as List<String>,originalReleaseDate: freezed == originalReleaseDate ? _self.originalReleaseDate : originalReleaseDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,genres: null == genres ? _self._genres : genres // ignore: cast_nullable_to_non_nullable
 as List<SubsonicNamedDTO>,artists: null == artists ? _self._artists : artists // ignore: cast_nullable_to_non_nullable
 as List<SubsonicArtistRefDTO>,song: null == song ? _self._song : song // ignore: cast_nullable_to_non_nullable
 as List<SubsonicChildDTO>,

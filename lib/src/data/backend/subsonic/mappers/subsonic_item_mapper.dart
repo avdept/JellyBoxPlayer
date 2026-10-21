@@ -172,6 +172,8 @@ extension SubsonicAlbumMapping on SubsonicAlbumDTO {
       kind: ItemKind.album,
       duration: Duration(seconds: duration ?? 0),
       productionYear: year,
+      originalReleaseDate: originalReleaseDate,
+      releaseTypes: releaseTypes,
       albumId: id,
       albumName: name,
       albumArtist: _presence(displayArtist) ?? _presence(artist),

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,6 @@ import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:sliver_tools/sliver_tools.dart';
 
 class ArtistPage extends ConsumerStatefulWidget {
   const ArtistPage({required this.artist, super.key});
@@ -154,7 +154,14 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     _device = DeviceType.fromScreenSize(_screenSize);
   }
 
-  Widget get mobileView {
+  double get _horizontalPadding =>
+      _device.isMobile ? 16 : (_device.isTablet ? 64 : 40);
+
+  double get _headerHeight =>
+      _device.isMobile ? 250 : (_device.isTablet ? 340 : 360);
+
+  @override
+  Widget build(BuildContext context) {
     return ScrollablePageScaffold(
       controller: _scrollController,
       slivers: [
@@ -168,168 +175,130 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                 child: child,
               ),
             ),
-            child: Text(
-              widget.artist.name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-          ),
-          floating: true,
-          pinned: true,
-          // snap: true,
-          expandedHeight: 250,
-          flexibleSpace: FlexibleSpaceBar(
-            collapseMode: CollapseMode.pin,
-            background: Stack(
-              alignment: Alignment.topCenter,
-              clipBehavior: Clip.none,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (widget.artist.images.backdrops.isNotEmpty)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: -60,
-                    height: 340,
-                    child: _headerImage(),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image(
+                    image: ref
+                        .read(imageServiceProvider)
+                        .itemImage(
+                          widget.artist,
+                        ),
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.cover,
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 20, top: 60),
-                  child: Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Flexible(
-                            child: AspectRatio(
-                              aspectRatio: 1,
-                              child: _mainImage(),
-                            ),
-                          ),
-                          Flexible(
-                            flex: 3,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          key: _titleKey,
-                                          widget.artist.name,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                      _playButton(),
-                                    ],
-                                  ),
-                                  DefaultTextStyle(
-                                    style: const TextStyle(fontSize: 14),
-                                    child: _infoText(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    widget.artist.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        ..._albumsWidgets(),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_device.isMobile) {
-      return mobileView;
-    }
-    return Scaffold(
-      body: SafeArea(
-        left: false,
-        right: false,
-        child: Stack(
-          alignment: Alignment.topCenter,
-          clipBehavior: Clip.none,
-          children: [
-            if (widget.artist.images.backdrops.isNotEmpty)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: _device.isMobile ? -60 : 0,
-                height: 340,
-                child: _headerImage(),
-              ),
-            const Positioned(top: 4, left: 10, child: BackButton()),
-            Positioned.fill(
-              left: _device.isMobile ? 20 : (_device.isTablet ? 64 : 40),
-              top: _device.isMobile ? 60 : (_device.isTablet ? 140 : 238),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: _mainImage(),
-                    ),
+          floating: true,
+          pinned: true,
+          expandedHeight: _headerHeight,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: ValueListenableBuilder(
+            valueListenable: _titleOpacity,
+            builder: (context, opacity, child) => ClipRect(
+              child: BackdropFilter(
+                enabled: opacity > 0,
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: ColoredBox(
+                  color: _theme.scaffoldBackgroundColor.withValues(
+                    alpha: 0.8 * opacity,
                   ),
-                  Flexible(
-                    flex: 3,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: _device.isMobile
-                            ? 16
-                            : (_device.isTablet ? 64 : 40),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  widget.artist.name,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              _playButton(),
-                            ],
+                  child: child,
+                ),
+              ),
+            ),
+            child: FlexibleSpaceBar(
+              collapseMode: CollapseMode.pin,
+              background: Stack(
+                alignment: Alignment.topCenter,
+                clipBehavior: Clip.none,
+                children: [
+                  if (widget.artist.images.backdrops.isNotEmpty)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: _device.isMobile ? -60 : 0,
+                      height: _device.isMobile ? 340 : _headerHeight,
+                      child: _headerImage(),
+                    ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: _device.isMobile ? 20 : _horizontalPadding,
+                      top: 60,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Flexible(
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: _mainImage(),
                           ),
-                          DefaultTextStyle(
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              color: _theme.textTheme.bodySmall?.color,
-                              fontSize: _device.isMobile ? 14 : 16,
+                        ),
+                        Flexible(
+                          flex: 3,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: _device.isMobile
+                                  ? 16
+                                  : _horizontalPadding,
                             ),
-                            child: _infoText(),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        key: _titleKey,
+                                        widget.artist.name,
+                                        style: TextStyle(
+                                          fontSize: _device.isMobile ? 18 : 20,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    _playButton(),
+                                  ],
+                                ),
+                                DefaultTextStyle(
+                                  style: TextStyle(
+                                    fontSize: _device.isMobile ? 14 : 16,
+                                  ),
+                                  child: _infoText(),
+                                ),
+                              ],
+                            ),
                           ),
-                          if (!_device.isMobile) Expanded(child: _albumsList()),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
+        ..._albumsWidgets(),
+      ],
     );
   }
 
@@ -387,26 +356,31 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     ),
   );
 
+  Widget _sectionHeading(String label) => SliverToBoxAdapter(
+    child: Padding(
+      padding: EdgeInsets.only(
+        left: _device.isMobile ? 8 : _horizontalPadding,
+        top: 8,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: _device.isMobile ? 20 : 24,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+  );
+
   List<Widget> _albumsWidgets() {
     return [
-      if (_albums.isNotEmpty) ...[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8, top: 8),
-            child: Text(
-              'Albums',
-              style: TextStyle(
-                fontSize: _device.isMobile ? 20 : 24,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
+      for (final section in releaseTypeSections(_albums)) ...[
+        _sectionHeading(section.label),
         SliverPadding(
           padding: EdgeInsets.only(
             top: 16,
-            right: _device.isMobile ? 16 : 0,
-            left: _device.isMobile ? 16 : 0,
+            right: _device.isMobile ? 16 : _horizontalPadding,
+            left: _device.isMobile ? 16 : _horizontalPadding,
             bottom: 16,
           ),
           sliver: SliverGrid.builder(
@@ -418,13 +392,13 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             ),
             itemBuilder: (context, index) => AlbumView(
               showArtist: false,
-              album: _albums[index],
-              subtitle: _albums[index].productionYear?.toString(),
+              album: section.albums[index],
+              subtitle: section.albums[index].productionYear?.toString(),
               alignTextStart: true,
               optionsBuilder: (context) => contextMenuActions(
                 context,
                 ref,
-                _albums[index],
+                section.albums[index],
                 scope: ContextMenuScope.browse,
                 onLike: _onAlbumLikePressed,
               ),
@@ -439,24 +413,16 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
               subTextStyle: const TextStyle(fontSize: 14),
             ),
-            itemCount: _albums.length,
+            itemCount: section.albums.length,
           ),
         ),
       ],
-      if (_appearsOn.isNotEmpty)
-        SliverToBoxAdapter(
-          child: Text(
-            'Appears On',
-            style: TextStyle(
-              fontSize: _device.isMobile ? 20 : 24,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+      if (_appearsOn.isNotEmpty) _sectionHeading('Appears On'),
       SliverPadding(
         padding: EdgeInsets.only(
           top: 16,
-          right: _device.isMobile ? 16 : (_device.isTablet ? 64 : 60),
+          right: _device.isMobile ? 16 : _horizontalPadding,
+          left: _device.isMobile ? 16 : _horizontalPadding,
           bottom: 16,
         ),
         sliver: SliverGrid.builder(
@@ -494,31 +460,4 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       ),
     ];
   }
-
-  Widget _albumsList() => CustomScrollbar(
-    controller: _scrollController,
-    child: CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        SliverPinnedHeader(
-          child: SizedBox.fromSize(
-            size: const Size.fromHeight(16),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    _theme.scaffoldBackgroundColor.withOpacity(1),
-                    _theme.scaffoldBackgroundColor.withOpacity(0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        ..._albumsWidgets(),
-      ],
-    ),
-  );
 }

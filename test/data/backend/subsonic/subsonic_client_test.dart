@@ -332,12 +332,82 @@ void main() {
       expect(uri.queryParameters['genre'], 'Heavy Metal');
     });
 
-    test('- appears-on is not available', () async {
+    test('- by artist keep only album-artist albums', () async {
+      server.ok('getArtist', {
+        'artist': {
+          'id': 'ar1',
+          'name': 'Adele',
+          'album': [
+            albumJson('own', artistId: 'ar1', year: 2011),
+            albumJson(
+              'comp',
+              artistId: 'va',
+              artists: [
+                {'id': 'va', 'name': 'Various Artists'},
+              ],
+              year: 2012,
+            ),
+          ],
+        },
+      });
+
+      final page = await client.getAlbums(
+        const LibraryQuery(artistIds: ['ar1']),
+      );
+
+      expect(page.items.map((a) => a.id), ['own']);
+      expect(page.totalRecordCount, 1);
+    });
+
+    test('- by artist trust the artists list over artistId', () async {
+      server.ok('getArtist', {
+        'artist': {
+          'id': 'ar1',
+          'name': 'Artist',
+          'album': [
+            albumJson(
+              'collab',
+              artistId: 'ar2',
+              artists: [
+                {'id': 'ar2', 'name': 'Other'},
+                {'id': 'ar1', 'name': 'Artist'},
+              ],
+            ),
+          ],
+        },
+      });
+
+      final page = await client.getAlbums(
+        const LibraryQuery(artistIds: ['ar1']),
+      );
+
+      expect(page.items.map((a) => a.id), ['collab']);
+    });
+
+    test('- appears-on returns the albums of other album artists', () async {
+      server.ok('getArtist', {
+        'artist': {
+          'id': 'ar1',
+          'name': 'Adele',
+          'album': [
+            albumJson('own', artistId: 'ar1'),
+            albumJson(
+              'comp',
+              artistId: 'va',
+              artists: [
+                {'id': 'va', 'name': 'Various Artists'},
+              ],
+            ),
+          ],
+        },
+      });
+
       final page = await client.getAlbums(
         const LibraryQuery(appearsOnArtistId: 'ar1'),
       );
-      expect(page.items, isEmpty);
-      expect(server.requests, isEmpty);
+
+      expect(page.items.map((a) => a.id), ['comp']);
+      expect(server.calls('getArtist').single.queryParameters['id'], 'ar1');
     });
   });
 
@@ -597,14 +667,22 @@ void main() {
       expect(page.totalRecordCount, 3);
     });
 
-    test('- an artist set walks albums oldest first', () async {
+    test('- an artist set walks own albums oldest first', () async {
       server.ok('getArtist', {
         'artist': {
           'id': 'ar1',
           'name': 'Artist',
           'album': [
-            albumJson('new', year: 2020),
-            albumJson('old', year: 1999),
+            albumJson('new', artistId: 'ar1', year: 2020),
+            albumJson('old', artistId: 'ar1', year: 1999),
+            albumJson(
+              'comp',
+              artistId: 'va',
+              artists: [
+                {'id': 'va', 'name': 'Various Artists'},
+              ],
+              year: 2005,
+            ),
           ],
         },
       });
