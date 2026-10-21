@@ -21,6 +21,8 @@ abstract class LibraryItem with _$LibraryItem {
     String? playlistItemId,
     String? overview,
     int? productionYear,
+    DateTime? originalReleaseDate,
+    @Default([]) List<String> releaseTypes,
     String? albumId,
     String? albumName,
     String? albumArtist,
@@ -63,6 +65,10 @@ abstract class LibraryItem with _$LibraryItem {
     playlistItemId: json['playlistItemId'] as String?,
     overview: json['overview'] as String?,
     productionYear: json['productionYear'] as int?,
+    originalReleaseDate: json['originalReleaseDate'] != null
+        ? DateTime.tryParse(json['originalReleaseDate'] as String)
+        : null,
+    releaseTypes: (json['releaseTypes'] as List<dynamic>? ?? []).cast<String>(),
     albumId: json['albumId'] as String?,
     albumName: json['albumName'] as String?,
     albumArtist: json['albumArtist'] as String?,
@@ -101,6 +107,8 @@ extension LibraryItemJson on LibraryItem {
     'playlistItemId': playlistItemId,
     'overview': overview,
     'productionYear': productionYear,
+    'originalReleaseDate': originalReleaseDate?.toIso8601String(),
+    'releaseTypes': releaseTypes,
     'albumId': albumId,
     'albumName': albumName,
     'albumArtist': albumArtist,

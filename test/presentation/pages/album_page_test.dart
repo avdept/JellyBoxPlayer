@@ -134,17 +134,20 @@ void main() {
 
   final suggestionsHeader = find.text('You may also like');
 
-  Future<void> scrollToSuggestions(WidgetTester tester) =>
-      tester.scrollUntilVisible(
-        suggestionsHeader,
-        200,
-        scrollable: find
-            .descendant(
-              of: find.byType(CustomScrollView),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
+  Future<void> scrollToSuggestions(WidgetTester tester) async {
+    await tester.scrollUntilVisible(
+      suggestionsHeader,
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -240));
+    await tester.pumpAndSettle();
+  }
 
   Future<void> scrollToEnd(WidgetTester tester) async {
     for (var i = 0; i < 6; i++) {

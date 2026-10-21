@@ -112,6 +112,11 @@ Map<String, Object?> childJson(
 Map<String, Object?> albumJson(
   String id, {
   String name = 'Album',
+  String artist = 'Artist',
+  String artistId = 'artist-1',
+  List<Map<String, Object?>>? artists,
+  List<String> releaseTypes = const [],
+  Map<String, Object?>? originalReleaseDate,
   int playCount = 0,
   int? year,
   String? created,
@@ -120,8 +125,11 @@ Map<String, Object?> albumJson(
 }) => {
   'id': id,
   'name': name,
-  'artist': 'Artist',
-  'artistId': 'artist-1',
+  'artist': artist,
+  'artistId': artistId,
+  if (artists != null) 'artists': artists,
+  if (releaseTypes.isNotEmpty) 'releaseTypes': releaseTypes,
+  if (originalReleaseDate != null) 'originalReleaseDate': originalReleaseDate,
   'coverArt': 'al-$id',
   'songCount': songs.length,
   'playCount': playCount,

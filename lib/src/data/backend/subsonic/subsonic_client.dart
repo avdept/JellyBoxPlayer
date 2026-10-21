@@ -123,7 +123,17 @@ class SubsonicClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> getAlbums(LibraryQuery query) async {
-    if (query.appearsOnArtistId != null) return const LibraryPage();
+    final appearsOnArtistId = query.appearsOnArtistId;
+    if (appearsOnArtistId != null) {
+      final albums = (await _api.getArtist(appearsOnArtistId)).album;
+      return _albumPage(
+        [
+          for (final album in albums)
+            if (!_isAlbumArtist(album, appearsOnArtistId)) album,
+        ],
+        query,
+      );
+    }
 
     if (query.ids.isNotEmpty) {
       final albums = await _albumsByIds(query.ids);
@@ -136,7 +146,7 @@ class SubsonicClient implements MediaServerClient {
     if (query.artistIds.isNotEmpty) {
       final albums = <SubsonicAlbumDTO>[];
       for (final artistId in query.artistIds) {
-        albums.addAll((await _api.getArtist(artistId)).album);
+        albums.addAll(await _artistOwnAlbums(artistId));
       }
       return _albumPage(albums, query);
     }
@@ -174,6 +184,22 @@ class SubsonicClient implements MediaServerClient {
       [for (final album in albums) album.toLibraryItem()],
       startIndex: query.startIndex,
     );
+  }
+
+  Future<List<SubsonicAlbumDTO>> _artistOwnAlbums(String artistId) async {
+    final albums = (await _api.getArtist(artistId)).album;
+    return [
+      for (final album in albums)
+        if (_isAlbumArtist(album, artistId)) album,
+    ];
+  }
+
+  bool _isAlbumArtist(SubsonicAlbumDTO album, String artistId) {
+    if (album.artists.isNotEmpty) {
+      return album.artists.any((artist) => artist.id == artistId);
+    }
+    final albumArtistId = album.artistId;
+    return albumArtistId == null || albumArtistId == artistId;
   }
 
   LibraryPage _albumPage(List<SubsonicAlbumDTO> albums, LibraryQuery query) {
@@ -384,7 +410,7 @@ class SubsonicClient implements MediaServerClient {
       final albums = <SubsonicAlbumDTO>[];
       if (query.artistIds.isNotEmpty) {
         for (final artistId in query.artistIds) {
-          albums.addAll((await _api.getArtist(artistId)).album);
+          albums.addAll(await _artistOwnAlbums(artistId));
         }
       } else {
         albums.addAll(
@@ -466,9 +492,8 @@ class SubsonicClient implements MediaServerClient {
     if (query.artistIds.isNotEmpty) {
       final songs = <SubsonicChildDTO>[];
       for (final artistId in query.artistIds) {
-        final artist = await _api.getArtist(artistId);
         final albums = subsonicSortAlbums(
-          artist.album,
+          await _artistOwnAlbums(artistId),
           ItemSort.releaseDate,
           SortDirection.ascending,
         );

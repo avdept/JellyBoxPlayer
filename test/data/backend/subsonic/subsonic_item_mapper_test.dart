@@ -200,6 +200,8 @@ void main() {
       'displayArtist': 'Insomnium',
       'starred': '2026-09-18T14:52:59Z',
       'playCount': 2,
+      'releaseTypes': ['Album', 'Live'],
+      'originalReleaseDate': {'year': 2026, 'month': 9, 'day': 5},
     }).toLibraryItem();
 
     expect(album.kind, ItemKind.album);
@@ -213,6 +215,8 @@ void main() {
     expect(album.userData.isFavorite, isTrue);
     expect(album.userData.playCount, 2);
     expect(album.externalIds, isEmpty);
+    expect(album.releaseTypes, ['Album', 'Live']);
+    expect(album.originalReleaseDate, DateTime(2026, 9, 5));
   });
 
   test('SubsonicArtistDTO.toLibraryItem maps artist fields', () {

@@ -146,7 +146,8 @@ Comparator<SubsonicAlbumDTO>? subsonicAlbumComparator(ItemSort sort) =>
       ItemSort.random => null,
       ItemSort.dateCreated || ItemSort.dateLastContentAdded =>
         (a, b) => _compareNullable(a.created, b.created),
-      ItemSort.releaseDate => (a, b) => _compareNullable(a.year, b.year),
+      ItemSort.releaseDate => (a, b) =>
+          _compareNullable(_albumReleaseDate(a), _albumReleaseDate(b)),
       ItemSort.albumArtist => (a, b) => subsonicCompareNames(
         a.displayArtist ?? a.artist,
         b.displayArtist ?? b.artist,
@@ -162,6 +163,11 @@ Comparator<SubsonicAlbumDTO>? subsonicAlbumComparator(ItemSort sort) =>
         b.sortName ?? b.name,
       ),
     };
+
+DateTime? _albumReleaseDate(SubsonicAlbumDTO album) {
+  final year = album.year;
+  return album.originalReleaseDate ?? (year != null ? DateTime(year) : null);
+}
 
 Comparator<SubsonicArtistDTO>? subsonicArtistComparator(ItemSort sort) =>
     switch (sort) {

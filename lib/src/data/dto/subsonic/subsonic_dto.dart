@@ -7,6 +7,15 @@ String subsonicIdFromJson(Object? value) => value?.toString() ?? '';
 
 String? subsonicOptionalIdFromJson(Object? value) => value?.toString();
 
+DateTime? subsonicItemDateFromJson(Object? value) {
+  if (value is! Map<String, dynamic>) return null;
+  final year = value['year'];
+  if (year is! int) return null;
+  final month = value['month'];
+  final day = value['day'];
+  return DateTime(year, month is int ? month : 1, day is int ? day : 1);
+}
+
 @freezed
 abstract class SubsonicErrorDTO with _$SubsonicErrorDTO {
   const factory SubsonicErrorDTO({int? code, String? message}) =
@@ -124,6 +133,8 @@ abstract class SubsonicAlbumDTO with _$SubsonicAlbumDTO {
     String? displayArtist,
     String? sortName,
     bool? isCompilation,
+    @Default([]) List<String> releaseTypes,
+    @JsonKey(fromJson: subsonicItemDateFromJson) DateTime? originalReleaseDate,
     @Default([]) List<SubsonicNamedDTO> genres,
     @Default([]) List<SubsonicArtistRefDTO> artists,
     @Default([]) List<SubsonicChildDTO> song,

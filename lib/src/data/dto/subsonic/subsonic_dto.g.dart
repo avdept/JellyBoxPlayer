@@ -152,46 +152,51 @@ Map<String, dynamic> _$SubsonicChildDTOToJson(_SubsonicChildDTO instance) =>
       'albumArtists': instance.albumArtists,
     };
 
-_SubsonicAlbumDTO _$SubsonicAlbumDTOFromJson(Map<String, dynamic> json) =>
-    _SubsonicAlbumDTO(
-      id: subsonicIdFromJson(json['id']),
-      name: json['name'] as String? ?? '',
-      artist: json['artist'] as String?,
-      artistId: subsonicOptionalIdFromJson(json['artistId']),
-      coverArt: subsonicOptionalIdFromJson(json['coverArt']),
-      songCount: (json['songCount'] as num?)?.toInt() ?? 0,
-      duration: (json['duration'] as num?)?.toInt(),
-      playCount: (json['playCount'] as num?)?.toInt() ?? 0,
-      created: json['created'] == null
-          ? null
-          : DateTime.parse(json['created'] as String),
-      starred: json['starred'] as String?,
-      year: (json['year'] as num?)?.toInt(),
-      genre: json['genre'] as String?,
-      played: json['played'] as String?,
-      userRating: (json['userRating'] as num?)?.toInt(),
-      musicBrainzId: json['musicBrainzId'] as String?,
-      displayArtist: json['displayArtist'] as String?,
-      sortName: json['sortName'] as String?,
-      isCompilation: json['isCompilation'] as bool?,
-      genres:
-          (json['genres'] as List<dynamic>?)
-              ?.map((e) => SubsonicNamedDTO.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      artists:
-          (json['artists'] as List<dynamic>?)
-              ?.map(
-                (e) => SubsonicArtistRefDTO.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          const [],
-      song:
-          (json['song'] as List<dynamic>?)
-              ?.map((e) => SubsonicChildDTO.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
-    );
+_SubsonicAlbumDTO _$SubsonicAlbumDTOFromJson(
+  Map<String, dynamic> json,
+) => _SubsonicAlbumDTO(
+  id: subsonicIdFromJson(json['id']),
+  name: json['name'] as String? ?? '',
+  artist: json['artist'] as String?,
+  artistId: subsonicOptionalIdFromJson(json['artistId']),
+  coverArt: subsonicOptionalIdFromJson(json['coverArt']),
+  songCount: (json['songCount'] as num?)?.toInt() ?? 0,
+  duration: (json['duration'] as num?)?.toInt(),
+  playCount: (json['playCount'] as num?)?.toInt() ?? 0,
+  created: json['created'] == null
+      ? null
+      : DateTime.parse(json['created'] as String),
+  starred: json['starred'] as String?,
+  year: (json['year'] as num?)?.toInt(),
+  genre: json['genre'] as String?,
+  played: json['played'] as String?,
+  userRating: (json['userRating'] as num?)?.toInt(),
+  musicBrainzId: json['musicBrainzId'] as String?,
+  displayArtist: json['displayArtist'] as String?,
+  sortName: json['sortName'] as String?,
+  isCompilation: json['isCompilation'] as bool?,
+  releaseTypes:
+      (json['releaseTypes'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  originalReleaseDate: subsonicItemDateFromJson(json['originalReleaseDate']),
+  genres:
+      (json['genres'] as List<dynamic>?)
+          ?.map((e) => SubsonicNamedDTO.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  artists:
+      (json['artists'] as List<dynamic>?)
+          ?.map((e) => SubsonicArtistRefDTO.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  song:
+      (json['song'] as List<dynamic>?)
+          ?.map((e) => SubsonicChildDTO.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
 
 Map<String, dynamic> _$SubsonicAlbumDTOToJson(_SubsonicAlbumDTO instance) =>
     <String, dynamic>{
@@ -213,6 +218,8 @@ Map<String, dynamic> _$SubsonicAlbumDTOToJson(_SubsonicAlbumDTO instance) =>
       'displayArtist': instance.displayArtist,
       'sortName': instance.sortName,
       'isCompilation': instance.isCompilation,
+      'releaseTypes': instance.releaseTypes,
+      'originalReleaseDate': instance.originalReleaseDate?.toIso8601String(),
       'genres': instance.genres,
       'artists': instance.artists,
       'song': instance.song,

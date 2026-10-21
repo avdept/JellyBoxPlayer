@@ -79,6 +79,29 @@ void main() {
       expect(sorted.map((a) => a.id), ['b', 'a', 'c']);
     });
 
+    test('- prefers the full original release date over the year', () {
+      final sorted = subsonicSortAlbums(
+        [
+          SubsonicAlbumDTO(
+            id: 'late',
+            name: 'Late',
+            year: 2011,
+            originalReleaseDate: DateTime(2011, 11, 25),
+          ),
+          SubsonicAlbumDTO(
+            id: 'early',
+            name: 'Early',
+            year: 2011,
+            originalReleaseDate: DateTime(2011, 1, 19),
+          ),
+          const SubsonicAlbumDTO(id: 'yearly', name: 'Yearly', year: 2010),
+        ],
+        ItemSort.releaseDate,
+        SortDirection.ascending,
+      );
+      expect(sorted.map((a) => a.id), ['yearly', 'early', 'late']);
+    });
+
     test('- shuffles deterministically for random', () {
       final first = subsonicSortAlbums(
         albums,
