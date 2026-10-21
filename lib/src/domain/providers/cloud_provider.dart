@@ -12,6 +12,8 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final conductorUrlProvider =
@@ -60,7 +62,9 @@ class CloudNotifier extends StateNotifier<CloudState> {
     _ref
       ..listen(conductorUrlProvider, (_, _) => unawaited(_refresh()))
       ..listen(currentUserProvider, (_, next) {
-        if (next == null) _cloud.forgetAccount();
+        if (next == null && _ref.read(accountsProvider).isEmpty) {
+          _cloud.forgetAccount();
+        }
         unawaited(_refresh());
       });
 
@@ -92,6 +96,8 @@ class CloudNotifier extends StateNotifier<CloudState> {
   Future<void> signOut() => _cloud.signOut();
 
   Future<bool> handoffTo(String deviceId) => _cloud.handoffTo(deviceId);
+
+  bool? sameBackend(ConductorDevice device) => _cloud.sameBackend(device);
 
   Future<void> sendCommand(PlayerCommand command, {Object? value}) =>
       _cloud.sendCommand(command, value: value);
@@ -181,7 +187,16 @@ final cloudAvailableProvider = Provider<bool>(
   (ref) => ref.watch(cloudProvider.notifier).available,
 );
 
+final remoteSessionOursProvider = Provider<bool>((ref) {
+  final queueRef = ref.watch(
+    cloudProvider.select((state) => state.remote?.doc.backendRef),
+  );
+  final ours = ref.watch(currentServerIdProvider);
+  return queueRef == null || ours == null || queueRef == ours;
+});
+
 final remoteRendererProvider = Provider<ConductorDevice?>((ref) {
+  if (!ref.watch(remoteSessionOursProvider)) return null;
   final state = ref.watch(cloudProvider);
   final hasQueue = !(state.remote?.doc.isEmpty ?? true);
   return hasQueue ? state.remoteRenderer : null;

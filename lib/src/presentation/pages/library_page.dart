@@ -10,6 +10,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -91,6 +92,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     _titleText(),
                     const Spacer(),
                     _searchButton(),
+                    if (ref.watch(accountsProvider).length > 1)
+                      TextButton(
+                        onPressed: () => unawaited(showServerSwitcher(context)),
+                        child: const Text('Switch server'),
+                      ),
                     TextButton(
                       onPressed: ref.read(authProvider.notifier).logout,
                       child: const Text('Logout'),

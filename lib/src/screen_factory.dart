@@ -149,6 +149,15 @@ class ScreenFactory {
     );
   }
 
+  Page<void> addServerPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: LoginPage(addingServer: true),
+    );
+  }
+
   Page<void> mainPage(
     BuildContext context,
     GoRouterState router,

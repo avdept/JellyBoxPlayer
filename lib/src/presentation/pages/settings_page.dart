@@ -17,6 +17,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
 import 'package:updatify_flutter/updatify_flutter.dart';
@@ -170,7 +171,9 @@ class SettingsPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 4,
                   children: [
-                    _sectionHeader('Server'),
+                    _sectionHeader('Servers'),
+                    const ServerAccountList(),
+                    _sectionHeader('Connection'),
                     const ServerAddressSettings(),
                     if (ref.watch(cloudAvailableProvider)) ...[
                       _sectionHeader('Jellybox Cloud'),
@@ -698,6 +701,10 @@ class SettingsPage extends ConsumerWidget {
     onPressed: ref.read(authProvider.notifier).logout,
     style: _buttonStyle,
     icon: const Icon(JPlayer.log_out),
-    label: const Text('Log out'),
+    label: Text(
+      ref.watch(accountsProvider).length > 1
+          ? 'Log out of all servers'
+          : 'Log out',
+    ),
   );
 }

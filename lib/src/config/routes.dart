@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 enum Routes {
   login('/login'),
+  addServer('/add-server'),
   library('/library'),
   settings('/settings'),
   downloads('/downloads'),

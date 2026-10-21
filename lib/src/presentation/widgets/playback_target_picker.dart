@@ -361,9 +361,18 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     if (_failedHandoff == device.id) {
       return conductor.error ?? 'Could not take over';
     }
+    if (device.isRenderer && _sessionFromAnotherServer) {
+      return 'Playing on a different server';
+    }
+    if (_onAnotherServer(device)) return 'Connected to a different server';
     if (device.isRenderer) return 'Playing';
     return device.isOnline ? 'Your device' : 'Asleep';
   }
+
+  bool _onAnotherServer(ConductorDevice device) =>
+      ref.read(cloudProvider.notifier).sameBackend(device) == false;
+
+  bool get _sessionFromAnotherServer => !ref.watch(remoteSessionOursProvider);
 
   void _selectRenderer(UpnpRenderer renderer) =>
       unawaited(_connectTo(UpnpPlaybackTarget(renderer)));
@@ -486,7 +495,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               subtitle: _deviceSubtitle(device, conductor),
               selected: device.id == elsewhere?.id,
               busy: conductor.handingOffTo == device.id,
-              onTap: device.isRenderer || conductor.handingOffTo == device.id
+              onTap:
+                  device.isRenderer ||
+                      conductor.handingOffTo == device.id ||
+                      _onAnotherServer(device)
                   ? null
                   : () => unawaited(_handOffTo(device)),
             ),

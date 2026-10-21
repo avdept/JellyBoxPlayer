@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/presentation/widgets/server_accounts.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 class OfflineBanner extends ConsumerWidget {
@@ -32,6 +36,22 @@ class OfflineBanner extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (ref.watch(accountsProvider).length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: InkWell(
+                      onTap: () => unawaited(showServerSwitcher(context)),
+                      child: Text(
+                        'Switch server',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.2,
+                          fontWeight: FontWeight.w600,
+                          color: foreground,
+                        ),
+                      ),
+                    ),
+                  ),
                 Text(
                   'Retry',
                   style: TextStyle(

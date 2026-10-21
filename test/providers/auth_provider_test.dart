@@ -17,6 +17,7 @@ import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/server_addresses_provider.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../provider_container.dart';
 
@@ -77,6 +78,7 @@ void main() {
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockAdapter = MockHttpClientAdapter();
     mockStorage = MockSecureStorage();
     mockProbe = MockServerProbeService();

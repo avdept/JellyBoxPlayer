@@ -186,6 +186,11 @@ class _AppState extends ConsumerState<App>
           pageBuilder: widget.screenFactory.loginPage,
         ),
         GoRoute(
+          path: Routes.addServer.path,
+          name: Routes.addServer.name,
+          pageBuilder: widget.screenFactory.addServerPage,
+        ),
+        GoRoute(
           path: Routes.library.path,
           name: Routes.library.name,
           pageBuilder: widget.screenFactory.libraryPage,

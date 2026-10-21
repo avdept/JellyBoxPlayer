@@ -1,18 +1,24 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
+import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({this.addingServer = false, super.key});
+
+  final bool addingServer;
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => LoginPageState();
@@ -36,6 +42,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   ServerUrlFieldMode _mode = ServerUrlFieldMode.discovering;
   DiscoveredServer? _selectedServer;
   bool _manualEntry = false;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -45,7 +52,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(ref.read(serverDiscoveryProvider.notifier).scan());
     });
-    unawaited(_prefillLastServer());
+    if (!widget.addingServer) unawaited(_prefillLastServer());
   }
 
   Future<void> _prefillLastServer() async {
@@ -92,8 +99,11 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   void _onDiscoveryChanged(ServerDiscoveryState discovery) {
     if (_manualEntry) return;
-    if (discovery.servers.isNotEmpty) {
-      if (_selectedServer == null) _selectServer(discovery.servers.first);
+    final candidate = discovery.servers.firstWhereOrNull(
+      (server) => !widget.addingServer || !_isAdded(server.id),
+    );
+    if (candidate != null) {
+      if (_selectedServer == null) _selectServer(candidate);
       return;
     }
     if (discovery.finished && _mode == ServerUrlFieldMode.discovering) {
@@ -221,7 +231,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> signIn({bool promptForCertificate = true}) async {
-    if (error != null) setState(() => error = null);
+    setState(() {
+      error = null;
+      _submitting = true;
+    });
 
     final credentials = UserCredentials(
       username: _emailInputController.text.trim(),
@@ -231,6 +244,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     if (credentials.serverUrl.isEmpty || credentials.username.isEmpty) {
       setState(() {
         error = 'Server URL and login are required';
+        _submitting = false;
       });
       return;
     }
@@ -241,6 +255,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         error =
             'Server URL is invalid. Try something like 192.168.1.10:8096 or '
             'jellyfin.example.com';
+        _submitting = false;
       });
       return;
     }
@@ -250,7 +265,11 @@ class LoginPageState extends ConsumerState<LoginPage> {
           credentials,
           serverType: _resolvedServerType,
         );
-    if (resp == null || !mounted) return;
+    if (!mounted) return;
+    if (resp == null) {
+      if (widget.addingServer) context.go('/');
+      return;
+    }
 
     if (promptForCertificate && await _trustServerCertificate(serverUri.host)) {
       if (!mounted) return;
@@ -263,6 +282,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
     setState(() {
       error = resp;
+      _submitting = false;
     });
   }
 
@@ -324,7 +344,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
                 child: KeyboardListener(
                   focusNode: FocusNode(),
                   onKeyEvent: (event) {
-                    if (event.logicalKey == LogicalKeyboardKey.enter) {
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.enter &&
+                        !_submitting) {
                       signIn();
                     }
                   },
@@ -342,12 +364,20 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       _loginField(),
                       const SizedBox(height: 8),
                       _passwordField(),
-                      if (error != null) ...[
+                      if (error case final message?) ...[
                         const SizedBox(height: 12),
-                        _errorText(error!),
+                        _errorText(message),
                       ],
                       const SizedBox(height: 63),
                       _signInButton(),
+                      if (widget.addingServer) ...[
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: context.pop,
+                          child: const Text('Cancel'),
+                        ),
+                      ] else
+                        ?_savedServers(),
                     ],
                   ),
                 ),
@@ -357,6 +387,34 @@ class LoginPageState extends ConsumerState<LoginPage> {
         ),
       ),
     );
+  }
+
+  bool _isAdded(String? serverId) => ref
+      .read(accountsProvider)
+      .any((account) => account.serverId == serverId && !account.needsReauth);
+
+  Widget? _savedServers() {
+    if (ref.watch(accountsProvider).isEmpty) return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 32),
+      child: ServerAccountList(
+        removable: false,
+        showAdd: false,
+        onSelect: _useSavedServer,
+      ),
+    );
+  }
+
+  void _useSavedServer(ServerAccount account) {
+    if (!account.needsReauth) {
+      unawaited(ref.read(authProvider.notifier).switchTo(account.serverId));
+      return;
+    }
+    _startManualEntry();
+    _serverUrlInputController.text = account.url;
+    _emailInputController.text = account.userName ?? '';
+    _passwordInputController.clear();
+    unawaited(_probeServer());
   }
 
   Widget _errorText(String message) => Text(
@@ -465,7 +523,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   );
 
   Widget _signInButton() => ShadowedButton(
-    onPressed: signIn,
+    onPressed: _submitting ? null : signIn,
     child: const Text(
       'Sign in',
       style: TextStyle(
