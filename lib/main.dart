@@ -19,6 +19,7 @@ import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
 import 'package:jplayer/src/core/home_widget/widget_commands.dart';
 import 'package:jplayer/src/core/listenbrainz/listenbrainz_scrobbler.dart';
+import 'package:jplayer/src/core/scrobbling/play_history_scrobbler.dart';
 import 'package:jplayer/src/core/scrobbling/scrobble_handler.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/errors/image_error_filter.dart';
@@ -199,6 +200,7 @@ Future<void> main() async {
     container,
     scrobblers: [
       ListenBrainzScrobbler(container, clientVersion: appInfo.version),
+      PlayHistoryScrobbler(container),
     ],
   );
 

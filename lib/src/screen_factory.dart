@@ -131,6 +131,15 @@ class ScreenFactory {
     );
   }
 
+  Page<void> onRepeatPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const CupertinoPage(
+      child: OnRepeatPage(),
+    );
+  }
+
   Page<void> homePage(
     BuildContext context,
     GoRouterState router,

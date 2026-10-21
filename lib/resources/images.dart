@@ -11,6 +11,7 @@ class Images {
   static const String coverSample = 'assets/images/cover_sample.png';
   static const String lib = 'assets/images/lib.png';
   static const String likedSongs = 'assets/images/liked_songs.jpg';
+  static const String onRepeat = 'assets/images/on_repeat.jpg';
   static const String librarySample = 'assets/images/library_sample.png';
   static const String songSample = 'assets/images/song_sample.png';
 }

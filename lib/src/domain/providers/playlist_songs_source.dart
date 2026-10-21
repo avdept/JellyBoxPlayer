@@ -9,6 +9,7 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -26,6 +27,8 @@ class PlaylistSongsSource {
           _ref.read(mediaServerClientProvider),
           libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
         );
+      case EphemeralPlaylistKind.onRepeat:
+        return onRepeatSongsOf(_ref);
       case EphemeralPlaylistKind.instantMix:
       case EphemeralPlaylistKind.soundMix:
       case EphemeralPlaylistKind.genreInstantMix:

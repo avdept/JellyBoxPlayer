@@ -123,10 +123,14 @@ class DownloadSync {
   }
 
   Future<void> _syncOne(DownloadManager manager, LibraryItem playlist) async {
-    final kind = EphemeralPlaylistId.parse(playlist.id)?.kind;
-    if (kind == EphemeralPlaylistKind.likedSongs &&
-        EphemeralPlaylistId.parse(playlist.id)!.key !=
-            _ref.read(currentUserProvider)?.userId) {
+    final parsed = EphemeralPlaylistId.parse(playlist.id);
+    final kind = parsed?.kind;
+    const userScoped = {
+      EphemeralPlaylistKind.likedSongs,
+      EphemeralPlaylistKind.onRepeat,
+    };
+    if (userScoped.contains(kind) &&
+        parsed!.key != _ref.read(currentUserProvider)?.userId) {
       return;
     }
     try {

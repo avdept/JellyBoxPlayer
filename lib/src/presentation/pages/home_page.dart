@@ -95,6 +95,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       context.pushNamed(branchAwareName(context, Routes.favouriteSongs));
       return;
     }
+    if (isOnRepeatId(playlist.id)) {
+      context.pushNamed(branchAwareName(context, Routes.onRepeat));
+      return;
+    }
     ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
     context.pushNamed(
       branchAwareName(context, Routes.playlist),
@@ -331,7 +335,11 @@ class _HomePageState extends ConsumerState<HomePage> {
               items: ref
                   .watch(recentlyUpdatedPlaylistsProvider)
                   .whenData(
-                    (list) => [?ref.watch(likedSongsPlaylistProvider), ...list],
+                    (list) => [
+                      ?ref.watch(likedSongsPlaylistProvider),
+                      ?ref.watch(onRepeatCardProvider).valueOrNull,
+                      ...list,
+                    ],
                   ),
               device: _device,
               horizontalPadding: _horizontalPadding,
