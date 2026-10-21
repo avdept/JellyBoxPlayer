@@ -106,8 +106,8 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
   var _isBusy = false;
 
   Future<void> _onDeletePressed() async {
-    final shouldDelete = await showAdaptiveDialog<bool>(
-      context: context,
+    final shouldDelete = await showAppDialog<bool>(
+      context,
       builder: (context) => AlertDialog.adaptive(
         key: widget.testKeys?.confirmationDialog,
         title: Text.rich(

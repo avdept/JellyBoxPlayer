@@ -6,6 +6,7 @@ import 'package:jplayer/src/data/providers/server_probe_provider.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/labeled_text_field.dart';
+import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/current_server_type_provider.dart';
@@ -23,6 +24,13 @@ class ServerAddressSettings extends ConsumerWidget {
     showFormModal<void>(
       context,
       builder: (context) => const RemoteAddressForm(),
+    ),
+  );
+
+  void _editHome(BuildContext context) => unawaited(
+    showFormModal<void>(
+      context,
+      builder: (context) => const HomeAddressForm(),
     ),
   );
 
@@ -44,6 +52,13 @@ class ServerAddressSettings extends ConsumerWidget {
           address: addresses.home,
           active: connection == ServerConnection.direct,
           muted: muted,
+          actions: [
+            _ActionIcon(
+              icon: Icons.edit_outlined,
+              tooltip: 'Change home address',
+              onPressed: () => _editHome(context),
+            ),
+          ],
         ),
         if (remote == null)
           TextButton.icon(
@@ -153,6 +168,125 @@ class _ActionIcon extends StatelessWidget {
   }
 }
 
+bool _matchesCurrentServer(WidgetRef ref, ServerIdentity identity) {
+  final serverId = ref.read(currentServerIdProvider);
+  final serverType = ref.read(currentServerTypeProvider);
+  if (serverType != null && identity.serverType != serverType) return false;
+  final id = identity.serverId;
+  return serverId == null || id == null || id.isEmpty || id == serverId;
+}
+
+class HomeAddressForm extends ConsumerStatefulWidget {
+  const HomeAddressForm({
+    this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+    super.key,
+  });
+
+  static const unreachableError = 'That address did not answer.';
+  static const emptyError = 'Enter the server address.';
+
+  final EdgeInsets padding;
+
+  @override
+  ConsumerState<HomeAddressForm> createState() => _HomeAddressFormState();
+}
+
+class _HomeAddressFormState extends ConsumerState<HomeAddressForm> {
+  late final _controller = TextEditingController(
+    text: ref.read(serverAddressesProvider)?.home ?? '',
+  );
+  String? _error;
+  var _submitting = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_submitting) return;
+    final text = _controller.text.trim();
+    if (text.isEmpty) {
+      setState(() => _error = HomeAddressForm.emptyError);
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    final url = normalizeServerUrl(text);
+    final failure = await _validate(url);
+    if (!mounted) return;
+    if (failure != null) {
+      setState(() {
+        _submitting = false;
+        _error = failure;
+      });
+      return;
+    }
+    await ref.read(authProvider.notifier).updateHomeUrl(url);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<String?> _validate(String url) async {
+    if (url == ref.read(serverAddressesProvider)?.home) return null;
+    final identity = await ref.read(serverProbeServiceProvider).probe(url);
+    if (identity == null) return HomeAddressForm.unreachableError;
+    if (!_matchesCurrentServer(ref, identity)) {
+      return RemoteAddressForm.differentServerError;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      minimum: widget.padding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ModalFormHeader('Home address'),
+          const SizedBox(height: 8),
+          Text(
+            'The main address of this server. Change it when the server '
+            'moved to a new IP or domain; you stay signed in.',
+            style: TextStyle(
+              fontSize: 14,
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 16),
+          LabeledTextField(
+            controller: _controller,
+            placeholder: 'http://192.168.1.22:8096',
+            keyboardType: TextInputType.url,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+          ),
+          if (_error case final error?)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                error,
+                style: TextStyle(fontSize: 13, color: theme.colorScheme.error),
+              ),
+            ),
+          const SizedBox(height: 16),
+          ModalFormActions(
+            submitLabel: 'Save',
+            onSubmit: () => unawaited(_submit()),
+            busy: _submitting,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class RemoteAddressForm extends ConsumerStatefulWidget {
   const RemoteAddressForm({
     this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
@@ -203,12 +337,7 @@ class _RemoteAddressFormState extends ConsumerState<RemoteAddressForm> {
 
   Future<bool> _sameServer(String url) async {
     final identity = await ref.read(serverProbeServiceProvider).probe(url);
-    if (identity == null) return true;
-    final serverId = ref.read(currentServerIdProvider);
-    final serverType = ref.read(currentServerTypeProvider);
-    if (serverType != null && identity.serverType != serverType) return false;
-    final id = identity.serverId;
-    return serverId == null || id == null || id.isEmpty || id == serverId;
+    return identity == null || _matchesCurrentServer(ref, identity);
   }
 
   @override

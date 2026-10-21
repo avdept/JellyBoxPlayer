@@ -15,6 +15,7 @@ import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
+import 'package:jplayer/src/providers/server_addresses_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../provider_container.dart';
@@ -430,6 +431,115 @@ void main() {
         verifyNever(() => mockStorage.read(key: 'x-mediabrowser-token'));
       },
     );
+  });
+
+  group('AuthNotifier.updateHomeUrl', () {
+    Future<ProviderContainer> restoreWith({bool homeAnswers = true}) async {
+      final stored = {
+        'serverUrl': 'http://jelly.local',
+        'remoteUrl': 'http://100.64.0.5:8096',
+        'userId': 'user-1',
+        'authToken': 'token-1',
+        'serverId': 'server-1',
+      };
+      for (final entry in stored.entries) {
+        when(
+          () => mockStorage.read(key: entry.key),
+        ).thenAnswer((_) async => entry.value);
+      }
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final uri =
+            (invocation.positionalArguments.first as RequestOptions).uri;
+        if (uri.host == 'jelly.local' && !homeAnswers) {
+          throw DioException.connectionError(
+            requestOptions: RequestOptions(path: uri.toString()),
+            reason: 'unreachable',
+          );
+        }
+        if (uri.host != 'jelly.local') {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+        return ResponseBody.fromString(
+          jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0}),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      final container = createProviderContainer(
+        overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+      );
+      container.read(dioProvider).httpClientAdapter = mockAdapter;
+      await container.read(authProvider.future);
+      return container;
+    }
+
+    test('- stores the new address and keeps the fallbacks', () async {
+      final container = await restoreWith();
+
+      await container
+          .read(authProvider.notifier)
+          .updateHomeUrl('http://jelly.new');
+
+      verify(
+        () => mockStorage.write(key: 'serverUrl', value: 'http://jelly.new'),
+      ).called(1);
+      verify(
+        () =>
+            mockStorage.write(key: 'lastServerUrl', value: 'http://jelly.new'),
+      ).called(1);
+      final addresses = container.read(serverAddressesProvider)!;
+      expect(addresses.home, 'http://jelly.new');
+      expect(addresses.remote, 'http://100.64.0.5:8096');
+    });
+
+    test('- moves the active connection off the old home address', () async {
+      final container = await restoreWith();
+      expect(container.read(baseUrlProvider), 'http://jelly.local');
+
+      await container
+          .read(authProvider.notifier)
+          .updateHomeUrl('http://jelly.new');
+
+      expect(container.read(baseUrlProvider), 'http://jelly.new');
+    });
+
+    test(
+      '- leaves the active connection alone when it is not home',
+      () async {
+        final container = await restoreWith(homeAnswers: false);
+        expect(container.read(baseUrlProvider), 'http://100.64.0.5:8096');
+
+        await container
+            .read(authProvider.notifier)
+            .updateHomeUrl('http://jelly.new');
+
+        expect(container.read(baseUrlProvider), 'http://100.64.0.5:8096');
+        expect(
+          container.read(serverAddressesProvider)?.home,
+          'http://jelly.new',
+        );
+      },
+    );
+
+    test('- does nothing when the address did not change', () async {
+      final container = await restoreWith();
+
+      await container
+          .read(authProvider.notifier)
+          .updateHomeUrl('http://jelly.local');
+
+      verifyNever(
+        () => mockStorage.write(
+          key: 'serverUrl',
+          value: any(named: 'value'),
+        ),
+      );
+    });
   });
 
   group('AuthNotifier server id backfill', () {

@@ -27,12 +27,13 @@ class ServerAddresses {
   List<String> get candidates => [home, ...fallbacks];
 
   ServerAddresses copyWith({
+    String? home,
     String? Function()? remote,
     String? Function()? relay,
     String? Function()? relayDenied,
     PluginNotice? Function()? pluginNotice,
   }) => ServerAddresses(
-    home: home,
+    home: home ?? this.home,
     remote: remote == null ? this.remote : remote(),
     relay: relay == null ? this.relay : relay(),
     relayDenied: relayDenied == null ? this.relayDenied : relayDenied(),

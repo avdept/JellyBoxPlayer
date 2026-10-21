@@ -181,8 +181,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   );
 
   Future<void> _onDeletePlaylist(LibraryItem playlist) async {
-    final shouldDelete = await showAdaptiveDialog<bool>(
-      context: context,
+    final shouldDelete = await showAppDialog<bool>(
+      context,
       builder: (context) => AlertDialog.adaptive(
         title: Text.rich(
           TextSpan(

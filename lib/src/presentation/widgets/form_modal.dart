@@ -1,5 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+
+Widget dismissOnEscape(BuildContext context, Widget child) => Focus(
+  onKeyEvent: (node, event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      Navigator.of(context).pop();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  },
+  child: child,
+);
+
+Future<T?> showAppDialog<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+}) => showAdaptiveDialog<T>(
+  context: context,
+  builder: (context) => dismissOnEscape(context, builder(context)),
+);
 
 Future<T?> showFormModal<T>(
   BuildContext context, {
@@ -7,8 +28,8 @@ Future<T?> showFormModal<T>(
 }) {
   final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   if (device.isDesktop) {
-    return showAdaptiveDialog<T>(
-      context: context,
+    return showAppDialog<T>(
+      context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: SizedBox(
@@ -34,7 +55,7 @@ Future<T?> showFormModal<T>(
         top: 12,
         bottom: 16 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      child: builder(context),
+      child: dismissOnEscape(context, builder(context)),
     ),
   );
 }

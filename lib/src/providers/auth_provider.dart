@@ -331,6 +331,20 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     }
   }
 
+  Future<void> updateHomeUrl(String url) async {
+    final home = normalizeServerUrl(url);
+    final addresses = ref.read(serverAddressesProvider);
+    if (addresses == null || addresses.home == home) return;
+    await _storage.write(key: _serverUrlKey, value: home);
+    await _rememberServerUrl(home);
+    if (ref.read(baseUrlProvider) == addresses.home) {
+      ref.read(baseUrlProvider.notifier).state = home;
+    }
+    ref.read(serverAddressesProvider.notifier).state = addresses.copyWith(
+      home: home,
+    );
+  }
+
   Future<void> _rememberServerUrl(String serverUrl) async {
     await _storage.write(key: _lastServerUrlKey, value: serverUrl);
     ref.invalidate(lastServerUrlProvider);
