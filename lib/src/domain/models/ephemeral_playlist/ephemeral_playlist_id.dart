@@ -2,6 +2,7 @@ import 'package:optional_features/genre_playlists.dart';
 
 enum EphemeralPlaylistKind {
   likedSongs,
+  onRepeat,
   instantMix,
   soundMix,
   genreInstantMix,
@@ -17,6 +18,7 @@ class EphemeralPlaylistId {
   final DateTime? createdAt;
 
   static const likedSongsPrefix = 'jellybox:liked-songs:';
+  static const onRepeatPrefix = 'jellybox:on-repeat:';
   static const instantMixPrefix = 'instant-mix:';
   static const soundSeedPrefix = 'sound:';
   static const genreRadioSeedPrefix = 'radio:';
@@ -25,6 +27,8 @@ class EphemeralPlaylistId {
   static final _stamp = RegExp(r':(\d+)$');
 
   static String likedSongs(String userId) => '$likedSongsPrefix$userId';
+
+  static String onRepeat(String userId) => '$onRepeatPrefix$userId';
 
   static String instantMix(String seedId, DateTime at) =>
       '$instantMixPrefix$seedId:${at.millisecondsSinceEpoch}';
@@ -44,6 +48,15 @@ class EphemeralPlaylistId {
       if (userId.isEmpty) return null;
       return EphemeralPlaylistId._(
         EphemeralPlaylistKind.likedSongs,
+        userId,
+        null,
+      );
+    }
+    if (id.startsWith(onRepeatPrefix)) {
+      final userId = id.substring(onRepeatPrefix.length);
+      if (userId.isEmpty) return null;
+      return EphemeralPlaylistId._(
+        EphemeralPlaylistKind.onRepeat,
         userId,
         null,
       );
@@ -96,6 +109,9 @@ class EphemeralPlaylistId {
 
   static bool isLikedSongs(String id) =>
       parse(id)?.kind == EphemeralPlaylistKind.likedSongs;
+
+  static bool isOnRepeat(String id) =>
+      parse(id)?.kind == EphemeralPlaylistKind.onRepeat;
 
   static bool isInstantMix(String id) => switch (parse(id)?.kind) {
     EphemeralPlaylistKind.instantMix ||

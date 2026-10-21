@@ -17,6 +17,18 @@ void main() {
     expect(EphemeralPlaylistId.parse('jellybox:liked-songs'), isNull);
   });
 
+  test('- on repeat carries the user id', () {
+    final id = EphemeralPlaylistId.onRepeat('user-7');
+
+    expect(id, 'jellybox:on-repeat:user-7');
+    final parsed = EphemeralPlaylistId.parse(id)!;
+    expect(parsed.kind, EphemeralPlaylistKind.onRepeat);
+    expect(parsed.key, 'user-7');
+    expect(EphemeralPlaylistId.isOnRepeat(id), isTrue);
+    expect(EphemeralPlaylistId.isLikedSongs(id), isFalse);
+    expect(EphemeralPlaylistId.parse('jellybox:on-repeat:'), isNull);
+  });
+
   test('- instant mixes keep the seed and the moment they were made', () {
     final id = EphemeralPlaylistId.instantMix('album-1', at);
 

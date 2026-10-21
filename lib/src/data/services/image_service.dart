@@ -33,6 +33,9 @@ class ImageService {
     if (EphemeralPlaylistId.isLikedSongs(item.id)) {
       return assetUri(Images.likedSongs);
     }
+    if (EphemeralPlaylistId.isOnRepeat(item.id)) {
+      return assetUri(Images.onRepeat);
+    }
     final downloaded = DownloadPaths.coverFile(item.albumId ?? item.id);
     if (downloaded != null) return downloaded.uri;
     if (!item.images.hasCover) return null;

@@ -236,6 +236,11 @@ class _AppState extends ConsumerState<App>
                       pageBuilder: widget.screenFactory.instantMixPage,
                     ),
                     GoRoute(
+                      path: Routes.homeOnRepeat.path,
+                      name: Routes.homeOnRepeat.name,
+                      pageBuilder: widget.screenFactory.onRepeatPage,
+                    ),
+                    GoRoute(
                       path: Routes.homeFavourites.path,
                       name: Routes.homeFavourites.name,
                       pageBuilder: widget.screenFactory.favouritesPage,

@@ -329,23 +329,26 @@ void main() {
 
         expect(find.text('Playlists'), findsOneWidget);
         expect(find.text('Liked songs'), findsOneWidget);
-        expect(find.byType(AlbumView), findsOneWidget);
+        expect(find.text('On repeat'), findsOneWidget);
+        expect(find.byType(AlbumView), findsNWidgets(2));
       },
     );
 
-    testWidgets('- lists Liked songs ahead of the real playlists', (
-      widgetTester,
-    ) async {
+    testWidgets('- lists Liked songs and On repeat ahead of the real '
+        'playlists', (widgetTester) async {
       final realPlaylists = createItems(2, ItemKind.playlist);
       await pumpHome(widgetTester, playlists: realPlaylists);
+      widgetTester.view.physicalSize = const Size(1600, 2000);
+      await widgetTester.pump();
 
       expect(find.text('Liked songs'), findsOneWidget);
-      expect(
-        widgetTester.getTopLeft(find.text('Liked songs')).dx,
-        lessThan(
-          widgetTester.getTopLeft(find.text(realPlaylists.first.name)).dx,
-        ),
-      );
+      final liked = widgetTester.getTopLeft(find.text('Liked songs')).dx;
+      final onRepeat = widgetTester.getTopLeft(find.text('On repeat')).dx;
+      final real = widgetTester
+          .getTopLeft(find.text(realPlaylists.first.name))
+          .dx;
+      expect(liked, lessThan(onRepeat));
+      expect(onRepeat, lessThan(real));
     });
 
     testWidgets('- offers play and download on the Liked songs card', (

@@ -13,6 +13,7 @@ export 'instant_mix_page.dart';
 export 'library_page.dart';
 export 'login_page.dart';
 export 'main_page.dart';
+export 'on_repeat_page.dart';
 export 'playlist_page.dart';
 export 'queue_cache_page.dart';
 export 'search_results_page.dart';
