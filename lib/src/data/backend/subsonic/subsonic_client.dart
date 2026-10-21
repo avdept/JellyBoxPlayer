@@ -577,7 +577,17 @@ class SubsonicClient implements MediaServerClient {
   @override
   Future<LibraryPage> getSongs(String albumId) async {
     final album = await _api.getAlbum(albumId);
-    final songs = _songItems(subsonicAlbumOrder(album.song));
+    final discTitles = <int, SubsonicDiscTitleDTO>{
+      for (final disc in album.discTitles)
+        if (disc.disc != null) disc.disc!: disc,
+    };
+    final songs = [
+      for (final song in subsonicAlbumOrder(album.song))
+        song.toLibraryItem(
+          lyricsAvailable: capabilities.lyrics,
+          discTitle: discTitles[song.discNumber],
+        ),
+    ];
     return LibraryPage(items: songs, totalRecordCount: songs.length);
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/instant_mix_database.dart';
+import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/data/storages/queue_cache_database.dart';
 
 typedef DownloadSummary = ({int songs, int bytes});
@@ -39,6 +40,7 @@ class ServerDataCleaner {
     }
     await QueueCacheDatabase(_database).deleteAll();
     await InstantMixDatabase(_database).deleteAll();
+    await PlaybackStorage().clear(_database.serverId);
   }
 }
 

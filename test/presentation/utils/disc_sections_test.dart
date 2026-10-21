@@ -2,11 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/utils/disc_sections.dart';
 
-LibraryItem _song(String id, {required int track, int? disc}) => LibraryItem(
+LibraryItem _song(
+  String id, {
+  required int track,
+  int? disc,
+  String? discTitle,
+  String? discCoverArt,
+}) => LibraryItem(
   id: id,
   name: id,
   kind: ItemKind.song,
   discNumber: disc,
+  discTitle: discTitle,
+  discCoverArt: discCoverArt,
   indexNumber: track,
 );
 
@@ -59,6 +67,19 @@ void main() {
     test('empty list yields no sections', () {
       expect(discSections([]), isEmpty);
     });
+
+    test('a section exposes the disc title and artwork of its songs', () {
+      final sections = discSections([
+        _song('d1t1', disc: 1, track: 1, discTitle: 'Live', discCoverArt: 'c1'),
+        _song('d1t2', disc: 1, track: 2, discTitle: 'Live', discCoverArt: 'c1'),
+        _song('d2t1', disc: 2, track: 1),
+      ]);
+
+      expect(sections[0].title, 'Live');
+      expect(sections[0].coverArt, 'c1');
+      expect(sections[1].title, isNull);
+      expect(sections[1].coverArt, isNull);
+    });
   });
 
   test('discNumber survives the JSON round trip', () {
@@ -68,5 +89,18 @@ void main() {
       LibraryItem.fromJson(_song('y', track: 1).toJson()).discNumber,
       isNull,
     );
+  });
+
+  test('disc title and artwork survive the JSON round trip', () {
+    final item = _song(
+      'x',
+      disc: 2,
+      track: 1,
+      discTitle: 'Knebworth 1996',
+      discCoverArt: 'mf-d2',
+    );
+    final restored = LibraryItem.fromJson(item.toJson());
+    expect(restored.discTitle, 'Knebworth 1996');
+    expect(restored.discCoverArt, 'mf-d2');
   });
 }

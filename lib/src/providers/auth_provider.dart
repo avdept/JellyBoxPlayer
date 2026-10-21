@@ -470,6 +470,21 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     } finally {
       _switching = false;
     }
+    _restoreQueue();
+  }
+
+  void _restoreQueue() {
+    if (!_hasActiveSession) return;
+    try {
+      unawaited(
+        ref
+            .read(playbackProvider.notifier)
+            .tryRestore()
+            .catchError((_) => false),
+      );
+    } on Object {
+      return;
+    }
   }
 
   Future<AsyncValue<bool>> _restoreInto(ServerAccount account) async {
@@ -539,6 +554,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     } finally {
       _switching = false;
     }
+    _restoreQueue();
   }
 
   Future<void> _expireActive() async {
@@ -610,7 +626,6 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   Future<void> _tearDownActive() async {
     await _stopPlayback();
     await _purgeQueueCache();
-    await ref.read(playbackStorageProvider).clear();
     PaintingBinding.instance.imageCache.clear();
     _clearSession();
     _removeAuthHeader();

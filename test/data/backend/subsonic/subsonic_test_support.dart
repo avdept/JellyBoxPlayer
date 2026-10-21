@@ -121,6 +121,7 @@ Map<String, Object?> albumJson(
   int? year,
   String? created,
   List<String> genres = const ['Rock'],
+  List<Map<String, Object?>> discTitles = const [],
   List<Map<String, Object?>> songs = const [],
 }) => {
   'id': id,
@@ -138,5 +139,6 @@ Map<String, Object?> albumJson(
   'genres': [
     for (final genre in genres) {'name': genre},
   ],
+  if (discTitles.isNotEmpty) 'discTitles': discTitles,
   'song': songs,
 };

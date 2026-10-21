@@ -258,17 +258,67 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     ];
   }
 
-  Widget _discHeader(DiscSection section) => Padding(
-    padding: EdgeInsets.fromLTRB(edgePadding, 20, edgePadding, 8),
-    child: Text(
-      section.discNumber != null ? 'Disc ${section.discNumber}' : 'Other',
-      style: TextStyle(
-        fontSize: discHeaderFontSize,
-        fontWeight: FontWeight.w600,
-        color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+  Widget _discHeader(DiscSection section) {
+    final coverArt = section.coverArt;
+    final headerColor = theme.colorScheme.onPrimary.withValues(alpha: 0.8);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(edgePadding, 14, edgePadding, 2),
+      child: Row(
+        children: [
+          if (coverArt != null && coverArt != album.images.primary) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image(
+                image: _discCoverImage(coverArt),
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Text(
+              section.title ??
+                  (section.discNumber != null
+                      ? 'Disc ${section.discNumber}'
+                      : 'Other'),
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: discHeaderFontSize,
+                fontWeight: FontWeight.w600,
+                color: headerColor,
+              ),
+            ),
+          ),
+          HoverIconButton(
+            icon: const Icon(Icons.play_arrow_outlined),
+            tooltip: 'Play disc',
+            color: headerColor,
+            onPressed: () => _playDisc(section),
+          ),
+        ],
       ),
+    );
+  }
+
+  ImageProvider _discCoverImage(String coverArt) => imageService.itemImage(
+    LibraryItem(
+      id: coverArt,
+      name: '',
+      kind: ItemKind.album,
+      images: ImageRefs(primary: coverArt),
     ),
+    size: 64,
   );
+
+  Future<void> _playDisc(DiscSection section) async {
+    final first = section.songs.firstOrNull;
+    if (first == null) return;
+    await ref
+        .read(playbackProvider.notifier)
+        .play(first, section.songs, album, sourceId: album.id);
+  }
 
   Widget _songsPlaceholder() {
     if (isLoadingSongs) {

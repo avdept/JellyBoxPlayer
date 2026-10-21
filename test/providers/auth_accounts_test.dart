@@ -33,9 +33,16 @@ class StubPlayback extends StateNotifier<PlaybackState>
   StubPlayback() : super(PlaybackState.initial());
 
   int cleared = 0;
+  int restores = 0;
 
   @override
   Future<void> clear() async => cleared++;
+
+  @override
+  Future<bool> tryRestore() async {
+    restores++;
+    return false;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -221,13 +228,18 @@ void main() {
     test('- switching restores the other server and its library', () async {
       final container = await start(
         signedInTo(accountA, accounts: [accountA, accountB]),
-        prefs: {'library_id': 'lib-a', 'pb_songs': '[]', 'pb_song_id': 's1'},
+        prefs: {
+          'library_id': 'lib-a',
+          'pb_songs.A': '[]',
+          'pb_song_id.A': 's1',
+        },
       );
 
       await container.read(authProvider.notifier).switchTo('B');
 
       expect(container.read(authProvider).value, isTrue);
       expect(playback.cleared, 1);
+      expect(playback.restores, 1);
       expect(container.read(currentServerIdProvider), 'B');
       expect(await storage.read(key: 'authToken'), 'token-b');
       expect(await storage.read(key: 'serverUrl'), 'http://b.local');
@@ -237,7 +249,7 @@ void main() {
       );
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('library_id'), 'lib-b');
-      expect(prefs.getString('pb_songs'), isNull);
+      expect(prefs.getString('pb_songs.A'), '[]');
       expect(accountOf(container, 'A').libraryId, 'lib-a');
     });
 

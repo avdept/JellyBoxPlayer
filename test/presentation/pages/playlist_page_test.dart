@@ -11,6 +11,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/pages.dart' hide LibraryPage;
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../app_wrapper.dart';
@@ -67,6 +68,7 @@ void main() {
         baseUrlProvider.overrideWith((_) => mockBaseUrl),
         currentUserProvider.overrideWith((_) => mockUser),
         downloadManagerProvider.overrideWithValue(mockDownloadManager),
+        isOfflineProvider.overrideWithValue(false),
       ],
     ),
     home: PlaylistPage(playlist: playlist),

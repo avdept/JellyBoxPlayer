@@ -667,6 +667,32 @@ void main() {
       expect(page.totalRecordCount, 3);
     });
 
+    test('- album songs carry their disc title and artwork', () async {
+      server.ok('getAlbum', {
+        'album': albumJson(
+          'a1',
+          discTitles: [
+            {'disc': 1, 'title': 'Definitely Maybe', 'coverArt': 'mf-d1'},
+            {'disc': 2, 'title': ''},
+          ],
+          songs: [
+            childJson('s1', disc: 1, track: 1),
+            childJson('s2', disc: 2, track: 1),
+            childJson('s3', disc: 3, track: 1),
+          ],
+        ),
+      });
+
+      final page = await client.getSongs('a1');
+
+      final byId = {for (final song in page.items) song.id: song};
+      expect(byId['s1']!.discTitle, 'Definitely Maybe');
+      expect(byId['s1']!.discCoverArt, 'mf-d1');
+      expect(byId['s2']!.discTitle, isNull);
+      expect(byId['s2']!.discCoverArt, isNull);
+      expect(byId['s3']!.discTitle, isNull);
+    });
+
     test('- an artist set walks own albums oldest first', () async {
       server.ok('getArtist', {
         'artist': {
