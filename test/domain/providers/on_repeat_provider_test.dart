@@ -146,6 +146,28 @@ void main() {
     expect([for (final song in songs) song.name], ['stored a']);
   });
 
+  test('- the home card hides below the minimum and shows at it', () async {
+    final counts = [onRepeatMinimumSongs - 1, onRepeatMinimumSongs];
+    when(
+      () => history.trackedSongCount(window: any(named: 'window')),
+    ).thenAnswer((_) async => counts.removeAt(0));
+    final container = createProviderContainer(
+      overrides: [
+        playHistoryDatabaseProvider.overrideWithValue(history),
+        currentUserProvider.overrideWith(
+          (_) => const User(userId: 'user-1', token: 't'),
+        ),
+      ],
+    );
+
+    expect(await container.read(onRepeatCardProvider.future), isNull);
+
+    container.read(playHistoryChangedProvider.notifier).state++;
+    final card = await container.read(onRepeatCardProvider.future);
+
+    expect(card?.name, onRepeatName);
+  });
+
   test('- empty history asks nobody for anything', () async {
     tracked(const []);
     final container = containerWith();

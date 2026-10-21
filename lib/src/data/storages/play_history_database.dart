@@ -84,6 +84,26 @@ class PlayHistoryDatabase {
     ];
   }
 
+  Future<int> trackedSongCount({
+    required Duration window,
+    DateTime Function() now = DateTime.now,
+  }) async {
+    final userId = this.userId;
+    if (userId == null) return 0;
+    final db = await _database;
+    final rows = await db.rawQuery(
+      'SELECT COUNT(DISTINCT p.SongId) AS TrackedCount FROM $_plays p '
+      'JOIN $_songs s ON s.ServerId = p.ServerId AND s.SongId = p.SongId '
+      'WHERE p.ServerId = ? AND p.UserId = ? AND p.PlayedAt >= ?',
+      [
+        _serverId,
+        userId,
+        now().toUtc().subtract(window).millisecondsSinceEpoch,
+      ],
+    );
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
   Future<Map<String, LibraryItem>> playedSongsByIds(List<String> ids) async {
     if (ids.isEmpty) return const {};
     final db = await _database;

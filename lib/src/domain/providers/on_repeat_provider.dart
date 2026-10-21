@@ -12,6 +12,9 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 const onRepeatName = 'On repeat';
 const onRepeatWindow = Duration(days: 30);
 const onRepeatSongsLimit = 200;
+const onRepeatMinimumSongs = 20;
+
+final playHistoryChangedProvider = StateProvider<int>((ref) => 0);
 
 typedef OnRepeatSnapshot = ({List<String> ids, List<LibraryItem> songs});
 
@@ -27,6 +30,17 @@ final Provider<LibraryItem?> onRepeatPlaylistProvider = Provider((ref) {
   final userId = ref.watch(currentUserProvider)?.userId;
   return userId == null ? null : onRepeatPlaylistFor(userId);
 });
+
+final AutoDisposeFutureProvider<LibraryItem?> onRepeatCardProvider =
+    FutureProvider.autoDispose((ref) async {
+      final playlist = ref.watch(onRepeatPlaylistProvider);
+      if (playlist == null) return null;
+      ref.watch(playHistoryChangedProvider);
+      final count = await ref
+          .watch(playHistoryDatabaseProvider)
+          .trackedSongCount(window: onRepeatWindow);
+      return count >= onRepeatMinimumSongs ? playlist : null;
+    });
 
 Future<OnRepeatSnapshot> onRepeatSnapshotOf(Ref ref) async {
   final history = ref.read(playHistoryDatabaseProvider);

@@ -6,6 +6,7 @@ import 'package:jplayer/src/data/providers/play_history_database_provider.dart';
 import 'package:jplayer/src/data/storages/play_history_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../provider_container.dart';
@@ -42,7 +43,7 @@ void main() {
     );
   });
 
-  test('- records each listen as a play', () async {
+  test('- records each listen as a play and announces the change', () async {
     final history = MockPlayHistoryDatabase();
     when(() => history.addPlays(any())).thenAnswer((_) async {});
     final container = createProviderContainer(
@@ -58,5 +59,6 @@ void main() {
             as List<SongPlay>;
     expect(plays.single.song.id, 'song-1');
     expect(plays.single.playedAt, listenedAt);
+    expect(container.read(playHistoryChangedProvider), 1);
   });
 }

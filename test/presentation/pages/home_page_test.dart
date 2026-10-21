@@ -8,7 +8,9 @@ import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/providers/play_history_database_provider.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
+import 'package:jplayer/src/data/storages/play_history_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
@@ -18,6 +20,7 @@ import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/home_sections_provider.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/presentation/pages/home_page.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -42,6 +45,8 @@ class MockDownloadManager extends Mock implements DownloadManager {}
 
 class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
+class MockPlayHistoryDatabase extends Mock implements PlayHistoryDatabase {}
+
 class FakeTodaysPlaylistsNotifier extends TodaysPlaylistsNotifier {
   FakeTodaysPlaylistsNotifier(this.playlists);
 
@@ -64,6 +69,7 @@ void main() {
   late MockMediaServerClient mockClient;
   late MockDownloadManager mockDownloadManager;
   late MockDownloadDatabase mockDownloadDatabase;
+  late MockPlayHistoryDatabase mockPlayHistory;
 
   final faker = Faker.instance;
 
@@ -151,6 +157,7 @@ void main() {
           mediaServerClientProvider.overrideWith((_) => mockClient),
           downloadManagerProvider.overrideWithValue(mockDownloadManager),
           downloadDatabaseProvider.overrideWithValue(mockDownloadDatabase),
+          playHistoryDatabaseProvider.overrideWithValue(mockPlayHistory),
           downloadedCollectionsProvider.overrideWith(
             (_) async => (albums: <String>{}, playlists: <String>{}),
           ),
@@ -194,11 +201,13 @@ void main() {
       ),
     );
     await widgetTester.pump(Duration.zero);
+    await widgetTester.pump(Duration.zero);
   }
 
   setUpAll(() {
     registerFallbackValue(const LibraryQuery());
     registerFallbackValue(likedSongsPlaylistFor('user-1'));
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -207,6 +216,10 @@ void main() {
     mockClient = MockMediaServerClient();
     mockDownloadManager = MockDownloadManager();
     mockDownloadDatabase = MockDownloadDatabase();
+    mockPlayHistory = MockPlayHistoryDatabase();
+    when(
+      () => mockPlayHistory.trackedSongCount(window: any(named: 'window')),
+    ).thenAnswer((_) async => onRepeatMinimumSongs);
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
     when(
@@ -334,12 +347,26 @@ void main() {
       },
     );
 
+    testWidgets('- hides On repeat until enough tracked songs exist', (
+      widgetTester,
+    ) async {
+      when(
+        () => mockPlayHistory.trackedSongCount(window: any(named: 'window')),
+      ).thenAnswer((_) async => onRepeatMinimumSongs - 1);
+
+      await pumpHome(widgetTester, playlists: const []);
+
+      expect(find.text('Liked songs'), findsOneWidget);
+      expect(find.text('On repeat'), findsNothing);
+    });
+
     testWidgets('- lists Liked songs and On repeat ahead of the real '
         'playlists', (widgetTester) async {
       final realPlaylists = createItems(2, ItemKind.playlist);
       await pumpHome(widgetTester, playlists: realPlaylists);
       widgetTester.view.physicalSize = const Size(1600, 2000);
       await widgetTester.pump();
+      await widgetTester.pump(const Duration(seconds: 1));
 
       expect(find.text('Liked songs'), findsOneWidget);
       final liked = widgetTester.getTopLeft(find.text('Liked songs')).dx;

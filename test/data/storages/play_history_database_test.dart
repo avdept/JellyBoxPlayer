@@ -148,6 +148,23 @@ void main() {
     expect([for (final row in years) row.songId], ['recent', 'ancient']);
   });
 
+  test('- counts the distinct songs played inside the window', () async {
+    final history = historyFor();
+    await history.addPlays([
+      play('a', daysAgo: 2),
+      play('a', daysAgo: 3),
+      play('b', daysAgo: 4),
+      play('outside', daysAgo: 40),
+    ]);
+
+    final count = await history.trackedSongCount(
+      window: const Duration(days: 30),
+      now: () => now,
+    );
+
+    expect(count, 2);
+  });
+
   test(
     '- keeps a snapshot of each played song, without like or rating',
     () async {

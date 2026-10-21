@@ -3,6 +3,7 @@ import 'package:jplayer/src/core/scrobbling/listen.dart';
 import 'package:jplayer/src/core/scrobbling/scrobbler.dart';
 import 'package:jplayer/src/data/providers/play_history_database_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 
 class PlayHistoryScrobbler implements Scrobbler {
   PlayHistoryScrobbler(this._container);
@@ -29,11 +30,13 @@ class PlayHistoryScrobbler implements Scrobbler {
   Future<void> updateNowPlaying(Listen listen) async {}
 
   @override
-  Future<void> scrobble(List<Listen> listens) =>
-      _container.read(playHistoryDatabaseProvider).addPlays([
-        for (final listen in listens)
-          (song: listen.song, playedAt: listen.listenedAt),
-      ]);
+  Future<void> scrobble(List<Listen> listens) async {
+    await _container.read(playHistoryDatabaseProvider).addPlays([
+      for (final listen in listens)
+        (song: listen.song, playedAt: listen.listenedAt),
+    ]);
+    _container.read(playHistoryChangedProvider.notifier).state++;
+  }
 
   @override
   void onUnauthorized() {}

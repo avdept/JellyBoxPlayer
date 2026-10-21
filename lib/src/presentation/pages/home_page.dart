@@ -337,7 +337,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   .whenData(
                     (list) => [
                       ?ref.watch(likedSongsPlaylistProvider),
-                      ?ref.watch(onRepeatPlaylistProvider),
+                      ?ref.watch(onRepeatCardProvider).valueOrNull,
                       ...list,
                     ],
                   ),
