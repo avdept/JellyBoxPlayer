@@ -6,6 +6,7 @@ import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
+import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -116,8 +117,8 @@ class _CollectionDownloadButtonState
   Future<void> _cancel() => _delete();
 
   Future<void> _remove() async {
-    final shouldDelete = await showAdaptiveDialog<bool>(
-      context: context,
+    final shouldDelete = await showAppDialog<bool>(
+      context,
       builder: (context) => AlertDialog.adaptive(
         key: widget.testKeys?.confirmationDialog,
         title: Text.rich(

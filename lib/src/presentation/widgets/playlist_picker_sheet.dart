@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class PlaylistPickerSheet extends ConsumerWidget {
@@ -115,8 +116,8 @@ Future<LibraryItem?> showPlaylistPicker(
   required bool isDesktop,
 }) {
   if (isDesktop) {
-    return showAdaptiveDialog<LibraryItem>(
-      context: context,
+    return showAppDialog<LibraryItem>(
+      context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: const PlaylistPickerSheet(isDesktop: true),
@@ -131,6 +132,7 @@ Future<LibraryItem?> showPlaylistPicker(
     context: context,
     useRootNavigator: true,
     clipBehavior: Clip.antiAlias,
-    builder: (context) => const PlaylistPickerSheet(isDesktop: false),
+    builder: (context) =>
+        dismissOnEscape(context, const PlaylistPickerSheet(isDesktop: false)),
   );
 }

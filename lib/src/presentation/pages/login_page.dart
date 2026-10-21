@@ -271,8 +271,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
     final certificate = trust.rejectedFor(host);
     if (certificate == null) return false;
 
-    final confirmed = await showAdaptiveDialog<bool>(
-      context: context,
+    final confirmed = await showAppDialog<bool>(
+      context,
       builder: (context) => CertificateTrustDialog(certificate: certificate),
     );
     if (confirmed ?? false) {

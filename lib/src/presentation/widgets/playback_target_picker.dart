@@ -22,6 +22,7 @@ import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/anchored_dropdown.dart';
+import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_settings.dart';
@@ -292,9 +293,12 @@ class PlaybackTargetMenu extends ConsumerStatefulWidget {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        builder: (sheetContext) => PlaybackTargetMenu(
-          inSheet: true,
-          onDone: () => Navigator.of(sheetContext).pop(),
+        builder: (sheetContext) => dismissOnEscape(
+          sheetContext,
+          PlaybackTargetMenu(
+            inSheet: true,
+            onDone: () => Navigator.of(sheetContext).pop(),
+          ),
         ),
       );
 
@@ -390,8 +394,8 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final payload = deviceReportPayload(renderers);
 
     widget.onDone();
-    final confirmed = await showAdaptiveDialog<bool>(
-      context: context,
+    final confirmed = await showAppDialog<bool>(
+      context,
       builder: (context) => _ShareDevicesDialog(count: renderers.length),
     );
     if (confirmed != true) return;

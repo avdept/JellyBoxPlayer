@@ -436,8 +436,8 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Future<void> _onPurgeCachePressed(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showAdaptiveDialog<bool>(
-      context: context,
+    final confirmed = await showAppDialog<bool>(
+      context,
       builder: (context) => AlertDialog.adaptive(
         title: const Text('Empty the cache?', textAlign: TextAlign.center),
         content: const Text(
@@ -471,8 +471,8 @@ class SettingsPage extends ConsumerWidget {
   );
 
   Future<void> _onClearImageCachePressed(BuildContext context) async {
-    final confirmed = await showAdaptiveDialog<bool>(
-      context: context,
+    final confirmed = await showAppDialog<bool>(
+      context,
       builder: (context) => AlertDialog.adaptive(
         title: const Text(
           'Clear the image cache?',

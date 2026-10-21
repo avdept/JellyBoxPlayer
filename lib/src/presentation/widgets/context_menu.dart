@@ -16,6 +16,7 @@ import 'package:jplayer/src/data/services/metadata_link_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_picker_sheet.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -533,17 +534,20 @@ Future<void> showContextMenuSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
     ),
-    builder: (sheetContext) => SafeArea(
-      top: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final action in actions)
-            action.toListTile(
-              context,
-              onSelected: () => Navigator.of(sheetContext).pop(),
-            ),
-        ],
+    builder: (sheetContext) => dismissOnEscape(
+      sheetContext,
+      SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final action in actions)
+              action.toListTile(
+                context,
+                onSelected: () => Navigator.of(sheetContext).pop(),
+              ),
+          ],
+        ),
       ),
     ),
   );
