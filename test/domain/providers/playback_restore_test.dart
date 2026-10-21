@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -160,6 +162,7 @@ void main() {
         }),
       ],
     );
+    container.read(currentServerIdProvider.notifier).state = 'srv';
     addTearDown(() async {
       await container.read(playbackProvider.notifier).clear();
       container.dispose();
@@ -167,13 +170,15 @@ void main() {
     return container;
   }
 
-  Future<void> saveQueue({String? sourceId}) => PlaybackStorage().save(
-    songs: songs,
-    album: album,
-    songId: 'b',
-    positionMs: 90000,
-    sourceId: sourceId,
-  );
+  Future<void> saveQueue({String? sourceId, String serverId = 'srv'}) =>
+      PlaybackStorage().save(
+        serverId: serverId,
+        songs: songs,
+        album: album,
+        songId: 'b',
+        positionMs: 90000,
+        sourceId: sourceId,
+      );
 
   test(
     '- restores the saved queue paused when nothing asked to play',
@@ -274,6 +279,56 @@ void main() {
     expect(container.read(playbackProvider).songs.map((s) => s.id), ['c']);
   });
 
+  test("- ignores another server's queue and leaves it in place", () async {
+    await saveQueue(serverId: 'other');
+    final container = containerWith(pendingPress: false);
+
+    final restored = await container
+        .read(playbackProvider.notifier)
+        .tryRestore();
+
+    expect(restored, isFalse);
+    expect(target.loads, isEmpty);
+    expect((await PlaybackStorage().load('other'))?.songId, 'b');
+  });
+
+  test('- adopts a pre-multi-server snapshot for the active server', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'pb_songs',
+      jsonEncode(songs.map((s) => s.toJson()).toList()),
+    );
+    await prefs.setString('pb_album', jsonEncode(album.toJson()));
+    await prefs.setString('pb_song_id', 'b');
+    await prefs.setInt('pb_position_ms', 90000);
+
+    final snapshot = await PlaybackStorage().load('srv');
+
+    expect(snapshot?.songId, 'b');
+    expect(snapshot?.positionMs, 90000);
+    expect(prefs.getString('pb_songs'), isNull);
+    expect(await PlaybackStorage().load('other'), isNull);
+  });
+
+  test('- each server keeps its own snapshot', () async {
+    await saveQueue();
+    await PlaybackStorage().save(
+      serverId: 'other',
+      songs: [songs.first],
+      album: album,
+      songId: 'a',
+      positionMs: 1000,
+    );
+
+    expect((await PlaybackStorage().load('srv'))?.songId, 'b');
+    expect((await PlaybackStorage().load('other'))?.songId, 'a');
+
+    await PlaybackStorage().clear('other');
+
+    expect(await PlaybackStorage().load('other'), isNull);
+    expect((await PlaybackStorage().load('srv'))?.songId, 'b');
+  });
+
   test('- restores which set the queue was started from', () async {
     await saveQueue(sourceId: 'album');
     final container = containerWith(pendingPress: false);
@@ -291,13 +346,13 @@ void main() {
 
       await playback.play(songs.first, songs, album, sourceId: 'album');
       await pumpEventQueue();
-      expect((await PlaybackStorage().load())?.sourceId, 'album');
+      expect((await PlaybackStorage().load('srv'))?.sourceId, 'album');
 
       await playback.play(songs.last, songs, album);
 
       expect(container.read(playbackProvider).sourceId, isNull);
       await pumpEventQueue();
-      expect((await PlaybackStorage().load())?.sourceId, isNull);
+      expect((await PlaybackStorage().load('srv'))?.sourceId, isNull);
     },
   );
 

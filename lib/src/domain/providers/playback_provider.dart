@@ -26,6 +26,7 @@ import 'package:jplayer/src/domain/providers/stream_preference_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
 
@@ -1442,12 +1443,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     List<LibraryItem>? songs,
     LibraryItem? album,
   }) async {
+    final serverId = _ref.read(currentServerIdProvider);
     final effectiveSongs = songs ?? state.songs;
     final effectiveAlbum = album ?? state.album;
-    if (effectiveSongs.isEmpty || effectiveAlbum == null) {
+    if (serverId == null ||
+        serverId.isEmpty ||
+        effectiveSongs.isEmpty ||
+        effectiveAlbum == null) {
       return;
     }
     await PlaybackStorage().save(
+      serverId: serverId,
       songs: effectiveSongs,
       album: effectiveAlbum,
       songId: songId,
@@ -1458,7 +1464,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<bool> tryRestore() async {
     final generation = _queueGeneration;
-    final snapshot = await PlaybackStorage().load();
+    final serverId = _ref.read(currentServerIdProvider);
+    final snapshot = serverId == null || serverId.isEmpty
+        ? null
+        : await PlaybackStorage().load(serverId);
     if (snapshot == null || generation != _queueGeneration) {
       debugPrint(
         '[Playback] restore: ${snapshot == null ? 'nothing saved' : 'a queue '

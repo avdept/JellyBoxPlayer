@@ -5,6 +5,10 @@ class DiscSection {
 
   final int? discNumber;
   final List<LibraryItem> songs;
+
+  String? get title => songs.firstOrNull?.discTitle;
+
+  String? get coverArt => songs.firstOrNull?.discCoverArt;
 }
 
 List<DiscSection> discSections(List<LibraryItem> songs) {

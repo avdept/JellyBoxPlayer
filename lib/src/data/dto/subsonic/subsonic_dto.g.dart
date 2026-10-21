@@ -152,6 +152,22 @@ Map<String, dynamic> _$SubsonicChildDTOToJson(_SubsonicChildDTO instance) =>
       'albumArtists': instance.albumArtists,
     };
 
+_SubsonicDiscTitleDTO _$SubsonicDiscTitleDTOFromJson(
+  Map<String, dynamic> json,
+) => _SubsonicDiscTitleDTO(
+  disc: (json['disc'] as num?)?.toInt(),
+  title: json['title'] as String?,
+  coverArt: subsonicOptionalIdFromJson(json['coverArt']),
+);
+
+Map<String, dynamic> _$SubsonicDiscTitleDTOToJson(
+  _SubsonicDiscTitleDTO instance,
+) => <String, dynamic>{
+  'disc': instance.disc,
+  'title': instance.title,
+  'coverArt': instance.coverArt,
+};
+
 _SubsonicAlbumDTO _$SubsonicAlbumDTOFromJson(
   Map<String, dynamic> json,
 ) => _SubsonicAlbumDTO(
@@ -191,6 +207,11 @@ _SubsonicAlbumDTO _$SubsonicAlbumDTOFromJson(
           ?.map((e) => SubsonicArtistRefDTO.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  discTitles:
+      (json['discTitles'] as List<dynamic>?)
+          ?.map((e) => SubsonicDiscTitleDTO.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
   song:
       (json['song'] as List<dynamic>?)
           ?.map((e) => SubsonicChildDTO.fromJson(e as Map<String, dynamic>))
@@ -222,6 +243,7 @@ Map<String, dynamic> _$SubsonicAlbumDTOToJson(_SubsonicAlbumDTO instance) =>
       'originalReleaseDate': instance.originalReleaseDate?.toIso8601String(),
       'genres': instance.genres,
       'artists': instance.artists,
+      'discTitles': instance.discTitles,
       'song': instance.song,
     };
 

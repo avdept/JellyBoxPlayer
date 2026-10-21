@@ -113,6 +113,18 @@ abstract class SubsonicChildDTO with _$SubsonicChildDTO {
 }
 
 @freezed
+abstract class SubsonicDiscTitleDTO with _$SubsonicDiscTitleDTO {
+  const factory SubsonicDiscTitleDTO({
+    int? disc,
+    String? title,
+    @JsonKey(fromJson: subsonicOptionalIdFromJson) String? coverArt,
+  }) = _SubsonicDiscTitleDTO;
+
+  factory SubsonicDiscTitleDTO.fromJson(Map<String, dynamic> json) =>
+      _$SubsonicDiscTitleDTOFromJson(json);
+}
+
+@freezed
 abstract class SubsonicAlbumDTO with _$SubsonicAlbumDTO {
   const factory SubsonicAlbumDTO({
     @JsonKey(fromJson: subsonicIdFromJson) required String id,
@@ -137,6 +149,7 @@ abstract class SubsonicAlbumDTO with _$SubsonicAlbumDTO {
     @JsonKey(fromJson: subsonicItemDateFromJson) DateTime? originalReleaseDate,
     @Default([]) List<SubsonicNamedDTO> genres,
     @Default([]) List<SubsonicArtistRefDTO> artists,
+    @Default([]) List<SubsonicDiscTitleDTO> discTitles,
     @Default([]) List<SubsonicChildDTO> song,
   }) = _SubsonicAlbumDTO;
 

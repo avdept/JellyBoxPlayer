@@ -103,6 +103,7 @@ extension SubsonicChildMapping on SubsonicChildDTO {
     String? playlistItemId,
     int? indexNumber,
     bool lyricsAvailable = true,
+    SubsonicDiscTitleDTO? discTitle,
   }) {
     final container = _presence(suffix);
     final resolvedAlbumId = _presence(albumId);
@@ -112,6 +113,8 @@ extension SubsonicChildMapping on SubsonicChildDTO {
       kind: ItemKind.song,
       indexNumber: indexNumber ?? track ?? 0,
       discNumber: discNumber,
+      discTitle: _presence(discTitle?.title),
+      discCoverArt: _presence(discTitle?.coverArt),
       duration: Duration(seconds: duration ?? 0),
       path: path,
       playlistItemId: playlistItemId,
