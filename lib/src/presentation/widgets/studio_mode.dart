@@ -11,6 +11,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/animated_cover_video.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
 import 'package:jplayer/src/presentation/widgets/desktop_window_chrome.dart';
 import 'package:jplayer/src/presentation/widgets/flip_panel.dart';
@@ -20,6 +21,7 @@ import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
+import 'package:jplayer/src/providers/network_type_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -68,6 +70,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   MediaItem? _currentSong;
   String? _displayedSongId;
   String? _pendingSongId;
+  Uri? _readyVideoUrl;
   ImageProvider _coverImage = const AssetImage(Images.album);
   ui.FragmentShader? _auroraShader;
   ui.Image? _blurredArt;
@@ -117,7 +120,13 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   void _onNowPlaying(MediaItem? song) {
     if (!mounted) return;
     if (song?.id != _currentSong?.id) {
-      setState(() => _currentSong = song);
+      final albumChanged =
+          song?.album != _currentSong?.album ||
+          song?.artist != _currentSong?.artist;
+      setState(() {
+        _currentSong = song;
+        if (albumChanged) _readyVideoUrl = null;
+      });
     }
     if (song?.id == _displayedSongId && _auroraShader != null) return;
     _prepareArtwork(song);
@@ -199,6 +208,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   }
 
   void _hideControls() {
+    if (ref.read(settingProvider(AppSetting.studioModePinnedControls))) return;
     if (_activePointers > 0) {
       _hideTimer = Timer(const Duration(seconds: 5), _hideControls);
       return;
@@ -235,8 +245,23 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     return true;
   }
 
+  Uri? _motionCover() {
+    if (ref.watch(networkTypeProvider) != NetworkType.wifi) return null;
+    return ref.watch(nowPlayingAnimatedCoverProvider).valueOrNull;
+  }
+
+  void _onVideoReady(Uri url) {
+    if (!mounted || _readyVideoUrl == url) return;
+    setState(() => _readyVideoUrl = url);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final motionCover = _motionCover();
+    final videoShown = motionCover != null && motionCover == _readyVideoUrl;
+    final coverOverVideo = ref.watch(
+      settingProvider(AppSetting.studioModeCoverOverVideo),
+    );
     return Material(
       type: MaterialType.transparency,
       child: Focus(
@@ -263,13 +288,36 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                     child: _animatedBackground(),
                   ),
                 ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 800),
+                  child: motionCover == null
+                      ? const SizedBox.expand(key: ValueKey(false))
+                      : KeyedSubtree(
+                          key: const ValueKey(true),
+                          child: _motionBackground(
+                            motionCover,
+                            active: videoShown,
+                          ),
+                        ),
+                ),
                 RepaintBoundary(
                   child: SafeArea(
                     child: FlipPanel(
                       side: ref.watch(studioModeLyricsProvider)
                           ? FlipSide.left
                           : FlipSide.front,
-                      front: _nowPlayingFace(),
+                      front: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        child: videoShown && !coverOverVideo
+                            ? KeyedSubtree(
+                                key: const ValueKey(true),
+                                child: _motionFace(),
+                              )
+                            : KeyedSubtree(
+                                key: const ValueKey(false),
+                                child: _nowPlayingFace(),
+                              ),
+                      ),
                       left: _lyricsFace(),
                     ),
                   ),
@@ -345,6 +393,67 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
         ],
       );
     },
+  );
+
+  Widget _motionBackground(Uri url, {required bool active}) {
+    final lyricsShown = active && ref.watch(studioModeLyricsProvider);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        AnimatedCoverVideo(url: url, onReady: _onVideoReady),
+        ClipRect(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: lyricsShown ? 10.0 : 0.0),
+            duration: const Duration(milliseconds: 400),
+            builder: (context, sigma, child) => BackdropFilter(
+              enabled: sigma > 0.1,
+              filter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          color: !active
+              ? Colors.transparent
+              : lyricsShown
+              ? Colors.black54
+              : Colors.black26,
+        ),
+        AnimatedOpacity(
+          opacity: active && _controlsVisible && !lyricsShown ? 1 : 0,
+          duration: const Duration(milliseconds: 200),
+          child: const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black45,
+                  Colors.transparent,
+                  Colors.transparent,
+                  Colors.black87,
+                ],
+                stops: [0, 0.22, 0.55, 1],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _motionFace() => Align(
+    alignment: Alignment.bottomCenter,
+    child: _fadeWithControls(
+      ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+          child: _controls(),
+        ),
+      ),
+    ),
   );
 
   Widget _lyricsFace() => const LyricsView(

@@ -37,8 +37,9 @@ dependencies:
   audio_session: any
   audio_service_mpris: ^0.1.0
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
-  media_kit_libs_windows_audio: any # Required dependency of just_audio_media_kit for Windows support
+  media_kit_libs_windows_video: any # libmpv with video decoders; serves just_audio_media_kit and animated covers on Windows
   media_kit_native_event_loop: any
+  video_player_media_kit: any # video_player backend on Windows/Linux (animated covers)
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
   # Vendored, trimmed fork of flutter_chrome_cast 1.4.8 with Android and iOS

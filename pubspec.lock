@@ -892,14 +892,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
-  media_kit_libs_windows_audio:
+  media_kit_libs_windows_video:
     dependency: "direct main"
     description:
-      name: media_kit_libs_windows_audio
-      sha256: c2fd558cc87b9d89a801141fcdffe02e338a3b21a41a18fbd63d5b221a1b8e53
+      name: media_kit_libs_windows_video
+      sha256: dff76da2778729ab650229e6b4ec6ec111eb5151431002cbd7ea304ff1f112ab
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.9"
+    version: "1.0.11"
   media_kit_native_event_loop:
     dependency: "direct main"
     description:
@@ -908,6 +908,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  media_kit_video:
+    dependency: transitive
+    description:
+      name: media_kit_video
+      sha256: afaa509e7b7e0bf247557a3a740cde903a52c34ace9810f94500e127bd7b043d
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   mediakeys_proxy:
     dependency: "direct main"
     description:
@@ -1814,6 +1822,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.12.0"
+  video_player_media_kit:
+    dependency: "direct main"
+    description:
+      name: video_player_media_kit
+      sha256: "66c5f30e2700f4528154320e708f89f4a80075b2451bebc6fef73a15d63a3fca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   video_player_platform_interface:
     dependency: transitive
     description:

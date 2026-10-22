@@ -8,7 +8,6 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page_state.dart';
-import 'package:jplayer/src/presentation/pages/album/mobile/animated_cover_video.dart';
 import 'package:jplayer/src/presentation/pages/album/mobile/blurred_cover_art.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';

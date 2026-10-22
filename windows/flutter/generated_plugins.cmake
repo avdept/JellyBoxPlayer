@@ -8,7 +8,8 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_windows
   flutter_udid
   flutter_volume_controller
-  media_kit_libs_windows_audio
+  media_kit_libs_windows_video
+  media_kit_video
   screen_retriever_windows
   sentry_flutter
   url_launcher_windows

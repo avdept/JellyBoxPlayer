@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 class AnimatedCoverVideo extends StatefulWidget {
-  const AnimatedCoverVideo({required this.url, super.key});
+  const AnimatedCoverVideo({required this.url, this.onReady, super.key});
 
   final Uri url;
+  final ValueChanged<Uri>? onReady;
 
   @override
   State<AnimatedCoverVideo> createState() => _AnimatedCoverVideoState();
@@ -59,6 +60,7 @@ class _AnimatedCoverVideoState extends State<AnimatedCoverVideo>
     }
     if (mounted && identical(controller, _controller)) {
       setState(() => _ready = true);
+      widget.onReady?.call(widget.url);
     }
   }
 
