@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
 class SidebarOverlay extends StatelessWidget {
   const SidebarOverlay({
@@ -7,6 +8,7 @@ class SidebarOverlay extends StatelessWidget {
     required this.onClose,
     required this.child,
     this.title,
+    this.actions = const [],
     this.width = 380,
     this.duration = const Duration(milliseconds: 250),
     super.key,
@@ -16,6 +18,7 @@ class SidebarOverlay extends StatelessWidget {
   final VoidCallback onClose;
   final Widget child;
   final String? title;
+  final List<Widget> actions;
   final double width;
   final Duration duration;
 
@@ -71,7 +74,8 @@ class SidebarOverlay extends StatelessWidget {
                           ),
                         ),
                       ),
-                      IconButton(
+                      ...actions,
+                      HoverIconButton(
                         onPressed: onClose,
                         color: theme.colorScheme.onPrimary,
                         tooltip: 'Close',
