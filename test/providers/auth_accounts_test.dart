@@ -100,6 +100,7 @@ void main() {
   late StubPlayback playback;
   late List<String> cleaned;
   late int status;
+  late Map<String, int> hostStatus;
   late String signInServerId;
 
   const storage = FlutterSecureStorage();
@@ -121,6 +122,7 @@ void main() {
     playback = StubPlayback();
     cleaned = [];
     status = 200;
+    hostStatus = {};
     signInServerId = 'B';
     when(() => adapter.fetch(any(), any(), any())).thenAnswer((
       invocation,
@@ -151,7 +153,7 @@ void main() {
           : jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0});
       return ResponseBody.fromString(
         body,
-        status,
+        hostStatus[options.uri.host] ?? status,
         headers: {
           Headers.contentTypeHeader: [Headers.jsonContentType],
         },
@@ -464,6 +466,48 @@ void main() {
       expect(await storage.read(key: 'authToken'), isNull);
       expect(await storage.read(key: 'listenbrainz_token'), 'lb');
     });
+
+    test(
+      '- keeps the session when the token still works on the tunnel',
+      () async {
+        final container = await start({
+          ...signedInTo(accountA, accounts: [accountA]),
+          'relayUrl': 'https://a.tunnel.jellybox.app',
+        });
+        hostStatus['a.local'] = 403;
+
+        await expectLater(
+          container.read(dioProvider).get<void>('http://a.local/Items'),
+          throwsA(isA<DioException>()),
+        );
+        await pumpEventQueue();
+
+        expect(container.read(authProvider).value, isTrue);
+        expect(accountOf(container, 'A').needsReauth, isFalse);
+        expect(await storage.read(key: 'authToken'), 'token-a');
+      },
+    );
+
+    test(
+      '- signs out when the tunnel rejects the token as well',
+      () async {
+        final container = await start({
+          ...signedInTo(accountA, accounts: [accountA]),
+          'relayUrl': 'https://a.tunnel.jellybox.app',
+        });
+        status = 401;
+
+        await expectLater(
+          container.read(dioProvider).get<void>('http://a.local/Items'),
+          throwsA(isA<DioException>()),
+        );
+        await pumpEventQueue();
+
+        expect(container.read(authProvider).value, isFalse);
+        expect(accountOf(container, 'A').needsReauth, isTrue);
+        expect(await storage.read(key: 'authToken'), isNull);
+      },
+    );
 
     test('- ignores a 401 from a server that is no longer active', () async {
       final container = await start(

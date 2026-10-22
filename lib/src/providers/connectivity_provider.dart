@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/providers/dio_provider.dart';
@@ -18,8 +19,10 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     this._ref, {
     Dio Function()? probeClient,
     Duration heartbeat = const Duration(seconds: 30),
+    Duration offlineGrace = const Duration(seconds: 2),
   }) : _probeClient = probeClient,
        _heartbeatInterval = heartbeat,
+       _offlineGrace = offlineGrace,
        _dio = _ref.read(dioProvider),
        super(true) {
     _watchInterface();
@@ -45,6 +48,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   }
 
   static const _probeTimeout = Duration(seconds: 4);
+  static const _probeIdle = Duration(seconds: 50);
   static const _relayRecheck = Duration(minutes: 10);
 
   final Ref _ref;
@@ -52,13 +56,18 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   final Dio _dio;
   late final Interceptor _failover;
   final Duration _heartbeatInterval;
+  final Duration _offlineGrace;
   Timer? _heartbeat;
   StreamSubscription<List<ConnectivityResult>>? _interfaceSubscription;
   AppLifecycleListener? _lifecycleListener;
   Future<bool>? _pending;
+  bool _rerun = false;
+  Dio? _prober;
   String? _selected;
   Set<String> _down = const {};
   DateTime? _relayCheckedAt;
+  DateTime? _suspectedOfflineAt;
+  Timer? _offlineConfirm;
 
   static bool get _bindingReady {
     try {
@@ -94,7 +103,21 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   }
 
   Future<bool> refresh() {
-    return _pending ??= _probe().whenComplete(() => _pending = null);
+    final pending = _pending;
+    if (pending != null) {
+      _rerun = true;
+      return pending;
+    }
+    return _pending = _rounds().whenComplete(() => _pending = null);
+  }
+
+  Future<bool> _rounds() async {
+    var result = await _probe();
+    while (_rerun && mounted) {
+      _rerun = false;
+      result = await _probe();
+    }
+    return result;
   }
 
   Future<void> setRemote(String? url) => rememberRemote(_ref, url);
@@ -119,6 +142,13 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     _selected = null;
     _down = const {};
     _relayCheckedAt = null;
+    _dismissOfflineSuspicion();
+  }
+
+  void _dismissOfflineSuspicion() {
+    _suspectedOfflineAt = null;
+    _offlineConfirm?.cancel();
+    _offlineConfirm = null;
   }
 
   void adopt(String url) {
@@ -133,10 +163,44 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   Future<bool> _probe() async {
     final addresses = _addresses;
     if (addresses == null) return state;
+    final started = DateTime.now();
     final candidates = addresses.candidates;
     final relay = addresses.relay;
     _keepBeating(addresses.fallbacks.isNotEmpty);
 
+    final client = _prober ??= _buildProber();
+    final answers = await Future.wait([
+      for (final url in candidates)
+        _answers(client, url, relayed: url == relay),
+    ]);
+    if (!mounted) return false;
+    _down = {
+      for (final (i, url) in candidates.indexed)
+        if (!answers[i]) url,
+    };
+    _ref.read(relayReachableProvider.notifier).state = relay == null
+        ? null
+        : !_down.contains(relay);
+
+    final up = candidates.firstWhereOrNull((url) => !_down.contains(url));
+    String verdict(String url) {
+      final host = Uri.tryParse(url)?.host ?? url;
+      return '$host ${_down.contains(url) ? 'down' : 'up'}';
+    }
+
+    debugPrint('[Connectivity] probe: ${candidates.map(verdict).join(', ')}');
+    if (up == null) {
+      _settleOffline(started);
+    } else {
+      _dismissOfflineSuspicion();
+      _select(up);
+      _setOnline(true);
+      if (up != relay) unawaited(_learnRelay());
+    }
+    return mounted && state;
+  }
+
+  Dio _buildProber() {
     final client =
         _probeClient?.call() ??
         Dio(
@@ -147,38 +211,26 @@ class ConnectivityNotifier extends StateNotifier<bool> {
             validateStatus: (_) => true,
           ),
         );
-    try {
-      final answers = await Future.wait([
-        for (final url in candidates)
-          _answers(client, url, relayed: url == relay),
-      ]);
-      if (!mounted) return false;
-      _down = {
-        for (final (i, url) in candidates.indexed)
-          if (!answers[i]) url,
-      };
-      _ref.read(relayReachableProvider.notifier).state = relay == null
-          ? null
-          : !_down.contains(relay);
-
-      final up = candidates.firstWhereOrNull((url) => !_down.contains(url));
-      String verdict(String url) {
-        final host = Uri.tryParse(url)?.host ?? url;
-        return '$host ${_down.contains(url) ? 'down' : 'up'}';
-      }
-
-      debugPrint('[Connectivity] probe: ${candidates.map(verdict).join(', ')}');
-      if (up == null) {
-        _setOnline(false);
-      } else {
-        _select(up);
-        _setOnline(true);
-        if (up != relay) unawaited(_learnRelay());
-      }
-    } finally {
-      client.close(force: true);
+    final adapter = client.httpClientAdapter;
+    if (adapter is IOHttpClientAdapter) {
+      adapter.createHttpClient = () => HttpClient()..idleTimeout = _probeIdle;
     }
-    return mounted && state;
+    return client;
+  }
+
+  void _settleOffline(DateTime started) {
+    final suspected = _suspectedOfflineAt;
+    if (!state ||
+        _offlineGrace == Duration.zero ||
+        (suspected != null && started.difference(suspected) >= _offlineGrace)) {
+      _setOnline(false);
+      return;
+    }
+    _suspectedOfflineAt ??= started;
+    _offlineConfirm ??= Timer(_offlineGrace, () {
+      _offlineConfirm = null;
+      if (mounted) unawaited(refresh());
+    });
   }
 
   void _keepBeating(bool beating) {
@@ -199,7 +251,9 @@ class ConnectivityNotifier extends StateNotifier<bool> {
         Uri.parse(url),
         options: Options(followRedirects: false, validateStatus: (_) => true),
       );
-      return !relayed || (response.statusCode ?? 0) < 500;
+      final status = response.statusCode ?? 0;
+      if (status == 401 || status == 403) return false;
+      return !relayed || status < 500;
     } on Object {
       return false;
     }
@@ -256,6 +310,10 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   static bool _worthRetrying(DioException error) => switch (error.type) {
     DioExceptionType.connectionError ||
     DioExceptionType.connectionTimeout => true,
+    DioExceptionType.badResponse => const {
+      401,
+      403,
+    }.contains(error.response?.statusCode),
     DioExceptionType.unknown => error.error is SocketException,
     _ => false,
   };
@@ -327,6 +385,8 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   @override
   void dispose() {
     _heartbeat?.cancel();
+    _offlineConfirm?.cancel();
+    _prober?.close(force: true);
     _dio.interceptors.remove(_failover);
     _lifecycleListener?.dispose();
     unawaited(_interfaceSubscription?.cancel());

@@ -174,7 +174,7 @@ class StreamProxyServer {
         outgoing.followRedirects = true;
         _copyRequestHeaders(request, outgoing);
         final response = await outgoing.close();
-        if (!last && _gatewayDown(response.statusCode)) {
+        if (!last && _unusable(response.statusCode)) {
           unawaited(_abort(response));
           failure = HttpException(
             'HTTP ${response.statusCode} from ${upstream.uri.host}',
@@ -191,7 +191,9 @@ class StreamProxyServer {
     throw failure;
   }
 
-  static bool _gatewayDown(int status) =>
+  static bool _unusable(int status) =>
+      status == HttpStatus.unauthorized ||
+      status == HttpStatus.forbidden ||
       status == HttpStatus.badGateway ||
       status == HttpStatus.serviceUnavailable ||
       status == HttpStatus.gatewayTimeout;

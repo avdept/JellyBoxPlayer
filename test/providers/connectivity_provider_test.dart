@@ -23,6 +23,7 @@ class _MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class _Hosts implements HttpClientAdapter {
   final status = <String, int>{};
+  Duration delay = Duration.zero;
 
   @override
   Future<ResponseBody> fetch(
@@ -31,6 +32,7 @@ class _Hosts implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     final code = status[options.uri.host];
+    if (delay != Duration.zero) await Future<void>.delayed(delay);
     if (code == null) {
       throw DioException.connectionError(
         requestOptions: options,
@@ -58,9 +60,11 @@ void main() {
   late _MockMediaServerClient client;
   late _MockSecureStorage storage;
   late CertificateTrust trust;
+  late int proberBuilds;
 
   setUp(() {
     hosts = _Hosts();
+    proberBuilds = 0;
     client = _MockMediaServerClient();
     storage = _MockSecureStorage();
     trust = CertificateTrust();
@@ -81,6 +85,7 @@ void main() {
     String? knownRemote,
     bool signedIn = true,
     Duration heartbeat = const Duration(hours: 1),
+    Duration offlineGrace = Duration.zero,
   }) {
     final container = createProviderContainer(
       overrides: [
@@ -90,8 +95,12 @@ void main() {
         connectivityProvider.overrideWith(
           (ref) => ConnectivityNotifier(
             ref,
-            probeClient: () => Dio()..httpClientAdapter = hosts,
+            probeClient: () {
+              proberBuilds++;
+              return Dio()..httpClientAdapter = hosts;
+            },
             heartbeat: heartbeat,
+            offlineGrace: offlineGrace,
           ),
         ),
       ],
@@ -203,6 +212,95 @@ void main() {
       hosts.status.remove('192.168.1.10');
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
+      expect(container.read(baseUrlProvider), relay);
+    },
+  );
+
+  test('- shrugs off a single failed round while it is online', () async {
+    hosts.status['192.168.1.10'] = 200;
+    final container = start(
+      knownRelay: relay,
+      offlineGrace: const Duration(milliseconds: 300),
+    );
+    await probe(container);
+    expect(container.read(connectivityProvider), isTrue);
+
+    hosts.status.clear();
+    expect(await probe(container), isTrue);
+    expect(container.read(connectivityProvider), isTrue);
+
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    expect(container.read(connectivityProvider), isTrue);
+    expect(container.read(baseUrlProvider), relay);
+  });
+
+  test('- goes offline once a second round confirms it', () async {
+    hosts.status['192.168.1.10'] = 200;
+    final container = start(
+      knownRelay: relay,
+      offlineGrace: const Duration(milliseconds: 200),
+    );
+    await probe(container);
+
+    hosts.status.clear();
+    expect(await probe(container), isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    expect(container.read(connectivityProvider), isFalse);
+  });
+
+  test('- runs one more round when a refresh arrives mid-round', () async {
+    hosts.status['192.168.1.10'] = 200;
+    final container = start();
+    await probe(container);
+
+    hosts.delay = const Duration(milliseconds: 100);
+    hosts.status.remove('192.168.1.10');
+    final stale = container.read(connectivityProvider.notifier).refresh();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    hosts.status['192.168.1.10'] = 200;
+    final fresh = container.read(connectivityProvider.notifier).refresh();
+
+    expect(await fresh, isTrue);
+    expect(await stale, isTrue);
+    expect(container.read(connectivityProvider), isTrue);
+    expect(container.read(baseUrlProvider), home);
+  });
+
+  test('- keeps one probe client across rounds', () async {
+    hosts.status['192.168.1.10'] = 200;
+    final container = start(knownRelay: relay);
+
+    await probe(container);
+    await probe(container);
+    await probe(container);
+
+    expect(proberBuilds, 1);
+  });
+
+  test('- treats a block page answering for home as down', () async {
+    hosts.status['192.168.1.10'] = 403;
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    final container = start(knownRelay: relay);
+
+    expect(await probe(container), isTrue);
+    expect(container.read(baseUrlProvider), relay);
+  });
+
+  test(
+    '- walks a request the block page answered over to the tunnel',
+    () async {
+      hosts.status['192.168.1.10'] = 403;
+      hosts.status['abc.tunnel.jellybox.app'] = 200;
+      final container = start(knownRelay: relay);
+
+      final response = await container
+          .read(dioProvider)
+          .getUri<void>(Uri.parse('$home/Items'));
+
+      expect(response.realUri.toString(), '$relay/Items');
       expect(container.read(baseUrlProvider), relay);
     },
   );
