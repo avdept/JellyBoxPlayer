@@ -41,6 +41,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player_media_kit/video_player_media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
 late String deviceId;
@@ -189,6 +190,7 @@ Future<void> main() async {
 
   if (Platform.isLinux || Platform.isWindows) {
     JustAudioMediaKit.ensureInitialized();
+    VideoPlayerMediaKit.ensureInitialized(windows: true, linux: true);
   }
 
   if (Platform.isWindows) await SmtcHandler.initialize(container);

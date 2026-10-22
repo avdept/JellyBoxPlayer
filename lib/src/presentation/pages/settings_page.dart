@@ -394,6 +394,21 @@ class SettingsPage extends ConsumerWidget {
                           label:
                               'Make player full screen when Studio Mode enabled',
                         ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModeVideoCovers,
+                        label: 'Use video covers when available',
+                      ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModePinnedControls,
+                        label: 'Always show controls',
+                      ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModeCoverOverVideo,
+                        label: 'Show cover art over video background',
+                      ),
                     ],
                     if (supportsDiscordPresence) ...[
                       _sectionHeader('Discord'),

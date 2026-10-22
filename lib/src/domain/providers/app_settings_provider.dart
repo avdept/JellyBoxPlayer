@@ -9,6 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum AppSetting {
   sidebarCollapsed('sidebar_collapsed', defaultValue: true),
   studioModeFullscreen('studio_mode_fullscreen'),
+  studioModeVideoCovers('studio_mode_video_covers', defaultValue: true),
+  studioModePinnedControls('studio_mode_pinned_controls'),
+  studioModeCoverOverVideo('studio_mode_cover_over_video'),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),

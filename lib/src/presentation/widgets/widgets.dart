@@ -8,6 +8,7 @@ export 'adaptive_dialog_action.dart';
 export 'album_card_metrics.dart';
 export 'album_view.dart';
 export 'anchored_dropdown.dart';
+export 'animated_cover_video.dart';
 export 'app_dropdown.dart';
 export 'audio_quality_badge.dart';
 export 'aurora_background.dart';
