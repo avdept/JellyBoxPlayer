@@ -1225,7 +1225,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (await remote?.remove(index) ?? false) return;
     final songs = [...state.songs];
     if (index < 0 || index >= songs.length) return;
-    if (songs.length == 1) return clear();
+    if (songs.length == 1) return clearQueue();
 
     final wasCurrent = state.currentMediaIndex == index;
     songs.removeAt(index);
@@ -1285,6 +1285,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _tracks.clear();
     _unshuffledOrder = null;
     state = PlaybackState.initial();
+  }
+
+  Future<void> clearQueue() async {
+    await clear();
+    final serverId = _ref.read(currentServerIdProvider);
+    if (serverId != null && serverId.isNotEmpty) {
+      await PlaybackStorage().clear(serverId);
+    }
   }
 
   Future<void> adoptCachedFiles(Map<String, String> pathsById) {
