@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
+import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -50,6 +51,23 @@ class _MainPageState extends ConsumerState<MainPage> {
         icon: const Icon(Icons.menu),
         color: _theme.colorScheme.onPrimary,
       ),
+    );
+  }
+
+  Widget _supportButton(bool collapsed) {
+    final button = RailItemButton(
+      onPressed: () => context.pushNamed(Routes.support.name),
+      icon: const Icon(Icons.help_outline),
+      label: const Text('Support'),
+      foregroundColor: _theme.colorScheme.onPrimary,
+      fontSize: 16,
+      horizontalPadding: 30,
+    );
+
+    return RailTooltip(
+      message: 'Support',
+      enabled: collapsed,
+      child: button,
     );
   }
 
@@ -170,7 +188,14 @@ class _MainPageState extends ConsumerState<MainPage> {
                       _collapseButton(sidebarCollapsed),
                     ],
                   ),
-                  trailing: _logoutButton(sidebarCollapsed),
+                  trailing: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _supportButton(sidebarCollapsed),
+                      _logoutButton(sidebarCollapsed),
+                    ],
+                  ),
                   selectedIndex: currentIndex,
                   onDestinationSelected: _navigateToItem,
                   destinations: List.generate(

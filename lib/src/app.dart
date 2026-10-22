@@ -314,6 +314,11 @@ class _AppState extends ConsumerState<App>
                       name: Routes.queueCache.name,
                       pageBuilder: widget.screenFactory.queueCachePage,
                     ),
+                    GoRoute(
+                      path: Routes.support.path,
+                      name: Routes.support.name,
+                      pageBuilder: widget.screenFactory.supportPage,
+                    ),
                   ],
                 ),
               ],

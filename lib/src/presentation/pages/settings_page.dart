@@ -171,6 +171,10 @@ class SettingsPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 4,
                   children: [
+                    if (!device.isDesktop) ...[
+                      const SizedBox(height: 4),
+                      _supportButton(context),
+                    ],
                     _sectionHeader('Servers'),
                     const ServerAccountList(),
                     _sectionHeader('Connection'),
@@ -521,6 +525,13 @@ class SettingsPage extends ConsumerWidget {
     style: _buttonStyle,
     icon: const Icon(JPlayer.music),
     label: const Text('Palette settings'),
+  );
+
+  Widget _supportButton(BuildContext context) => TextButton.icon(
+    onPressed: () => context.pushNamed(Routes.support.name),
+    style: _buttonStyle,
+    icon: const Icon(Icons.help_outline),
+    label: const Text('Support'),
   );
 
   Widget _changelogButton(BuildContext context, DeviceType device) {

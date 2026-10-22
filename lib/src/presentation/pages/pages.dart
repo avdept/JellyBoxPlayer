@@ -18,3 +18,4 @@ export 'playlist_page.dart';
 export 'queue_cache_page.dart';
 export 'search_results_page.dart';
 export 'settings_page.dart';
+export 'support_page.dart';
