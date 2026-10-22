@@ -273,6 +273,7 @@ void main() {
   group('AuthNotifier.build', () {
     Future<ProviderContainer> restoreWith({
       required Future<ResponseBody> Function(Uri uri) answer,
+      bool expectSignedIn = true,
     }) async {
       final stored = {
         'serverUrl': 'http://jelly.local',
@@ -297,13 +298,24 @@ void main() {
         overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
       );
       container.read(dioProvider).httpClientAdapter = mockAdapter;
-      expect(await container.read(authProvider.future), isTrue);
+      expect(
+        await container.read(authProvider.future),
+        expectSignedIn ? isTrue : isFalse,
+      );
       return container;
     }
 
     ResponseBody artists() => ResponseBody.fromString(
       jsonEncode({'Items': <dynamic>[], 'TotalRecordCount': 0}),
       200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+
+    ResponseBody denied(int statusCode) => ResponseBody.fromString(
+      jsonEncode({'error': 'blocked'}),
+      statusCode,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],
       },
@@ -344,6 +356,25 @@ void main() {
       );
 
       expect(container.read(baseUrlProvider), 'https://relay.test/r/key');
+    });
+
+    test(
+      '- stays signed in when a block page answers 403 for home',
+      () async {
+        final container = await restoreWith(
+          answer: (uri) async =>
+              uri.host == 'jelly.local' ? denied(403) : artists(),
+        );
+
+        expect(container.read(baseUrlProvider), isNot('http://jelly.local'));
+      },
+    );
+
+    test('- signs out when every address rejects the token', () async {
+      await restoreWith(
+        answer: (uri) async => denied(401),
+        expectSignedIn: false,
+      );
     });
 
     test('- starts at home when home answers first', () async {

@@ -42,11 +42,16 @@ class AuthNotifier extends AsyncNotifier<bool?> {
       onError: (error, handler) {
         final failure = MediaServerException.fromDio(error);
         if (failure.isUnauthorized &&
+            _hasActiveSession &&
             !_authenticating &&
             !_loggingOut &&
             !_switching &&
             _isActiveServer(error.requestOptions.uri)) {
-          unawaited(_expireActive());
+          debugPrint(
+            '[Auth] HTTP ${failure.statusCode} from '
+            '${error.requestOptions.uri.host}, re-checking the session',
+          );
+          unawaited(_expireIfSessionInvalid());
         }
         handler.next(error);
       },
@@ -62,6 +67,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
   bool _authenticating = false;
   bool _loggingOut = false;
   bool _switching = false;
+  bool _recheckingSession = false;
   _QuickConnectSession? _quickConnect;
 
   static const serverUnreachableError =
@@ -557,6 +563,38 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     _restoreQueue();
   }
 
+  Future<void> _expireIfSessionInvalid() async {
+    if (_recheckingSession) return;
+    final user = ref.read(currentUserProvider);
+    final serverType = ref.read(currentServerTypeProvider);
+    final addresses = ref.read(serverAddressesProvider);
+    if (user == null || serverType == null || addresses == null) {
+      return _expireActive();
+    }
+    _recheckingSession = true;
+    try {
+      final statuses = await Future.wait([
+        for (final url in addresses.candidates)
+          _sessionStatus(
+            _clientFor(
+              serverType,
+              serverUrl: url,
+              userId: user.userId,
+              token: user.token,
+            ),
+          ),
+      ]);
+      if (statuses.contains(SessionStatus.valid)) {
+        debugPrint('[Auth] the session is still valid, staying signed in');
+      } else if (statuses.contains(SessionStatus.invalid)) {
+        debugPrint('[Auth] the server rejected the session, signing out');
+        await _expireActive();
+      }
+    } finally {
+      _recheckingSession = false;
+    }
+  }
+
   Future<void> _expireActive() async {
     if (_loggingOut || _switching) return;
     _loggingOut = true;
@@ -915,6 +953,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     try {
       final answered = Completer<(String, SessionStatus)>();
       var left = urls.length;
+      (String, SessionStatus)? rejection;
       for (final url in urls) {
         final client = _clientFor(
           serverType,
@@ -926,10 +965,15 @@ class AuthNotifier extends AsyncNotifier<bool?> {
           _sessionStatus(client).then((status) {
             left--;
             if (answered.isCompleted) return;
-            if (status != SessionStatus.unreachable) {
+            if (status == SessionStatus.valid) {
               answered.complete((url, status));
-            } else if (left == 0) {
-              answered.complete((urls.first, status));
+              return;
+            }
+            if (status == SessionStatus.invalid) rejection ??= (url, status);
+            if (left == 0) {
+              answered.complete(
+                rejection ?? (urls.first, SessionStatus.unreachable),
+              );
             }
           }),
         );

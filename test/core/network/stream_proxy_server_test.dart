@@ -303,6 +303,23 @@ void main() {
       expect(switched, ['$originBase/jellyfin']);
     });
 
+    test('skips an endpoint a block page answers for', () async {
+      final blocker = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => blocker.close(force: true));
+      blocker.listen((request) async {
+        request.response.statusCode = HttpStatus.forbidden;
+        await request.response.close();
+      });
+      endpoints = ['http://127.0.0.1:${blocker.port}', '$originBase/jellyfin'];
+      final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
+
+      final response = await get(uri);
+
+      expect(response.statusCode, 200);
+      expect(await response.transform(utf8.decoder).join(), 'abcdefghi');
+      expect(switched, ['$originBase/jellyfin']);
+    });
+
     test('answers 502 when no endpoint reaches the server', () async {
       endpoints = [await deadEndpoint()];
       final uri = await proxy.forLocation(Uri.parse('Audio/1/x.flac'));
