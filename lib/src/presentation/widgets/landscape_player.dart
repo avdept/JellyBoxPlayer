@@ -182,7 +182,11 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
           AuroraBackground(
             animate: ref.watch(animationSpeedProvider).isAnimated,
           ),
-          const KeepScreenAwake(),
+          KeepScreenAwake(
+            force:
+                _panel == _Panel.lyrics &&
+                ref.watch(currentSongHasLyricsProvider),
+          ),
           Material(
             type: MaterialType.transparency,
             child: SafeArea(
