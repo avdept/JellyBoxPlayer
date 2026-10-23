@@ -141,12 +141,19 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     builder: (context, ref, child) => AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: ref.watch(lyricsShownProvider)
-          ? const Padding(
-              key: ValueKey('lyrics'),
-              padding: EdgeInsets.symmetric(
+          ? Padding(
+              key: const ValueKey('lyrics'),
+              padding: const EdgeInsets.symmetric(
                 horizontal: _sheetHorizontalPadding,
               ),
-              child: LyricsView(),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const LyricsView(),
+                  if (_isMobile && supportsLandscapePlayer)
+                    const KeepScreenAwake(force: true),
+                ],
+              ),
             )
           : child,
     ),
