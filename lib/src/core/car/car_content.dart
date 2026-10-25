@@ -245,7 +245,11 @@ class CarContent {
             ),
           ),
           'artists' => client.searchArtists(
-            SearchQuery(term: term, startIndex: startIndex),
+            SearchQuery(
+              term: term,
+              libraryId: libraryId,
+              startIndex: startIndex,
+            ),
           ),
           'playlists' => client.searchPlaylists(
             SearchQuery(
@@ -350,6 +354,7 @@ class CarContent {
         final resp = await client.searchArtists(
           SearchQuery(
             term: term,
+            libraryId: libraryId,
             artistScope: _ref.read(effectiveArtistScopeProvider),
           ),
         );

@@ -41,7 +41,11 @@ class SearchItemsNotifier
         return ItemsPage(items: resp.items);
       case ItemList.artists:
         final resp = await _client.searchArtists(
-          SearchQuery(term: _searchTerm, artistScope: _artistScope),
+          SearchQuery(
+            term: _searchTerm,
+            libraryId: libraryId,
+            artistScope: _artistScope,
+          ),
         );
         return ItemsPage(items: resp.items);
       case ItemList.playlists:

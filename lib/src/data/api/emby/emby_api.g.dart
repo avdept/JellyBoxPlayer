@@ -1032,6 +1032,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     required String userId,
     required String searchTerm,
+    String? libraryId,
     List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
@@ -1042,12 +1043,14 @@ class _EmbyApi implements EmbyApi {
     final queryParameters = <String, dynamic>{
       r'UserId': userId,
       r'SearchTerm': searchTerm,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'StartIndex': startIndex,
       r'Limit': limit,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
@@ -1076,6 +1079,7 @@ class _EmbyApi implements EmbyApi {
   Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
     required String userId,
     required String searchTerm,
+    String? libraryId,
     List<String> fields = const ['Overview', 'ProviderIds'],
     String startIndex = '0',
     String limit = '100',
@@ -1086,12 +1090,14 @@ class _EmbyApi implements EmbyApi {
     final queryParameters = <String, dynamic>{
       r'UserId': userId,
       r'SearchTerm': searchTerm,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'StartIndex': startIndex,
       r'Limit': limit,
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemsWrapper>>(

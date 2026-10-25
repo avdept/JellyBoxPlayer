@@ -1205,6 +1205,7 @@ class _JellyfinApi implements JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     required String userId,
     required String searchTerm,
+    String? libraryId,
     List<String> fields = const [
       'BackdropImageTags',
       'Overview',
@@ -1221,6 +1222,7 @@ class _JellyfinApi implements JellyfinApi {
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'searchTerm': searchTerm,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'IncludeArtists': includeArtists,
       r'IncludeItemTypes': type,
@@ -1229,6 +1231,7 @@ class _JellyfinApi implements JellyfinApi {
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
@@ -1257,6 +1260,7 @@ class _JellyfinApi implements JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
     required String userId,
     required String searchTerm,
+    String? libraryId,
     List<String> fields = const [
       'BackdropImageTags',
       'Overview',
@@ -1273,6 +1277,7 @@ class _JellyfinApi implements JellyfinApi {
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'searchTerm': searchTerm,
+      r'ParentId': libraryId,
       r'Fields': fields,
       r'IncludeArtists': includeArtists,
       r'IncludeItemTypes': type,
@@ -1281,6 +1286,7 @@ class _JellyfinApi implements JellyfinApi {
       r'SortOrder': sortOrder,
       r'Recursive': recursive,
     };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<HttpResponse<ItemsWrapper>>(
