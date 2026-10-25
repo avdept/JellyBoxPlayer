@@ -318,6 +318,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               if (!_isMobile && !playingElsewhere) _downloadTrackButton(),
               _likeTrackButton(size: _isMobile ? 26 : 24),
               _queueButton(),
+              _sleepTimerButton(size: _isMobile ? 26 : 24),
             ],
           );
         },
@@ -524,6 +525,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             if (_isDesktop)
                               _repeatTrackButton(size: _barIconSize),
                             if (_isDesktop) _lyricsButton(size: _barIconSize),
+                            if (_isDesktop)
+                              _sleepTimerButton(size: _barIconSize),
                             if (_isDesktop) const VolumeControl(size: 36),
                             if (_isDesktop) _playbackTargetButton(size: 36),
                             if (_isDesktop) _queueSidebarButton(),
@@ -803,6 +806,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         isSelected: mode != LoopMode.off,
       );
     },
+  );
+
+  Widget _sleepTimerButton({double size = 24}) => SleepTimerButton(
+    color: _theme.colorScheme.onPrimary,
+    iconSize: size,
   );
 
   Widget _playbackTargetButton({

@@ -69,6 +69,7 @@ export 'shimmer.dart';
 export 'sidebar_overlay.dart';
 export 'simple_list_tile.dart';
 export 'singer_view.dart';
+export 'sleep_timer.dart';
 export 'context_menu.dart';
 export 'mix_page_scaffold.dart';
 export 'song_list_sliver.dart';
