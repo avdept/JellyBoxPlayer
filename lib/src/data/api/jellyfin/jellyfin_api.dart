@@ -318,6 +318,7 @@ abstract class JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> searchArtists({
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
+    @Query('ParentId') String? libraryId,
     @Query('Fields')
     List<String> fields = const [
       'BackdropImageTags',
@@ -336,6 +337,7 @@ abstract class JellyfinApi {
   Future<HttpResponse<ItemsWrapper>> searchAlbumArtists({
     @Query('userId') required String userId,
     @Query('searchTerm') required String searchTerm,
+    @Query('ParentId') String? libraryId,
     @Query('Fields')
     List<String> fields = const [
       'BackdropImageTags',

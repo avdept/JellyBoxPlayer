@@ -498,6 +498,23 @@ void main() {
       expect(requestedPath(), '/Artists');
     });
 
+    test('- scopes the artist search to the selected library', () async {
+      await scopedClient.searchArtists(
+        const SearchQuery(
+          term: 'portishead',
+          libraryId: 'lib-1',
+          artistScope: ArtistScope.allArtists,
+        ),
+      );
+
+      final captured = verify(
+        () => mockAdapter.fetch(captureAny(), any(), any()),
+      ).captured.single;
+      final uri = (captured as RequestOptions).uri;
+      expect(uri.path, '/Artists');
+      expect(uri.queryParameters['ParentId'], 'lib-1');
+    });
+
     test('- advertises both scopes', () {
       expect(scopedClient.capabilities.artistScopes, {
         ArtistScope.albumArtists,

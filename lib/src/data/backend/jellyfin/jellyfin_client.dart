@@ -386,6 +386,7 @@ class JellyfinClient implements MediaServerClient {
       ArtistScope.albumArtists => await _api.searchAlbumArtists(
         userId: userId,
         searchTerm: query.term,
+        libraryId: query.libraryId,
         startIndex: '${query.startIndex}',
         limit: '${query.limit}',
         sortOrder: mediaBrowserSortOrder(query.direction),
@@ -393,6 +394,7 @@ class JellyfinClient implements MediaServerClient {
       ArtistScope.allArtists => await _api.searchArtists(
         userId: userId,
         searchTerm: query.term,
+        libraryId: query.libraryId,
         startIndex: '${query.startIndex}',
         limit: '${query.limit}',
         sortOrder: mediaBrowserSortOrder(query.direction),
