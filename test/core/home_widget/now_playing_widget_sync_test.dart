@@ -145,12 +145,17 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  test('writes nothing until a track is loaded', () async {
+  const strings = {
+    'idleSubtitle': 'Nothing playing',
+    'signedOutSubtitle': 'Sign in to start listening',
+  };
+
+  test('publishes localized idle text before a track is loaded', () async {
     start(path: root.path);
     await emit(stateWith(const [], PlaybackStatus.stopped));
 
-    expect(file(NowPlayingWidgetSync.snapshotFile).existsSync(), isFalse);
-    expect(host.reloads, 0);
+    expect(snapshot(), {'strings': strings});
+    expect(host.reloads, 1);
   });
 
   test('publishes the current track with its cover and tint', () async {
@@ -167,9 +172,10 @@ void main() {
       'cover': file(NowPlayingWidgetSync.coverFile).path,
       'background': artwork.background.toARGB32(),
       'foreground': artwork.foreground.toARGB32(),
+      'strings': strings,
     });
     expect(file(NowPlayingWidgetSync.coverFile).readAsBytesSync(), [1]);
-    expect(host.reloads, 1);
+    expect(host.reloads, 2);
   });
 
   test('pausing updates the state without reloading the artwork', () async {
@@ -180,7 +186,7 @@ void main() {
 
     expect(snapshot()['playing'], isFalse);
     expect(host.artworkSources, ['1']);
-    expect(host.reloads, 2);
+    expect(host.reloads, 3);
   });
 
   test('treats buffering as playing', () async {
@@ -217,7 +223,7 @@ void main() {
     );
 
     expect(snapshot()['liked'], isTrue);
-    expect(host.reloads, 2);
+    expect(host.reloads, 3);
   });
 
   test('a track without artwork drops the previous cover', () async {
@@ -237,8 +243,8 @@ void main() {
     await emit(stateWith([song('1', 'Sour Times')], PlaybackStatus.playing));
     await emit(stateWith(const [], PlaybackStatus.stopped));
 
-    expect(snapshot(), isEmpty);
-    expect(host.reloads, 2);
+    expect(snapshot(), {'strings': strings});
+    expect(host.reloads, 3);
   });
 
   test('shows the signed-out state after logout', () async {
@@ -246,7 +252,7 @@ void main() {
     await emit(stateWith([song('1', 'Sour Times')], PlaybackStatus.playing));
     await signIn(const AsyncData(false));
 
-    expect(snapshot(), {'signedOut': true});
+    expect(snapshot(), {'signedOut': true, 'strings': strings});
   });
 
   test('stays unchanged while the session is still loading', () async {
@@ -257,12 +263,12 @@ void main() {
     expect(snapshot()['title'], 'Sour Times');
   });
 
-  test('signing in replaces the signed-out state with an empty one', () async {
+  test('signing in replaces the signed-out state with an idle one', () async {
     start(path: root.path);
     await signIn(const AsyncData(false));
     await signIn(const AsyncData(true));
 
-    expect(snapshot(), isEmpty);
+    expect(snapshot(), {'strings': strings});
   });
 
   group('recent albums', () {
@@ -323,7 +329,7 @@ void main() {
       await sync.idle;
       await signIn(const AsyncData(false));
 
-      expect(snapshot(), {'signedOut': true});
+      expect(snapshot(), {'signedOut': true, 'strings': strings});
     });
 
     test('keep the last list when loading fails', () async {

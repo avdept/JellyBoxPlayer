@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/quick_connect_dialog.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -36,6 +37,8 @@ void main() {
       ProviderScope(
         overrides: [authProvider.overrideWith(() => mockAuthNotifier)],
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           theme: ThemeData(platform: platform),
           home: const Scaffold(body: QuickConnectDialog(code: '123456')),
         ),

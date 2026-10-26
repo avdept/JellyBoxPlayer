@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
@@ -27,7 +28,7 @@ class OnRepeatPage extends ConsumerWidget {
 
     return MixPageScaffold(
       name: onRepeatName,
-      subtitle: 'Most played in the last 30 days',
+      subtitle: S.of(context).mostPlayedLast30Days,
       songs: items,
       coverImages: [if (onRepeat != null) imageService.itemImage(onRepeat)],
       isPlayLoading:
@@ -58,10 +59,10 @@ class OnRepeatPage extends ConsumerWidget {
         ...songs.when(
           data: (list) => [
             if (list.isEmpty)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
-                  child: Text('Nothing played in the last 30 days.'),
+                  child: Text(S.of(context).nothingPlayedLast30Days),
                 ),
               )
             else

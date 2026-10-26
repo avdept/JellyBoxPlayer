@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
@@ -85,6 +86,8 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           theme: Themes.red,
           debugShowCheckedModeBanner: false,
           builder: (context, child) => Stack(
@@ -134,6 +137,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            localizationsDelegates: const [S.delegate],
+            supportedLocales: S.delegate.supportedLocales,
             theme: Themes.red,
             debugShowCheckedModeBanner: false,
             builder: (context, child) => LandscapePlayerScope(child: child!),

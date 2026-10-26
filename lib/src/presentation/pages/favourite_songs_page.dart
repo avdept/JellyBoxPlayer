@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
@@ -19,13 +20,14 @@ import 'package:jplayer/src/presentation/widgets/sort_menu_button.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
-const _sortOptions = <EntityFilter, String>{
-  EntityFilter.dateLiked: 'Date Liked',
-  EntityFilter.sortName: 'Name',
-  EntityFilter.dateCreated: 'Date Added',
-  EntityFilter.albumArtist: 'Album Artist',
-  EntityFilter.random: 'Random',
-};
+Map<EntityFilter, String> _sortOptions(BuildContext context) =>
+    <EntityFilter, String>{
+      EntityFilter.dateLiked: S.of(context).dateLiked,
+      EntityFilter.sortName: S.of(context).name,
+      EntityFilter.dateCreated: S.of(context).dateAdded,
+      EntityFilter.albumArtist: S.of(context).albumArtist,
+      EntityFilter.random: S.of(context).random,
+    };
 
 class FavouriteSongsPage extends ConsumerStatefulWidget {
   const FavouriteSongsPage({super.key});
@@ -107,7 +109,7 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
           ? null
           : SortMenuButton<EntityFilter>(
               options: {
-                for (final entry in _sortOptions.entries)
+                for (final entry in _sortOptions(context).entries)
                   if (entry.key != EntityFilter.dateLiked ||
                       capabilities.likedTimestamp)
                     entry.key: entry.value,
@@ -137,8 +139,8 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
                 child: Center(
                   child: Text(
                     isOffline
-                        ? 'Liked songs are not downloaded.'
-                        : "There's no songs yet.",
+                        ? S.of(context).likedSongsNotDownloaded
+                        : S.of(context).noSongsYet,
                   ),
                 ),
               )

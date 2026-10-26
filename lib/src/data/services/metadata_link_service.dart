@@ -1,71 +1,72 @@
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
 typedef _Template = ({String label, String host, String path, String? icon});
 
-const _templates = <String, _Template>{
+Map<String, _Template> get _templates => <String, _Template>{
   ExternalIdProvider.musicBrainzAlbum: (
-    label: 'MusicBrainz release',
+    label: S.current.musicBrainzRelease,
     host: 'musicbrainz.org',
     path: 'release',
     icon: SvgPictures.musicBrainzLogo,
   ),
   ExternalIdProvider.musicBrainzReleaseGroup: (
-    label: 'MusicBrainz release group',
+    label: S.current.musicBrainzReleaseGroup,
     host: 'musicbrainz.org',
     path: 'release-group',
     icon: SvgPictures.musicBrainzLogo,
   ),
   ExternalIdProvider.musicBrainzArtist: (
-    label: 'MusicBrainz artist',
+    label: S.current.musicBrainzArtist,
     host: 'musicbrainz.org',
     path: 'artist',
     icon: SvgPictures.musicBrainzLogo,
   ),
   ExternalIdProvider.musicBrainzAlbumArtist: (
-    label: 'MusicBrainz artist',
+    label: S.current.musicBrainzArtist,
     host: 'musicbrainz.org',
     path: 'artist',
     icon: SvgPictures.musicBrainzLogo,
   ),
   ExternalIdProvider.musicBrainzTrack: (
-    label: 'MusicBrainz track',
+    label: S.current.musicBrainzTrack,
     host: 'musicbrainz.org',
     path: 'track',
     icon: SvgPictures.musicBrainzLogo,
   ),
   ExternalIdProvider.musicBrainzRecording: (
-    label: 'MusicBrainz recording',
+    label: S.current.musicBrainzRecording,
     host: 'musicbrainz.org',
     path: 'recording',
     icon: SvgPictures.musicBrainzLogo,
   ),
   ExternalIdProvider.discogsRelease: (
-    label: 'Discogs release',
+    label: S.current.discogsRelease,
     host: 'www.discogs.com',
     path: 'release',
     icon: SvgPictures.discogsLogo,
   ),
   ExternalIdProvider.discogsMaster: (
-    label: 'Discogs master',
+    label: S.current.discogsMaster,
     host: 'www.discogs.com',
     path: 'master',
     icon: SvgPictures.discogsLogo,
   ),
   ExternalIdProvider.discogsArtist: (
-    label: 'Discogs artist',
+    label: S.current.discogsArtist,
     host: 'www.discogs.com',
     path: 'artist',
     icon: SvgPictures.discogsLogo,
   ),
   ExternalIdProvider.audioDbAlbum: (
-    label: 'TheAudioDB album',
+    label: S.current.theAudioDbAlbum,
     host: 'www.theaudiodb.com',
     path: 'album',
     icon: null,
   ),
   ExternalIdProvider.audioDbArtist: (
-    label: 'TheAudioDB artist',
+    label: S.current.theAudioDbArtist,
     host: 'www.theaudiodb.com',
     path: 'artist',
     icon: null,

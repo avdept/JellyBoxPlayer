@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -205,7 +206,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
     final serverUrl = _effectiveServerUrl;
     if (serverUrl.isEmpty) {
-      setState(() => error = 'Server URL is required');
+      setState(() => error = S.current.serverUrlRequired);
       return;
     }
 
@@ -243,7 +244,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     );
     if (credentials.serverUrl.isEmpty || credentials.username.isEmpty) {
       setState(() {
-        error = 'Server URL and login are required';
+        error = S.current.serverUrlAndLoginRequired;
         _submitting = false;
       });
       return;
@@ -252,9 +253,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
     final serverUri = Uri.tryParse(credentials.serverUrl);
     if (serverUri == null || !serverUri.isAbsolute || serverUri.host.isEmpty) {
       setState(() {
-        error =
-            'Server URL is invalid. Try something like 192.168.1.10:8096 or '
-            'jellyfin.example.com';
+        error = S.current.serverUrlInvalid;
         _submitting = false;
       });
       return;
@@ -374,7 +373,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 12),
                         TextButton(
                           onPressed: context.pop,
-                          child: const Text('Cancel'),
+                          child: Text(S.of(context).cancel),
                         ),
                       ] else
                         ?_savedServers(),
@@ -486,14 +485,14 @@ class LoginPageState extends ConsumerState<LoginPage> {
       : null;
 
   Widget _loginField() => LabeledTextField(
-    label: 'Login',
+    label: S.of(context).login,
     keyboardType: TextInputType.text,
     controller: _emailInputController,
     textInputAction: TextInputAction.next,
   );
 
   Widget _passwordField() => LabeledTextField(
-    label: 'Password',
+    label: S.of(context).password,
     controller: _passwordInputController,
     obscureText: true,
     keyboardType: TextInputType.visiblePassword,
@@ -524,9 +523,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   Widget _signInButton() => ShadowedButton(
     onPressed: _submitting ? null : signIn,
-    child: const Text(
-      'Sign in',
-      style: TextStyle(
+    child: Text(
+      S.of(context).signIn,
+      style: const TextStyle(
         fontFamily: FontFamily.inter,
         fontSize: 16,
         fontWeight: FontWeight.w500,

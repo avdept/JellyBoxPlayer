@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -101,7 +102,7 @@ class _JellyboxCloudConnectFormState
 
           if (account != null && !_submitting) ...[
             Text(
-              'Connected as ${account.email}',
+              S.of(context).connectedAs(account.email),
               style: TextStyle(color: muted),
             ),
             if (_connectionError(ref) case final error?)
@@ -118,7 +119,13 @@ class _JellyboxCloudConnectFormState
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Current online devices: ${ref.watch(cloudProvider).devices.where((d) => d.isOnline).length}',
+                S.of(context).currentOnlineDevices(
+                  ref
+                      .watch(cloudProvider)
+                      .devices
+                      .where((d) => d.isOnline)
+                      .length,
+                ),
                 style: TextStyle(color: muted),
               ),
             ),
@@ -128,18 +135,17 @@ class _JellyboxCloudConnectFormState
               child: TextButton(
                 onPressed: () => unawaited(_disconnect()),
                 style: ModalFormActions.buttonStyle(context),
-                child: const Text('Disconnect'),
+                child: Text(S.of(context).disconnect),
               ),
             ),
           ] else ...[
             Text(
-              'Sign in to play across your devices - start on one, '
-              'carry on with another.',
+              S.of(context).cloudSignInIntro,
               style: TextStyle(fontSize: 14, color: muted),
             ),
             const SizedBox(height: 16),
             Text(
-              'Hitting connect will either create new account or sign in to existing account.',
+              S.of(context).cloudConnectNote,
               style: TextStyle(fontSize: 14, color: muted),
             ),
             const SizedBox(height: 16),
@@ -154,7 +160,7 @@ class _JellyboxCloudConnectFormState
             ],
             LabeledTextField(
               controller: _email,
-              label: 'Email',
+              label: S.of(context).email,
               keyboardType: TextInputType.emailAddress,
               autofocus: true,
               textInputAction: TextInputAction.next,
@@ -162,7 +168,7 @@ class _JellyboxCloudConnectFormState
             const SizedBox(height: 8),
             LabeledTextField(
               controller: _password,
-              label: 'Password',
+              label: S.of(context).password,
               obscureText: true,
               textInputAction: TextInputAction.done,
             ),
@@ -171,7 +177,7 @@ class _JellyboxCloudConnectFormState
               child: TextButton(
                 onPressed: () => unawaited(_forgotPassword()),
                 style: ModalFormActions.buttonStyle(context),
-                child: const Text('Forgot password?'),
+                child: Text(S.of(context).forgotPassword),
               ),
             ),
             if (state.error case final error?)
@@ -187,7 +193,7 @@ class _JellyboxCloudConnectFormState
               ),
             const SizedBox(height: 16),
             ModalFormActions(
-              submitLabel: 'Connect',
+              submitLabel: S.of(context).connect,
               onSubmit: () => unawaited(_submit()),
               busy: _submitting,
             ),
@@ -200,6 +206,6 @@ class _JellyboxCloudConnectFormState
   String? _connectionError(WidgetRef ref) {
     final conductor = ref.watch(cloudProvider);
     if (conductor.status != ConductorStatus.error) return null;
-    return conductor.error ?? 'Connection problem';
+    return conductor.error ?? S.current.connectionProblem;
   }
 }

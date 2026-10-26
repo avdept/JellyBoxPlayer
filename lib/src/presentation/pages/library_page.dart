@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -95,11 +96,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     if (ref.watch(accountsProvider).length > 1)
                       TextButton(
                         onPressed: () => unawaited(showServerSwitcher(context)),
-                        child: const Text('Switch server'),
+                        child: Text(S.of(context).switchServer),
                       ),
                     TextButton(
                       onPressed: ref.read(authProvider.notifier).logout,
-                      child: const Text('Logout'),
+                      child: Text(S.of(context).logout),
                     ),
                   ],
                 ),
@@ -135,8 +136,8 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         body: Center(
           child: OfflineNotice(
             message: ref.watch(isOfflineProvider)
-                ? "You're offline, so your libraries can't be loaded."
-                : 'Could not load your libraries.',
+                ? S.of(context).librariesOfflineMessage
+                : S.of(context).librariesLoadFailed,
             onRetry: () => ref.invalidate(librariesProvider),
             showDownloadsLink: true,
           ),
@@ -152,13 +153,13 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     super.dispose();
   }
 
-  Widget _noLibrariesMessage() => const SliverFillRemaining(
+  Widget _noLibrariesMessage() => SliverFillRemaining(
     hasScrollBody: false,
     child: Center(
       child: Text(
-        'No libraries found :(',
+        S.of(context).noLibrariesFound,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,
         ),
@@ -198,9 +199,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     ),
   );
 
-  Widget _titleText() => const Text(
-    'Select Library',
-    style: TextStyle(
+  Widget _titleText() => Text(
+    S.of(context).selectLibrary,
+    style: const TextStyle(
       fontSize: 24,
       fontWeight: FontWeight.w600,
       height: 1.2,

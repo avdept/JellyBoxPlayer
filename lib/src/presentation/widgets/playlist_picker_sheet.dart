@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -37,9 +38,12 @@ class PlaylistPickerSheet extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'Add to playlist',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                S.of(context).addToPlaylist,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Spacer(),
               IconButton(
@@ -53,9 +57,9 @@ class PlaylistPickerSheet extends ConsumerWidget {
             key: formKey,
             child: DropdownButtonFormField<LibraryItem>(
               onSaved: (value) => Navigator.of(context).pop(value),
-              hint: const Text(
-                'Select a playlist',
-                style: TextStyle(fontSize: 14),
+              hint: Text(
+                S.of(context).selectAPlaylist,
+                style: const TextStyle(fontSize: 14),
               ),
               onChanged: (_) {},
               items: data.value?.items
@@ -86,7 +90,7 @@ class PlaylistPickerSheet extends ConsumerWidget {
                       formKey.currentState!.save();
                     }
                   },
-                  child: const Text('Add to playlist'),
+                  child: Text(S.of(context).addToPlaylist),
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 
@@ -13,7 +14,7 @@ class CertificateTrustDialog extends StatelessWidget {
     final localizations = MaterialLocalizations.of(context);
 
     return AlertDialog.adaptive(
-      title: const Text('Untrusted certificate'),
+      title: Text(S.of(context).untrustedCertificate),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -21,18 +22,18 @@ class CertificateTrustDialog extends StatelessWidget {
           children: [
             Text(
               certificate.selfSigned
-                  ? '${certificate.host} uses a self-signed certificate, so '
-                        'its identity cannot be verified automatically.'
-                  : '${certificate.host} uses a certificate that cannot be '
-                        'verified automatically.',
+                  ? S.of(context).selfSignedCertificate(certificate.host)
+                  : S.of(context).unverifiableCertificate(certificate.host),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            _field(context, 'Issued to', certificate.commonName),
-            _field(context, 'Issued by', certificate.issuerName),
+            _field(context, S.of(context).issuedTo, certificate.commonName),
+            _field(context, S.of(context).issuedBy, certificate.issuerName),
             _field(
               context,
-              certificate.expired ? 'Expired' : 'Expires',
+              certificate.expired
+                  ? S.of(context).expired
+                  : S.of(context).expires,
               localizations.formatShortDate(certificate.validTo.toLocal()),
               valueColor: certificate.expired ? theme.colorScheme.error : null,
             ),
@@ -44,8 +45,7 @@ class CertificateTrustDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'JellyBox will trust ${certificate.host} from now on, even if '
-              'its certificate changes. Only continue if this is your server.',
+              S.of(context).trustFromNowOn(certificate.host),
               style: theme.textTheme.bodySmall,
             ),
           ],
@@ -55,12 +55,12 @@ class CertificateTrustDialog extends StatelessWidget {
         AdaptiveDialogAction(
           onPressed: () => Navigator.of(context).pop(false),
           isDefaultAction: true,
-          child: const Text('Cancel'),
+          child: Text(S.of(context).cancel),
         ),
         AdaptiveDialogAction(
           onPressed: () => Navigator.of(context).pop(true),
           isDestructiveAction: true,
-          child: const Text('Trust'),
+          child: Text(S.of(context).trust),
         ),
       ],
     );

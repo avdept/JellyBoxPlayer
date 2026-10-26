@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -125,7 +126,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final result = await action();
     if (result == SetPlaybackResult.empty && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nothing to play in "${item.name}"')),
+        SnackBar(content: Text(S.of(context).nothingToPlayIn(item.name))),
       );
     }
   }
@@ -159,7 +160,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         unawaited(ref.read(todaysPlaylistsProvider.notifier).regenerate()),
     icon: const Icon(Icons.refresh),
     iconSize: 20,
-    tooltip: 'Rebuild mixes (debug)',
+    tooltip: S.of(context).rebuildMixesDebug,
     color: Theme.of(context).colorScheme.onPrimary,
   );
 
@@ -256,9 +257,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
               child: OfflineNotice(
-                message:
-                    "You're offline. Your library will be back "
-                    'once the server is reachable.',
+                message: S.of(context).offlineLibraryNotice,
                 onRetry: _refresh,
                 showDownloadsLink: true,
               ),
@@ -267,7 +266,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         else ...[
           SliverToBoxAdapter(
             child: ItemCarousel(
-              title: 'Recently added',
+              title: S.of(context).recentlyAdded,
               items: ref.watch(recentlyAddedAlbumsProvider),
               device: _device,
               horizontalPadding: _horizontalPadding,
@@ -283,7 +282,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ))
             SliverToBoxAdapter(
               child: ItemCarousel(
-                title: 'Made for you',
+                title: S.of(context).madeForYou,
                 items: ref.watch(todaysPlaylistItemsProvider),
                 device: _device,
                 horizontalPadding: _horizontalPadding,
@@ -300,7 +299,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           if (!ref.watch(settingProvider(AppSetting.recentlyPlayedHidden)))
             SliverToBoxAdapter(
               child: ItemCarousel(
-                title: 'Recently played',
+                title: S.of(context).recentlyPlayed,
                 items: ref.watch(recentlyPlayedItemsProvider),
                 device: _device,
                 horizontalPadding: _horizontalPadding,
@@ -317,7 +316,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           if (!ref.watch(settingProvider(AppSetting.favouritesHidden)))
             SliverToBoxAdapter(
               child: ItemCarousel(
-                title: 'Favourites',
+                title: S.of(context).favourites,
                 items: ref.watch(homeFavouritesProvider),
                 device: _device,
                 horizontalPadding: _horizontalPadding,
@@ -331,7 +330,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           SliverToBoxAdapter(
             child: ItemCarousel(
-              title: 'Playlists',
+              title: S.of(context).playlists,
               items: ref
                   .watch(recentlyUpdatedPlaylistsProvider)
                   .whenData(
@@ -353,7 +352,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           SliverToBoxAdapter(
             child: ItemCarousel(
-              title: 'Frequently played',
+              title: S.of(context).frequentlyPlayed,
               items: ref.watch(frequentlyPlayedAlbumsProvider),
               device: _device,
               horizontalPadding: _horizontalPadding,

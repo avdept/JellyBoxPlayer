@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
@@ -103,7 +104,7 @@ class GeneratedPlaylistPage extends ConsumerWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: edgePadding),
               child: OfflineNotice(
-                message: "You're offline, so playlists need a connection.",
+                message: S.of(context).offlinePlaylistsNotice,
                 onRetry: () =>
                     ref.invalidate(todaysPlaylistSongsProvider(playlist.id)),
                 showDownloadsLink: true,
@@ -116,7 +117,8 @@ class GeneratedPlaylistPage extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  today.error?.toString() ?? 'This playlist has no songs yet.',
+                  today.error?.toString() ??
+                      S.of(context).playlistNoSongsYet,
                 ),
               ),
             ),

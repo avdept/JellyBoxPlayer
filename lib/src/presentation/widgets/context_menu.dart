@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -575,7 +576,7 @@ class ContextMenuButton extends StatelessWidget {
     if (!isDesktop) {
       return HoverIconButton(
         icon: Icon(icon),
-        tooltip: 'More',
+        tooltip: S.of(context).more,
         style: style,
         hoverColor: hoverColor,
         mutedHover: true,
@@ -587,7 +588,7 @@ class ContextMenuButton extends StatelessWidget {
       actions: actionsBuilder(context),
       builder: (context, controller, _) => HoverIconButton(
         icon: Icon(icon),
-        tooltip: 'More',
+        tooltip: S.of(context).more,
         style: style,
         hoverColor: hoverColor,
         mutedHover: true,
@@ -623,7 +624,7 @@ class _ContextMenuActions {
 
   bool _guardOffline() {
     if (!ref.read(isOfflineProvider)) return false;
-    _showSnackBar('Not available offline');
+    _showSnackBar(S.current.notAvailableOffline);
     return true;
   }
 
@@ -645,11 +646,11 @@ class _ContextMenuActions {
     entry: ContextMenuEntry.play,
     icon: const Icon(Icons.play_arrow),
     label: Text(switch (item.kind) {
-      ItemKind.album => 'Play album',
-      ItemKind.artist => 'Play artist',
-      ItemKind.playlist => 'Play playlist',
-      ItemKind.genre => 'Play genre',
-      _ => 'Play',
+      ItemKind.album => S.of(context).playAlbum,
+      ItemKind.artist => S.of(context).playArtist,
+      ItemKind.playlist => S.of(context).playPlaylist,
+      ItemKind.genre => S.of(context).playGenre,
+      _ => S.of(context).play,
     }),
     run: () async {
       final notifier = ref.read(setPlaybackProvider.notifier);
@@ -662,10 +663,10 @@ class _ContextMenuActions {
           _ => Future.value(SetPlaybackResult.busy),
         };
         if (result == SetPlaybackResult.empty) {
-          _showSnackBar('Nothing to play in "${item.name}"');
+          _showSnackBar(S.current.nothingToPlayIn(item.name));
         }
       } on Object {
-        _showSnackBar('Could not start playing "${item.name}"');
+        _showSnackBar(S.current.couldNotStartPlaying(item.name));
       }
     },
   );
@@ -673,7 +674,7 @@ class _ContextMenuActions {
   ContextMenuAction addToPlaylist() => ContextMenuAction(
     entry: ContextMenuEntry.addToPlaylist,
     icon: const Icon(CupertinoIcons.text_badge_plus),
-    label: const Text('Add to playlist'),
+    label: Text(S.of(context).addToPlaylist),
     run: () async {
       if (_guardOffline()) return;
       final playlist = await showPlaylistPicker(
@@ -685,21 +686,21 @@ class _ContextMenuActions {
           .read(mediaServerClientProvider)
           .addPlaylistItems(playlistId: playlist.id, itemIds: [item.id]);
       ref.read(downloadSyncProvider).syncPlaylist(playlist.id);
-      _showSnackBar('Successfully added to playlist');
+      _showSnackBar(S.current.successfullyAddedToPlaylist);
     },
   );
 
   ContextMenuAction playNext() => ContextMenuAction(
     entry: ContextMenuEntry.playNext,
     icon: const Icon(Icons.playlist_play),
-    label: const Text('Play next'),
+    label: Text(S.of(context).playNext),
     run: () => _enqueue(playNext: true),
   );
 
   ContextMenuAction addToQueue() => ContextMenuAction(
     entry: ContextMenuEntry.addToQueue,
     icon: const Icon(Icons.playlist_add),
-    label: const Text('Add to queue'),
+    label: Text(S.of(context).addToQueue),
     run: () => _enqueue(playNext: false),
   );
 
@@ -708,11 +709,11 @@ class _ContextMenuActions {
     try {
       songs = await _queueableSongs();
     } on Object {
-      _showSnackBar('Could not queue ${item.name}');
+      _showSnackBar(S.current.couldNotQueue(item.name));
       return;
     }
     if (songs.isEmpty) {
-      _showSnackBar('Nothing to queue in "${item.name}"');
+      _showSnackBar(S.current.nothingToQueueIn(item.name));
       return;
     }
     final notifier = ref.read(playbackProvider.notifier);
@@ -721,11 +722,11 @@ class _ContextMenuActions {
         ? await notifier.playNextAll(songs, set: set)
         : await notifier.addAllToQueue(songs, set: set);
     if (!queued) {
-      _showSnackBar('Could not queue ${item.name}');
+      _showSnackBar(S.current.couldNotQueue(item.name));
     } else if (playNext) {
-      _showSnackBar('Playing next');
+      _showSnackBar(S.current.playingNext);
     } else {
-      _showSnackBar('Added to queue');
+      _showSnackBar(S.current.addedToQueue);
     }
   }
 
@@ -743,22 +744,22 @@ class _ContextMenuActions {
     entry: ContextMenuEntry.instantMix,
     icon: const _SvgIcon(SvgPictures.compassIcon),
     label: Text(switch (item.kind) {
-      ItemKind.album => 'Start album mix',
-      ItemKind.artist => 'Start artist mix',
-      _ => 'Start song mix',
+      ItemKind.album => S.of(context).startAlbumMix,
+      ItemKind.artist => S.of(context).startArtistMix,
+      _ => S.of(context).startSongMix,
     }),
     run: () async {
       if (_guardOffline()) return;
       try {
         final mix = await ref.read(instantMixesProvider.notifier).create(item);
         if (mix == null) {
-          _showSnackBar('No mix available for "${item.name}"');
+          _showSnackBar(S.current.noMixAvailableFor(item.name));
           return;
         }
         _navigate(Routes.instantMix, 'mix', mix.item);
         await ref.read(setPlaybackProvider.notifier).playInstantMix(mix);
       } on Object {
-        _showSnackBar('Could not start an instant mix for "${item.name}"');
+        _showSnackBar(S.current.couldNotStartInstantMixFor(item.name));
       }
     },
   );
@@ -768,8 +769,8 @@ class _ContextMenuActions {
     icon: const _SvgIcon(SvgPictures.compassIcon),
     label: Text(
       ref.read(serverCapabilitiesProvider).soundSearch
-          ? 'Start genre radio'
-          : 'Start genre mix',
+          ? S.of(context).startGenreRadio
+          : S.of(context).startGenreMix,
     ),
     run: () async {
       if (_guardOffline()) return;
@@ -778,13 +779,13 @@ class _ContextMenuActions {
             .read(instantMixesProvider.notifier)
             .createGenreMix(item);
         if (mix == null) {
-          _showSnackBar('No songs found for "${item.name}"');
+          _showSnackBar(S.current.noSongsFoundFor(item.name));
           return;
         }
         _navigate(Routes.instantMix, 'mix', mix.item);
         await ref.read(setPlaybackProvider.notifier).playInstantMix(mix);
       } on Object {
-        _showSnackBar('Could not start a mix for "${item.name}"');
+        _showSnackBar(S.current.couldNotStartMixFor(item.name));
       }
     },
   );
@@ -800,7 +801,7 @@ class _ContextMenuActions {
       final messenger = ScaffoldMessenger.maybeOf(context);
       final downloading = ref.read(downloadProgressProvider(item.id)) != null;
       void removed() => messenger?.showSnackBar(
-        SnackBar(content: Text('Removed "${item.name}" from downloads')),
+        SnackBar(content: Text(S.current.removedFromDownloads(item.name))),
       );
       switch (item.kind) {
         case ItemKind.song:
@@ -840,7 +841,7 @@ class _ContextMenuActions {
       Icon(isDownloaded ? Icons.delete_outline : JPlayer.download);
 
   static Widget _downloadLabel(bool isDownloaded) =>
-      Text(isDownloaded ? 'Remove download' : 'Download');
+      Text(isDownloaded ? S.current.removeDownload : S.current.download);
 
   ContextMenuAction like(Future<void> Function(LibraryItem item) onLike) {
     final isFavorite = item.userData.isFavorite;
@@ -848,7 +849,9 @@ class _ContextMenuActions {
       entry: ContextMenuEntry.like,
       icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
       label: Text(
-        isFavorite ? 'Remove from favourites' : 'Add to favourites',
+        isFavorite
+            ? S.of(context).removeFromFavourites
+            : S.of(context).addToFavourites,
       ),
       run: () async {
         if (_guardOffline()) return;
@@ -860,7 +863,7 @@ class _ContextMenuActions {
   ContextMenuAction goToArtist() => ContextMenuAction(
     entry: ContextMenuEntry.goToArtist,
     icon: const Icon(CupertinoIcons.person),
-    label: const Text('Go to artist'),
+    label: Text(S.of(context).goToArtist),
     run: () async {
       final artistId = item.effectiveArtists.first.id;
       final target = await ref
@@ -873,7 +876,7 @@ class _ContextMenuActions {
   ContextMenuAction goToAlbum() => ContextMenuAction(
     entry: ContextMenuEntry.goToAlbum,
     icon: const Icon(Icons.album_outlined),
-    label: const Text('Go to album'),
+    label: Text(S.of(context).goToAlbum),
     run: () async {
       final target = await ref
           .read(mediaServerClientProvider)
@@ -890,7 +893,7 @@ class _ContextMenuActions {
     return ContextMenuAction(
       entry: ContextMenuEntry.metadataLinks,
       icon: const Icon(Icons.link),
-      label: const Text('View on'),
+      label: Text(S.of(context).viewOn),
       children: [
         for (final link in links)
           ContextMenuAction(
@@ -904,7 +907,7 @@ class _ContextMenuActions {
                 link.uri,
                 mode: LaunchMode.externalApplication,
               );
-              if (!opened) _showSnackBar('Could not open ${link.label}');
+              if (!opened) _showSnackBar(S.current.couldNotOpen(link.label));
             },
           ),
       ],

@@ -2,12 +2,15 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/android_auto/auto_media_id.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
+import 'package:jplayer/src/core/l10n/app_locale.dart';
 import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_toggles.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -66,6 +69,10 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
       return url == null ? null : ArtworkCache.instance.pathFor(url);
     });
     ref
+      ..listen(appLocaleProvider, (previous, next) async {
+        await reloadAppLocale(next);
+        content.localeChanged();
+      })
       ..listen(
         playbackProvider.select((s) => s.shuffleEnabled),
         fireImmediately: true,
@@ -134,22 +141,22 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     final results = await _content.search(query);
     return [
       ..._folderGroup(
-        'Artists',
+        S.current.artists,
         AutoMediaId.artist,
-        results.artists.map((e) => e.withSubtitle('Artist')),
+        results.artists.map((e) => e.withSubtitle(S.current.artist)),
       ),
       ..._folderGroup(
-        'Albums',
+        S.current.albums,
         AutoMediaId.album,
-        results.albums.map((e) => e.withSubtitle('Album')),
+        results.albums.map((e) => e.withSubtitle(S.current.album)),
       ),
       ..._folderGroup(
-        'Playlists',
+        S.current.playlists,
         AutoMediaId.playlist,
-        results.playlists.map((e) => e.withSubtitle('Playlist')),
+        results.playlists.map((e) => e.withSubtitle(S.current.playlist)),
       ),
       ..._songGroup(
-        'Songs',
+        S.current.songs,
         CarContent.searchContext,
         results.songs.map((e) => e.withSubtitle(_songLabel(e.item))),
       ),
@@ -260,7 +267,7 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
         androidIcon: shuffled
             ? 'drawable/ic_auto_shuffle_on'
             : 'drawable/ic_auto_shuffle',
-        label: shuffled ? 'Shuffle on' : 'Shuffle',
+        label: shuffled ? S.current.shuffleOn : S.current.shuffle,
         name: shuffleAction,
       ),
       MediaControl.custom(
@@ -270,9 +277,9 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
           LoopMode.one => 'drawable/ic_auto_repeat_one_on',
         },
         label: switch (loop) {
-          LoopMode.off => 'Repeat',
-          LoopMode.all => 'Repeat all',
-          LoopMode.one => 'Repeat one',
+          LoopMode.off => S.current.repeat,
+          LoopMode.all => S.current.repeatAll,
+          LoopMode.one => S.current.repeatOne,
         },
         name: repeatAction,
       ),
@@ -281,7 +288,7 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
           androidIcon: liked
               ? 'drawable/ic_auto_favourite'
               : 'drawable/ic_auto_favourite_border',
-          label: liked ? 'Liked' : 'Like',
+          label: liked ? S.current.liked : S.current.like,
           name: favouriteAction,
         ),
     ];
@@ -304,28 +311,32 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
 
   Future<List<MediaItem>> _root() async {
     if (!_content.isSignedIn) {
-      return const [
+      return [
         MediaItem(
           id: AutoMediaId.signIn,
-          title: 'Sign in on your phone',
-          artist: 'Open JellyBox to connect to your server',
+          title: S.current.signInOnYourPhone,
+          artist: S.current.openJellyboxToConnect,
         ),
       ];
     }
     return [
-      _folder(AutoMediaId.home, 'Home', children: _gridChildren),
-      _folder(AutoMediaId.library, 'Library', children: _listChildren),
-      _folder(AutoMediaId.downloads, 'Downloads', children: _gridChildren),
+      _folder(AutoMediaId.home, S.current.home, children: _gridChildren),
+      _folder(AutoMediaId.library, S.current.library, children: _listChildren),
+      _folder(
+        AutoMediaId.downloads,
+        S.current.downloads,
+        children: _gridChildren,
+      ),
     ];
   }
 
   bool get _offline => _ref.read(isOfflineProvider);
 
-  static final _offlineNotice = [
+  static List<MediaItem> get _offlineNotice => [
     MediaItem(
       id: AutoMediaId.offline,
-      title: "JellyBox can't connect to your server",
-      artist: 'Downloads are still available',
+      title: S.current.jellyboxCantConnect,
+      artist: S.current.downloadsStillAvailable,
       artUri: Uri.parse(
         'android.resource://com.prodigytech.jellybox/drawable/ic_auto_offline',
       ),
@@ -356,11 +367,11 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
       _content.playlists(limit: homeRowLimit),
     ]);
     return [
-      ..._folderGroup('Recently added', AutoMediaId.album, recent),
-      ..._folderGroup('Made for you', AutoMediaId.mix, _content.mixes()),
-      ..._folderGroup('Playlists', AutoMediaId.playlist, playlists),
+      ..._folderGroup(S.current.recentlyAdded, AutoMediaId.album, recent),
+      ..._folderGroup(S.current.madeForYou, AutoMediaId.mix, _content.mixes()),
+      ..._folderGroup(S.current.playlists, AutoMediaId.playlist, playlists),
       ..._folderGroup(
-        'Favourites',
+        S.current.favourites,
         AutoMediaId.album,
         _content.favouriteAlbums(limit: homeRowLimit),
       ),
@@ -371,10 +382,14 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     if (_offline)
       ..._offlineNotice
     else ...[
-      _folder(AutoMediaId.albums, 'Albums', children: _gridChildren),
-      _folder(AutoMediaId.artists, 'Artists', children: _listChildren),
-      _folder(AutoMediaId.playlists, 'Playlists', children: _listChildren),
-      _folder(AutoMediaId.songs, 'Songs', children: _songChildren),
+      _folder(AutoMediaId.albums, S.current.albums, children: _gridChildren),
+      _folder(AutoMediaId.artists, S.current.artists, children: _listChildren),
+      _folder(
+        AutoMediaId.playlists,
+        S.current.playlists,
+        children: _listChildren,
+      ),
+      _folder(AutoMediaId.songs, S.current.songs, children: _songChildren),
     ],
   ];
 
@@ -382,9 +397,13 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
     final CarDownloads(:albums, :playlists) = await _content.downloads();
     final grouped = albums.isNotEmpty && playlists.isNotEmpty;
     return [
-      ..._folderGroup(grouped ? 'Albums' : null, AutoMediaId.download, albums),
       ..._folderGroup(
-        grouped ? 'Playlists' : null,
+        grouped ? S.current.albums : null,
+        AutoMediaId.download,
+        albums,
+      ),
+      ..._folderGroup(
+        grouped ? S.current.playlists : null,
         AutoMediaId.download,
         playlists,
       ),
@@ -474,14 +493,14 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
 
   MediaItem _playAll(AutoMediaId set, {String? name, Uri? artUri}) => MediaItem(
     id: set.all.encode(),
-    title: 'Play all',
+    title: S.current.playAll,
     artist: name,
     artUri: autoArtUri(artUri),
   );
 
   MediaItem _loadMore(AutoMediaId parent) => MediaItem(
     id: parent.withStart(parent.start + CarContent.pageSize).encode(),
-    title: 'Load more…',
+    title: S.current.loadMore,
     playable: false,
   );
 
@@ -551,7 +570,7 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
 
   static String _songLabel(LibraryItem song) {
     final artist = song.artistLabel;
-    return artist.isEmpty ? 'Song' : 'Song • $artist';
+    return artist.isEmpty ? S.current.song : S.current.songWithArtist(artist);
   }
 
   static LibraryItem? _currentSong(PlaybackState state) {

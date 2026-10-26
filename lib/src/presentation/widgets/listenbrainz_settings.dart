@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/providers/listenbrainz_account_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/listenbrainz_connect_form.dart';
@@ -35,7 +36,7 @@ class ListenBrainzSettings extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(left: 12),
             child: Text(
-              'Connected as ${account.userName}',
+              S.of(context).connectedAs(account.userName ?? ''),
               style: TextStyle(color: muted),
             ),
           ),
@@ -45,7 +46,7 @@ class ListenBrainzSettings extends ConsumerWidget {
               ref.read(listenBrainzAccountProvider.notifier).disconnect(),
             ),
             style: _buttonStyle,
-            child: const Text('Disconnect'),
+            child: Text(S.of(context).disconnect),
           ),
         ],
       ),
@@ -73,7 +74,7 @@ class ListenBrainzSettings extends ConsumerWidget {
                 : () => _openConnectForm(context),
             style: _buttonStyle,
             icon: const Icon(Icons.link),
-            label: const Text('Connect ListenBrainz'),
+            label: Text(S.of(context).connectListenBrainz),
           ),
         ],
       ),

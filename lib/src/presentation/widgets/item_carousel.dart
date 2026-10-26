@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
@@ -53,12 +54,12 @@ class ItemCarousel extends StatelessWidget {
     final content = items.when(
       data: (list) => switch (list) {
         [] when trailing == null => null,
-        [] => _message(theme, 'Nothing here yet.'),
+        [] => _message(theme, S.of(context).nothingHereYet),
         _ => _list(list),
       },
       error: (error, stackTrace) => _message(
         theme,
-        'Could not load this section.',
+        S.of(context).couldNotLoadSection,
         showRetry: true,
       ),
       loading: _loading,
@@ -188,9 +189,11 @@ class ItemCarousel extends StatelessWidget {
               ),
             ),
             if (showRetry && onRetry != null)
-              TextButton(
-                onPressed: onRetry,
-                child: const Text('Retry'),
+              Builder(
+                builder: (context) => TextButton(
+                  onPressed: onRetry,
+                  child: Text(S.of(context).retry),
+                ),
               ),
           ],
         ),

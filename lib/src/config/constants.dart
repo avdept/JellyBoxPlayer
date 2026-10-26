@@ -3,7 +3,6 @@ const int kTabletBreakpoint = 600;
 
 const String updatifyProjectId = '0ebf56de-26b5-4107-bc87-1aa89b328924';
 
-const String changelogTitle = "What's new";
 
 /// True for the direct-download (Developer ID / notarized DMG) build, set via
 /// `--dart-define=JELLYBOX_DIRECT_DOWNLOAD=true` in the macOS DMG workflow.

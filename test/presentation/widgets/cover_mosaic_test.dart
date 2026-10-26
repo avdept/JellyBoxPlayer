@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
 
 final _pixel = Uint8List.fromList([
@@ -82,6 +83,8 @@ void main() {
 
   Future<void> pumpMosaic(WidgetTester tester, int count) => tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: const [S.delegate],
+      supportedLocales: S.delegate.supportedLocales,
       home: Center(
         child: SizedBox.square(
           dimension: 200,

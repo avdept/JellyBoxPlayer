@@ -124,6 +124,8 @@ class CarContent {
     if (!_changes.isClosed) _changes.add(null);
   }
 
+  void localeChanged() => _notifyChanged();
+
   Future<List<CarEntry>> recentAlbums({
     int limit = recentAlbumsLimit,
     bool shuffle = true,

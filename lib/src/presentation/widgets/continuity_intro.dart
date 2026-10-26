@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,36 +18,13 @@ class ContinuityIntro extends StatelessWidget {
     builder: (context) => const ContinuityIntro(),
   );
 
-  static const _whatItDoes =
-      'Thanks for trying the continuity feature. This feature allows you to '
-      'transfer playback between your connected devices - phones, desktops, '
-      'etc.';
-  static const _remoteControl =
-      'This feature also allows you to remotely control your other connected '
-      'devices - playback, position, queue, volume.';
-  static const _privacy =
-      'NO data is shared with 3rd parties. Your content stays on your '
-      'devices, and this tool just orchestrates which device plays now and '
-      'sends Item IDs between devices.';
-  static const _experimental =
-      'This feature is currently experimental, so there might be bugs, '
-      'issues, delays.';
-  static const _notYet =
-      "What's not working currently - you can't wake up a sleeping phone. If "
-      'your phone plays music - you can control it even if the phone is in '
-      "locked mode, but if you paused playback or the app wasn't running at "
-      "all - currently there's no way to turn it on and start playback. This "
-      'will be added in upcoming releases.';
-  static const _report =
-      'Please report any issues in Discord or via GitHub issues.';
-
-  static const List<String> _paragraphs = [
-    _whatItDoes,
-    _remoteControl,
-    _privacy,
-    _experimental,
-    _notYet,
-    _report,
+  static List<String> _paragraphs(BuildContext context) => [
+    S.of(context).continuityWhatItDoes,
+    S.of(context).continuityRemoteControl,
+    S.of(context).continuityPrivacy,
+    S.of(context).continuityExperimental,
+    S.of(context).continuityNotYet,
+    S.of(context).continuityReport,
   ];
 
   @override
@@ -69,7 +47,7 @@ class ContinuityIntro extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final paragraph in _paragraphs)
+                  for (final paragraph in _paragraphs(context))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
@@ -90,7 +68,7 @@ class ContinuityIntro extends StatelessWidget {
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ModalFormActions.buttonStyle(context, primary: true),
-                child: const Text('Got it'),
+                child: Text(S.of(context).gotIt),
               ),
             ],
           ),

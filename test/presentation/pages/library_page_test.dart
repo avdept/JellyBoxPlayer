@@ -2,6 +2,7 @@ import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -66,6 +67,8 @@ void main() {
     container: createProviderContainer(overrides: overrides()),
     child: MaterialApp.router(
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [S.delegate],
+      supportedLocales: S.delegate.supportedLocales,
       theme: Themes.red,
       routerConfig: GoRouter(
         routes: [

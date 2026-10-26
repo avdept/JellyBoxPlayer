@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -35,15 +36,17 @@ class _MainPageState extends ConsumerState<MainPage> {
   late DeviceType _device;
 
   Set<(IconData, String)> get _menuItems => {
-    (Icons.home_outlined, 'Home'),
-    (JPlayer.play_circle_outlined, 'Browse'),
-    (JPlayer.settings, 'Settings'),
-    (JPlayer.download, 'Downloads'),
+    (Icons.home_outlined, S.of(context).home),
+    (JPlayer.play_circle_outlined, S.of(context).browse),
+    (JPlayer.settings, S.of(context).settings),
+    (JPlayer.download, S.of(context).downloads),
   };
 
   Widget _collapseButton(bool collapsed) {
     return RailTooltip(
-      message: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      message: collapsed
+          ? S.of(context).expandSidebar
+          : S.of(context).collapseSidebar,
       child: IconButton(
         onPressed: () => ref
             .read(appSettingsProvider.notifier)
@@ -58,14 +61,14 @@ class _MainPageState extends ConsumerState<MainPage> {
     final button = RailItemButton(
       onPressed: () => context.pushNamed(Routes.support.name),
       icon: const Icon(Icons.help_outline),
-      label: const Text('Support'),
+      label: Text(S.of(context).support),
       foregroundColor: _theme.colorScheme.onPrimary,
       fontSize: 16,
       horizontalPadding: 30,
     );
 
     return RailTooltip(
-      message: 'Support',
+      message: S.of(context).support,
       enabled: collapsed,
       child: button,
     );
@@ -75,14 +78,14 @@ class _MainPageState extends ConsumerState<MainPage> {
     final button = RailItemButton(
       onPressed: ref.read(authProvider.notifier).logout,
       icon: const Icon(JPlayer.log_out),
-      label: const Text('Log out'),
+      label: Text(S.of(context).logOut),
       foregroundColor: _theme.colorScheme.onPrimary,
       fontSize: 16,
       horizontalPadding: 30,
     );
 
     return RailTooltip(
-      message: 'Log out',
+      message: S.of(context).logOut,
       enabled: collapsed,
       child: button,
     );
@@ -121,7 +124,7 @@ class _MainPageState extends ConsumerState<MainPage> {
           ? UpdatifyPopupType.modal
           : UpdatifyPopupType.bottomSheet,
       backgroundColor: Themes.changelogSurface,
-      title: changelogTitle,
+      title: S.of(context).whatsNew,
       borderRadius: BorderRadius.circular(8),
       width: isDesktop ? MediaQuery.sizeOf(context).width / 2 : null,
     );

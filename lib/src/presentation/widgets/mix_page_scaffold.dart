@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -304,7 +305,7 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
             padding: EdgeInsets.only(right: 6),
             child: Icon(JPlayer.music, size: 14),
           ),
-          Text('$count songs'),
+          Text(S.of(context).songsCount(count)),
         ],
       ),
     );

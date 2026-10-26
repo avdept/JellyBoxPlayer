@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
@@ -141,7 +142,7 @@ class LibrarySelectorButton extends ConsumerWidget {
       return [
         AppDropdownEntry(
           value: _Server(account.serverId),
-          label: 'Sign in again',
+          label: S.current.signInAgain,
           leadingBuilder: (color) => Icon(Icons.login, size: 20, color: color),
         ),
       ];
@@ -166,7 +167,7 @@ class LibrarySelectorButton extends ConsumerWidget {
       return [
         AppDropdownEntry(
           value: _Server(account.serverId),
-          label: 'Open',
+          label: S.current.open,
           leadingBuilder: (color) =>
               Icon(Icons.dns_outlined, size: 20, color: color),
         ),
@@ -211,7 +212,7 @@ class LibrarySelectorButton extends ConsumerWidget {
         Navigator.of(menuContext).pop();
         unawaited(confirmRemoveAccount(context, ref, account));
       },
-      tooltip: 'Log out of ${account.displayName}',
+      tooltip: S.of(context).logOutOfServer(account.displayName),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(width: 28, height: 28),
@@ -274,7 +275,7 @@ class LibrarySelectorButton extends ConsumerWidget {
         ],
       AppDropdownEntry(
         value: const _AddServer(),
-        label: 'Add server',
+        label: S.of(context).addServer,
         leadingBuilder: (color) => Icon(Icons.add, size: 20, color: color),
       ),
     ];

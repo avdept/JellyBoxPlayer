@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart' show PaintingBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
 import 'package:jplayer/src/data/backend/media_server_backends.dart';
@@ -72,15 +73,14 @@ class AuthNotifier extends AsyncNotifier<bool?> {
 
   static const serverUnreachableError =
       'Server is not accessible. Check the server URL and your connection.';
-  static const invalidCredentialsError = 'Incorrect login or password';
-  static const untrustedCertificateError =
-      "The server's security certificate is not trusted.";
-  static const quickConnectUnavailableError =
-      'Quick Connect is not available on this server.';
-  static const quickConnectExpiredError =
-      'The Quick Connect code expired. Try again.';
+  static String get invalidCredentialsError => S.current.invalidCredentials;
+  static String get untrustedCertificateError =>
+      S.current.certificateNotTrusted;
+  static String get quickConnectUnavailableError =>
+      S.current.quickConnectUnavailable;
+  static String get quickConnectExpiredError => S.current.quickConnectExpired;
   static const quickConnectCancelled = 'quick-connect-cancelled';
-  static const alreadyAddedError = 'This server is already added.';
+  static String get alreadyAddedError => S.current.serverAlreadyAdded;
 
   static const _sessionValidationTimeout = Duration(seconds: 6);
   static const _quickConnectPollInterval = Duration(seconds: 3);

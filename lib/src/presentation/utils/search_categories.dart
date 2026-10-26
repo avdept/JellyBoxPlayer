@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -15,14 +16,14 @@ const searchCategories = [
 
 int searchSongsPreviewLimit({required bool isMobile}) => isMobile ? 8 : 20;
 
-const soundSearchLabel = 'Sounds like';
+String get soundSearchLabel => S.current.soundsLike;
 
 String searchCategoryLabel(ItemList category) => switch (category) {
-  ItemList.albums => 'Albums',
-  ItemList.artists => 'Artists',
-  ItemList.genres => 'Genres',
-  ItemList.playlists => 'Playlists',
-  ItemList.songs => 'Songs',
+  ItemList.albums => S.current.albums,
+  ItemList.artists => S.current.artists,
+  ItemList.genres => S.current.genres,
+  ItemList.playlists => S.current.playlists,
+  ItemList.songs => S.current.songs,
 };
 
 void openSearchResult(

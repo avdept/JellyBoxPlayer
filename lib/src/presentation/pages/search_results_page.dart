@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -38,7 +39,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
   Widget _error(WidgetRef ref, Object error) => SliverToBoxAdapter(
     child: ref.watch(isOfflineProvider)
         ? OfflineNotice(
-            message: "You're offline, so search needs a connection.",
+            message: S.of(context).offlineSearchNotice,
             onRetry: () => ref.invalidate(searchItemsProvider(widget.category)),
             showDownloadsLink: true,
           )
@@ -62,7 +63,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
               children: [
                 CupertinoNavigationBarBackButton(
                   color: _theme.colorScheme.onPrimary,
-                  previousPageTitle: 'Browse',
+                  previousPageTitle: S.of(context).browse,
                   onPressed: () => context.pop(),
                 ),
                 SizedBox(width: _device.isMobile ? 12 : 20),

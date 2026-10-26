@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
@@ -27,7 +28,7 @@ class LyricsView extends ConsumerWidget {
     final song = ref.watch(barSongProvider);
 
     if (song == null) {
-      return const _Message('No lyrics for this track');
+      return _Message(S.of(context).noLyricsForThisTrack);
     }
 
     return _LyricsBody(
@@ -132,7 +133,7 @@ class _LyricsPanel extends ConsumerWidget {
               },
               color: Colors.white,
               iconSize: 24,
-              tooltip: 'Studio mode',
+              tooltip: S.of(context).studioMode,
               icon: const Icon(Icons.fullscreen),
             ),
             HoverIconButton(
@@ -140,7 +141,7 @@ class _LyricsPanel extends ConsumerWidget {
                   ref.read(lyricsVisibleProvider.notifier).state = false,
               color: Colors.white,
               iconSize: 24,
-              tooltip: 'Close lyrics',
+              tooltip: S.of(context).closeLyrics,
               icon: const Icon(Icons.close),
             ),
           ],
@@ -276,10 +277,12 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Center(child: TextLinesShimmer(count: 7)),
       ),
-      error: (_, _) => const _Message("Couldn't load lyrics"),
+      error: (_, _) => _Message(S.of(context).couldNotLoadLyrics),
       data: (lyrics) {
         final lines = lyrics?.lines ?? const <LyricLine>[];
-        if (lines.isEmpty) return const _Message('No lyrics for this track');
+        if (lines.isEmpty) {
+          return _Message(S.of(context).noLyricsForThisTrack);
+        }
 
         if (_lineKeys.length != lines.length) {
           _lineKeys = List.generate(lines.length, (_) => GlobalKey());

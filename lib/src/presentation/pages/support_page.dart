@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -23,8 +24,8 @@ class SupportPage extends StatelessWidget {
     final version = build.isEmpty
         ? appInfo.version
         : '${appInfo.version} ($build)';
-    final subject = Uri.encodeComponent('JellyBox support');
-    final body = Uri.encodeComponent('\n\nApp version: $version');
+    final subject = Uri.encodeComponent(S.current.supportEmailSubject);
+    final body = Uri.encodeComponent('\n\n${S.current.appVersionLabel(version)}');
     return Uri.parse('mailto:$_email?subject=$subject&body=$body');
   }
 
@@ -49,7 +50,7 @@ class SupportPage extends StatelessWidget {
               const BackButton(),
               const SizedBox(width: 4),
               Text(
-                'Support',
+                S.of(context).support,
                 style: TextStyle(
                   fontSize: device.isMobile ? 22 : 26,
                   fontWeight: FontWeight.w600,
@@ -76,7 +77,7 @@ class SupportPage extends StatelessWidget {
                 children: [
                   const SizedBox(height: 8),
                   Text(
-                    'Questions, problems or ideas? Get in touch. Please try to report as much details as possible - that will help me to identify issue and help you with resolving it.',
+                    S.of(context).supportIntro,
                     style: TextStyle(
                       fontSize: 14,
                       height: 1.3,
@@ -89,31 +90,29 @@ class SupportPage extends StatelessWidget {
                   _tile(
                     theme: theme,
                     icon: Icons.mail_outline,
-                    title: 'Email me',
+                    title: S.of(context).emailMe,
                     subtitle: _email,
                     onTap: () => _open(_emailUri()),
                   ),
                   _tile(
                     theme: theme,
                     icon: Icons.discord,
-                    title: 'Join Discord',
-                    subtitle: 'Chat with the me (Alex, the developer) and other users',
+                    title: S.of(context).joinDiscord,
+                    subtitle: S.of(context).joinDiscordSubtitle,
                     onTap: () => _open(_discordUri),
                   ),
                   _tile(
                     theme: theme,
                     icon: Icons.bug_report_outlined,
-                    title: 'Create a GitHub issue',
-                    subtitle: 'Report a bug or request a feature',
+                    title: S.of(context).createGithubIssue,
+                    subtitle: S.of(context).createGithubIssueSubtitle,
                     onTap: () => _open(_issuesUri),
                   ),
                   _tile(
                     theme: theme,
                     icon: Icons.coffee_outlined,
-                    title: 'Donate',
-                    subtitle:
-                        'This will help me to buy new devices to develop '
-                        'for and test on',
+                    title: S.of(context).donate,
+                    subtitle: S.of(context).donateSubtitle,
                     onTap: () => _open(_donateUri),
                   ),
                 ],

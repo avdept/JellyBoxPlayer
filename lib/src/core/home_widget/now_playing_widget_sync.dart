@@ -5,9 +5,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_screen_widgets/home_screen_widgets.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/home_widget/widget_artwork.dart';
+import 'package:jplayer/src/core/l10n/app_locale.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -180,6 +183,10 @@ class NowPlayingWidgetSync {
         _schedule();
       },
     );
+    ref.listen(appLocaleProvider, (previous, next) async {
+      await reloadAppLocale(next);
+      _schedule();
+    });
     (loopModes ?? ref.read(playerProvider).loopModeStream).listen((mode) {
       _repeat = mode;
       _schedule();
@@ -267,11 +274,15 @@ class NowPlayingWidgetSync {
       for (final album in _recent)
         {'id': album.id, 'title': album.title, 'cover': album.cover},
     ];
+    final strings = {
+      'idleSubtitle': S.current.nothingPlaying,
+      'signedOutSubtitle': S.current.signInToStartListening,
+    };
     final Map<String, Object?> json;
     if (_signedOut) {
-      json = const {'signedOut': true};
+      json = {'signedOut': true, 'strings': strings};
     } else if (item == null) {
-      json = {if (recent.isNotEmpty) 'recent': recent};
+      json = {if (recent.isNotEmpty) 'recent': recent, 'strings': strings};
     } else {
       if (item.id != _coverId) await _refreshCover(directory, item);
       final cover = _cover;
@@ -286,12 +297,12 @@ class NowPlayingWidgetSync {
         'background': cover?.background.toARGB32(),
         'foreground': cover?.foreground.toARGB32(),
         if (recent.isNotEmpty) 'recent': recent,
+        'strings': strings,
       };
     }
 
     final encoded = jsonEncode(json);
     if (encoded == _published) return;
-    if (json.isEmpty && _published == null) return;
     await _replace(
       File(p.join(directory.path, snapshotFile)),
       utf8.encode(encoded),

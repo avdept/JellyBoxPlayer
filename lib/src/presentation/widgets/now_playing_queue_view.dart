@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -89,7 +90,7 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
   void _showOfflineNotice() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('This action needs a connection')),
+      SnackBar(content: Text(S.of(context).thisActionNeedsAConnection)),
     );
   }
 
@@ -227,7 +228,7 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
     ContextMenuAction(
       entry: ContextMenuEntry.removeFromQueue,
       icon: const Icon(Icons.remove_circle_outline),
-      label: const Text('Remove from queue'),
+      label: Text(S.of(context).removeFromQueue),
       run: widget.onRemove,
     ),
     ...contextMenuActions(

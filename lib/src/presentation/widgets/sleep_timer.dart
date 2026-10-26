@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/providers/sleep_timer_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -24,7 +25,7 @@ class SleepTimerButton extends ConsumerWidget {
       selectedColor: Colors.redAccent,
       iconSize: iconSize,
       style: style,
-      tooltip: 'Sleep timer',
+      tooltip: S.of(context).sleepTimer,
       icon: const Icon(Icons.schedule),
       selectedIcon: const Icon(Icons.watch_later),
       isSelected: isActive,
@@ -117,7 +118,7 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const ModalFormHeader('Stop in'),
+        ModalFormHeader(S.of(context).sleepTimerStopIn),
         const SizedBox(height: 8),
         RadioGroup<SleepTimerMode>(
           groupValue: _mode,
@@ -129,7 +130,7 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
                   const Radio(value: SleepTimerMode.tracks),
                   SizedBox(width: 64, child: _tracksField()),
                   const SizedBox(width: 10),
-                  const Text('tracks'),
+                  Text(S.of(context).sleepTimerTracks),
                 ],
               ),
               const SizedBox(height: 8),
@@ -142,21 +143,24 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
                       min: 1,
                       max: 60,
                       divisions: 59,
-                      label: '$_minutes min',
+                      label: S.of(context).minutesShort(_minutes),
                       onChanged: (value) => setState(() {
                         _mode = SleepTimerMode.minutes;
                         _minutes = value.round();
                       }),
                     ),
                   ),
-                  SizedBox(width: 56, child: Text('$_minutes min')),
+                  SizedBox(
+                    width: 56,
+                    child: Text(S.of(context).minutesShort(_minutes)),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   const Radio(value: SleepTimerMode.time),
-                  const Text('at'),
+                  Text(S.of(context).sleepTimerAt),
                   const SizedBox(width: 10),
                   _timeButton(),
                 ],
@@ -173,14 +177,14 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
               style: ModalFormActions.buttonStyle(context),
               child: Text(
                 ref.watch(sleepTimerProvider) != null
-                    ? 'Stop timer'
-                    : 'Cancel',
+                    ? S.of(context).stopTimer
+                    : S.of(context).cancel,
               ),
             ),
             TextButton(
               onPressed: _canSave ? _save : null,
               style: ModalFormActions.buttonStyle(context, primary: true),
-              child: const Text('Save'),
+              child: Text(S.of(context).save),
             ),
           ],
         ),

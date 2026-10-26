@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/letter_ruler.dart';
 
 void main() {
@@ -8,6 +9,8 @@ void main() {
     required ValueChanged<String> onLetterSelected,
     bool reversed = false,
   }) => MaterialApp(
+    localizationsDelegates: const [S.delegate],
+    supportedLocales: S.delegate.supportedLocales,
     home: Scaffold(
       body: Align(
         alignment: Alignment.centerRight,

@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -343,7 +344,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                           onPressed: _close,
                           color: Colors.white,
                           iconSize: 24,
-                          tooltip: 'Exit studio mode',
+                          tooltip: S.of(context).exitStudioMode,
                           icon: const Icon(Icons.fullscreen_exit),
                         ),
                       ],
@@ -470,9 +471,9 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
         disabledColor: Colors.white.withValues(alpha: 0.3),
         iconSize: 24,
         tooltip: switch ((hasLyrics, showLyrics)) {
-          (_, true) => 'Hide lyrics',
-          (true, false) => 'Lyrics',
-          (false, false) => 'No lyrics for this track',
+          (_, true) => S.of(context).hideLyrics,
+          (true, false) => S.of(context).lyrics,
+          (false, false) => S.of(context).noLyricsForThisTrack,
         },
         icon: const Icon(Icons.lyrics_outlined),
         selectedIcon: const Icon(Icons.lyrics),

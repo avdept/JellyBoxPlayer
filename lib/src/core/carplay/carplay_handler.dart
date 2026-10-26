@@ -3,7 +3,10 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
+import 'package:jplayer/src/core/l10n/app_locale.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/data/providers/search_provider.dart';
 import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -110,6 +113,11 @@ class CarPlayHandler {
           }
         },
       );
+    ref.listen(appLocaleProvider, (previous, next) async {
+      await reloadAppLocale(next);
+      _notifyLocalized();
+    });
+    _notifyLocalized();
     ref.read(playerProvider).loopModeStream.listen((mode) {
       final value = switch (mode) {
         LoopMode.off => 'off',
@@ -126,6 +134,40 @@ class CarPlayHandler {
   static void _notifyContentChanged() {
     _channel.invokeMethod('contentChanged').ignore();
   }
+
+  static void _notifyLocalized() {
+    _channel.invokeMethod('localize', _strings()).ignore();
+  }
+
+  static Map<String, String> _strings() => {
+    'home': S.current.home,
+    'downloads': S.current.downloads,
+    'search': S.current.search,
+    'albums': S.current.albums,
+    'artists': S.current.artists,
+    'playlists': S.current.playlists,
+    'songs': S.current.songs,
+    'browse': S.current.browse,
+    'sortName': S.current.name,
+    'sortAlbumArtist': S.current.albumArtist,
+    'sortDateCreated': S.current.dateAdded,
+    'sortRandom': S.current.random,
+    'cancel': S.current.cancel,
+    'sortBy': S.current.sortBy,
+    'noResults': S.current.noResults,
+    'noResultsFormat': S.current.noResultsFor('%@'),
+    'playingNext': S.current.playingNext,
+    'queueIsEmpty': S.current.queueIsEmpty,
+    'noDownloads': S.current.noDownloads,
+    'loading': S.current.loading,
+    'nothingHereYet': S.current.nothingHereYet,
+    'playAll': S.current.playAll,
+    'loadMore': S.current.loadMore,
+    'madeForYou': S.current.madeForYou,
+    'recentlyAdded': S.current.recentlyAdded,
+    'recentlyPlayed': S.current.recentlyPlayed,
+    'openToStart': S.current.openOnIphoneToStart,
+  };
 
   static void _notifyModes() {
     _channel.invokeMethod('modesChanged', {

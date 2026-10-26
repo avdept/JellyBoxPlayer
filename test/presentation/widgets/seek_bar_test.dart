@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 
 void main() {
@@ -13,6 +14,8 @@ void main() {
     duration = const Duration(minutes: 3);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [S.delegate],
+        supportedLocales: S.delegate.supportedLocales,
         home: Scaffold(
           body: Center(
             child: SizedBox(

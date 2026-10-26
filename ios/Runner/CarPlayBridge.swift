@@ -10,6 +10,7 @@ final class CarPlayBridge {
   var onPlaybackStateChanged: (() -> Void)?
   var onModesChanged: (() -> Void)?
   var onSearchChanged: ((String) -> Void)?
+  var onStringsChanged: (() -> Void)?
   private(set) var playingSetId: String?
   private(set) var playingSongId: String?
   private(set) var isPlaying = false
@@ -17,9 +18,21 @@ final class CarPlayBridge {
   private(set) var repeatMode = "off"
   private(set) var likedCurrent = false
 
-  private init() {}
+  private static let stringsKey = "carplay.localizedStrings"
+
+  private var localizedStrings: [String: String]
+
+  private init() {
+    localizedStrings =
+      UserDefaults.standard.dictionary(forKey: Self.stringsKey)
+        as? [String: String] ?? [:]
+  }
 
   var isReady: Bool { channel != nil }
+
+  func string(_ key: String, _ fallback: String) -> String {
+    localizedStrings[key] ?? fallback
+  }
 
   func setup(messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
@@ -44,6 +57,13 @@ final class CarPlayBridge {
         self?.playingSongId = args?["songId"] as? String
         self?.isPlaying = args?["playing"] as? Bool ?? false
         self?.onPlaybackStateChanged?()
+        result(nil)
+      case "localize":
+        if let strings = call.arguments as? [String: String] {
+          self?.localizedStrings = strings
+          UserDefaults.standard.set(strings, forKey: Self.stringsKey)
+          self?.onStringsChanged?()
+        }
         result(nil)
       case "modesChanged":
         let args = call.arguments as? [String: Any]

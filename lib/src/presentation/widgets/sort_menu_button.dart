@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
 class SortMenuButton<T> extends StatelessWidget {
@@ -59,7 +60,7 @@ class SortMenuButton<T> extends StatelessWidget {
   Widget build(BuildContext context) => HoverIconButton(
     icon: const Icon(Icons.sort),
     color: Theme.of(context).colorScheme.onPrimary,
-    tooltip: 'Sort',
+    tooltip: S.of(context).sort,
     onPressed: () => _open(context).ignore(),
   );
 }

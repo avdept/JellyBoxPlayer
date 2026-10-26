@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
@@ -135,7 +136,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CupertinoNavigationBar(
-                previousPageTitle: 'Playlists',
+                previousPageTitle: S.of(context).playlists,
                 backgroundColor: Colors.transparent,
                 padding: EdgeInsetsDirectional.symmetric(
                   horizontal: _device.isMobile ? 16 : 30,
@@ -217,9 +218,9 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                         sliver: SliverToBoxAdapter(child: _controls()),
                       ),
                       if (_songsLoaded && songs.isEmpty)
-                        const SliverFillRemaining(
+                        SliverFillRemaining(
                           hasScrollBody: false,
-                          child: Center(child: Text("There's no songs yet.")),
+                          child: Center(child: Text(S.of(context).noSongsYet)),
                         ),
                       SliverList.builder(
                         itemBuilder: (context, index) => ValueListenableBuilder(
@@ -245,7 +246,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                 ContextMenuAction(
                                   entry: ContextMenuEntry.removeFromPlaylist,
                                   icon: const Icon(Icons.playlist_remove),
-                                  label: const Text('Remove from playlist'),
+                                  label: Text(S.of(context).removeFromPlaylist),
                                   run: () => _onRemoveFromPlaylist(song),
                                 ),
                                 ...contextMenuActions(
@@ -289,7 +290,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     final entryId = song.playlistItemId;
     if (entryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Uff! Something went wrong...')),
+        SnackBar(content: Text(S.of(context).somethingWentWrong)),
       );
       return;
     }
@@ -300,7 +301,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     unawaited(_getSongs());
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Successfully removed item from playlist')),
+      SnackBar(content: Text(S.of(context).removedFromPlaylist)),
     );
   }
 
@@ -440,7 +441,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
       if (result == SetPlaybackResult.empty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Nothing to play in "${widget.playlist.name}"'),
+            content: Text(S.of(context).nothingToPlayIn(widget.playlist.name)),
           ),
         );
       }
@@ -448,7 +449,9 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not start playing "${widget.playlist.name}"'),
+            content: Text(
+              S.of(context).couldNotStartPlaying(widget.playlist.name),
+            ),
           ),
         );
       }
@@ -498,7 +501,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
             padding: EdgeInsets.only(right: 6),
             child: Icon(JPlayer.music, size: 14),
           ),
-          Text('$soundsCount songs'),
+          Text(S.of(context).songsCount(soundsCount)),
           if (year != null) ...[
             divider,
             Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
 import 'package:jplayer/src/presentation/utils/server_logo.dart';
@@ -21,8 +22,8 @@ class ServerUrlField extends StatefulWidget {
     super.key,
   });
 
-  static const label = 'Server URL';
-  static const discoveringPlaceholder = 'Auto discovering...';
+  static String get label => S.current.serverUrl;
+  static String get discoveringPlaceholder => S.current.autoDiscovering;
   static const ValueKey<String> surfaceKey = ValueKey(
     'serverUrlFieldSurface',
   );
@@ -72,9 +73,9 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           ServerUrlField.label,
-          style: TextStyle(fontFamily: FontFamily.inter, fontSize: 12),
+          style: const TextStyle(fontFamily: FontFamily.inter, fontSize: 12),
         ),
         const SizedBox(height: 4),
         _selectedServer(server),
@@ -115,7 +116,7 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
             IconButton(
               onPressed: widget.onEdit,
               visualDensity: VisualDensity.compact,
-              tooltip: 'Enter a server address',
+              tooltip: S.of(context).enterAServerAddress,
               icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
             ),
           ],

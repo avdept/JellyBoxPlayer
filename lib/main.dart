@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_udid/flutter_udid.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/app.dart';
 import 'package:jplayer/src/core/android_auto/android_auto_handler.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
@@ -17,6 +18,7 @@ import 'package:jplayer/src/core/cast/cast_runtime.dart';
 import 'package:jplayer/src/core/diagnostics/device_log.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
+import 'package:jplayer/src/core/l10n/app_locale.dart';
 import 'package:jplayer/src/core/home_widget/widget_commands.dart';
 import 'package:jplayer/src/core/listenbrainz/listenbrainz_scrobbler.dart';
 import 'package:jplayer/src/core/scrobbling/play_history_scrobbler.dart';
@@ -28,6 +30,7 @@ import 'package:jplayer/src/core/smtc/smtc_handler.dart';
 import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
@@ -118,6 +121,7 @@ Future<void> main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
+  await S.load(_initialLocale(prefs));
   await CertificateTrust.instance.load(prefs);
   HttpOverrides.global = TrustedCertificateHttpOverrides(
     CertificateTrust.instance,
@@ -217,6 +221,16 @@ Future<void> main() async {
   );
 
   _silenceUnreachableImageErrors();
+}
+
+Locale _initialLocale(SharedPreferences prefs) {
+  final language = AppSettingsNotifier.valueIn(prefs, AppSetting.appLanguage);
+  Locale? override;
+  if (language.isNotEmpty && language != 'system') {
+    final parts = language.split('_');
+    override = parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+  }
+  return resolveAppLocale(override);
 }
 
 void _silenceUnreachableImageErrors() {

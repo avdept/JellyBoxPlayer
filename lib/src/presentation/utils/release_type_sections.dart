@@ -1,3 +1,4 @@
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
 class ReleaseTypeSection {
@@ -54,7 +55,12 @@ class _Group {
   final List<LibraryItem> albums = [];
 
   String get label {
-    final head = '${_display(primary)}s';
+    final head = switch (primary) {
+      'ep' => S.current.eps,
+      'single' => S.current.singles,
+      'broadcast' => S.current.broadcasts,
+      _ => S.current.albums,
+    };
     if (secondaries.isEmpty) return head;
     return '$head – ${secondaries.map(_display).join(' – ')}';
   }

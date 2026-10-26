@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -39,7 +40,7 @@ class SingerView extends StatelessWidget {
         maxLines: 1,
       ),
       subtitle: Text(
-        'Artist',
+        S.of(context).artist,
         style: TextStyle(
           fontSize: isTablet ? 16 : 12,
           height: 1.2,

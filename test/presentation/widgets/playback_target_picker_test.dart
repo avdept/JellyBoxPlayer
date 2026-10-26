@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/upnp_device.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
@@ -209,6 +210,8 @@ void main() {
             cloudProvider.overrideWith((ref) => _FakeCloudNotifier(cloud)),
         ],
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           home: Scaffold(body: PlaybackTargetMenu(onDone: onDone ?? () {})),
         ),
       ),
@@ -570,6 +573,8 @@ void main() {
             ),
           ],
           child: MaterialApp(
+            localizationsDelegates: const [S.delegate],
+            supportedLocales: S.delegate.supportedLocales,
             home: Scaffold(
               body: PlaybackTargetMenu(onDone: () => closed = true),
             ),
@@ -615,6 +620,8 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
         ),
       ),
@@ -652,6 +659,8 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
         ),
       ),
@@ -687,6 +696,8 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           home: Scaffold(
             body: PlaybackTargetMenu(onDone: () => closed = true),
           ),
@@ -741,6 +752,8 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           home: Scaffold(
             body: PlaybackTargetMenu(onDone: () => closed = true),
           ),
@@ -839,6 +852,8 @@ void main() {
             ),
           ],
           child: MaterialApp(
+            localizationsDelegates: const [S.delegate],
+            supportedLocales: S.delegate.supportedLocales,
             home: Scaffold(body: PlaybackTargetMenu(onDone: () {})),
           ),
         ),
@@ -1130,6 +1145,8 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          localizationsDelegates: const [S.delegate],
+          supportedLocales: S.delegate.supportedLocales,
           theme: theme,
           home: Scaffold(body: body),
         ),
@@ -1247,6 +1264,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            localizationsDelegates: const [S.delegate],
+            supportedLocales: S.delegate.supportedLocales,
             home: Scaffold(body: Center(child: PlaybackTargetButton())),
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -67,18 +68,18 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   late DeviceType _device;
 
   Map<ItemList, String> get _viewLabels => {
-    ItemList.albums: 'Albums',
-    ItemList.artists: 'Artists',
-    ItemList.genres: 'Genres',
-    ItemList.playlists: 'Playlists',
-    ItemList.songs: 'Songs',
+    ItemList.albums: S.of(context).albums,
+    ItemList.artists: S.of(context).artists,
+    ItemList.genres: S.of(context).genres,
+    ItemList.playlists: S.of(context).playlists,
+    ItemList.songs: S.of(context).songs,
   };
 
   Map<EntityFilter, String> get _filtersLabels => {
-    EntityFilter.dateCreated: 'Date Added',
-    EntityFilter.albumArtist: 'Album Artist',
-    EntityFilter.sortName: 'Name',
-    EntityFilter.random: 'Random',
+    EntityFilter.dateCreated: S.of(context).dateAdded,
+    EntityFilter.albumArtist: S.of(context).albumArtist,
+    EntityFilter.sortName: S.of(context).name,
+    EntityFilter.random: S.of(context).random,
   };
 
   Map<EntityFilter, bool> get _defaultSorting => {
@@ -124,13 +125,15 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       };
       if (result == SetPlaybackResult.empty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nothing to play in "${item.name}"')),
+          SnackBar(content: Text(S.of(context).nothingToPlayIn(item.name))),
         );
       }
     } on Object catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start playing "${item.name}"')),
+          SnackBar(
+            content: Text(S.of(context).couldNotStartPlaying(item.name)),
+          ),
         );
       }
     }
@@ -185,27 +188,21 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       context,
       builder: (context) => AlertDialog.adaptive(
         title: Text.rich(
-          TextSpan(
-            text: 'Delete ',
-            children: [
-              TextSpan(
-                text: '"${playlist.name}"',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const TextSpan(text: '?'),
-            ],
+          boldNameSpan(
+            S.of(context).deleteNameQuestion(playlist.name),
+            playlist.name,
           ),
           textAlign: TextAlign.center,
         ),
         actions: [
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: Text(S.of(context).no),
           ),
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(true),
             isDestructiveAction: true,
-            child: const Text('Yes'),
+            child: Text(S.of(context).yes),
           ),
         ],
       ),
@@ -554,7 +551,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                 ContextMenuAction(
                   entry: ContextMenuEntry.deletePlaylist,
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Delete playlist'),
+                  label: Text(S.of(context).deletePlaylist),
                   run: () => _onDeletePlaylist(item),
                 ),
               ...contextMenuActions(
@@ -616,9 +613,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           error: (error, stackTrace) => SliverToBoxAdapter(
             child: ref.watch(isOfflineProvider)
                 ? OfflineNotice(
-                    message:
-                        "You're offline. Your library will be back "
-                        'once the server is reachable.',
+                    message: S.of(context).offlineLibraryNotice,
                     onRetry: () => ref.invalidate(itemListProvider(value)),
                     showDownloadsLink: true,
                   )
@@ -723,7 +718,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           backgroundColor: _chipColor(isSelected: isSelected),
           onPressed: () => _currentView.value = ItemList.artists,
           deleteIcon: const Icon(Icons.expand_more, size: 16),
-          deleteButtonTooltipMessage: 'Choose which artists to browse',
+          deleteButtonTooltipMessage: S.of(context).chooseWhichArtistsToBrowse,
           onDeleted: _artistScope.toggle,
         ),
       );
@@ -782,8 +777,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       );
 
   String _artistScopeLabel(ArtistScope scope) => switch (scope) {
-    ArtistScope.albumArtists => 'Album Artists',
-    ArtistScope.allArtists => 'Artists',
+    ArtistScope.albumArtists => S.of(context).albumArtists,
+    ArtistScope.allArtists => S.of(context).artists,
   };
 
   String _filterLabel(EntityFilter filter) {
@@ -898,8 +893,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   };
 
   String _layoutLabel(BrowseLayout layout) => switch (layout) {
-    BrowseLayout.cards => 'Cards',
-    BrowseLayout.rows => 'Rows',
+    BrowseLayout.cards => S.of(context).cards,
+    BrowseLayout.rows => S.of(context).rows,
   };
 
   Widget _navigationBarContent() => LayoutBuilder(
@@ -1004,7 +999,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     onPressed: _openSearch,
     iconSize: _headerIconSize ?? 24,
     color: Theme.of(context).colorScheme.onPrimary,
-    tooltip: 'Search',
+    tooltip: S.of(context).search,
     icon: const Icon(JPlayer.search),
   );
 
@@ -1045,7 +1040,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         padding: EdgeInsets.zero,
         icon: const Icon(JPlayer.close),
       ),
-      hintText: 'Search',
+      hintText: S.of(context).search,
     ),
   );
 
@@ -1062,7 +1057,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           onPressed: _onCreateNewPlaylist,
           iconSize: _headerIconSize ?? 24,
           color: Theme.of(context).colorScheme.onPrimary,
-          tooltip: 'New playlist',
+          tooltip: S.of(context).newPlaylist,
           icon: const Icon(Icons.add),
         ),
         _ => const SizedBox.shrink(),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/listenbrainz/listenbrainz_client.dart';
 import 'package:jplayer/src/domain/providers/listenbrainz_account_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -71,10 +72,10 @@ class _ListenBrainzConnectFormState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('Connect ListenBrainz'),
+          ModalFormHeader(S.of(context).connectListenBrainz),
           const SizedBox(height: 8),
           Text(
-            'Paste the user token from your ListenBrainz settings.',
+            S.of(context).pasteListenBrainzToken,
             style: TextStyle(
               fontSize: 14,
               color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
@@ -83,7 +84,7 @@ class _ListenBrainzConnectFormState
           const SizedBox(height: 16),
           LabeledTextField(
             controller: _apiUrlController,
-            label: 'API URL',
+            label: S.of(context).apiUrl,
             placeholder: ListenBrainzClient.defaultApiUrl,
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.next,
@@ -91,8 +92,8 @@ class _ListenBrainzConnectFormState
           const SizedBox(height: 12),
           LabeledTextField(
             controller: _tokenController,
-            label: 'User token',
-            placeholder: 'User token',
+            label: S.of(context).userToken,
+            placeholder: S.of(context).userToken,
             obscureText: true,
             autofocus: true,
             textInputAction: TextInputAction.done,
@@ -124,7 +125,7 @@ class _ListenBrainzConnectFormState
                       ),
                     ),
                     style: ModalFormActions.buttonStyle(context),
-                    child: const Text('Get your token from listenbrainz.org'),
+                    child: Text(S.of(context).getTokenFromListenBrainz),
                   ),
                 ),
               );
@@ -132,7 +133,7 @@ class _ListenBrainzConnectFormState
           ),
           const SizedBox(height: 16),
           ModalFormActions(
-            submitLabel: 'Connect',
+            submitLabel: S.of(context).connect,
             onSubmit: () => unawaited(_submit()),
             busy: _submitting,
           ),

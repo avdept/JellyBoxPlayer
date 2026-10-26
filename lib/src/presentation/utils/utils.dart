@@ -1,3 +1,4 @@
+export 'bold_name_span.dart';
 export 'device_type.dart';
 export 'disc_sections.dart';
 export 'id_list_diff.dart';

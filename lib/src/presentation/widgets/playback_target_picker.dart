@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/cast/cast_runtime.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
@@ -156,7 +157,7 @@ class _PlaybackTargetButtonState extends ConsumerState<PlaybackTargetButton> {
     VoidCallback open,
   ) => Semantics(
     button: true,
-    label: 'Playing on $name. Choose a device',
+    label: S.of(context).playingOnChooseDevice(name),
     child: InkWell(
       onTap: open,
       borderRadius: BorderRadius.circular(8),
@@ -196,7 +197,9 @@ class _PlaybackTargetButtonState extends ConsumerState<PlaybackTargetButton> {
     clipBehavior: Clip.none,
     children: [
       HoverIconButton(
-        tooltip: casting ? 'Playing on ${target.name}' : 'Play on a device',
+        tooltip: casting
+            ? S.of(context).playingOn(target.name)
+            : S.of(context).playOnADevice,
         style: box == null
             ? null
             : ButtonStyle(
@@ -356,17 +359,21 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
   String _deviceSubtitle(ConductorDevice device, CloudState conductor) {
     if (conductor.handingOffTo == device.id) {
-      return device.isOnline ? 'Connecting…' : 'Waking up…';
+      return device.isOnline
+          ? S.of(context).connecting
+          : S.of(context).wakingUp;
     }
     if (_failedHandoff == device.id) {
-      return conductor.error ?? 'Could not take over';
+      return conductor.error ?? S.of(context).couldNotTakeOver;
     }
     if (device.isRenderer && _sessionFromAnotherServer) {
-      return 'Playing on a different server';
+      return S.of(context).playingOnADifferentServer;
     }
-    if (_onAnotherServer(device)) return 'Connected to a different server';
-    if (device.isRenderer) return 'Playing';
-    return device.isOnline ? 'Your device' : 'Asleep';
+    if (_onAnotherServer(device)) {
+      return S.of(context).connectedToADifferentServer;
+    }
+    if (device.isRenderer) return S.of(context).playing;
+    return device.isOnline ? S.of(context).yourDevice : S.of(context).asleep;
   }
 
   bool _onAnotherServer(ConductorDevice device) =>
@@ -411,7 +418,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
     await diagnostics.report(upnpDeviceReportMessage, data: payload);
     messenger?.showSnackBar(
-      const SnackBar(content: Text('Device list sent. Thank you!')),
+      SnackBar(content: Text(S.current.deviceListSentThankYou)),
     );
   }
 
@@ -445,7 +452,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             padding: const EdgeInsets.only(left: 16, top: 8, right: 8),
             child: Row(
               children: [
-                Text('Play on', style: theme.textTheme.titleSmall),
+                Text(S.of(context).playOn, style: theme.textTheme.titleSmall),
                 const Spacer(),
                 if (scanning)
                   const Padding(
@@ -457,13 +464,13 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                   )
                 else
                   IconButton(
-                    tooltip: 'Scan again',
+                    tooltip: S.of(context).scanAgain,
                     iconSize: 18,
                     icon: const Icon(Icons.refresh),
                     onPressed: _rescan,
                   ),
                 IconButton(
-                  tooltip: 'Share this device list with the developer',
+                  tooltip: S.of(context).shareDeviceListWithDeveloper,
                   iconSize: 18,
                   icon: const Icon(Icons.upload),
                   onPressed: discovery.scanning || discovery.renderers.isEmpty
@@ -476,15 +483,15 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
           if (route == null)
             _TargetTile(
               icon: _thisDeviceIcon,
-              title: 'This device',
+              title: S.of(context).thisDevice,
               selected: onThisDevice,
               onTap: _selectLocal,
             ),
           if (ref.watch(cloudAvailableProvider) && conductor.account == null)
             _TargetTile(
               icon: Icons.cloud_off_outlined,
-              title: 'Continuity not available',
-              subtitle: 'Tap to connect',
+              title: S.of(context).continuityNotAvailable,
+              subtitle: S.of(context).tapToConnect,
               selected: false,
               onTap: _connectCloud,
             ),
@@ -536,8 +543,8 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               child: Text(
                 castSupported
-                    ? 'No Cast or DLNA devices found on this network.'
-                    : 'No DLNA devices found on this network.',
+                    ? S.of(context).noCastOrDlnaDevicesFound
+                    : S.of(context).noDlnaDevicesFound,
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -547,7 +554,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 icon: route == null
                     ? Icons.airplay
                     : outputRouteIcon(route.kind),
-                title: 'AirPlay & Bluetooth',
+                title: S.of(context).airplayAndBluetooth,
                 subtitle: route?.name,
                 selected: route != null,
                 onTap: () => _showSystemOutputs(row),
@@ -865,25 +872,17 @@ class _ShareDevicesDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AlertDialog.adaptive(
-    title: const Text('Share what JellyBox found?'),
-    content: Text(
-      count == 1
-          ? 'Send the details of the DLNA device on your network? It stays '
-                'private and is only used to build proper support for '
-                'different manufacturers.'
-          : 'Send the details of the $count DLNA devices on your network? It '
-                'stays private and is only used to build proper support for '
-                'different manufacturers.',
-    ),
+    title: Text(S.of(context).shareWhatJellyboxFound),
+    content: Text(S.of(context).shareDevicesDialogBody(count)),
     actions: [
       AdaptiveDialogAction(
         onPressed: () => Navigator.pop(context, false),
-        child: const Text('Not now'),
+        child: Text(S.of(context).notNow),
       ),
       AdaptiveDialogAction(
         onPressed: () => Navigator.pop(context, true),
         isDefaultAction: true,
-        child: const Text('Share'),
+        child: Text(S.of(context).share),
       ),
     ],
   );

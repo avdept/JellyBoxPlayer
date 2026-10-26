@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/presentation/utils/server_logo.dart';
@@ -12,8 +13,8 @@ class ServerApiSelector extends StatelessWidget {
     super.key,
   });
 
-  static const label = 'This server speaks more than one API';
-  static const experimentalLabel = 'experimental';
+  static String get label => S.current.serverSpeaksMultipleApis;
+  static String get experimentalLabel => S.current.experimental;
 
   final List<ServerIdentity> choices;
   final String? selectedUrl;
@@ -24,9 +25,9 @@ class ServerApiSelector extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         label,
-        style: TextStyle(
+        style: const TextStyle(
           fontFamily: FontFamily.inter,
           fontSize: 12,
           color: Colors.white70,
@@ -77,7 +78,7 @@ class ServerApiSelector extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${choice.serverType.label} API',
+                  S.of(context).apiWithName(choice.serverType.label),
                   style: TextStyle(
                     fontFamily: FontFamily.inter,
                     fontSize: 13,

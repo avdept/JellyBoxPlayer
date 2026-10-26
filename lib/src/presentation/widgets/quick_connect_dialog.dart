@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 
@@ -53,8 +54,7 @@ class _QuickConnectDialogState extends ConsumerState<QuickConnectDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'On a device where you are already signed in, open Quick Connect '
-            'in your user settings and enter this code.',
+            S.of(context).quickConnectInstructions,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium,
           ),
@@ -82,7 +82,7 @@ class _QuickConnectDialogState extends ConsumerState<QuickConnectDialog> {
           ),
           const SizedBox(height: 4),
           Text(
-            _copied ? 'Copied' : 'Tap the code to copy it',
+            _copied ? S.of(context).copied : S.of(context).tapCodeToCopy,
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 20),
@@ -97,7 +97,7 @@ class _QuickConnectDialogState extends ConsumerState<QuickConnectDialog> {
               const SizedBox(width: 10),
               Flexible(
                 child: Text(
-                  'Waiting for approval',
+                  S.of(context).waitingForApproval,
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -109,7 +109,7 @@ class _QuickConnectDialogState extends ConsumerState<QuickConnectDialog> {
         AdaptiveDialogAction(
           onPressed: _cancel,
           isDefaultAction: true,
-          child: const Text('Cancel'),
+          child: Text(S.of(context).cancel),
         ),
       ],
     );

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -14,7 +15,7 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const favouritesLimit = 100;
 
-const likedSongsName = 'Liked songs';
+String get likedSongsName => S.current.likedSongs;
 
 LibraryItem likedSongsPlaylistFor(String userId) => LibraryItem(
   id: EphemeralPlaylistId.likedSongs(userId),

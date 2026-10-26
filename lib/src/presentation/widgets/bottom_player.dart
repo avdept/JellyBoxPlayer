@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -203,7 +204,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       onPressed: () => _queueShown.value = !isShown,
       color: _theme.colorScheme.onPrimary,
       iconSize: _isMobile ? 26 : 24,
-      tooltip: isShown ? 'Hide queue' : 'Queue',
+      tooltip: isShown ? S.of(context).hideQueue : S.of(context).queue,
       icon: const Icon(Icons.queue_music),
       selectedIcon: const Icon(Icons.queue_music),
       isSelected: isShown,
@@ -644,7 +645,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     final saved = await ref.read(barControlsProvider).rate(song, rating);
     if (!saved && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This action needs a connection')),
+        SnackBar(content: Text(S.of(context).thisActionNeedsAConnection)),
       );
     }
   }
@@ -653,7 +654,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     final saved = await ref.read(barControlsProvider).toggleFavourite(song);
     if (!saved && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This action needs a connection')),
+        SnackBar(content: Text(S.of(context).thisActionNeedsAConnection)),
       );
     }
   }
@@ -761,7 +762,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             padding: WidgetStatePropertyAll(EdgeInsets.zero),
           ),
           iconSize: _barIconSize,
-          tooltip: isShown ? 'Hide queue' : 'Queue',
+          tooltip: isShown ? S.of(context).hideQueue : S.of(context).queue,
           icon: const Icon(Icons.queue_music),
           selectedIcon: const Icon(Icons.queue_music),
           isSelected: isShown,
@@ -778,7 +779,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     },
     color: _theme.colorScheme.onPrimary,
     iconSize: _barIconSize,
-    tooltip: 'Studio mode',
+    tooltip: S.of(context).studioModeTooltip,
     icon: const Icon(Icons.fullscreen),
   );
 
@@ -849,7 +850,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         color: _theme.colorScheme.onPrimary,
         disabledColor: _theme.colorScheme.onPrimary.withOpacity(0.3),
         iconSize: size,
-        tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
+        tooltip: hasLyrics
+            ? S.of(context).lyrics
+            : S.of(context).noLyricsForThisTrack,
         icon: const Icon(Icons.lyrics_outlined),
         selectedIcon: const Icon(Icons.lyrics),
         isSelected: isShown,

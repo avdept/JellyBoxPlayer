@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
@@ -78,7 +79,7 @@ class SidebarOverlay extends StatelessWidget {
                       HoverIconButton(
                         onPressed: onClose,
                         color: theme.colorScheme.onPrimary,
-                        tooltip: 'Close',
+                        tooltip: S.of(context).close,
                         icon: const Icon(Icons.close),
                       ),
                     ],

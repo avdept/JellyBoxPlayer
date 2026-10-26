@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -75,7 +76,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
               const BackButton(),
               const SizedBox(width: 4),
               Text(
-                'Favourites',
+                S.of(context).favourites,
                 style: TextStyle(
                   fontSize: _device.isMobile ? 22 : 26,
                   fontWeight: FontWeight.w600,
@@ -95,9 +96,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
         if (isOffline)
           SliverToBoxAdapter(
             child: OfflineNotice(
-              message:
-                  "You're offline. Your favourites will be back "
-                  'once the server is reachable.',
+              message: S.of(context).offlineFavouritesNotice,
               onRetry: _refresh,
               showDownloadsLink: true,
             ),
@@ -119,7 +118,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  "You haven't favourited anything yet.",
+                  S.of(context).noFavouritesYet,
                   style: TextStyle(
                     fontSize: _device.isMobile ? 14 : 16,
                     color: _theme.colorScheme.onPrimary.withValues(alpha: 0.6),
@@ -133,7 +132,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
           ..._cardsSection(ItemList.artists, artists),
           ..._cardsSection(ItemList.playlists, playlists),
           if (songs.isNotEmpty) ...[
-            _sectionHeader('Songs'),
+            _sectionHeader(S.of(context).songs),
             SongListSliver(
               songs: songs,
               onItemUpdated: (_) => ref.invalidate(favouriteSongsProvider),
@@ -147,7 +146,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
                       branchAwareName(context, Routes.favouriteSongs),
                     ),
                     child: Text(
-                      'Show all ${songsPage.totalRecordCount} songs',
+                      S.of(context).showAllSongs(songsPage.totalRecordCount),
                     ),
                   ),
                 ),

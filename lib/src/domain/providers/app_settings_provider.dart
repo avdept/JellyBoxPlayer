@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Locale;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -46,6 +47,7 @@ enum AppSetting {
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
+  appLanguage('app_language', defaultValue: 'system'),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   telemetryOptOut('telemetry_opt_out');
@@ -184,6 +186,16 @@ final defaultStartPageProvider = Provider<StartPage>(
       StartPage.home,
 );
 
+final appLocaleProvider = Provider<Locale?>((ref) {
+  final value = _asString(
+    ref.watch(appSettingsProvider)[AppSetting.appLanguage],
+    AppSetting.appLanguage,
+  );
+  if (value.isEmpty || value == 'system') return null;
+  final parts = value.split('_');
+  return parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+});
+
 bool _asBool(Object? value, AppSetting setting) {
   final resolved = value ?? setting.defaultValue;
   return resolved is bool && resolved;
@@ -230,6 +242,9 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
 
   static bool isEnabledIn(SharedPreferences? prefs, AppSetting setting) =>
       _asBool(_read(prefs)[setting], setting);
+
+  static String valueIn(SharedPreferences? prefs, AppSetting setting) =>
+      _asString(_read(prefs)[setting], setting);
 
   bool isEnabled(AppSetting setting) => _asBool(state[setting], setting);
 

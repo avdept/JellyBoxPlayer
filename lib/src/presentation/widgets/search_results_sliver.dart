@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -28,9 +29,9 @@ class SearchResultsSliver extends ConsumerWidget {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
 
     if (ref.watch(isOfflineProvider)) {
-      return const SliverToBoxAdapter(
+      return SliverToBoxAdapter(
         child: OfflineNotice(
-          message: "You're offline, so search needs a connection.",
+          message: S.of(context).offlineSearchNotice,
           showDownloadsLink: true,
         ),
       );
@@ -63,7 +64,9 @@ class SearchResultsSliver extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Center(
             child: Text(
-              hasError ? 'Search failed. Try again.' : 'Nothing found',
+              hasError
+                  ? S.of(context).searchFailedTryAgain
+                  : S.of(context).nothingFound,
               style: TextStyle(
                 fontSize: device.isMobile ? 14 : 16,
                 color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.6),
@@ -99,7 +102,7 @@ class SearchResultsSliver extends ConsumerWidget {
 
     final query = ref.watch(searchProvider)?.trim() ?? '';
     final seed = soundMixSeed(query);
-    final mixItem = seed.copyWith(name: '${seed.name} Mix');
+    final mixItem = seed.copyWith(name: S.of(context).nameMix(seed.name));
     final imageService = ref.read(imageServiceProvider);
     final cardWidth = AlbumCardMetrics.width(device);
 
@@ -125,7 +128,7 @@ class SearchResultsSliver extends ConsumerWidget {
               album: mixItem,
               showArtist: false,
               showDownloadBadge: false,
-              subtitle: '${songs.length} songs',
+              subtitle: S.of(context).songsCount(songs.length),
               coverOverride: CoverMosaic(
                 images: [
                   for (final song in songs.take(4))

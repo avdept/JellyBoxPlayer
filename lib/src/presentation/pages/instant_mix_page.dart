@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
@@ -55,7 +56,7 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
               isGenreRadioSeed(mix.seed) ||
               isGenreShuffleSeed(mix.seed)
           ? null
-          : 'Based on ${mix.seed.name}',
+          : S.of(context).basedOn(mix.seed.name),
       songs: songs,
       coverImages: [
         for (final song in songs.take(4)) imageService.itemImage(song),
@@ -77,7 +78,7 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
           .ignore(),
       sort: PlaylistSortButton(
         order: order,
-        defaultLabel: 'Mix order',
+        defaultLabel: S.of(context).mixOrder,
         onChanged: (next) =>
             ref.read(playlistSongOrderProvider(mixId).notifier).state = next,
       ),
@@ -89,9 +90,9 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
       ],
       slivers: [
         if (songs.isEmpty && !isLoading)
-          const SliverFillRemaining(
+          SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(child: Text('This mix is no longer available')),
+            child: Center(child: Text(S.of(context).mixNoLongerAvailable)),
           )
         else
           SongListSliver(

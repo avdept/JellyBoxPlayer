@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 
 Widget dismissOnEscape(BuildContext context, Widget child) => Focus(
@@ -78,7 +79,7 @@ class ModalFormHeader extends StatelessWidget {
         ),
         IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Close',
+          tooltip: S.of(context).close,
           visualDensity: VisualDensity.compact,
           style: ButtonStyle(
             overlayColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -124,7 +125,7 @@ class ModalFormActions extends StatelessWidget {
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
         style: buttonStyle(context),
-        child: const Text('Cancel'),
+        child: Text(S.of(context).cancel),
       ),
       TextButton(
         onPressed: busy ? null : onSubmit,

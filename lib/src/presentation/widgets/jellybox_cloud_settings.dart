@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
@@ -43,7 +44,9 @@ class JellyboxCloudSettings extends ConsumerWidget {
           style: _buttonStyle,
           icon: Icon(account == null ? Icons.cloud_outlined : Icons.cloud_done),
           label: Text(
-            account == null ? 'Connect' : 'Connected as ${account.email}',
+            account == null
+                ? S.of(context).connect
+                : S.of(context).connectedAs(account.email),
           ),
         ),
         const _ServerConnectionRow(),
@@ -70,10 +73,19 @@ class _ServerConnectionRow extends ConsumerWidget {
     ).colorScheme.onPrimary.withValues(alpha: 0.5);
 
     final (icon, label) = switch (connection) {
-      ServerConnection.direct => (Icons.lan_outlined, 'Direct'),
-      ServerConnection.remote => (Icons.public_outlined, 'Remote address'),
-      ServerConnection.tunnel => (Icons.vpn_lock_outlined, 'Tunnel'),
-      ServerConnection.offline => (Icons.cloud_off_outlined, 'Offline'),
+      ServerConnection.direct => (Icons.lan_outlined, S.of(context).direct),
+      ServerConnection.remote => (
+        Icons.public_outlined,
+        S.of(context).remoteAddress,
+      ),
+      ServerConnection.tunnel => (
+        Icons.vpn_lock_outlined,
+        S.of(context).tunnel,
+      ),
+      ServerConnection.offline => (
+        Icons.cloud_off_outlined,
+        S.of(context).offline,
+      ),
     };
 
     return Padding(
@@ -83,24 +95,22 @@ class _ServerConnectionRow extends ConsumerWidget {
         children: [
           Row(
             spacing: 8,
-            children: [Icon(icon, size: 18), Text('Connection: $label')],
+            children: [
+              Icon(icon, size: 18),
+              Text(S.of(context).connectionStatus(label)),
+            ],
           ),
           Padding(
             padding: const EdgeInsets.only(left: 26, top: 2),
             child: Text(
               switch ((hasTunnel, tunnelUp)) {
                 (false, _) => switch (addresses?.relayDenied) {
-                  'plan_full' =>
-                    "This server's Jellybox Cloud plan has no free seat for "
-                        'your user. Ask the owner to make room.',
-                  'no_password' =>
-                    'Remote access needs a password on your Jellyfin user.',
-                  _ => 'No remote access address for this server yet.',
+                  'plan_full' => S.of(context).relayPlanFull,
+                  'no_password' => S.of(context).relayNoPassword,
+                  _ => S.of(context).relayNotSetUp,
                 },
-                (true, false) =>
-                  'Remote access is set up, but the tunnel '
-                      'is not answering.',
-                _ => 'Remote access is set up and the tunnel is ready.',
+                (true, false) => S.of(context).tunnelNotAnswering,
+                _ => S.of(context).tunnelReady,
               },
               style: TextStyle(fontSize: 12, height: 1.3, color: muted),
             ),
@@ -116,7 +126,7 @@ class _ServerConnectionRow extends ConsumerWidget {
                   ),
                 ),
                 child: Text(
-                  'Set up the JellyBox Relay plugin',
+                  S.of(context).setUpRelayPlugin,
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.3,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
@@ -40,7 +41,7 @@ class UpdatifyBell extends ConsumerWidget {
                 ? UpdatifyPopupType.modal
                 : UpdatifyPopupType.bottomSheet,
             backgroundColor: Themes.changelogSurface,
-            title: changelogTitle,
+            title: S.of(context).whatsNew,
             borderRadius: BorderRadius.circular(8),
             width: isDesktop
                 ? MediaQuery.sizeOf(context).width / 2

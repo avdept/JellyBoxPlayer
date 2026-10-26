@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class CastFailure {
@@ -13,13 +14,9 @@ class CastFailure {
   final bool takenOver;
 
   String get message {
-    if (takenOver) {
-      return '$deviceName is now playing something else — switched back to '
-          'this device.';
-    }
-    return 'Unable to cast to $deviceName — switched back to this device.'
-        '${reported ? ' An error report was submitted and Alex will look into '
-                  'whether this device can be supported.' : ''}';
+    if (takenOver) return S.current.castTakenOver(deviceName);
+    final failed = S.current.castFailed(deviceName);
+    return reported ? '$failed ${S.current.castFailureReported}' : failed;
   }
 }
 

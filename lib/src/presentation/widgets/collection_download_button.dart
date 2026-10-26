@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
 import 'package:jplayer/src/domain/providers/download_manager_provider.dart';
+import 'package:jplayer/src/presentation/utils/bold_name_span.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
@@ -47,8 +49,6 @@ class _CollectionDownloadButtonState
 
   bool get _isAlbum => item.kind == ItemKind.album;
 
-  String get _noun => _isAlbum ? 'album' : 'playlist';
-
   @override
   Widget build(BuildContext context) {
     final badge = ref.watch(downloadBadgeProvider((item.kind, item.id)));
@@ -60,7 +60,7 @@ class _CollectionDownloadButtonState
       return HoverIconButton(
         key: widget.testKeys?.delete,
         onPressed: _preparing ? null : _cancel,
-        tooltip: 'Stop download',
+        tooltip: S.of(context).stopDownload,
         icon: SizedBox.square(
           dimension: 24,
           child: Stack(
@@ -82,7 +82,9 @@ class _CollectionDownloadButtonState
     return HoverIconButton(
       key: badge == null ? widget.testKeys?.download : widget.testKeys?.delete,
       onPressed: badge == null ? _download : _remove,
-      tooltip: badge == null ? 'Download' : 'Remove download',
+      tooltip: badge == null
+          ? S.of(context).download
+          : S.of(context).removeDownload,
       icon: Icon(badge == null ? JPlayer.download : JPlayer.trash_2),
     );
   }
@@ -95,14 +97,14 @@ class _CollectionDownloadButtonState
     } on Object {
       if (mounted) {
         setState(() => _preparing = false);
-        _notify('Not available offline');
+        _notify(S.current.notAvailableOffline);
       }
       return;
     }
     if (list.isEmpty) {
       if (mounted) {
         setState(() => _preparing = false);
-        _notify('Nothing to download');
+        _notify(S.current.nothingToDownload);
       }
       return;
     }
@@ -122,34 +124,34 @@ class _CollectionDownloadButtonState
       builder: (context) => AlertDialog.adaptive(
         key: widget.testKeys?.confirmationDialog,
         title: Text.rich(
-          TextSpan(
-            text: 'Delete downloaded ',
-            children: [
-              TextSpan(
-                text: '"${item.name}"',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const TextSpan(text: '?'),
-            ],
+          boldNameSpan(
+            S.of(context).deleteDownloadedNameQuestion(item.name),
+            item.name,
           ),
           textAlign: TextAlign.center,
         ),
         actions: [
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: Text(S.of(context).no),
           ),
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(true),
             isDestructiveAction: true,
-            child: const Text('Yes'),
+            child: Text(S.of(context).yes),
           ),
         ],
       ),
     );
     if (!(shouldDelete ?? false) || !mounted) return;
     await _delete();
-    if (mounted) _notify('Successfully deleted $_noun');
+    if (mounted) {
+      _notify(
+        _isAlbum
+            ? S.current.successfullyDeletedAlbum
+            : S.current.successfullyDeletedPlaylist,
+      );
+    }
   }
 
   Future<void> _delete() {

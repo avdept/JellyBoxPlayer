@@ -1,3 +1,751 @@
 {
-  "@@locale": "en"
+  "@@locale": "en",
+  "about": "About",
+  "addRemoteAddress": "Add remote address",
+  "addServer": "Add server",
+  "addToFavourites": "Add to favourites",
+  "addToPlaylist": "Add to playlist",
+  "addToQueue": "Add to queue",
+  "addedToQueue": "Added to queue",
+  "addressDidNotAnswer": "That address did not answer.",
+  "addressDifferentServer": "That address answers as a different server.",
+  "airplayAndBluetooth": "AirPlay & Bluetooth",
+  "album": "Album",
+  "albumArtTintSetting": "Tint album pages with cover art colours",
+  "albumArtist": "Album Artist",
+  "albumArtists": "Album Artists",
+  "albums": "Albums",
+  "albumsCount": "{count, plural, one{{count} album} other{{count} albums}}",
+  "@albumsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "always": "Always",
+  "alwaysShowControls": "Always show controls",
+  "animatedAlbumCovers": "Animated album covers",
+  "animatedCoversNote": "Looks up for animated covers and plays them on Wi-Fi only.",
+  "animationSpeed": "Animation speed",
+  "animationSpeedNote": "Affects Studio Mode and Landscape Mode.",
+  "apiUrl": "API URL",
+  "apiWithName": "{name} API",
+  "@apiWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "appVersionLabel": "App version: {version}",
+  "@appVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appearsOn": "Appears On",
+  "artist": "Artist",
+  "artistNoInformation": "This artist does not have any information.",
+  "artists": "Artists",
+  "artworkAccentSetting": "Match button colours to the current track",
+  "asleep": "Asleep",
+  "autoDiscovering": "Auto discovering...",
+  "basedOn": "Based on {name}",
+  "@basedOn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "broadcasts": "Broadcasts",
+  "browse": "Browse",
+  "cache": "Cache",
+  "cacheAhead": "Cache ahead",
+  "cacheEmptied": "Cache emptied",
+  "cacheLimit": "Cache limit",
+  "cachedTrack": "Cached track",
+  "cancel": "Cancel",
+  "cards": "Cards",
+  "castFailed": "Unable to cast to {deviceName} — switched back to this device.",
+  "@castFailed": {
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
+  "castFailureReported": "An error report was submitted and Alex will look into whether this device can be supported.",
+  "castTakenOver": "{deviceName} is now playing something else — switched back to this device.",
+  "@castTakenOver": {
+    "placeholders": {
+      "deviceName": {
+        "type": "String"
+      }
+    }
+  },
+  "cellular": "Cellular",
+  "certificateNotTrusted": "The server's security certificate is not trusted.",
+  "changeHomeAddress": "Change home address",
+  "changeRemoteAddress": "Change remote address",
+  "changelog": "Changelog",
+  "chooseWhichArtistsToBrowse": "Choose which artists to browse",
+  "clearImageCache": "Clear image cache",
+  "clearImageCacheQuestion": "Clear the image cache?",
+  "clearImageCacheWarning": "Artwork will be downloaded again from your server as you browse.",
+  "clearQueue": "Clear queue",
+  "close": "Close",
+  "closeLyrics": "Close lyrics",
+  "cloudConnectNote": "Hitting connect will either create new account or sign in to existing account.",
+  "cloudSignInIntro": "Sign in to play across your devices - start on one, carry on with another.",
+  "collapseSidebar": "Collapse sidebar",
+  "connect": "Connect",
+  "connectListenBrainz": "Connect ListenBrainz",
+  "connectedAs": "Connected as {name}",
+  "@connectedAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "connectedToADifferentServer": "Connected to a different server",
+  "connecting": "Connecting…",
+  "connection": "Connection",
+  "connectionProblem": "Connection problem",
+  "connectionStatus": "Connection: {status}",
+  "@connectionStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "contentUpdateInterval": "Content update interval",
+  "contentUpdateIntervalNote": "How often the home page refreshes and downloaded playlists check your server for changes.",
+  "continuityExperimental": "This feature is currently experimental, so there might be bugs, issues, delays.",
+  "continuityNotAvailable": "Continuity not available",
+  "continuityNotYet": "What's not working currently - you can't wake up a sleeping phone. If your phone plays music - you can control it even if the phone is in locked mode, but if you paused playback or the app wasn't running at all - currently there's no way to turn it on and start playback. This will be added in upcoming releases.",
+  "continuityPrivacy": "NO data is shared with 3rd parties. Your content stays on your devices, and this tool just orchestrates which device plays now and sends Item IDs between devices.",
+  "continuityRemoteControl": "This feature also allows you to remotely control your other connected devices - playback, position, queue, volume.",
+  "continuityReport": "Please report any issues in Discord or via GitHub issues.",
+  "continuityWhatItDoes": "Thanks for trying the continuity feature. This feature allows you to transfer playback between your connected devices - phones, desktops, etc.",
+  "copied": "Copied",
+  "couldNotCreatePlaylist": "Could not create the playlist",
+  "couldNotLoadLyrics": "Couldn't load lyrics",
+  "couldNotLoadSection": "Could not load this section.",
+  "couldNotLoadThisAlbum": "Could not load this album.",
+  "couldNotOpen": "Could not open {name}",
+  "@couldNotOpen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotQueue": "Could not queue {name}",
+  "@couldNotQueue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotStartInstantMixFor": "Could not start an instant mix for \"{name}\"",
+  "@couldNotStartInstantMixFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotStartMixFor": "Could not start a mix for \"{name}\"",
+  "@couldNotStartMixFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotStartPlaying": "Could not start playing \"{name}\"",
+  "@couldNotStartPlaying": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotTakeOver": "Could not take over",
+  "coverOverVideoSetting": "Show cover art over video background",
+  "createGithubIssue": "Create a GitHub issue",
+  "createGithubIssueSubtitle": "Report a bug or request a feature",
+  "createPlaylist": "Create playlist",
+  "currentOnlineDevices": "Current online devices: {count}",
+  "@currentOnlineDevices": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dateAdded": "Date Added",
+  "dateLiked": "Date Liked",
+  "defaultBrowseTab": "Default browse tab",
+  "defaultStartPage": "Default start page",
+  "deleteDownloadedNameQuestion": "Delete downloaded \"{name}\"?",
+  "@deleteDownloadedNameQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteNameQuestion": "Delete \"{name}\"?",
+  "@deleteNameQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlaylist": "Delete playlist",
+  "deviceListSentThankYou": "Device list sent. Thank you!",
+  "direct": "Direct",
+  "disableAutoGeneratedPlaylists": "Disable auto-generated playlists",
+  "discNumber": "Disc {number}",
+  "@discNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "discogsArtist": "Discogs artist",
+  "discogsMaster": "Discogs master",
+  "discogsRelease": "Discogs release",
+  "disconnect": "Disconnect",
+  "discordPresenceSetting": "Share what I am listening to on Discord",
+  "dismiss": "Dismiss",
+  "donate": "Donate",
+  "donateSubtitle": "This will help me to buy new devices to develop for and test on",
+  "download": "Download",
+  "downloadSyncNote": "Downloaded playlists follow your server: new songs are downloaded and removed songs are deleted. Otherwise this only happens on Wi-Fi.",
+  "downloadSyncOnCellularSetting": "Update downloaded playlists on cellular",
+  "downloads": "Downloads",
+  "downloadsDeletedNote": "Its {count, plural, one{{count} downloaded song} other{{count} downloaded songs}} ({size}) will be deleted from this device.",
+  "@downloadsDeletedNote": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadsStillAvailable": "Downloads are still available",
+  "email": "Email",
+  "emailMe": "Email me",
+  "emptyCache": "Empty cache",
+  "emptyCacheQuestion": "Empty the cache?",
+  "emptyCacheWarning": "Tracks cached ahead for offline playback will be deleted.",
+  "enterAServerAddress": "Enter a server address",
+  "enterTheServerAddress": "Enter the server address.",
+  "eps": "EPs",
+  "errorWithDetails": "Error: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exitStudioMode": "Exit studio mode",
+  "expandSidebar": "Expand sidebar",
+  "experimental": "experimental",
+  "expired": "Expired",
+  "expires": "Expires",
+  "fast": "Fast",
+  "favourites": "Favourites",
+  "forgotPassword": "Forgot password?",
+  "frequentlyPlayed": "Frequently played",
+  "general": "General",
+  "genres": "Genres",
+  "getTokenFromListenBrainz": "Get your token from listenbrainz.org",
+  "gigabytesLabel": "{count} GB",
+  "@gigabytesLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goToAlbum": "Go to album",
+  "goToArtist": "Go to artist",
+  "gotIt": "Got it",
+  "hideFavourites": "Hide favourites",
+  "hideLyrics": "Hide lyrics",
+  "hideQueue": "Hide queue",
+  "hideRecentlyPlayed": "Hide recently played",
+  "home": "Home",
+  "homeAddress": "Home address",
+  "homeAddressDescription": "The main address of this server. Change it when the server moved to a new IP or domain; you stay signed in.",
+  "homePage": "Home Page",
+  "homePageRefreshed": "Home page refreshed",
+  "imageCacheCleared": "Image cache cleared",
+  "invalidCredentials": "Incorrect login or password",
+  "isPublic": "Is public",
+  "issuedBy": "Issued by",
+  "issuedTo": "Issued to",
+  "jellyboxCantConnect": "JellyBox can't connect to your server",
+  "joinDiscord": "Join Discord",
+  "joinDiscordSubtitle": "Chat with the me (Alex, the developer) and other users",
+  "kbpsLabel": "{kbps} kbps",
+  "@kbpsLabel": {
+    "placeholders": {
+      "kbps": {
+        "type": "int"
+      }
+    }
+  },
+  "keepTheScreenOn": "Keep the screen on",
+  "landscapePlayer": "Landscape player",
+  "language": "Language",
+  "left": "Left",
+  "letterRulerSetting": "Show A–Z index on browse lists sorted by name",
+  "librariesLoadFailed": "Could not load your libraries.",
+  "librariesOfflineMessage": "You're offline, so your libraries can't be loaded.",
+  "library": "Library",
+  "like": "Like",
+  "liked": "Liked",
+  "likedSongs": "Liked songs",
+  "likedSongsNotDownloaded": "Liked songs are not downloaded.",
+  "loadMore": "Load more…",
+  "loading": "Loading…",
+  "logOut": "Log out",
+  "logOutOfAllServers": "Log out of all servers",
+  "logOutOfName": "Log out of {name}?",
+  "@logOutOfName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "logOutOfServer": "Log out of {name}",
+  "@logOutOfServer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "logOutOfThisServer": "Log out of this server",
+  "login": "Login",
+  "logout": "Logout",
+  "lrclibLyricsNote": "When your server has no lyrics for a song, looks them up on lrclib.net, a free public lyrics library.",
+  "lrclibLyricsSetting": "Find missing lyrics on LRCLIB",
+  "lyrics": "Lyrics",
+  "lyricsTextAlignment": "Lyrics text alignment",
+  "madeForYou": "Made for you",
+  "medium": "Medium",
+  "megabytesLabel": "{count} MB",
+  "@megabytesLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "middle": "Middle",
+  "minutesAbbreviated": "{count} min",
+  "@minutesAbbreviated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesCount": "{count, plural, one{1 minute} other{{count} minutes}}",
+  "@minutesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesShort": "{minutes} min",
+  "@minutesShort": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "mixNoLongerAvailable": "This mix is no longer available",
+  "mixOrder": "Mix order",
+  "more": "More",
+  "moreFrom": "More from {name}",
+  "@moreFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mostPlayedLast30Days": "Most played in the last 30 days",
+  "musicBrainzArtist": "MusicBrainz artist",
+  "musicBrainzRecording": "MusicBrainz recording",
+  "musicBrainzRelease": "MusicBrainz release",
+  "musicBrainzReleaseGroup": "MusicBrainz release group",
+  "musicBrainzTrack": "MusicBrainz track",
+  "mute": "Mute",
+  "myNewPlaylist": "My new playlist",
+  "name": "Name",
+  "nameMix": "{name} Mix",
+  "@nameMix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "never": "Never",
+  "newPlaylist": "New playlist",
+  "no": "No",
+  "noCastOrDlnaDevicesFound": "No Cast or DLNA devices found on this network.",
+  "noDlnaDevicesFound": "No DLNA devices found on this network.",
+  "noDownloads": "No downloads",
+  "noDownloadsYet": "No downloads yet",
+  "noFavouritesYet": "You haven't favourited anything yet.",
+  "noLibrariesFound": "No libraries found :(",
+  "noLyricsForThisTrack": "No lyrics for this track",
+  "noMixAvailableFor": "No mix available for \"{name}\"",
+  "@noMixAvailableFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noResults": "No results",
+  "noResultsFor": "No results for “{query}”",
+  "@noResultsFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "noSongsFoundFor": "No songs found for \"{name}\"",
+  "@noSongsFoundFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSongsInThisAlbum": "No songs in this album",
+  "noSongsYet": "There's no songs yet.",
+  "none": "None",
+  "notAvailableOffline": "Not available offline",
+  "notNow": "Not now",
+  "nothingFound": "Nothing found",
+  "nothingHereYet": "Nothing here yet.",
+  "nothingInQueue": "Nothing in queue",
+  "nothingPlayedLast30Days": "Nothing played in the last 30 days.",
+  "nothingPlaying": "Nothing playing",
+  "nothingToDownload": "Nothing to download",
+  "nothingToPlayIn": "Nothing to play in \"{name}\"",
+  "@nothingToPlayIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nothingToQueueIn": "Nothing to queue in \"{name}\"",
+  "@nothingToQueueIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nowPlayingHaloSetting": "Enable halo effect for currently playing media",
+  "off": "Off",
+  "offline": "Offline",
+  "offlineAlbumNotDownloaded": "You're offline and this album isn't downloaded.",
+  "offlineFavouritesNotice": "You're offline. Your favourites will be back once the server is reachable.",
+  "offlineGenreNotice": "You're offline. This genre needs a connection.",
+  "offlineLibraryNotice": "You're offline. Your library will be back once the server is reachable.",
+  "offlineOnlyDownloads": "Offline — only downloads are available",
+  "offlinePlaylistsNotice": "You're offline, so playlists need a connection.",
+  "offlineSearchNotice": "You're offline, so search needs a connection.",
+  "onRepeat": "On repeat",
+  "open": "Open",
+  "openDownloads": "Open downloads",
+  "openJellyboxToConnect": "Open JellyBox to connect to your server",
+  "openOnIphoneToStart": "Open JellyBox on your iPhone to get started",
+  "original": "Original",
+  "other": "Other",
+  "paletteSettings": "Palette settings",
+  "password": "Password",
+  "pasteListenBrainzToken": "Paste the user token from your ListenBrainz settings.",
+  "play": "Play",
+  "playAlbum": "Play album",
+  "playAll": "Play all",
+  "playArtist": "Play artist",
+  "playDisc": "Play disc",
+  "playGenre": "Play genre",
+  "playNext": "Play next",
+  "playOn": "Play on",
+  "playOnADevice": "Play on a device",
+  "playPlaylist": "Play playlist",
+  "playing": "Playing",
+  "playingNext": "Playing next",
+  "playingOn": "Playing on {name}",
+  "@playingOn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playingOnADifferentServer": "Playing on a different server",
+  "playingOnChooseDevice": "Playing on {name}. Choose a device",
+  "@playingOnChooseDevice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlist": "Playlist",
+  "playlistName": "Playlist name",
+  "playlistNoSongsYet": "This playlist has no songs yet.",
+  "playlistOrder": "Playlist order",
+  "playlists": "Playlists",
+  "playlistsCount": "{count, plural, one{{count} playlist} other{{count} playlists}}",
+  "@playlistsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pluginOutOfDateNotice": "The JellyBox Relay plugin on this server is out of date. A server admin can update it under Dashboard → Plugins.",
+  "privacy": "Privacy",
+  "queue": "Queue",
+  "queueCache": "Queue cache",
+  "queueIsEmpty": "Queue is empty",
+  "quickConnectExpired": "The Quick Connect code expired. Try again.",
+  "quickConnectInstructions": "On a device where you are already signed in, open Quick Connect in your user settings and enter this code.",
+  "quickConnectUnavailable": "Quick Connect is not available on this server.",
+  "random": "Random",
+  "readMore": "Read more",
+  "rebuildMixesDebug": "Rebuild mixes (debug)",
+  "recentlyAdded": "Recently added",
+  "recentlyPlayed": "Recently played",
+  "refreshNow": "Refresh now",
+  "relayNoPassword": "Remote access needs a password on your Jellyfin user.",
+  "relayNotSetUp": "No remote access address for this server yet.",
+  "relayPlanFull": "This server's Jellybox Cloud plan has no free seat for your user. Ask the owner to make room.",
+  "remote": "Remote",
+  "remoteAddress": "Remote address",
+  "remoteAddressDescription": "A second address for the same server, such as a Tailscale, WireGuard or reverse proxy URL. Jellybox uses the home address when it answers and switches to this one when it does not.",
+  "removeDownload": "Remove download",
+  "removeFromFavourites": "Remove from favourites",
+  "removeFromPlaylist": "Remove from playlist",
+  "removeFromQueue": "Remove from queue",
+  "removeRemoteAddress": "Remove remote address",
+  "removedFromDownloads": "Removed \"{name}\" from downloads",
+  "@removedFromDownloads": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removedFromPlaylist": "Successfully removed item from playlist",
+  "repeat": "Repeat",
+  "repeatAll": "Repeat all",
+  "repeatOne": "Repeat one",
+  "retry": "Retry",
+  "right": "Right",
+  "rows": "Rows",
+  "save": "Save",
+  "scanAgain": "Scan again",
+  "search": "Search",
+  "searchFailedTryAgain": "Search failed. Try again.",
+  "selectAPlaylist": "Select a playlist",
+  "selectLibrary": "Select Library",
+  "selfSignedCertificate": "{host} uses a self-signed certificate, so its identity cannot be verified automatically.",
+  "@selfSignedCertificate": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "serverAlreadyAdded": "This server is already added.",
+  "serverSpeaksMultipleApis": "This server speaks more than one API",
+  "serverUrl": "Server URL",
+  "serverUrlAndLoginRequired": "Server URL and login are required",
+  "serverUrlInvalid": "Server URL is invalid. Try something like 192.168.1.10:8096 or jellyfin.example.com",
+  "serverUrlRequired": "Server URL is required",
+  "servers": "Servers",
+  "setUpRelayPlugin": "Set up the JellyBox Relay plugin",
+  "settings": "Settings",
+  "share": "Share",
+  "shareDeviceListWithDeveloper": "Share this device list with the developer",
+  "shareDevicesDialogBody": "{count, plural, one{Send the details of the DLNA device on your network? It stays private and is only used to build proper support for different manufacturers.} other{Send the details of the {count} DLNA devices on your network? It stays private and is only used to build proper support for different manufacturers.}}",
+  "@shareDevicesDialogBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareWhatJellyboxFound": "Share what JellyBox found?",
+  "showAllSongs": "Show all {count} songs",
+  "@showAllSongs": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showLess": "Show less",
+  "shuffle": "Shuffle",
+  "shuffleOn": "Shuffle on",
+  "shufflePlay": "Shuffle play",
+  "signIn": "Sign in",
+  "signInAgain": "Sign in again",
+  "signInOnYourPhone": "Sign in on your phone",
+  "signInToStartListening": "Sign in to start listening",
+  "signedOutOfThisServer": "You will be signed out of this server.",
+  "singles": "Singles",
+  "sleepTimer": "Sleep timer",
+  "sleepTimerAt": "at",
+  "sleepTimerStopIn": "Stop in",
+  "sleepTimerTracks": "tracks",
+  "slow": "Slow",
+  "somethingWentWrong": "Uff! Something went wrong...",
+  "song": "Song",
+  "songWithArtist": "Song • {artist}",
+  "@songWithArtist": {
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "songs": "Songs",
+  "songsCount": "{count, plural, one{{count} song} other{{count} songs}}",
+  "@songsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sort": "Sort",
+  "sortBy": "Sort by",
+  "soundsLike": "Sounds like",
+  "startAlbumMix": "Start album mix",
+  "startArtistMix": "Start artist mix",
+  "startGenreMix": "Start genre mix",
+  "startGenreRadio": "Start genre radio",
+  "startSongMix": "Start song mix",
+  "stopDownload": "Stop download",
+  "stopTimer": "Stop timer",
+  "streaming": "Streaming",
+  "streamingQuality": "Streaming quality",
+  "streamingQualityNote": "Songs above the limit are converted by your server. Changes apply from the next song. Downloads always keep the original quality.",
+  "studioMode": "Studio Mode",
+  "studioModeFullscreenSetting": "Make player full screen when Studio Mode enabled",
+  "studioModeTooltip": "Studio mode",
+  "successfullyAddedToPlaylist": "Successfully added to playlist",
+  "successfullyDeletedAlbum": "Successfully deleted album",
+  "successfullyDeletedPlaylist": "Successfully deleted playlist",
+  "support": "Support",
+  "supportEmailSubject": "JellyBox support",
+  "supportIntro": "Questions, problems or ideas? Get in touch. Please try to report as much details as possible - that will help me to identify issue and help you with resolving it.",
+  "switchServer": "Switch server",
+  "system": "System",
+  "tapCodeToCopy": "Tap the code to copy it",
+  "tapToConnect": "Tap to connect",
+  "telemetryNote": "Jellybox counts app launches and sends crash reports to help fix bugs. Nothing about your library or listening is collected.",
+  "telemetryOptOutSetting": "Opt out of analytics and crash reports",
+  "theAudioDbAlbum": "TheAudioDB album",
+  "theAudioDbArtist": "TheAudioDB artist",
+  "thisActionNeedsAConnection": "This action needs a connection",
+  "thisDevice": "This device",
+  "title": "Title",
+  "trust": "Trust",
+  "trustFromNowOn": "JellyBox will trust {host} from now on, even if its certificate changes. Only continue if this is your server.",
+  "@trustFromNowOn": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "tryAgain": "Try again",
+  "tunnel": "Tunnel",
+  "tunnelNotAnswering": "Remote access is set up, but the tunnel is not answering.",
+  "tunnelReady": "Remote access is set up and the tunnel is ready.",
+  "ui": "UI",
+  "unmute": "Unmute",
+  "untrustedCertificate": "Untrusted certificate",
+  "unverifiableCertificate": "{host} uses a certificate that cannot be verified automatically.",
+  "@unverifiableCertificate": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "updateAvailable": "JellyBox {version} is available",
+  "@updateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "useVideoCoversSetting": "Use video covers when available",
+  "userToken": "User token",
+  "versionBuildLabel": "Version {version} ({build})",
+  "@versionBuildLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOn": "View on",
+  "waitingForApproval": "Waiting for approval",
+  "wakingUp": "Waking up…",
+  "whatsNew": "What's new",
+  "whileCharging": "While charging",
+  "wifi": "Wi-Fi",
+  "yes": "Yes",
+  "youMayAlsoLike": "You may also like",
+  "yourDevice": "Your device"
 }

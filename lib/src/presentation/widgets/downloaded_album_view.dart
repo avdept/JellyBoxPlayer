@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/presentation/utils/bold_name_span.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -68,7 +70,7 @@ class DownloadedPlaylistView extends StatelessWidget {
   Widget build(BuildContext context) => DownloadedItemView(
     item: playlist.item,
     sizeInBytes: playlist.sizeInBytes,
-    subtitlePrefix: 'Playlist',
+    subtitlePrefix: S.of(context).playlist,
     onTap: (onTap != null) ? () => onTap!.call(playlist) : null,
     onDelete: (onDelete != null) ? () => onDelete!.call(playlist) : null,
     onPlayPressed: (onPlayPressed != null)
@@ -111,29 +113,21 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
       builder: (context) => AlertDialog.adaptive(
         key: widget.testKeys?.confirmationDialog,
         title: Text.rich(
-          TextSpan(
-            text: 'Delete ',
-            children: [
-              TextSpan(
-                text: '"${widget.item.name}"',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const TextSpan(text: '?'),
-            ],
+          boldNameSpan(
+            S.of(context).deleteNameQuestion(widget.item.name),
+            widget.item.name,
           ),
           textAlign: TextAlign.center,
         ),
         actions: [
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: Text(S.of(context).no),
           ),
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(true),
             isDestructiveAction: true,
-            child: const Text('Yes'),
+            child: Text(S.of(context).yes),
           ),
         ],
       ),
@@ -143,7 +137,9 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
       setState(() => _isBusy = true);
       await widget.onDelete?.call();
       messenger?.showSnackBar(
-        SnackBar(content: Text('Removed "${widget.item.name}" from downloads')),
+        SnackBar(
+          content: Text(S.current.removedFromDownloads(widget.item.name)),
+        ),
       );
       _isBusy = false;
       if (mounted) setState(() {});
@@ -193,7 +189,7 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
             minimumSize: WidgetStatePropertyAll(Size.zero),
             visualDensity: VisualDensity.compact,
           ),
-          tooltip: 'Remove download',
+          tooltip: S.of(context).removeDownload,
           iconSize: isTablet ? 24 : 20,
           icon: const Icon(JPlayer.trash_2),
         ),

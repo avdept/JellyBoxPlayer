@@ -81,9 +81,16 @@ struct WidgetSnapshot {
       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     else { return .idle }
 
-    if json["signedOut"] as? Bool == true { return .signedOut }
+    let strings = json["strings"] as? [String: String] ?? [:]
+
+    if json["signedOut"] as? Bool == true {
+      var snapshot = WidgetSnapshot.signedOut
+      if let subtitle = strings["signedOutSubtitle"] { snapshot.artist = subtitle }
+      return snapshot
+    }
 
     var snapshot = WidgetSnapshot.idle
+    if let subtitle = strings["idleSubtitle"] { snapshot.artist = subtitle }
     snapshot.recent = (json["recent"] as? [[String: Any]] ?? []).compactMap { entry in
       guard let id = entry["id"] as? String else { return nil }
       return RecentAlbum(

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/presentation/widgets/server_accounts.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -28,7 +29,7 @@ class OfflineBanner extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Offline — only downloads are available',
+                    S.of(context).offlineOnlyDownloads,
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.2,
@@ -42,7 +43,7 @@ class OfflineBanner extends ConsumerWidget {
                     child: InkWell(
                       onTap: () => unawaited(showServerSwitcher(context)),
                       child: Text(
-                        'Switch server',
+                        S.of(context).switchServer,
                         style: TextStyle(
                           fontSize: 13,
                           height: 1.2,
@@ -53,7 +54,7 @@ class OfflineBanner extends ConsumerWidget {
                     ),
                   ),
                 Text(
-                  'Retry',
+                  S.of(context).retry,
                   style: TextStyle(
                     fontSize: 13,
                     height: 1.2,

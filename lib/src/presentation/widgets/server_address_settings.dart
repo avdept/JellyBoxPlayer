@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/data/providers/server_probe_provider.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -48,14 +49,14 @@ class ServerAddressSettings extends ConsumerWidget {
       spacing: 4,
       children: [
         _AddressRow(
-          label: 'Home',
+          label: S.of(context).home,
           address: addresses.home,
           active: connection == ServerConnection.direct,
           muted: muted,
           actions: [
             _ActionIcon(
               icon: Icons.edit_outlined,
-              tooltip: 'Change home address',
+              tooltip: S.of(context).changeHomeAddress,
               onPressed: () => _editHome(context),
             ),
           ],
@@ -65,23 +66,23 @@ class ServerAddressSettings extends ConsumerWidget {
             onPressed: () => _edit(context),
             style: _buttonStyle,
             icon: const Icon(Icons.add_link),
-            label: const Text('Add remote address'),
+            label: Text(S.of(context).addRemoteAddress),
           )
         else
           _AddressRow(
-            label: 'Remote',
+            label: S.of(context).remote,
             address: remote,
             active: connection == ServerConnection.remote,
             muted: muted,
             actions: [
               _ActionIcon(
                 icon: Icons.edit_outlined,
-                tooltip: 'Change remote address',
+                tooltip: S.of(context).changeRemoteAddress,
                 onPressed: () => _edit(context),
               ),
               _ActionIcon(
                 icon: Icons.delete_outline,
-                tooltip: 'Remove remote address',
+                tooltip: S.of(context).removeRemoteAddress,
                 onPressed: () => unawaited(
                   ref.read(connectivityProvider.notifier).setRemote(null),
                 ),
@@ -182,8 +183,8 @@ class HomeAddressForm extends ConsumerStatefulWidget {
     super.key,
   });
 
-  static const unreachableError = 'That address did not answer.';
-  static const emptyError = 'Enter the server address.';
+  static String get unreachableError => S.current.addressDidNotAnswer;
+  static String get emptyError => S.current.enterTheServerAddress;
 
   final EdgeInsets padding;
 
@@ -249,11 +250,10 @@ class _HomeAddressFormState extends ConsumerState<HomeAddressForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('Home address'),
+          ModalFormHeader(S.of(context).homeAddress),
           const SizedBox(height: 8),
           Text(
-            'The main address of this server. Change it when the server '
-            'moved to a new IP or domain; you stay signed in.',
+            S.of(context).homeAddressDescription,
             style: TextStyle(
               fontSize: 14,
               color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
@@ -277,7 +277,7 @@ class _HomeAddressFormState extends ConsumerState<HomeAddressForm> {
             ),
           const SizedBox(height: 16),
           ModalFormActions(
-            submitLabel: 'Save',
+            submitLabel: S.of(context).save,
             onSubmit: () => unawaited(_submit()),
             busy: _submitting,
           ),
@@ -293,8 +293,7 @@ class RemoteAddressForm extends ConsumerStatefulWidget {
     super.key,
   });
 
-  static const differentServerError =
-      'That address answers as a different server.';
+  static String get differentServerError => S.current.addressDifferentServer;
 
   final EdgeInsets padding;
 
@@ -350,12 +349,10 @@ class _RemoteAddressFormState extends ConsumerState<RemoteAddressForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('Remote address'),
+          ModalFormHeader(S.of(context).remoteAddress),
           const SizedBox(height: 8),
           Text(
-            'A second address for the same server, such as a Tailscale, '
-            'WireGuard or reverse proxy URL. Jellybox uses the home address '
-            'when it answers and switches to this one when it does not.',
+            S.of(context).remoteAddressDescription,
             style: TextStyle(
               fontSize: 14,
               color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
@@ -379,7 +376,7 @@ class _RemoteAddressFormState extends ConsumerState<RemoteAddressForm> {
             ),
           const SizedBox(height: 16),
           ModalFormActions(
-            submitLabel: 'Save',
+            submitLabel: S.of(context).save,
             onSubmit: () => unawaited(_submit()),
             busy: _submitting,
           ),

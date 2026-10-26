@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -11,9 +12,9 @@ import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 Map<PlaylistSongSort, String> playlistSortOptions(String defaultLabel) => {
   PlaylistSongSort.playlistOrder: defaultLabel,
-  PlaylistSongSort.title: 'Title',
-  PlaylistSongSort.artist: 'Artist',
-  PlaylistSongSort.album: 'Album',
+  PlaylistSongSort.title: S.current.title,
+  PlaylistSongSort.artist: S.current.artist,
+  PlaylistSongSort.album: S.current.album,
 };
 
 class PlaylistControls extends StatelessWidget {
@@ -56,7 +57,7 @@ class PlaylistControls extends StatelessWidget {
             iconSize: 20,
             icon: const Icon(JPlayer.mix),
             color: Theme.of(context).colorScheme.onPrimary,
-            tooltip: 'Shuffle play',
+            tooltip: S.of(context).shufflePlay,
             onPressed: isPlayLoading ? null : onShuffle,
           ),
           ?download,
@@ -72,17 +73,17 @@ class PlaylistSortButton extends StatelessWidget {
   const PlaylistSortButton({
     required this.order,
     required this.onChanged,
-    this.defaultLabel = 'Playlist order',
+    this.defaultLabel,
     super.key,
   });
 
   final PlaylistSongOrder order;
   final ValueChanged<PlaylistSongOrder> onChanged;
-  final String defaultLabel;
+  final String? defaultLabel;
 
   @override
   Widget build(BuildContext context) => SortMenuButton<PlaylistSongSort>(
-    options: playlistSortOptions(defaultLabel),
+    options: playlistSortOptions(defaultLabel ?? S.of(context).playlistOrder),
     selected: order.sort,
     descending: order.descending,
     onSelected: (sort) => onChanged(order.select(sort)),

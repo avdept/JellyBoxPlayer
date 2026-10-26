@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -23,7 +24,9 @@ class CreatePlaylistForm extends ConsumerStatefulWidget {
 }
 
 class _CreatePlaylistFormState extends ConsumerState<CreatePlaylistForm> {
-  final _nameController = TextEditingController(text: 'My new playlist');
+  late final _nameController = TextEditingController(
+    text: S.current.myNewPlaylist,
+  );
   var _isPublic = true;
   var _submitting = false;
   String? _error;
@@ -57,7 +60,7 @@ class _CreatePlaylistFormState extends ConsumerState<CreatePlaylistForm> {
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = 'Could not create the playlist';
+        _error = S.current.couldNotCreatePlaylist;
       });
     }
   }
@@ -72,11 +75,11 @@ class _CreatePlaylistFormState extends ConsumerState<CreatePlaylistForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('New playlist'),
+          ModalFormHeader(S.of(context).newPlaylist),
           const SizedBox(height: 16),
           LabeledTextField(
             controller: _nameController,
-            placeholder: 'Playlist name',
+            placeholder: S.of(context).playlistName,
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
             autofocus: true,
@@ -97,12 +100,12 @@ class _CreatePlaylistFormState extends ConsumerState<CreatePlaylistForm> {
                 onChanged: (value) =>
                     setState(() => _isPublic = value ?? _isPublic),
               ),
-              const Text('Is public'),
+              Text(S.of(context).isPublic),
             ],
           ),
           const SizedBox(height: 16),
           ModalFormActions(
-            submitLabel: 'Create playlist',
+            submitLabel: S.of(context).createPlaylist,
             onSubmit: () => unawaited(_submit()),
             busy: _submitting,
           ),

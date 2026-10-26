@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
@@ -101,7 +102,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   String get id => 'local';
 
   @override
-  String get name => 'This device';
+  String get name => S.current.thisDevice;
 
   @override
   PlaybackTargetKind get kind => PlaybackTargetKind.local;

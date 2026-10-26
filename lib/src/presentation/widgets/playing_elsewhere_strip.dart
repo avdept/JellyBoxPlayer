@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/playback_target_picker.dart';
@@ -41,7 +42,7 @@ class PlayingElsewhereStrip extends ConsumerWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Playing on ${renderer.name}',
+                          S.of(context).playingOn(renderer.name),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelMedium?.copyWith(

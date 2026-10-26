@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/play_history_database_provider.dart';
@@ -9,7 +10,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
-const onRepeatName = 'On repeat';
+String get onRepeatName => S.current.onRepeat;
 const onRepeatWindow = Duration(days: 30);
 const onRepeatSongsLimit = 200;
 const onRepeatMinimumSongs = 20;

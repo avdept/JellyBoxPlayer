@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -104,7 +105,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   void showOfflineSnackBar() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Not available offline')),
+      SnackBar(content: Text(S.of(context).notAvailableOffline)),
     );
   }
 
@@ -189,7 +190,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   Widget navBar() => CupertinoNavigationBar(
-    previousPageTitle: 'Albums',
+    previousPageTitle: S.of(context).albums,
     backgroundColor: Colors.transparent,
     enableBackgroundFilterBlur: false,
     padding: EdgeInsetsDirectional.symmetric(horizontal: edgePadding),
@@ -281,8 +282,8 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
             child: Text(
               section.title ??
                   (section.discNumber != null
-                      ? 'Disc ${section.discNumber}'
-                      : 'Other'),
+                      ? S.of(context).discNumber(section.discNumber!)
+                      : S.of(context).other),
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: discHeaderFontSize,
@@ -293,7 +294,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
           ),
           HoverIconButton(
             icon: const Icon(Icons.play_arrow_outlined),
-            tooltip: 'Play disc',
+            tooltip: S.of(context).playDisc,
             color: headerColor,
             onPressed: () => _playDisc(section),
           ),
@@ -330,16 +331,16 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     }
 
     if (!loadFailed && !ref.watch(isOfflineProvider)) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: Text('No songs in this album')),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: Text(S.of(context).noSongsInThisAlbum)),
       );
     }
 
     return OfflineNotice(
       message: ref.watch(isOfflineProvider)
-          ? "You're offline and this album isn't downloaded."
-          : 'Could not load this album.',
+          ? S.of(context).offlineAlbumNotDownloaded
+          : S.of(context).couldNotLoadThisAlbum,
       onRetry: _retryLoad,
     );
   }
@@ -437,13 +438,15 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
           .playAlbum(album);
       if (result == SetPlaybackResult.empty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nothing to play in "${album.name}"')),
+          SnackBar(content: Text(S.of(context).nothingToPlayIn(album.name))),
         );
       }
     } on Object catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start playing "${album.name}"')),
+          SnackBar(
+            content: Text(S.of(context).couldNotStartPlaying(album.name)),
+          ),
         );
       }
     }
@@ -511,7 +514,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
             bottom: 12,
           ),
           child: Text(
-            'About',
+            S.of(context).about,
             style: TextStyle(
               fontSize: sectionTitleFontSize,
               fontWeight: FontWeight.w500,
@@ -568,7 +571,9 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Text(
-                    descriptionExpanded ? 'Show less' : 'Read more',
+                    descriptionExpanded
+                        ? S.of(context).showLess
+                        : S.of(context).readMore,
                     style: style.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onPrimary,
@@ -588,7 +593,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final albums = ref.watch(moreFromArtistProvider(key)).valueOrNull;
     if (albums == null || albums.isEmpty) return const [];
     return _albumRowSlivers(
-      title: 'More from ${album.albumArtists.first.name}',
+      title: S.of(context).moreFrom(album.albumArtists.first.name),
       albums: albums,
       onLike: _onMoreFromArtistLikePressed,
     );
@@ -598,7 +603,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final albums = ref.watch(similarAlbumsProvider(album.id)).valueOrNull;
     if (albums == null || albums.isEmpty) return const [];
     return _albumRowSlivers(
-      title: 'You may also like',
+      title: S.of(context).youMayAlsoLike,
       albums: albums,
       onLike: _onSuggestedAlbumLikePressed,
     );

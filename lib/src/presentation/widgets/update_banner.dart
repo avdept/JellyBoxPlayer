@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/core/updates/release_checker.dart';
 import 'package:jplayer/src/domain/providers/update_banner_provider.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
@@ -46,10 +47,11 @@ class UpdateBanner extends ConsumerWidget {
                           ),
                         ),
                         TextSpan(
-                          text: 'JellyBox ${update.version} is available  ',
+                          text:
+                              '${S.of(context).updateAvailable(update.version)}  ',
                         ),
                         TextSpan(
-                          text: 'Download',
+                          text: S.of(context).download,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.underline,
@@ -64,7 +66,7 @@ class UpdateBanner extends ConsumerWidget {
                   ),
                 ),
                 HoverIconButton(
-                  tooltip: 'Dismiss',
+                  tooltip: S.of(context).dismiss,
                   iconSize: 16,
                   color: foreground,
                   style: const ButtonStyle(

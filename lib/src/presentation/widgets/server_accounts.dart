@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/data/services/server_data_cleaner.dart';
@@ -64,7 +65,7 @@ class ServerAccountList extends ConsumerWidget {
               ),
             ),
             icon: const Icon(Icons.add),
-            label: const Text('Add server'),
+            label: Text(S.of(context).addServer),
           ),
       ],
     );
@@ -95,30 +96,27 @@ Future<void> confirmRemoveAccount(
   if (!context.mounted) return;
   final downloads = summary.songs == 0
       ? ''
-      : ' Its ${summary.songs} downloaded '
-            '${summary.songs == 1 ? 'song' : 'songs'} '
-            '(${QueueCachePage.formatBytes(summary.bytes)}) '
-            'will be deleted from this device.';
+      : ' ${S.of(context).downloadsDeletedNote(summary.songs, QueueCachePage.formatBytes(summary.bytes))}';
   final confirmed = await showAdaptiveDialog<bool>(
     context: context,
     builder: (context) => AlertDialog.adaptive(
       title: Text(
-        'Log out of ${account.displayName}?',
+        S.of(context).logOutOfName(account.displayName),
         textAlign: TextAlign.center,
       ),
       content: Text(
-        'You will be signed out of this server.$downloads',
+        '${S.of(context).signedOutOfThisServer}$downloads',
         textAlign: TextAlign.center,
       ),
       actions: [
         AdaptiveDialogAction(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(S.of(context).cancel),
         ),
         AdaptiveDialogAction(
           onPressed: () => Navigator.of(context).pop(true),
           isDestructiveAction: true,
-          child: const Text('Log out'),
+          child: Text(S.of(context).logOut),
         ),
       ],
     ),
@@ -170,7 +168,7 @@ class _AccountRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    account.needsReauth ? 'Sign in again' : details,
+                    account.needsReauth ? S.of(context).signInAgain : details,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -187,7 +185,7 @@ class _AccountRow extends StatelessWidget {
             if (onRemove case final remove?)
               IconButton(
                 onPressed: remove,
-                tooltip: 'Log out of this server',
+                tooltip: S.of(context).logOutOfThisServer,
                 visualDensity: VisualDensity.compact,
                 iconSize: 18,
                 icon: Icon(Icons.logout, color: muted),

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
@@ -297,7 +298,7 @@ class _CachedBadgeState extends State<_CachedBadge> {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'Cached track',
+    message: S.of(context).cachedTrack,
     child: MouseRegion(
       onEnter: (_) => _setHovered(true),
       onExit: (_) => _setHovered(false),

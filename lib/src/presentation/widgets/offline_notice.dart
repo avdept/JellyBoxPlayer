@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -67,13 +68,13 @@ class OfflineNotice extends ConsumerWidget {
                   await ref.read(connectivityProvider.notifier).refresh();
                   await onRetry?.call();
                 },
-                child: const Text('Try again'),
+                child: Text(S.of(context).tryAgain),
               ),
               if (showDownloadsLink)
                 TextButton(
                   style: buttonStyle,
                   onPressed: () => context.goNamed(Routes.downloads.name),
-                  child: const Text('Open downloads'),
+                  child: Text(S.of(context).openDownloads),
                 ),
               if (isOffline && addresses != null)
                 TextButton(
@@ -86,8 +87,8 @@ class OfflineNotice extends ConsumerWidget {
                   ),
                   child: Text(
                     addresses.remote == null
-                        ? 'Add remote address'
-                        : 'Change remote address',
+                        ? S.of(context).addRemoteAddress
+                        : S.of(context).changeRemoteAddress,
                   ),
                 ),
             ],

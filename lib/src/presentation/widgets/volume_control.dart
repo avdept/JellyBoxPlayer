@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/providers/device_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
@@ -206,7 +207,9 @@ class _DeviceVolumeSliderState extends ConsumerState<DeviceVolumeSlider>
         children: [
           HoverIconButton(
             onPressed: _toggleMute,
-            tooltip: volume.isSilent ? 'Unmute' : 'Mute',
+            tooltip: volume.isSilent
+                ? S.of(context).unmute
+                : S.of(context).mute,
             iconSize: 20,
             color: theme.colorScheme.onSurface,
             icon: Icon(_iconFor(volume)),

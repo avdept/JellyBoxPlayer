@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -65,7 +66,7 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
               children: [
                 CupertinoNavigationBarBackButton(
                   color: _theme.colorScheme.onPrimary,
-                  previousPageTitle: 'Genres',
+                  previousPageTitle: S.of(context).genres,
                   onPressed: () => context.pop(),
                 ),
                 SizedBox(width: _device.isMobile ? 12 : 20),
@@ -117,8 +118,7 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
                 error: (error, stackTrace) => SliverToBoxAdapter(
                   child: ref.watch(isOfflineProvider)
                       ? OfflineNotice(
-                          message:
-                              "You're offline. This genre needs a connection.",
+                          message: S.of(context).offlineGenreNotice,
                           onRetry: () => ref.invalidate(
                             genreAlbumsProvider(widget.genre.id),
                           ),

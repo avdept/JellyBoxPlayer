@@ -80,7 +80,9 @@ class NowPlayingWidget : AppWidgetProvider() {
             )
             setTextViewText(
                 R.id.widget_artist,
-                state?.artist ?: context.getString(R.string.widget_idle_subtitle),
+                state?.artist
+                    ?: WidgetState.localized(context, "idleSubtitle")
+                    ?: context.getString(R.string.widget_idle_subtitle),
             )
             setTextColor(R.id.widget_title, foreground)
             setTextColor(R.id.widget_artist, withAlpha(foreground, SECONDARY_ALPHA))
@@ -160,7 +162,8 @@ class NowPlayingWidget : AppWidgetProvider() {
             setTextViewText(R.id.widget_title, context.getString(R.string.widget_idle_title))
             setTextViewText(
                 R.id.widget_artist,
-                context.getString(R.string.widget_signed_out_subtitle),
+                WidgetState.localized(context, "signedOutSubtitle")
+                    ?: context.getString(R.string.widget_signed_out_subtitle),
             )
             setTextColor(R.id.widget_title, DEFAULT_FOREGROUND)
             setTextColor(R.id.widget_artist, withAlpha(DEFAULT_FOREGROUND, SECONDARY_ALPHA))
@@ -240,6 +243,9 @@ class NowPlayingWidget : AppWidgetProvider() {
         companion object {
             fun isSignedOut(context: Context): Boolean =
                 snapshot(context)?.optBoolean("signedOut") ?: false
+
+            fun localized(context: Context, key: String): String? =
+                snapshot(context)?.optJSONObject("strings")?.stringOrNull(key)
 
             fun read(context: Context): WidgetState? {
                 val json = snapshot(context) ?: return null

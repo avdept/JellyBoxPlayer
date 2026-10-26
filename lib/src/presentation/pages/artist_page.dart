@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
@@ -134,13 +135,15 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       final result = await play();
       if (result == SetPlaybackResult.empty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nothing to play in "${setItem.name}"')),
+          SnackBar(content: Text(S.of(context).nothingToPlayIn(setItem.name))),
         );
       }
     } on Object catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start playing "${setItem.name}"')),
+          SnackBar(
+            content: Text(S.of(context).couldNotStartPlaying(setItem.name)),
+          ),
         );
       }
     }
@@ -337,7 +340,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   Widget _infoText() => Padding(
     padding: const EdgeInsets.only(top: 20),
     child: Text(
-      _artist.overview ?? 'This artist does not have any information.',
+      _artist.overview ?? S.of(context).artistNoInformation,
       maxLines: 5,
       overflow: TextOverflow.ellipsis,
       softWrap: true,
@@ -417,7 +420,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           ),
         ),
       ],
-      if (_appearsOn.isNotEmpty) _sectionHeading('Appears On'),
+      if (_appearsOn.isNotEmpty) _sectionHeading(S.of(context).appearsOn),
       SliverPadding(
         padding: EdgeInsets.only(
           top: 16,

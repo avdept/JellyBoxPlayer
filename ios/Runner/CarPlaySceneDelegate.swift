@@ -32,19 +32,27 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     return external?.bounds.width ?? 0
   }
 
-  private let sortLabels = [
-    "sortName": "Name",
-    "albumArtist": "Album Artist",
-    "dateCreated": "Date Added",
-    "random": "Random",
-  ]
+  private func str(_ key: String, _ fallback: String) -> String {
+    CarPlayBridge.shared.string(key, fallback)
+  }
 
-  private let browseEntries: [(type: String, title: String, symbol: String)] = [
-    ("albums", "Albums", "square.stack"),
-    ("artists", "Artists", "music.mic"),
-    ("playlists", "Playlists", "music.note.list"),
-    ("songs", "Songs", "music.note"),
-  ]
+  private var sortLabels: [String: String] {
+    [
+      "sortName": str("sortName", "Name"),
+      "albumArtist": str("sortAlbumArtist", "Album Artist"),
+      "dateCreated": str("sortDateCreated", "Date Added"),
+      "random": str("sortRandom", "Random"),
+    ]
+  }
+
+  private var browseEntries: [(type: String, title: String, symbol: String)] {
+    [
+      ("albums", str("albums", "Albums"), "square.stack"),
+      ("artists", str("artists", "Artists"), "music.mic"),
+      ("playlists", str("playlists", "Playlists"), "music.note.list"),
+      ("songs", str("songs", "Songs"), "music.note"),
+    ]
+  }
 
   private lazy var placeholderImage: UIImage? = {
     let key = FlutterDartProject.lookupKey(forAsset: "assets/images/album.png")
@@ -61,13 +69,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     self.interfaceController = interfaceController
     carWindow = templateApplicationScene.carWindow
 
-    homeTemplate.tabTitle = "Home"
+    applyStaticLabels()
     homeTemplate.tabImage = UIImage(systemName: "house")
-    downloadsTemplate.tabTitle = "Downloads"
     downloadsTemplate.tabImage = UIImage(systemName: "arrow.down.circle")
-    searchTemplate.tabTitle = "Search"
     searchTemplate.tabImage = UIImage(systemName: "magnifyingglass")
-    searchTemplate.emptyViewTitleVariants = ["No results"]
 
     let tabBar = CPTabBarTemplate(templates: [homeTemplate, downloadsTemplate])
     self.tabBar = tabBar
@@ -88,6 +93,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     CarPlayBridge.shared.onSearchChanged = { [weak self] query in
       self?.searchQueryChanged(query)
     }
+    CarPlayBridge.shared.onStringsChanged = { [weak self] in
+      self?.applyStaticLabels()
+      self?.reload()
+    }
     CPNowPlayingTemplate.shared.isUpNextButtonEnabled = true
     CPNowPlayingTemplate.shared.add(self)
     applyNowPlayingButtons()
@@ -104,7 +113,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     CarPlayBridge.shared.onPlaybackStateChanged = nil
     CarPlayBridge.shared.onModesChanged = nil
     CarPlayBridge.shared.onSearchChanged = nil
+    CarPlayBridge.shared.onStringsChanged = nil
     CPNowPlayingTemplate.shared.remove(self)
+  }
+
+  private func applyStaticLabels() {
+    homeTemplate.tabTitle = str("home", "Home")
+    downloadsTemplate.tabTitle = str("downloads", "Downloads")
+    searchTemplate.tabTitle = str("search", "Search")
+    searchTemplate.emptyViewTitleVariants = [str("noResults", "No results")]
   }
 
   func nowPlayingTemplateUpNextButtonTapped(_ nowPlayingTemplate: CPNowPlayingTemplate) {
@@ -179,10 +196,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         return item
       }
       let template = CPListTemplate(
-        title: "Playing Next",
+        title: self.str("playingNext", "Playing Next"),
         sections: [CPListSection(items: items)]
       )
-      template.emptyViewTitleVariants = ["Queue is empty"]
+      template.emptyViewTitleVariants = [self.str("queueIsEmpty", "Queue is empty")]
       self.trackedItems["queue"] = pairs
       self.interfaceController?.pushTemplate(template, animated: true) { _, error in
         if let error { NSLog("[CarPlay] push failed: %@", error.localizedDescription) }
@@ -193,7 +210,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
   private func reload() {
     guard CarPlayBridge.shared.isReady else {
-      let waiting = ["Open JellyBox on your iPhone to get started"]
+      let waiting = [str("openToStart", "Open JellyBox on your iPhone to get started")]
       homeTemplate.emptyViewTitleVariants = waiting
       downloadsTemplate.emptyViewTitleVariants = waiting
       return
@@ -244,7 +261,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       let albums = items("albums")
       let playlists = items("playlists")
       let grouped = !albums.isEmpty && !playlists.isEmpty
-      let sections = [("Albums", albums), ("Playlists", playlists)]
+      let sections = [
+        (self.str("albums", "Albums"), albums),
+        (self.str("playlists", "Playlists"), playlists),
+      ]
         .filter { !$0.1.isEmpty }
         .map {
           CPListSection(
@@ -253,7 +273,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             sectionIndexTitle: nil
           )
         }
-      self.downloadsTemplate.emptyViewTitleVariants = ["No downloads"]
+      self.downloadsTemplate.emptyViewTitleVariants = [self.str("noDownloads", "No downloads")]
       self.downloadsTemplate.updateSections(sections)
       self.trackedItems["downloads"] = albums + playlists
       self.applyPlaybackState()
@@ -265,7 +285,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     if playType == "artist" {
       pushBrowseList(
         type: "albums",
-        title: entry["title"] as? String ?? "Albums",
+        title: entry["title"] as? String ?? str("albums", "Albums"),
         artistId: id
       )
     } else {
@@ -281,7 +301,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     artistId: String? = nil
   ) {
     let template = CPListTemplate(title: title, sections: [])
-    template.emptyViewTitleVariants = ["Loading…"]
+    template.emptyViewTitleVariants = [str("loading", "Loading…")]
     if query == nil, let fields = sortFields(for: type) {
       template.trailingNavigationBarButtons = [
         CPBarButton(image: UIImage(systemName: "arrow.up.arrow.down")!) { [weak self] _ in
@@ -309,7 +329,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     guard let type = pushedType, let template = pushedTemplate, !pushedLoading else { return }
     pushedLoading = true
     if reset, !pushedEntries.isEmpty {
-      template.emptyViewTitleVariants = ["Loading…"]
+      template.emptyViewTitleVariants = [str("loading", "Loading…")]
       template.updateSections([])
       trackedItems["pushed"] = []
     }
@@ -338,7 +358,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
   private func renderPushedList() {
     guard let template = pushedTemplate, let type = pushedType else { return }
-    template.emptyViewTitleVariants = ["Nothing here yet"]
+    template.emptyViewTitleVariants = [str("nothingHereYet", "Nothing here yet")]
     let playType = playType(for: type)
     var items = [CPListTemplateItem]()
 
@@ -372,7 +392,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     if let artistId = pushedArtistId {
       let playAll = CPListItem(
-        text: "Play All",
+        text: str("playAll", "Play All"),
         detailText: nil,
         image: UIImage(systemName: "play.circle")
       )
@@ -387,7 +407,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     var sections = [CPListSection(items: items)]
     if pushedHasMore {
       let more = CPListItem(
-        text: "Load More…",
+        text: str("loadMore", "Load More…"),
         detailText: nil,
         image: UIImage(systemName: "ellipsis.circle")
       )
@@ -446,11 +466,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         CarPlayBridge.shared.setSort(field: field)
       }
     }
-    let cancel = CPAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in
+    let cancel = CPAlertAction(title: str("cancel", "Cancel"), style: .cancel) { [weak self] _ in
       self?.dismissPresentedTemplate()
     }
     let sheet = CPActionSheetTemplate(
-      title: "Sort by",
+      title: str("sortBy", "Sort by"),
       message: nil,
       actions: actions + [cancel]
     )
@@ -482,10 +502,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       guard let self, self.lastQuery == trimmed, let data else { return }
       self.lastSearchResults = data
       let categories: [(key: String, title: String, type: String)] = [
-        ("albums", "Albums", "albums"),
-        ("artists", "Artists", "artists"),
-        ("playlists", "Playlists", "playlists"),
-        ("songs", "Songs", "songs"),
+        ("albums", self.str("albums", "Albums"), "albums"),
+        ("artists", self.str("artists", "Artists"), "artists"),
+        ("playlists", self.str("playlists", "Playlists"), "playlists"),
+        ("songs", self.str("songs", "Songs"), "songs"),
       ]
       var sections = [CPListSection]()
       for category in categories {
@@ -495,7 +515,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
           self.makeSearchSection(title: category.title, type: category.type, entries: entries)
         )
       }
-      self.searchTemplate.emptyViewTitleVariants = ["No results for “\(trimmed)”"]
+      self.searchTemplate.emptyViewTitleVariants = [
+        String(format: self.str("noResultsFormat", "No results for “%@”"), trimmed)
+      ]
       self.searchTemplate.updateSections(sections)
       self.setSearchTabVisible(true)
     }
@@ -590,7 +612,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       )
     } else {
       row = CPListImageRowItem(
-        text: "Browse",
+        text: str("browse", "Browse"),
         images: browseEntries.map {
           makeTile(symbol: $0.symbol, size: CPListImageRowItem.maximumImageSize)
         },
@@ -643,7 +665,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     if #available(iOS 26.0, *) {
       let visible = Array(entries.prefix(cardsPerLine()))
       row = CPListImageRowItem(
-        text: "Made for You",
+        text: str("madeForYou", "Made for You"),
         elements: rowElements(for: visible, padTo: cardsPerLine()),
         allowsMultipleLines: false
       )
@@ -659,29 +681,41 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
       row = makeCoverRow(
         entries: Array(entries.prefix(8)),
         playType: "mix",
-        text: "Made for You"
+        text: str("madeForYou", "Made for You")
       )
     }
     row.handler = { [weak self] _, completion in
-      self?.pushBrowseList(type: "mixes", title: "Made for You")
+      guard let self else {
+        completion()
+        return
+      }
+      self.pushBrowseList(type: "mixes", title: self.str("madeForYou", "Made for You"))
       completion()
     }
     return row
   }
 
   private func makeRecentRow(entries: [[String: Any]]) -> CPListImageRowItem {
-    let row = makeAlbumRow(entries: entries, text: "Recently Added")
+    let row = makeAlbumRow(entries: entries, text: str("recentlyAdded", "Recently Added"))
     row.handler = { [weak self] _, completion in
-      self?.pushBrowseList(type: "albums", title: "Albums")
+      guard let self else {
+        completion()
+        return
+      }
+      self.pushBrowseList(type: "albums", title: self.str("albums", "Albums"))
       completion()
     }
     return row
   }
 
   private func makePlayedRow(entries: [[String: Any]]) -> CPListImageRowItem {
-    let row = makeAlbumRow(entries: entries, text: "Recently Played")
+    let row = makeAlbumRow(entries: entries, text: str("recentlyPlayed", "Recently Played"))
     row.handler = { [weak self] _, completion in
-      self?.pushBrowseList(type: "played", title: "Recently Played")
+      guard let self else {
+        completion()
+        return
+      }
+      self.pushBrowseList(type: "played", title: self.str("recentlyPlayed", "Recently Played"))
       completion()
     }
     return row

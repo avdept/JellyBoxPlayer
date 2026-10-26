@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
@@ -394,10 +395,11 @@ class _AppState extends ConsumerState<App>
       scaffoldMessengerKey: _scaffoldMessengerKey,
       theme: Themes.red,
       debugShowCheckedModeBanner: false,
+      locale: ref.watch(appLocaleProvider),
       localizationsDelegates: const [
-        DefaultWidgetsLocalizations.delegate,
-        DefaultMaterialLocalizations.delegate,
-        DefaultCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
         S.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,

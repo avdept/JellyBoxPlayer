@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -23,6 +24,8 @@ void main() {
   });
 
   Widget wrap(ServerType? serverType) => MaterialApp(
+    localizationsDelegates: const [S.delegate],
+    supportedLocales: S.delegate.supportedLocales,
     home: Scaffold(
       body: Center(child: LoginLogo(serverType: serverType)),
     ),

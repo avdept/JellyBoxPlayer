@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
@@ -16,14 +17,14 @@ class QueueSidebar extends ConsumerWidget {
 
     return SidebarOverlay(
       isShown: isShown,
-      title: 'Queue',
+      title: S.of(context).queue,
       actions: [
         HoverIconButton(
           onPressed: hasQueue
               ? () => ref.read(playbackProvider.notifier).clearQueue()
               : null,
           color: Theme.of(context).colorScheme.onPrimary,
-          tooltip: 'Clear queue',
+          tooltip: S.of(context).clearQueue,
           icon: const Icon(Icons.playlist_remove),
         ),
       ],
@@ -31,7 +32,7 @@ class QueueSidebar extends ConsumerWidget {
           ref.read(queueSidebarVisibleProvider.notifier).state = false,
       child: hasQueue
           ? NowPlayingQueueView(isActive: isShown)
-          : const Center(child: Text('Nothing in queue')),
+          : Center(child: Text(S.of(context).nothingInQueue)),
     );
   }
 }

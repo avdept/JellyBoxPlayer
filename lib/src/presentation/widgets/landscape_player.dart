@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -369,7 +370,9 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
         color: _foreground,
         disabledColor: _foreground.withValues(alpha: 0.3),
         iconSize: 24,
-        tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
+        tooltip: hasLyrics
+            ? S.of(context).lyrics
+            : S.of(context).noLyricsForThisTrack,
         icon: const Icon(Icons.lyrics_outlined),
         selectedIcon: const Icon(Icons.lyrics),
         isSelected: _panel == _Panel.lyrics,
@@ -381,7 +384,9 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
     onPressed: () => _showPanel(_Panel.queue),
     color: _foreground,
     iconSize: 24,
-    tooltip: _panel == _Panel.queue ? 'Hide queue' : 'Queue',
+    tooltip: _panel == _Panel.queue
+        ? S.of(context).hideQueue
+        : S.of(context).queue,
     icon: const Icon(Icons.queue_music),
     selectedIcon: const Icon(Icons.queue_music),
     isSelected: _panel == _Panel.queue,

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
@@ -32,71 +33,104 @@ class SettingsPage extends ConsumerWidget {
     vertical: 10,
   );
 
-  static const Map<ItemList, String> _browseTabLabels = {
-    ItemList.albums: 'Albums',
-    ItemList.artists: 'Artists',
-    ItemList.songs: 'Songs',
-    ItemList.playlists: 'Playlists',
-    ItemList.genres: 'Genres',
+  static Map<ItemList, String> _browseTabLabels(BuildContext context) => {
+    ItemList.albums: S.of(context).albums,
+    ItemList.artists: S.of(context).artists,
+    ItemList.songs: S.of(context).songs,
+    ItemList.playlists: S.of(context).playlists,
+    ItemList.genres: S.of(context).genres,
   };
 
-  static const Map<KeepScreenOn, String> _keepScreenOnLabels = {
-    KeepScreenOn.never: 'Never',
-    KeepScreenOn.charging: 'While charging',
-    KeepScreenOn.always: 'Always',
+  static Map<KeepScreenOn, String> _keepScreenOnLabels(BuildContext context) =>
+      {
+        KeepScreenOn.never: S.of(context).never,
+        KeepScreenOn.charging: S.of(context).whileCharging,
+        KeepScreenOn.always: S.of(context).always,
+      };
+
+  static Map<AnimationSpeed, String> _animationSpeedLabels(
+    BuildContext context,
+  ) => {
+    AnimationSpeed.none: S.of(context).none,
+    AnimationSpeed.slow: S.of(context).slow,
+    AnimationSpeed.medium: S.of(context).medium,
+    AnimationSpeed.fast: S.of(context).fast,
   };
 
-  static const Map<AnimationSpeed, String> _animationSpeedLabels = {
-    AnimationSpeed.none: 'None',
-    AnimationSpeed.slow: 'Slow',
-    AnimationSpeed.medium: 'Medium',
-    AnimationSpeed.fast: 'Fast',
+  static Map<LyricsAlignment, String> _lyricsAlignmentLabels(
+    BuildContext context,
+  ) => {
+    LyricsAlignment.left: S.of(context).left,
+    LyricsAlignment.center: S.of(context).middle,
+    LyricsAlignment.right: S.of(context).right,
   };
 
-  static const Map<LyricsAlignment, String> _lyricsAlignmentLabels = {
-    LyricsAlignment.left: 'Left',
-    LyricsAlignment.center: 'Middle',
-    LyricsAlignment.right: 'Right',
+  static Map<StartPage, String> _startPageLabels(BuildContext context) => {
+    StartPage.home: S.of(context).home,
+    StartPage.browse: S.of(context).browse,
   };
 
-  static const Map<StartPage, String> _startPageLabels = {
-    StartPage.home: 'Home',
-    StartPage.browse: 'Browse',
+  static const Map<String, String> _languageEndonyms = {
+    'en': 'English',
   };
 
-  static const Map<ForwardCacheWindow, String> _forwardCacheWindowLabels = {
-    ForwardCacheWindow.min10: '10 min',
-    ForwardCacheWindow.min15: '15 min',
-    ForwardCacheWindow.min30: '30 min',
-    ForwardCacheWindow.min45: '45 min',
-    ForwardCacheWindow.min60: '60 min',
+  static Map<String, String> _languageLabels(BuildContext context) => {
+    'system': S.of(context).system,
+    for (final locale in S.delegate.supportedLocales)
+      locale.toString():
+          _languageEndonyms[locale.toString()] ?? locale.toString(),
   };
 
-  static const Map<StreamQuality, String> _streamQualityLabels = {
-    StreamQuality.original: 'Original',
-    StreamQuality.kbps320: '320 kbps',
-    StreamQuality.kbps256: '256 kbps',
-    StreamQuality.kbps192: '192 kbps',
-    StreamQuality.kbps128: '128 kbps',
-    StreamQuality.kbps96: '96 kbps',
-    StreamQuality.kbps64: '64 kbps',
+  static String _selectedLanguage(WidgetRef ref) {
+    final value = ref.watch(appSettingsProvider)[AppSetting.appLanguage];
+    final known = {
+      'system',
+      for (final locale in S.delegate.supportedLocales) locale.toString(),
+    };
+    return value is String && known.contains(value) ? value : 'system';
+  }
+
+  static Map<ForwardCacheWindow, String> _forwardCacheWindowLabels(
+    BuildContext context,
+  ) => {
+    ForwardCacheWindow.min10: S.of(context).minutesAbbreviated(10),
+    ForwardCacheWindow.min15: S.of(context).minutesAbbreviated(15),
+    ForwardCacheWindow.min30: S.of(context).minutesAbbreviated(30),
+    ForwardCacheWindow.min45: S.of(context).minutesAbbreviated(45),
+    ForwardCacheWindow.min60: S.of(context).minutesAbbreviated(60),
   };
 
-  static const Map<ContentUpdateInterval, String> _contentUpdateLabels = {
-    ContentUpdateInterval.min1: '1 minute',
-    ContentUpdateInterval.min5: '5 minutes',
-    ContentUpdateInterval.min15: '15 minutes',
-    ContentUpdateInterval.min30: '30 minutes',
-    ContentUpdateInterval.never: 'Never',
+  static Map<StreamQuality, String> _streamQualityLabels(
+    BuildContext context,
+  ) => {
+    StreamQuality.original: S.of(context).original,
+    StreamQuality.kbps320: S.of(context).kbpsLabel(320),
+    StreamQuality.kbps256: S.of(context).kbpsLabel(256),
+    StreamQuality.kbps192: S.of(context).kbpsLabel(192),
+    StreamQuality.kbps128: S.of(context).kbpsLabel(128),
+    StreamQuality.kbps96: S.of(context).kbpsLabel(96),
+    StreamQuality.kbps64: S.of(context).kbpsLabel(64),
   };
 
-  static const Map<ForwardCacheLimit, String> _forwardCacheLabels = {
-    ForwardCacheLimit.off: 'Off',
-    ForwardCacheLimit.mb500: '500 MB',
-    ForwardCacheLimit.gb1: '1 GB',
-    ForwardCacheLimit.gb2: '2 GB',
-    ForwardCacheLimit.gb4: '4 GB',
-    ForwardCacheLimit.gb8: '8 GB',
+  static Map<ContentUpdateInterval, String> _contentUpdateLabels(
+    BuildContext context,
+  ) => {
+    ContentUpdateInterval.min1: S.of(context).minutesCount(1),
+    ContentUpdateInterval.min5: S.of(context).minutesCount(5),
+    ContentUpdateInterval.min15: S.of(context).minutesCount(15),
+    ContentUpdateInterval.min30: S.of(context).minutesCount(30),
+    ContentUpdateInterval.never: S.of(context).never,
+  };
+
+  static Map<ForwardCacheLimit, String> _forwardCacheLabels(
+    BuildContext context,
+  ) => {
+    ForwardCacheLimit.off: S.of(context).off,
+    ForwardCacheLimit.mb500: S.of(context).megabytesLabel(500),
+    ForwardCacheLimit.gb1: S.of(context).gigabytesLabel(1),
+    ForwardCacheLimit.gb2: S.of(context).gigabytesLabel(2),
+    ForwardCacheLimit.gb4: S.of(context).gigabytesLabel(4),
+    ForwardCacheLimit.gb8: S.of(context).gigabytesLabel(8),
   };
 
   ButtonStyle get _buttonStyle => TextButton.styleFrom(
@@ -116,7 +150,7 @@ class SettingsPage extends ConsumerWidget {
           backgroundColor: Themes.changelogSurface,
           borderRadius: BorderRadius.circular(8),
           width: MediaQuery.sizeOf(context).width / 2,
-          title: changelogTitle,
+          title: S.of(context).whatsNew,
         ),
       );
     } else {
@@ -126,7 +160,7 @@ class SettingsPage extends ConsumerWidget {
           projectId: updatifyProjectId,
           backgroundColor: Themes.changelogSurface,
           borderRadius: BorderRadius.circular(8),
-          title: changelogTitle,
+          title: S.of(context).whatsNew,
         ),
       );
     }
@@ -157,7 +191,7 @@ class SettingsPage extends ConsumerWidget {
                   bottom: 20,
                 ),
                 child: Text(
-                  'Settings',
+                  S.of(context).settings,
                   style: TextStyle(
                     fontSize: device.isMobile ? 24 : 36,
                     fontWeight: FontWeight.w600,
@@ -181,42 +215,42 @@ class SettingsPage extends ConsumerWidget {
                       const SizedBox(height: 4),
                       _supportButton(context),
                     ],
-                    _sectionHeader('Servers'),
+                    _sectionHeader(S.of(context).servers),
                     const ServerAccountList(),
-                    _sectionHeader('Connection'),
+                    _sectionHeader(S.of(context).connection),
                     const ServerAddressSettings(),
                     if (ref.watch(cloudAvailableProvider)) ...[
                       _sectionHeader('Jellybox Cloud'),
                       const JellyboxCloudSettings(),
                     ],
-                    _sectionHeader('General'),
+                    _sectionHeader(S.of(context).general),
                     if (kDebugMode) _settingsButton(context),
                     if (kDebugMode) _queueCacheButton(context),
                     _changelogButton(context, device),
-                    _sectionHeader('Home Page'),
+                    _sectionHeader(S.of(context).homePage),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.generatedPlaylistsDisabled,
-                      label: 'Disable auto-generated playlists',
+                      label: S.of(context).disableAutoGeneratedPlaylists,
                     ),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.favouritesHidden,
-                      label: 'Hide favourites',
+                      label: S.of(context).hideFavourites,
                     ),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.recentlyPlayedHidden,
-                      label: 'Hide recently played',
+                      label: S.of(context).hideRecentlyPlayed,
                     ),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _settingDropdown<ContentUpdateInterval>(
                           context: context,
-                          label: 'Content update interval',
+                          label: S.of(context).contentUpdateInterval,
                           value: ref.watch(contentUpdateIntervalProvider),
-                          options: _contentUpdateLabels,
+                          options: _contentUpdateLabels(context),
                           onChanged: (value) => ref
                               .read(appSettingsProvider.notifier)
                               .setValue(
@@ -229,15 +263,23 @@ class SettingsPage extends ConsumerWidget {
                     ),
                     _settingNote(
                       context,
-                      'How often the home page refreshes and downloaded '
-                      'playlists check your server for changes.',
+                      S.of(context).contentUpdateIntervalNote,
                     ),
-                    _sectionHeader('UI'),
+                    _sectionHeader(S.of(context).ui),
+                    _settingDropdown<String>(
+                      context: context,
+                      label: S.of(context).language,
+                      value: _selectedLanguage(ref),
+                      options: _languageLabels(context),
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.appLanguage, value),
+                    ),
                     _settingDropdown<StartPage>(
                       context: context,
-                      label: 'Default start page',
+                      label: S.of(context).defaultStartPage,
                       value: ref.watch(defaultStartPageProvider),
-                      options: _startPageLabels,
+                      options: _startPageLabels(context),
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultStartPage, value.name),
@@ -245,23 +287,23 @@ class SettingsPage extends ConsumerWidget {
                     if (!device.isMobile) ...[
                       _settingDropdown<AnimationSpeed>(
                         context: context,
-                        label: 'Animation speed',
+                        label: S.of(context).animationSpeed,
                         value: ref.watch(animationSpeedProvider),
-                        options: _animationSpeedLabels,
+                        options: _animationSpeedLabels(context),
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
                             .setValue(AppSetting.animationSpeed, value.name),
                       ),
                       _settingNote(
                         context,
-                        'Affects Studio Mode and Landscape Mode.',
+                        S.of(context).animationSpeedNote,
                       ),
                     ],
                     _settingDropdown<ItemList>(
                       context: context,
-                      label: 'Default browse tab',
+                      label: S.of(context).defaultBrowseTab,
                       value: ref.watch(defaultBrowseTabProvider),
-                      options: _browseTabLabels,
+                      options: _browseTabLabels(context),
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.defaultBrowseTab, value.name),
@@ -269,41 +311,42 @@ class SettingsPage extends ConsumerWidget {
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.letterRuler,
-                      label: 'Show A–Z index on browse lists sorted by name',
+                      label: S.of(context).letterRulerSetting,
                     ),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.artworkAccent,
-                      label: 'Match button colours to the current track',
+                      label: S.of(context).artworkAccentSetting,
                     ),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.nowPlayingHalo,
-                      label: 'Enable halo effect for currently playing media',
+                      label: S.of(context).nowPlayingHaloSetting,
                     ),
                     if (device.isMobile) ...[
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.albumArtTint,
-                        label: 'Tint album pages with cover art colours',
+                        label: S.of(context).albumArtTintSetting,
                       ),
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.animatedCovers,
-                        label: 'Animated album covers',
+                        label: S.of(context).animatedAlbumCovers,
                       ),
                       _settingNote(
                         context,
-                        'Looks up for animated covers and plays them on '
-                        'Wi-Fi only.',
+                        S.of(context).animatedCoversNote,
                       ),
                     ],
-                    _sectionHeader('Streaming'),
+                    _sectionHeader(S.of(context).streaming),
                     _settingDropdown<StreamQuality>(
                       context: context,
-                      label: deviceHasCellular ? 'Wi-Fi' : 'Streaming quality',
+                      label: deviceHasCellular
+                          ? S.of(context).wifi
+                          : S.of(context).streamingQuality,
                       value: ref.watch(streamQualityWifiProvider),
-                      options: _streamQualityLabels,
+                      options: _streamQualityLabels(context),
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.streamQualityWifi, value.name),
@@ -311,9 +354,9 @@ class SettingsPage extends ConsumerWidget {
                     if (deviceHasCellular)
                       _settingDropdown<StreamQuality>(
                         context: context,
-                        label: 'Cellular',
+                        label: S.of(context).cellular,
                         value: ref.watch(streamQualityCellularProvider),
-                        options: _streamQualityLabels,
+                        options: _streamQualityLabels(context),
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
                             .setValue(
@@ -323,30 +366,26 @@ class SettingsPage extends ConsumerWidget {
                       ),
                     _settingNote(
                       context,
-                      'Songs above the limit are converted by your server. '
-                      'Changes apply from the next song. Downloads always '
-                      'keep the original quality.',
+                      S.of(context).streamingQualityNote,
                     ),
                     if (deviceHasCellular) ...[
-                      _sectionHeader('Downloads'),
+                      _sectionHeader(S.of(context).downloads),
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.downloadSyncOnCellular,
-                        label: 'Update downloaded playlists on cellular',
+                        label: S.of(context).downloadSyncOnCellularSetting,
                       ),
                       _settingNote(
                         context,
-                        'Downloaded playlists follow your server: new songs '
-                        'are downloaded and removed songs are deleted. '
-                        'Otherwise this only happens on Wi-Fi.',
+                        S.of(context).downloadSyncNote,
                       ),
                     ],
-                    _sectionHeader('Cache'),
+                    _sectionHeader(S.of(context).cache),
                     _settingDropdown<ForwardCacheLimit>(
                       context: context,
-                      label: 'Cache limit',
+                      label: S.of(context).cacheLimit,
                       value: ref.watch(forwardCacheLimitProvider),
-                      options: _forwardCacheLabels,
+                      options: _forwardCacheLabels(context),
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.forwardCacheLimit, value.name),
@@ -355,9 +394,9 @@ class SettingsPage extends ConsumerWidget {
                     if (ref.watch(forwardCacheLimitProvider).isEnabled)
                       _settingDropdown<ForwardCacheWindow>(
                         context: context,
-                        label: 'Cache ahead',
+                        label: S.of(context).cacheAhead,
                         value: ref.watch(forwardCacheWindowProvider),
-                        options: _forwardCacheWindowLabels,
+                        options: _forwardCacheWindowLabels(context),
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
                             .setValue(
@@ -367,53 +406,52 @@ class SettingsPage extends ConsumerWidget {
                       ),
                     _clearImageCacheButton(context),
                     if (device.isMobile) ...[
-                      _sectionHeader('Landscape player'),
+                      _sectionHeader(S.of(context).landscapePlayer),
                       _settingDropdown<KeepScreenOn>(
                         context: context,
-                        label: 'Keep the screen on',
+                        label: S.of(context).keepTheScreenOn,
                         value: ref.watch(keepScreenOnProvider),
-                        options: _keepScreenOnLabels,
+                        options: _keepScreenOnLabels(context),
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
                             .setValue(AppSetting.keepScreenOn, value.name),
                       ),
                       _settingDropdown<AnimationSpeed>(
                         context: context,
-                        label: 'Animation speed',
+                        label: S.of(context).animationSpeed,
                         value: ref.watch(animationSpeedProvider),
-                        options: _animationSpeedLabels,
+                        options: _animationSpeedLabels(context),
                         onChanged: (value) => ref
                             .read(appSettingsProvider.notifier)
                             .setValue(AppSetting.animationSpeed, value.name),
                       ),
                       _settingNote(
                         context,
-                        'Affects Studio Mode and Landscape Mode.',
+                        S.of(context).animationSpeedNote,
                       ),
                     ],
                     if (!device.isMobile) ...[
-                      _sectionHeader('Studio Mode'),
+                      _sectionHeader(S.of(context).studioMode),
                       if (supportsWindowFullscreen)
                         _settingCheckbox(
                           ref: ref,
                           setting: AppSetting.studioModeFullscreen,
-                          label:
-                              'Make player full screen when Studio Mode enabled',
+                          label: S.of(context).studioModeFullscreenSetting,
                         ),
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.studioModeVideoCovers,
-                        label: 'Use video covers when available',
+                        label: S.of(context).useVideoCoversSetting,
                       ),
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.studioModePinnedControls,
-                        label: 'Always show controls',
+                        label: S.of(context).alwaysShowControls,
                       ),
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.studioModeCoverOverVideo,
-                        label: 'Show cover art over video background',
+                        label: S.of(context).coverOverVideoSetting,
                       ),
                     ],
                     if (supportsDiscordPresence) ...[
@@ -421,17 +459,17 @@ class SettingsPage extends ConsumerWidget {
                       _settingCheckbox(
                         ref: ref,
                         setting: AppSetting.discordRichPresence,
-                        label: 'Share what I am listening to on Discord',
+                        label: S.of(context).discordPresenceSetting,
                       ),
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
-                    _sectionHeader('Lyrics'),
+                    _sectionHeader(S.of(context).lyrics),
                     _settingDropdown<LyricsAlignment>(
                       context: context,
-                      label: 'Lyrics text alignment',
+                      label: S.of(context).lyricsTextAlignment,
                       value: ref.watch(lyricsAlignmentProvider),
-                      options: _lyricsAlignmentLabels,
+                      options: _lyricsAlignmentLabels(context),
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.lyricsAlignment, value.name),
@@ -439,26 +477,23 @@ class SettingsPage extends ConsumerWidget {
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.lrclibLyrics,
-                      label: 'Find missing lyrics on LRCLIB',
+                      label: S.of(context).lrclibLyricsSetting,
                     ),
                     _settingNote(
                       context,
-                      'When your server has no lyrics for a song, looks '
-                      'them up on lrclib.net, a free public lyrics library.',
+                      S.of(context).lrclibLyricsNote,
                     ),
-                    _sectionHeader('Privacy'),
+                    _sectionHeader(S.of(context).privacy),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.telemetryOptOut,
-                      label: 'Opt out of analytics and crash reports',
+                      label: S.of(context).telemetryOptOutSetting,
                     ),
                     _settingNote(
                       context,
-                      'Jellybox counts app launches and sends crash reports to '
-                      'help fix bugs. Nothing about your library or listening '
-                      'is collected.',
+                      S.of(context).telemetryNote,
                     ),
-                    if (!device.isDesktop) _logOutButton(ref),
+                    if (!device.isDesktop) _logOutButton(context, ref),
                     _versionLabel(context),
                   ],
                 ),
@@ -478,7 +513,7 @@ class SettingsPage extends ConsumerWidget {
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(width: 30, height: 30),
       visualDensity: VisualDensity.compact,
-      tooltip: 'Empty cache',
+      tooltip: S.of(context).emptyCache,
       color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
     );
   }
@@ -487,70 +522,72 @@ class SettingsPage extends ConsumerWidget {
     final confirmed = await showAppDialog<bool>(
       context,
       builder: (context) => AlertDialog.adaptive(
-        title: const Text('Empty the cache?', textAlign: TextAlign.center),
-        content: const Text(
-          'Tracks cached ahead for offline playback will be deleted.',
+        title: Text(S.of(context).emptyCacheQuestion, textAlign: TextAlign.center),
+        content: Text(
+          S.of(context).emptyCacheWarning,
           textAlign: TextAlign.center,
         ),
         actions: [
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: Text(S.of(context).no),
           ),
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(true),
             isDestructiveAction: true,
-            child: const Text('Yes'),
+            child: Text(S.of(context).yes),
           ),
         ],
       ),
     );
     if (confirmed != true || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final message = S.of(context).cacheEmptied;
     await ref.read(forwardCacheProvider.notifier).purge();
-    messenger.showSnackBar(const SnackBar(content: Text('Cache emptied')));
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _clearImageCacheButton(BuildContext context) => TextButton.icon(
     onPressed: () => _onClearImageCachePressed(context),
     style: _buttonStyle,
     icon: const Icon(Icons.image_not_supported_outlined),
-    label: const Text('Clear image cache'),
+    label: Text(S.of(context).clearImageCache),
   );
 
   Future<void> _onClearImageCachePressed(BuildContext context) async {
     final confirmed = await showAppDialog<bool>(
       context,
       builder: (context) => AlertDialog.adaptive(
-        title: const Text(
-          'Clear the image cache?',
+        title: Text(
+          S.of(context).clearImageCacheQuestion,
           textAlign: TextAlign.center,
         ),
-        content: const Text(
-          'Artwork will be downloaded again from your server as you browse.',
+        content: Text(
+          S.of(context).clearImageCacheWarning,
           textAlign: TextAlign.center,
         ),
         actions: [
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: Text(S.of(context).no),
           ),
           AdaptiveDialogAction(
             onPressed: () => Navigator.of(context).pop(true),
             isDestructiveAction: true,
-            child: const Text('Yes'),
+            child: Text(S.of(context).yes),
           ),
         ],
       ),
     );
     if (confirmed != true || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
+    final message = S.of(context).imageCacheCleared;
     await ArtworkCache.instance.emptyCache();
     PaintingBinding.instance.imageCache
       ..clear()
       ..clearLiveImages();
     messenger.showSnackBar(
-      const SnackBar(content: Text('Image cache cleared')),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -558,21 +595,21 @@ class SettingsPage extends ConsumerWidget {
     onPressed: () => context.pushNamed(Routes.queueCache.name),
     style: _buttonStyle,
     icon: const Icon(JPlayer.download),
-    label: const Text('Queue cache'),
+    label: Text(S.of(context).queueCache),
   );
 
   Widget _settingsButton(BuildContext context) => TextButton.icon(
     onPressed: () => _onPaletteSettingsPressed(context),
     style: _buttonStyle,
     icon: const Icon(JPlayer.music),
-    label: const Text('Palette settings'),
+    label: Text(S.of(context).paletteSettings),
   );
 
   Widget _supportButton(BuildContext context) => TextButton.icon(
     onPressed: () => context.pushNamed(Routes.support.name),
     style: _buttonStyle,
     icon: const Icon(Icons.help_outline),
-    label: const Text('Support'),
+    label: Text(S.of(context).support),
   );
 
   Widget _changelogButton(BuildContext context, DeviceType device) {
@@ -580,7 +617,7 @@ class SettingsPage extends ConsumerWidget {
       onPressed: () => _onChangelogPressed(context, device),
       style: _buttonStyle,
       icon: const Icon(Icons.history),
-      label: const Text('Changelog'),
+      label: Text(S.of(context).changelog),
     );
   }
 
@@ -591,10 +628,10 @@ class SettingsPage extends ConsumerWidget {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              const SnackBar(content: Text('Home page refreshed')),
+              SnackBar(content: Text(S.of(context).homePageRefreshed)),
             );
         },
-        tooltip: 'Refresh now',
+        tooltip: S.of(context).refreshNow,
         iconSize: 20,
         color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
         icon: const Icon(Icons.refresh),
@@ -738,8 +775,8 @@ class SettingsPage extends ConsumerWidget {
       padding: const EdgeInsets.only(left: 12, top: 20),
       child: Text(
         build.isEmpty
-            ? 'Version ${appInfo.version}'
-            : 'Version ${appInfo.version} ($build)',
+            ? S.of(context).versionLabel(appInfo.version)
+            : S.of(context).versionBuildLabel(appInfo.version, build),
         style: TextStyle(
           fontSize: 12,
           height: 1.2,
@@ -749,14 +786,15 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _logOutButton(WidgetRef ref) => TextButton.icon(
-    onPressed: ref.read(authProvider.notifier).logout,
-    style: _buttonStyle,
-    icon: const Icon(JPlayer.log_out),
-    label: Text(
-      ref.watch(accountsProvider).length > 1
-          ? 'Log out of all servers'
-          : 'Log out',
-    ),
-  );
+  Widget _logOutButton(BuildContext context, WidgetRef ref) =>
+      TextButton.icon(
+        onPressed: ref.read(authProvider.notifier).logout,
+        style: _buttonStyle,
+        icon: const Icon(JPlayer.log_out),
+        label: Text(
+          ref.watch(accountsProvider).length > 1
+              ? S.of(context).logOutOfAllServers
+              : S.of(context).logOut,
+        ),
+      );
 }
