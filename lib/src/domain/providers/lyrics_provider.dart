@@ -1,14 +1,47 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/lyrics/lrclib_client.dart';
+import 'package:jplayer/src/core/lyrics/lrclib_lyrics_source.dart';
+import 'package:jplayer/src/core/lyrics/lyrics_source.dart';
+import 'package:jplayer/src/core/lyrics/server_lyrics_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
+final lrclibClientProvider = Provider<LrclibClient>(
+  (ref) => LrclibClient(userAgent: _userAgent()),
+);
+
+String _userAgent() {
+  const project = 'https://github.com/avdept/JellyBoxPlayer';
+  try {
+    return 'JellyBox v${appInfo.version} ($project)';
+  } catch (_) {
+    return 'JellyBox ($project)';
+  }
+}
+
+final lyricsSourcesProvider = Provider<List<LyricsSource>>(
+  (ref) => [
+    if (ref.watch(serverCapabilitiesProvider).lyrics)
+      ServerLyricsSource(ref.watch(mediaServerClientProvider)),
+    if (ref.watch(settingProvider(AppSetting.lrclibLyrics)))
+      LrclibLyricsSource(ref.watch(lrclibClientProvider)),
+  ],
+);
+
 final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
   if (ref.watch(isOfflineProvider)) return Future.value();
-  if (!ref.watch(serverCapabilitiesProvider).lyrics) return Future.value();
-  return ref.watch(mediaServerClientProvider).getLyrics(itemId);
+  final sources = ref.watch(lyricsSourcesProvider);
+  if (sources.isEmpty) return Future.value();
+  final song = ref.read(barSongProvider);
+  final request = song != null && song.id == itemId
+      ? LyricsRequest.forSong(song)
+      : LyricsRequest(itemId: itemId);
+  return resolveLyrics(sources, request);
 });
 
 final lyricsVisibleProvider = StateProvider<bool>((ref) => false);
