@@ -53,6 +53,12 @@ class SettingsPage extends ConsumerWidget {
     AnimationSpeed.fast: 'Fast',
   };
 
+  static const Map<StudioLyricsPlacement, String> _studioLyricsLabels = {
+    StudioLyricsPlacement.right: 'Right side',
+    StudioLyricsPlacement.left: 'Left side',
+    StudioLyricsPlacement.separate: 'Separate page',
+  };
+
   static const Map<LyricsAlignment, String> _lyricsAlignmentLabels = {
     LyricsAlignment.left: 'Left',
     LyricsAlignment.center: 'Middle',
@@ -414,6 +420,18 @@ class SettingsPage extends ConsumerWidget {
                         ref: ref,
                         setting: AppSetting.studioModeCoverOverVideo,
                         label: 'Show cover art over video background',
+                      ),
+                      _settingDropdown<StudioLyricsPlacement>(
+                        context: context,
+                        label: 'Show lyrics',
+                        value: ref.watch(studioLyricsPlacementProvider),
+                        options: _studioLyricsLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(
+                              AppSetting.studioModeLyricsPlacement,
+                              value.name,
+                            ),
                       ),
                     ],
                     if (supportsDiscordPresence) ...[

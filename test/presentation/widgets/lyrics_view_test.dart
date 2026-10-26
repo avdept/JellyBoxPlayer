@@ -118,7 +118,7 @@ void main() {
       expect(active.color, Colors.white);
       expect(inactive.fontWeight, FontWeight.w500);
       expect(inactive.color, isNot(Colors.white));
-      expect(active.fontSize, greaterThan(inactive.fontSize!));
+      expect(active.fontSize, inactive.fontSize);
     });
 
     testWidgets('- leaves unsynced lyrics solid white with no active line', (

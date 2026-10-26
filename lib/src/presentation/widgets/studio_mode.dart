@@ -59,6 +59,8 @@ class _StudioModeView extends ConsumerStatefulWidget {
 }
 
 class _StudioModeViewState extends ConsumerState<_StudioModeView> {
+  static const _splitDuration = Duration(milliseconds: 450);
+  static const Curve _splitCurve = Curves.easeInOutCubic;
   static const double _playingSpeed = 1 / 90;
   static const double _pausedSpeed = 1 / 450;
   static const double _speedRampSeconds = 1.5;
@@ -78,6 +80,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   double _speedScale = AnimationSpeed.medium.multiplier;
   Timer? _hideTimer;
   bool _controlsVisible = true;
+  bool _lyricsMounted = false;
   int _activePointers = 0;
   bool _didEnterWindowFullscreen = false;
 
@@ -262,6 +265,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     final coverOverVideo = ref.watch(
       settingProvider(AppSetting.studioModeCoverOverVideo),
     );
+    final placement = ref.watch(studioLyricsPlacementProvider);
     return Material(
       type: MaterialType.transparency,
       child: Focus(
@@ -302,24 +306,80 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                 ),
                 RepaintBoundary(
                   child: SafeArea(
-                    child: FlipPanel(
-                      side: ref.watch(studioModeLyricsProvider)
-                          ? FlipSide.left
-                          : FlipSide.front,
-                      front: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 500),
-                        child: videoShown && !coverOverVideo
-                            ? KeyedSubtree(
-                                key: const ValueKey(true),
-                                child: _motionFace(),
-                              )
-                            : KeyedSubtree(
-                                key: const ValueKey(false),
-                                child: _nowPlayingFace(),
-                              ),
-                      ),
-                      left: _lyricsFace(),
-                    ),
+                    child: placement == StudioLyricsPlacement.separate
+                        ? FlipPanel(
+                            side: ref.watch(studioModeLyricsProvider)
+                                ? FlipSide.left
+                                : FlipSide.front,
+                            front: _stageFace(
+                              videoShown: videoShown,
+                              coverOverVideo: coverOverVideo,
+                              lyricsShown: false,
+                            ),
+                            left: _lyricsFace(),
+                          )
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final lyricsShown = ref.watch(
+                                studioModeLyricsProvider,
+                              );
+                              if (lyricsShown) _lyricsMounted = true;
+                              final onLeft =
+                                  placement == StudioLyricsPlacement.left;
+                              final lyricsWidth = constraints.maxWidth / 2;
+                              return Stack(
+                                children: [
+                                  AnimatedPositioned(
+                                    duration: _splitDuration,
+                                    curve: _splitCurve,
+                                    top: 0,
+                                    bottom: 0,
+                                    left: lyricsShown && onLeft
+                                        ? lyricsWidth
+                                        : 0,
+                                    width: lyricsShown
+                                        ? constraints.maxWidth - lyricsWidth
+                                        : constraints.maxWidth,
+                                    child: _stageFace(
+                                      videoShown: videoShown,
+                                      coverOverVideo: coverOverVideo,
+                                      lyricsShown: lyricsShown,
+                                    ),
+                                  ),
+                                  AnimatedPositioned(
+                                    duration: _splitDuration,
+                                    curve: _splitCurve,
+                                    top: 0,
+                                    bottom: 0,
+                                    left: onLeft
+                                        ? (lyricsShown ? 0 : -lyricsWidth)
+                                        : (lyricsShown
+                                              ? constraints.maxWidth -
+                                                    lyricsWidth
+                                              : constraints.maxWidth),
+                                    width: lyricsWidth,
+                                    onEnd: () {
+                                      if (!ref.read(
+                                            studioModeLyricsProvider,
+                                          ) &&
+                                          mounted) {
+                                        setState(
+                                          () => _lyricsMounted = false,
+                                        );
+                                      }
+                                    },
+                                    child: AnimatedOpacity(
+                                      opacity: lyricsShown ? 1 : 0,
+                                      duration: _splitDuration,
+                                      child: _lyricsMounted
+                                          ? _lyricsFace()
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                   ),
                 ),
                 Positioned(
@@ -357,6 +417,23 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       ),
     );
   }
+
+  Widget _stageFace({
+    required bool videoShown,
+    required bool coverOverVideo,
+    required bool lyricsShown,
+  }) => AnimatedSwitcher(
+    duration: const Duration(milliseconds: 500),
+    child: videoShown && !coverOverVideo && !lyricsShown
+        ? KeyedSubtree(
+            key: const ValueKey(true),
+            child: _motionFace(),
+          )
+        : KeyedSubtree(
+            key: const ValueKey(false),
+            child: _nowPlayingFace(),
+          ),
+  );
 
   Widget _nowPlayingFace() => LayoutBuilder(
     builder: (context, constraints) {

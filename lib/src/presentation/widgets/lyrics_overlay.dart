@@ -169,12 +169,14 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
   static const _maxExtrapolation = Duration(milliseconds: 1500);
 
   final _clock = ValueNotifier<Duration>(Duration.zero);
+  final _scrollController = ScrollController();
   final _sinceAnchor = Stopwatch();
   late final Ticker _ticker = createTicker(_onTick);
   Duration _anchor = Duration.zero;
   bool _playing = false;
   List<GlobalKey> _lineKeys = const [];
   int _activeLine = -1;
+  int _autoScrolls = 0;
   bool _didInitialSync = false;
 
   @override
@@ -200,6 +202,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
   void dispose() {
     _ticker.dispose();
     _clock.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -251,13 +254,14 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     if (_activeLine < 0 || _activeLine >= _lineKeys.length) return;
     final lineContext = _lineKeys[_activeLine].currentContext;
     if (lineContext == null) return;
+    _autoScrolls++;
     unawaited(
       Scrollable.ensureVisible(
         lineContext,
         alignment: 0.4,
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeOutCubic,
-      ),
+      ).whenComplete(() => _autoScrolls--),
     );
   }
 
@@ -297,20 +301,30 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
         final isSynced = lyrics!.isSynced;
         final textAlign = _textAlign;
 
-        return SingleChildScrollView(
-          padding: widget.padding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < lines.length; i++)
-                _line(
-                  i,
-                  lines[i],
-                  isSynced: isSynced,
-                  offset: lyrics.offset,
-                  textAlign: textAlign,
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: Scrollbar(
+            controller: _scrollController,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (_) => _autoScrolls > 0,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: widget.padding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < lines.length; i++)
+                      _line(
+                        i,
+                        lines[i],
+                        isSynced: isSynced,
+                        offset: lyrics.offset,
+                        textAlign: textAlign,
+                      ),
+                  ],
                 ),
-            ],
+              ),
+            ),
           ),
         );
       },
@@ -338,17 +352,9 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
         ? 0.4
         : (0.45 - 0.03 * distance).clamp(0.25, 0.45);
 
-    return AnimatedPadding(
+    return Padding(
       key: _lineKeys[index],
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutCubic,
-      padding: EdgeInsets.symmetric(
-        vertical: switch ((isSynced, isActive)) {
-          (false, _) => 10,
-          (true, true) => widget.device.isMobile ? 16 : 22,
-          (true, false) => 7,
-        },
-      ),
+      padding: EdgeInsets.symmetric(vertical: isSynced ? 7 : 10),
       child: GestureDetector(
         onTap: (isSynced && start != null)
             ? () => ref.read(barControlsProvider).seek(start)
@@ -372,9 +378,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
               color: (!isSynced || isActive)
                   ? Colors.white
                   : Colors.white.withOpacity(fade),
-              fontSize: isActive
-                  ? (widget.device.isMobile ? 24 : 30)
-                  : (widget.device.isMobile ? 19 : 24),
+              fontSize: widget.device.isMobile ? 19 : 24,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               height: 1.4,
             ),
