@@ -8,13 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
-import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
-import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/lyrics_provider.dart';
-import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
-import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/audio_quality_badge.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
@@ -80,7 +76,7 @@ class _LandscapePlayerScopeState extends ConsumerState<LandscapePlayerScope> {
     }
 
     final hasSong = ref.watch(
-      nowPlayingProvider.select((song) => song != null),
+      barMediaItemProvider.select((song) => song != null),
     );
     _applyOrientations(hasSong ? _phoneOrientations : _portraitOrientations);
 
@@ -138,7 +134,7 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
   @override
   void initState() {
     super.initState();
-    _isPlaying.value = ref.read(playbackProvider).status.isPlaying;
+    _isPlaying.value = ref.read(barPlayingProvider);
     unawaited(
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
     );
@@ -165,13 +161,13 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
   @override
   Widget build(BuildContext context) {
     ref.listen(
-      playbackProvider.select((state) => state.status.isPlaying),
+      barPlayingProvider,
       (_, isPlaying) => _isPlaying.value = isPlaying,
     );
 
     final colorScheme =
         ref.watch(artworkSchemeProvider).valueOrNull ?? _theme.colorScheme;
-    final song = ref.watch(nowPlayingProvider);
+    final song = ref.watch(barMediaItemProvider);
 
     return Theme(
       data: _theme.copyWith(colorScheme: colorScheme),
@@ -325,8 +321,8 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
   Widget _transport(MediaItem? song, ColorScheme colorScheme) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      const PositionSlider(),
-      PositionLabels(
+      const PositionSlider.bar(),
+      PositionLabels.bar(
         fontSize: 12,
         middle: AudioQualityBadge.heard(
           song?.extras,
@@ -393,12 +389,14 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
 
   Widget _likeButton() => Consumer(
     builder: (context, ref, _) {
-      final song = ref.watch(currentSongProvider);
+      final song = ref.watch(barSongProvider);
       if (song == null) return const SizedBox.shrink();
       final isOffline = ref.watch(isOfflineProvider);
 
       return HoverIconButton(
-        onPressed: isOffline ? null : () => _toggleFavourite(song),
+        onPressed: isOffline
+            ? null
+            : () => ref.read(barControlsProvider).toggleFavourite(song),
         iconSize: 26,
         color: _foreground,
         mutedHover: true,
@@ -410,43 +408,22 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
     },
   );
 
-  Future<void> _toggleFavourite(LibraryItem song) async {
-    final favourite = !song.userData.isFavorite;
-    try {
-      await ref
-          .read(mediaServerClientProvider)
-          .setFavorite(song.id, favorite: favourite);
-    } on Object {
-      return;
-    }
-    if (!mounted) return;
-    ref.invalidate(favouriteSongsProvider);
-    ref.read(favouritesChangedProvider.notifier).state++;
-    ref
-        .read(playbackProvider.notifier)
-        .updateSong(
-          song.copyWith(
-            userData: song.userData.copyWith(isFavorite: favourite),
-          ),
-        );
-  }
-
   Widget _playPauseButton(ColorScheme colorScheme) => PlayPauseButton(
-    onPressed: ref.read(playbackProvider.notifier).playPause,
+    onPressed: ref.read(barControlsProvider).togglePlay,
     background: _foreground,
     foreground: colorScheme.primaryContainer,
     stateNotifier: _isPlaying,
   );
 
   Widget _prevTrackButton() => HoverIconButton(
-    onPressed: ref.read(playbackProvider.notifier).prev,
+    onPressed: ref.read(barControlsProvider).previous,
     color: _foreground,
     iconSize: 34,
     icon: const Icon(Entypo.fast_backward),
   );
 
   Widget _nextTrackButton() => HoverIconButton(
-    onPressed: ref.read(playbackProvider.notifier).next,
+    onPressed: ref.read(barControlsProvider).next,
     color: _foreground,
     iconSize: 34,
     icon: const Icon(Entypo.fast_forward),
