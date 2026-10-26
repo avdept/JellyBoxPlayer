@@ -17,7 +17,6 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 
 mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   LibraryItem get album;
@@ -32,9 +31,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   final GlobalKey titleKey = GlobalKey(debugLabel: 'title');
   final ScrollController scrollController = ScrollController();
   final ValueNotifier<double> titleOpacity = ValueNotifier<double>(0);
-  final ValueNotifier<MediaItem?> currentSong = ValueNotifier<MediaItem?>(
-    null,
-  );
+  final ValueNotifier<String?> playingSongId = ValueNotifier<String?>(null);
   List<LibraryItem> songs = [];
   bool isLoadingSongs = true;
   bool loadFailed = false;
@@ -55,10 +52,13 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     imageService = ref.read(imageServiceProvider);
     unawaited(_loadSongs());
     unawaited(_loadDescription());
-    currentSong.value = ref.read(nowPlayingProvider);
-    ref.listenManual<MediaItem?>(nowPlayingProvider, (_, song) {
+    playingSongId.value = ref.read(barSongProvider)?.id;
+    ref.listenManual<String?>(barSongProvider.select((song) => song?.id), (
+      _,
+      songId,
+    ) {
       if (!mounted) return;
-      currentSong.value = song;
+      playingSongId.value = songId;
       ref.read(imageSchemeProvider.notifier).state = imageService.itemImage(
         album,
       );
@@ -77,7 +77,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   void dispose() {
     scrollController.dispose();
     titleOpacity.dispose();
-    currentSong.dispose();
+    playingSongId.dispose();
     super.dispose();
   }
 
@@ -228,12 +228,12 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         if (showHeaders) SliverToBoxAdapter(child: _discHeader(section)),
         SliverList.builder(
           itemBuilder: (context, index) => ValueListenableBuilder(
-            valueListenable: currentSong,
-            builder: (context, item, other) {
+            valueListenable: playingSongId,
+            builder: (context, songId, other) {
               final song = section.songs[index];
               return SongRowView(
                 song: song,
-                isPlaying: item != null && song.id == item.id,
+                isPlaying: song.id == songId,
                 onTap: (song) => ref
                     .read(playbackProvider.notifier)
                     .play(song, songs, album, sourceId: album.id),

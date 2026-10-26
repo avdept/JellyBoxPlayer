@@ -513,10 +513,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           data: (list) {
             if (value == ItemList.songs) {
               final currentSongId = ref.watch(
-                playbackProvider.select((s) {
-                  final idx = s.currentMediaIndex;
-                  return idx != null ? s.songs.elementAtOrNull(idx)?.id : null;
-                }),
+                barSongProvider.select((song) => song?.id),
               );
               return SliverFixedExtentList.builder(
                 key: _listKey,

@@ -10,8 +10,8 @@ import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/download_sync_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
-import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -19,7 +19,6 @@ import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 
 class PlaylistPage extends ConsumerStatefulWidget {
   const PlaylistPage({required this.playlist, super.key});
@@ -32,7 +31,7 @@ class PlaylistPage extends ConsumerStatefulWidget {
 class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   final _scrollController = ScrollController();
   final _titleOpacity = ValueNotifier<double>(0);
-  late ValueNotifier<MediaItem?> _currentSong;
+  late ValueNotifier<String?> _playingSongId;
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> songs = [];
   bool _songsLoaded = false;
@@ -65,13 +64,16 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   @override
   void initState() {
     super.initState();
-    _currentSong = ValueNotifier<MediaItem?>(null);
+    _playingSongId = ValueNotifier<String?>(null);
     _imageService = ref.read(imageServiceProvider);
     unawaited(_getSongs());
-    _currentSong.value = ref.read(nowPlayingProvider);
-    ref.listenManual<MediaItem?>(nowPlayingProvider, (_, song) {
+    _playingSongId.value = ref.read(barSongProvider)?.id;
+    ref.listenManual<String?>(barSongProvider.select((song) => song?.id), (
+      _,
+      songId,
+    ) {
       if (!mounted) return;
-      _currentSong.value = song;
+      _playingSongId.value = songId;
       ref.read(imageSchemeProvider.notifier).state = _imageService.itemImage(
         widget.playlist,
       );
@@ -221,12 +223,12 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                         ),
                       SliverList.builder(
                         itemBuilder: (context, index) => ValueListenableBuilder(
-                          valueListenable: _currentSong,
-                          builder: (context, item, other) {
+                          valueListenable: _playingSongId,
+                          builder: (context, songId, other) {
                             final song = shown[index];
                             return SongRowView(
                               song: song,
-                              isPlaying: item != null && song.id == item.id,
+                              isPlaying: song.id == songId,
                               onTap: (song) => ref
                                   .read(playbackProvider.notifier)
                                   .play(
@@ -307,7 +309,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
     super.dispose();
     _scrollController.dispose();
     _titleOpacity.dispose();
-    _currentSong.dispose();
+    _playingSongId.dispose();
   }
 
   Widget _albumPanelMobile() => IconTheme.merge(

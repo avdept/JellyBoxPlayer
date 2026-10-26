@@ -25,6 +25,7 @@ enum AppSetting {
   browseLayout('browse_layout', defaultValue: 'cards'),
   letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
+  lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
   playerVolume('player_volume', defaultValue: 1.0),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
@@ -153,6 +154,15 @@ final animationSpeedProvider = Provider<AnimationSpeed>(
         AppSetting.animationSpeed,
       )] ??
       AnimationSpeed.medium,
+);
+
+final lyricsAlignmentProvider = Provider<LyricsAlignment>(
+  (ref) =>
+      LyricsAlignment.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.lyricsAlignment],
+        AppSetting.lyricsAlignment,
+      )] ??
+      LyricsAlignment.center,
 );
 
 final playerTimeDisplayProvider = Provider<PlayerTimeDisplay>(
