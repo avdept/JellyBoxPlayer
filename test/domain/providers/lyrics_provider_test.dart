@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/lyrics/lrclib_client.dart';
 import 'package:jplayer/src/data/backend/mappers/lyrics_dto_mapper.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
@@ -17,6 +18,8 @@ import '../../provider_container.dart';
 
 class MockMediaServerClient extends Mock implements MediaServerClient {}
 
+class MockLrclibClient extends Mock implements LrclibClient {}
+
 class FakePlaybackNotifier extends StateNotifier<PlaybackState>
     with Mock
     implements PlaybackNotifier {
@@ -25,8 +28,14 @@ class FakePlaybackNotifier extends StateNotifier<PlaybackState>
   void emit(PlaybackState value) => state = value;
 }
 
-LibraryItem _song(String id, {required bool hasLyrics}) =>
-    LibraryItem(id: id, name: id, kind: ItemKind.song, hasLyrics: hasLyrics);
+LibraryItem _song(String id, {required bool hasLyrics, String? artist}) =>
+    LibraryItem(
+      id: id,
+      name: id,
+      kind: ItemKind.song,
+      hasLyrics: hasLyrics,
+      albumArtist: artist,
+    );
 
 PlaybackState _playing(List<LibraryItem> songs, int index) => PlaybackState(
   album: null,
@@ -48,14 +57,19 @@ void main() {
     ],
   }).toLyrics();
 
-  ProviderContainer containerWith({PlaybackNotifier? playback}) =>
-      createProviderContainer(
-        overrides: [
-          mediaServerClientProvider.overrideWithValue(mockClient),
-          remoteRendererProvider.overrideWithValue(null),
-          if (playback != null) playbackProvider.overrideWith((_) => playback),
-        ],
-      );
+  ProviderContainer containerWith({
+    PlaybackNotifier? playback,
+    LrclibClient? lrclib,
+  }) => createProviderContainer(
+    overrides: [
+      mediaServerClientProvider.overrideWithValue(mockClient),
+      remoteRendererProvider.overrideWithValue(null),
+      playbackProvider.overrideWith(
+        (_) => playback ?? FakePlaybackNotifier(PlaybackState.initial()),
+      ),
+      if (lrclib != null) lrclibClientProvider.overrideWithValue(lrclib),
+    ],
+  );
 
   setUp(() {
     mockClient = MockMediaServerClient();
@@ -106,10 +120,96 @@ void main() {
         const MediaServerException(MediaServerErrorKind.server),
       );
 
+      final container = containerWith();
+      container
+          .read(appSettingsProvider.notifier)
+          .setEnabled(AppSetting.lrclibLyrics, value: false);
+
       await expectLater(
-        containerWith().read(lyricsProvider('song-1').future),
+        container.read(lyricsProvider('song-1').future),
         throwsA(isA<MediaServerException>()),
       );
+    });
+  });
+
+  group('lyricsProvider with LRCLIB', () {
+    late MockLrclibClient lrclib;
+
+    setUp(() {
+      lrclib = MockLrclibClient();
+    });
+
+    ProviderContainer lrclibContainer({required bool enabled}) {
+      final playback = FakePlaybackNotifier(
+        _playing([_song('song-1', hasLyrics: false, artist: 'Artist')], 0),
+      );
+      final container = containerWith(playback: playback, lrclib: lrclib);
+      container
+          .read(appSettingsProvider.notifier)
+          .setEnabled(AppSetting.lrclibLyrics, value: enabled);
+      return container;
+    }
+
+    test('- falls back to LRCLIB when the server has nothing', () async {
+      when(() => mockClient.getLyrics('song-1')).thenAnswer((_) async => null);
+      when(
+        () => lrclib.search(trackName: 'song-1', artistName: 'Artist'),
+      ).thenAnswer(
+        (_) async => [
+          const LrclibTrack(id: 1, syncedLyrics: '[00:10.00] Hello there'),
+        ],
+      );
+
+      final result = await lrclibContainer(
+        enabled: true,
+      ).read(lyricsProvider('song-1').future);
+
+      expect(result!.isSynced, isTrue);
+      expect(result.lines.single.text, 'Hello there');
+      verify(() => mockClient.getLyrics('song-1')).called(1);
+    });
+
+    test('- leaves LRCLIB alone when the server has lyrics', () async {
+      when(
+        () => mockClient.getLyrics('song-1'),
+      ).thenAnswer((_) async => lyrics);
+
+      final result = await lrclibContainer(
+        enabled: true,
+      ).read(lyricsProvider('song-1').future);
+
+      expect(result, lyrics);
+      verifyZeroInteractions(lrclib);
+    });
+
+    test('- stays quiet when the setting is turned off', () async {
+      when(() => mockClient.getLyrics('song-1')).thenAnswer((_) async => null);
+
+      final result = await lrclibContainer(
+        enabled: false,
+      ).read(lyricsProvider('song-1').future);
+
+      expect(result, isNull);
+      verifyZeroInteractions(lrclib);
+    });
+
+    test('- still answers when the backend has no lyrics support', () async {
+      when(
+        () => mockClient.capabilities,
+      ).thenReturn(const MediaServerCapabilities(lyrics: false));
+      when(
+        () => lrclib.search(trackName: 'song-1', artistName: 'Artist'),
+      ).thenAnswer(
+        (_) async => [const LrclibTrack(id: 1, plainLyrics: 'Plain line')],
+      );
+
+      final result = await lrclibContainer(
+        enabled: true,
+      ).read(lyricsProvider('song-1').future);
+
+      expect(result!.isSynced, isFalse);
+      expect(result.lines.single.text, 'Plain line');
+      verifyNever(() => mockClient.getLyrics(any()));
     });
   });
 

@@ -26,6 +26,7 @@ enum AppSetting {
   letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
+  lrclibLyrics('lrclib_lyrics', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),

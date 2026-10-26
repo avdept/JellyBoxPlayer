@@ -271,15 +271,6 @@ class SettingsPage extends ConsumerWidget {
                       setting: AppSetting.letterRuler,
                       label: 'Show A–Z index on browse lists sorted by name',
                     ),
-                    _settingDropdown<LyricsAlignment>(
-                      context: context,
-                      label: 'Lyrics text alignment',
-                      value: ref.watch(lyricsAlignmentProvider),
-                      options: _lyricsAlignmentLabels,
-                      onChanged: (value) => ref
-                          .read(appSettingsProvider.notifier)
-                          .setValue(AppSetting.lyricsAlignment, value.name),
-                    ),
                     _settingCheckbox(
                       ref: ref,
                       setting: AppSetting.artworkAccent,
@@ -435,6 +426,26 @@ class SettingsPage extends ConsumerWidget {
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
+                    _sectionHeader('Lyrics'),
+                    _settingDropdown<LyricsAlignment>(
+                      context: context,
+                      label: 'Lyrics text alignment',
+                      value: ref.watch(lyricsAlignmentProvider),
+                      options: _lyricsAlignmentLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.lyricsAlignment, value.name),
+                    ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.lrclibLyrics,
+                      label: 'Find missing lyrics on LRCLIB',
+                    ),
+                    _settingNote(
+                      context,
+                      'When your server has no lyrics for a song, looks '
+                      'them up on lrclib.net, a free public lyrics library.',
+                    ),
                     _sectionHeader('Privacy'),
                     _settingCheckbox(
                       ref: ref,
