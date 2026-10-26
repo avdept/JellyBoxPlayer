@@ -325,6 +325,86 @@ void main() {
     );
   });
 
+  group('attach', () {
+    test(
+      '- adopts a live session without touching the current track',
+      () async {
+        deviceReports(
+          AvTransportState.playing,
+          position: const Duration(seconds: 80),
+          trackUri: '${track(1).uri}',
+        );
+
+        await target.attach(
+          [track(1), track(2)],
+          index: 0,
+          position: const Duration(seconds: 80),
+          playing: true,
+        );
+
+        verifyNever(
+          () => transport.setUri(any(), metadata: any(named: 'metadata')),
+        );
+        verifyNever(transport.play);
+        expectPrefetched(2);
+        expect(target.state.status, PlaybackStatus.playing);
+        expect(target.state.position, const Duration(seconds: 80));
+        expect(target.state.currentIndex, 0);
+      },
+    );
+
+    test('- keeps following the device after adopting', () async {
+      await target.attach(
+        [track(1), track(2)],
+        index: 0,
+        position: Duration.zero,
+        playing: true,
+      );
+      deviceReports(
+        AvTransportState.playing,
+        position: const Duration(seconds: 5),
+        trackUri: '${track(2).uri}',
+      );
+      await pump();
+
+      expect(target.state.currentIndex, 1);
+      expect(target.state.position, const Duration(seconds: 5));
+    });
+
+    test('- advances past the adopted track when the device stops', () async {
+      await target.attach(
+        [track(1), track(2)],
+        index: 0,
+        position: const Duration(minutes: 2),
+        playing: true,
+      );
+      await pump();
+      deviceReports(AvTransportState.stopped);
+      await pump();
+
+      expectStarted(2);
+      expect(target.state.currentIndex, 1);
+    });
+
+    test('- adopts a paused session without resuming it', () async {
+      deviceReports(
+        AvTransportState.pausedPlayback,
+        position: const Duration(seconds: 10),
+      );
+
+      await target.attach(
+        [track(1)],
+        index: 0,
+        position: const Duration(seconds: 10),
+        playing: false,
+      );
+      await pump();
+
+      verifyNever(transport.play);
+      expect(target.state.status, PlaybackStatus.paused);
+    });
+  });
+
   group('polling', () {
     test('- mirrors the device transport state', () async {
       await start([track(1)]);
