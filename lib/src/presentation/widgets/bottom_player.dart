@@ -75,6 +75,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                     return const SizedBox.shrink();
                   }
                   final currentSong = ref.watch(barMediaItemProvider);
+                  final lyricsExpanded =
+                      _isMobile && ref.watch(lyricsShownProvider);
                   return Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
@@ -87,7 +89,18 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                             front: Column(
                               children: [
                                 Expanded(child: _artworkArea()),
-                                _sheetDetails(context, currentSong),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 250),
+                                  transitionBuilder: (child, animation) =>
+                                      SizeTransition(
+                                        sizeFactor: animation,
+                                        axisAlignment: -1,
+                                        child: child,
+                                      ),
+                                  child: lyricsExpanded
+                                      ? const SizedBox(width: double.infinity)
+                                      : _sheetDetails(context, currentSong),
+                                ),
                               ],
                             ),
                             right: const NowPlayingQueueView(),

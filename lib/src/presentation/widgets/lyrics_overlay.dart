@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/dto/dto.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -261,6 +261,12 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     );
   }
 
+  TextAlign get _textAlign => switch (ref.watch(lyricsAlignmentProvider)) {
+    LyricsAlignment.left => TextAlign.left,
+    LyricsAlignment.center => TextAlign.center,
+    LyricsAlignment.right => TextAlign.right,
+  };
+
   @override
   Widget build(BuildContext context) {
     final lyrics = ref.watch(lyricsProvider(widget.songId));
@@ -289,6 +295,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
         }
 
         final isSynced = lyrics!.isSynced;
+        final textAlign = _textAlign;
 
         return SingleChildScrollView(
           padding: widget.padding,
@@ -301,6 +308,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
                   lines[i],
                   isSynced: isSynced,
                   offset: lyrics.offset,
+                  textAlign: textAlign,
                 ),
             ],
           ),
@@ -314,11 +322,21 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     LyricLine line, {
     required bool isSynced,
     required Duration offset,
+    required TextAlign textAlign,
   }) {
     final isActive = isSynced && index == _activeLine;
     final start = line.start;
     final trimmed = line.text.trim();
     final text = trimmed.isEmpty ? '♪' : trimmed;
+    final distance = (isSynced && _activeLine >= 0 && !isActive)
+        ? (index - _activeLine).abs()
+        : 0;
+    final blurSigma = distance == 0
+        ? 0.0
+        : (0.3 + 0.7 * distance).clamp(0.0, 4.0);
+    final fade = distance == 0
+        ? 0.4
+        : (0.45 - 0.03 * distance).clamp(0.25, 0.45);
 
     return AnimatedPadding(
       key: _lineKeys[index],
@@ -326,9 +344,9 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
       curve: Curves.easeOutCubic,
       padding: EdgeInsets.symmetric(
         vertical: switch ((isSynced, isActive)) {
-          (false, _) => 8,
-          (true, true) => widget.device.isMobile ? 14 : 20,
-          (true, false) => 3,
+          (false, _) => 10,
+          (true, true) => widget.device.isMobile ? 16 : 22,
+          (true, false) => 7,
         },
       ),
       child: GestureDetector(
@@ -336,29 +354,41 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
             ? () => ref.read(barControlsProvider).seek(start)
             : null,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: (!isSynced || isActive)
-                ? Colors.white
-                : Colors.white.withOpacity(0.4),
-            fontSize: isActive
-                ? (widget.device.isMobile ? 24 : 30)
-                : (widget.device.isMobile ? 19 : 24),
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-            height: 1.35,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: blurSigma),
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          builder: (context, sigma, child) => sigma < 0.05
+              ? child!
+              : ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                  child: child,
+                ),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            textAlign: textAlign,
+            style: TextStyle(
+              color: (!isSynced || isActive)
+                  ? Colors.white
+                  : Colors.white.withOpacity(fade),
+              fontSize: isActive
+                  ? (widget.device.isMobile ? 24 : 30)
+                  : (widget.device.isMobile ? 19 : 24),
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              height: 1.4,
+            ),
+            child: isActive
+                ? _ActiveLineText(
+                    line: line,
+                    text: text,
+                    leading: line.text.length - line.text.trimLeft().length,
+                    clock: _clock,
+                    offset: offset,
+                    textAlign: textAlign,
+                  )
+                : Text(text, textAlign: textAlign),
           ),
-          child: isActive
-              ? _ActiveLineText(
-                  line: line,
-                  text: text,
-                  leading: line.text.length - line.text.trimLeft().length,
-                  clock: _clock,
-                  offset: offset,
-                )
-              : Text(text, textAlign: TextAlign.center),
         ),
       ),
     );
@@ -390,6 +420,7 @@ class _ActiveLineText extends StatefulWidget {
     required this.leading,
     required this.clock,
     required this.offset,
+    required this.textAlign,
   });
 
   final LyricLine line;
@@ -397,14 +428,15 @@ class _ActiveLineText extends StatefulWidget {
   final int leading;
   final ValueListenable<Duration> clock;
   final Duration offset;
+  final TextAlign textAlign;
 
   @override
   State<_ActiveLineText> createState() => _ActiveLineTextState();
 }
 
 class _ActiveLineTextState extends State<_ActiveLineText> {
-  final _base = TextPainter(textAlign: TextAlign.center);
-  final _sung = TextPainter(textAlign: TextAlign.center);
+  final _base = TextPainter();
+  final _sung = TextPainter();
 
   @override
   void dispose() {
@@ -426,6 +458,7 @@ class _ActiveLineTextState extends State<_ActiveLineText> {
           text: widget.text,
           style: style.copyWith(color: paintColor),
         )
+        ..textAlign = widget.textAlign
         ..textDirection = direction
         ..textScaler = scaler
         ..layout(maxWidth: maxWidth);
@@ -448,10 +481,11 @@ class _ActiveLineTextState extends State<_ActiveLineText> {
             clock: widget.clock,
             offset: widget.offset,
             fontSize: style.fontSize ?? 14,
+            textAlign: widget.textAlign,
           ),
           child: Text(
             widget.text,
-            textAlign: TextAlign.center,
+            textAlign: widget.textAlign,
             style: const TextStyle(color: Colors.transparent),
           ),
         );
@@ -470,9 +504,8 @@ class _ActiveLinePainter extends CustomPainter {
     required this.clock,
     required this.offset,
     required this.fontSize,
+    required this.textAlign,
   }) : super(repaint: line.cues.isEmpty ? null : clock);
-
-  static const _glowOpacity = 0.85;
 
   final TextPainter base;
   final TextPainter sung;
@@ -482,22 +515,28 @@ class _ActiveLinePainter extends CustomPainter {
   final ValueListenable<Duration> clock;
   final Duration offset;
   final double fontSize;
+  final TextAlign textAlign;
 
   double get _bleed => fontSize * 0.25;
 
-  double get _glow => fontSize * 0.3;
-
   @override
   void paint(Canvas canvas, Size size) {
-    final origin = Offset((size.width - base.width) / 2, 0);
+    final origin = Offset(
+      switch (textAlign) {
+        TextAlign.right => size.width - base.width,
+        TextAlign.center => (size.width - base.width) / 2,
+        _ => 0,
+      },
+      0,
+    );
     if (line.cues.isEmpty) {
-      _paintGlowing(canvas, size, origin, null);
+      _paintSung(canvas, origin, null);
       return;
     }
 
     base.paint(canvas, origin);
     final clip = _sungClip();
-    if (clip != null) _paintGlowing(canvas, size, origin, clip);
+    if (clip != null) _paintSung(canvas, origin, clip);
   }
 
   Path? _sungClip() {
@@ -538,18 +577,6 @@ class _ActiveLinePainter extends CustomPainter {
       );
     }
     return clip;
-  }
-
-  void _paintGlowing(Canvas canvas, Size size, Offset origin, Path? clip) {
-    canvas.saveLayer(
-      (Offset.zero & size).inflate(_glow * 3),
-      Paint()
-        ..color = Colors.white.withValues(alpha: _glowOpacity)
-        ..imageFilter = ImageFilter.blur(sigmaX: _glow, sigmaY: _glow),
-    );
-    _paintSung(canvas, origin, clip);
-    canvas.restore();
-    _paintSung(canvas, origin, clip);
   }
 
   void _paintSung(Canvas canvas, Offset origin, Path? clip) {

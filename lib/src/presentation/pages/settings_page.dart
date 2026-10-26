@@ -53,6 +53,12 @@ class SettingsPage extends ConsumerWidget {
     AnimationSpeed.fast: 'Fast',
   };
 
+  static const Map<LyricsAlignment, String> _lyricsAlignmentLabels = {
+    LyricsAlignment.left: 'Left',
+    LyricsAlignment.center: 'Middle',
+    LyricsAlignment.right: 'Right',
+  };
+
   static const Map<StartPage, String> _startPageLabels = {
     StartPage.home: 'Home',
     StartPage.browse: 'Browse',
@@ -264,6 +270,15 @@ class SettingsPage extends ConsumerWidget {
                       ref: ref,
                       setting: AppSetting.letterRuler,
                       label: 'Show A–Z index on browse lists sorted by name',
+                    ),
+                    _settingDropdown<LyricsAlignment>(
+                      context: context,
+                      label: 'Lyrics text alignment',
+                      value: ref.watch(lyricsAlignmentProvider),
+                      options: _lyricsAlignmentLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.lyricsAlignment, value.name),
                     ),
                     _settingCheckbox(
                       ref: ref,

@@ -9,6 +9,7 @@ export 'forward_cache_window.dart';
 export 'item_list.dart';
 export 'keep_screen_on.dart';
 export 'layout.dart';
+export 'lyrics_alignment.dart';
 export 'network_exceptions.dart';
 export 'playback_status.dart';
 export 'player_time_display.dart';

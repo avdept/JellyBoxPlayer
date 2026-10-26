@@ -75,10 +75,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
     if (songs.isEmpty) return const SliverToBoxAdapter();
 
     final currentSongId = ref.watch(
-      playbackProvider.select((s) {
-        final index = s.currentMediaIndex;
-        return index != null ? s.songs.elementAtOrNull(index)?.id : null;
-      }),
+      barSongProvider.select((song) => song?.id),
     );
     final limit = widget.limit;
     final visible = (limit != null && limit < songs.length)
