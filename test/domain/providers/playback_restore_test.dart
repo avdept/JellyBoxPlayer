@@ -9,11 +9,16 @@ import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
+import 'package:jplayer/src/core/upnp/av_transport.dart';
+import 'package:jplayer/src/core/upnp/upnp_device.dart';
+import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/cast_session_resume.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -89,6 +94,10 @@ class _FakeTarget implements PlaybackTarget {
 
 class _MockMediaServerClient extends Mock implements MediaServerClient {}
 
+class _MockCastResume extends Mock implements CastSessionResume {}
+
+class _MockAvTransport extends Mock implements AvTransport {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
@@ -117,6 +126,7 @@ void main() {
     registerFallbackValue(
       const PlaybackReport(itemId: 'fallback', playSessionId: 'fallback'),
     );
+    registerFallbackValue(Uri.parse('http://example.org'));
   });
 
   setUp(() async {
@@ -150,6 +160,7 @@ void main() {
   ProviderContainer containerWith({
     required bool pendingPress,
     bool offline = false,
+    CastSessionResume? castResume,
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -160,6 +171,8 @@ void main() {
           pendingTakes++;
           return pendingPress;
         }),
+        if (castResume != null)
+          castSessionResumeProvider.overrideWithValue(castResume),
       ],
     );
     container.read(currentServerIdProvider.notifier).state = 'srv';
@@ -393,6 +406,194 @@ void main() {
 
       expect(target.loads, isEmpty);
       expect(container.read(playbackProvider).status, PlaybackStatus.error);
+    });
+  });
+
+  group('cast session re-attach', () {
+    late _MockAvTransport transport;
+    late _MockCastResume castResume;
+
+    UpnpRenderer renderer() => UpnpRenderer(
+      device: UpnpDevice(
+        udn: 'uuid:kef',
+        friendlyName: 'KEF LS50',
+        deviceType: 'urn:schemas-upnp-org:device:MediaRenderer:1',
+        location: Uri.parse('http://192.168.0.20:49152/description.xml'),
+        services: const [],
+      ),
+      avTransport: transport,
+    );
+
+    setUp(() {
+      transport = _MockAvTransport();
+      castResume = _MockCastResume();
+      when(() => transport.supportsNextUri).thenReturn(true);
+      when(() => transport.supportsSeek).thenReturn(true);
+      when(() => transport.supportsPause).thenReturn(true);
+      when(
+        () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
+      ).thenAnswer((_) async {});
+      when(transport.play).thenAnswer((_) async {});
+      when(transport.stopTransport).thenAnswer((_) async {});
+      when(transport.transportInfo).thenAnswer(
+        (_) async => const AvTransportInfo(
+          state: AvTransportState.playing,
+          status: 'OK',
+        ),
+      );
+      when(transport.positionInfo).thenAnswer(
+        (_) async => const AvPositionInfo(position: Duration(seconds: 95)),
+      );
+      when(() => castResume.find(any())).thenAnswer((_) async => null);
+      when(
+        () => client.resolveStreamSource(
+          any(),
+          playSessionId: any(named: 'playSessionId'),
+          target: any(named: 'target'),
+        ),
+      ).thenAnswer((invocation) async {
+        final song = invocation.positionalArguments.first as LibraryItem;
+        return StreamSource(
+          uri: Uri.parse('http://192.168.0.9:8096/Audio/${song.id}/universal'),
+          isHls: false,
+          outputContainer: 'flac',
+          mimeType: 'audio/flac',
+        );
+      });
+    });
+
+    void rendererPlays(
+      String songId, {
+      Duration position = const Duration(seconds: 95),
+      bool playing = true,
+    }) {
+      when(() => castResume.find('srv')).thenAnswer(
+        (_) async => ResumableCastSession(
+          renderer: renderer(),
+          playing: playing,
+          trackUri: Uri.parse(
+            'http://192.168.0.9:8096/Audio/$songId/universal'
+            '?PlaySessionId=before-the-crash',
+          ),
+          position: position,
+        ),
+      );
+    }
+
+    test('- re-attaches to a renderer still playing the saved queue',
+        () async {
+      await saveQueue();
+      rendererPlays('b');
+      final container = containerWith(
+        pendingPress: false,
+        castResume: castResume,
+      );
+
+      final restored = await container
+          .read(playbackProvider.notifier)
+          .tryRestore();
+
+      expect(restored, isTrue);
+      expect(target.loads, isEmpty);
+      final active = container.read(playbackTargetProvider);
+      expect(active, isA<UpnpPlaybackTarget>());
+      expect(active.id, 'uuid:kef');
+      final state = container.read(playbackProvider);
+      expect(state.status, PlaybackStatus.playing);
+      expect(state.currentMediaIndex, 1);
+      expect(state.position, const Duration(seconds: 95));
+      verifyNever(
+        () => transport.setUri(any(), metadata: any(named: 'metadata')),
+      );
+      verifyNever(transport.play);
+      verify(
+        () => transport.setNextUri(any(), metadata: any(named: 'metadata')),
+      ).called(1);
+    });
+
+    test('- follows the renderer past the track the snapshot saved',
+        () async {
+      await saveQueue();
+      rendererPlays('c', position: const Duration(seconds: 5));
+      final container = containerWith(
+        pendingPress: false,
+        castResume: castResume,
+      );
+
+      await container.read(playbackProvider.notifier).tryRestore();
+
+      final state = container.read(playbackProvider);
+      expect(state.currentMediaIndex, 2);
+      expect(state.position, const Duration(seconds: 5));
+    });
+
+    test('- adopts a paused renderer without resuming it', () async {
+      await saveQueue();
+      rendererPlays('b', playing: false);
+      final container = containerWith(
+        pendingPress: false,
+        castResume: castResume,
+      );
+
+      await container.read(playbackProvider.notifier).tryRestore();
+
+      expect(container.read(playbackProvider).status, PlaybackStatus.paused);
+      verifyNever(transport.play);
+    });
+
+    test('- a press that woke the app resumes the paused renderer', () async {
+      await saveQueue();
+      rendererPlays('b', playing: false);
+      final container = containerWith(
+        pendingPress: true,
+        castResume: castResume,
+      );
+
+      await container.read(playbackProvider.notifier).tryRestore();
+
+      verify(transport.play).called(1);
+      expect(container.read(playbackProvider).status, PlaybackStatus.playing);
+    });
+
+    test(
+      '- restores locally when the renderer plays something else',
+      () async {
+        await saveQueue();
+        rendererPlays('not-in-the-queue');
+        final container = containerWith(
+          pendingPress: false,
+          castResume: castResume,
+        );
+
+        final restored = await container
+            .read(playbackProvider.notifier)
+            .tryRestore();
+
+        expect(restored, isTrue);
+        expect(target.loads.single.index, 1);
+        expect(
+          container.read(playbackTargetProvider).kind,
+          PlaybackTargetKind.local,
+        );
+      },
+    );
+
+    test('- does not look for a cast session offline', () async {
+      await saveQueue();
+      rendererPlays('b');
+      final container = containerWith(
+        pendingPress: false,
+        offline: true,
+        castResume: castResume,
+      );
+
+      final restored = await container
+          .read(playbackProvider.notifier)
+          .tryRestore();
+
+      expect(restored, isTrue);
+      verifyNever(() => castResume.find(any()));
+      expect(target.loads, hasLength(1));
     });
   });
 }

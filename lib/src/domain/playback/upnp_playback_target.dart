@@ -107,6 +107,39 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     );
   }
 
+  Future<void> attach(
+    List<TargetTrack> tracks, {
+    required int index,
+    required Duration position,
+    required bool playing,
+  }) async {
+    _tracks
+      ..clear()
+      ..addAll(tracks);
+    _index = index.clamp(0, tracks.length - 1);
+    _sawPlaying = playing;
+    _stopRequested = false;
+    _idlePolls = 0;
+    _gaveUpWaiting = false;
+    _pendingSeek = null;
+    _pollGeneration++;
+
+    diagnostics.trail(
+      're-attached to a live session on ${renderer.model ?? 'a renderer'}',
+      category: 'upnp',
+    );
+
+    _emit(
+      status: playing ? PlaybackStatus.playing : PlaybackStatus.paused,
+      position: position,
+      currentIndex: _index,
+      duration: _currentTrack?.duration,
+    );
+
+    await _pushNextUri();
+    _startPolling();
+  }
+
   Future<void> _handOverQueue(
     DeviceQueue queue, {
     required Duration initialPosition,
