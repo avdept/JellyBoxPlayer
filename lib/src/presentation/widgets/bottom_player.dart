@@ -53,7 +53,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     if (_isMobile && _isLandscape) return Future<void>.value();
     final route = ModalSheetRoute<void>(
       builder: (context) => SafeArea(
-        top: false,
         minimum: EdgeInsets.only(
           top: _isMobile ? 0 : 20,
           bottom: _isMobile ? 20 : 60,
@@ -126,7 +125,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
             showDragHandle: false,
             backgroundColor: colorScheme?.background,
             constraints: BoxConstraints(
-              maxHeight: constraints.maxHeight * 0.92,
+              maxHeight: constraints.maxHeight,
               minWidth: constraints.maxWidth,
             ),
             builder: (context) => child!,
