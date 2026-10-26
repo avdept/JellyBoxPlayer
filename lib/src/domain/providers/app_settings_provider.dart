@@ -12,6 +12,10 @@ enum AppSetting {
   studioModeVideoCovers('studio_mode_video_covers', defaultValue: true),
   studioModePinnedControls('studio_mode_pinned_controls'),
   studioModeCoverOverVideo('studio_mode_cover_over_video'),
+  studioModeLyricsPlacement(
+    'studio_mode_lyrics_placement',
+    defaultValue: 'right',
+  ),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),
@@ -155,6 +159,15 @@ final animationSpeedProvider = Provider<AnimationSpeed>(
         AppSetting.animationSpeed,
       )] ??
       AnimationSpeed.medium,
+);
+
+final studioLyricsPlacementProvider = Provider<StudioLyricsPlacement>(
+  (ref) =>
+      StudioLyricsPlacement.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.studioModeLyricsPlacement],
+        AppSetting.studioModeLyricsPlacement,
+      )] ??
+      StudioLyricsPlacement.right,
 );
 
 final lyricsAlignmentProvider = Provider<LyricsAlignment>(
