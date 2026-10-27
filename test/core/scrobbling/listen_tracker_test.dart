@@ -250,6 +250,26 @@ void main() {
     expect(started.single.listen.listenedAt, now);
   });
 
+  test('a radio stream never announces or submits', () {
+    const radio = LibraryItem(
+      id: 'radio',
+      name: 'TECHNO',
+      kind: ItemKind.song,
+      audioSources: [AudioSourceInfo(url: 'http://radio.example/stream')],
+    );
+    final events = <ScrobbleEvent>[];
+    for (
+      var at = Duration.zero;
+      at <= const Duration(minutes: 5);
+      at += const Duration(seconds: 10)
+    ) {
+      now = now.add(const Duration(seconds: 10));
+      events.addAll(tracker.update(stateAt(at, songs: const [radio])));
+    }
+    expect(events, isEmpty);
+    expect(tracker.current, isNull);
+  });
+
   test('an empty queue resets tracking', () {
     tracker.update(stateAt(Duration.zero));
     expect(

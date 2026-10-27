@@ -42,6 +42,7 @@ class DownloadManager {
 
   Future<void> downloadSong(LibraryItem song) =>
       _attempt('downloadSong', () async {
+        if (song.isRadioStream) return;
         final client = _client();
         final file = await _downloadSongFile(song, client);
         if (file == null) return;
@@ -59,7 +60,9 @@ class DownloadManager {
   Future<void> downloadAlbum(LibraryItem album, List<LibraryItem> songs) =>
       _attempt('downloadAlbum', () async {
         final client = _client();
-        await _downloadCollection(album.id, songs, (stored) async {
+        await _downloadCollection(album.id, _downloadable(songs), (
+          stored,
+        ) async {
           if (stored.isEmpty) return;
           await _database.insertDownloadedAlbum(
             album,
@@ -72,15 +75,21 @@ class DownloadManager {
   Future<void> downloadPlaylist(
     LibraryItem playlist,
     List<LibraryItem> songs,
-  ) => _attempt('downloadPlaylist', () => _storePlaylist(playlist, songs));
+  ) => _attempt(
+    'downloadPlaylist',
+    () => _storePlaylist(playlist, _downloadable(songs)),
+  );
 
   Future<bool> syncPlaylist(
     LibraryItem playlist,
     List<LibraryItem> songs, {
     bool keepLocalOrder = false,
   }) async {
+    final wantedSongs = _downloadable(songs);
     final localIds = await _database.getPlaylistSongIds(playlist.id);
-    final ordered = keepLocalOrder ? mergeLikedOrder(localIds, songs) : songs;
+    final ordered = keepLocalOrder
+        ? mergeLikedOrder(localIds, wantedSongs)
+        : wantedSongs;
     final wantedIds = [for (final song in ordered) song.id];
     if (listEquals(localIds, wantedIds)) return false;
 
@@ -144,6 +153,11 @@ class DownloadManager {
       await _service.downloadAlbumCover(playlist.id, client.imageUri(playlist));
     });
   }
+
+  static List<LibraryItem> _downloadable(List<LibraryItem> songs) => [
+    for (final song in songs)
+      if (!song.isRadioStream) song,
+  ];
 
   Future<void> _downloadCollection(
     String id,

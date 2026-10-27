@@ -110,6 +110,7 @@ void main() {
       (widgetTester) async {
         await widgetTester.pumpWidget(getWidgetUT(playlist: mockPlaylist));
         await widgetTester.pump(Duration.zero);
+        await widgetTester.pump(Duration.zero);
         expect(find.text(mockPlaylist.name), findsAtLeastNWidgets(1));
       },
     );
@@ -118,9 +119,15 @@ void main() {
       '- displays list of songs',
       (widgetTester) async {
         await widgetTester.pumpWidget(getWidgetUT(playlist: mockPlaylist));
-        await widgetTester.pump(Duration.zero);
         final songUT = mockSongs.items.first;
         final songFinder = find.byType(SongRowView);
+        for (
+          var i = 0;
+          i < 50 && widgetTester.widgetList(songFinder).isEmpty;
+          i++
+        ) {
+          await widgetTester.pump(const Duration(milliseconds: 10));
+        }
         expect(songFinder, findsWidgets);
         expect(
           find.descendant(

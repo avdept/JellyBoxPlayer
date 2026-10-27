@@ -157,6 +157,35 @@ void main() {
       expect(source.outputContainer, 'flac');
     });
 
+    test('- plays a radio station straight from its remote URL', () async {
+      final station = ItemDTO.fromJson({
+        'Id': 'radio-1',
+        'Name': 'TECHNO',
+        'Type': 'Audio',
+        'Path': 'http://radio.example/live.m3u8',
+        'MediaSources': [
+          {
+            'Id': 'mediasource_radio-1',
+            'Path': 'http://radio.example/live.m3u8',
+          },
+        ],
+      }).toEmbyLibraryItem();
+
+      final source = await client.resolveStreamSource(
+        station,
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.localPlayer(
+          isAndroid: true,
+        ).withPreference(const StreamPreference(maxBitRate: 128)),
+      );
+
+      expect(source.uri, Uri.parse('http://radio.example/live.m3u8'));
+      expect(source.location, isNull);
+      expect(source.isHls, isTrue);
+      expect(source.requiresTranscode, isFalse);
+      expect(source.mimeType, 'application/vnd.apple.mpegurl');
+    });
+
     test('- asks for ADTS rather than m4a on the progressive path', () async {
       final source = await client.resolveStreamSource(
         songWith(container: 'flac', codec: 'flac', bitRate: 1000000),

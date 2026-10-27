@@ -334,6 +334,28 @@ void main() {
       expect(downloader.requested, isNot(contains('a')));
     });
 
+    test('- never caches a radio station in the queue', () async {
+      containerWith(ForwardCacheLimit.gb1);
+      container.read(forwardCacheProvider.notifier);
+
+      const radio = LibraryItem(
+        id: 'radio',
+        name: 'TECHNO',
+        kind: ItemKind.song,
+        audioSources: [AudioSourceInfo(url: 'http://radio.example/stream')],
+      );
+      final queue = [songs[0], radio, songs[1]];
+
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs[0], queue, album);
+      await pumpUntil(() => container.read(forwardCacheProvider).length == 2);
+      await settle();
+
+      expect(downloader.requested, isNot(contains('radio')));
+      expect(container.read(forwardCacheProvider), {'a', 'b'});
+    });
+
     test('- caches nothing while the limit is off', () async {
       containerWith(ForwardCacheLimit.off);
       container.read(forwardCacheProvider.notifier);

@@ -167,36 +167,57 @@ void main() {
     container.dispose();
   });
 
-  test('- a pause from the target silences periodic progress reports', () async {
+  test('- never reports a radio station to the server', () async {
+    const radio = LibraryItem(
+      id: 'radio',
+      name: 'TECHNO',
+      kind: ItemKind.song,
+      audioSources: [AudioSourceInfo(url: 'http://radio.example/stream')],
+    );
     final notifier = container.read(playbackProvider.notifier);
-    await notifier.play(songs.first, songs, album);
+    await notifier.play(radio, const [radio], album);
     await Future<void>.delayed(const Duration(milliseconds: 120));
 
-    verify(() => client.reportPlaybackStarted(any())).called(1);
-    verify(
-      () => client.reportPlaybackProgress(any()),
-    ).called(greaterThanOrEqualTo(2));
-    clearInteractions(client);
+    verifyNever(() => client.reportPlaybackStarted(any()));
+    verifyNever(() => client.reportPlaybackProgress(any()));
 
-    target.emit(playing: false, position: const Duration(seconds: 30));
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
-    expect(container.read(playbackProvider).status, PlaybackStatus.paused);
-    final paused = verify(
-      () => client.reportPlaybackProgress(captureAny()),
-    ).captured;
-    expect(paused, hasLength(1));
-    expect((paused.single as PlaybackReport).isPaused, isTrue);
+    await notifier.clear();
     verifyNever(() => client.reportPlaybackStopped(any()));
-
-    target.emit(playing: true, position: const Duration(seconds: 30));
-    await Future<void>.delayed(const Duration(milliseconds: 120));
-
-    expect(container.read(playbackProvider).status, PlaybackStatus.playing);
-    final resumed = verify(
-      () => client.reportPlaybackProgress(captureAny()),
-    ).captured;
-    expect(resumed.length, greaterThanOrEqualTo(2));
-    expect((resumed.first as PlaybackReport).isPaused, isFalse);
   });
+
+  test(
+    '- a pause from the target silences periodic progress reports',
+    () async {
+      final notifier = container.read(playbackProvider.notifier);
+      await notifier.play(songs.first, songs, album);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      verify(() => client.reportPlaybackStarted(any())).called(1);
+      verify(
+        () => client.reportPlaybackProgress(any()),
+      ).called(greaterThanOrEqualTo(2));
+      clearInteractions(client);
+
+      target.emit(playing: false, position: const Duration(seconds: 30));
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(container.read(playbackProvider).status, PlaybackStatus.paused);
+      final paused = verify(
+        () => client.reportPlaybackProgress(captureAny()),
+      ).captured;
+      expect(paused, hasLength(1));
+      expect((paused.single as PlaybackReport).isPaused, isTrue);
+      verifyNever(() => client.reportPlaybackStopped(any()));
+
+      target.emit(playing: true, position: const Duration(seconds: 30));
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      expect(container.read(playbackProvider).status, PlaybackStatus.playing);
+      final resumed = verify(
+        () => client.reportPlaybackProgress(captureAny()),
+      ).captured;
+      expect(resumed.length, greaterThanOrEqualTo(2));
+      expect((resumed.first as PlaybackReport).isPaused, isFalse);
+    },
+  );
 }

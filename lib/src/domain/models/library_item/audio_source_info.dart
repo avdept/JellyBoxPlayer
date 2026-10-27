@@ -8,6 +8,7 @@ abstract class AudioSourceInfo with _$AudioSourceInfo {
   const factory AudioSourceInfo({
     String? id,
     String? container,
+    String? url,
     String? codec,
     int? bitRate,
     int? sampleRate,

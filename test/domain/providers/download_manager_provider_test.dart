@@ -165,6 +165,59 @@ void main() {
       expect(trackedSongs(), isEmpty);
     });
 
+    test('- does not download a radio station', () async {
+      const radio = LibraryItem(
+        id: 'radio',
+        name: 'TECHNO',
+        kind: ItemKind.song,
+        audioSources: [AudioSourceInfo(url: 'http://radio.example/stream')],
+      );
+      stubDownloads(DownloadStatus.completed);
+
+      await manager().downloadSong(radio);
+
+      verifyNever(
+        () => service.downloadSong(
+          any(),
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
+      expect(revision(), 0);
+    });
+
+    test('- skips radio stations when downloading a playlist', () async {
+      const radio = LibraryItem(
+        id: 'radio',
+        name: 'TECHNO',
+        kind: ItemKind.song,
+        audioSources: [AudioSourceInfo(url: 'http://radio.example/stream')],
+      );
+      final songs = [song('a'), radio, song('b')];
+      stubDownloads(DownloadStatus.completed);
+
+      await manager().downloadPlaylist(playlist, songs);
+
+      verifyNever(
+        () => service.downloadSong(
+          radio,
+          any(),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
+      final stored = verify(
+        () => database.insertDownloadedPlaylist(
+          playlist,
+          songs: captureAny(named: 'songs'),
+          files: any(named: 'files'),
+        ),
+      ).captured;
+      expect(
+        [for (final item in stored.single as List<LibraryItem>) item.id],
+        ['a', 'b'],
+      );
+    });
+
     test('- downloads every song of an album and then the album', () async {
       final songs = [song('a'), song('b'), song('c')];
       stubDownloads(DownloadStatus.completed);
