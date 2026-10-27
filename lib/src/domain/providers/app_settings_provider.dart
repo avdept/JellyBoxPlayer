@@ -33,6 +33,7 @@ enum AppSetting {
   lrclibLyrics('lrclib_lyrics', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
+  sleepTimerLast('sleep_timer_last', defaultValue: ''),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
   streamQualityWifi(

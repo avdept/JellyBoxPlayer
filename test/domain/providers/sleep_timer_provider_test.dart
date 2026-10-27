@@ -2,6 +2,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/sleep_timer_provider.dart';
 
@@ -143,6 +144,43 @@ void main() {
       async.elapse(const Duration(hours: 2));
       expect(playback.pauseCalls, 1);
     });
+  });
+
+  test('remembers the last saved selection', () {
+    final notifier = setUpTimer();
+    final settings = container.read(appSettingsProvider.notifier);
+
+    SleepTimerSelection last() => SleepTimerSelection.parse(
+      settings.valueOf(AppSetting.sleepTimerLast),
+    );
+
+    notifier.startMinutes(30);
+    expect(last().mode, SleepTimerMode.minutes);
+    expect(last().minutes, 30);
+
+    notifier.startTracks(3);
+    expect(last().mode, SleepTimerMode.tracks);
+    expect(last().tracks, 3);
+
+    notifier.startTime(23, 30);
+    expect(last().mode, SleepTimerMode.time);
+    expect(last().hour, 23);
+    expect(last().minute, 30);
+  });
+
+  test('an unparseable remembered selection is ignored', () {
+    const invalid = [
+      '',
+      'minutes',
+      'minutes:0',
+      'minutes:90',
+      'time:25:00',
+      'time:23',
+      'tracks:x',
+    ];
+    for (final raw in invalid) {
+      expect(SleepTimerSelection.parse(raw).mode, isNull, reason: raw);
+    }
   });
 
   test('does not pause when playback is already paused', () {

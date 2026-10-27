@@ -1,9 +1,52 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
 enum SleepTimerMode { tracks, minutes, time }
+
+class SleepTimerSelection {
+  const SleepTimerSelection._({
+    this.mode,
+    this.tracks,
+    this.minutes,
+    this.hour,
+    this.minute,
+  });
+
+  factory SleepTimerSelection.parse(String raw) {
+    final parts = raw.split(':');
+    final mode = SleepTimerMode.values.asNameMap()[parts.first];
+    final first = parts.length > 1 ? int.tryParse(parts[1]) : null;
+    final second = parts.length > 2 ? int.tryParse(parts[2]) : null;
+    if (mode == SleepTimerMode.tracks && first != null && first > 0) {
+      return SleepTimerSelection._(mode: mode, tracks: first);
+    }
+    if (mode == SleepTimerMode.minutes &&
+        first != null &&
+        first >= 1 &&
+        first <= 60) {
+      return SleepTimerSelection._(mode: mode, minutes: first);
+    }
+    if (mode == SleepTimerMode.time &&
+        first != null &&
+        second != null &&
+        first >= 0 &&
+        first < 24 &&
+        second >= 0 &&
+        second < 60) {
+      return SleepTimerSelection._(mode: mode, hour: first, minute: second);
+    }
+    return const SleepTimerSelection._();
+  }
+
+  final SleepTimerMode? mode;
+  final int? tracks;
+  final int? minutes;
+  final int? hour;
+  final int? minute;
+}
 
 class SleepTimerState {
   const SleepTimerState.tracks({required int this.tracks, required this.tracksLeft})
@@ -43,6 +86,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState?> {
   void startTracks(int tracks) {
     _stopCountdown();
     state = SleepTimerState.tracks(tracks: tracks, tracksLeft: tracks);
+    _remember('${SleepTimerMode.tracks.name}:$tracks');
   }
 
   void startMinutes(int minutes) {
@@ -52,6 +96,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState?> {
       minutes: minutes,
       endsAt: DateTime.now().add(Duration(minutes: minutes)),
     );
+    _remember('${SleepTimerMode.minutes.name}:$minutes');
   }
 
   void startTime(int hour, int minute) {
@@ -61,7 +106,12 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState?> {
     if (!endsAt.isAfter(now)) endsAt = endsAt.add(const Duration(days: 1));
     _timer = Timer(endsAt.difference(now), _fire);
     state = SleepTimerState.time(endsAt: endsAt);
+    _remember('${SleepTimerMode.time.name}:$hour:$minute');
   }
+
+  void _remember(String selection) => _ref
+      .read(appSettingsProvider.notifier)
+      .setValue(AppSetting.sleepTimerLast, selection);
 
   void cancel() {
     _stopCountdown();
