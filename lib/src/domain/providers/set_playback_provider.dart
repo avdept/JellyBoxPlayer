@@ -79,7 +79,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
             LibraryQuery(
               libraryId: _ref.read(currentLibraryProvider).valueOrNull?.id,
               genreIds: [genre.id],
-              sort: ItemSort.albumOrder,
+              sort: ItemSort.random,
               limit: _setSongsLimit,
             ),
           );
