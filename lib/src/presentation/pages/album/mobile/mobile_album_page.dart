@@ -210,7 +210,9 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
               width: _coverExtent,
               height: _coverExtent + stretch,
               background: background,
-              overlay: video == null ? null : AnimatedCoverVideo(url: video),
+              overlay: video == null
+                  ? null
+                  : AnimatedCoverVideo(url: video, maxWidth: _coverExtent),
             ),
           ),
         );
