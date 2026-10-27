@@ -203,6 +203,126 @@ void main() {
     });
   });
 
+  group('StoredFilePath.relativize', () {
+    test('- keeps the album and file segments of an absolute path', () {
+      expect(
+        StoredFilePath.relativize(
+          '/var/mobile/Containers/Data/Application/OLD-UUID/Documents/music/'
+          'album1/track.flac',
+          depth: 2,
+        ),
+        'album1/track.flac',
+      );
+      expect(
+        StoredFilePath.relativize(
+          r'C:\Users\old\AppData\Roaming\jellybox\music\album2\track.flac',
+          depth: 2,
+        ),
+        'album2/track.flac',
+      );
+      expect(
+        StoredFilePath.relativize('/old/Library/queue_cache/a.flac', depth: 1),
+        'a.flac',
+      );
+    });
+
+    test('- leaves relative values alone', () {
+      expect(StoredFilePath.relativize('album1/track.flac', depth: 2), isNull);
+      expect(StoredFilePath.relativize('a.flac', depth: 1), isNull);
+    });
+
+    test('- refuses paths that are too shallow or escape', () {
+      expect(StoredFilePath.relativize('/track.flac', depth: 2), isNull);
+      expect(StoredFilePath.relativize('/a/track.flac', depth: 2), isNull);
+      expect(StoredFilePath.relativize('/a/b/../track.flac', depth: 2), isNull);
+    });
+  });
+
+  group('StoredFilePath.resolve', () {
+    test('- joins a relative value under the root', () {
+      expect(
+        StoredFilePath.resolve('album1/track.flac', root: root.path, depth: 2),
+        p.join(root.path, 'album1', 'track.flac'),
+      );
+      expect(
+        StoredFilePath.resolve('a.flac', root: root.path, depth: 1),
+        p.join(root.path, 'a.flac'),
+      );
+    });
+
+    test('- rebases an absolute path from an old container', () {
+      expect(
+        StoredFilePath.resolve(
+          '/var/mobile/Containers/Data/Application/OLD-UUID/Documents/music/'
+          'album1/track.flac',
+          root: root.path,
+          depth: 2,
+        ),
+        p.join(root.path, 'album1', 'track.flac'),
+      );
+      expect(
+        StoredFilePath.resolve(
+          r'C:\Users\old\AppData\Roaming\jellybox\music\album1\track.flac',
+          root: root.path,
+          depth: 2,
+        ),
+        p.join(root.path, 'album1', 'track.flac'),
+      );
+    });
+
+    test('- a path already under the root resolves to itself', () {
+      final current = p.join(root.path, 'album1', 'track.flac');
+      expect(
+        StoredFilePath.resolve(current, root: root.path, depth: 2),
+        current,
+      );
+    });
+
+    test('- never resolves outside the root', () {
+      for (final stored in [
+        '../x.flac',
+        '../../outside/x.flac',
+        'a/../../x.flac',
+        '/x.flac',
+        '',
+        '/',
+      ]) {
+        final resolved = StoredFilePath.resolve(
+          stored,
+          root: root.path,
+          depth: 2,
+        );
+        expect(resolved, isNull, reason: stored);
+      }
+    });
+
+    test('- without a root only absolute values pass through', () {
+      expect(
+        StoredFilePath.resolve('/old/music/a/b.flac', root: null, depth: 2),
+        '/old/music/a/b.flac',
+      );
+      expect(StoredFilePath.resolve('a/b.flac', root: null, depth: 2), isNull);
+    });
+  });
+
+  group('StoredFilePath.relativeTo', () {
+    test('- stores paths under the root as portable relative values', () {
+      expect(
+        StoredFilePath.relativeTo(
+          p.join(root.path, 'album1', 'track.flac'),
+          root: root.path,
+        ),
+        'album1/track.flac',
+      );
+    });
+
+    test('- keeps paths outside the root untouched', () {
+      final foreign = p.join(outside.path, 'track.flac');
+      expect(StoredFilePath.relativeTo(foreign, root: root.path), foreign);
+      expect(StoredFilePath.relativeTo(foreign, root: null), foreign);
+    });
+  });
+
   group('DownloadPaths.isResolvedWithinRoot', () {
     test('- accepts real children and rejects the root and escapes', () async {
       final album = await Directory(p.join(root.path, guid)).create();

@@ -41,9 +41,14 @@ void main() {
     await databaseFactory.deleteDatabase(join(dir, 'downloads.db'));
   }
 
+  QueueCacheDatabase scopedDb(String serverId) => QueueCacheDatabase(
+    DownloadDatabase(serverId: serverId),
+    directory: () async => filesDir.path,
+  );
+
   Future<QueueCacheDatabase> freshDb({String serverId = 'server-1'}) async {
     await deleteDb();
-    return QueueCacheDatabase(DownloadDatabase(serverId: serverId));
+    return scopedDb(serverId);
   }
 
   Future<void> settle() =>
@@ -106,9 +111,7 @@ void main() {
         });
         await v6.close();
 
-        final database = QueueCacheDatabase(
-          DownloadDatabase(serverId: 'server-1'),
-        );
+        final database = scopedDb('server-1');
 
         expect(await database.pathOf('a'), file.path);
         expect(await database.qualityOf('a'), isNull);
@@ -180,9 +183,7 @@ void main() {
 
     test('- clearing only touches the current server', () async {
       final first = await freshDb();
-      final second = QueueCacheDatabase(
-        DownloadDatabase(serverId: 'server-2'),
-      );
+      final second = scopedDb('server-2');
       final mine = cachedFile('a');
       final theirs = cachedFile('b');
       await first.insert(song('a'), file: mine);
@@ -223,9 +224,7 @@ void main() {
 
     test('- drops entries belonging to other servers', () async {
       final mine = await freshDb();
-      final theirs = QueueCacheDatabase(
-        DownloadDatabase(serverId: 'server-2'),
-      );
+      final theirs = scopedDb('server-2');
       final myFile = cachedFile('a');
       final theirFile = cachedFile('b');
       await mine.insert(song('a'), file: myFile);
@@ -241,9 +240,7 @@ void main() {
 
     test('- keeps every server when it has no server id', () async {
       final legacy = await freshDb(serverId: '');
-      final scoped = QueueCacheDatabase(
-        DownloadDatabase(serverId: 'server-2'),
-      );
+      final scoped = scopedDb('server-2');
       await scoped.insert(song('b'), file: cachedFile('b'));
 
       await legacy.deleteForeignServers();
@@ -253,9 +250,7 @@ void main() {
 
     test('- sees file paths across every server', () async {
       final first = await freshDb();
-      final second = QueueCacheDatabase(
-        DownloadDatabase(serverId: 'server-2'),
-      );
+      final second = scopedDb('server-2');
       final mine = cachedFile('a');
       final theirs = cachedFile('b');
       await first.insert(song('a'), file: mine);
@@ -263,6 +258,41 @@ void main() {
 
       expect(await first.allFilePaths(), {mine.path, theirs.path});
     });
+
+    test('- entries survive the cache directory moving', () async {
+      final database = await freshDb();
+      await database.insert(song('a'), file: cachedFile('a'));
+
+      final newDir = await Directory.systemTemp.createTemp('queue_cache_new');
+      addTearDown(() => newDir.delete(recursive: true));
+      final movedFile = File(join(newDir.path, 'a.flac'));
+      File(join(filesDir.path, 'a.flac')).renameSync(movedFile.path);
+      final moved = QueueCacheDatabase(
+        DownloadDatabase(serverId: 'server-1'),
+        directory: () async => newDir.path,
+      );
+
+      expect(await moved.pathOf('a'), movedFile.path);
+      expect(await moved.pathsFor(['a']), {'a': movedFile.path});
+      expect(await moved.allFilePaths(), {movedFile.path});
+    });
+
+    test(
+      '- an unresolvable cache directory serves and prunes nothing',
+      () async {
+        final database = await freshDb();
+        await database.insert(song('a'), file: cachedFile('a'));
+        final blind = QueueCacheDatabase(
+          DownloadDatabase(serverId: 'server-1'),
+          directory: () async => null,
+        );
+
+        expect(await blind.pathOf('a'), isNull);
+        expect(await blind.pathsFor(['a']), isEmpty);
+        expect(await blind.pruneMissing(), 0);
+        expect(await blind.cachedIds(), {'a'});
+      },
+    );
   });
 
   group('downloads.db v5 -> v6 migration', () {

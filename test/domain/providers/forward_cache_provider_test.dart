@@ -271,6 +271,12 @@ void main() {
     forwardCacheWindowProvider.overrideWithValue(window),
     if (downloads != null)
       downloadDatabaseProvider.overrideWithValue(downloads),
+    queueCacheDatabaseProvider.overrideWith(
+      (ref) => QueueCacheDatabase(
+        ref.watch(downloadDatabaseProvider),
+        directory: downloader.directoryPath,
+      ),
+    ),
     queueCacheServiceProvider.overrideWith(
       (ref) => QueueCacheService(
         database: ref.watch(queueCacheDatabaseProvider),

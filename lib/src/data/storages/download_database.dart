@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -16,7 +17,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 12;
+  static const _schemaVersion = 13;
 
   static String? databaseDirectory;
 
@@ -60,6 +61,7 @@ class DownloadDatabase {
           await source.rename('$target$suffix');
         } on FileSystemException {
           await source.copy('$target$suffix');
+          await source.delete();
         }
       }
     } on Object {
@@ -85,6 +87,7 @@ class DownloadDatabase {
     await _migrateToV10(db);
     await _migrateToV11(db);
     await _migrateToV12(db);
+    await _migrateToV13(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -99,6 +102,37 @@ class DownloadDatabase {
     if (oldVersion < 10) await _migrateToV10(db);
     if (oldVersion < 11) await _migrateToV11(db);
     if (oldVersion < 12) await _migrateToV12(db);
+    if (oldVersion < 13) await _migrateToV13(db);
+  }
+
+  Future<void> _migrateToV13(Database db) async {
+    await _relativizeFilePaths(db, 'Downloads', depth: 2);
+    await _relativizeFilePaths(db, 'QueueCache', depth: 1);
+  }
+
+  Future<void> _relativizeFilePaths(
+    Database db,
+    String table, {
+    required int depth,
+  }) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    if (columns.isEmpty) return;
+    final rows = await db.query(table, columns: ['rowid', 'FilePath']);
+    final batch = db.batch();
+    var dirty = false;
+    for (final row in rows) {
+      final stored = row['FilePath']! as String;
+      final relative = StoredFilePath.relativize(stored, depth: depth);
+      if (relative == null) continue;
+      dirty = true;
+      batch.update(
+        table,
+        {'FilePath': relative},
+        where: 'rowid = ?',
+        whereArgs: [row['rowid']],
+      );
+    }
+    if (dirty) await batch.commit(noResult: true);
   }
 
   Future<void> _migrateToV12(Database db) async {
@@ -225,7 +259,10 @@ class DownloadDatabase {
       'Id': song.id,
       'ServerId': serverId,
       'AlbumId': song.albumId,
-      'FilePath': file.path,
+      'FilePath': StoredFilePath.relativeTo(
+        file.path,
+        root: DownloadPaths.root,
+      ),
       'SizeInBytes': file.lengthSync(),
       'DownloadDate': DateTime.now().millisecondsSinceEpoch,
       'Data': jsonEncode(song.toJson()),
@@ -337,7 +374,7 @@ class DownloadDatabase {
       'ORDER BY ps.Position',
       [playlistId, serverId],
     );
-    return results.map(_downloadedSongFromRow).toList();
+    return _songsFromRows(results);
   }
 
   Future<List<String>> getPlaylistSongIds(String playlistId) async {
@@ -424,7 +461,7 @@ class DownloadDatabase {
             where: 'AlbumId = ? AND ServerId = ?',
             whereArgs: [albumId, serverId],
           );
-    return results.map(_downloadedSongFromRow).toList();
+    return _songsFromRows(results);
   }
 
   Future<List<DownloadedSong>> getStandaloneSongs() async {
@@ -439,7 +476,24 @@ class DownloadDatabase {
       'ORDER BY d.DownloadDate DESC',
       [serverId],
     );
-    return results.map(_downloadedSongFromRow).toList();
+    return _songsFromRows(results);
+  }
+
+  Future<List<DownloadedSong>> _songsFromRows(
+    List<Map<String, Object?>> rows,
+  ) async {
+    final root = await _musicRoot();
+    return [for (final row in rows) _downloadedSongFromRow(row, root)];
+  }
+
+  Future<String?> _musicRoot() async {
+    final root = DownloadPaths.root;
+    if (root != null) return root;
+    try {
+      return await DownloadPaths.init();
+    } on Object {
+      return null;
+    }
   }
 
   Future<List<DownloadedAlbum>> getDownloadedAlbums() async {
@@ -577,21 +631,26 @@ class DownloadDatabase {
       whereArgs: [id, serverId],
     );
 
-    return results.firstOrNull?['FilePath'] as String?;
+    final stored = results.firstOrNull?['FilePath'] as String?;
+    if (stored == null) return null;
+    return StoredFilePath.resolve(stored, root: await _musicRoot(), depth: 2);
   }
 }
 
-DownloadedSong _downloadedSongFromRow(Map<String, Object?> row) =>
-    DownloadedSong(
-      item: LibraryItem.fromJson(
-        jsonDecode(row['Data']! as String) as Map<String, dynamic>,
-      ),
-      filePath: row['FilePath']! as String,
-      sizeInBytes: row['SizeInBytes']! as int,
-      downloadDate: DateTime.fromMillisecondsSinceEpoch(
-        row['DownloadDate']! as int,
-      ),
-    );
+DownloadedSong _downloadedSongFromRow(Map<String, Object?> row, String? root) {
+  final stored = row['FilePath']! as String;
+  final resolved = StoredFilePath.resolve(stored, root: root, depth: 2);
+  return DownloadedSong(
+    item: LibraryItem.fromJson(
+      jsonDecode(row['Data']! as String) as Map<String, dynamic>,
+    ),
+    filePath: resolved ?? (root == null ? stored : join(root, '.missing')),
+    sizeInBytes: row['SizeInBytes']! as int,
+    downloadDate: DateTime.fromMillisecondsSinceEpoch(
+      row['DownloadDate']! as int,
+    ),
+  );
+}
 
 DownloadedPlaylist _downloadedPlaylistFromRow(Map<String, Object?> row) =>
     DownloadedPlaylist(
