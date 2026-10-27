@@ -1,4 +1,4 @@
-CREATE TABLE Downloads (
+CREATE TABLE IF NOT EXISTS Downloads (
     Id TEXT PRIMARY KEY,
     RunTimeTicks INTEGER NOT NULL,
     IndexNumber INTEGER NOT NULL,

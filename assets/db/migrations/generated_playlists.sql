@@ -1,4 +1,4 @@
-CREATE TABLE GeneratedPlaylists (
+CREATE TABLE IF NOT EXISTS GeneratedPlaylists (
     Id TEXT NOT NULL,
     UserId TEXT NOT NULL,
     LibraryId TEXT NOT NULL,

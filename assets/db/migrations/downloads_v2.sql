@@ -1,4 +1,4 @@
-CREATE TABLE Downloads (
+CREATE TABLE IF NOT EXISTS Downloads (
     Id TEXT PRIMARY KEY,
     AlbumId TEXT,
     FilePath TEXT NOT NULL,

@@ -1,4 +1,4 @@
-CREATE TABLE QueueCache (
+CREATE TABLE IF NOT EXISTS QueueCache (
     Id TEXT NOT NULL,
     ServerId TEXT NOT NULL DEFAULT '',
     FilePath TEXT NOT NULL,
