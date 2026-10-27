@@ -528,6 +528,9 @@ class JellyfinClient implements MediaServerClient {
     bool forceTranscode = false,
     Duration? startPosition,
   }) async {
+    final radio = radioStreamSource(song);
+    if (radio != null) return radio;
+
     final audioSource = song.audioSources.firstOrNull;
 
     final profile = AudioStreamProfile.forSource(

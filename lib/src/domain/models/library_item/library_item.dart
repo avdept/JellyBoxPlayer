@@ -42,6 +42,20 @@ abstract class LibraryItem with _$LibraryItem {
 
   String get primaryImageId => images.primaryItemId ?? id;
 
+  String? get radioStreamUrl {
+    for (final source in audioSources) {
+      if (source.url != null) return source.url;
+    }
+    final path = this.path;
+    if (path != null &&
+        (path.startsWith('http://') || path.startsWith('https://'))) {
+      return path;
+    }
+    return null;
+  }
+
+  bool get isRadioStream => kind == ItemKind.song && radioStreamUrl != null;
+
   List<ArtistRef> get effectiveArtists =>
       artists.isNotEmpty ? artists : albumArtists;
 

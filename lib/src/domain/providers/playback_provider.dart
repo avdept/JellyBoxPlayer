@@ -463,6 +463,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     required int positionMs,
     bool? isPaused,
   }) {
+    if (song.isRadioStream) return;
     _startReported = true;
     _report(
       (client) => client.reportPlaybackStarted(

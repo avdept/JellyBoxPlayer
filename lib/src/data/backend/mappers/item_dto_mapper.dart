@@ -58,6 +58,7 @@ AudioSourceInfo _toAudioSourceInfo(MediaSourceDTO source) {
   return AudioSourceInfo(
     id: source.id,
     container: source.container,
+    url: _remoteUrl(source.path),
     codec: audioStream?.codec,
     bitRate: audioStream?.bitRate,
     sampleRate: audioStream?.sampleRate,
@@ -66,6 +67,11 @@ AudioSourceInfo _toAudioSourceInfo(MediaSourceDTO source) {
     channelLayout: audioStream?.channelLayout,
   );
 }
+
+String? _remoteUrl(String? path) =>
+    path != null && (path.startsWith('http://') || path.startsWith('https://'))
+    ? path
+    : null;
 
 extension ItemsWrapperMapping on ItemsWrapper {
   LibraryPage toLibraryPage() => LibraryPage(

@@ -49,7 +49,7 @@ class ListenTracker {
   List<ScrobbleEvent> update(PlaybackState state) {
     final index = state.currentMediaIndex;
     final song = index == null ? null : state.songs.elementAtOrNull(index);
-    if (song == null) {
+    if (song == null || song.isRadioStream) {
       reset();
       return const [];
     }

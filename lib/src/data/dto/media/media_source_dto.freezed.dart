@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MediaSourceDTO {
 
-@JsonKey(name: 'Id') String? get id;@JsonKey(name: 'Container') String? get container;@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> get mediaStreams;
+@JsonKey(name: 'Id') String? get id;@JsonKey(name: 'Container') String? get container;@JsonKey(name: 'Path') String? get path;@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> get mediaStreams;
 /// Create a copy of MediaSourceDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MediaSourceDTOCopyWith<MediaSourceDTO> get copyWith => _$MediaSourceDTOCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MediaSourceDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.container, container) || other.container == container)&&const DeepCollectionEquality().equals(other.mediaStreams, mediaStreams));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MediaSourceDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.container, container) || other.container == container)&&(identical(other.path, path) || other.path == path)&&const DeepCollectionEquality().equals(other.mediaStreams, mediaStreams));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,container,const DeepCollectionEquality().hash(mediaStreams));
+int get hashCode => Object.hash(runtimeType,id,container,path,const DeepCollectionEquality().hash(mediaStreams));
 
 @override
 String toString() {
-  return 'MediaSourceDTO(id: $id, container: $container, mediaStreams: $mediaStreams)';
+  return 'MediaSourceDTO(id: $id, container: $container, path: $path, mediaStreams: $mediaStreams)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MediaSourceDTOCopyWith<$Res>  {
   factory $MediaSourceDTOCopyWith(MediaSourceDTO value, $Res Function(MediaSourceDTO) _then) = _$MediaSourceDTOCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'Id') String? id,@JsonKey(name: 'Container') String? container,@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> mediaStreams
+@JsonKey(name: 'Id') String? id,@JsonKey(name: 'Container') String? container,@JsonKey(name: 'Path') String? path,@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> mediaStreams
 });
 
 
@@ -65,10 +65,11 @@ class _$MediaSourceDTOCopyWithImpl<$Res>
 
 /// Create a copy of MediaSourceDTO
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? container = freezed,Object? mediaStreams = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? container = freezed,Object? path = freezed,Object? mediaStreams = null,}) {
   return _then(_self.copyWith(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,container: freezed == container ? _self.container : container // ignore: cast_nullable_to_non_nullable
+as String?,path: freezed == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
 as String?,mediaStreams: null == mediaStreams ? _self.mediaStreams : mediaStreams // ignore: cast_nullable_to_non_nullable
 as List<MediaStreamDTO>,
   ));
@@ -155,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String? id, @JsonKey(name: 'Container')  String? container, @JsonKey(name: 'MediaStreams')  List<MediaStreamDTO> mediaStreams)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String? id, @JsonKey(name: 'Container')  String? container, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'MediaStreams')  List<MediaStreamDTO> mediaStreams)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MediaSourceDTO() when $default != null:
-return $default(_that.id,_that.container,_that.mediaStreams);case _:
+return $default(_that.id,_that.container,_that.path,_that.mediaStreams);case _:
   return orElse();
 
 }
@@ -176,10 +177,10 @@ return $default(_that.id,_that.container,_that.mediaStreams);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String? id, @JsonKey(name: 'Container')  String? container, @JsonKey(name: 'MediaStreams')  List<MediaStreamDTO> mediaStreams)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'Id')  String? id, @JsonKey(name: 'Container')  String? container, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'MediaStreams')  List<MediaStreamDTO> mediaStreams)  $default,) {final _that = this;
 switch (_that) {
 case _MediaSourceDTO():
-return $default(_that.id,_that.container,_that.mediaStreams);case _:
+return $default(_that.id,_that.container,_that.path,_that.mediaStreams);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +197,10 @@ return $default(_that.id,_that.container,_that.mediaStreams);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Id')  String? id, @JsonKey(name: 'Container')  String? container, @JsonKey(name: 'MediaStreams')  List<MediaStreamDTO> mediaStreams)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'Id')  String? id, @JsonKey(name: 'Container')  String? container, @JsonKey(name: 'Path')  String? path, @JsonKey(name: 'MediaStreams')  List<MediaStreamDTO> mediaStreams)?  $default,) {final _that = this;
 switch (_that) {
 case _MediaSourceDTO() when $default != null:
-return $default(_that.id,_that.container,_that.mediaStreams);case _:
+return $default(_that.id,_that.container,_that.path,_that.mediaStreams);case _:
   return null;
 
 }
@@ -211,11 +212,12 @@ return $default(_that.id,_that.container,_that.mediaStreams);case _:
 @JsonSerializable()
 
 class _MediaSourceDTO implements MediaSourceDTO {
-  const _MediaSourceDTO({@JsonKey(name: 'Id') this.id, @JsonKey(name: 'Container') this.container, @JsonKey(name: 'MediaStreams') final  List<MediaStreamDTO> mediaStreams = const []}): _mediaStreams = mediaStreams;
+  const _MediaSourceDTO({@JsonKey(name: 'Id') this.id, @JsonKey(name: 'Container') this.container, @JsonKey(name: 'Path') this.path, @JsonKey(name: 'MediaStreams') final  List<MediaStreamDTO> mediaStreams = const []}): _mediaStreams = mediaStreams;
   factory _MediaSourceDTO.fromJson(Map<String, dynamic> json) => _$MediaSourceDTOFromJson(json);
 
 @override@JsonKey(name: 'Id') final  String? id;
 @override@JsonKey(name: 'Container') final  String? container;
+@override@JsonKey(name: 'Path') final  String? path;
  final  List<MediaStreamDTO> _mediaStreams;
 @override@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> get mediaStreams {
   if (_mediaStreams is EqualUnmodifiableListView) return _mediaStreams;
@@ -237,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MediaSourceDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.container, container) || other.container == container)&&const DeepCollectionEquality().equals(other._mediaStreams, _mediaStreams));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MediaSourceDTO&&(identical(other.id, id) || other.id == id)&&(identical(other.container, container) || other.container == container)&&(identical(other.path, path) || other.path == path)&&const DeepCollectionEquality().equals(other._mediaStreams, _mediaStreams));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,container,const DeepCollectionEquality().hash(_mediaStreams));
+int get hashCode => Object.hash(runtimeType,id,container,path,const DeepCollectionEquality().hash(_mediaStreams));
 
 @override
 String toString() {
-  return 'MediaSourceDTO(id: $id, container: $container, mediaStreams: $mediaStreams)';
+  return 'MediaSourceDTO(id: $id, container: $container, path: $path, mediaStreams: $mediaStreams)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$MediaSourceDTOCopyWith<$Res> implements $MediaSourceDTOCo
   factory _$MediaSourceDTOCopyWith(_MediaSourceDTO value, $Res Function(_MediaSourceDTO) _then) = __$MediaSourceDTOCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'Id') String? id,@JsonKey(name: 'Container') String? container,@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> mediaStreams
+@JsonKey(name: 'Id') String? id,@JsonKey(name: 'Container') String? container,@JsonKey(name: 'Path') String? path,@JsonKey(name: 'MediaStreams') List<MediaStreamDTO> mediaStreams
 });
 
 
@@ -274,10 +276,11 @@ class __$MediaSourceDTOCopyWithImpl<$Res>
 
 /// Create a copy of MediaSourceDTO
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? container = freezed,Object? mediaStreams = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? container = freezed,Object? path = freezed,Object? mediaStreams = null,}) {
   return _then(_MediaSourceDTO(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,container: freezed == container ? _self.container : container // ignore: cast_nullable_to_non_nullable
+as String?,path: freezed == path ? _self.path : path // ignore: cast_nullable_to_non_nullable
 as String?,mediaStreams: null == mediaStreams ? _self._mediaStreams : mediaStreams // ignore: cast_nullable_to_non_nullable
 as List<MediaStreamDTO>,
   ));

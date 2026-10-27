@@ -368,7 +368,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       id: track.itemId,
       album: track.album,
       artist: track.artist,
-      duration: track.duration,
+      duration: track.duration > Duration.zero ? track.duration : null,
       title: track.title,
       extras: track.extras,
       artUri: track.artUri,

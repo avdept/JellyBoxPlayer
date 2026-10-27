@@ -147,6 +147,30 @@ void main() {
       isAndroid: false,
     ).withPreference(StreamPreference(maxBitRate: kbps));
 
+    test('- plays a radio station straight from its remote URL', () async {
+      final station = ItemDTO.fromJson({
+        'Id': 'radio-1',
+        'Name': 'TECHNO',
+        'Type': 'Audio',
+        'Path': 'https://radio.example/stream',
+        'MediaSources': [
+          {'Id': 'mediasource_radio-1', 'Container': 'strm'},
+        ],
+      }).toLibraryItem();
+
+      final source = await client.resolveStreamSource(
+        station,
+        playSessionId: 'session-1',
+        target: capped(128),
+      );
+
+      expect(source.uri, Uri.parse('https://radio.example/stream'));
+      expect(source.location, isNull);
+      expect(source.isHls, isFalse);
+      expect(source.requiresTranscode, isFalse);
+      expect(source.mimeType, 'audio/mpeg');
+    });
+
     test('- caps a source over the limit and reports what arrives', () async {
       final source = await client.resolveStreamSource(
         songWith(container: 'flac', codec: 'flac', bitRate: 1000000),

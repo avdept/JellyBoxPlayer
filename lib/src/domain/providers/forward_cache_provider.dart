@@ -123,9 +123,9 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     ];
     if (pending.isEmpty) return null;
 
-    final downloaded = await _ref
-        .read(downloadDatabaseProvider)
-        .downloadedIds([for (final song in pending) song.id]);
+    final downloaded = await _ref.read(downloadDatabaseProvider).downloadedIds([
+      for (final song in pending) song.id,
+    ]);
     if (!mounted) return null;
     final wanted = [
       for (final song in pending)
@@ -164,7 +164,10 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     final playback = _ref.read(playbackProvider);
     final songs = playback.songs;
     if (songs.isEmpty) return const [];
-    final current = (playback.currentMediaIndex ?? 0).clamp(0, songs.length - 1);
+    final current = (playback.currentMediaIndex ?? 0).clamp(
+      0,
+      songs.length - 1,
+    );
     final window = _ref.read(forwardCacheWindowProvider).duration;
 
     var ahead = _lengthOf(songs[current]) - playback.position;
@@ -180,7 +183,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     final seen = <String>{};
     return [
       for (final song in ordered)
-        if (seen.add(song.id)) song,
+        if (!song.isRadioStream && seen.add(song.id)) song,
     ];
   }
 

@@ -38,6 +38,7 @@ class QueueCacheService {
     MediaServerClient client, {
     StreamPreference preference = StreamPreference.original,
   }) async {
+    if (song.isRadioStream) return null;
     try {
       final resolved = await client.resolveStreamSource(
         song,

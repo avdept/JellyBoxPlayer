@@ -864,7 +864,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
           ? playback.songs.elementAtOrNull(playback.currentMediaIndex!)
           : null;
 
-      if (currentSong == null) return const SizedBox.shrink();
+      if (currentSong == null || currentSong.isRadioStream) {
+        return const SizedBox.shrink();
+      }
 
       final isDownloaded = ref
           .watch(isSongDownloadedProvider(currentSong.id))

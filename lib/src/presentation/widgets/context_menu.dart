@@ -330,7 +330,8 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.addToQueue => actions.addToQueue(),
         ContextMenuEntry.instantMix => actions.instantMix(),
         ContextMenuEntry.genreMix => actions.genreMix(),
-        ContextMenuEntry.download => actions.download(),
+        ContextMenuEntry.download =>
+          item.isRadioStream ? null : actions.download(),
         ContextMenuEntry.like =>
           onLike != null && !rowHasLike && canLike
               ? actions.like(onLike)
