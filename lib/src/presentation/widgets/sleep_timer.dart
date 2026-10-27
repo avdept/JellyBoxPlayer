@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/sleep_timer_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -52,11 +53,18 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
   void initState() {
     super.initState();
     final timer = ref.read(sleepTimerProvider);
-    _mode = timer?.mode ?? SleepTimerMode.minutes;
-    _tracksController = TextEditingController(text: '${timer?.tracks ?? 5}');
-    _minutes = timer?.minutes ?? 15;
+    final last = SleepTimerSelection.parse(
+      ref.read(appSettingsProvider.notifier).valueOf(AppSetting.sleepTimerLast),
+    );
+    _mode = timer?.mode ?? last.mode ?? SleepTimerMode.minutes;
+    _tracksController = TextEditingController(
+      text: '${timer?.tracks ?? last.tracks ?? 5}',
+    );
+    _minutes = timer?.minutes ?? last.minutes ?? 15;
     _time = timer?.mode == SleepTimerMode.time
         ? TimeOfDay.fromDateTime(timer!.endsAt!)
+        : last.hour != null
+        ? TimeOfDay(hour: last.hour!, minute: last.minute!)
         : TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
   }
 

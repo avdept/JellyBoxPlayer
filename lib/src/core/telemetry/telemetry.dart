@@ -4,7 +4,9 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/diagnostics/device_log.dart';
+import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/providers/current_server_type_provider.dart';
 import 'package:plausible/plausible.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +18,8 @@ class Telemetry {
   static const _plausibleHost = 'plausible.prodigytech.dev';
 
   static bool _optedOut = false;
+  static ServerType? _serverType;
+  static ServerType? _reportedServerType;
 
   static bool get isEnabled => !_optedOut;
 
@@ -56,10 +60,22 @@ class Telemetry {
   }
 
   static void watch(ProviderContainer container) {
-    container.listen(
-      settingProvider(AppSetting.telemetryOptOut),
-      (previous, next) => unawaited(_onOptOutChanged(optedOut: next)),
-    );
+    container
+      ..listen(
+        settingProvider(AppSetting.telemetryOptOut),
+        (previous, next) => unawaited(_onOptOutChanged(optedOut: next)),
+      )
+      ..listen(currentServerTypeProvider, (previous, next) {
+        _serverType = next;
+        _reportServerType();
+      }, fireImmediately: true);
+  }
+
+  static void _reportServerType() {
+    final type = _serverType;
+    if (_optedOut || type == null || type == _reportedServerType) return;
+    _reportedServerType = type;
+    unawaited(_sendEvent('server-connected', props: {'server': type.name}));
   }
 
   static void _configureSentry(SentryFlutterOptions options) {
@@ -78,6 +94,7 @@ class Telemetry {
       DeviceLog.install();
     } else {
       unawaited(_sendLaunchEvents());
+      _reportServerType();
       await SentryFlutter.init(_configureSentry);
       _keepConsoleLogging();
     }
@@ -97,11 +114,14 @@ class Telemetry {
     await _sendEvent('app-launched');
   }
 
-  static Future<void> _sendEvent(String event) async {
+  static Future<void> _sendEvent(
+    String event, {
+    Map<String, String> props = const {},
+  }) async {
     try {
       await _plausible().send(
         event: event,
-        props: {'os': Platform.operatingSystem},
+        props: {'os': Platform.operatingSystem, ...props},
       );
     } on Object catch (error) {
       debugPrint('[Telemetry] $error');
