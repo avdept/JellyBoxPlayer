@@ -1,4 +1,4 @@
-CREATE TABLE PlaylistSongs (
+CREATE TABLE IF NOT EXISTS PlaylistSongs (
     PlaylistId TEXT NOT NULL,
     SongId TEXT NOT NULL,
     ServerId TEXT NOT NULL DEFAULT '',

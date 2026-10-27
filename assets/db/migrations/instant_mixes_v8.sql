@@ -1,4 +1,4 @@
-CREATE TABLE InstantMixes (
+CREATE TABLE IF NOT EXISTS InstantMixes (
     Id TEXT NOT NULL,
     ServerId TEXT NOT NULL,
     UserId TEXT NOT NULL,

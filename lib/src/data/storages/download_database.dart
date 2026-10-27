@@ -144,12 +144,24 @@ class DownloadDatabase {
   }
 
   Future<void> _migrateToV10(Database db) async {
-    final columns = await db.rawQuery('PRAGMA table_info(Downloads)');
-    if (columns.isEmpty) return;
-    if (columns.any((column) => column['name'] == 'Pending')) return;
-    await db.execute(
-      'ALTER TABLE Downloads ADD COLUMN Pending INTEGER NOT NULL DEFAULT 0',
+    await _addColumn(
+      db,
+      table: 'Downloads',
+      column: 'Pending',
+      sql: 'ALTER TABLE Downloads ADD COLUMN Pending INTEGER NOT NULL DEFAULT 0',
     );
+  }
+
+  Future<void> _addColumn(
+    Database db, {
+    required String table,
+    required String column,
+    required String sql,
+  }) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    if (columns.isEmpty) return;
+    if (columns.any((existing) => existing['name'] == column)) return;
+    await db.execute(sql);
   }
 
   Future<void> _migrateToV9(Database db) async {
@@ -163,7 +175,12 @@ class DownloadDatabase {
   }
 
   Future<void> _migrateToV7(Database db) async {
-    await db.execute(await rootBundle.loadString(DbMigrations.queueCacheV7));
+    await _addColumn(
+      db,
+      table: 'QueueCache',
+      column: 'Quality',
+      sql: await rootBundle.loadString(DbMigrations.queueCacheV7),
+    );
   }
 
   Future<void> _migrateToV6(Database db) async {
@@ -179,11 +196,18 @@ class DownloadDatabase {
   }
 
   Future<void> _migrateToV4(Database db) async {
-    final createV4 = [DbMigrations.downloadsV4, DbMigrations.albumsV4];
-    final queries = await Future.wait(createV4.map(rootBundle.loadString));
-    for (final query in queries) {
-      await db.execute(query);
-    }
+    await _addColumn(
+      db,
+      table: 'Downloads',
+      column: 'ServerId',
+      sql: await rootBundle.loadString(DbMigrations.downloadsV4),
+    );
+    await _addColumn(
+      db,
+      table: 'Albums',
+      column: 'ServerId',
+      sql: await rootBundle.loadString(DbMigrations.albumsV4),
+    );
   }
 
   // TODO: Remove in 2.5.0, tis is one time thing to adopt dowmloads without serverId
@@ -212,6 +236,9 @@ class DownloadDatabase {
   }
 
   Future<void> _migrateToV2(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info(Downloads)');
+    if (columns.any((column) => column['name'] == 'Data')) return;
+
     final legacySongs = await db.query('Downloads');
     final legacyAlbums = await db.query('Albums');
 

@@ -1,4 +1,4 @@
-CREATE TABLE SongPlays (
+CREATE TABLE IF NOT EXISTS SongPlays (
     ServerId TEXT NOT NULL,
     UserId TEXT NOT NULL,
     SongId TEXT NOT NULL,
