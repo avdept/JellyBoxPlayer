@@ -12,6 +12,16 @@ on:
         required: false
         type: boolean
         default: false
+      version:
+        description: 'Version to stamp (blank = pubspec version)'
+        required: false
+        type: string
+        default: ''
+      build_number:
+        description: 'Build number to stamp (blank = pubspec build number)'
+        required: false
+        type: string
+        default: ''
       release_tag:
         description: 'Release to attach the DMG to: a tag, "latest", or blank to only build'
         required: false
@@ -48,12 +58,21 @@ jobs:
         working-directory: .
         env:
           IMPELLER: ${{ inputs.impeller }}
+          IN_VERSION: ${{ inputs.version }}
+          IN_BUILD_NUMBER: ${{ inputs.build_number }}
         run: |
-          VERSION="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
+          # The run number is useless as a build number here: it restarts when
+          # the workflow file is renamed and produced builds like 2.10.0+2 that
+          # are impossible to tell apart from release builds in Sentry. The
+          # pubspec build number at least identifies the commit range.
+          PUBSPEC="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')"
+          VERSION="${IN_VERSION:-${PUBSPEC%%+*}}"
+          BUILD_NUMBER="${IN_BUILD_NUMBER:-${PUBSPEC#*+}}"
           if [ "$IMPELLER" = "true" ]; then RENDERER=impeller; else RENDERER=skia; fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "build_number=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
           echo "renderer=$RENDERER" >> "$GITHUB_OUTPUT"
+          echo "Building $VERSION+$BUILD_NUMBER ($RENDERER)"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -78,6 +97,7 @@ jobs:
           flutter pub get
           flutter build macos --release \
             --dart-define=JELLYBOX_DIRECT_DOWNLOAD=true \
+            --dart-define=JELLYBOX_SIDELOAD=true \
             --build-name=${{ steps.version.outputs.version }} \
             --build-number=${{ steps.version.outputs.build_number }}
 
