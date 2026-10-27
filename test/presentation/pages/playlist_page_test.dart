@@ -34,10 +34,10 @@ void main() {
   final mockBaseUrl = faker.internet.url();
   final mockPlaylist = LibraryItem(
     id: faker.datatype.uuid(),
-    name: faker.lorem.sentence(),
+    name: 'Road Trip',
     kind: ItemKind.playlist,
     productionYear: faker.date.past(DateTime.now()).year,
-    albumArtist: faker.name.fullName(),
+    albumArtist: 'Mixed Artists',
     images: ImageRefs(primary: faker.datatype.uuid()),
   );
   final mockSongs = LibraryPage(

@@ -81,7 +81,10 @@ void main() {
     coverRequests = [];
 
     downloader = _FakeDownloader(filesDir);
-    database = QueueCacheDatabase(DownloadDatabase(serverId: 'server-1'));
+    database = QueueCacheDatabase(
+      DownloadDatabase(serverId: 'server-1'),
+      directory: downloader.directoryPath,
+    );
     service = QueueCacheService(
       database: database,
       downloads: DownloadDatabase(serverId: 'server-1'),
@@ -300,7 +303,10 @@ void main() {
     });
 
     test("- reconciling drops another server's entries", () async {
-      final other = QueueCacheDatabase(DownloadDatabase(serverId: 'server-2'));
+      final other = QueueCacheDatabase(
+        DownloadDatabase(serverId: 'server-2'),
+        directory: downloader.directoryPath,
+      );
       await service.cache(song('a'), client);
       final theirFile = File(join(filesDir.path, 'theirs.flac'))
         ..writeAsBytesSync([1, 2, 3]);
@@ -322,7 +328,9 @@ void main() {
       );
       await downloads.insertDownloadedAlbum(
         album,
-        files: [File(join(filesDir.path, 'placeholder'))..writeAsBytesSync([1])],
+        files: [
+          File(join(filesDir.path, 'placeholder'))..writeAsBytesSync([1]),
+        ],
       );
       final kept = File(
         join(coversDir.path, 'album-kept', DownloadPaths.coverFileName),

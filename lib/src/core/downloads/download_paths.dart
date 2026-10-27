@@ -125,3 +125,54 @@ class DownloadPaths {
     await directory.delete(recursive: true);
   }
 }
+
+class StoredFilePath {
+  StoredFilePath._();
+
+  static bool isAbsolute(String path) =>
+      p.posix.isAbsolute(path) || p.windows.isAbsolute(path);
+
+  static String relativeTo(String path, {required String? root}) {
+    if (root == null || !p.isWithin(root, path)) return path;
+    return p.split(p.relative(path, from: root)).join('/');
+  }
+
+  static String? relativize(String path, {required int depth}) {
+    if (!isAbsolute(path)) return null;
+    final segments = _segments(path);
+    if (segments.length <= depth) return null;
+    final tail = segments.sublist(segments.length - depth);
+    if (tail.any((segment) => segment == '.' || segment == '..')) return null;
+    return tail.join('/');
+  }
+
+  static String? resolve(
+    String stored, {
+    required String? root,
+    required int depth,
+  }) {
+    if (root == null) return isAbsolute(stored) ? stored : null;
+    final relative = isAbsolute(stored)
+        ? relativize(stored, depth: depth)
+        : stored;
+    if (relative == null) return null;
+    final segments = [
+      for (final segment in relative.split('/'))
+        if (segment.isNotEmpty) segment,
+    ];
+    if (segments.isEmpty) return null;
+    try {
+      return DownloadPaths.resolveWithin(root, segments);
+    } on UnsafePathException {
+      return null;
+    }
+  }
+
+  static List<String> _segments(String path) {
+    final parts = path.contains('/') ? path.split('/') : path.split(r'\');
+    return [
+      for (final part in parts)
+        if (part.isNotEmpty) part,
+    ];
+  }
+}

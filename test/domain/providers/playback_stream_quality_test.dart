@@ -12,6 +12,7 @@ import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/data/storages/queue_cache_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
@@ -218,6 +219,12 @@ void main() {
         mediaServerClientProvider.overrideWith((_) => client),
         isOfflineProvider.overrideWithValue(false),
         networkTypeProvider.overrideWith((_) => network),
+        queueCacheDatabaseProvider.overrideWith(
+          (ref) => QueueCacheDatabase(
+            ref.watch(downloadDatabaseProvider),
+            directory: () async => filesDir.path,
+          ),
+        ),
       ],
     );
     await container.read(sharedPreferencesProvider.future);

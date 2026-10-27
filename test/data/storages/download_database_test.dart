@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:path/path.dart' hide equals;
@@ -62,11 +64,13 @@ void main() {
   setUp(() async {
     await deleteDb();
     tempDir = await Directory.systemTemp.createTemp('download_database_test');
+    DownloadPaths.root = tempDir.path;
     songFile = File(join(tempDir.path, 'song.flac'))
       ..writeAsBytesSync(List.generate(1024, (i) => i % 256));
   });
 
   tearDown(() async {
+    DownloadPaths.root = null;
     await deleteDb();
     if (tempDir.existsSync()) await tempDir.delete(recursive: true);
   });
@@ -585,6 +589,8 @@ void main() {
     test('- migrates legacy song rows to the new blob schema', () async {
       final songId = faker.datatype.uuid();
       final albumId = faker.datatype.uuid();
+      final legacyFile = File(join(tempDir.path, albumId, 'song.flac'))
+        ..createSync(recursive: true);
       await seedLegacyDatabase(
         songRow: {
           'Id': songId,
@@ -604,7 +610,7 @@ void main() {
           }),
           'ImageTags': 'Primary:legacy-tag',
           'DownloadDate': 1700000000000,
-          'FilePath': songFile.path,
+          'FilePath': legacyFile.path,
           'SizeInBytes': 12345,
         },
         albumRow: {
@@ -641,7 +647,7 @@ void main() {
       expect(song.item.userData.playCount, 4);
       expect(song.item.userData.isFavorite, isTrue);
       expect(song.item.userData.played, isTrue);
-      expect(song.filePath, songFile.path);
+      expect(song.filePath, legacyFile.path);
       expect(song.sizeInBytes, 12345);
 
       expect(albums, hasLength(1));
@@ -660,6 +666,8 @@ void main() {
     test('- preserves existing rows so no re-download is required', () async {
       final songId = faker.datatype.uuid();
       final albumId = faker.datatype.uuid();
+      final legacyFile = File(join(tempDir.path, albumId, 'song.flac'))
+        ..createSync(recursive: true);
       await seedLegacyDatabase(
         songRow: {
           'Id': songId,
@@ -674,7 +682,7 @@ void main() {
           'UserData': jsonEncode(<String, dynamic>{}),
           'ImageTags': null,
           'DownloadDate': 1700000000000,
-          'FilePath': songFile.path,
+          'FilePath': legacyFile.path,
           'SizeInBytes': 999,
         },
         albumRow: {
@@ -695,7 +703,7 @@ void main() {
       final db = DownloadDatabase();
       expect(await db.isSongDownloaded(songId), isTrue);
       expect(await db.isAlbumDownloaded(albumId), isTrue);
-      expect(await db.getDownloadedSongPath(songId), songFile.path);
+      expect(await db.getDownloadedSongPath(songId), legacyFile.path);
       expect(await db.getDownloadedPlaylists(), isEmpty);
     });
   });
@@ -735,6 +743,182 @@ void main() {
       expect(await moved.getDownloadedSongs(), hasLength(1));
       expect(File(join(overrideDir.path, 'downloads.db')).existsSync(), isTrue);
       expect(File(dbPath).existsSync(), isFalse);
+    });
+  });
+
+  group('DownloadDatabase (v12 -> v13 migration)', () {
+    const downloadsV12Sql = '''
+CREATE TABLE Downloads (
+    Id TEXT NOT NULL,
+    ServerId TEXT NOT NULL DEFAULT '',
+    AlbumId TEXT,
+    FilePath TEXT NOT NULL,
+    SizeInBytes INTEGER NOT NULL,
+    DownloadDate INTEGER NOT NULL,
+    Data TEXT NOT NULL,
+    Pending INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (Id, ServerId)
+)
+''';
+    const queueCacheV12Sql = '''
+CREATE TABLE QueueCache (
+    Id TEXT NOT NULL,
+    ServerId TEXT NOT NULL DEFAULT '',
+    FilePath TEXT NOT NULL,
+    SizeInBytes INTEGER NOT NULL,
+    CachedDate INTEGER NOT NULL,
+    LastUsedDate INTEGER NOT NULL,
+    Data TEXT NOT NULL,
+    Quality TEXT,
+    PRIMARY KEY (Id, ServerId)
+)
+''';
+
+    Future<void> seedV12({
+      List<Map<String, Object?>> songRows = const [],
+      List<Map<String, Object?>> cacheRows = const [],
+    }) async {
+      final v12 = await databaseFactory.openDatabase(
+        dbPath,
+        options: OpenDatabaseOptions(
+          version: 12,
+          onCreate: (db, version) async {
+            await db.execute(downloadsV12Sql);
+            await db.execute(queueCacheV12Sql);
+          },
+        ),
+      );
+      for (final row in songRows) {
+        await v12.insert('Downloads', row);
+      }
+      for (final row in cacheRows) {
+        await v12.insert('QueueCache', row);
+      }
+      await v12.close();
+    }
+
+    Map<String, Object?> songRow(LibraryItem song, String filePath) => {
+      'Id': song.id,
+      'ServerId': 'server-a',
+      'AlbumId': song.albumId,
+      'FilePath': filePath,
+      'SizeInBytes': 1024,
+      'DownloadDate': 1700000000000,
+      'Data': jsonEncode(song.toJson()),
+    };
+
+    Future<String?> rawFilePath(DownloadDatabase db, String id) async {
+      final rows = await (await db.database).query(
+        'Downloads',
+        columns: ['FilePath'],
+        where: 'Id = ?',
+        whereArgs: [id],
+      );
+      return rows.firstOrNull?['FilePath'] as String?;
+    }
+
+    test('- rebases a row written in an old iOS container', () async {
+      final song = buildSong();
+      final moved = File(join(tempDir.path, 'album1', 'track.flac'))
+        ..createSync(recursive: true);
+      await seedV12(
+        songRows: [
+          songRow(
+            song,
+            '/var/mobile/Containers/Data/Application/'
+            'A1B2C3D4-0000-0000-0000-000000000000/Documents/music/'
+            'album1/track.flac',
+          ),
+        ],
+      );
+
+      final db = DownloadDatabase(serverId: 'server-a');
+
+      expect(await db.getDownloadedSongPath(song.id), moved.path);
+      expect(await rawFilePath(db, song.id), 'album1/track.flac');
+      final read = await db.getDownloadedSongs();
+      expect(read.single.filePath, moved.path);
+      expect(File(read.single.filePath).existsSync(), isTrue);
+    });
+
+    test('- rebases a row written with Windows separators', () async {
+      final song = buildSong();
+      await seedV12(
+        songRows: [
+          songRow(
+            song,
+            r'C:\Users\old\AppData\Roaming\jellybox\music\album2\track.flac',
+          ),
+        ],
+      );
+
+      final db = DownloadDatabase(serverId: 'server-a');
+
+      expect(
+        await db.getDownloadedSongPath(song.id),
+        join(tempDir.path, 'album2', 'track.flac'),
+      );
+      expect(await rawFilePath(db, song.id), 'album2/track.flac');
+    });
+
+    test('- never maps a stored path outside the music folder', () async {
+      final shallow = buildSong();
+      final escaping = buildSong();
+      await seedV12(
+        songRows: [
+          songRow(shallow, '/victim.flac'),
+          songRow(escaping, '../../outside/evil.flac'),
+        ],
+      );
+
+      final db = DownloadDatabase(serverId: 'server-a');
+
+      expect(await db.getDownloadedSongPath(shallow.id), isNull);
+      expect(await rawFilePath(db, shallow.id), '/victim.flac');
+      expect(await db.getDownloadedSongPath(escaping.id), isNull);
+      for (final song in await db.getDownloadedSongs()) {
+        expect(isWithin(tempDir.path, song.filePath), isTrue);
+      }
+    });
+
+    test('- rebases queue cache rows to their file name', () async {
+      await seedV12(
+        cacheRows: [
+          {
+            'Id': 'q1',
+            'ServerId': 'server-a',
+            'FilePath':
+                '/var/mobile/Containers/Data/Application/'
+                'A1B2C3D4-0000-0000-0000-000000000000/Library/Caches/'
+                'queue_cache/q1.flac',
+            'SizeInBytes': 1024,
+            'CachedDate': 0,
+            'LastUsedDate': 0,
+            'Data': '{}',
+          },
+        ],
+      );
+
+      final db = DownloadDatabase(serverId: 'server-a');
+      final rows = await (await db.database).query(
+        'QueueCache',
+        columns: ['FilePath'],
+      );
+
+      expect(rows.single['FilePath'], 'q1.flac');
+    });
+
+    test('- new downloads are stored relative to the root', () async {
+      final song = buildSong();
+      final file = File(join(tempDir.path, 'album3', 'track.flac'))
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List.filled(16, 0));
+      final db = DownloadDatabase(serverId: 'server-a');
+
+      await db.insertDownloadedSong(song, file: file);
+
+      expect(await rawFilePath(db, song.id), 'album3/track.flac');
+      expect(await db.getDownloadedSongPath(song.id), file.path);
     });
   });
 }
