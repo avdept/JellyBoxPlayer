@@ -55,6 +55,11 @@ void main() {
   late File songFile;
   late Directory tempDir;
 
+  setUpAll(() async {
+    final dbDir = await Directory.systemTemp.createTemp('download_db');
+    await databaseFactory.setDatabasesPath(dbDir.path);
+  });
+
   Future<void> deleteDb() async {
     final dir = await getDatabasesPath();
     dbPath = join(dir, 'downloads.db');
