@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:optional_features/catalog.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/presentation/pages/pages.dart';
@@ -34,6 +35,26 @@ class ScreenFactory {
     return CupertinoPage(
       key: ValueKey('artist:${artist.id}'),
       child: ArtistPage(artist: artist),
+    );
+  }
+
+  Page<void> catalogArtistPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final params = router.extra! as Map<String, dynamic>;
+    return CupertinoPage(
+      child: CatalogArtistPage(artist: params['artist'] as CatalogArtist),
+    );
+  }
+
+  Page<void> catalogAlbumPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final params = router.extra! as Map<String, dynamic>;
+    return CupertinoPage(
+      child: CatalogAlbumPage(album: params['album'] as CatalogAlbum),
     );
   }
 

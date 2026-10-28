@@ -9,6 +9,7 @@ import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
+import 'package:jplayer/src/domain/providers/catalog_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -456,6 +457,86 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             subTextStyle: const TextStyle(fontSize: 14),
           ),
           itemCount: _appearsOn.length,
+        ),
+      ),
+      ..._missingAlbumsWidgets(),
+      SliverToBoxAdapter(
+        child: SimilarArtistsRow(
+          artists: ref.watch(similarArtistsProvider(_catalogKey)),
+          device: _device,
+          horizontalPadding: _device.isMobile ? 16 : _horizontalPadding,
+          showPlaceholder: _discoveryEnabled,
+        ),
+      ),
+    ];
+  }
+
+  LibraryArtistKey get _catalogKey => (
+    artistId: widget.artist.id,
+    name: widget.artist.name,
+  );
+
+  bool get _discoveryEnabled => ref.watch(catalogSourcesProvider).isNotEmpty;
+
+  EdgeInsets get _gridPadding => EdgeInsets.only(
+    top: 16,
+    right: _device.isMobile ? 16 : _horizontalPadding,
+    left: _device.isMobile ? 16 : _horizontalPadding,
+    bottom: 16,
+  );
+
+  SliverGridDelegate get _albumGridDelegate =>
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: _device.isMobile ? 200 : 160,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: _device.isMobile ? 8 : 16,
+        childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
+      );
+
+  List<Widget> _missingAlbumsWidgets() {
+    if (!_discoveryEnabled) return const [];
+    final missing = ref.watch(missingAlbumsProvider(_catalogKey));
+    if (missing.isLoading) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: _device.isMobile ? 8 : _horizontalPadding,
+              top: 8,
+            ),
+            child: SectionHeaderShimmer(
+              width: 180,
+              height: _device.isMobile ? 20 : 24,
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: _gridPadding,
+          sliver: AlbumCardsGridShimmer(
+            device: _device,
+            count: 4,
+            gridDelegate: _albumGridDelegate,
+          ),
+        ),
+      ];
+    }
+    final albums = missing.valueOrNull ?? const <CatalogAlbum>[];
+    if (albums.isEmpty) return const [];
+    return [
+      _sectionHeading('Not in your library'),
+      SliverPadding(
+        padding: _gridPadding,
+        sliver: SliverGrid.builder(
+          gridDelegate: _albumGridDelegate,
+          itemCount: albums.length,
+          itemBuilder: (context, index) => CatalogAlbumCard(
+            album: albums[index],
+            muted: true,
+            onTap: () => context.pushNamed(
+              branchAwareName(context, Routes.catalogAlbum),
+              extra: {'album': albums[index]},
+            ),
+          ),
         ),
       ),
     ];

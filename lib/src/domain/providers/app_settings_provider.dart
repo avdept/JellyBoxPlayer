@@ -32,6 +32,7 @@ enum AppSetting {
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
   lrclibLyrics('lrclib_lyrics', defaultValue: true),
+  catalogDiscovery('catalog_discovery', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
   repeatMode('repeat_mode', defaultValue: 'off', syncs: false),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),

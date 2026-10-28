@@ -228,6 +228,16 @@ class _AppState extends ConsumerState<App>
                       pageBuilder: widget.screenFactory.artistPage,
                     ),
                     GoRoute(
+                      path: Routes.homeCatalogArtist.path,
+                      name: Routes.homeCatalogArtist.name,
+                      pageBuilder: widget.screenFactory.catalogArtistPage,
+                    ),
+                    GoRoute(
+                      path: Routes.homeCatalogAlbum.path,
+                      name: Routes.homeCatalogAlbum.name,
+                      pageBuilder: widget.screenFactory.catalogAlbumPage,
+                    ),
+                    GoRoute(
                       path: Routes.homePlaylist.path,
                       name: Routes.homePlaylist.name,
                       pageBuilder: widget.screenFactory.playlistPage,
@@ -284,6 +294,16 @@ class _AppState extends ConsumerState<App>
                       path: Routes.artist.path,
                       name: Routes.artist.name,
                       pageBuilder: widget.screenFactory.artistPage,
+                    ),
+                    GoRoute(
+                      path: Routes.catalogArtist.path,
+                      name: Routes.catalogArtist.name,
+                      pageBuilder: widget.screenFactory.catalogArtistPage,
+                    ),
+                    GoRoute(
+                      path: Routes.catalogAlbum.path,
+                      name: Routes.catalogAlbum.name,
+                      pageBuilder: widget.screenFactory.catalogAlbumPage,
                     ),
                     GoRoute(
                       path: Routes.playlist.path,
