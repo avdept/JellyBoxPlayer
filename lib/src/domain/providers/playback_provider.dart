@@ -72,6 +72,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final Ref _ref;
   final _playSessionIds = <String, String>{};
   final _localSongIds = <String>{};
+  final _streamFallbackIds = <String>{};
   final _tracks = <TargetTrack>[];
   List<String>? _unshuffledOrder;
   Future<void> _swaps = Future<void>.value();
@@ -79,6 +80,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   late PlaybackTarget _destination;
   Future<void> _switching = Future<void>.value();
   StreamSubscription<TargetPlaybackState>? _targetSubscription;
+  StreamSubscription<TrackLoadFailure>? _loadFailureSubscription;
   TargetPlaybackState _targetState = TargetPlaybackState.idle;
   DateTime? _lastPositionSave;
   int? _reportedIndex;
@@ -217,6 +219,62 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _listenToTarget() {
     _targetSubscription = _target.stateStream.listen(_onTargetState);
+    unawaited(_loadFailureSubscription?.cancel());
+    final target = _target;
+    _loadFailureSubscription = target is LoadFailureReporting
+        ? target.loadFailures.listen(_onTrackLoadFailure)
+        : null;
+  }
+
+  Future<void> _onTrackLoadFailure(TrackLoadFailure failure) async {
+    if (_target.kind != PlaybackTargetKind.local) return;
+    if (_ref.read(isOfflineProvider)) return;
+    final itemId = failure.itemId;
+    if (itemId == null || _localSongIds.contains(itemId)) return;
+
+    var index = failure.index;
+    if (_tracks.elementAtOrNull(index)?.itemId != itemId) {
+      index = _tracks.indexWhere((track) => track.itemId == itemId);
+    }
+    final track = _tracks.elementAtOrNull(index);
+    if (track == null || track.isLocalFile || !track.isHls) return;
+
+    final song = state.songs.where((song) => song.id == itemId).firstOrNull;
+    final album = state.album;
+    final sessionId = _playSessionIds[itemId];
+    if (song == null || album == null || sessionId == null) return;
+    if (!_streamFallbackIds.add(itemId)) return;
+
+    debugPrint(
+      '[Playback] "${song.name}" failed to load over HLS; '
+      'falling back to a progressive stream',
+    );
+    try {
+      final resolved = await _resolveTrack(
+        song,
+        album,
+        sessionId,
+        keepStreamOffline: true,
+      );
+      final replacement = resolved?.track;
+      final target = _target;
+      if (replacement == null ||
+          replacement.isHls ||
+          target is! SwappableQueue) {
+        _streamFallbackIds.remove(itemId);
+        return;
+      }
+      if (_tracks.elementAtOrNull(index)?.itemId != itemId) {
+        index = _tracks.indexWhere((track) => track.itemId == itemId);
+      }
+      if (index < 0 || index >= _tracks.length) return;
+      await _editQueue(() => target.replace(index, replacement));
+      _tracks[index] = replacement;
+      state = state.copyWith(deliveredQualities: _deliveredQualities());
+    } on Object catch (error) {
+      _streamFallbackIds.remove(itemId);
+      debugPrint('[Playback] the progressive fallback failed: $error');
+    }
   }
 
   void _onTargetState(TargetPlaybackState targetState) {
@@ -822,12 +880,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (target.kind == PlaybackTargetKind.local) {
         await _ref.read(networkTypeProvider.notifier).ready;
       }
+      var streamProfile = _streamProfileFor(target);
+      if (_streamFallbackIds.contains(song.id)) {
+        streamProfile = streamProfile.withoutHls();
+      }
       final resolved = await _ref
           .read(mediaServerClientProvider)
           .resolveStreamSource(
             song,
             playSessionId: playSessionId,
-            target: _streamProfileFor(target),
+            target: streamProfile,
           );
       uri = resolved.uri;
       location = resolved.location;
@@ -1734,6 +1796,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _stopProgressReports();
     _reportStopped();
     unawaited(_targetSubscription?.cancel());
+    unawaited(_loadFailureSubscription?.cancel());
     super.dispose();
   }
 }

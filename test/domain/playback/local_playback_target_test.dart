@@ -7,6 +7,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/playback/local_playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAudioPlayer extends Mock implements AudioPlayer {}
@@ -523,6 +524,33 @@ void main() {
             shuffleOrder: any(named: 'shuffleOrder'),
           ),
         ).called(1);
+      });
+
+      test('- reports which track failed to load', () async {
+        when(() => player.sequence).thenReturn([
+          AudioSource.uri(
+            Uri.parse('http://127.0.0.1:1234/x/main.m3u8'),
+            tag: const MediaItem(id: 'song-1', title: 'Roads'),
+          ),
+        ]);
+        failures = 100;
+        final retrying = targetThatRetries(
+          retryDelay: const Duration(seconds: 5),
+        );
+        final reported = <TrackLoadFailure>[];
+        retrying.loadFailures.listen(reported.add);
+
+        await retrying.load(
+          [trackWith(isHls: true)],
+          initialIndex: 0,
+          initialPosition: Duration.zero,
+          autoPlay: true,
+        );
+        await Future<void>.delayed(soon);
+
+        expect(reported, hasLength(1));
+        expect(reported.single.itemId, 'song-1');
+        expect(reported.single.index, 0);
       });
 
       test('- never skips while offline', () async {
