@@ -17,7 +17,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 13;
+  static const _schemaVersion = 14;
 
   static String? databaseDirectory;
 
@@ -88,6 +88,7 @@ class DownloadDatabase {
     await _migrateToV11(db);
     await _migrateToV12(db);
     await _migrateToV13(db);
+    await _migrateToV14(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -103,6 +104,14 @@ class DownloadDatabase {
     if (oldVersion < 11) await _migrateToV11(db);
     if (oldVersion < 12) await _migrateToV12(db);
     if (oldVersion < 13) await _migrateToV13(db);
+    if (oldVersion < 14) await _migrateToV14(db);
+  }
+
+  Future<void> _migrateToV14(Database db) async {
+    await db.execute(await rootBundle.loadString(DbMigrations.catalogCacheV14));
+    await db.execute(
+      await rootBundle.loadString(DbMigrations.catalogArtistLinksV14),
+    );
   }
 
   Future<void> _migrateToV13(Database db) async {
@@ -148,7 +157,8 @@ class DownloadDatabase {
       db,
       table: 'Downloads',
       column: 'Pending',
-      sql: 'ALTER TABLE Downloads ADD COLUMN Pending INTEGER NOT NULL DEFAULT 0',
+      sql:
+          'ALTER TABLE Downloads ADD COLUMN Pending INTEGER NOT NULL DEFAULT 0',
     );
   }
 

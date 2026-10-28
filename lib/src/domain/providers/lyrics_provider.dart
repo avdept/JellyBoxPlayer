@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/http/user_agent.dart';
 import 'package:jplayer/src/core/lyrics/lrclib_client.dart';
 import 'package:jplayer/src/core/lyrics/lrclib_lyrics_source.dart';
 import 'package:jplayer/src/core/lyrics/lyrics_source.dart';
@@ -12,17 +12,8 @@ import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 final lrclibClientProvider = Provider<LrclibClient>(
-  (ref) => LrclibClient(userAgent: _userAgent()),
+  (ref) => LrclibClient(userAgent: jellyboxUserAgent()),
 );
-
-String _userAgent() {
-  const project = 'https://github.com/avdept/JellyBoxPlayer';
-  try {
-    return 'JellyBox v${appInfo.version} ($project)';
-  } catch (_) {
-    return 'JellyBox ($project)';
-  }
-}
 
 final lyricsSourcesProvider = Provider<List<LyricsSource>>(
   (ref) => [
