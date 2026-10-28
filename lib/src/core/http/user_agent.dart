@@ -4,8 +4,8 @@ const _project = 'https://github.com/avdept/JellyBoxPlayer';
 
 String jellyboxUserAgent() {
   try {
-    return 'JellyBox v${appInfo.version} ($_project)';
-  } catch (_) {
+    return 'JellyBox/${appInfo.version} ($_project)';
+  } on Object {
     return 'JellyBox ($_project)';
   }
 }

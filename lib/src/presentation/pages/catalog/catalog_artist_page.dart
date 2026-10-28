@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,11 +8,16 @@ import 'package:jplayer/src/domain/providers/catalog_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
-class CatalogArtistPage extends ConsumerWidget {
+class CatalogArtistPage extends ConsumerStatefulWidget {
   const CatalogArtistPage({required this.artist, super.key});
 
   final CatalogArtist artist;
 
+  @override
+  ConsumerState<CatalogArtistPage> createState() => _CatalogArtistPageState();
+}
+
+class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
   static const Map<CatalogReleaseType, String> _sectionLabels = {
     CatalogReleaseType.album: 'Albums',
     CatalogReleaseType.ep: 'EPs',
@@ -21,229 +25,211 @@ class CatalogArtistPage extends ConsumerWidget {
     CatalogReleaseType.compilation: 'Compilations',
   };
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
-    final padding = device.isMobile ? 16.0 : 30.0;
-    final albums = ref.watch(catalogAlbumsProvider(artist.key));
-    final gridDelegate = AlbumCardMetrics.gridDelegate(device);
+  final _scrollController = ScrollController();
+  final GlobalKey _titleKey = GlobalKey(debugLabel: 'catalog-artist-title');
 
-    return Scaffold(
-      body: ScrollablePageScaffold(
-        useGradientBackground: true,
-        navigationBar: CatalogNavigationBar(title: artist.name, device: device),
-        contentPadding: EdgeInsets.only(
-          left: padding,
-          right: padding,
-          bottom: 30,
-        ),
-        slivers: [
-          SliverToBoxAdapter(
-            child: _Header(artist: artist, device: device, theme: theme),
+  late Size _screenSize;
+  late ThemeData _theme;
+  late DeviceType _device;
+
+  CatalogArtist get _artist => widget.artist;
+
+  ImageProvider get _picture => switch (_artist.pictureUrl) {
+    final url? => CachedNetworkImageProvider(url),
+    null => const AssetImage(Images.artistSample),
+  };
+
+  double get _horizontalPadding =>
+      _device.isMobile ? 16 : (_device.isTablet ? 64 : 40);
+
+  double get _headerHeight =>
+      _device.isMobile ? 250 : (_device.isTablet ? 340 : 360);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _screenSize = MediaQuery.sizeOf(context);
+    _theme = Theme.of(context);
+    _device = DeviceType.fromScreenSize(_screenSize);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final albums = ref.watch(catalogAlbumsProvider(_artist.key));
+    return ScrollablePageScaffold(
+      controller: _scrollController,
+      slivers: [
+        ArtistHeaderAppBar(
+          controller: _scrollController,
+          titleKey: _titleKey,
+          name: _artist.name,
+          titleImage: _picture,
+          image: ClipOval(
+            child: Image(image: _picture, fit: BoxFit.cover),
           ),
-          ...albums.when(
-            data: (list) => [
-              for (final type in CatalogReleaseType.values)
-                ..._section(
-                  type,
-                  [
-                    for (final album in list)
-                      if (album.releaseType == type) album,
-                  ],
-                  device,
-                  gridDelegate,
+          backdrop: _artist.pictureUrl == null
+              ? null
+              : Opacity(
+                  opacity: 0.35,
+                  child: BlurredCoverArt(
+                    image: _picture,
+                    width: _screenSize.width,
+                    height: _device.isMobile ? 340 : _headerHeight,
+                    blurStart: 0,
+                  ),
                 ),
-            ],
-            error: (error, stackTrace) => [
-              SliverToBoxAdapter(
-                child: _message('Could not load albums.', theme),
+          headerHeight: _headerHeight,
+          horizontalPadding: _horizontalPadding,
+          isMobile: _device.isMobile,
+          panel: _headerPanel(),
+        ),
+        ...albums.when(
+          data: (list) => [
+            for (final type in CatalogReleaseType.values)
+              ..._section(
+                type,
+                [
+                  for (final album in list)
+                    if (album.releaseType == type) album,
+                ]..sort(newestCatalogAlbumFirst),
               ),
-            ],
-            loading: () => [
-              AlbumCardsGridShimmer(device: device, gridDelegate: gridDelegate),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: SimilarArtistsRow(
-                artists: ref.watch(catalogRelatedArtistsProvider(artist.key)),
-                device: device,
-                showPlaceholder: true,
+          ],
+          error: (error, stackTrace) => [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  _horizontalPadding,
+                  24,
+                  _horizontalPadding,
+                  0,
+                ),
+                child: Text(
+                  'Could not load albums.',
+                  style: TextStyle(
+                    color: _theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+                  ),
+                ),
               ),
             ),
+          ],
+          loading: () => [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: _headingPadding,
+                child: SectionHeaderShimmer(
+                  height: _device.isMobile ? 20 : 24,
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: _gridPadding,
+              sliver: AlbumCardsGridShimmer(
+                device: _device,
+                gridDelegate: _gridDelegate,
+              ),
+            ),
+          ],
+        ),
+        SliverToBoxAdapter(
+          child: SimilarArtistsRow(
+            artists: ref.watch(catalogRelatedArtistsProvider(_artist.key)),
+            device: _device,
+            horizontalPadding: _horizontalPadding,
+            showPlaceholder: true,
           ),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 30)),
+      ],
     );
   }
 
-  List<Widget> _section(
-    CatalogReleaseType type,
-    List<CatalogAlbum> albums,
-    DeviceType device,
-    SliverGridDelegate gridDelegate,
-  ) {
+  Widget _headerPanel() {
+    final faded = _theme.colorScheme.onPrimary.withValues(alpha: 0.7);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                _artist.name,
+                key: _titleKey,
+                style: TextStyle(
+                  fontSize: _device.isMobile ? 18 : 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const AddToLidarrButton(),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          [
+            if (_artist.fans > 0) '${_formatFans(_artist.fans)} fans',
+            'Not in your library',
+          ].join(' · '),
+          style: TextStyle(fontSize: _device.isMobile ? 14 : 16, color: faded),
+        ),
+        const SizedBox(height: 10),
+        CatalogAttribution(source: _artist.source, url: _artist.url),
+      ],
+    );
+  }
+
+  EdgeInsets get _headingPadding => EdgeInsets.only(
+    left: _device.isMobile ? 8 : _horizontalPadding,
+    top: 8,
+  );
+
+  EdgeInsets get _gridPadding => EdgeInsets.only(
+    top: 16,
+    right: _device.isMobile ? 16 : _horizontalPadding,
+    left: _device.isMobile ? 16 : _horizontalPadding,
+    bottom: 16,
+  );
+
+  SliverGridDelegate get _gridDelegate =>
+      SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: _device.isMobile ? 200 : 160,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: _device.isMobile ? 8 : 16,
+        childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
+      );
+
+  List<Widget> _section(CatalogReleaseType type, List<CatalogAlbum> albums) {
     if (albums.isEmpty) return const [];
     return [
-      _heading(_sectionLabels[type]!, device),
-      SliverGrid.builder(
-        gridDelegate: gridDelegate,
-        itemCount: albums.length,
-        itemBuilder: (context, index) => CatalogAlbumCard(
-          album: albums[index],
-          onTap: () => context.pushNamed(
-            branchAwareName(context, Routes.catalogAlbum),
-            extra: {'album': albums[index]},
+      SliverToBoxAdapter(
+        child: SectionHeading(
+          label: _sectionLabels[type]!,
+          fontSize: _device.isMobile ? 20 : 24,
+          padding: _headingPadding,
+        ),
+      ),
+      SliverPadding(
+        padding: _gridPadding,
+        sliver: SliverGrid.builder(
+          gridDelegate: _gridDelegate,
+          itemCount: albums.length,
+          itemBuilder: (context, index) => CatalogAlbumCard(
+            album: albums[index],
+            onTap: () => context.pushNamed(
+              branchAwareName(context, Routes.catalogAlbum),
+              extra: {'album': albums[index]},
+            ),
           ),
         ),
       ),
     ];
-  }
-
-  Widget _heading(String label, DeviceType device) => SliverPadding(
-    padding: const EdgeInsets.only(top: 24, bottom: 12),
-    sliver: SliverToBoxAdapter(
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: device.isMobile ? 20 : 24,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    ),
-  );
-
-  Widget _message(String text, ThemeData theme) => Padding(
-    padding: const EdgeInsets.only(top: 24),
-    child: Text(
-      text,
-      style: TextStyle(
-        color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
-      ),
-    ),
-  );
-}
-
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.artist,
-    required this.device,
-    required this.theme,
-  });
-
-  final CatalogArtist artist;
-  final DeviceType device;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = device.isMobile ? 120.0 : 180.0;
-    final picture = artist.pictureUrl;
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          ClipOval(
-            child: picture == null
-                ? Image.asset(Images.artistSample, width: size, height: size)
-                : Image(
-                    image: CachedNetworkImageProvider(picture),
-                    width: size,
-                    height: size,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      Images.artistSample,
-                      width: size,
-                      height: size,
-                    ),
-                  ),
-          ),
-          SizedBox(width: device.isMobile ? 16 : 28),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  artist.name,
-                  style: TextStyle(
-                    fontSize: device.isMobile ? 22 : 32,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      [
-                        if (artist.fans > 0) '${_formatFans(artist.fans)} fans',
-                        'Not in your library',
-                      ].join(' · '),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.colorScheme.onPrimary.withValues(
-                          alpha: 0.7,
-                        ),
-                      ),
-                    ),
-                    const AddToLidarrButton(),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                CatalogAttribution(source: artist.source, url: artist.url),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class CatalogNavigationBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  const CatalogNavigationBar({
-    required this.title,
-    required this.device,
-    super.key,
-  });
-
-  final String title;
-  final DeviceType device;
-
-  @override
-  Size get preferredSize => Size.fromHeight(device.isMobile ? 60 : 100);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: device.isMobile ? 16 : 30),
-      child: Row(
-        children: [
-          CupertinoNavigationBarBackButton(
-            color: theme.colorScheme.onPrimary,
-            onPressed: () => context.pop(),
-          ),
-          SizedBox(width: device.isMobile ? 12 : 20),
-          Expanded(
-            child: Text(
-              title,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: device.isMobile ? 18 : 24,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
