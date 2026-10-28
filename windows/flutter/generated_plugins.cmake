@@ -12,6 +12,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   media_kit_video
   screen_retriever_windows
   sentry_flutter
+  share_plus
   url_launcher_windows
   window_manager
 )

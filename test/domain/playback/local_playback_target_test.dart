@@ -128,7 +128,7 @@ void main() {
     setUp(() => idle = LocalPlaybackTarget(player, idleStopAfter: after));
     tearDown(() => idle.dispose());
 
-    test('- stops the player after staying paused', () async {
+    test('- releases the player after staying paused', () async {
       reportPlayer(playing: false, processingState: ProcessingState.ready);
       await Future<void>.delayed(longer);
 
