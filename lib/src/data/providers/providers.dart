@@ -15,3 +15,4 @@ export 'server_probe_provider.dart';
 export 'shared_preferences_provider.dart';
 export 'stream_proxy_provider.dart';
 export 'animated_cover_database_provider.dart';
+export 'catalog_cache_database_provider.dart';

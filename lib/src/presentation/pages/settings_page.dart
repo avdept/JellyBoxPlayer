@@ -444,6 +444,16 @@ class SettingsPage extends ConsumerWidget {
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
+                    if (ref.watch(installedCatalogSourcesProvider).firstOrNull
+                        case final catalog?) ...[
+                      _sectionHeader('Discover'),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.catalogDiscovery,
+                        label: 'Discover music on ${catalog.brand.name}',
+                      ),
+                      _settingNote(context, catalog.brand.description),
+                    ],
                     _sectionHeader('Lyrics'),
                     _settingDropdown<LyricsAlignment>(
                       context: context,

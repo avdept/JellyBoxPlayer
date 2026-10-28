@@ -39,6 +39,7 @@ enum ContextMenuEntry {
   removeFromQueue,
   removeFromPlaylist,
   deletePlaylist,
+  addToLidarr,
 }
 
 const contextMenuLayout =
@@ -343,7 +344,8 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.metadataLinks => actions.metadataLinks(),
         ContextMenuEntry.removeFromQueue ||
         ContextMenuEntry.removeFromPlaylist ||
-        ContextMenuEntry.deletePlaylist => null,
+        ContextMenuEntry.deletePlaylist ||
+        ContextMenuEntry.addToLidarr => null,
       },
   ].nonNulls.toList();
 }

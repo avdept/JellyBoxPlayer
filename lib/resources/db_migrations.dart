@@ -22,8 +22,11 @@ class DbMigrations {
       'assets/db/migrations/instant_mixes_v8.sql';
   static const String animatedCoversV9 =
       'assets/db/migrations/animated_covers_v9.sql';
-  static const String songPlaysV11 =
-      'assets/db/migrations/song_plays_v11.sql';
+  static const String songPlaysV11 = 'assets/db/migrations/song_plays_v11.sql';
   static const String playedSongsV12 =
       'assets/db/migrations/played_songs_v12.sql';
+  static const String catalogCacheV14 =
+      'assets/db/migrations/catalog_cache_v14.sql';
+  static const String catalogArtistLinksV14 =
+      'assets/db/migrations/catalog_artist_links_v14.sql';
 }
