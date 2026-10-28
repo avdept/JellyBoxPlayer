@@ -16,7 +16,8 @@ typedef _PendingLoad = ({
   Duration position,
 });
 
-class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
+class LocalPlaybackTarget
+    implements PlaybackTarget, SwappableQueue, LoadFailureReporting {
   LocalPlaybackTarget(
     this._player, {
     Duration? idleStopAfter,
@@ -73,6 +74,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   final Duration _loadTimeout;
   final Duration _stopTimeout;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
+  final _failures = StreamController<TrackLoadFailure>.broadcast();
   final _shuffleOrder = QueueShuffleOrder();
 
   late final List<StreamSubscription<Object?>> _subscriptions;
@@ -89,6 +91,9 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
   Timer? _idleStop;
 
   bool get retryPending => _pending != null;
+
+  @override
+  Stream<TrackLoadFailure> get loadFailures => _failures.stream;
 
   bool get _loading => _inFlight == _generation;
 
@@ -212,6 +217,14 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
       '[LocalTarget] keeping index $index (${position.inSeconds}s) pending; '
       'wantsPlay=$_wantsPlay online=${_isOnline?.call()} attempt=$_attempt',
     );
+    if (!_failures.isClosed) {
+      final tag = _pending?.track?.tag;
+      _failures.add((
+        itemId: tag is MediaItem ? tag.id : null,
+        index: index,
+        attempt: _attempt,
+      ));
+    }
     _syncHold();
     _onlineSubscription ??= _onlineChanges?.call().listen((online) {
       if (online) _restart();
@@ -583,6 +596,7 @@ class LocalPlaybackTarget implements PlaybackTarget, SwappableQueue {
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
+    await _failures.close();
     await _controller.close();
   }
 

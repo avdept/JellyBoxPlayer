@@ -147,3 +147,9 @@ mixin SwappableQueue implements PlaybackTarget {
 
   bool get holdsCurrentTrack => true;
 }
+
+typedef TrackLoadFailure = ({String? itemId, int index, int attempt});
+
+mixin LoadFailureReporting implements PlaybackTarget {
+  Stream<TrackLoadFailure> get loadFailures;
+}

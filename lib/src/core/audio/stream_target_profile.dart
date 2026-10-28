@@ -168,6 +168,14 @@ class StreamTargetProfile {
         preference: preference,
       );
 
+  StreamTargetProfile withoutHls() => StreamTargetProfile(
+    directPlay: directPlay,
+    lossyTranscode: lossyTranscode,
+    losslessTranscode: losslessTranscode,
+    supportsHls: false,
+    preference: preference,
+  );
+
   bool prefersHls({required String? container}) =>
       container != null && preferHlsContainers.contains(container);
 
