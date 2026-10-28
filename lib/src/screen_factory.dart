@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
-import 'package:optional_features/catalog.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/presentation/pages/pages.dart';
+import 'package:optional_features/catalog.dart';
 
 class ScreenFactory {
   const ScreenFactory();

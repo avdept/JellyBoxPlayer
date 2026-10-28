@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,8 +22,7 @@ class ArtistPage extends ConsumerStatefulWidget {
 
 class _ArtistPageState extends ConsumerState<ArtistPage> {
   final _scrollController = ScrollController();
-  final _titleOpacity = ValueNotifier<double>(0);
-  final _titleKey = GlobalKey(debugLabel: 'title');
+  final GlobalKey _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> _albums = [];
   List<LibraryItem> _appearsOn = [];
   late LibraryItem _artist = widget.artist;
@@ -35,32 +31,12 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   late ThemeData _theme;
   late DeviceType _device;
 
-  void _onScroll() {
-    final titleContext = _titleKey.currentContext;
-
-    if (titleContext?.mounted ?? false) {
-      final scrollPosition = _scrollController.position;
-      final scrollableContext = scrollPosition.context.notificationContext!;
-      final scrollableRenderBox =
-          scrollableContext.findRenderObject()! as RenderBox;
-      final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
-      final titlePosition = titleRenderBox.localToGlobal(
-        Offset.zero,
-        ancestor: scrollableRenderBox,
-      );
-      final titleHeight = titleContext.size!.height;
-      final visibleFraction = (titlePosition.dy + titleHeight) / titleHeight;
-      _titleOpacity.value = 1 - min(max(visibleFraction, 0), 1);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     _getAlbums();
     _getAppearsOn();
     _refreshArtist();
-    _scrollController.addListener(_onScroll);
   }
 
   Future<void> _refreshArtist() async {
@@ -166,136 +142,41 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     return ScrollablePageScaffold(
       controller: _scrollController,
       slivers: [
-        SliverAppBar(
-          title: ValueListenableBuilder(
-            valueListenable: _titleOpacity,
-            builder: (context, opacity, child) => Transform.translate(
-              offset: Offset(0, 8 - 8 * opacity),
-              child: Opacity(
-                opacity: opacity,
-                child: child,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image(
-                    image: ref
-                        .read(imageServiceProvider)
-                        .itemImage(
-                          widget.artist,
-                        ),
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    widget.artist.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          floating: true,
-          pinned: true,
-          expandedHeight: _headerHeight,
-          backgroundColor: Colors.transparent,
-          flexibleSpace: ValueListenableBuilder(
-            valueListenable: _titleOpacity,
-            builder: (context, opacity, child) => ClipRect(
-              child: BackdropFilter(
-                enabled: opacity > 0,
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: ColoredBox(
-                  color: _theme.scaffoldBackgroundColor.withValues(
-                    alpha: 0.8 * opacity,
-                  ),
-                  child: child,
-                ),
-              ),
-            ),
-            child: FlexibleSpaceBar(
-              collapseMode: CollapseMode.pin,
-              background: Stack(
-                alignment: Alignment.topCenter,
-                clipBehavior: Clip.none,
+        ArtistHeaderAppBar(
+          controller: _scrollController,
+          titleKey: _titleKey,
+          name: widget.artist.name,
+          titleImage: ref.read(imageServiceProvider).itemImage(widget.artist),
+          image: _mainImage(),
+          backdrop: widget.artist.images.backdrops.isNotEmpty
+              ? _headerImage()
+              : null,
+          headerHeight: _headerHeight,
+          horizontalPadding: _horizontalPadding,
+          isMobile: _device.isMobile,
+          panel: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (widget.artist.images.backdrops.isNotEmpty)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: _device.isMobile ? -60 : 0,
-                      height: _device.isMobile ? 340 : _headerHeight,
-                      child: _headerImage(),
-                    ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: _device.isMobile ? 20 : _horizontalPadding,
-                      top: 60,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: _mainImage(),
-                          ),
-                        ),
-                        Flexible(
-                          flex: 3,
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: _device.isMobile
-                                  ? 16
-                                  : _horizontalPadding,
-                            ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        key: _titleKey,
-                                        widget.artist.name,
-                                        style: TextStyle(
-                                          fontSize: _device.isMobile ? 18 : 20,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    _playButton(),
-                                  ],
-                                ),
-                                DefaultTextStyle(
-                                  style: TextStyle(
-                                    fontSize: _device.isMobile ? 14 : 16,
-                                  ),
-                                  child: _infoText(),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                  Expanded(
+                    child: Text(
+                      key: _titleKey,
+                      widget.artist.name,
+                      style: TextStyle(
+                        fontSize: _device.isMobile ? 18 : 20,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
+                  _playButton(),
                 ],
               ),
-            ),
+              DefaultTextStyle(
+                style: TextStyle(fontSize: _device.isMobile ? 14 : 16),
+                child: _infoText(),
+              ),
+            ],
           ),
         ),
         ..._albumsWidgets(),
@@ -330,9 +211,11 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     ),
   );
 
-  Widget _mainImage() => Image(
-    image: ref.read(imageServiceProvider).itemImage(widget.artist),
-    width: 500,
+  Widget _mainImage() => ClipOval(
+    child: Image(
+      image: ref.read(imageServiceProvider).itemImage(widget.artist),
+      fit: BoxFit.cover,
+    ),
   );
 
   Widget _infoText() => Padding(
@@ -358,17 +241,12 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   );
 
   Widget _sectionHeading(String label) => SliverToBoxAdapter(
-    child: Padding(
+    child: SectionHeading(
+      label: label,
+      fontSize: _device.isMobile ? 20 : 24,
       padding: EdgeInsets.only(
         left: _device.isMobile ? 8 : _horizontalPadding,
         top: 8,
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: _device.isMobile ? 20 : 24,
-          fontWeight: FontWeight.w500,
-        ),
       ),
     ),
   );

@@ -19,7 +19,7 @@ typedef LibraryArtistKey = ({String artistId, String name});
 
 typedef SimilarArtist = ({CatalogArtist artist, LibraryItem? owned});
 
-const similarArtistsLimit = 16;
+const similarArtistsLimit = 20;
 const noMatchRetryAfter = Duration(days: 7);
 
 final installedCatalogSourcesProvider = Provider<List<CatalogSource>>((ref) {
@@ -170,14 +170,15 @@ List<CatalogAlbum> missingAlbums(
     if (!seen.add(base)) continue;
     missing.add(album);
   }
-  missing.sort((a, b) {
-    final left = a.releaseDate;
-    final right = b.releaseDate;
-    if (left == null && right == null) return 0;
-    if (left == null || right == null) return left == null ? 1 : -1;
-    return right.compareTo(left);
-  });
-  return missing;
+  return missing..sort(newestCatalogAlbumFirst);
+}
+
+int newestCatalogAlbumFirst(CatalogAlbum a, CatalogAlbum b) {
+  final left = a.releaseDate;
+  final right = b.releaseDate;
+  if (left == null && right == null) return 0;
+  if (left == null || right == null) return left == null ? 1 : -1;
+  return right.compareTo(left);
 }
 
 String _baseTitle(String title) =>
