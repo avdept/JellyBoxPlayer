@@ -72,7 +72,9 @@ Future<void> main() async {
           : getApplicationSupportDirectory,
       adoptFrom: Platform.isAndroid ? getApplicationSupportDirectory : null,
     ),
-    header: 'JellyBox ${appInfo.version}+${appInfo.buildNumber} starting',
+    header:
+        'JellyBox ${appInfo.version}+${appInfo.buildNumber} starting on '
+        '${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
   );
   DeviceLog.install();
 

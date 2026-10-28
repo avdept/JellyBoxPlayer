@@ -1,3 +1,17 @@
+## 0.0.1-beta.17+jellybox.8 (LOCAL FORK)
+
+* PATCH: `JustAudioBackground.releaseKeepingSession(release)` runs
+  `AudioPlayer.stop()` (or any release) without ending the media session. The
+  handler disposes the native player as before but keeps reporting "ready,
+  paused" instead of idle, so audio_service leaves the service, notification,
+  queue and metadata in place; the next `AudioPlayer.play()` recreates the
+  player where it stopped. Android hands a Bluetooth or headset play to the
+  most recent live media session, so an app whose session is gone loses the
+  car's play to whichever app last made a sound (Telegram, Spotify). The app
+  uses it for its 15 minute idle release. A real stop with the player already
+  released (`JustAudioBackground.endSession()`, or the notification being
+  dismissed) still ends the session.
+
 ## 0.0.1-beta.17+jellybox.7 (LOCAL FORK)
 
 * PATCH: `[Session]` log lines (via `debugPrint`, so they reach the app's

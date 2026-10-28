@@ -70,6 +70,22 @@ void main() {
     ]);
   });
 
+  test('- lists the rotated file before the current one', () async {
+    final log = DeviceLog(directory: () async => dir, maxBytes: 120);
+
+    expect(await log.files(), isEmpty);
+
+    for (var i = 0; i < 6; i++) {
+      log.write('line $i padded to make it longer');
+      await log.flush();
+    }
+
+    expect((await log.files()).map((file) => file.path), [
+      logFile('jellybox.1.log').path,
+      logFile().path,
+    ]);
+  });
+
   test('- carries a file left in the old location over', () async {
     final old = await Directory.systemTemp.createTemp('device_log_old');
     addTearDown(() => old.delete(recursive: true));

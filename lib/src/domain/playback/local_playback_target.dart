@@ -435,6 +435,7 @@ class LocalPlaybackTarget
     _syncHold();
     _pending = null;
     await _player.stop();
+    await JustAudioBackground.endSession();
   }
 
   @override
@@ -614,7 +615,12 @@ class LocalPlaybackTarget
     }
     _idleStop ??= Timer(after, () {
       _idleStop = null;
-      if (!_player.playing) unawaited(_player.stop());
+      if (_player.playing) return;
+      debugPrint(
+        '[LocalTarget] paused for ${after.inMinutes} min; '
+        'releasing the player, keeping the session',
+      );
+      unawaited(JustAudioBackground.releaseKeepingSession(_player.stop));
     });
   }
 
