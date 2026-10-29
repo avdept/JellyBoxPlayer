@@ -54,6 +54,7 @@ class _CatalogAlbumCardState extends State<CatalogAlbumCard> {
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
         child: CatalogContextMenuRegion(
+          target: LidarrAlbumTarget(widget.album),
           onTap: widget.onTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

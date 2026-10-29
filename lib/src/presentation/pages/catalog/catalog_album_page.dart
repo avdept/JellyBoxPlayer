@@ -53,7 +53,7 @@ class _CatalogAlbumPageState extends ConsumerState<CatalogAlbumPage> {
     final tracks = detail.valueOrNull?.tracks ?? const <CatalogTrack>[];
     final edgePadding = _device.isMobile ? 16.0 : 30.0;
     final content = [
-      ..._contentSlivers(detail, tracks, edgePadding),
+      ..._contentSlivers(detail, album, tracks, edgePadding),
       const SliverToBoxAdapter(child: SizedBox(height: 30)),
     ];
 
@@ -93,6 +93,7 @@ class _CatalogAlbumPageState extends ConsumerState<CatalogAlbumPage> {
 
   List<Widget> _contentSlivers(
     AsyncValue<CatalogAlbumDetail?> detail,
+    CatalogAlbum album,
     List<CatalogTrack> tracks,
     double edgePadding,
   ) {
@@ -145,6 +146,7 @@ class _CatalogAlbumPageState extends ConsumerState<CatalogAlbumPage> {
             final active = preview.track == track.key;
             return _TrackRow(
               track: track,
+              target: LidarrAlbumTarget(album),
               position: track.trackNumber ?? index + 1,
               status: !active
                   ? _PreviewStatus.idle
@@ -216,7 +218,7 @@ class _MobilePanel extends StatelessWidget {
               child: _AlbumDetails(album: album, tracks: tracks),
             ),
             const SizedBox(width: 12),
-            const AddToLidarrButton(),
+            AddToLidarrButton(target: LidarrAlbumTarget(album)),
           ],
         ),
         const SizedBox(height: 8),
@@ -296,7 +298,7 @@ class _DesktopHeader extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _AlbumDetails(album: album, tracks: tracks),
-                      const AddToLidarrButton(),
+                      AddToLidarrButton(target: LidarrAlbumTarget(album)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -358,6 +360,7 @@ enum _PreviewStatus { idle, loading, playing }
 class _TrackRow extends StatefulWidget {
   const _TrackRow({
     required this.track,
+    required this.target,
     required this.position,
     required this.status,
     required this.progress,
@@ -368,6 +371,7 @@ class _TrackRow extends StatefulWidget {
   });
 
   final CatalogTrack track;
+  final LidarrTarget target;
   final int position;
   final _PreviewStatus status;
   final ValueListenable<double> progress;
@@ -397,6 +401,7 @@ class _TrackRowState extends State<_TrackRow> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: CatalogContextMenuRegion(
+        target: widget.target,
         child: SimpleListTile(
           onTap: widget.onTap,
           hoverColor: onPrimary.withValues(alpha: 0.06),
@@ -462,7 +467,10 @@ class _TrackRowState extends State<_TrackRow> {
                   color: secondary,
                 ),
               ),
-              const ContextMenuButton(actionsBuilder: catalogItemActions),
+              ContextMenuButton(
+                actionsBuilder: (context) =>
+                    catalogItemActions(context, widget.target),
+              ),
             ],
           ),
         ),

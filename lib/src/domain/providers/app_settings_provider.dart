@@ -54,6 +54,19 @@ enum AppSetting {
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
+  lidarrUrl('lidarr_url', defaultValue: '', syncs: false),
+  lidarrRootFolder('lidarr_root_folder', defaultValue: '', syncs: false),
+  lidarrQualityProfile(
+    'lidarr_quality_profile',
+    defaultValue: '',
+    syncs: false,
+  ),
+  lidarrMetadataProfile(
+    'lidarr_metadata_profile',
+    defaultValue: '',
+    syncs: false,
+  ),
+  lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   telemetryOptOut('telemetry_opt_out');

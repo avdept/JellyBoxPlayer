@@ -127,7 +127,7 @@ class _ArtistCard extends StatelessWidget {
     final picture = artist.artist.pictureUrl;
     return CatalogContextMenuRegion(
       onTap: onTap,
-      enabled: artist.owned == null,
+      target: artist.owned == null ? LidarrArtistTarget(artist.artist) : null,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: SizedBox(
