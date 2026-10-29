@@ -444,6 +444,10 @@ class SettingsPage extends ConsumerWidget {
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
+                    if (ref.watch(lidarrAvailableProvider)) ...[
+                      _sectionHeader('Lidarr'),
+                      const LidarrSettings(),
+                    ],
                     if (ref.watch(installedCatalogSourcesProvider).firstOrNull
                         case final catalog?) ...[
                       _sectionHeader('Discover'),

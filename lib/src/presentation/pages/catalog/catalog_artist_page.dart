@@ -168,7 +168,7 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
               ),
             ),
             const SizedBox(width: 12),
-            const AddToLidarrButton(),
+            AddToLidarrButton(target: LidarrArtistTarget(_artist)),
           ],
         ),
         const SizedBox(height: 12),
