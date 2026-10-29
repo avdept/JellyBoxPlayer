@@ -287,6 +287,11 @@ class SettingsPage extends ConsumerWidget {
                       setting: AppSetting.nowPlayingHalo,
                       label: 'Enable halo effect for currently playing media',
                     ),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.ratingsHidden,
+                      label: 'Hide song ratings',
+                    ),
                     if (device.isMobile) ...[
                       _settingCheckbox(
                         ref: ref,

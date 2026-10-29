@@ -24,6 +24,7 @@ enum AppSetting {
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),
   recentlyPlayedHidden('hide_recently_played'),
+  ratingsHidden('hide_ratings'),
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
@@ -32,6 +33,7 @@ enum AppSetting {
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
   lrclibLyrics('lrclib_lyrics', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
+  repeatMode('repeat_mode', defaultValue: 'off', syncs: false),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
   sleepTimerLast('sleep_timer_last', defaultValue: ''),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
@@ -244,6 +246,9 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
 
   static bool isEnabledIn(SharedPreferences? prefs, AppSetting setting) =>
       _asBool(_read(prefs)[setting], setting);
+
+  static String valueIn(SharedPreferences? prefs, AppSetting setting) =>
+      _asString(_read(prefs)[setting], setting);
 
   bool isEnabled(AppSetting setting) => _asBool(state[setting], setting);
 

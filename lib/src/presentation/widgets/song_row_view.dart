@@ -6,6 +6,7 @@ import 'package:jplayer/src/core/enums/download_status.dart';
 import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -86,9 +87,7 @@ class SongRowView extends ConsumerWidget {
     final isCached = ref.watch(
       forwardCacheProvider.select((ids) => ids.contains(song.id)),
     );
-    final ratingsSupported = ref.watch(
-      serverCapabilitiesProvider.select((c) => c.ratings),
-    );
+    final ratingsSupported = ref.watch(ratingsEnabledProvider);
     final canRate = isDesktop && onRatingChanged != null;
     final showRating =
         ratingsSupported && (canRate || song.userData.rating > 0);
@@ -147,16 +146,26 @@ class SongRowView extends ConsumerWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Flexible(
-              child: Text(
-                song.name,
-                style: TextStyle(
-                  fontSize: isTablet ? 18 : 14,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                maxLines: 1,
-              ),
+              child: isMobile
+                  ? MarqueeText(
+                      song.name,
+                      bounce: true,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    )
+                  : Text(
+                      song.name,
+                      style: TextStyle(
+                        fontSize: isTablet ? 18 : 14,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 1,
+                    ),
             ),
             if (showRating) ...[
               const SizedBox(width: 8),

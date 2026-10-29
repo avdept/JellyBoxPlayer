@@ -662,6 +662,31 @@ class DownloadDatabase {
     if (stored == null) return null;
     return StoredFilePath.resolve(stored, root: await _musicRoot(), depth: 2);
   }
+
+  Future<Map<String, String>> downloadedPathsFor(Iterable<String> ids) async {
+    final wanted = ids.toSet().toList();
+    if (wanted.isEmpty) return const {};
+    final db = await database;
+    final root = await _musicRoot();
+    final paths = <String, String>{};
+    const chunkSize = 500;
+    for (var start = 0; start < wanted.length; start += chunkSize) {
+      final chunk = wanted.sublist(start, min(start + chunkSize, wanted.length));
+      final results = await db.query(
+        'Downloads',
+        columns: ['Id', 'FilePath'],
+        where: 'ServerId = ? AND Id IN (${List.filled(chunk.length, '?').join(', ')})',
+        whereArgs: [serverId, ...chunk],
+      );
+      for (final row in results) {
+        final stored = row['FilePath'] as String?;
+        if (stored == null) continue;
+        final path = StoredFilePath.resolve(stored, root: root, depth: 2);
+        if (path != null) paths[row['Id']! as String] = path;
+      }
+    }
+    return paths;
+  }
 }
 
 DownloadedSong _downloadedSongFromRow(Map<String, Object?> row, String? root) {
