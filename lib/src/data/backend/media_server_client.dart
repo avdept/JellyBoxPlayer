@@ -119,6 +119,8 @@ abstract class MediaServerClient {
 
   Future<void> reportPlaybackProgress(PlaybackReport report);
 
+  Future<void> reportPlaybackSuspended(PlaybackReport report);
+
   Future<void> reportPlaybackStopped(PlaybackReport report);
 
   Future<SessionStatus> validateSession();

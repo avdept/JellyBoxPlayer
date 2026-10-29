@@ -999,6 +999,17 @@ class SubsonicClient implements MediaServerClient {
   }
 
   @override
+  Future<void> reportPlaybackSuspended(PlaybackReport report) async {
+    if (!await _supports(playbackReportExtension)) return;
+    await _api.reportPlayback(
+      mediaId: report.itemId,
+      state: 'stopped',
+      position: report.position,
+      ignoreScrobble: true,
+    );
+  }
+
+  @override
   Future<void> reportPlaybackStopped(PlaybackReport report) async {
     final startedAt = _startedAt.remove(report.itemId);
     if (await _supports(playbackReportExtension)) {

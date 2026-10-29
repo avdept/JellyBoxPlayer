@@ -1,5 +1,6 @@
 import 'dart:async' show Timer, scheduleMicrotask, unawaited;
 import 'dart:io' show Platform;
+import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -127,8 +128,19 @@ class _AppState extends ConsumerState<App>
 
   void _watchDayRollover() {
     _checkDayRollover();
-    _lifecycleListener = AppLifecycleListener(onResume: _checkDayRollover);
+    _lifecycleListener = AppLifecycleListener(
+      onResume: _checkDayRollover,
+      onExitRequested: _onExitRequested,
+    );
     _router.routerDelegate.addListener(_checkDayRollover);
+  }
+
+  Future<AppExitResponse> _onExitRequested() async {
+    await ref
+        .read(playbackProvider.notifier)
+        .reportExit()
+        .timeout(const Duration(seconds: 3), onTimeout: () {});
+    return AppExitResponse.exit;
   }
 
   void _maybeRestorePlayback() {

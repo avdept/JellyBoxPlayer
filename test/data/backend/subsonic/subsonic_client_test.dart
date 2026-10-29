@@ -1074,7 +1074,34 @@ void main() {
         server.calls('reportPlayback').last.queryParameters['positionMs'],
         '130000',
       );
+      expect(
+        server.calls('reportPlayback').last.queryParameters['ignoreScrobble'],
+        isNull,
+      );
       expect(server.calls('scrobble'), isEmpty);
+    });
+
+    test('- a suspended session is cleared without a scrobble', () async {
+      extensions(['playbackReport']);
+      server.ok('reportPlayback', {});
+
+      await client.reportPlaybackSuspended(report);
+
+      final params = server.calls('reportPlayback').single.queryParameters;
+      expect(params['state'], 'stopped');
+      expect(params['ignoreScrobble'], 'true');
+      expect(params['positionMs'], '130000');
+      expect(server.calls('scrobble'), isEmpty);
+    });
+
+    test('- suspending is silent without the extension', () async {
+      extensions([]);
+      server.ok('scrobble', {});
+
+      await client.reportPlaybackSuspended(report);
+
+      expect(server.calls('scrobble'), isEmpty);
+      expect(server.calls('reportPlayback'), isEmpty);
     });
 
     test('- falls back to scrobble and only submits real listens', () async {

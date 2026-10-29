@@ -66,6 +66,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   @visibleForTesting
   static Duration progressInterval = const Duration(seconds: 10);
+
+  @visibleForTesting
+  static Duration pausedIdleTimeout = const Duration(minutes: 5);
   static const _stallSlack = Duration(seconds: 1);
   static const _stallGrace = Duration(seconds: 6);
 
@@ -99,6 +102,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   DateTime? _stalledSince;
   var _stallLogged = false;
   Timer? _progressTimer;
+  Timer? _pausedIdleTimer;
+  Future<void>? _lastReport;
   Timer? _requalifyDebounce;
   var _requalifyGeneration = 0;
 
@@ -367,6 +372,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
     } else if (targetState.status.isPlaying && !state.status.isPlaying) {
       state = state.copyWith(status: PlaybackStatus.playing);
+      _cancelPausedIdleTimer();
       _reportProgress();
       _startProgressReports();
     } else if (targetState.status.isPaused && state.status.isPlaying) {
@@ -376,7 +382,41 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
       _stopProgressReports();
       _reportProgress();
+      _startPausedIdleTimer();
     }
+  }
+
+  void _startPausedIdleTimer() {
+    _pausedIdleTimer?.cancel();
+    _pausedIdleTimer = Timer(pausedIdleTimeout, _reportSuspended);
+  }
+
+  void _cancelPausedIdleTimer() {
+    _pausedIdleTimer?.cancel();
+    _pausedIdleTimer = null;
+  }
+
+  void _reportSuspended() {
+    _pausedIdleTimer = null;
+    if (!_startReported) return;
+    final song = _reportedSong;
+    if (song == null) return;
+    _report(
+      (client) => client.reportPlaybackSuspended(
+        _playbackReport(
+          song,
+          positionMs: _targetState.position.inMilliseconds,
+          isPaused: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> reportExit() async {
+    _stopProgressReports();
+    _lastReport = null;
+    _reportStopped();
+    await _lastReport;
   }
 
   Future<void> switchTarget(PlaybackTarget to, {bool carryQueue = true}) {
@@ -560,6 +600,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   void _reportStopped() {
+    _cancelPausedIdleTimer();
     if (!_startReported) return;
     final song = _reportedSong;
     if (song == null) return;
@@ -621,7 +662,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _report(Future<void> Function(MediaServerClient client) call) {
     if (_ref.read(isOfflineProvider)) return;
-    unawaited(_runReport(call));
+    final report = _runReport(call);
+    _lastReport = report;
+    unawaited(report);
   }
 
   Future<void> _runReport(

@@ -604,6 +604,9 @@ class EmbyClient implements MediaServerClient {
   }
 
   @override
+  Future<void> reportPlaybackSuspended(PlaybackReport report) async {}
+
+  @override
   Future<void> reportPlaybackStopped(PlaybackReport report) async {
     await _api.playbackStopped(values: _toPlaystateData(report));
   }
