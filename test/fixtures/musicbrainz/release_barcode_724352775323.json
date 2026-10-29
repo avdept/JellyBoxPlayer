@@ -1,0 +1,546 @@
+{
+ "created": "2026-10-28T19:05:32.966Z",
+ "count": 7,
+ "offset": 0,
+ "releases": [
+  {
+   "id": "a433e838-ed6b-4e10-8139-a0889ba06f77",
+   "score": 100,
+   "status-id": "1156806e-d06a-38bd-83f0-cf2284a808b9",
+   "packaging-id": "8f931351-d2e2-310f-afc6-37b89ddba246",
+   "artist-credit-id": "e3f6553c-07e0-37a3-8889-cccbd1e64cd3",
+   "count": 2,
+   "title": "2001-8-28: Georgia Theatre: Athens, Georgia",
+   "status": "Bootleg",
+   "packaging": "Digipak",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "David Byrne",
+     "artist": {
+      "id": "d4659efb-b8eb-4f03-95e9-f69ce35967a9",
+      "name": "David Byrne",
+      "sort-name": "Byrne, David",
+      "disambiguation": "Talking Heads"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "83cc4327-f860-47e3-93cb-41fbc6015d23",
+    "type-id": "6fd474e2-6b58-3102-9d17-d6f7eb7da0a0",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "2001-8-28: Georgia Theatre: Athens, Georgia",
+    "primary-type": "Album",
+    "secondary-types": [
+     "Live"
+    ],
+    "secondary-type-ids": [
+     "6fd474e2-6b58-3102-9d17-d6f7eb7da0a0"
+    ]
+   },
+   "date": "",
+   "country": "US",
+   "release-events": [
+    {
+     "date": "",
+     "area": {
+      "id": "489ce91b-6658-3307-9877-795b68554c98",
+      "name": "United States",
+      "sort-name": "United States",
+      "iso-3166-1-codes": [
+       "US"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "label-info": [
+    {
+     "catalog-number": "CDDB828"
+    }
+   ],
+   "track-count": 25,
+   "media": [
+    {
+     "id": "878a1139-3210-33dc-a486-afdd1ee7b290",
+     "format": "CD",
+     "disc-count": 1,
+     "track-count": 14
+    },
+    {
+     "id": "ec23d344-d00e-36f6-b2fc-2d143c4f5094",
+     "format": "CD",
+     "disc-count": 1,
+     "track-count": 11
+    }
+   ]
+  },
+  {
+   "id": "f947caf6-2da7-3a57-aa4b-0d5e374226ce",
+   "score": 100,
+   "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+   "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+   "artist-credit-id": "021661c1-84c5-30d7-9bb2-f0766affb734",
+   "count": 1,
+   "title": "Kid A",
+   "status": "Official",
+   "packaging": "Jewel Case",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "Radiohead",
+     "artist": {
+      "id": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "name": "Radiohead",
+      "sort-name": "Radiohead"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "e75c0549-ad55-39e3-8025-c72c5d4a3c5d",
+    "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "Kid A",
+    "primary-type": "Album"
+   },
+   "date": "2000-09-29",
+   "country": "FR",
+   "release-events": [
+    {
+     "date": "2000-09-29",
+     "area": {
+      "id": "08310658-51eb-3801-80de-5a0739207115",
+      "name": "France",
+      "sort-name": "France",
+      "iso-3166-1-codes": [
+       "FR"
+      ]
+     }
+    },
+    {
+     "date": "2000-09-29",
+     "area": {
+      "id": "85752fda-13c4-31a3-bee5-0e5cb1f51dad",
+      "name": "Germany",
+      "sort-name": "Germany",
+      "iso-3166-1-codes": [
+       "DE"
+      ]
+     }
+    },
+    {
+     "date": "2000-10-02",
+     "area": {
+      "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+      "name": "United Kingdom",
+      "sort-name": "United Kingdom",
+      "iso-3166-1-codes": [
+       "GB"
+      ]
+     }
+    },
+    {
+     "date": "2000-09-29",
+     "area": {
+      "id": "89a675c2-3e37-3518-b83c-418bad59a85a",
+      "name": "Europe",
+      "sort-name": "Europe",
+      "iso-3166-1-codes": [
+       "XE"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "asin": "B00004XONN",
+   "label-info": [
+    {
+     "catalog-number": "527 7532",
+     "label": {
+      "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+      "name": "Parlophone"
+     }
+    },
+    {
+     "catalog-number": "7243 5 27753 2 3",
+     "label": {
+      "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+      "name": "Parlophone"
+     }
+    }
+   ],
+   "track-count": 10,
+   "media": [
+    {
+     "id": "f7a1d823-fde2-3411-8677-13a4a8cfaf5a",
+     "format": "CD",
+     "disc-count": 12,
+     "track-count": 10
+    }
+   ]
+  },
+  {
+   "id": "18e2b05b-937a-3c25-ac78-07267e6411a0",
+   "score": 100,
+   "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+   "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+   "artist-credit-id": "021661c1-84c5-30d7-9bb2-f0766affb734",
+   "count": 1,
+   "title": "Kid A",
+   "status": "Official",
+   "packaging": "Jewel Case",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "Radiohead",
+     "artist": {
+      "id": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "name": "Radiohead",
+      "sort-name": "Radiohead"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "e75c0549-ad55-39e3-8025-c72c5d4a3c5d",
+    "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "Kid A",
+    "primary-type": "Album"
+   },
+   "date": "2000-10-03",
+   "country": "US",
+   "release-events": [
+    {
+     "date": "2000-10-03",
+     "area": {
+      "id": "489ce91b-6658-3307-9877-795b68554c98",
+      "name": "United States",
+      "sort-name": "United States",
+      "iso-3166-1-codes": [
+       "US"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "asin": "B00004XONN",
+   "label-info": [
+    {
+     "catalog-number": "CDP 7243 5 27753 2 3",
+     "label": {
+      "id": "abea2d3e-eabf-4480-ab24-9382dd642c73",
+      "name": "Capitol Records"
+     }
+    }
+   ],
+   "track-count": 10,
+   "media": [
+    {
+     "id": "65e1fb45-59cd-37ec-bbf9-5fd112659531",
+     "format": "CD",
+     "disc-count": 12,
+     "track-count": 10
+    }
+   ],
+   "tags": [
+    {
+     "count": 1,
+     "name": "electronic"
+    }
+   ]
+  },
+  {
+   "id": "b9188837-f377-4f22-b4cb-e9a49719c9fe",
+   "score": 100,
+   "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+   "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+   "artist-credit-id": "021661c1-84c5-30d7-9bb2-f0766affb734",
+   "count": 1,
+   "title": "Kid A",
+   "status": "Official",
+   "packaging": "Jewel Case",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "Radiohead",
+     "artist": {
+      "id": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "name": "Radiohead",
+      "sort-name": "Radiohead"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "e75c0549-ad55-39e3-8025-c72c5d4a3c5d",
+    "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "Kid A",
+    "primary-type": "Album"
+   },
+   "date": "2000",
+   "country": "XE",
+   "release-events": [
+    {
+     "date": "2000",
+     "area": {
+      "id": "89a675c2-3e37-3518-b83c-418bad59a85a",
+      "name": "Europe",
+      "sort-name": "Europe",
+      "iso-3166-1-codes": [
+       "XE"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "label-info": [
+    {
+     "catalog-number": "527 7532",
+     "label": {
+      "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+      "name": "Parlophone"
+     }
+    },
+    {
+     "catalog-number": "7243 5 27753 2 3",
+     "label": {
+      "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+      "name": "Parlophone"
+     }
+    }
+   ],
+   "track-count": 10,
+   "media": [
+    {
+     "id": "be85de36-4d58-3cae-8488-ab735d523947",
+     "format": "CD",
+     "disc-count": 1,
+     "track-count": 10
+    }
+   ]
+  },
+  {
+   "id": "9046da34-87be-3727-80a9-c1cb0c276113",
+   "score": 100,
+   "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+   "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+   "artist-credit-id": "021661c1-84c5-30d7-9bb2-f0766affb734",
+   "count": 1,
+   "title": "Kid A",
+   "status": "Official",
+   "packaging": "Jewel Case",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "Radiohead",
+     "artist": {
+      "id": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "name": "Radiohead",
+      "sort-name": "Radiohead"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "e75c0549-ad55-39e3-8025-c72c5d4a3c5d",
+    "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "Kid A",
+    "primary-type": "Album"
+   },
+   "date": "2000-10-03",
+   "country": "CA",
+   "release-events": [
+    {
+     "date": "2000-10-03",
+     "area": {
+      "id": "71bbafaa-e825-3e15-8ca9-017dcad1748b",
+      "name": "Canada",
+      "sort-name": "Canada",
+      "iso-3166-1-codes": [
+       "CA"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "asin": "B00004XONN",
+   "label-info": [
+    {
+     "catalog-number": "7243 5 27753 2 3",
+     "label": {
+      "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+      "name": "Parlophone"
+     }
+    },
+    {
+     "catalog-number": "7243 5 27753 2 3",
+     "label": {
+      "id": "095b5fc8-724e-4357-9eab-ee89196afc8e",
+      "name": "EMI Music Canada"
+     }
+    }
+   ],
+   "track-count": 10,
+   "media": [
+    {
+     "id": "9fcc385d-bdfa-3ec3-aa6b-6b37bfe2b7b9",
+     "format": "CD",
+     "disc-count": 12,
+     "track-count": 10
+    }
+   ],
+   "tags": [
+    {
+     "count": 1,
+     "name": "alternative rock"
+    }
+   ]
+  },
+  {
+   "id": "af94b009-b110-4c50-8f7a-7a122d6a2257",
+   "score": 100,
+   "status-id": "518ffc83-5cde-34df-8627-81bff5093d92",
+   "artist-credit-id": "021661c1-84c5-30d7-9bb2-f0766affb734",
+   "count": 1,
+   "title": "Kid A",
+   "status": "Promotion",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "Radiohead",
+     "artist": {
+      "id": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "name": "Radiohead",
+      "sort-name": "Radiohead"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "e75c0549-ad55-39e3-8025-c72c5d4a3c5d",
+    "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "Kid A",
+    "primary-type": "Album"
+   },
+   "date": "2000",
+   "country": "US",
+   "release-events": [
+    {
+     "date": "2000",
+     "area": {
+      "id": "489ce91b-6658-3307-9877-795b68554c98",
+      "name": "United States",
+      "sort-name": "United States",
+      "iso-3166-1-codes": [
+       "US"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "label-info": [
+    {
+     "catalog-number": "7243 5 27753 2 3",
+     "label": {
+      "id": "abea2d3e-eabf-4480-ab24-9382dd642c73",
+      "name": "Capitol Records"
+     }
+    }
+   ],
+   "track-count": 10,
+   "media": [
+    {
+     "id": "4f261d02-27d1-3e05-8644-683654f389a4",
+     "format": "CD",
+     "disc-count": 0,
+     "track-count": 10
+    }
+   ]
+  },
+  {
+   "id": "e63fe164-3bab-4250-a3d9-a64704fe7c59",
+   "score": 100,
+   "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+   "packaging-id": "ec27701a-4a22-37f4-bfac-6616e0f9750a",
+   "artist-credit-id": "021661c1-84c5-30d7-9bb2-f0766affb734",
+   "count": 1,
+   "title": "Kid A",
+   "status": "Official",
+   "disambiguation": "misprint",
+   "packaging": "Jewel Case",
+   "text-representation": {
+    "language": "eng",
+    "script": "Latn"
+   },
+   "artist-credit": [
+    {
+     "name": "Radiohead",
+     "artist": {
+      "id": "a74b1b7f-71a5-4011-9441-d0b5e4122711",
+      "name": "Radiohead",
+      "sort-name": "Radiohead"
+     }
+    }
+   ],
+   "release-group": {
+    "id": "e75c0549-ad55-39e3-8025-c72c5d4a3c5d",
+    "type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+    "title": "Kid A",
+    "primary-type": "Album"
+   },
+   "date": "2000",
+   "country": "NL",
+   "release-events": [
+    {
+     "date": "2000",
+     "area": {
+      "id": "ef1b7cc0-cd26-36f4-8ea0-04d9623786c7",
+      "name": "Netherlands",
+      "sort-name": "Netherlands",
+      "iso-3166-1-codes": [
+       "NL"
+      ]
+     }
+    }
+   ],
+   "barcode": "724352775323",
+   "label-info": [
+    {
+     "catalog-number": "7243 5 27753 2 3",
+     "label": {
+      "id": "df7d1c7f-ef95-425f-8eef-445b3d7bcbd9",
+      "name": "Parlophone"
+     }
+    }
+   ],
+   "track-count": 10,
+   "media": [
+    {
+     "id": "01906eca-cc6f-3f41-bcf0-e2bf7d20af6e",
+     "format": "CD",
+     "disc-count": 0,
+     "track-count": 10
+    }
+   ]
+  }
+ ]
+}

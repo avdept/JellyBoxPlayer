@@ -4,111 +4,167 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/providers/catalog_preview_provider.dart';
 import 'package:jplayer/src/domain/providers/catalog_provider.dart';
-import 'package:jplayer/src/presentation/pages/catalog/catalog_artist_page.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
-class CatalogAlbumPage extends ConsumerWidget {
+class CatalogAlbumPage extends ConsumerStatefulWidget {
   const CatalogAlbumPage({required this.album, super.key});
 
   final CatalogAlbum album;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
-    final edgePadding = device.isMobile ? 16.0 : 30.0;
-    final detail = ref.watch(catalogAlbumProvider(album.key));
-    final preview = ref.watch(catalogPreviewProvider);
-    final tracks = detail.valueOrNull?.tracks ?? const <CatalogTrack>[];
-    final sections = _discSections(tracks);
+  ConsumerState<CatalogAlbumPage> createState() => _CatalogAlbumPageState();
+}
 
-    return Scaffold(
-      body: ScrollablePageScaffold(
-        useGradientBackground: true,
-        navigationBar: CatalogNavigationBar(title: album.title, device: device),
-        contentPadding: const EdgeInsets.only(bottom: 30),
-        slivers: [
-          SliverToBoxAdapter(
-            child: _Header(
-              album: detail.valueOrNull?.album ?? album,
-              tracks: tracks,
-              device: device,
-              theme: theme,
+class _CatalogAlbumPageState extends ConsumerState<CatalogAlbumPage> {
+  final _scrollController = ScrollController();
+  final GlobalKey _titleKey = GlobalKey(debugLabel: 'catalog-album-title');
+
+  late ThemeData _theme;
+  late DeviceType _device;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _theme = Theme.of(context);
+    _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  CatalogAlbum get _album => widget.album;
+
+  ImageProvider get _cover => switch (_album.coverUrl) {
+    final url? => CachedNetworkImageProvider(url),
+    null => const AssetImage(Images.album),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = ref.watch(catalogAlbumProvider(_album.key));
+    final album = detail.valueOrNull?.album ?? _album;
+    final tracks = detail.valueOrNull?.tracks ?? const <CatalogTrack>[];
+    final edgePadding = _device.isMobile ? 16.0 : 30.0;
+    final content = [
+      ..._contentSlivers(detail, tracks, edgePadding),
+      const SliverToBoxAdapter(child: SizedBox(height: 30)),
+    ];
+
+    if (_device.isMobile) {
+      return MobileCoverScaffold(
+        controller: _scrollController,
+        titleKey: _titleKey,
+        title: album.title,
+        previousPageTitle: album.artistName ?? 'Back',
+        cover: _cover,
+        panel: _MobilePanel(album: album, tracks: tracks, titleKey: _titleKey),
+        slivers: content,
+      );
+    }
+
+    return DesktopPageColumn(
+      controller: _scrollController,
+      titleKey: _titleKey,
+      title: album.title,
+      previousPageTitle: album.artistName ?? 'Back',
+      edgePadding: edgePadding,
+      slivers: [
+        SliverToBoxAdapter(
+          child: _DesktopHeader(
+            album: album,
+            tracks: tracks,
+            cover: _cover,
+            titleKey: _titleKey,
+            device: _device,
+            edgePadding: edgePadding,
+          ),
+        ),
+        ...content,
+      ],
+    );
+  }
+
+  List<Widget> _contentSlivers(
+    AsyncValue<CatalogAlbumDetail?> detail,
+    List<CatalogTrack> tracks,
+    double edgePadding,
+  ) {
+    if (detail.hasError) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(edgePadding, 24, edgePadding, 0),
+            child: Text(
+              'Could not load this album.',
+              style: TextStyle(
+                color: _theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (detail.isLoading) {
+      return [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: SongRowsShimmer(
+              device: _device,
+              count: 6,
               edgePadding: edgePadding,
             ),
           ),
-          if (detail.hasError)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(edgePadding, 24, edgePadding, 0),
-                child: Text(
-                  'Could not load this album.',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
-                  ),
-                ),
-              ),
-            )
-          else if (detail.isLoading)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: SongRowsShimmer(
-                  device: device,
-                  count: 6,
-                  edgePadding: edgePadding,
-                ),
-              ),
-            )
-          else
-            for (final section in sections) ...[
-              if (sections.length > 1)
-                SliverToBoxAdapter(
-                  child: _DiscHeader(
-                    disc: section.disc,
-                    device: device,
-                    theme: theme,
-                    edgePadding: edgePadding,
-                  ),
-                ),
-              SliverList.builder(
-                itemCount: section.tracks.length,
-                itemBuilder: (context, index) {
-                  final track = section.tracks[index];
-                  final active = preview.track == track.key;
-                  return _TrackRow(
-                    track: track,
-                    position: track.trackNumber ?? index + 1,
-                    status: !active
-                        ? _PreviewStatus.idle
-                        : (preview.loading
-                              ? _PreviewStatus.loading
-                              : _PreviewStatus.playing),
-                    progress: ref
-                        .read(catalogPreviewProvider.notifier)
-                        .progress,
-                    device: device,
-                    theme: theme,
-                    edgePadding: edgePadding,
-                    onTap: track.hasPreview
-                        ? () => unawaited(
-                            ref
-                                .read(catalogPreviewProvider.notifier)
-                                .toggle(track),
-                          )
-                        : null,
-                  );
-                },
-              ),
-            ],
-        ],
-      ),
-    );
+        ),
+      ];
+    }
+
+    final preview = ref.watch(catalogPreviewProvider);
+    final sections = _discSections(tracks);
+    return [
+      for (final section in sections) ...[
+        if (sections.length > 1)
+          SliverToBoxAdapter(
+            child: DiscHeader(
+              title: section.disc != null ? 'Disc ${section.disc}' : 'Other',
+              fontSize: _device.isMobile ? 16 : 18,
+              edgePadding: edgePadding,
+            ),
+          ),
+        SliverList.builder(
+          itemCount: section.tracks.length,
+          itemBuilder: (context, index) {
+            final track = section.tracks[index];
+            final active = preview.track == track.key;
+            return _TrackRow(
+              track: track,
+              position: track.trackNumber ?? index + 1,
+              status: !active
+                  ? _PreviewStatus.idle
+                  : (preview.loading
+                        ? _PreviewStatus.loading
+                        : _PreviewStatus.playing),
+              progress: ref.read(catalogPreviewProvider.notifier).progress,
+              device: _device,
+              theme: _theme,
+              edgePadding: edgePadding,
+              onTap: track.hasPreview
+                  ? () => unawaited(
+                      ref.read(catalogPreviewProvider.notifier).toggle(track),
+                    )
+                  : null,
+            );
+          },
+        ),
+      ],
+    ];
   }
 
   static List<({int? disc, List<CatalogTrack> tracks})> _discSections(
@@ -125,197 +181,175 @@ class CatalogAlbumPage extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
+class _MobilePanel extends StatelessWidget {
+  const _MobilePanel({
     required this.album,
     required this.tracks,
+    required this.titleKey,
+  });
+
+  final CatalogAlbum album;
+  final List<CatalogTrack> tracks;
+  final GlobalKey titleKey;
+
+  @override
+  Widget build(BuildContext context) => IconTheme.merge(
+    data: const IconThemeData(size: 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          album.title,
+          key: titleKey,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if (album.artistName case final artist?) Text(artist),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: _AlbumDetails(album: album, tracks: tracks),
+            ),
+            const SizedBox(width: 12),
+            const AddToLidarrButton(),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _Attribution(album: album),
+      ],
+    ),
+  );
+}
+
+class _DesktopHeader extends StatelessWidget {
+  const _DesktopHeader({
+    required this.album,
+    required this.tracks,
+    required this.cover,
+    required this.titleKey,
     required this.device,
-    required this.theme,
     required this.edgePadding,
   });
 
   final CatalogAlbum album;
   final List<CatalogTrack> tracks;
+  final ImageProvider cover;
+  final GlobalKey titleKey;
   final DeviceType device;
-  final ThemeData theme;
   final double edgePadding;
 
   @override
   Widget build(BuildContext context) {
-    final size = device.isDesktop ? 254.0 : (device.isMobile ? 140.0 : 200.0);
+    final size = device.isDesktop ? 254.0 : 200.0;
     return Padding(
       padding: EdgeInsets.fromLTRB(edgePadding, 8, edgePadding, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          _cover(size),
-          SizedBox(width: device.isMobile ? 16 : 38),
-          Expanded(child: _panel()),
-        ],
-      ),
-    );
-  }
-
-  Widget _cover(double size) {
-    final cover = album.coverUrl;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: cover == null
-          ? Image.asset(Images.album, width: size, height: size)
-          : Image(
-              image: CachedNetworkImageProvider(cover),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image(
+              image: cover,
               width: size,
               height: size,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) =>
                   Image.asset(Images.album, width: size, height: size),
             ),
-    );
-  }
-
-  Widget _panel() => IconTheme.merge(
-    data: const IconThemeData(size: 24),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          album.title,
-          style: TextStyle(
-            fontSize: device.isMobile ? 18 : 32,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
           ),
-        ),
-        if (album.artistName case final artist?)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: Text(
-              artist,
-              style: TextStyle(
-                fontSize: device.isMobile ? 14 : 15,
-                fontWeight: FontWeight.w300,
+          const SizedBox(width: 38),
+          Expanded(
+            child: IconTheme.merge(
+              data: const IconThemeData(size: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    album.title,
+                    key: titleKey,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (album.artistName case final artist?)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Text(
+                        artist,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _AlbumDetails(album: album, tracks: tracks),
+                      const AddToLidarrButton(),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _Attribution(album: album),
+                ],
               ),
             ),
           ),
-        _details(),
-        if (tracks.any((track) => track.hasPreview))
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              'Tap a song to hear a 30-second preview',
-              style: TextStyle(
-                fontSize: 13,
-                color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
-              ),
-            ),
-          ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              'Not in your library',
-              style: TextStyle(
-                fontSize: 14,
-                color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
-              ),
-            ),
-            const AddToLidarrButton(),
-          ],
-        ),
-        const SizedBox(height: 10),
-        CatalogAttribution(source: album.source, url: album.url),
-      ],
-    ),
-  );
-
-  Widget _details() {
-    final total = tracks.fold(
-      Duration.zero,
-      (sum, track) => sum + track.duration,
-    );
-    final hours = total.inHours;
-    final minutes = total.inMinutes.remainder(60);
-    final seconds = total.inSeconds.remainder(60);
-    final year = album.releaseDate?.year;
-    return DefaultTextStyle(
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        height: 1.2,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (tracks.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.only(right: 6),
-              child: Icon(JPlayer.clock, size: 14),
-            ),
-            Text(
-              [
-                if (hours > 0) hours.toString().padLeft(2, '0'),
-                minutes.toString().padLeft(2, '0'),
-                seconds.toString().padLeft(2, '0'),
-              ].join(':'),
-            ),
-            _dot(),
-            const Padding(
-              padding: EdgeInsets.only(right: 6),
-              child: Icon(JPlayer.music, size: 14),
-            ),
-            Text('${tracks.length}'),
-          ],
-          if (year != null) ...[
-            if (tracks.isNotEmpty) _dot(),
-            Text(
-              '$year',
-              style: const TextStyle(fontWeight: FontWeight.normal),
-            ),
-          ],
         ],
       ),
     );
   }
-
-  Widget _dot() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: Icon(
-      Icons.circle,
-      size: 4,
-      color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
-    ),
-  );
 }
 
-class _DiscHeader extends StatelessWidget {
-  const _DiscHeader({
-    required this.disc,
-    required this.device,
-    required this.theme,
-    required this.edgePadding,
-  });
+class _AlbumDetails extends StatelessWidget {
+  const _AlbumDetails({required this.album, required this.tracks});
 
-  final int? disc;
-  final DeviceType device;
-  final ThemeData theme;
-  final double edgePadding;
+  final CatalogAlbum album;
+  final List<CatalogTrack> tracks;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(edgePadding, 14, edgePadding, 2),
-    child: Text(
-      disc != null ? 'Disc $disc' : 'Other',
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        fontSize: device.isMobile ? 16 : 18,
-        fontWeight: FontWeight.w600,
-        color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+  Widget build(BuildContext context) {
+    final year = album.releaseDate?.year;
+    if (tracks.isEmpty) {
+      return year == null
+          ? const SizedBox.shrink()
+          : Text('$year', style: const TextStyle(fontSize: 14, height: 1.2));
+    }
+    return AlbumDetailsRow(
+      duration: tracks.fold(
+        Duration.zero,
+        (sum, track) => sum + track.duration,
       ),
-    ),
+      songCount: tracks.length,
+      year: year,
+    );
+  }
+}
+
+class _Attribution extends StatelessWidget {
+  const _Attribution({required this.album});
+
+  final CatalogAlbum album;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 12,
+    runSpacing: 4,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      CatalogAttribution(source: album.source, url: album.url),
+      MusicBrainzLink(barcode: album.upc, artistName: album.artistName),
+    ],
   );
 }
 
@@ -386,18 +420,36 @@ class _TrackRowState extends State<_TrackRow> {
               color: playable ? onPrimary : onPrimary.withValues(alpha: 0.45),
             ),
           ),
-          subtitle: artist == null
+          subtitle: artist == null && !playable
               ? null
-              : Text(
-                  artist,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: isTablet ? 16 : 12,
-                    fontWeight: FontWeight.w400,
-                    height: 1.2,
-                    color: secondary,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    if (artist != null)
+                      Flexible(
+                        child: Text(
+                          artist,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: isTablet ? 16 : 12,
+                            fontWeight: FontWeight.w400,
+                            height: 1.2,
+                            color: secondary,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    if (playable) ...[
+                      if (artist != null) const SizedBox(width: 6),
+                      AudioQualityBadge(
+                        label: 'Preview',
+                        fontSize: isTablet ? 11 : 9,
+                        textColor: onPrimary.withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ],
                 ),
           trailing: Wrap(
             spacing: 4,

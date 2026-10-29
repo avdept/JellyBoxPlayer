@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:jplayer/resources/resources.dart';
-import 'package:optional_features/catalog.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/catalog_actions.dart';
 import 'package:jplayer/src/presentation/widgets/catalog_source_badge.dart';
+import 'package:optional_features/catalog.dart';
 
 class CatalogAlbumCard extends StatefulWidget {
   const CatalogAlbumCard({

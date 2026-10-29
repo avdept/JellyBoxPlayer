@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
@@ -25,12 +23,10 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   double get navTitleFontSize;
   double get discHeaderFontSize;
   double get sectionTitleFontSize;
-  double get titleInset => 0;
   Color? get playingRowColor => null;
 
   final GlobalKey titleKey = GlobalKey(debugLabel: 'title');
   final ScrollController scrollController = ScrollController();
-  final ValueNotifier<double> titleOpacity = ValueNotifier<double>(0);
   final ValueNotifier<String?> playingSongId = ValueNotifier<String?>(null);
   List<LibraryItem> songs = [];
   bool isLoadingSongs = true;
@@ -63,7 +59,6 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         album,
       );
     });
-    scrollController.addListener(_onScroll);
   }
 
   @override
@@ -76,29 +71,8 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   @override
   void dispose() {
     scrollController.dispose();
-    titleOpacity.dispose();
     playingSongId.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    final titleContext = titleKey.currentContext;
-    if (!(titleContext?.mounted ?? false)) return;
-
-    final scrollableContext =
-        scrollController.position.context.notificationContext!;
-    final scrollableRenderBox =
-        scrollableContext.findRenderObject()! as RenderBox;
-    final titleRenderBox = titleContext!.findRenderObject()! as RenderBox;
-    final titlePosition = titleRenderBox.localToGlobal(
-      Offset.zero,
-      ancestor: scrollableRenderBox,
-    );
-    final titleHeight = titleContext.size!.height;
-    final visibleFraction =
-        (titlePosition.dy - titleInset + titleHeight) / titleHeight;
-
-    titleOpacity.value = 1 - min(max(visibleFraction, 0), 1);
   }
 
   void showOfflineSnackBar() {
@@ -188,28 +162,6 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (mounted) await _getSongs(silent: false);
   }
 
-  Widget navBar() => CupertinoNavigationBar(
-    previousPageTitle: 'Albums',
-    backgroundColor: Colors.transparent,
-    enableBackgroundFilterBlur: false,
-    padding: EdgeInsetsDirectional.symmetric(horizontal: edgePadding),
-    middle: ValueListenableBuilder(
-      valueListenable: titleOpacity,
-      builder: (context, opacity, child) => Transform.translate(
-        offset: Offset(0, 8 - 8 * opacity),
-        child: Opacity(opacity: opacity, child: child),
-      ),
-      child: Text(
-        album.name,
-        overflow: TextOverflow.clip,
-        style: TextStyle(
-          fontSize: navTitleFontSize,
-          color: theme.colorScheme.onPrimary,
-        ),
-      ),
-    ),
-  );
-
   List<Widget> contentSlivers() => [
     if (songs.isEmpty)
       SliverToBoxAdapter(child: _songsPlaceholder())
@@ -261,12 +213,14 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   Widget _discHeader(DiscSection section) {
     final coverArt = section.coverArt;
     final headerColor = theme.colorScheme.onPrimary.withValues(alpha: 0.8);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(edgePadding, 14, edgePadding, 2),
-      child: Row(
-        children: [
-          if (coverArt != null && coverArt != album.images.primary) ...[
-            ClipRRect(
+    return DiscHeader(
+      title:
+          section.title ??
+          (section.discNumber != null ? 'Disc ${section.discNumber}' : 'Other'),
+      fontSize: discHeaderFontSize,
+      edgePadding: edgePadding,
+      leading: coverArt != null && coverArt != album.images.primary
+          ? ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: Image(
                 image: _discCoverImage(coverArt),
@@ -274,30 +228,13 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
                 height: 32,
                 fit: BoxFit.cover,
               ),
-            ),
-            const SizedBox(width: 10),
-          ],
-          Expanded(
-            child: Text(
-              section.title ??
-                  (section.discNumber != null
-                      ? 'Disc ${section.discNumber}'
-                      : 'Other'),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: discHeaderFontSize,
-                fontWeight: FontWeight.w600,
-                color: headerColor,
-              ),
-            ),
-          ),
-          HoverIconButton(
-            icon: const Icon(Icons.play_arrow_outlined),
-            tooltip: 'Play disc',
-            color: headerColor,
-            onPressed: () => _playDisc(section),
-          ),
-        ],
+            )
+          : null,
+      trailing: HoverIconButton(
+        icon: const Icon(Icons.play_arrow_outlined),
+        tooltip: 'Play disc',
+        color: headerColor,
+        onPressed: () => _playDisc(section),
       ),
     );
   }
@@ -369,60 +306,10 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     );
   }
 
-  Widget albumDetails() {
-    final durationInSeconds = album.duration.inSeconds;
-    final hours = durationInSeconds ~/ Duration.secondsPerHour;
-    final minutes =
-        (durationInSeconds - hours * Duration.secondsPerHour) ~/
-        Duration.secondsPerMinute;
-    final seconds = durationInSeconds % Duration.secondsPerMinute;
-    final year = album.productionYear;
-
-    return DefaultTextStyle(
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        height: 1.2,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(right: 6),
-            child: Icon(JPlayer.clock, size: 14),
-          ),
-          Text(
-            [
-              if (hours > 0) hours.toString().padLeft(2, '0'),
-              minutes.toString().padLeft(2, '0'),
-              seconds.toString().padLeft(2, '0'),
-            ].join(':'),
-          ),
-          _detailsDot(),
-          const Padding(
-            padding: EdgeInsets.only(right: 6),
-            child: Icon(JPlayer.music, size: 14),
-          ),
-          Text('${songs.length}'),
-          if (year != null) ...[
-            _detailsDot(),
-            Text(
-              year.toString(),
-              style: const TextStyle(fontWeight: FontWeight.normal),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _detailsDot() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: Icon(
-      Icons.circle,
-      size: 4,
-      color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
-    ),
+  Widget albumDetails() => AlbumDetailsRow(
+    duration: album.duration,
+    songCount: songs.length,
+    year: album.productionYear,
   );
 
   Widget playAlbumButton() => PlayButton(
@@ -503,19 +390,14 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (text == null || text.isEmpty) return const [];
     return [
       SliverToBoxAdapter(
-        child: Padding(
+        child: SectionHeading(
+          label: 'About',
+          fontSize: sectionTitleFontSize,
           padding: EdgeInsets.only(
             left: edgePadding,
             right: edgePadding,
             top: 24,
             bottom: 12,
-          ),
-          child: Text(
-            'About',
-            style: TextStyle(
-              fontSize: sectionTitleFontSize,
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ),
       ),
@@ -617,19 +499,14 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
     return [
       SliverToBoxAdapter(
-        child: Padding(
+        child: SectionHeading(
+          label: title,
+          fontSize: sectionTitleFontSize,
           padding: EdgeInsets.only(
             left: edgePadding,
             right: edgePadding,
             top: 24,
             bottom: 12,
-          ),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: sectionTitleFontSize,
-              fontWeight: FontWeight.w500,
-            ),
           ),
         ),
       ),
