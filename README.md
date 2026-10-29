@@ -38,7 +38,7 @@ JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://
 | **iOS / iPadOS / macOS**  | App Store | [![App Store](https://img.shields.io/badge/App_Store-0D96F6?logo=apple&logoColor=white)](https://apps.apple.com/us/app/jellybox-player/id6469732117) |
 | **macOS** | `.dmg` (signed & notarized) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Windows** | Installer `.exe` or portable `.zip` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
-| **Linux** | `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
+| **Linux** | `.flatpak`, `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android** | Google Play | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
 | **Android** | `.apk` (sideload) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 
@@ -177,7 +177,13 @@ Install from [Google Play](https://play.google.com/store/apps/details?id=com.pro
 
 ### Linux
 
-The release bundle expects a few shared libraries. On Debian/Ubuntu:
+**Flatpak** - the `.flatpak` bundle brings its own libraries and only needs the freedesktop runtime, which it pulls from Flathub on install:
+
+```bash
+flatpak install ./jellybox-linux-x86_64.flatpak
+```
+
+**Other packages** - the release bundle expects a few shared libraries. On Debian/Ubuntu:
 
 ```bash
 sudo apt-get install libmpv-dev mpv libasound2-dev libsecret-1-dev libsqlite3-dev libjsoncpp-dev libcurl4-openssl-dev libdbus-1-dev

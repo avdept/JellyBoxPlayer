@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.prodigytech.jellybox</id>
+  <name>JellyBox</name>
+  <summary>Music player for Jellyfin, Emby and Navidrome</summary>
+  <developer id="com.prodigytech">
+    <name>ProdigyTech Inc.</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-only</project_license>
+  <description>
+    <p>
+      JellyBox is a native music player for your own Jellyfin, Emby or Navidrome
+      server. Browse your library, build and sync playlists, download albums for
+      offline listening, and keep playback going from the media keys and the
+      desktop media controls.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.prodigytech.jellybox.desktop</launchable>
+  <url type="homepage">https://github.com/avdept/JellyBoxPlayer</url>
+  <url type="bugtracker">https://github.com/avdept/JellyBoxPlayer/issues</url>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Player</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

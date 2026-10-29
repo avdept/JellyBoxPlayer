@@ -1,0 +1,129 @@
+name: Flatpak
+
+# Wraps the Linux bundles already attached to a release into .flatpak files
+# and optionally attaches them to that same release. The bundle is the exact
+# tarball the Linux Release workflow produced (private package included), so
+# nothing is rebuilt here. Kept separate from linux-release.yaml while the
+# Flatpak is being proven; fold the job in there once it is.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release whose Linux bundles to wrap: a tag, or "latest"'
+        required: true
+        type: string
+        default: latest
+      attach:
+        description: Attach the .flatpak files to that release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.fetch.outputs.tag }}
+      version: ${{ steps.fetch.outputs.version }}
+    steps:
+      - name: Download Linux bundles
+        id: fetch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          TAG="$RELEASE_TAG"
+          if [ "$TAG" = "latest" ]; then
+            TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+          VERSION="${TAG#v}"
+          VERSION="${VERSION%%+*}"
+          mkdir dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir dist --pattern 'jellybox-linux-*.tar.gz'
+          ls -lh dist
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Wrapping $TAG (version $VERSION)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-bundles
+          path: dist/*.tar.gz
+
+  # Runs inside the Flathub builder image, which already has flatpak-builder
+  # and the freedesktop runtime installed.
+  build:
+    needs: fetch
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+            flatpak_arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            flatpak_arch: aarch64
+
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-bundles
+          path: dist
+
+      - name: Stage bundle
+        run: |
+          mkdir -p bundle
+          tar xzf dist/jellybox-linux-${{ matrix.arch }}.tar.gz -C bundle
+          ./linux/packaging/flatpak/stage.sh bundle "${{ needs.fetch.outputs.version }}"
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: linux/packaging/flatpak/com.prodigytech.jellybox.yml
+          bundle: jellybox-linux-${{ matrix.flatpak_arch }}.flatpak
+          arch: ${{ matrix.flatpak_arch }}
+          cache: false
+          upload-artifact: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jellybox-linux-flatpak-${{ matrix.arch }}
+          path: jellybox-linux-${{ matrix.flatpak_arch }}.flatpak
+
+  release:
+    needs: [fetch, build]
+    if: ${{ inputs.attach }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jellybox-linux-flatpak-*
+          merge-multiple: true
+          path: dist
+
+      - name: List artifacts
+        run: ls -lh dist
+
+      - name: Attach to release
+        uses: ./.github/actions/release-assets
+        with:
+          release-tag: ${{ needs.fetch.outputs.tag }}
+          files: dist/*
+          token: ${{ secrets.GITHUB_TOKEN }}

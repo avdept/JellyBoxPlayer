@@ -53,3 +53,6 @@ app.*.map.json
 # Local dependency overrides (private upnp_quirks table, see pubspec_overrides.yaml.example)
 pubspec_overrides.yaml
 packages/*/build/
+
+# Staged input for the Flatpak build (linux/packaging/flatpak/stage.sh)
+linux/packaging/flatpak/stage/
