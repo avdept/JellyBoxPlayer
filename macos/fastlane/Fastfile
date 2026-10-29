@@ -66,6 +66,19 @@ platform :mac do
         additional_cert_types: ["mac_installer_distribution"]
     )
 
+    # Xcode rewrites the project to Automatic signing whenever it is opened
+    # locally; a manually specified profile on an Automatic target is a hard
+    # error, so switch the Release config to Manual here on every run.
+    update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "Runner.xcodeproj",
+        targets: ["Runner"],
+        build_configurations: ["Release"],
+        code_sign_identity: "Apple Distribution",
+        team_id: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_macos_team-id"],
+        profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_macos_profile-name"]
+    )
+
     update_project_provisioning(
         xcodeproj: "Runner.xcodeproj",
         build_configuration: "Release",
