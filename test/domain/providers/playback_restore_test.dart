@@ -82,6 +82,18 @@ class _FakeTarget implements PlaybackTarget {
   @override
   Future<void> play() async => plays++;
 
+  void emit(TargetPlaybackState state) {
+    _state = state;
+    _controller.add(state);
+  }
+
+  @override
+  Future<void> reorder(
+    List<TargetTrack> tracks, {
+    required List<int> order,
+    required int currentIndex,
+  }) async {}
+
   @override
   Future<void> stop() async {}
 
@@ -183,15 +195,22 @@ void main() {
     return container;
   }
 
-  Future<void> saveQueue({String? sourceId, String serverId = 'srv'}) =>
-      PlaybackStorage().save(
-        serverId: serverId,
-        songs: songs,
-        album: album,
-        songId: 'b',
-        positionMs: 90000,
-        sourceId: sourceId,
-      );
+  Future<void> saveQueue({
+    String? sourceId,
+    String serverId = 'srv',
+    List<LibraryItem>? queue,
+    bool shuffle = false,
+    List<String>? unshuffledOrder,
+  }) => PlaybackStorage().save(
+    serverId: serverId,
+    songs: queue ?? songs,
+    album: album,
+    songId: 'b',
+    positionMs: 90000,
+    sourceId: sourceId,
+    shuffle: shuffle,
+    unshuffledOrder: unshuffledOrder,
+  );
 
   test(
     '- restores the saved queue paused when nothing asked to play',
@@ -319,6 +338,7 @@ void main() {
 
     expect(snapshot?.songId, 'b');
     expect(snapshot?.positionMs, 90000);
+    expect(snapshot?.shuffle, isFalse);
     expect(prefs.getString('pb_songs'), isNull);
     expect(await PlaybackStorage().load('other'), isNull);
   });
@@ -340,6 +360,109 @@ void main() {
 
     expect(await PlaybackStorage().load('other'), isNull);
     expect((await PlaybackStorage().load('srv'))?.songId, 'b');
+  });
+
+  test('- restores shuffle and the order it goes back to', () async {
+    final shuffled = [songs[1], songs[2], songs[0]];
+    await saveQueue(
+      queue: shuffled,
+      shuffle: true,
+      unshuffledOrder: ['a', 'b', 'c'],
+    );
+    final container = containerWith(pendingPress: false);
+    final playback = container.read(playbackProvider.notifier);
+
+    await playback.tryRestore();
+    await pumpEventQueue();
+
+    expect(container.read(playbackProvider).shuffleEnabled, isTrue);
+    expect(
+      container.read(playbackProvider).songs.map((s) => s.id),
+      ['b', 'c', 'a'],
+    );
+    final saved = await PlaybackStorage().load('srv');
+    expect(saved?.shuffle, isTrue);
+    expect(saved?.unshuffledOrder, ['a', 'b', 'c']);
+
+    await playback.setShuffle(enabled: false);
+    await pumpEventQueue();
+
+    expect(
+      container.read(playbackProvider).songs.map((s) => s.id),
+      ['a', 'b', 'c'],
+    );
+    expect(container.read(playbackProvider).currentMediaIndex, 1);
+    expect((await PlaybackStorage().load('srv'))?.shuffle, isFalse);
+  });
+
+  test('- saves only the position until the queue changes', () async {
+    final container = containerWith(pendingPress: false);
+    final playback = container.read(playbackProvider.notifier);
+
+    await playback.play(songs.first, songs, album);
+    await pumpEventQueue();
+    expect((await PlaybackStorage().load('srv'))?.songs, hasLength(3));
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'pb_songs.srv',
+      jsonEncode([songs.first.toJson()]),
+    );
+
+    target.emit(
+      const TargetPlaybackState(
+        status: PlaybackStatus.playing,
+        position: Duration(seconds: 30),
+        currentIndex: 1,
+      ),
+    );
+    await pumpEventQueue();
+
+    var saved = await PlaybackStorage().load('srv');
+    expect(saved?.songs, hasLength(1));
+    expect(saved?.songId, 'b');
+
+    playback.updateSong(songs.last.copyWith(name: 'renamed'));
+    target.emit(
+      const TargetPlaybackState(
+        status: PlaybackStatus.playing,
+        position: Duration.zero,
+        currentIndex: 2,
+      ),
+    );
+    await pumpEventQueue();
+
+    saved = await PlaybackStorage().load('srv');
+    expect(saved?.songs.map((s) => s.name), ['song a', 'song b', 'renamed']);
+    expect(saved?.songId, 'c');
+  });
+
+  test('- reports only the queue around the playing song', () async {
+    final long = [
+      for (var i = 0; i < 200; i++)
+        LibraryItem(id: 's$i', name: 'song $i', kind: ItemKind.song),
+    ];
+    final container = containerWith(pendingPress: false);
+    final playback = container.read(playbackProvider.notifier);
+
+    await playback.play(long[120], long, album);
+    final middle =
+        verify(
+              () => client.reportPlaybackStarted(captureAny()),
+            ).captured.single
+            as PlaybackReport;
+    expect(middle.queueItemIds.first, 's70');
+    expect(middle.queueItemIds.last, 's170');
+    expect(middle.queueItemIds, hasLength(101));
+
+    await playback.play(long[3], long, album);
+    final nearStart =
+        verify(
+              () => client.reportPlaybackStarted(captureAny()),
+            ).captured.single
+            as PlaybackReport;
+    expect(nearStart.queueItemIds.first, 's0');
+    expect(nearStart.queueItemIds.last, 's53');
   });
 
   test('- restores which set the queue was started from', () async {

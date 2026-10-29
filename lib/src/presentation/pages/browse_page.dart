@@ -87,7 +87,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   };
 
   void _onAlbumTap(LibraryItem album) {
-    ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
       Routes.album.name,
       extra: {'album': album},

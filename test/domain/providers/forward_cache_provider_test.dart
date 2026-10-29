@@ -176,13 +176,13 @@ class _HookedDownloadDatabase extends DownloadDatabase {
   Future<void> Function()? onNextLookup;
 
   @override
-  Future<bool> isSongDownloaded(String id) async {
+  Future<String?> getDownloadedSongPath(String id) async {
     final hook = onNextLookup;
     if (hook != null) {
       onNextLookup = null;
       await hook();
     }
-    return super.isSongDownloaded(id);
+    return super.getDownloadedSongPath(id);
   }
 }
 

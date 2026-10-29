@@ -880,7 +880,6 @@ class _ContextMenuActions {
           .read(mediaServerClientProvider)
           .getItem(item.albumId!, kind: ItemKind.album);
       if (!_mounted) return;
-      ref.read(currentAlbumProvider.notifier).setAlbum(target);
       _navigate(Routes.album, 'album', target);
     },
   );

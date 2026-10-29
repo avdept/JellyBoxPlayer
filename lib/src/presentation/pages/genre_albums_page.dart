@@ -36,7 +36,6 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
   }
 
   void _onAlbumTap(LibraryItem album) {
-    ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
       branchAwareName(context, Routes.album),
       extra: {'album': album},

@@ -157,6 +157,25 @@ void main() {
       expect(await jellyfin.downloadedIds(const []), isEmpty);
     });
 
+    test('- resolves downloaded paths in one batch per server', () async {
+      final jellyfin = DownloadDatabase(serverId: 'server-a');
+      final emby = DownloadDatabase(serverId: 'server-b');
+      final mine = buildSong();
+      final theirs = buildSong();
+
+      await jellyfin.insertDownloadedSong(mine, file: songFile);
+      await emby.insertDownloadedSong(theirs, file: songFile);
+
+      final paths = await jellyfin.downloadedPathsFor([
+        mine.id,
+        theirs.id,
+        'missing',
+      ]);
+
+      expect(paths, {mine.id: songFile.path});
+      expect(await jellyfin.downloadedPathsFor(const []), isEmpty);
+    });
+
     test('- reports album ids from albums and songs alike', () async {
       final jellyfin = DownloadDatabase(serverId: 'server-a');
       final emby = DownloadDatabase(serverId: 'server-b');

@@ -223,16 +223,27 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    currentSong?.title ?? '',
-                    style: TextStyle(
-                      fontSize: _isMobile ? 24 : 32,
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                      overflow: TextOverflow.ellipsis,
+                  if (_isMobile)
+                    MarqueeText(
+                      currentSong?.title ?? '',
+                      bounce: true,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                    )
+                  else
+                    Text(
+                      currentSong?.title ?? '',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
-                  ),
                   const SizedBox(height: 2),
                   ClickableWidget(
                     onPressed: currentSong?.extras?['artistId'] != null
@@ -452,16 +463,26 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Flexible(
-                                    child: Text(
-                                      currentSong?.title ?? '',
-                                      style: TextStyle(
-                                        fontSize: _isMobile ? 18 : 24,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      maxLines: 1,
-                                    ),
+                                    child: _isMobile
+                                        ? MarqueeText(
+                                            currentSong?.title ?? '',
+                                            bounce: true,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w500,
+                                              height: 1.2,
+                                            ),
+                                          )
+                                        : Text(
+                                            currentSong?.title ?? '',
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.w500,
+                                              height: 1.2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            maxLines: 1,
+                                          ),
                                   ),
                                   if (_isDesktop) const SizedBox(width: 8),
                                   if (_isDesktop)
@@ -616,7 +637,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     Alignment? alignment,
   }) => Consumer(
     builder: (context, ref, _) {
-      if (!ref.watch(serverCapabilitiesProvider).ratings) {
+      if (!ref.watch(ratingsEnabledProvider)) {
         return const SizedBox.shrink();
       }
       final song = ref.watch(barSongProvider);
@@ -694,7 +715,6 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         .read(mediaServerClientProvider)
         .getItem(albumId, kind: ItemKind.album);
     if (!mounted) return;
-    ref.read(currentAlbumProvider.notifier).setAlbum(item);
     context.goNamed(Routes.album.name, extra: {'album': item});
   }
 

@@ -10,6 +10,8 @@ class PlaybackSnapshot {
     required this.songId,
     required this.positionMs,
     this.sourceId,
+    this.shuffle = false,
+    this.unshuffledOrder,
   });
 
   final List<LibraryItem> songs;
@@ -17,6 +19,8 @@ class PlaybackSnapshot {
   final String songId;
   final int positionMs;
   final String? sourceId;
+  final bool shuffle;
+  final List<String>? unshuffledOrder;
 }
 
 class PlaybackStorage {
@@ -25,8 +29,23 @@ class PlaybackStorage {
   static const _songIdKey = 'pb_song_id';
   static const _positionMsKey = 'pb_position_ms';
   static const _sourceIdKey = 'pb_source_id';
+  static const _shuffleKey = 'pb_shuffle';
+  static const _unshuffledOrderKey = 'pb_unshuffled_order';
 
   static const List<String> _keys = [
+    _songsKey,
+    _albumKey,
+    _songIdKey,
+    _positionMsKey,
+    _sourceIdKey,
+    _shuffleKey,
+    _unshuffledOrderKey,
+  ];
+
+  // TODO: Remove in 2.12, with _adoptLegacy and _removeLegacy. This is a
+  // one-time adoption of a snapshot saved before snapshots were scoped per
+  // server.
+  static const List<String> _legacyKeys = [
     _songsKey,
     _albumKey,
     _songIdKey,
@@ -43,6 +62,8 @@ class PlaybackStorage {
     required String songId,
     required int positionMs,
     String? sourceId,
+    bool shuffle = false,
+    List<String>? unshuffledOrder,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -57,7 +78,31 @@ class PlaybackStorage {
           prefs.setString(_scoped(_sourceIdKey, serverId), sourceId)
         else
           prefs.remove(_scoped(_sourceIdKey, serverId)),
+        prefs.setBool(_scoped(_shuffleKey, serverId), shuffle),
+        if (shuffle && unshuffledOrder != null)
+          prefs.setStringList(
+            _scoped(_unshuffledOrderKey, serverId),
+            unshuffledOrder,
+          )
+        else
+          prefs.remove(_scoped(_unshuffledOrderKey, serverId)),
         ..._removeLegacy(prefs),
+      ]);
+    } on Object {
+      // ignore
+    }
+  }
+
+  Future<void> savePosition({
+    required String serverId,
+    required String songId,
+    required int positionMs,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await Future.wait([
+        prefs.setString(_scoped(_songIdKey, serverId), songId),
+        prefs.setInt(_scoped(_positionMsKey, serverId), positionMs),
       ]);
     } on Object {
       // ignore
@@ -87,6 +132,10 @@ class PlaybackStorage {
         songId: songId,
         positionMs: positionMs,
         sourceId: prefs.getString(_scoped(_sourceIdKey, serverId)),
+        shuffle: prefs.getBool(_scoped(_shuffleKey, serverId)) ?? false,
+        unshuffledOrder: prefs.getStringList(
+          _scoped(_unshuffledOrderKey, serverId),
+        ),
       );
     } on Object {
       return null;
@@ -129,6 +178,6 @@ class PlaybackStorage {
 
   List<Future<bool>> _removeLegacy(SharedPreferences prefs) => [
     if (prefs.containsKey(_songsKey))
-      for (final key in _keys) prefs.remove(key),
+      for (final key in _legacyKeys) prefs.remove(key),
   ];
 }
