@@ -67,6 +67,29 @@ platform :ios do
         app_identifier: [ENV["APP_IDENTIFIER"], widget_identifier]
     )
 
+    # Xcode rewrites the project to Automatic signing whenever it is opened
+    # locally; a manually specified profile on an Automatic target is a hard
+    # error, so switch the Release configs to Manual here on every run.
+    update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "Runner.xcodeproj",
+        targets: ["Runner"],
+        build_configurations: ["Release"],
+        code_sign_identity: "Apple Distribution",
+        team_id: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_team-id"],
+        profile_name: ENV["sigh_#{ENV["APP_IDENTIFIER"]}_appstore_profile-name"]
+    )
+
+    update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "Runner.xcodeproj",
+        targets: ["NowPlayingWidgetExtension"],
+        build_configurations: ["Release"],
+        code_sign_identity: "Apple Distribution",
+        team_id: ENV["sigh_#{widget_identifier}_appstore_team-id"],
+        profile_name: ENV["sigh_#{widget_identifier}_appstore_profile-name"]
+    )
+
     update_project_provisioning(
         xcodeproj: "Runner.xcodeproj",
         build_configuration: "Release",

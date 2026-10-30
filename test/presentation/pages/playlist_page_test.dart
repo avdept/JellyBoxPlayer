@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -74,8 +75,8 @@ void main() {
     home: PlaylistPage(playlist: playlist),
   );
 
-  Future<LibraryPage> mockGetPlaylistSongs({String? playlistId}) {
-    return mockMediaServerClient.getPlaylistSongs(playlistId ?? any());
+  Stream<PlaylistSongsBatch> mockGetPlaylistSongs({String? playlistId}) {
+    return mockMediaServerClient.streamPlaylistSongs(playlistId ?? any());
   }
 
   setUpAll(() {
@@ -100,7 +101,14 @@ void main() {
     ).thenReturn(Uri.parse('https://example.com/image.jpg'));
     when(
       () => mockGetPlaylistSongs(playlistId: mockPlaylist.id),
-    ).thenAnswer((_) async => mockSongs);
+    ).thenAnswer(
+      (_) => Stream.value(
+        PlaylistSongsBatch(
+          songs: mockSongs.items,
+          expectedTotal: mockSongs.items.length,
+        ),
+      ),
+    );
     when(() => mockUser.userId).thenReturn(mockUserId);
   });
 

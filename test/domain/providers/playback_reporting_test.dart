@@ -121,10 +121,12 @@ void main() {
       const PlaybackReport(itemId: 'fallback', playSessionId: 'fallback'),
     );
     PlaybackNotifier.progressInterval = const Duration(milliseconds: 25);
+    PlaybackNotifier.pausedIdleTimeout = const Duration(milliseconds: 100);
   });
 
   tearDownAll(() {
     PlaybackNotifier.progressInterval = const Duration(seconds: 10);
+    PlaybackNotifier.pausedIdleTimeout = const Duration(minutes: 5);
   });
 
   setUp(() async {
@@ -152,6 +154,7 @@ void main() {
     when(() => client.reportPlaybackStarted(any())).thenAnswer((_) async {});
     when(() => client.reportPlaybackStopped(any())).thenAnswer((_) async {});
     when(() => client.reportPlaybackProgress(any())).thenAnswer((_) async {});
+    when(() => client.reportPlaybackSuspended(any())).thenAnswer((_) async {});
 
     container = ProviderContainer(
       overrides: [
@@ -220,4 +223,90 @@ void main() {
       expect((resumed.first as PlaybackReport).isPaused, isFalse);
     },
   );
+
+  test(
+    '- a long pause suspends the session once, resuming revives it',
+    () async {
+      final notifier = container.read(playbackProvider.notifier);
+      await notifier.play(songs.first, songs, album);
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      clearInteractions(client);
+
+      target.emit(playing: false, position: const Duration(seconds: 42));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      verifyNever(() => client.reportPlaybackSuspended(any()));
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final suspended = verify(
+        () => client.reportPlaybackSuspended(captureAny()),
+      ).captured;
+      expect(suspended, hasLength(1));
+      final report = suspended.single as PlaybackReport;
+      expect(report.itemId, 'a');
+      expect(report.position, const Duration(seconds: 42));
+      verifyNever(() => client.reportPlaybackStopped(any()));
+
+      target.emit(playing: true, position: const Duration(seconds: 42));
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      verify(
+        () => client.reportPlaybackProgress(any()),
+      ).called(greaterThanOrEqualTo(2));
+      verifyNever(() => client.reportPlaybackSuspended(any()));
+
+      await notifier.stop();
+      verify(() => client.reportPlaybackStopped(any())).called(1);
+    },
+  );
+
+  test('- resuming before the idle timeout never suspends', () async {
+    final notifier = container.read(playbackProvider.notifier);
+    await notifier.play(songs.first, songs, album);
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+
+    target.emit(playing: false, position: const Duration(seconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    target.emit(playing: true, position: const Duration(seconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+
+    verifyNever(() => client.reportPlaybackSuspended(any()));
+  });
+
+  test('- a stop cancels a pending suspension', () async {
+    final notifier = container.read(playbackProvider.notifier);
+    await notifier.play(songs.first, songs, album);
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+
+    target.emit(playing: false, position: const Duration(seconds: 10));
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    await notifier.stop();
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+
+    verify(() => client.reportPlaybackStopped(any())).called(1);
+    verifyNever(() => client.reportPlaybackSuspended(any()));
+  });
+
+  test('- reportExit waits for the stop report to reach the server', () async {
+    var stopDelivered = false;
+    when(() => client.reportPlaybackStopped(any())).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      stopDelivered = true;
+    });
+    final notifier = container.read(playbackProvider.notifier);
+    await notifier.play(songs.first, songs, album);
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    target.emit(playing: true, position: const Duration(seconds: 90));
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    await notifier.reportExit();
+
+    expect(stopDelivered, isTrue);
+    final stopped = verify(
+      () => client.reportPlaybackStopped(captureAny()),
+    ).captured;
+    expect(stopped, hasLength(1));
+    expect((stopped.single as PlaybackReport).itemId, 'a');
+
+    await notifier.reportExit();
+    verifyNever(() => client.reportPlaybackStopped(any()));
+  });
 }

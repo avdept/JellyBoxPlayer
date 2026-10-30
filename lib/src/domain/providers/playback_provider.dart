@@ -66,6 +66,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   @visibleForTesting
   static Duration progressInterval = const Duration(seconds: 10);
+
+  @visibleForTesting
+  static Duration pausedIdleTimeout = const Duration(minutes: 5);
   static const _stallSlack = Duration(seconds: 1);
   static const _stallGrace = Duration(seconds: 6);
 
@@ -75,6 +78,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   final _streamFallbackIds = <String>{};
   final _tracks = <TargetTrack>[];
   List<String>? _unshuffledOrder;
+  var _queueDirty = true;
+  String? _queueSavedFor;
   Future<void> _swaps = Future<void>.value();
   late PlaybackTarget _target;
   late PlaybackTarget _destination;
@@ -97,10 +102,24 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   DateTime? _stalledSince;
   var _stallLogged = false;
   Timer? _progressTimer;
+  Timer? _pausedIdleTimer;
+  Future<void>? _lastReport;
   Timer? _requalifyDebounce;
   var _requalifyGeneration = 0;
 
   RemotePlayback? remote;
+
+  @override
+  set state(PlaybackState value) {
+    final current = state;
+    if (value.songs != current.songs ||
+        value.album != current.album ||
+        value.sourceId != current.sourceId ||
+        value.shuffleEnabled != current.shuffleEnabled) {
+      _queueDirty = true;
+    }
+    super.state = value;
+  }
 
   PlaybackTarget get target => _target;
 
@@ -353,6 +372,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       }
     } else if (targetState.status.isPlaying && !state.status.isPlaying) {
       state = state.copyWith(status: PlaybackStatus.playing);
+      _cancelPausedIdleTimer();
       _reportProgress();
       _startProgressReports();
     } else if (targetState.status.isPaused && state.status.isPlaying) {
@@ -362,7 +382,41 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
       _stopProgressReports();
       _reportProgress();
+      _startPausedIdleTimer();
     }
+  }
+
+  void _startPausedIdleTimer() {
+    _pausedIdleTimer?.cancel();
+    _pausedIdleTimer = Timer(pausedIdleTimeout, _reportSuspended);
+  }
+
+  void _cancelPausedIdleTimer() {
+    _pausedIdleTimer?.cancel();
+    _pausedIdleTimer = null;
+  }
+
+  void _reportSuspended() {
+    _pausedIdleTimer = null;
+    if (!_startReported) return;
+    final song = _reportedSong;
+    if (song == null) return;
+    _report(
+      (client) => client.reportPlaybackSuspended(
+        _playbackReport(
+          song,
+          positionMs: _targetState.position.inMilliseconds,
+          isPaused: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> reportExit() async {
+    _stopProgressReports();
+    _lastReport = null;
+    _reportStopped();
+    await _lastReport;
   }
 
   Future<void> switchTarget(PlaybackTarget to, {bool carryQueue = true}) {
@@ -513,8 +567,23 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     duration: song.duration,
     isPaused: isPaused,
     canSeek: _targetState.canSeek,
-    queueItemIds: [for (final queued in state.songs) queued.id],
+    queueItemIds: _reportedQueueWindow(song),
   );
+
+  @visibleForTesting
+  static int reportedQueueReach = 50;
+
+  List<String> _reportedQueueWindow(LibraryItem song) {
+    final songs = state.songs;
+    var index = _reportedIndex;
+    if (index == null || songs.elementAtOrNull(index)?.id != song.id) {
+      index = songs.indexWhere((queued) => queued.id == song.id);
+    }
+    if (index < 0) return const [];
+    final start = (index - reportedQueueReach).clamp(0, songs.length);
+    final end = (index + reportedQueueReach + 1).clamp(0, songs.length);
+    return [for (final queued in songs.getRange(start, end)) queued.id];
+  }
 
   void _reportStarted(
     LibraryItem song, {
@@ -531,6 +600,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }
 
   void _reportStopped() {
+    _cancelPausedIdleTimer();
     if (!_startReported) return;
     final song = _reportedSong;
     if (song == null) return;
@@ -592,7 +662,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _report(Future<void> Function(MediaServerClient client) call) {
     if (_ref.read(isOfflineProvider)) return;
-    unawaited(_runReport(call));
+    final report = _runReport(call);
+    _lastReport = report;
+    unawaited(report);
   }
 
   Future<void> _runReport(
@@ -776,6 +848,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     };
 
     final cachedPaths = await _cachedPaths(songs, on: on);
+    final downloadedPaths = await _downloadedPaths(songs, on: on);
     final resolved = await Future.wait(
       songs.map(
         (song) => _resolveTrack(
@@ -783,6 +856,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           album,
           sessionIds[song.id]!,
           cachedPath: cachedPaths[song.id],
+          downloadedPaths: downloadedPaths,
           keepStreamOffline: keepStreamsOffline,
           on: on,
         ),
@@ -823,6 +897,23 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
   }
 
+  Future<Map<String, String>> _downloadedPaths(
+    List<LibraryItem> songs, {
+    PlaybackTarget? on,
+  }) async {
+    if (!(on ?? _target).supportsLocalFiles || songs.isEmpty) {
+      return const <String, String>{};
+    }
+    try {
+      return await _ref.read(downloadDatabaseProvider).downloadedPathsFor([
+        for (final song in songs) song.id,
+      ]);
+    } on Object catch (error) {
+      debugPrint('[Playback] reading downloaded paths failed: $error');
+      return const <String, String>{};
+    }
+  }
+
   Map<String, AudioSourceInfo> _deliveredQualities() => {
     for (final track in _tracks)
       track.itemId: ?QualityExtras.streamed(track.extras),
@@ -842,18 +933,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     LibraryItem album,
     String playSessionId, {
     String? cachedPath,
+    Map<String, String>? downloadedPaths,
     bool keepStreamOffline = false,
     PlaybackTarget? on,
   }) async {
     final target = on ?? _target;
-    final isDownloaded = await _ref
-        .read(downloadDatabaseProvider)
-        .isSongDownloaded(song.id);
-    final downloadedPath = isDownloaded && target.supportsLocalFiles
-        ? await _ref
-              .read(downloadDatabaseProvider)
-              .getDownloadedSongPath(song.id)
-        : null;
+    final String? downloadedPath;
+    if (!target.supportsLocalFiles) {
+      downloadedPath = null;
+    } else if (downloadedPaths != null) {
+      downloadedPath = downloadedPaths[song.id];
+    } else {
+      downloadedPath = await _ref
+          .read(downloadDatabaseProvider)
+          .getDownloadedSongPath(song.id);
+    }
     final localPath =
         downloadedPath ?? (target.supportsLocalFiles ? cachedPath : null);
 
@@ -1434,14 +1528,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> requalifyStreams() {
     final generation = ++_requalifyGeneration;
+    Future<Map<String, String>>? downloaded;
     return _swapQueue(
       'requalified',
       (song, album, sessionId) async {
         if (_localSongIds.contains(song.id)) return null;
+        downloaded ??= _downloadedPaths(state.songs);
         final resolved = await _resolveTrack(
           song,
           album,
           sessionId,
+          downloadedPaths: await downloaded,
           keepStreamOffline: true,
         );
         return resolved?.track;
@@ -1485,7 +1582,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (album == null) return;
 
     final songs = state.songs;
-    final queueIds = [for (final song in songs) song.id];
     final keepCurrent = target.holdsCurrentTrack;
     final start = (state.currentMediaIndex ?? -1) + (keepCurrent ? 1 : 0);
     var swapped = 0;
@@ -1495,9 +1591,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       'current ${keepCurrent ? 'kept' : 'included'}',
     );
 
-    bool proceed() {
+    bool proceed(int index, LibraryItem song) {
       if (cancelled?.call() ?? false) return false;
-      interrupted = !_queueIsSteady(queueIds);
+      interrupted = !_slotHolds(index, song, queueLength: songs.length);
       return !interrupted;
     }
 
@@ -1506,7 +1602,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         final index = (start + step) % songs.length;
         final song = songs[index];
         await _queueEditsToSettle();
-        if (!proceed()) return;
+        if (!proceed(index, song)) return;
         if (keepCurrent && index == state.currentMediaIndex) continue;
         final sessionId = _playSessionIds[song.id];
         if (sessionId == null) continue;
@@ -1514,7 +1610,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         final track = await resolve(song, album, sessionId);
         if (track == null) continue;
         await _queueEditsToSettle();
-        if (!proceed()) return;
+        if (!proceed(index, song)) return;
         if (keepCurrent && index == state.currentMediaIndex) continue;
         if (index < _tracks.length && _sameStream(_tracks[index], track)) {
           continue;
@@ -1550,17 +1646,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       a.transcoded == b.transcoded &&
       QualityExtras.streamed(a.extras) == QualityExtras.streamed(b.extras);
 
-  bool _queueIsSteady(List<String> queueIds) =>
-      !_preparingQueue && _queueEditsInFlight == 0 && _queueMatches(queueIds);
-
-  bool _queueMatches(List<String> queueIds) {
-    final songs = state.songs;
-    if (songs.length != queueIds.length) return false;
-    for (var i = 0; i < songs.length; i++) {
-      if (songs[i].id != queueIds[i]) return false;
-    }
-    return true;
-  }
+  bool _slotHolds(int index, LibraryItem song, {required int queueLength}) =>
+      !_preparingQueue &&
+      _queueEditsInFlight == 0 &&
+      state.songs.length == queueLength &&
+      state.songs.elementAtOrNull(index)?.id == song.id;
 
   void toggleRepeat() {
     state = state.copyWith();
@@ -1581,6 +1671,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         effectiveAlbum == null) {
       return;
     }
+    if (songs == null &&
+        album == null &&
+        !_queueDirty &&
+        _queueSavedFor == serverId) {
+      await PlaybackStorage().savePosition(
+        serverId: serverId,
+        songId: songId,
+        positionMs: positionMs,
+      );
+      return;
+    }
+    _queueDirty = false;
+    _queueSavedFor = serverId;
     await PlaybackStorage().save(
       serverId: serverId,
       songs: effectiveSongs,
@@ -1588,7 +1691,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       songId: songId,
       positionMs: positionMs,
       sourceId: state.sourceId,
+      shuffle: state.shuffleEnabled,
+      unshuffledOrder: _unshuffledOrder,
     );
+  }
+
+  void _adoptSavedShuffle(PlaybackSnapshot snapshot) {
+    _unshuffledOrder = snapshot.shuffle ? snapshot.unshuffledOrder : null;
+    if (state.shuffleEnabled != snapshot.shuffle) {
+      state = state.copyWith(shuffleEnabled: snapshot.shuffle);
+    }
   }
 
   Future<bool> tryRestore() async {
@@ -1614,6 +1726,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       '[Playback] restore: ${snapshot.songs.length} songs, "${song.name}" at '
       '${snapshot.positionMs ~/ 1000}s, offline=${_ref.read(isOfflineProvider)}',
     );
+    _adoptSavedShuffle(snapshot);
 
     if (await _adoptCastSession(snapshot, generation)) {
       final pendingPress = _ref.read(pendingMediaPlayProvider)();
@@ -1710,7 +1823,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _localSongIds
         ..clear()
         ..addAll(resolved.localIds);
-      _unshuffledOrder = null;
       _tracks
         ..clear()
         ..addAll(resolved.tracks);

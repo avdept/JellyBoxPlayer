@@ -17,6 +17,7 @@ import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_home.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -254,11 +255,93 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   Future<LibraryPage> getPlaylistSongs(String playlistId) async {
+    final ids = await _playlistItemIds(playlistId);
+    if (ids == null) return _playlistSongsPage(playlistId);
+    final songs = <LibraryItem>[];
+    await _hydratePlaylist(ids).forEach((batch) => songs.addAll(batch.songs));
+    return LibraryPage(items: songs, totalRecordCount: songs.length);
+  }
+
+  @override
+  Stream<PlaylistSongsBatch> streamPlaylistSongs(String playlistId) async* {
+    final ids = await _playlistItemIds(playlistId);
+    if (ids == null) {
+      final songs = (await _playlistSongsPage(playlistId)).items;
+      yield PlaylistSongsBatch(songs: songs, expectedTotal: songs.length);
+      return;
+    }
+    yield* _hydratePlaylist(ids);
+  }
+
+  static const _playlistBatchSize = 100;
+  static const _playlistBatchConcurrency = 2;
+  static const _playlistSongFields = [
+    'MediaSources',
+    'ArtistItems',
+    'ProviderIds',
+  ];
+
+  Future<LibraryPage> _playlistSongsPage(String playlistId) async {
     final response = await _api.getPlaylistSongs(
       playlistId: playlistId,
       userId: userId,
     );
     return response.data.toJellyfinLibraryPage();
+  }
+
+  Future<List<String>?> _playlistItemIds(String playlistId) async {
+    final Response<Map<String, dynamic>> response;
+    try {
+      response = await _dio.getUri<Map<String, dynamic>>(
+        _resolve('Playlists/$playlistId', const {}),
+      );
+    } on DioException catch (error) {
+      if (MediaServerException.fromDio(error).isNotFound) return null;
+      rethrow;
+    }
+    final ids = response.data?['ItemIds'];
+    if (ids is! List) return null;
+    return [
+      for (final id in ids)
+        if (id is String && id.isNotEmpty) id,
+    ];
+  }
+
+  Stream<PlaylistSongsBatch> _hydratePlaylist(List<String> ids) async* {
+    final batches = [
+      for (var start = 0; start < ids.length; start += _playlistBatchSize)
+        ids.skip(start).take(_playlistBatchSize).toList(),
+    ];
+    for (
+      var start = 0;
+      start < batches.length;
+      start += _playlistBatchConcurrency
+    ) {
+      final round = batches.skip(start).take(_playlistBatchConcurrency);
+      final pages = await Future.wait([
+        for (final batch in round) _playlistBatch(batch),
+      ]);
+      yield PlaylistSongsBatch(
+        songs: [for (final page in pages) ...page],
+        expectedTotal: ids.length,
+      );
+    }
+  }
+
+  Future<List<LibraryItem>> _playlistBatch(List<String> ids) async {
+    final response = await _api.getItemsByIds(
+      userId: userId,
+      ids: ids.join(','),
+      fields: _playlistSongFields,
+    );
+    final byId = {
+      for (final item in response.data.items)
+        item.id: item.toJellyfinLibraryItem(),
+    };
+    return [
+      for (final id in ids)
+        if (byId[id] case final item?) item,
+    ];
   }
 
   @override
@@ -651,6 +734,9 @@ class JellyfinClient implements MediaServerClient {
   Future<void> reportPlaybackProgress(PlaybackReport report) async {
     await _api.playbackProgress(values: _toPlaystateData(report));
   }
+
+  @override
+  Future<void> reportPlaybackSuspended(PlaybackReport report) async {}
 
   @override
   Future<void> reportPlaybackStopped(PlaybackReport report) async {

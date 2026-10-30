@@ -33,7 +33,6 @@ void openSearchResult(
 ) {
   switch (category) {
     case ItemList.albums:
-      ref.read(currentAlbumProvider.notifier).setAlbum(item);
       context.pushNamed(
         branchAwareName(context, Routes.album),
         extra: {'album': item},

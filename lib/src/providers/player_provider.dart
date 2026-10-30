@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/providers/audio_handler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -42,5 +46,25 @@ final playerProvider = Provider<AudioPlayer>((ref) {
       ),
     );
   }
+  unawaited(rememberRepeatMode(ref, player));
   return player;
 });
+
+@visibleForTesting
+Future<void> rememberRepeatMode(Ref ref, AudioPlayer player) async {
+  StreamSubscription<LoopMode>? changes;
+  ref.onDispose(() => changes?.cancel());
+  final prefs = await ref.read(sharedPreferencesProvider.future);
+  final saved = LoopMode.values.asNameMap()[AppSettingsNotifier.valueIn(
+    prefs,
+    AppSetting.repeatMode,
+  )];
+  if (saved != null && saved != player.loopMode) {
+    await player.setLoopMode(saved);
+  }
+  changes = player.loopModeStream.listen((mode) {
+    ref
+        .read(appSettingsProvider.notifier)
+        .setValue(AppSetting.repeatMode, mode.name);
+  });
+}

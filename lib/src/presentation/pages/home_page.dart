@@ -83,7 +83,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       contextMenuActions(context, ref, item, scope: ContextMenuScope.browse);
 
   void _onAlbumTap(LibraryItem album) {
-    ref.read(currentAlbumProvider.notifier).setAlbum(album);
     context.pushNamed(
       branchAwareName(context, Routes.album),
       extra: {'album': album},

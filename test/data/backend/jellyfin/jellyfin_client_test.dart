@@ -656,6 +656,139 @@ void main() {
     });
   });
 
+  group('playlist songs', () {
+    late MockHttpClientAdapter mockAdapter;
+    late JellyfinClient playlistClient;
+    final requests = <RequestOptions>[];
+
+    ResponseBody json(Object body, [int status = 200]) =>
+        ResponseBody.fromString(
+          jsonEncode(body),
+          status,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+
+    setUp(() {
+      requests.clear();
+      mockAdapter = MockHttpClientAdapter();
+      playlistClient = JellyfinClient(
+        dio: Dio()..httpClientAdapter = mockAdapter,
+        baseUrl: 'http://jelly.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+    });
+
+    void answer(ResponseBody Function(RequestOptions options) respond) {
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) async {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        requests.add(options);
+        return respond(options);
+      });
+    }
+
+    List<String> ids(int count) => [for (var i = 1; i <= count; i++) 'song-$i'];
+
+    ResponseBody itemsFor(
+      RequestOptions options, {
+      Set<String> missing = const {},
+    }) {
+      final requested = options.uri.queryParameters['Ids']!.split(',');
+      return json({
+        'Items': [
+          for (final id in requested.reversed)
+            if (!missing.contains(id)) {'Id': id, 'Name': id, 'Type': 'Audio'},
+        ],
+        'TotalRecordCount': requested.length,
+      });
+    }
+
+    test('- streams the playlist in order, hydrating ids in batches', () async {
+      answer(
+        (options) => options.uri.path == '/Playlists/list-1'
+            ? json({
+                'OpenAccess': false,
+                'Shares': <Object>[],
+                'ItemIds': ids(650),
+              })
+            : itemsFor(options),
+      );
+
+      final batches = await playlistClient
+          .streamPlaylistSongs('list-1')
+          .toList();
+
+      expect(batches.map((batch) => batch.songs.length), [200, 200, 200, 50]);
+      expect(batches.map((batch) => batch.expectedTotal), [650, 650, 650, 650]);
+      final songs = [for (final batch in batches) ...batch.songs];
+      expect(songs.map((song) => song.id), ids(650));
+      final hydrations = requests.skip(1).toList();
+      expect(hydrations, hasLength(7));
+      expect(hydrations.first.uri.path, '/Users/user-1/Items');
+      expect(
+        hydrations.first.uri.queryParameters['Ids'],
+        ids(100).join(','),
+      );
+      expect(hydrations.first.uri.queryParametersAll['Fields'], [
+        'MediaSources',
+        'ArtistItems',
+        'ProviderIds',
+      ]);
+    });
+
+    test(
+      '- getPlaylistSongs returns the whole list and skips dropped ids',
+      () async {
+        answer(
+          (options) => options.uri.path == '/Playlists/list-1'
+              ? json({'ItemIds': ids(3)})
+              : itemsFor(options, missing: {'song-2'}),
+        );
+
+        final page = await playlistClient.getPlaylistSongs('list-1');
+
+        expect(page.items.map((song) => song.id), ['song-1', 'song-3']);
+        expect(page.totalRecordCount, 2);
+      },
+    );
+
+    test('- falls back to the items endpoint on servers without ids', () async {
+      answer(
+        (options) => options.uri.path == '/Playlists/list-1'
+            ? json({'error': 'not found'}, 404)
+            : json({
+                'Items': [
+                  {'Id': 'song-9', 'Name': 'Roads', 'Type': 'Audio'},
+                ],
+                'TotalRecordCount': 1,
+              }),
+      );
+
+      final batches = await playlistClient
+          .streamPlaylistSongs('list-1')
+          .toList();
+
+      expect(batches, hasLength(1));
+      expect(batches.single.songs.map((song) => song.id), ['song-9']);
+      expect(batches.single.expectedTotal, 1);
+      expect(requests.last.uri.path, '/Playlists/list-1/Items');
+    });
+
+    test('- surfaces other failures of the ids request', () async {
+      answer((_) => json({'error': 'boom'}, 500));
+
+      await expectLater(
+        playlistClient.getPlaylistSongs('list-1'),
+        throwsA(isA<DioException>()),
+      );
+    });
+  });
+
   group('searchBySound', () {
     late MockHttpClientAdapter mockAdapter;
     late JellyfinClient soundClient;

@@ -17,6 +17,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['album'] as Map<String, dynamic>);
 
     return CupertinoPage(
+      key: ValueKey('album:${album.id}'),
       child: AlbumPage(album: album),
     );
   }
@@ -31,6 +32,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['artist'] as Map<String, dynamic>);
 
     return CupertinoPage(
+      key: ValueKey('artist:${artist.id}'),
       child: ArtistPage(artist: artist),
     );
   }
@@ -45,6 +47,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['genre'] as Map<String, dynamic>);
 
     return CupertinoPage(
+      key: ValueKey('genre:${genre.id}'),
       child: GenreAlbumsPage(genre: genre),
     );
   }
@@ -59,6 +62,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['playlist'] as Map<String, dynamic>);
 
     return CupertinoPage(
+      key: ValueKey('generated-playlist:${playlist.id}'),
       child: GeneratedPlaylistPage(playlist: playlist),
     );
   }
@@ -73,6 +77,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['mix'] as Map<String, dynamic>);
 
     return CupertinoPage(
+      key: ValueKey('mix:${mix.id}'),
       child: InstantMixPage(mix: mix),
     );
   }
@@ -205,6 +210,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['playlist'] as Map<String, dynamic>);
 
     return CupertinoPage(
+      key: ValueKey('playlist:${playlist.id}'),
       child: PlaylistPage(playlist: playlist),
     );
   }

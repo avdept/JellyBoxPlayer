@@ -267,11 +267,13 @@ class SubsonicApi {
     required String mediaId,
     required String state,
     Duration? position,
+    bool ignoreScrobble = false,
   }) => call('reportPlayback', {
     'mediaId': mediaId,
     'mediaType': 'song',
     'state': state,
     'positionMs': position?.inMilliseconds,
+    'ignoreScrobble': ignoreScrobble ? true : null,
   });
 
   Future<SubsonicLyricsListDTO> getLyricsBySongId(String id) async =>

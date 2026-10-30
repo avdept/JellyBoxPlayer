@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/image_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -35,6 +36,9 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   final _titleKey = GlobalKey(debugLabel: 'title');
   List<LibraryItem> songs = [];
   bool _songsLoaded = false;
+  bool _songsLoading = false;
+  int? _expectedTotal;
+  StreamSubscription<PlaylistSongsBatch>? _songsSubscription;
 
   late final ImageService _imageService;
 
@@ -82,24 +86,61 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   }
 
   Future<void> _getSongs() async {
+    await _songsSubscription?.cancel();
     if (ref.read(isOfflineProvider)) {
       await _getDownloadedSongs();
       return;
     }
-    try {
-      final value = await ref
-          .read(mediaServerClientProvider)
-          .getPlaylistSongs(widget.playlist.id);
+    final loaded = <LibraryItem>[];
+    final progressive = songs.isEmpty;
+    setState(() {
+      _songsLoading = true;
+      _expectedTotal = null;
+    });
+    void finish() {
       if (!mounted) return;
       setState(() {
-        songs = [...value.items]
-          ..sort((a, b) => a.indexNumber.compareTo(b.indexNumber));
+        songs = loaded;
         _songsLoaded = true;
+        _songsLoading = false;
+        _expectedTotal = null;
       });
-    } on Object {
-      await _getDownloadedSongs();
     }
+
+    _songsSubscription = ref
+        .read(mediaServerClientProvider)
+        .streamPlaylistSongs(widget.playlist.id)
+        .listen(
+          (batch) {
+            loaded.addAll(batch.songs);
+            if (!mounted) return;
+            setState(() {
+              _expectedTotal = batch.expectedTotal;
+              if (progressive) {
+                songs = List.of(loaded);
+                _songsLoaded = true;
+              }
+            });
+          },
+          onError: (Object _) {
+            if (!mounted) return;
+            if (loaded.isEmpty) {
+              setState(() {
+                _songsLoading = false;
+                _expectedTotal = null;
+              });
+              unawaited(_getDownloadedSongs());
+            } else {
+              finish();
+            }
+          },
+          onDone: finish,
+          cancelOnError: true,
+        );
   }
+
+  int get _songCount =>
+      _songsLoading && _expectedTotal != null ? _expectedTotal! : songs.length;
 
   Future<void> _getDownloadedSongs() async {
     final downloaded = await ref
@@ -216,12 +257,21 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                         ),
                         sliver: SliverToBoxAdapter(child: _controls()),
                       ),
+                      if (_songsLoading && songs.isEmpty)
+                        SliverToBoxAdapter(
+                          child: SongRowsShimmer(
+                            device: _device,
+                            count: 8,
+                            edgePadding: _device.isMobile ? 16 : 30,
+                          ),
+                        ),
                       if (_songsLoaded && songs.isEmpty)
                         const SliverFillRemaining(
                           hasScrollBody: false,
                           child: Center(child: Text("There's no songs yet.")),
                         ),
-                      SliverList.builder(
+                      SliverFixedExtentList.builder(
+                        itemExtent: _device.isMobile ? 62 : 72,
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _playingSongId,
                           builder: (context, songId, other) {
@@ -307,6 +357,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
   @override
   void dispose() {
     super.dispose();
+    unawaited(_songsSubscription?.cancel());
     _scrollController.dispose();
     _titleOpacity.dispose();
     _playingSongId.dispose();
@@ -338,7 +389,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           children: [
             _albumDetails(
               duration: widget.playlist.duration,
-              soundsCount: songs.length,
+              soundsCount: _songCount,
               albumArtist: songs.isNotEmpty ? songs.first.albumArtist : '',
               year: widget.playlist.productionYear,
               divider: Padding(
@@ -385,7 +436,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                 children: [
                   _albumDetails(
                     duration: widget.playlist.duration,
-                    soundsCount: songs.length,
+                    soundsCount: _songCount,
                     albumArtist: songs.isNotEmpty
                         ? songs.first.albumArtist
                         : '',

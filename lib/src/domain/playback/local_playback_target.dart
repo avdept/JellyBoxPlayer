@@ -39,7 +39,10 @@ class LocalPlaybackTarget
        _loadTimeout = loadTimeout,
        _stopTimeout = stopTimeout {
     _subscriptions = [
-      _player.currentIndexStream.listen((_) => _emit()),
+      _player.currentIndexStream.listen((index) {
+        _emit();
+        _onIndexChanged(index);
+      }),
       _player.positionStream.listen((_) => _emit()),
       _player.durationStream.listen((_) => _emit()),
       _player.playerStateStream.listen((playerState) {
@@ -53,6 +56,10 @@ class LocalPlaybackTarget
   static const androidIdleStop = Duration(minutes: 15);
   static const defaultLoadTimeout = Duration(seconds: 15);
   static const defaultStopTimeout = Duration(seconds: 5);
+  static const queueWindowThreshold = 300;
+  static const queueWindowBehind = 30;
+  static const queueWindowAhead = 100;
+  static const queueWindowMargin = 20;
 
   static const defaultRetryDelays = [
     Duration(seconds: 2),
@@ -89,6 +96,11 @@ class LocalPlaybackTarget
   _PendingLoad? _pending;
   Timer? _retry;
   Timer? _idleStop;
+  final _tracks = <TargetTrack>[];
+  List<int>? _window;
+  Future<void> _windowOps = Future<void>.value();
+  var _holdIndex = false;
+  int? _lastSlot;
 
   bool get retryPending => _pending != null;
 
@@ -140,10 +152,22 @@ class LocalPlaybackTarget
       '(${initialPosition.inSeconds}s, autoPlay=$autoPlay) '
       'from ${_originOf(tracks.elementAtOrNull(initialIndex))}',
     );
-    final sources = [for (final track in tracks) _audioSource(track)];
+    _tracks
+      ..clear()
+      ..addAll(tracks);
+    _lastSlot = null;
+    _window = tracks.length > queueWindowThreshold
+        ? _windowAround(initialIndex)
+        : null;
+    if (_window != null) {
+      debugPrint(
+        '[LocalTarget] big queue: loading a window of ${_window!.length} '
+        'around index $initialIndex',
+      );
+    }
     final loaded = await _setSources(
-      sources,
-      index: initialIndex,
+      _windowSources(),
+      index: _playerIndexOf(initialIndex) ?? 0,
       position: initialPosition,
     );
     if (loaded && autoPlay) unawaited(_player.play());
@@ -187,7 +211,7 @@ class LocalPlaybackTarget
       await _stopPlayer();
       if (!current()) return false;
       _attempt++;
-      _needsLoad(index, position);
+      _needsLoad(_appIndex(index) ?? index, position);
       return false;
     } finally {
       if (current()) _inFlight = null;
@@ -209,7 +233,7 @@ class LocalPlaybackTarget
 
   void _needsLoad(int index, Duration position) {
     _pending = (
-      track: _player.sequence.elementAtOrNull(index),
+      track: _sourceAt(index),
       index: index,
       position: position,
     );
@@ -264,7 +288,7 @@ class LocalPlaybackTarget
       if (_retry == null) _scheduleRetry();
       return;
     }
-    final index = _state.currentIndex ?? _player.currentIndex ?? 0;
+    final index = _state.currentIndex ?? _appIndex(_player.currentIndex) ?? 0;
     final position = _state.position;
     await _stopPlayer();
     if (_loading || _pending != null) return;
@@ -306,7 +330,7 @@ class LocalPlaybackTarget
     }
     debugPrint('[LocalTarget] skipping track ${pending.index}, trying $next');
     _pending = (
-      track: _player.sequence.elementAtOrNull(next),
+      track: _sourceAt(next),
       index: next,
       position: Duration.zero,
     );
@@ -324,7 +348,16 @@ class LocalPlaybackTarget
     final pending = _pending;
     if (_disposed || pending == null || !_wantsPlay || _loading) return;
     _cancelRetry();
-    final sources = [..._player.sequence];
+    final List<AudioSource> sources;
+    final int index;
+    if (_window != null) {
+      _window = _windowAround(pending.index);
+      sources = _windowSources();
+      index = _playerIndexOf(pending.index) ?? 0;
+    } else {
+      sources = [..._player.sequence];
+      index = _indexOf(pending);
+    }
     if (sources.isEmpty) {
       _pending = null;
       _emit();
@@ -333,7 +366,7 @@ class LocalPlaybackTarget
     debugPrint('[LocalTarget] retrying the queue after $_attempt failure(s)');
     final loaded = await _setSources(
       sources,
-      index: _indexOf(pending),
+      index: index,
       position: pending.position,
     );
     if (!loaded) return;
@@ -351,10 +384,19 @@ class LocalPlaybackTarget
     final track = pending.track;
     final at = track == null ? -1 : sequence.indexOf(track);
     if (at >= 0) return at;
-    return sequence.isEmpty ? 0 : pending.index.clamp(0, sequence.length - 1);
+    if (sequence.isEmpty) return 0;
+    final slot = _playerIndexOf(pending.index) ?? pending.index;
+    return slot.clamp(0, sequence.length - 1);
   }
 
+  int _pendingAppIndex(_PendingLoad pending) =>
+      _window == null ? _indexOf(pending) : pending.index;
+
   int? _neighbour(_PendingLoad pending, int offset) {
+    if (_window != null) {
+      final next = pending.index + offset;
+      return next >= 0 && next < _tracks.length ? next : null;
+    }
     final order = _player.effectiveIndices;
     final at = order.indexOf(_indexOf(pending));
     final slot = at + offset;
@@ -368,7 +410,7 @@ class LocalPlaybackTarget
       'now index $index at ${position.inSeconds}s',
     );
     _pending = (
-      track: _player.sequence.elementAtOrNull(index),
+      track: _sourceAt(index),
       index: index,
       position: position,
     );
@@ -454,7 +496,18 @@ class LocalPlaybackTarget
       _repoint(index, Duration.zero, 'skipTo');
       return;
     }
-    await _player.seek(Duration.zero, index: index);
+    if (_window == null) {
+      await _player.seek(Duration.zero, index: index);
+      return;
+    }
+    await _serial(() async {
+      final slot = _playerIndexOf(index);
+      if (slot != null) {
+        await _player.seek(Duration.zero, index: slot);
+        return;
+      }
+      await _rewindowNow(index, Duration.zero);
+    });
   }
 
   @override
@@ -465,7 +518,14 @@ class LocalPlaybackTarget
       if (next != null) _repoint(next, Duration.zero, 'next');
       return;
     }
-    await _player.seekToNext();
+    if (_window == null) {
+      await _player.seekToNext();
+      return;
+    }
+    await _serial(() async {
+      await _slide();
+      await _player.seekToNext();
+    });
   }
 
   @override
@@ -476,20 +536,81 @@ class LocalPlaybackTarget
       final restart =
           previous == null || pending.position > const Duration(seconds: 3);
       _repoint(
-        restart ? _indexOf(pending) : previous,
+        restart ? _pendingAppIndex(pending) : previous,
         Duration.zero,
         'previous',
       );
       return;
     }
-    await _player.smartSeekToPrevious();
+    if (_window == null) {
+      await _player.smartSeekToPrevious();
+      return;
+    }
+    await _serial(() async {
+      await _slide();
+      await _player.smartSeekToPrevious();
+    });
   }
 
   @override
-  Future<void> move(int from, int to) => _player.moveAudioSource(from, to);
+  Future<void> move(int from, int to) async {
+    final window = _window;
+    if (window == null) return _player.moveAudioSource(from, to);
+    await _serial(() async {
+      if (from < 0 ||
+          from >= _tracks.length ||
+          to < 0 ||
+          to >= _tracks.length) {
+        debugPrint('[LocalTarget] queue is out of step; leaving it alone');
+        return;
+      }
+      final fromSlot = window.indexOf(from);
+      final toSlot = window.indexOf(to);
+      _tracks.insert(to, _tracks.removeAt(from));
+      for (var slot = 0; slot < window.length; slot++) {
+        final index = window[slot];
+        if (index == from) {
+          window[slot] = to;
+        } else if (from < index && index <= to) {
+          window[slot] = index - 1;
+        } else if (to <= index && index < from) {
+          window[slot] = index + 1;
+        }
+      }
+      if (fromSlot >= 0 && toSlot >= 0) {
+        await _player.moveAudioSource(fromSlot, toSlot);
+        window.sort();
+      } else if (fromSlot >= 0 || toSlot >= 0) {
+        await _rebuildAroundCurrent();
+      }
+    });
+  }
 
   @override
-  Future<void> remove(int index) => _player.removeAudioSourceAt(index);
+  Future<void> remove(int index) async {
+    final window = _window;
+    if (window == null) return _player.removeAudioSourceAt(index);
+    await _serial(() async {
+      if (index < 0 || index >= _tracks.length) return;
+      _tracks.removeAt(index);
+      final slot = window.indexOf(index);
+      if (slot >= 0) {
+        await _player.removeAudioSourceAt(slot);
+        window.removeAt(slot);
+      }
+      for (var i = 0; i < window.length; i++) {
+        if (window[i] > index) window[i] = window[i] - 1;
+      }
+      final pending = _pending;
+      if (pending != null && pending.index > index) {
+        _pending = (
+          track: pending.track,
+          index: pending.index - 1,
+          position: pending.position,
+        );
+      }
+    });
+  }
 
   @override
   Future<void> insert(
@@ -497,13 +618,38 @@ class LocalPlaybackTarget
     TargetTrack track, {
     bool playNext = false,
   }) async {
-    if (_player.shuffleModeEnabled) {
-      final current = _player.currentIndex;
-      _shuffleOrder.nextInsertPosition = playNext && current != null
-          ? _shuffleOrder.positionAfterIndex(current)
-          : _shuffleOrder.lastPosition;
+    final window = _window;
+    if (window == null) {
+      if (_player.shuffleModeEnabled) {
+        final current = _player.currentIndex;
+        _shuffleOrder.nextInsertPosition = playNext && current != null
+            ? _shuffleOrder.positionAfterIndex(current)
+            : _shuffleOrder.lastPosition;
+      }
+      await _player.insertAudioSource(index, _audioSource(track));
+      return;
     }
-    await _player.insertAudioSource(index, _audioSource(track));
+    await _serial(() async {
+      if (index < 0 || index > _tracks.length) return;
+      final first = window.first;
+      final last = window.last;
+      _tracks.insert(index, track);
+      for (var i = 0; i < window.length; i++) {
+        if (window[i] >= index) window[i] = window[i] + 1;
+      }
+      final pending = _pending;
+      if (pending != null && pending.index >= index) {
+        _pending = (
+          track: pending.track,
+          index: pending.index + 1,
+          position: pending.position,
+        );
+      }
+      if (index < first || index > last + 1) return;
+      final slot = index - first;
+      await _player.insertAudioSource(slot, _audioSource(track));
+      window.insert(slot, index);
+    });
   }
 
   @override
@@ -511,6 +657,21 @@ class LocalPlaybackTarget
     int currentIndex,
     List<TargetTrack> upcoming,
   ) async {
+    if (_window != null) {
+      await _serial(() async {
+        final current = _tracks.elementAtOrNull(currentIndex);
+        if (current == null) {
+          debugPrint('[LocalTarget] queue is out of step; leaving it alone');
+          return;
+        }
+        _tracks
+          ..clear()
+          ..add(current)
+          ..addAll(upcoming);
+        await _rebuildAroundCurrent(appIndex: 0);
+      });
+      return;
+    }
     final length = _player.sequence.length;
     if (currentIndex < 0 || currentIndex >= length) {
       debugPrint('[LocalTarget] queue is out of step; leaving it alone');
@@ -520,9 +681,7 @@ class LocalPlaybackTarget
     if (currentIndex + 1 < length) {
       await _player.removeAudioSourceRange(currentIndex + 1, length);
     }
-    if (currentIndex > 0) {
-      await _player.removeAudioSourceRange(0, currentIndex);
-    }
+    await _removeHead(currentIndex, current: currentIndex);
     if (upcoming.isEmpty) return;
     _shuffleOrder.nextInsertPosition = _shuffleOrder.lastPosition;
     await _player.addAudioSources([
@@ -536,6 +695,21 @@ class LocalPlaybackTarget
     required List<int> order,
     required int currentIndex,
   }) async {
+    if (_window != null) {
+      await _serial(() async {
+        if (order.length != _tracks.length) {
+          debugPrint(
+            '[LocalTarget] queue is out of step; leaving its order alone',
+          );
+          return;
+        }
+        _tracks
+          ..clear()
+          ..addAll(tracks);
+        await _rebuildAroundCurrent(appIndex: currentIndex);
+      });
+      return;
+    }
     if (order.length != _player.sequence.length) {
       debugPrint('[LocalTarget] queue is out of step; leaving its order alone');
       return;
@@ -556,20 +730,33 @@ class LocalPlaybackTarget
 
   @override
   Future<void> replace(int index, TargetTrack track) async {
-    if (index < 0 || index >= _player.sequence.length) {
+    if (_window != null) {
+      await _serial(() async {
+        if (index >= 0 && index < _tracks.length) _tracks[index] = track;
+        await _replaceSlot(index, track);
+      });
+      return;
+    }
+    await _replaceSlot(index, track);
+  }
+
+  Future<void> _replaceSlot(int index, TargetTrack track) async {
+    final slot = _playerIndexOf(index);
+    if (slot == null) return;
+    if (slot < 0 || slot >= _player.sequence.length) {
       debugPrint('[LocalTarget] queue is out of step; skipping a replacement');
       return;
     }
 
-    final position = _shuffleOrder.positionOfIndex(index);
+    final position = _shuffleOrder.positionOfIndex(slot);
     final pending = _pending;
-    final replacesPending = pending != null && index == _indexOf(pending);
-    await _player.removeAudioSourceAt(index);
+    final replacesPending = pending != null && slot == _indexOf(pending);
+    await _player.removeAudioSourceAt(slot);
     _shuffleOrder.nextInsertPosition = position;
-    await _player.insertAudioSource(index, _audioSource(track));
+    await _player.insertAudioSource(slot, _audioSource(track));
     if (!replacesPending) return;
     _pending = (
-      track: _player.sequence.elementAtOrNull(index),
+      track: _player.sequence.elementAtOrNull(slot),
       index: index,
       position: pending.position,
     );
@@ -643,17 +830,217 @@ class LocalPlaybackTarget
                 ? PlaybackStatus.buffering
                 : PlaybackStatus.paused,
             position: pending.position,
-            currentIndex: _indexOf(pending),
+            currentIndex: _pendingAppIndex(pending),
           )
         : TargetPlaybackState(
             status: _statusOf(playerState),
             position: _player.position,
-            currentIndex: _player.currentIndex,
+            currentIndex: _holdIndex
+                ? _state.currentIndex
+                : _appIndex(_player.currentIndex),
             duration: _player.duration,
             bufferedPosition: _player.bufferedPosition,
             completed: playerState.processingState == ProcessingState.completed,
           );
     _controller.add(_state);
+  }
+
+  int? _appIndex(int? slot) {
+    if (slot == null) return null;
+    final window = _window;
+    if (window == null) return slot;
+    return slot < window.length ? window[slot] : null;
+  }
+
+  int? _playerIndexOf(int index) {
+    final window = _window;
+    if (window == null) return index;
+    final slot = window.indexOf(index);
+    return slot < 0 ? null : slot;
+  }
+
+  IndexedAudioSource? _sourceAt(int index) {
+    final slot = _playerIndexOf(index);
+    return slot == null ? null : _player.sequence.elementAtOrNull(slot);
+  }
+
+  List<int> _windowAround(int index) {
+    final length = _tracks.length;
+    if (length == 0) return [];
+    final at = index.clamp(0, length - 1);
+    final start = (at - queueWindowBehind).clamp(0, length);
+    final end = (at + queueWindowAhead + 1).clamp(0, length);
+    return [for (var i = start; i < end; i++) i];
+  }
+
+  List<AudioSource> _windowSources() {
+    final window = _window;
+    if (window == null) {
+      return [for (final track in _tracks) _audioSource(track)];
+    }
+    return [for (final index in window) _audioSource(_tracks[index])];
+  }
+
+  Future<void> _serial(Future<void> Function() action) {
+    final run = _windowOps.then((_) => action()).catchError((Object error) {
+      debugPrint('[LocalTarget] queue window update failed: $error');
+    });
+    _windowOps = run;
+    return run;
+  }
+
+  void _onIndexChanged(int? slot) {
+    final window = _window;
+    final previous = _lastSlot;
+    _lastSlot = slot;
+    if (window == null || slot == null) return;
+    if (slot == 0 &&
+        previous == window.length - 1 &&
+        window.first > 0 &&
+        window.length < _tracks.length &&
+        _player.loopMode == LoopMode.all) {
+      unawaited(_rewindow(0, Duration.zero));
+      return;
+    }
+    unawaited(_serial(_slide));
+  }
+
+  Future<void> _rewindow(int index, Duration position) =>
+      _serial(() => _rewindowNow(index, position));
+
+  Future<void> _rewindowNow(int index, Duration position) async {
+    if (_window == null || _tracks.isEmpty) return;
+    final wantsPlay = _player.playing;
+    _window = _windowAround(index);
+    _lastSlot = null;
+    debugPrint('[LocalTarget] moving the queue window to index $index');
+    final loaded = await _setSources(
+      _windowSources(),
+      index: _playerIndexOf(index) ?? 0,
+      position: position,
+    );
+    if (loaded && wantsPlay) unawaited(_player.play());
+  }
+
+  Future<void> _slide() async {
+    final window = _window;
+    if (window == null || _disposed || _loading || _pending != null) return;
+    var slot = _player.currentIndex;
+    if (slot == null || slot >= window.length) return;
+    final length = _tracks.length;
+
+    final ahead = window.length - 1 - slot;
+    if (ahead < queueWindowMargin && window.last + 1 < length) {
+      final next = [
+        for (
+          var i = window.last + 1;
+          i < length && i <= window.last + queueWindowAhead - ahead;
+          i++
+        )
+          i,
+      ];
+      await _player.addAudioSources([
+        for (final index in next) _audioSource(_tracks[index]),
+      ]);
+      window.addAll(next);
+    }
+
+    if (slot < queueWindowMargin && window.first > 0) {
+      final first = (window.first - (queueWindowBehind - slot)).clamp(
+        0,
+        window.first,
+      );
+      final previous = [for (var i = first; i < window.first; i++) i];
+      _holdIndex = true;
+      try {
+        await _player.insertAudioSources(0, [
+          for (final index in previous) _audioSource(_tracks[index]),
+        ]);
+        window.insertAll(0, previous);
+        slot += previous.length;
+      } finally {
+        _holdIndex = false;
+      }
+      _emit();
+    }
+
+    final drop = slot - queueWindowBehind;
+    if (drop > queueWindowMargin) {
+      _holdIndex = true;
+      try {
+        await _removeHead(drop, current: slot);
+        window.removeRange(0, drop);
+        slot -= drop;
+      } finally {
+        _holdIndex = false;
+      }
+      _emit();
+    }
+
+    final excess = window.length - 1 - slot - queueWindowAhead;
+    if (excess > queueWindowMargin) {
+      await _player.removeAudioSourceRange(
+        window.length - excess,
+        window.length,
+      );
+      window.removeRange(window.length - excess, window.length);
+    }
+  }
+
+  Future<void> _removeHead(int count, {required int current}) async {
+    var remaining = count;
+    var slot = current;
+    while (remaining > 0) {
+      var chunk = slot ~/ 2;
+      if (chunk < 1) chunk = 1;
+      if (chunk > remaining) chunk = remaining;
+      await _player.removeAudioSourceRange(0, chunk);
+      slot -= chunk;
+      remaining -= chunk;
+    }
+  }
+
+  Future<void> _rebuildAroundCurrent({int? appIndex}) async {
+    final window = _window;
+    if (window == null) return;
+    final slot = _player.currentIndex;
+    final length = _player.sequence.length;
+    if (slot == null || slot >= length || slot >= window.length) {
+      _window = _windowAround(appIndex ?? 0);
+      await _setSources(
+        _windowSources(),
+        index: _playerIndexOf(appIndex ?? 0) ?? 0,
+        position: Duration.zero,
+      );
+      return;
+    }
+    final current = appIndex ?? window[slot];
+    final next = _windowAround(current);
+    final at = next.indexOf(current);
+    final before = next.sublist(0, at);
+    final after = next.sublist(at + 1);
+    _holdIndex = true;
+    try {
+      if (slot + 1 < length) {
+        await _player.removeAudioSourceRange(slot + 1, length);
+      }
+      await _removeHead(slot, current: slot);
+      if (before.isNotEmpty) {
+        await _player.insertAudioSources(0, [
+          for (final index in before) _audioSource(_tracks[index]),
+        ]);
+      }
+      if (after.isNotEmpty) {
+        await _player.addAudioSources([
+          for (final index in after) _audioSource(_tracks[index]),
+        ]);
+      }
+      _window = next;
+      _lastSlot = _player.currentIndex;
+    } finally {
+      _holdIndex = false;
+    }
+    _emit();
   }
 
   PlaybackStatus _statusOf(PlayerState playerState) {

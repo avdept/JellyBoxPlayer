@@ -1105,6 +1105,216 @@ void main() {
     });
   });
 
+  group('a big queue', () {
+    List<TargetTrack> tracks(int count) => [
+      for (var i = 0; i < count; i++)
+        TargetTrack(
+          itemId: 'song-$i',
+          uri: Uri.parse('http://jelly.local:8096/Audio/song-$i/universal'),
+          mimeType: 'audio/flac',
+          isHls: false,
+          title: 'Track $i',
+          duration: const Duration(minutes: 4),
+        ),
+    ];
+
+    ({List<AudioSource> sources, int index}) lastLoad() {
+      final captured = verify(
+        () => player.setAudioSources(
+          captureAny(),
+          initialIndex: captureAny(named: 'initialIndex'),
+          initialPosition: any(named: 'initialPosition'),
+          preload: any(named: 'preload'),
+          shuffleOrder: any(named: 'shuffleOrder'),
+        ),
+      ).captured;
+      return (
+        sources: captured[captured.length - 2] as List<AudioSource>,
+        index: captured.last as int,
+      );
+    }
+
+    String idOf(AudioSource source) =>
+        ((source as UriAudioSource).tag as MediaItem).id;
+
+    setUp(() {
+      when(() => player.addAudioSources(any())).thenAnswer((_) async {});
+      when(
+        () => player.insertAudioSources(any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => player.removeAudioSourceRange(any(), any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => player.insertAudioSource(any(), any()),
+      ).thenAnswer((_) async {});
+      when(() => player.removeAudioSourceAt(any())).thenAnswer((_) async {});
+      when(() => player.loopMode).thenReturn(LoopMode.off);
+    });
+
+    Future<void> loadBig({int at = 500}) async {
+      await target.load(
+        tracks(1000),
+        initialIndex: at,
+        initialPosition: Duration.zero,
+        autoPlay: true,
+      );
+      reportPlayer(
+        playing: true,
+        processingState: ProcessingState.ready,
+        index: at - 470,
+      );
+    }
+
+    test('- loads only a window around the starting track', () async {
+      await loadBig();
+
+      final load = lastLoad();
+      expect(load.sources, hasLength(131));
+      expect(idOf(load.sources.first), 'song-470');
+      expect(idOf(load.sources.last), 'song-600');
+      expect(load.index, 30);
+    });
+
+    test('- reports queue indices, not player slots', () async {
+      await loadBig();
+      indexes.add(30);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(target.state.currentIndex, 500);
+    });
+
+    test(
+      '- never removes more than half the slots ahead of the current one',
+      () async {
+        await loadBig();
+        reportPlayer(
+          playing: true,
+          processingState: ProcessingState.ready,
+          index: 66,
+        );
+        indexes.add(66);
+        await Future<void>.delayed(Duration.zero);
+
+        verifyInOrder([
+          () => player.removeAudioSourceRange(0, 33),
+          () => player.removeAudioSourceRange(0, 3),
+        ]);
+        verifyNever(() => player.removeAudioSourceRange(0, 36));
+      },
+    );
+
+    test('- slides the window forward as playback nears its end', () async {
+      await loadBig();
+      reportPlayer(
+        playing: true,
+        processingState: ProcessingState.ready,
+        index: 111,
+      );
+      indexes.add(111);
+      await Future<void>.delayed(Duration.zero);
+
+      final added =
+          verify(() => player.addAudioSources(captureAny())).captured.single
+              as List<AudioSource>;
+      expect(added, hasLength(81));
+      expect(idOf(added.first), 'song-601');
+      expect(idOf(added.last), 'song-681');
+      verifyInOrder([
+        () => player.removeAudioSourceRange(0, 55),
+        () => player.removeAudioSourceRange(0, 26),
+      ]);
+      verifyNever(() => player.removeAudioSourceRange(0, 81));
+      reportPlayer(
+        playing: true,
+        processingState: ProcessingState.ready,
+        index: 30,
+      );
+      indexes.add(30);
+      await Future<void>.delayed(Duration.zero);
+      expect(target.state.currentIndex, 581);
+    });
+
+    test('- waits for a head trim before seeking to a slot', () async {
+      await loadBig();
+      final trimming = Completer<void>();
+      when(
+        () => player.removeAudioSourceRange(0, 55),
+      ).thenAnswer((_) => trimming.future);
+      reportPlayer(
+        playing: true,
+        processingState: ProcessingState.ready,
+        index: 111,
+      );
+      indexes.add(111);
+      await Future<void>.delayed(Duration.zero);
+
+      final jump = target.skipTo(560);
+      await Future<void>.delayed(Duration.zero);
+      verifyNever(() => player.seek(any(), index: any(named: 'index')));
+      trimming.complete();
+      await jump;
+
+      verify(() => player.seek(Duration.zero, index: 9)).called(1);
+    });
+
+    test('- reloads the window for a jump far outside it', () async {
+      await loadBig();
+      await target.skipTo(10);
+
+      final load = lastLoad();
+      expect(load.sources, hasLength(111));
+      expect(idOf(load.sources.first), 'song-0');
+      expect(load.index, 10);
+      verifyNever(() => player.seek(any(), index: any(named: 'index')));
+      reportPlayer(
+        playing: true,
+        processingState: ProcessingState.ready,
+        index: 10,
+      );
+      indexes.add(10);
+      await Future<void>.delayed(Duration.zero);
+      expect(target.state.currentIndex, 10);
+    });
+
+    test('- seeks within the window without reloading', () async {
+      await loadBig();
+      await target.skipTo(520);
+
+      verify(() => player.seek(Duration.zero, index: 50)).called(1);
+    });
+
+    test('- keeps indices straight when the queue is edited', () async {
+      await loadBig();
+      await target.insert(0, tracks(1).single);
+      verifyNever(() => player.insertAudioSource(any(), any()));
+      indexes.add(30);
+      await Future<void>.delayed(Duration.zero);
+      expect(target.state.currentIndex, 501);
+
+      await target.remove(0);
+      indexes.add(30);
+      await Future<void>.delayed(Duration.zero);
+      expect(target.state.currentIndex, 500);
+
+      await target.insert(501, tracks(1).single);
+      verify(() => player.insertAudioSource(31, any())).called(1);
+    });
+
+    test('- moves within the window as a single player move', () async {
+      await loadBig();
+      when(() => player.moveAudioSource(any(), any())).thenAnswer((_) async {});
+
+      await target.move(520, 480);
+
+      verify(() => player.moveAudioSource(50, 10)).called(1);
+      verifyNever(() => player.removeAudioSourceRange(any(), any()));
+      indexes.add(30);
+      await Future<void>.delayed(Duration.zero);
+      expect(target.state.currentIndex, 500);
+    });
+  });
+
   group('a player between sessions', () {
     test(
       '- absorbs the dead channel a stopped service leaves behind',
