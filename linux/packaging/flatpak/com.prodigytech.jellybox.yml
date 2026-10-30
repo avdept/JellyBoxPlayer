@@ -19,6 +19,8 @@ finish-args:
   - --device=dri
   # flutter_secure_storage keeps the server token in the keyring via libsecret.
   - --talk-name=org.freedesktop.secrets
+  # connectivity_plus watches interface changes via NetworkManager on the system bus.
+  - --system-talk-name=org.freedesktop.NetworkManager
   # audio_service_mpris registers as org.mpris.MediaPlayer2.<channel id>.instance<pid>.
   - --own-name=org.mpris.MediaPlayer2.com.ryanheise.bg_demo.channel.audio.*
   # Discord rich presence: native Discord's socket and the Flatpak Discord ones.
