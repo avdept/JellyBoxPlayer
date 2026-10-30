@@ -11,6 +11,7 @@ import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/backend/subsonic/mappers/subsonic_item_mapper.dart';
@@ -603,6 +604,12 @@ class SubsonicClient implements MediaServerClient {
         ),
     ];
     return LibraryPage(items: songs, totalRecordCount: songs.length);
+  }
+
+  @override
+  Stream<PlaylistSongsBatch> streamPlaylistSongs(String playlistId) async* {
+    final songs = (await getPlaylistSongs(playlistId)).items;
+    yield PlaylistSongsBatch(songs: songs, expectedTotal: songs.length);
   }
 
   @override

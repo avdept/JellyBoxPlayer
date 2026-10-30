@@ -3,6 +3,7 @@ import 'package:jplayer/src/data/backend/letter_index.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/params/params.dart';
@@ -36,6 +37,8 @@ abstract class MediaServerClient {
   Future<LibraryPage> getSongs(String albumId);
 
   Future<LibraryPage> getPlaylistSongs(String playlistId);
+
+  Stream<PlaylistSongsBatch> streamPlaylistSongs(String playlistId);
 
   Future<LibraryPage> getSimilarAlbums(String albumId, {int limit = 12});
 
