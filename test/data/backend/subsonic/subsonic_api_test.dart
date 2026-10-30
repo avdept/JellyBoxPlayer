@@ -7,6 +7,7 @@ import 'subsonic_test_support.dart';
 
 void main() {
   const credentials = SubsonicCredentials(
+    kind: SubSonicCredentialsKind.token,
     username: 'joe',
     token: 'tok',
     salt: 'salt',

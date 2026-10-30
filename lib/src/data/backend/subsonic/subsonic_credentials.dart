@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 
 const _saltLength = 16;
@@ -22,22 +23,35 @@ String subsonicTokenFor({required String password, required String salt}) =>
 String subsonicServerId(String serverUrl) =>
     serverUrl.trim().replaceAll(RegExp(r'/+$'), '');
 
+enum SubSonicCredentialsKind {
+  legacy,
+  token,
+}
+
 class SubsonicCredentials {
   const SubsonicCredentials({
+    required this.kind,
     required this.username,
     required this.token,
     required this.salt,
-  });
+  }) : assert(
+         salt != null || kind == SubSonicCredentialsKind.legacy,
+         'salt is required for token based auth',
+       );
 
   factory SubsonicCredentials.fromPassword({
     required String username,
     required String password,
+    required SubSonicCredentialsKind kind,
     String? salt,
   }) {
     final resolvedSalt = salt ?? subsonicSalt();
     return SubsonicCredentials(
+      kind: kind,
       username: username,
-      token: subsonicTokenFor(password: password, salt: resolvedSalt),
+      token: kind == SubSonicCredentialsKind.legacy
+          ? password
+          : subsonicTokenFor(password: password, salt: resolvedSalt),
       salt: resolvedSalt,
     );
   }
@@ -46,24 +60,47 @@ class SubsonicCredentials {
     required String username,
     required String encodedToken,
   }) {
-    final separator = encodedToken.indexOf(':');
-    if (separator <= 0 || separator == encodedToken.length - 1) return null;
+    final parts = encodedToken.split(':');
+
+    final kind = switch (parts.length) {
+      2 => SubSonicCredentialsKind.token,
+      3 => SubSonicCredentialsKind.values.firstWhereOrNull(
+        (kind) => kind.name == parts.first,
+      ),
+      _ => null,
+    };
+    if (kind == null) {
+      return null;
+    }
+
+    final (token, salt) = (parts[parts.length - 2], parts[parts.length - 1]);
+
+    if (token.isEmpty || (kind == SubSonicCredentialsKind.token && salt.isEmpty)) {
+      return null;
+    }
+
     return SubsonicCredentials(
+      kind: kind,
       username: username,
-      token: encodedToken.substring(0, separator),
-      salt: encodedToken.substring(separator + 1),
+      token: token,
+      salt: salt,
     );
   }
 
   final String username;
+  final SubSonicCredentialsKind kind;
   final String token;
-  final String salt;
+  final String? salt;
 
-  String get encodedToken => '$token:$salt';
+  String get encodedToken => '${kind.name}:$token:$salt';
 
   Map<String, String> get queryParameters => {
     'u': username,
-    't': token,
-    's': salt,
+    if (kind == SubSonicCredentialsKind.legacy)
+      'p': token
+    else ...{
+      't': token,
+      's': ?salt,
+    },
   };
 }
