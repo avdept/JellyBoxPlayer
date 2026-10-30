@@ -18,6 +18,7 @@ import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_home.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
+import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
@@ -243,6 +244,12 @@ class EmbyClient implements MediaServerClient {
       userId: userId,
     );
     return response.data.toEmbyLibraryPage();
+  }
+
+  @override
+  Stream<PlaylistSongsBatch> streamPlaylistSongs(String playlistId) async* {
+    final songs = (await getPlaylistSongs(playlistId)).items;
+    yield PlaylistSongsBatch(songs: songs, expectedTotal: songs.length);
   }
 
   @override
