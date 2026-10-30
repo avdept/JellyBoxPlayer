@@ -31,6 +31,7 @@ enum AppSetting {
   letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
+  lyricsBlur('lyrics_blur', defaultValue: 'medium'),
   lrclibLyrics('lrclib_lyrics', defaultValue: true),
   catalogDiscovery('catalog_discovery', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
@@ -194,6 +195,15 @@ final lyricsAlignmentProvider = Provider<LyricsAlignment>(
         AppSetting.lyricsAlignment,
       )] ??
       LyricsAlignment.center,
+);
+
+final lyricsBlurProvider = Provider<LyricsBlur>(
+  (ref) =>
+      LyricsBlur.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.lyricsBlur],
+        AppSetting.lyricsBlur,
+      )] ??
+      LyricsBlur.medium,
 );
 
 final playerTimeDisplayProvider = Provider<PlayerTimeDisplay>(
