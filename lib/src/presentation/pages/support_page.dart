@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/diagnostics/device_log.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SupportPage extends StatelessWidget {
@@ -30,6 +33,38 @@ class SupportPage extends StatelessWidget {
 
   void _open(Uri uri) =>
       unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
+
+  static bool get _canShareFiles => Platform.isAndroid || Platform.isIOS;
+
+  Future<void> _sendLog(BuildContext context) async {
+    final log = DeviceLog.current;
+    if (log == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+    final files = await log.files();
+    if (files.isEmpty) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('There is no log yet')));
+      return;
+    }
+    if (!_canShareFiles) {
+      await launchUrl(Uri.directory((await log.directory).path));
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          for (final file in files) XFile(file.path, mimeType: 'text/plain'),
+        ],
+        subject: 'JellyBox log',
+        sharePositionOrigin: origin,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +130,22 @@ class SupportPage extends StatelessWidget {
                   ),
                   _tile(
                     theme: theme,
+                    icon: Icons.description_outlined,
+                    title: _canShareFiles
+                        ? 'Send the app log'
+                        : 'Show the app log',
+                    subtitle:
+                        'A record of playback, connections and errors from '
+                        'the last days. Attach it when reporting a problem. '
+                        'It contains your server addresses and song titles.',
+                    onTap: () => unawaited(_sendLog(context)),
+                  ),
+                  _tile(
+                    theme: theme,
                     icon: Icons.discord,
                     title: 'Join Discord',
-                    subtitle: 'Chat with the me (Alex, the developer) and other users',
+                    subtitle:
+                        'Chat with the me (Alex, the developer) and other users',
                     onTap: () => _open(_discordUri),
                   ),
                   _tile(
