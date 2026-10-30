@@ -65,6 +65,12 @@ class SettingsPage extends ConsumerWidget {
     LyricsAlignment.right: 'Right',
   };
 
+  static const Map<LyricsBlur, String> _lyricsBlurLabels = {
+    LyricsBlur.off: 'Disabled',
+    LyricsBlur.medium: 'Medium',
+    LyricsBlur.hard: 'Hard',
+  };
+
   static const Map<StartPage, String> _startPageLabels = {
     StartPage.home: 'Home',
     StartPage.browse: 'Browse',
@@ -467,6 +473,15 @@ class SettingsPage extends ConsumerWidget {
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.lyricsAlignment, value.name),
+                    ),
+                    _settingDropdown<LyricsBlur>(
+                      context: context,
+                      label: 'Blur of other lines',
+                      value: ref.watch(lyricsBlurProvider),
+                      options: _lyricsBlurLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.lyricsBlur, value.name),
                     ),
                     _settingCheckbox(
                       ref: ref,
