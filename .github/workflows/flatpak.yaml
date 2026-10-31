@@ -3,20 +3,27 @@ name: Flatpak
 # Wraps the Linux bundles already attached to a release into .flatpak files
 # and optionally attaches them to that same release. The bundle is the exact
 # tarball the Linux Release workflow produced (private package included).
-# With a blank release_tag it runs that workflow on the selected branch first
+# With source set to branch it runs that workflow on the selected branch first
 # and wraps those bundles instead. Kept separate from linux-release.yaml while the
 # Flatpak is being proven; fold the job in there once it is.
 
 on:
   workflow_dispatch:
     inputs:
+      source:
+        description: Build the selected branch, or wrap the bundles of an existing release
+        type: choice
+        options:
+          - branch
+          - release
+        default: branch
       release_tag:
-        description: 'Release whose Linux bundles to wrap: a tag, "latest", or blank to build the selected branch'
+        description: 'Release to wrap when source is release: a tag, or "latest"'
         required: false
         type: string
         default: latest
       attach:
-        description: Attach the .flatpak files to that release (ignored when building a branch)
+        description: Attach the .flatpak files to that release (release source only)
         type: boolean
         default: false
 
@@ -25,7 +32,7 @@ permissions:
 
 jobs:
   source:
-    if: ${{ inputs.release_tag == '' }}
+    if: ${{ inputs.source == 'branch' }}
     uses: ./.github/workflows/linux-release.yaml
     with:
       version: ''
@@ -41,10 +48,10 @@ jobs:
       version: ${{ steps.fetch.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        if: ${{ inputs.release_tag == '' }}
+        if: ${{ inputs.source == 'branch' }}
 
       - uses: actions/download-artifact@v4
-        if: ${{ inputs.release_tag == '' }}
+        if: ${{ inputs.source == 'branch' }}
         with:
           pattern: jellybox-linux-*
           merge-multiple: true
@@ -52,7 +59,7 @@ jobs:
 
       - name: Collect branch bundles
         id: built
-        if: ${{ inputs.release_tag == '' }}
+        if: ${{ inputs.source == 'branch' }}
         run: |
           set -euo pipefail
           SOURCE="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')"
@@ -66,7 +73,7 @@ jobs:
 
       - name: Download Linux bundles
         id: release
-        if: ${{ inputs.release_tag != '' }}
+        if: ${{ inputs.source == 'release' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.release_tag }}
@@ -149,7 +156,7 @@ jobs:
 
   release:
     needs: [fetch, build]
-    if: ${{ !cancelled() && needs.build.result == 'success' && inputs.attach && inputs.release_tag != '' }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && inputs.attach && inputs.source == 'release' }}
     runs-on: ubuntu-latest
 
     steps:
