@@ -55,14 +55,15 @@ Future<void> rememberRepeatMode(Ref ref, AudioPlayer player) async {
   StreamSubscription<LoopMode>? changes;
   ref.onDispose(() => changes?.cancel());
   final prefs = await ref.read(sharedPreferencesProvider.future);
-  final saved = LoopMode.values.asNameMap()[AppSettingsNotifier.valueIn(
-    prefs,
-    AppSetting.repeatMode,
-  )];
+  final saved =
+      LoopMode.values.asNameMap()[AppSettingsNotifier.valueIn(
+        prefs,
+        AppSetting.repeatMode,
+      )];
   if (saved != null && saved != player.loopMode) {
     await player.setLoopMode(saved);
   }
-  changes = player.loopModeStream.listen((mode) {
+  changes = player.loopModeStream.distinct().listen((mode) {
     ref
         .read(appSettingsProvider.notifier)
         .setValue(AppSetting.repeatMode, mode.name);

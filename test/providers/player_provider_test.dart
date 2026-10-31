@@ -68,4 +68,17 @@ void main() {
       containsPair('repeat_mode', 'one'),
     );
   });
+
+  test('- ignores the same mode re-emitted on every playback event', () async {
+    final container = await attach({});
+    var updates = 0;
+    container.listen(appSettingsProvider, (_, _) => updates++);
+
+    for (var i = 0; i < 5; i++) {
+      loopModes.add(LoopMode.one);
+    }
+    await pumpEventQueue();
+
+    expect(updates, 1);
+  });
 }
