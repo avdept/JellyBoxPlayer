@@ -2,20 +2,21 @@ name: Flatpak
 
 # Wraps the Linux bundles already attached to a release into .flatpak files
 # and optionally attaches them to that same release. The bundle is the exact
-# tarball the Linux Release workflow produced (private package included), so
-# nothing is rebuilt here. Kept separate from linux-release.yaml while the
+# tarball the Linux Release workflow produced (private package included).
+# With a blank release_tag it runs that workflow on the selected branch first
+# and wraps those bundles instead. Kept separate from linux-release.yaml while the
 # Flatpak is being proven; fold the job in there once it is.
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release whose Linux bundles to wrap: a tag, or "latest"'
-        required: true
+        description: 'Release whose Linux bundles to wrap: a tag, "latest", or blank to build the selected branch'
+        required: false
         type: string
         default: latest
       attach:
-        description: Attach the .flatpak files to that release
+        description: Attach the .flatpak files to that release (ignored when building a branch)
         type: boolean
         default: false
 
@@ -23,14 +24,49 @@ permissions:
   contents: write
 
 jobs:
+  source:
+    if: ${{ inputs.release_tag == '' }}
+    uses: ./.github/workflows/linux-release.yaml
+    with:
+      version: ''
+      build_number: ''
+    secrets: inherit
+
   fetch:
+    needs: source
+    if: ${{ !cancelled() && needs.source.result != 'failure' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.fetch.outputs.tag }}
       version: ${{ steps.fetch.outputs.version }}
     steps:
+      - uses: actions/checkout@v4
+        if: ${{ inputs.release_tag == '' }}
+
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.release_tag == '' }}
+        with:
+          pattern: jellybox-linux-*
+          merge-multiple: true
+          path: built
+
+      - name: Collect branch bundles
+        id: built
+        if: ${{ inputs.release_tag == '' }}
+        run: |
+          set -euo pipefail
+          SOURCE="$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')"
+          VERSION="${SOURCE%+*}"
+          mkdir dist
+          mv built/jellybox-linux-*.tar.gz dist/
+          ls -lh dist
+          echo "tag=" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Wrapping $GITHUB_REF_NAME@${GITHUB_SHA::7} (version $VERSION)"
+
       - name: Download Linux bundles
-        id: fetch
+        id: release
+        if: ${{ inputs.release_tag != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.release_tag }}
@@ -50,6 +86,12 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Wrapping $TAG (version $VERSION)"
 
+      - name: Resolve outputs
+        id: fetch
+        run: |
+          echo "tag=${{ steps.release.outputs.tag || steps.built.outputs.tag }}" >> "$GITHUB_OUTPUT"
+          echo "version=${{ steps.release.outputs.version || steps.built.outputs.version }}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux-bundles
@@ -59,6 +101,7 @@ jobs:
   # and the freedesktop runtime installed.
   build:
     needs: fetch
+    if: ${{ !cancelled() && needs.fetch.result == 'success' }}
 
     strategy:
       fail-fast: false
@@ -106,7 +149,7 @@ jobs:
 
   release:
     needs: [fetch, build]
-    if: ${{ inputs.attach }}
+    if: ${{ !cancelled() && needs.build.result == 'success' && inputs.attach && inputs.release_tag != '' }}
     runs-on: ubuntu-latest
 
     steps:

@@ -4,9 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/storages/linux_keyring_storage.dart';
 
-/// Mirrors flutter_secure_storage_linux: every key lives in one JSON blob that
-/// each call reads, edits and stores back whole, and a blank blob reads as an
-/// empty bundle.
 class _FakeKeyring extends FlutterSecureStorage {
   String blob = '';
 
@@ -14,8 +11,6 @@ class _FakeKeyring extends FlutterSecureStorage {
       ? {}
       : (jsonDecode(blob) as Map<String, dynamic>).cast<String, String>();
 
-  /// What an unencrypted gnome-keyring does to a secret holding a backslash
-  /// when it reloads its file.
   void reload() {
     if (blob.contains(r'\')) blob = '';
   }
