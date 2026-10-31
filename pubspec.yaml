@@ -34,6 +34,8 @@ dependencies:
   just_audio_background:
     path: ./packages/just_audio_background
   just_audio_media_kit: any
+  # Resolved to the vendored fork in packages/audio_session through
+  # dependency_overrides below (just_audio depends on it too).
   audio_session: any
   audio_service_mpris: ^0.1.0
   media_kit_libs_linux: any # Required dependency of just_audio_media_kit for Linux support
@@ -104,6 +106,14 @@ dev_dependencies:
   mocktail: ^1.0.4
   faker_dart: ^0.2.3
   fake_async: ^1.3.3
+
+# Vendored audio_session 0.2.2 with an Android audio-focus fix: a refused
+# focus request used to be remembered as granted, so later plays never asked
+# Android again and Android Auto kept the car's media stream closed.
+# See packages/audio_session/CHANGELOG.md.
+dependency_overrides:
+  audio_session:
+    path: ./packages/audio_session
 
 flutter:
   uses-material-design: true

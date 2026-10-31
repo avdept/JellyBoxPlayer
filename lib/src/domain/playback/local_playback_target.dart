@@ -211,6 +211,7 @@ class LocalPlaybackTarget
             : '[LocalTarget] load of index $index failed after '
                   '${clock.elapsedMilliseconds}ms: $error',
       );
+      if (_player.playing) _wantsPlay = true;
       await _stopPlayer();
       if (!current()) return false;
       _attempt++;
@@ -480,7 +481,6 @@ class LocalPlaybackTarget
     _syncHold();
     _pending = null;
     await _player.stop();
-    await JustAudioBackground.endSession();
   }
 
   @override
@@ -814,10 +814,9 @@ class LocalPlaybackTarget
       _idleStop = null;
       if (_player.playing) return;
       debugPrint(
-        '[LocalTarget] paused for ${after.inMinutes} min; '
-        'releasing the player, keeping the session',
+        '[LocalTarget] paused for ${after.inMinutes} min; stopping the player',
       );
-      unawaited(JustAudioBackground.releaseKeepingSession(_player.stop));
+      unawaited(_player.stop());
     });
   }
 

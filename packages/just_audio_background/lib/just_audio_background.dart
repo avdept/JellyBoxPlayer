@@ -149,28 +149,6 @@ class JustAudioBackground {
   static void cancelPendingPlayback() {
     _playerAudioHandler.cancelHold();
   }
-
-  /// Runs [release] (normally `AudioPlayer.stop()`) so the native player and
-  /// its buffers go away, while the media session stays active and paused
-  /// with its queue, metadata and notification. Android routes a Bluetooth or
-  /// headset play to the most recent live session, so a session that is gone
-  /// loses the car's play to whichever app last made a sound. The next
-  /// `AudioPlayer.play()` brings the player back where it stopped.
-  static Future<void> releaseKeepingSession(
-    Future<void> Function() release,
-  ) async {
-    _playerAudioHandler._keepSessionOnRelease = true;
-    try {
-      await release();
-    } finally {
-      _playerAudioHandler._keepSessionOnRelease = false;
-    }
-  }
-
-  /// Ends a session kept by [releaseKeepingSession]: the service, notification
-  /// and metadata go away as on a normal stop. Does nothing while a native
-  /// player exists, because `AudioPlayer.stop()` already ends the session then.
-  static Future<void> endSession() => _playerAudioHandler.stop();
 }
 
 class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
@@ -603,12 +581,6 @@ class _PlayerAudioHandler extends BaseAudioHandler
   // reports playing before any player exists, so the real play that follows
   // a successful reload must still reach the player.
   bool _playerPlaying = false;
-  // Set by JustAudioBackground.releaseKeepingSession around the player's
-  // release, and kept as _playerReleased until a new native player reports
-  // a state: the session then stays "ready, paused" instead of going idle,
-  // which is what makes audio_service stop the service.
-  bool _keepSessionOnRelease = false;
-  bool _playerReleased = false;
   double _speed = 1.0;
   _Seeker? _seeker;
   AudioServiceRepeatMode _repeatMode = AudioServiceRepeatMode.none;
@@ -654,7 +626,6 @@ class _PlayerAudioHandler extends BaseAudioHandler
                 if (_playing) _holding = true;
               } else if (event.processingState != ProcessingStateMessage.idle) {
                 _holding = false;
-                _playerReleased = false;
               }
               _justAudioEvent = event;
               customEvent.add(event);
@@ -1019,25 +990,18 @@ class _PlayerAudioHandler extends BaseAudioHandler
   @override
   Future<void> stop() => _lock.synchronized(() async {
         final player = _playerCompleter.value;
-        final keepSession =
-            _keepSessionOnRelease && player != null && _source != null;
         debugPrint(
           '[Session] handler stop (player=${player != null}, '
-          'holding=$_holding, keepSession=$keepSession, '
-          'playerReleased=$_playerReleased)',
+          'holding=$_holding)',
         );
-        if (player == null && !_playerReleased) return;
+        if (player == null) return;
         _updatePosition();
         if (!_holding) customEvent.add(_PlayingEvent(_playing = false));
         _playerPlaying = false;
-        _playerReleased = keepSession;
-        if (!keepSession) {
-          _justAudioEvent = _justAudioEvent.copyWith(
-            processingState: ProcessingStateMessage.idle,
-          );
-        }
+        _justAudioEvent = _justAudioEvent.copyWith(
+          processingState: ProcessingStateMessage.idle,
+        );
         _broadcastState();
-        if (player == null) return;
         _playerCompleter = _ValueCompleter<AudioPlayerPlatform>();
         await _platform.disposePlayer(DisposePlayerRequest(id: player.id));
       });
@@ -1081,8 +1045,7 @@ class _PlayerAudioHandler extends BaseAudioHandler
   }
 
   void _broadcastStateIfActive() {
-    if (_playerReleased ||
-        _justAudioEvent.processingState != ProcessingStateMessage.idle) {
+    if (_justAudioEvent.processingState != ProcessingStateMessage.idle) {
       _broadcastState();
     }
   }
@@ -1112,9 +1075,7 @@ class _PlayerAudioHandler extends BaseAudioHandler
       androidCompactActionIndices: List.generate(transport.length, (i) => i),
       processingState: held
           ? AudioProcessingState.buffering
-          : _playerReleased
-              ? AudioProcessingState.ready
-              : _justAudioEvent.errorCode != null
+          : _justAudioEvent.errorCode != null
               ? AudioProcessingState.error
               : const {
                     ProcessingStateMessage.idle: AudioProcessingState.idle,
@@ -1129,11 +1090,8 @@ class _PlayerAudioHandler extends BaseAudioHandler
                   AudioProcessingState.idle,
       playing: held ||
           _playing &&
-              (_playerReleased ||
-                  !{
-                    ProcessingStateMessage.idle,
-                    ProcessingStateMessage.completed,
-                  }.contains(_justAudioEvent.processingState)),
+              !{ProcessingStateMessage.idle, ProcessingStateMessage.completed}
+                  .contains(_justAudioEvent.processingState),
       updatePosition: currentPosition,
       bufferedPosition: _justAudioEvent.bufferedPosition,
       speed: _speed,

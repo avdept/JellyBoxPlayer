@@ -39,6 +39,8 @@ runs:
           "$host" "$key_file" >> "$HOME/.ssh/config"
         git config --global "url.git@${host}:avdept/${package}.git.insteadOf" \
           "git@github.com:avdept/${package}.git"
-        printf 'dependency_overrides:\n  %s:\n    git:\n      url: git@github.com:avdept/%s.git\n      ref: main\n' \
+        # pubspec_overrides.yaml replaces the dependency_overrides section of
+        # pubspec.yaml, so the vendored audio_session fork must be repeated.
+        printf 'dependency_overrides:\n  %s:\n    git:\n      url: git@github.com:avdept/%s.git\n      ref: main\n  audio_session:\n    path: ./packages/audio_session\n' \
           "$package" "$package" > "$overrides"
         echo "${package}: private package"
