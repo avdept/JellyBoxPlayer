@@ -211,6 +211,7 @@ class LocalPlaybackTarget
             : '[LocalTarget] load of index $index failed after '
                   '${clock.elapsedMilliseconds}ms: $error',
       );
+      if (_player.playing) _wantsPlay = true;
       await _stopPlayer();
       if (!current()) return false;
       _attempt++;
@@ -811,7 +812,11 @@ class LocalPlaybackTarget
     }
     _idleStop ??= Timer(after, () {
       _idleStop = null;
-      if (!_player.playing) unawaited(_player.stop());
+      if (_player.playing) return;
+      debugPrint(
+        '[LocalTarget] paused for ${after.inMinutes} min; stopping the player',
+      );
+      unawaited(_player.stop());
     });
   }
 

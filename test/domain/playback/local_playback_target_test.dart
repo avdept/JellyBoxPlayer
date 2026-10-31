@@ -815,6 +815,46 @@ void main() {
         verify(player.play).called(1);
       });
 
+      test(
+        '- a play that bypassed the target during a stuck load is kept',
+        () async {
+          final stuck = Completer<Duration?>();
+          var calls = 0;
+          when(
+            () => player.setAudioSources(
+              any(),
+              initialIndex: any(named: 'initialIndex'),
+              initialPosition: any(named: 'initialPosition'),
+              preload: any(named: 'preload'),
+              shuffleOrder: any(named: 'shuffleOrder'),
+            ),
+          ).thenAnswer((_) {
+            calls++;
+            return calls == 1 ? stuck.future : Future.value();
+          });
+          final retrying = targetThatRetries(loadTimeout: soon);
+          reportPlayer(playing: true, processingState: ProcessingState.loading);
+
+          await retrying.load(
+            [trackWith()],
+            initialIndex: 0,
+            initialPosition: const Duration(seconds: 7),
+            autoPlay: false,
+          );
+
+          expect(retrying.state.status, PlaybackStatus.buffering);
+          expect(retrying.retryPending, isTrue);
+          verify(player.stop).called(1);
+          verifyNever(player.play);
+
+          await Future<void>.delayed(later);
+
+          expect(calls, 2);
+          expect(retrying.retryPending, isFalse);
+          verify(player.play).called(1);
+        },
+      );
+
       test('- a player that will not stop does not block the retry', () async {
         when(player.stop).thenAnswer((_) => Completer<void>().future);
         final retrying = targetThatRetries(stopTimeout: soon);

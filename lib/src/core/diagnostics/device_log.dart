@@ -70,6 +70,20 @@ class DeviceLog {
 
   Future<void> flush() => _queue;
 
+  Future<Directory> get directory async => (await _open()).parent;
+
+  Future<List<File>> files() async {
+    await flush();
+    final file = await _open();
+    final rotated = File(
+      '${file.parent.path}${Platform.pathSeparator}$rotatedFileName',
+    );
+    return [
+      if (rotated.existsSync()) rotated,
+      if (file.existsSync()) file,
+    ];
+  }
+
   Future<void> _drain() async {
     try {
       while (_buffer.isNotEmpty && !_broken) {

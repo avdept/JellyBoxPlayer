@@ -3,3 +3,7 @@ dependency_overrides:
     git:
       url: git@github.com:avdept/optional_features.git
       ref: main
+  # This file replaces the dependency_overrides section of pubspec.yaml, so
+  # the vendored audio_session fork has to be repeated here.
+  audio_session:
+    path: ./packages/audio_session
