@@ -6,22 +6,54 @@ import 'package:just_audio/just_audio.dart';
 
 class JellyBoxAudioHandler extends BaseAudioHandler with SeekHandler {
   JellyBoxAudioHandler(this._player) {
-    _player.playbackEventStream.listen((_) => _updatePlaybackState());
+    _player.playbackEventStream.listen((_) => _onPlaybackEvent());
     _player.playerStateStream.listen((_) => _updatePlaybackState());
 
     _player.sequenceStateStream.listen((sequenceState) {
       final currentItem = sequenceState?.currentSource?.tag;
-      if (currentItem is MediaItem) {
+      if (currentItem is MediaItem &&
+          !identical(currentItem, mediaItem.value)) {
         mediaItem.add(currentItem);
       }
     });
   }
 
+  static const positionInterval = Duration(milliseconds: 250);
+
+  final AudioPlayer _player;
+  final _sinceUpdate = Stopwatch();
+
+  void _onPlaybackEvent() {
+    final last = playbackState.value;
+    final positionOnly =
+        last.playing == _player.playing &&
+        last.processingState == _processingState &&
+        last.queueIndex == _player.currentIndex &&
+        last.speed == _player.speed;
+    if (positionOnly &&
+        _player.playing &&
+        _sinceUpdate.isRunning &&
+        _sinceUpdate.elapsed < positionInterval) {
+      return;
+    }
+    _updatePlaybackState();
+  }
+
   void _updatePlaybackState() {
+    _sinceUpdate
+      ..reset()
+      ..start();
     playbackState.add(_transformEvent());
   }
 
-  final AudioPlayer _player;
+  AudioProcessingState get _processingState =>
+      switch (_player.processingState) {
+        ProcessingState.idle => AudioProcessingState.idle,
+        ProcessingState.loading => AudioProcessingState.loading,
+        ProcessingState.buffering => AudioProcessingState.buffering,
+        ProcessingState.ready => AudioProcessingState.ready,
+        ProcessingState.completed => AudioProcessingState.completed,
+      };
 
   @override
   Future<void> play() async {
@@ -60,13 +92,7 @@ class JellyBoxAudioHandler extends BaseAudioHandler with SeekHandler {
         MediaAction.seekBackward,
       },
       androidCompactActionIndices: const [0, 1, 2],
-      processingState: switch (_player.processingState) {
-        ProcessingState.idle => AudioProcessingState.idle,
-        ProcessingState.loading => AudioProcessingState.loading,
-        ProcessingState.buffering => AudioProcessingState.buffering,
-        ProcessingState.ready => AudioProcessingState.ready,
-        ProcessingState.completed => AudioProcessingState.completed,
-      },
+      processingState: _processingState,
       playing: _player.playing,
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,

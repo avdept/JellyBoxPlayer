@@ -45,6 +45,29 @@ class UpdatifyBell extends ConsumerWidget {
             width: isDesktop
                 ? MediaQuery.sizeOf(context).width / 2
                 : double.infinity,
+            builder: (context, hasNewUpdates, openUpdates) => IconButton(
+              onPressed: openUpdates,
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_outlined),
+                  if (hasNewUpdates)
+                    const Positioned(
+                      top: -1,
+                      right: -1,
+                      child: SizedBox.square(
+                        dimension: 8,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: PingColor.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -1,7 +1,10 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/src/config/constants.dart';
+import 'package:jplayer/src/data/storages/linux_keyring_storage.dart';
 
 /// Direct-download builds carry no provisioning profile, so they cannot use the
 /// macOS Data Protection Keychain (which requires one). They use the legacy
@@ -31,8 +34,7 @@ class EntitlementTolerantSecureStorage extends FlutterSecureStorage {
   static const _missingEntitlementCode = -34018;
 
   bool _ignorable(PlatformException exception) =>
-      ignoreMissingEntitlement &&
-      exception.details == _missingEntitlementCode;
+      ignoreMissingEntitlement && exception.details == _missingEntitlementCode;
 
   @override
   Future<void> delete({
@@ -110,8 +112,8 @@ class EntitlementTolerantSecureStorage extends FlutterSecureStorage {
   }
 }
 
-final secureStorageProvider = Provider<FlutterSecureStorage>(
-  (ref) => const EntitlementTolerantSecureStorage(
+final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
+  const storage = EntitlementTolerantSecureStorage(
     ignoreMissingEntitlement: kDirectDownloadBuild,
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,
@@ -121,5 +123,6 @@ final secureStorageProvider = Provider<FlutterSecureStorage>(
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
     mOptions: _kMacOsOptions,
-  ),
-);
+  );
+  return Platform.isLinux ? LinuxKeyringStorage(storage) : storage;
+});

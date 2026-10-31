@@ -39,11 +39,11 @@ class LocalPlaybackTarget
        _loadTimeout = loadTimeout,
        _stopTimeout = stopTimeout {
     _subscriptions = [
-      _player.currentIndexStream.listen((index) {
+      _player.currentIndexStream.distinct().listen((index) {
         _emit();
         _onIndexChanged(index);
       }),
-      _player.positionStream.listen((_) => _emit()),
+      _player.positionStream.listen((_) => _onPosition()),
       _player.durationStream.listen((_) => _emit()),
       _player.playerStateStream.listen((playerState) {
         _scheduleIdleStop(playerState);
@@ -54,6 +54,8 @@ class LocalPlaybackTarget
   }
 
   static const androidIdleStop = Duration(minutes: 15);
+
+  static const positionInterval = Duration(milliseconds: 200);
   static const defaultLoadTimeout = Duration(seconds: 15);
   static const defaultStopTimeout = Duration(seconds: 5);
   static const queueWindowThreshold = 300;
@@ -85,6 +87,7 @@ class LocalPlaybackTarget
   final _shuffleOrder = QueueShuffleOrder();
 
   late final List<StreamSubscription<Object?>> _subscriptions;
+  final _sincePositionEmit = Stopwatch();
 
   var _state = TargetPlaybackState.idle;
   var _wantsPlay = false;
@@ -583,6 +586,7 @@ class LocalPlaybackTarget
         await _rebuildAroundCurrent();
       }
     });
+    _emitRemapped();
   }
 
   @override
@@ -609,6 +613,7 @@ class LocalPlaybackTarget
         );
       }
     });
+    _emitRemapped();
   }
 
   @override
@@ -649,6 +654,11 @@ class LocalPlaybackTarget
       await _player.insertAudioSource(slot, _audioSource(track));
       window.insert(slot, index);
     });
+    _emitRemapped();
+  }
+
+  void _emitRemapped() {
+    if (!_disposed) _emit();
   }
 
   @override
@@ -814,8 +824,20 @@ class LocalPlaybackTarget
     return uri.host.isEmpty ? uri.scheme : uri.host;
   }
 
+  void _onPosition() {
+    if (_player.playing &&
+        _sincePositionEmit.isRunning &&
+        _sincePositionEmit.elapsed < positionInterval) {
+      return;
+    }
+    _emit();
+  }
+
   void _emit() {
     if (_controller.isClosed) return;
+    _sincePositionEmit
+      ..reset()
+      ..start();
     final playerState = _player.playerState;
     final pending = _pending;
     _state = pending != null

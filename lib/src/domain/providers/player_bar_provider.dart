@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
@@ -12,6 +13,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 
+@immutable
 class BarProgress {
   const BarProgress({
     required this.position,
@@ -26,6 +28,17 @@ class BarProgress {
   final bool stopped;
 
   Duration get remaining => duration - position;
+
+  @override
+  bool operator ==(Object other) =>
+      other is BarProgress &&
+      other.position == position &&
+      other.duration == duration &&
+      other.buffered == buffered &&
+      other.stopped == stopped;
+
+  @override
+  int get hashCode => Object.hash(position, duration, buffered, stopped);
 }
 
 final barSongProvider = Provider<LibraryItem?>(
@@ -117,7 +130,7 @@ final barShuffleProvider = Provider<bool>(
 );
 
 final _localLoopModeProvider = StreamProvider<LoopMode>(
-  (ref) => ref.watch(playerProvider).loopModeStream,
+  (ref) => ref.watch(playerProvider).loopModeStream.distinct(),
 );
 
 final barRepeatProvider = Provider<LoopMode>((ref) {

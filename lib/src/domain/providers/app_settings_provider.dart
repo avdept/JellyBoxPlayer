@@ -289,6 +289,7 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
       setEnabled(setting, value: !isEnabled(setting));
 
   void _store(AppSetting setting, Object value) {
+    if (state[setting] == value) return;
     state = {...state, setting: value};
     final prefs = _prefs;
     if (prefs == null) return;

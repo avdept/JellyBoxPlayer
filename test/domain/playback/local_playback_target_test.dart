@@ -240,6 +240,60 @@ void main() {
     });
   });
 
+  group('update rate', () {
+    late List<TargetPlaybackState> states;
+    late StreamSubscription<TargetPlaybackState> subscription;
+
+    setUp(() {
+      states = [];
+      subscription = target.stateStream.listen(states.add);
+    });
+    tearDown(() => subscription.cancel());
+
+    void tick(Duration position) {
+      when(() => player.position).thenReturn(position);
+      positions.add(position);
+    }
+
+    test('- coalesces position ticks while playing', () async {
+      reportPlayer(playing: true, processingState: ProcessingState.ready);
+      for (var ms = 20; ms <= 100; ms += 20) {
+        tick(Duration(milliseconds: ms));
+      }
+      await Future<void>.delayed(Duration.zero);
+
+      expect(states, hasLength(1));
+
+      await Future<void>.delayed(LocalPlaybackTarget.positionInterval);
+      tick(const Duration(milliseconds: 300));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(states, hasLength(2));
+      expect(states.last.position, const Duration(milliseconds: 300));
+    });
+
+    test('- passes every position while paused, such as a seek', () async {
+      reportPlayer(playing: false, processingState: ProcessingState.ready);
+      tick(const Duration(seconds: 30));
+      tick(const Duration(seconds: 60));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(states, hasLength(3));
+      expect(states.last.position, const Duration(seconds: 60));
+    });
+
+    test('- ignores a repeated current index', () async {
+      indexes
+        ..add(0)
+        ..add(0)
+        ..add(0)
+        ..add(1);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(states, hasLength(2));
+    });
+  });
+
   group('load', () {
     test('- builds a progressive source with precise darwin timing', () async {
       await target.load(

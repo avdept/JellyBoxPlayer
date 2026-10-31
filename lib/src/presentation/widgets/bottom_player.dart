@@ -879,10 +879,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   Widget _downloadTrackButton() => Consumer(
     builder: (context, ref, _) {
-      final playback = ref.watch(playbackProvider);
-      final currentSong = playback.currentMediaIndex != null
-          ? playback.songs.elementAtOrNull(playback.currentMediaIndex!)
-          : null;
+      final currentSong = ref.watch(currentSongProvider);
 
       if (currentSong == null || currentSong.isRadioStream) {
         return const SizedBox.shrink();
