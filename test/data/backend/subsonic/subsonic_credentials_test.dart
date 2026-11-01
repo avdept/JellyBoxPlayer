@@ -7,6 +7,7 @@ void main() {
   group('SubsonicCredentials', () {
     test('- hashes the password with the salt as md5 hex', () {
       final credentials = SubsonicCredentials.fromPassword(
+        kind: SubSonicCredentialsKind.token,
         username: 'joe',
         password: 'sesame',
         salt: 'c19b2d',
@@ -20,8 +21,23 @@ void main() {
       });
     });
 
+    test('- passes the plain text password in legacy mode', () {
+      final credentials = SubsonicCredentials.fromPassword(
+        kind: SubSonicCredentialsKind.legacy,
+        username: 'joe',
+        password: 'sesame',
+      );
+
+      expect(credentials.token, 'sesame');
+      expect(credentials.queryParameters, {
+        'u': 'joe',
+        'p': 'sesame',
+      });
+    });
+
     test('- round-trips through the stored token form', () {
       final original = SubsonicCredentials.fromPassword(
+        kind: SubSonicCredentialsKind.token,
         username: 'joe',
         password: 'sesame',
       );
@@ -34,6 +50,16 @@ void main() {
       expect(decoded?.token, original.token);
       expect(decoded?.salt, original.salt);
       expect(decoded?.queryParameters, original.queryParameters);
+    });
+
+    test('- decodes old non-kind stored token form', () {
+      final decoded = SubsonicCredentials.decode(
+        username: 'joe',
+        encodedToken: 'token:salt',
+      );
+
+      expect(decoded?.token, 'token');
+      expect(decoded?.salt, 'salt');
     });
 
     test('- rejects malformed stored tokens', () {
@@ -51,6 +77,13 @@ void main() {
       );
       expect(
         SubsonicCredentials.decode(username: 'joe', encodedToken: ':salt'),
+        isNull,
+      );
+      expect(
+        SubsonicCredentials.decode(
+          username: 'joe',
+          encodedToken: 'invalid:token:salt',
+        ),
         isNull,
       );
     });

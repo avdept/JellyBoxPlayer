@@ -18,20 +18,32 @@ class SubsonicAuthenticator extends MediaServerAuthenticator {
     UserCredentials credentials, {
     required String serverUrl,
   }) async {
-    final subsonic = SubsonicCredentials.fromPassword(
-      username: credentials.username,
-      password: credentials.pw,
-    );
-    final envelope = await SubsonicApi(
-      _client,
-      baseUrl: serverUrl,
-      credentials: subsonic,
-    ).ping();
-    return ServerSession(
-      userId: credentials.username,
-      token: subsonic.encodedToken,
-      serverId: subsonicServerId(serverUrl),
-      serverName: subsonicProductLabel(envelope.type),
-    );
+    Exception? exception;
+
+    for (final kind in SubSonicCredentialsKind.values) {
+      try {
+        final subsonic = SubsonicCredentials.fromPassword(
+          kind: kind,
+          username: credentials.username,
+          password: credentials.pw,
+        );
+
+        final envelope = await SubsonicApi(
+          _client,
+          baseUrl: serverUrl,
+          credentials: subsonic,
+        ).ping();
+
+        return ServerSession(
+          userId: credentials.username,
+          token: subsonic.encodedToken,
+          serverId: subsonicServerId(serverUrl),
+          serverName: subsonicProductLabel(envelope.type),
+        );
+      } on Exception catch (ex) {
+        exception = ex;
+      }
+    }
+    throw exception!;
   }
 }
