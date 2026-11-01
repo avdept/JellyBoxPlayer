@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/server_probe_provider.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -168,12 +169,20 @@ class _ActionIcon extends StatelessWidget {
   }
 }
 
-bool _matchesCurrentServer(WidgetRef ref, ServerIdentity identity) {
-  final serverId = ref.read(currentServerIdProvider);
+Future<bool> _answersAsCurrentServer(
+  WidgetRef ref,
+  String url,
+  ServerIdentity identity,
+) async {
   final serverType = ref.read(currentServerTypeProvider);
   if (serverType != null && identity.serverType != serverType) return false;
   final id = identity.serverId;
-  return serverId == null || id == null || id.isEmpty || id == serverId;
+  if (id != null && id.isNotEmpty) {
+    final serverId = ref.read(currentServerIdProvider);
+    return serverId == null || id == serverId;
+  }
+  final status = await ref.read(authProvider.notifier).sessionStatusAt(url);
+  return status != SessionStatus.invalid;
 }
 
 class HomeAddressForm extends ConsumerStatefulWidget {
@@ -233,7 +242,7 @@ class _HomeAddressFormState extends ConsumerState<HomeAddressForm> {
     if (url == ref.read(serverAddressesProvider)?.home) return null;
     final identity = await ref.read(serverProbeServiceProvider).probe(url);
     if (identity == null) return HomeAddressForm.unreachableError;
-    if (!_matchesCurrentServer(ref, identity)) {
+    if (!await _answersAsCurrentServer(ref, url, identity)) {
       return RemoteAddressForm.differentServerError;
     }
     return null;
@@ -337,7 +346,8 @@ class _RemoteAddressFormState extends ConsumerState<RemoteAddressForm> {
 
   Future<bool> _sameServer(String url) async {
     final identity = await ref.read(serverProbeServiceProvider).probe(url);
-    return identity == null || _matchesCurrentServer(ref, identity);
+    return identity == null ||
+        await _answersAsCurrentServer(ref, url, identity);
   }
 
   @override

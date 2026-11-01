@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/dto/dto.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -19,6 +20,8 @@ import 'package:jplayer/src/providers/server_addresses_provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/backend/subsonic/subsonic_test_support.dart'
+    show jsonBody, subsonicFailed, subsonicOk;
 import '../provider_container.dart';
 
 class MockHttpClientAdapter extends Mock implements HttpClientAdapter {}
@@ -571,6 +574,91 @@ void main() {
           key: 'serverUrl',
           value: any(named: 'value'),
         ),
+      );
+    });
+  });
+
+  group('AuthNotifier.sessionStatusAt', () {
+    Future<ProviderContainer> restoreSubsonic({
+      required Future<ResponseBody> Function(Uri uri) remote,
+    }) async {
+      final stored = {
+        'serverUrl': 'http://music.local:4533',
+        'serverType': 'subsonic',
+        'userId': 'alex',
+        'authToken': 'tok:salt',
+        'serverId': 'http://music.local:4533',
+      };
+      for (final entry in stored.entries) {
+        when(
+          () => mockStorage.read(key: entry.key),
+        ).thenAnswer((_) async => entry.value);
+      }
+      when(() => mockAdapter.fetch(any(), any(), any())).thenAnswer((
+        invocation,
+      ) {
+        final uri =
+            (invocation.positionalArguments.first as RequestOptions).uri;
+        if (uri.host == 'music.local') {
+          return Future.value(jsonBody(subsonicOk()));
+        }
+        return remote(uri);
+      });
+
+      final container = createProviderContainer(
+        overrides: [secureStorageProvider.overrideWithValue(mockStorage)],
+      );
+      container.read(dioProvider).httpClientAdapter = mockAdapter;
+      expect(await container.read(authProvider.future), isTrue);
+      return container;
+    }
+
+    test('- is valid when the address accepts the stored login', () async {
+      late Uri seen;
+      final container = await restoreSubsonic(
+        remote: (uri) async {
+          seen = uri;
+          return jsonBody(subsonicOk());
+        },
+      );
+
+      final status = await container
+          .read(authProvider.notifier)
+          .sessionStatusAt('http://100.64.0.5:4533');
+
+      expect(status, SessionStatus.valid);
+      expect(seen.host, '100.64.0.5');
+      expect(seen.queryParameters['u'], 'alex');
+      expect(seen.queryParameters['t'], 'tok');
+    });
+
+    test('- is invalid when the address rejects the stored login', () async {
+      final container = await restoreSubsonic(
+        remote: (_) async =>
+            jsonBody(subsonicFailed(40, 'Wrong username or password')),
+      );
+
+      expect(
+        await container
+            .read(authProvider.notifier)
+            .sessionStatusAt('http://100.64.0.5:4533'),
+        SessionStatus.invalid,
+      );
+    });
+
+    test('- is unreachable when the address does not answer', () async {
+      final container = await restoreSubsonic(
+        remote: (uri) async => throw DioException.connectionError(
+          requestOptions: RequestOptions(path: uri.toString()),
+          reason: 'unreachable',
+        ),
+      );
+
+      expect(
+        await container
+            .read(authProvider.notifier)
+            .sessionStatusAt('http://100.64.0.5:4533'),
+        SessionStatus.unreachable,
       );
     });
   });
