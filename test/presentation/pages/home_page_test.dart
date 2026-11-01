@@ -218,7 +218,10 @@ void main() {
     mockDownloadDatabase = MockDownloadDatabase();
     mockPlayHistory = MockPlayHistoryDatabase();
     when(
-      () => mockPlayHistory.trackedSongCount(window: any(named: 'window')),
+      () => mockPlayHistory.trackedSongCount(
+        window: any(named: 'window'),
+        minPlays: any(named: 'minPlays'),
+      ),
     ).thenAnswer((_) async => onRepeatMinimumSongs);
     when(mockCurrentLibraryNotifier.build).thenAnswer((_) async => mockLibrary);
     when(mockLibrariesNotifier.build).thenAnswer((_) async => [mockLibrary]);
@@ -351,7 +354,10 @@ void main() {
       widgetTester,
     ) async {
       when(
-        () => mockPlayHistory.trackedSongCount(window: any(named: 'window')),
+        () => mockPlayHistory.trackedSongCount(
+          window: any(named: 'window'),
+          minPlays: any(named: 'minPlays'),
+        ),
       ).thenAnswer((_) async => onRepeatMinimumSongs - 1);
 
       await pumpHome(widgetTester, playlists: const []);
