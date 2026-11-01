@@ -35,9 +35,8 @@ class SubsonicProbe extends ServerProbe {
       return null;
     }
     return ServerIdentity(
-      serverUrl: serverUrl,
+      serverUrl: subsonicServerId(serverUrl),
       serverType: serverType,
-      serverId: subsonicServerId(serverUrl),
       name: subsonicProductLabel(envelope.type),
       version: envelope.serverVersion ?? envelope.version,
       productName: envelope.type,

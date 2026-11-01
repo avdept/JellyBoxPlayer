@@ -34,7 +34,8 @@ void main() {
       expect(identity?.productName, 'navidrome');
       expect(identity?.name, 'Navidrome');
       expect(identity?.version, '0.64.0 (1072e9f7)');
-      expect(identity?.serverId, 'http://music.local:4533');
+      expect(identity?.serverId, isNull);
+      expect(identity?.serverUrl, 'http://music.local:4533');
       expect(identity?.quickConnect, isFalse);
       expect(
         await probe.identifyType('http://music.local:4533'),
