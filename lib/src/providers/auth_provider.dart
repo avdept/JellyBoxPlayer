@@ -453,6 +453,20 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     await _syncActiveAccount();
   }
 
+  Future<SessionStatus> sessionStatusAt(String url) async {
+    final user = ref.read(currentUserProvider);
+    final serverType = ref.read(currentServerTypeProvider);
+    if (user == null || serverType == null) return SessionStatus.unreachable;
+    return _sessionStatus(
+      _clientFor(
+        serverType,
+        serverUrl: url,
+        userId: user.userId,
+        token: user.token,
+      ),
+    );
+  }
+
   Future<void> switchTo(String serverId, {LibraryItem? library}) async {
     final account = _accountFor(serverId);
     if (account == null || _switching || _loggingOut) return;
@@ -846,8 +860,9 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     final identity = await ref
         .read(serverProbeServiceProvider)
         .probe(serverUrl);
-    final serverId = identity?.serverId;
-    if (serverId == null || serverId.isEmpty) return null;
+    if (identity == null) return null;
+    final serverId = identity.serverId ?? identity.serverUrl;
+    if (serverId.isEmpty) return null;
 
     await _storage.write(key: _serverIdKey, value: serverId);
     return serverId;
