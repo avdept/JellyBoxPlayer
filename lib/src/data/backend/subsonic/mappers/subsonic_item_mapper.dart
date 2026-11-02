@@ -5,6 +5,11 @@ const subsonicAlbumArtPrefix = 'al-';
 const subsonicArtistArtPrefix = 'ar-';
 const subsonicPlaylistArtPrefix = 'pl-';
 
+final _typedId = RegExp(r'^[a-z_]+-\d+$');
+
+String subsonicArtIdFor(String id, {required String prefix}) =>
+    _typedId.hasMatch(id) ? id : '$prefix$id';
+
 String? subsonicCodecForSuffix(String? suffix, {int? bitDepth}) {
   final normalized = suffix?.trim().toLowerCase();
   if (normalized == null || normalized.isEmpty) return null;
@@ -184,7 +189,9 @@ extension SubsonicAlbumMapping on SubsonicAlbumDTO {
       artists: albumArtists,
       genres: _genreNames(genres, genre),
       images: ImageRefs(
-        primary: _presence(coverArt) ?? '$subsonicAlbumArtPrefix$id',
+        primary:
+            _presence(coverArt) ??
+            subsonicArtIdFor(id, prefix: subsonicAlbumArtPrefix),
       ),
       userData: _userData(
         playCount: playCount,
@@ -205,7 +212,9 @@ extension SubsonicArtistMapping on SubsonicArtistDTO {
     name: name,
     kind: ItemKind.artist,
     images: ImageRefs(
-      primary: _presence(coverArt) ?? '$subsonicArtistArtPrefix$id',
+      primary:
+          _presence(coverArt) ??
+          subsonicArtIdFor(id, prefix: subsonicArtistArtPrefix),
       backdrops: [?_presence(artistImageUrl)],
     ),
     userData: _userData(playCount: 0, starred: starred, userRating: userRating),
@@ -224,7 +233,9 @@ extension SubsonicPlaylistMapping on SubsonicPlaylistDTO {
     duration: Duration(seconds: duration ?? 0),
     overview: _presence(comment),
     images: ImageRefs(
-      primary: _presence(coverArt) ?? '$subsonicPlaylistArtPrefix$id',
+      primary:
+          _presence(coverArt) ??
+          subsonicArtIdFor(id, prefix: subsonicPlaylistArtPrefix),
     ),
   );
 }
