@@ -289,6 +289,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   ),
                               position: index + 1,
                               showCover: true,
+                              showAlbum: true,
                               edgePadding: _device.isMobile ? 16 : 30,
                               onLikePressed: _onSongLikePressed,
                               onRatingChanged: _onSongRated,

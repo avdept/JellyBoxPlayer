@@ -49,18 +49,34 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
   @override
   void didUpdateWidget(covariant SwipeableArtwork oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final indexChanged = oldWidget.currentIndex != widget.currentIndex;
+    final lengthChanged = oldWidget.queue.length != widget.queue.length;
+    if (!indexChanged && !lengthChanged) return;
     final target = _currentPage;
-    if (target == _page) return;
     _page = target;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _moveTo(target));
+    final animate = oldWidget.queue.isNotEmpty;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _moveTo(target, animate: animate),
+    );
   }
 
-  void _moveTo(int target) {
+  int? _pendingMove;
+  bool _pendingAnimate = true;
+  ValueNotifier<bool>? _scrollingNotifier;
+
+  void _moveTo(int target, {bool animate = true}) {
     if (!mounted || !_controller.hasClients) return;
-    if (_controller.position.isScrollingNotifier.value) return;
+    if (target >= widget.queue.length) return;
+    final scrolling = _controller.position.isScrollingNotifier;
+    if (scrolling.value) {
+      _pendingMove = target;
+      _pendingAnimate = animate;
+      _scrollingNotifier ??= scrolling..addListener(_onScrollSettled);
+      return;
+    }
     final current = _controller.page?.round();
     if (current == target) return;
-    if (current != null && (current - target).abs() == 1) {
+    if (animate && current != null && (current - target).abs() == 1) {
       unawaited(
         _controller.animateToPage(
           target,
@@ -71,6 +87,22 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
     } else {
       _controller.jumpToPage(target);
     }
+  }
+
+  void _onScrollSettled() {
+    final notifier = _scrollingNotifier;
+    if (notifier == null || notifier.value) return;
+    _stopWaitingForSettle();
+    final target = _pendingMove;
+    _pendingMove = null;
+    if (target != null && target == _page) {
+      _moveTo(target, animate: _pendingAnimate);
+    }
+  }
+
+  void _stopWaitingForSettle() {
+    _scrollingNotifier?.removeListener(_onScrollSettled);
+    _scrollingNotifier = null;
   }
 
   Future<void> _onPageChanged(int page) async {
@@ -93,6 +125,7 @@ class _SwipeableArtworkState extends ConsumerState<SwipeableArtwork> {
 
   @override
   void dispose() {
+    _stopWaitingForSettle();
     _controller.dispose();
     super.dispose();
   }

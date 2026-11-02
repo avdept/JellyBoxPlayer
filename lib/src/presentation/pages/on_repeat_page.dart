@@ -69,6 +69,8 @@ class OnRepeatPage extends ConsumerWidget {
                 songs: list,
                 set: isOffline ? onRepeat : null,
                 showPosition: true,
+                showAlbum: true,
+                showCover: true,
                 edgePadding: edgePadding,
                 onItemUpdated: ref
                     .read(onRepeatSongsProvider.notifier)
