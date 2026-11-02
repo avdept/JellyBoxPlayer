@@ -54,6 +54,7 @@ class LidarrClient {
     LidarrAlbum album, {
     required LidarrAddDefaults defaults,
     bool search = true,
+    bool monitorArtist = true,
   }) => _unavailable();
 
   Future<void> searchAlbum(int albumId) => _unavailable();

@@ -412,9 +412,15 @@ class LidarrAdder {
     LidarrAlbum album, {
     required LidarrAddDefaults defaults,
     required bool search,
+    bool monitorArtist = true,
   }) async {
     if (album.isAdded) return LidarrAddOutcome.alreadyAdded;
-    await _client.addAlbum(album, defaults: defaults, search: search);
+    await _client.addAlbum(
+      album,
+      defaults: defaults,
+      search: search,
+      monitorArtist: monitorArtist,
+    );
     _refreshStatuses();
     return LidarrAddOutcome.added;
   }

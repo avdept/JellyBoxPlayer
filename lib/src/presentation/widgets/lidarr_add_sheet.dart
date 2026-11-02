@@ -33,6 +33,7 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
   LidarrAddPlan? _plan;
   String? _error;
   var _selected = 0;
+  var _monitorArtist = true;
   var _submitting = false;
 
   @override
@@ -68,6 +69,7 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
               plan.albums[_selected],
               defaults: placement.defaults,
               search: search,
+              monitorArtist: _monitorArtist,
             )
           : await adder.addArtist(
               plan.artists[_selected],
@@ -160,8 +162,23 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
                 ),
                 const SizedBox(height: 8),
                 ..._candidates(plan, theme),
+                if (_artistIsNew(plan))
+                  CheckboxListTile(
+                    value: _monitorArtist,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: const Text('Monitor artist'),
+                    subtitle: const Text(
+                      'Lidarr will also monitor artist for new releases',
+                    ),
+                    onChanged: _submitting
+                        ? null
+                        : (value) =>
+                              setState(() => _monitorArtist = value ?? true),
+                  ),
                 const SizedBox(height: 12),
-                _placementSummary(placement, muted),
+                _placementSummary(placement, muted, plan),
               ],
             ],
             if (_error case final error?)
@@ -193,6 +210,11 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
   bool _alreadyAdded(LidarrAddPlan plan) => plan.albums.isNotEmpty
       ? plan.albums[_selected].isAdded
       : plan.artists[_selected].isAdded;
+
+  bool _artistIsNew(LidarrAddPlan plan) =>
+      plan.albums.isNotEmpty &&
+      !plan.albums[_selected].isAdded &&
+      !(plan.albums[_selected].artist?.isAdded ?? true);
 
   List<Widget> _candidates(LidarrAddPlan plan, ThemeData theme) {
     final rows = <({String title, String subtitle, bool added})>[
@@ -248,6 +270,7 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
   Widget _placementSummary(
     AsyncValue<LidarrPlacement?> placement,
     Color muted,
+    LidarrAddPlan plan,
   ) {
     final value = placement.valueOrNull;
     final text = switch (placement) {
@@ -260,6 +283,8 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
         'Metadata: ${value.metadataProfile?.name ?? '?'}',
         switch (widget.target) {
           LidarrArtistTarget() => 'All albums will be monitored',
+          LidarrAlbumTarget() when _artistIsNew(plan) && _monitorArtist =>
+            'This album and new releases will be monitored',
           LidarrAlbumTarget() => 'Only this album will be monitored',
         },
       ].join(' · '),
