@@ -273,7 +273,7 @@ void main() {
 
       expect(container.read(currentSongHasLyricsProvider), isFalse);
       container.read(lyricsVisibleProvider.notifier).state = true;
-      expect(container.read(lyricsShownProvider), isFalse);
+      expect(container.read(lyricsShownProvider), isTrue);
     });
 
     test('- stays on when real lyrics arrive', () async {
@@ -306,18 +306,17 @@ void main() {
       expect(container.read(lyricsShownProvider), isTrue);
     });
 
-    test('- stays off for a track without lyrics', () {
+    test('- stays on for a track without lyrics', () {
       final playback = FakePlaybackNotifier(
         _playing([_song('song-1', hasLyrics: false)], 0),
       );
       final container = containerWith(playback: playback);
       container.read(lyricsVisibleProvider.notifier).state = true;
 
-      expect(container.read(lyricsShownProvider), isFalse);
+      expect(container.read(lyricsShownProvider), isTrue);
     });
 
-    test('- falls back to the artwork when the next track has no lyrics, '
-        'then picks back up', () {
+    test('- stays open across a track without lyrics', () {
       final songs = [
         _song('with-lyrics', hasLyrics: true),
         _song('without-lyrics', hasLyrics: false),
@@ -329,8 +328,7 @@ void main() {
       expect(container.read(lyricsShownProvider), isTrue);
 
       playback.emit(_playing(songs, 1));
-      expect(container.read(lyricsShownProvider), isFalse);
-      expect(container.read(lyricsVisibleProvider), isTrue);
+      expect(container.read(lyricsShownProvider), isTrue);
 
       playback.emit(_playing(songs, 2));
       expect(container.read(lyricsShownProvider), isTrue);

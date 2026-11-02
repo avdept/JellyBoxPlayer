@@ -48,5 +48,5 @@ final currentSongHasLyricsProvider = Provider<bool>((ref) {
 final lyricsShownProvider = Provider<bool>((ref) {
   if (!ref.watch(lyricsVisibleProvider)) return false;
   if (ref.watch(studioModeVisibleProvider)) return false;
-  return ref.watch(currentSongHasLyricsProvider);
+  return ref.watch(barSongProvider) != null;
 });

@@ -234,8 +234,9 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     _pokeControls();
   }
 
-  void _toggleLyrics() =>
-      ref.read(studioModeLyricsProvider.notifier).update((shown) => !shown);
+  void _toggleLyrics() => ref
+      .read(appSettingsProvider.notifier)
+      .toggle(AppSetting.studioModeLyrics);
 
   void _close() {
     ref.read(studioModeVisibleProvider.notifier).state = false;
