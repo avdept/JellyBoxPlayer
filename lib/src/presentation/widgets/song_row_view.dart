@@ -30,6 +30,7 @@ class SongRowView extends ConsumerWidget {
     this.onRatingChanged,
     this.optionsBuilder,
     this.position,
+    this.showCover,
     this.secondaryTextColor,
     this.playingColor,
     this.trailing,
@@ -48,6 +49,8 @@ class SongRowView extends ConsumerWidget {
 
   final int? position;
 
+  final bool? showCover;
+
   final Color? secondaryTextColor;
 
   final Widget? trailing;
@@ -55,6 +58,8 @@ class SongRowView extends ConsumerWidget {
   final double? edgePadding;
 
   final SongRowViewKeys? testKeys;
+
+  static const double numberedHeight = 64;
 
   String get formattedDuration {
     final duration = song.duration;
@@ -75,7 +80,7 @@ class SongRowView extends ConsumerWidget {
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isTablet = deviceType == DeviceScreenType.tablet;
     final isDesktop = deviceType == DeviceScreenType.desktop;
-    final imageSize = isMobile ? 46.0 : 56.0;
+    final imageSize = isMobile || position != null ? 46.0 : 56.0;
     final horizontal = edgePadding ?? 0;
     final isDownloaded = ref
         .watch(isSongDownloadedProvider(song.id))
@@ -91,6 +96,31 @@ class SongRowView extends ConsumerWidget {
     final canRate = isDesktop && onRatingChanged != null;
     final showRating =
         ratingsSupported && (canRate || song.userData.rating > 0);
+    final cover = showCover ?? position == null;
+
+    Widget coverImage() => ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Image(
+        image: _coverImage(ref),
+        width: imageSize,
+        height: imageSize,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          Images.album,
+          width: imageSize,
+          height: imageSize,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+
+    Widget positionText() => Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 18),
+        child: Text('$position', textAlign: TextAlign.end),
+      ),
+    );
 
     return GestureDetector(
       onLongPress: (!isDesktop && optionsBuilder != null)
@@ -119,26 +149,15 @@ class SongRowView extends ConsumerWidget {
           optionsBuilder != null ? 4 : horizontal,
           8,
         ),
-        leading: position != null
-            ? Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: Text('$position'),
-              )
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image(
-                  image: _coverImage(ref),
-                  width: imageSize,
-                  height: imageSize,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Image.asset(
-                    Images.album,
-                    width: imageSize,
-                    height: imageSize,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+        leading: switch ((position != null, cover)) {
+          (true, true) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [positionText(), coverImage()],
+          ),
+          (true, false) => positionText(),
+          (false, true) => coverImage(),
+          (false, false) => null,
+        },
         leadingToTitle: isMobile ? 12 : 16,
         title: Row(
           mainAxisSize: MainAxisSize.min,
