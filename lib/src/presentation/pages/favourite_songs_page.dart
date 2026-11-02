@@ -147,6 +147,8 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
                 songs: list,
                 set: isOffline ? liked : null,
                 showPosition: true,
+                showAlbum: true,
+                showCover: true,
                 edgePadding: edgePadding,
                 onItemUpdated: isOffline
                     ? (_) {}

@@ -169,10 +169,60 @@ jobs:
             jellybox-linux-${{ matrix.deb_arch }}.deb
             jellybox-linux-${{ matrix.rpm_arch }}.rpm
 
-  # Publishing is its own job so the two build legs never race to upload the
-  # same release assets.
+  # Wraps each leg's tarball into a .flatpak. Runs inside the Flathub builder
+  # image, which already has flatpak-builder and the freedesktop runtime.
+  flatpak:
+    needs: [version, build]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+            flatpak_arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            flatpak_arch: aarch64
+
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: jellybox-linux-${{ matrix.arch }}
+          path: dist
+
+      - name: Stage bundle
+        run: |
+          mkdir -p bundle
+          tar xzf dist/jellybox-linux-${{ matrix.arch }}.tar.gz -C bundle
+          ./linux/packaging/flatpak/stage.sh bundle "${{ needs.version.outputs.version }}"
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: linux/packaging/flatpak/com.prodigytech.jellybox.yml
+          bundle: jellybox-linux-${{ matrix.flatpak_arch }}.flatpak
+          arch: ${{ matrix.flatpak_arch }}
+          cache: false
+          upload-artifact: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jellybox-linux-flatpak-${{ matrix.arch }}
+          path: jellybox-linux-${{ matrix.flatpak_arch }}.flatpak
+
+  # Publishing is its own job so the build legs never race to upload the same
+  # release assets. The `jellybox-linux-*` pattern picks up both the packages
+  # and the .flatpak files.
   release:
-    needs: build
+    needs: [build, flatpak]
     if: ${{ inputs.release_tag != '' }}
     runs-on: ubuntu-latest
 

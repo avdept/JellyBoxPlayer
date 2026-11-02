@@ -219,8 +219,6 @@ class SongRowView extends ConsumerWidget {
         ),
         subtitle: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
           children: [
             Flexible(
               child: Text(
