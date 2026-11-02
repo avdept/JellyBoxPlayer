@@ -17,6 +17,8 @@ class SongListSliver extends ConsumerStatefulWidget {
     this.edgePadding,
     this.set,
     this.showPosition = false,
+    this.showAlbum = false,
+    this.showCover,
     super.key,
   });
 
@@ -26,6 +28,8 @@ class SongListSliver extends ConsumerStatefulWidget {
   final double? edgePadding;
   final LibraryItem? set;
   final bool showPosition;
+  final bool showAlbum;
+  final bool? showCover;
 
   @override
   ConsumerState<SongListSliver> createState() => _SongListSliverState();
@@ -93,6 +97,8 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
           onLikePressed: _onLikePressed,
           onRatingChanged: _onRatingChanged,
           position: widget.showPosition ? index + 1 : null,
+          showAlbum: widget.showAlbum,
+          showCover: widget.showCover,
           edgePadding: widget.edgePadding,
           optionsBuilder: (context) => contextMenuActions(
             context,
