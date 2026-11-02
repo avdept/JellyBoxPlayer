@@ -36,7 +36,49 @@ void main() {
       expect(decoded?.queryParameters, original.queryParameters);
     });
 
+    test('- sends the plain password when the server rejects tokens', () {
+      const credentials = SubsonicCredentials.plain(
+        username: 'joe',
+        password: 'open:sesame',
+      );
+
+      expect(credentials.usesPlainPassword, isTrue);
+      expect(credentials.queryParameters, {'u': 'joe', 'p': 'open:sesame'});
+      expect(credentials.encodedToken, 'plain:open:sesame');
+    });
+
+    test('- round-trips plain credentials through the stored token form', () {
+      const original = SubsonicCredentials.plain(
+        username: 'joe',
+        password: 'open:sesame',
+      );
+
+      final decoded = SubsonicCredentials.decode(
+        username: 'joe',
+        encodedToken: original.encodedToken,
+      );
+
+      expect(decoded?.usesPlainPassword, isTrue);
+      expect(decoded?.password, 'open:sesame');
+      expect(decoded?.queryParameters, original.queryParameters);
+    });
+
+    test('- keeps decoding token credentials stored before plain auth', () {
+      final decoded = SubsonicCredentials.decode(
+        username: 'joe',
+        encodedToken: '26719a1196d2a940705a59634eb18eab:c19b2d',
+      );
+
+      expect(decoded?.usesPlainPassword, isFalse);
+      expect(decoded?.token, '26719a1196d2a940705a59634eb18eab');
+      expect(decoded?.salt, 'c19b2d');
+    });
+
     test('- rejects malformed stored tokens', () {
+      expect(
+        SubsonicCredentials.decode(username: 'joe', encodedToken: 'plain:'),
+        isNull,
+      );
       expect(
         SubsonicCredentials.decode(username: 'joe', encodedToken: ''),
         isNull,

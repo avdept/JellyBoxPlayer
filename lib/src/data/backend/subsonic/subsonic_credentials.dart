@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 
 const _saltLength = 16;
 const _hexDigits = '0123456789abcdef';
+const _plainPrefix = 'plain:';
 
 String subsonicSalt({Random? random}) {
   final rng = random ?? Random.secure();
@@ -25,9 +26,15 @@ String subsonicServerId(String serverUrl) =>
 class SubsonicCredentials {
   const SubsonicCredentials({
     required this.username,
-    required this.token,
-    required this.salt,
-  });
+    required String this.token,
+    required String this.salt,
+  }) : password = null;
+
+  const SubsonicCredentials.plain({
+    required this.username,
+    required String this.password,
+  }) : token = null,
+       salt = null;
 
   factory SubsonicCredentials.fromPassword({
     required String username,
@@ -46,6 +53,11 @@ class SubsonicCredentials {
     required String username,
     required String encodedToken,
   }) {
+    if (encodedToken.startsWith(_plainPrefix)) {
+      final password = encodedToken.substring(_plainPrefix.length);
+      if (password.isEmpty) return null;
+      return SubsonicCredentials.plain(username: username, password: password);
+    }
     final separator = encodedToken.indexOf(':');
     if (separator <= 0 || separator == encodedToken.length - 1) return null;
     return SubsonicCredentials(
@@ -56,14 +68,22 @@ class SubsonicCredentials {
   }
 
   final String username;
-  final String token;
-  final String salt;
+  final String? token;
+  final String? salt;
+  final String? password;
 
-  String get encodedToken => '$token:$salt';
+  bool get usesPlainPassword => password != null;
+
+  String get encodedToken =>
+      usesPlainPassword ? '$_plainPrefix$password' : '$token:$salt';
 
   Map<String, String> get queryParameters => {
     'u': username,
-    't': token,
-    's': salt,
+    if (password case final password?)
+      'p': password
+    else ...{
+      't': token!,
+      's': salt!,
+    },
   };
 }
