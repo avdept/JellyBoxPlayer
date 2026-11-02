@@ -284,7 +284,7 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
         switch (widget.target) {
           LidarrArtistTarget() => 'All albums will be monitored',
           LidarrAlbumTarget() when _artistIsNew(plan) && _monitorArtist =>
-            'This album and new releases will be monitored',
+            'All albums will be monitored',
           LidarrAlbumTarget() => 'Only this album will be monitored',
         },
       ].join(' · '),
