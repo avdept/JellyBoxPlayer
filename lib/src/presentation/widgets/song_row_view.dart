@@ -31,6 +31,7 @@ class SongRowView extends ConsumerWidget {
     this.optionsBuilder,
     this.position,
     this.showCover,
+    this.showAlbum = false,
     this.secondaryTextColor,
     this.playingColor,
     this.trailing,
@@ -51,6 +52,8 @@ class SongRowView extends ConsumerWidget {
 
   final bool? showCover;
 
+  final bool showAlbum;
+
   final Color? secondaryTextColor;
 
   final Widget? trailing;
@@ -68,6 +71,17 @@ class SongRowView extends ConsumerWidget {
     final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
     final twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
     return '$negativeSign${duration.inHours > 0 ? '${twoDigits(duration.inHours)}:' : ''}$twoDigitMinutes:$twoDigitSeconds';
+  }
+
+  String get subtitleLabel {
+    if (!showAlbum) return song.artistLabel;
+    final album = song.albumName?.trim() ?? '';
+    final year = song.productionYear;
+    return [
+      song.artistLabel,
+      if (album.isNotEmpty) album,
+      if (year != null && year > 0) year.toString(),
+    ].where((part) => part.isNotEmpty).join(' · ');
   }
 
   ImageProvider _coverImage(WidgetRef ref) =>
@@ -210,7 +224,7 @@ class SongRowView extends ConsumerWidget {
           children: [
             Flexible(
               child: Text(
-                song.artistLabel,
+                subtitleLabel,
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: isTablet ? 16 : 12,
