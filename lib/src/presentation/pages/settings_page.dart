@@ -444,6 +444,11 @@ class SettingsPage extends ConsumerWidget {
                               value.name,
                             ),
                       ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModeRememberLyrics,
+                        label: 'Remember lyrics mode',
+                      ),
                     ],
                     if (supportsDiscordPresence) ...[
                       _sectionHeader('Discord'),

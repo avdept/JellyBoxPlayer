@@ -792,8 +792,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   Widget _studioModeButton() => HoverIconButton(
     onPressed: () {
+      final settings = ref.read(appSettingsProvider.notifier);
+      if (!settings.isEnabled(AppSetting.studioModeRememberLyrics)) {
+        settings.setEnabled(AppSetting.studioModeLyrics, value: false);
+      }
       ref.read(lyricsVisibleProvider.notifier).state = false;
-      ref.read(studioModeLyricsProvider.notifier).state = false;
       ref.read(studioModeVisibleProvider.notifier).state = true;
     },
     color: _theme.colorScheme.onPrimary,
@@ -860,7 +863,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       final isShown = ref.watch(lyricsShownProvider);
 
       return HoverIconButton(
-        onPressed: hasLyrics
+        onPressed: hasLyrics || isShown
             ? () {
                 _queueShown.value = false;
                 ref.read(lyricsVisibleProvider.notifier).state = !isShown;
@@ -869,7 +872,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         color: _theme.colorScheme.onPrimary,
         disabledColor: _theme.colorScheme.onPrimary.withOpacity(0.3),
         iconSize: size,
-        tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
+        tooltip: switch ((hasLyrics, isShown)) {
+          (_, true) => 'Hide lyrics',
+          (true, false) => 'Lyrics',
+          (false, false) => 'No lyrics for this track',
+        },
         icon: const Icon(Icons.lyrics_outlined),
         selectedIcon: const Icon(Icons.lyrics),
         isSelected: isShown,

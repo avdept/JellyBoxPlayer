@@ -127,7 +127,9 @@ class _LyricsPanel extends ConsumerWidget {
             HoverIconButton(
               onPressed: () {
                 ref.read(lyricsVisibleProvider.notifier).state = false;
-                ref.read(studioModeLyricsProvider.notifier).state = true;
+                ref
+                    .read(appSettingsProvider.notifier)
+                    .setEnabled(AppSetting.studioModeLyrics, value: true);
                 ref.read(studioModeVisibleProvider.notifier).state = true;
               },
               color: Colors.white,

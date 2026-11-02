@@ -365,7 +365,9 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
     builder: (context, ref, _) {
       final hasLyrics = ref.watch(currentSongHasLyricsProvider);
       return HoverIconButton(
-        onPressed: hasLyrics ? () => _showPanel(_Panel.lyrics) : null,
+        onPressed: hasLyrics || _panel == _Panel.lyrics
+            ? () => _showPanel(_Panel.lyrics)
+            : null,
         color: _foreground,
         disabledColor: _foreground.withValues(alpha: 0.3),
         iconSize: 24,

@@ -16,6 +16,8 @@ enum AppSetting {
     'studio_mode_lyrics_placement',
     defaultValue: 'right',
   ),
+  studioModeRememberLyrics('studio_mode_remember_lyrics'),
+  studioModeLyrics('studio_mode_lyrics', syncs: false),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),
