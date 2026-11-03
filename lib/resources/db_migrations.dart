@@ -29,4 +29,5 @@ class DbMigrations {
       'assets/db/migrations/catalog_cache_v14.sql';
   static const String catalogArtistLinksV14 =
       'assets/db/migrations/catalog_artist_links_v14.sql';
+  static const String pinsV15 = 'assets/db/migrations/pins_v15.sql';
 }

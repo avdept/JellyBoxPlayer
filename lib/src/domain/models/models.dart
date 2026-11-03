@@ -10,6 +10,7 @@ export 'library_item/downloaded_item.dart';
 export 'library_item/external_id_provider.dart';
 export 'library_item/image_refs.dart';
 export 'library_item/item_kind.dart';
+export 'pinned_item/pinned_item.dart';
 export 'library_item/library_item.dart';
 export 'library_item/library_page.dart';
 export 'library_item/metadata_link.dart';
