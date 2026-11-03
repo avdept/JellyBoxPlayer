@@ -251,27 +251,25 @@ class SettingsPage extends ConsumerWidget {
                       'How often the home page refreshes and downloaded '
                       'playlists check your server for changes.',
                     ),
-                    if (device.isDesktop) ...[
-                      _sectionHeader('Pins'),
-                      _settingCheckbox(
-                        ref: ref,
-                        setting: AppSetting.pinsEnabled,
-                        label: 'Enable pins',
-                      ),
-                      _settingDropdown<PinLongevity>(
-                        context: context,
-                        label: 'Pins longevity',
-                        value: ref.watch(pinLongevityProvider),
-                        options: _pinLongevityLabels,
-                        onChanged: (value) => ref
-                            .read(appSettingsProvider.notifier)
-                            .setValue(AppSetting.pinLongevity, value.name),
-                      ),
-                      _settingNote(
-                        context,
-                        'Auto expire pins to keep it always fresh.',
-                      ),
-                    ],
+                    _sectionHeader('Pins'),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.pinsEnabled,
+                      label: 'Enable pins',
+                    ),
+                    _settingDropdown<PinLongevity>(
+                      context: context,
+                      label: 'Pins longevity',
+                      value: ref.watch(pinLongevityProvider),
+                      options: _pinLongevityLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.pinLongevity, value.name),
+                    ),
+                    _settingNote(
+                      context,
+                      'Auto expire pins to keep it always fresh.',
+                    ),
                     _sectionHeader('UI'),
                     _settingDropdown<StartPage>(
                       context: context,

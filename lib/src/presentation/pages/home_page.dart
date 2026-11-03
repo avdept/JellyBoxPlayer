@@ -240,6 +240,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                 showName: true,
               ),
               const Spacer(),
+              if (!_device.isDesktop &&
+                  ref.watch(settingProvider(AppSetting.pinsEnabled))) ...[
+                const PinnedItemsButton(),
+                const SizedBox(width: 12),
+              ],
               UpdatifyBell(
                 isDesktop: _device.isDesktop,
                 iconSize: _device.isDesktop ? 24 : 28,

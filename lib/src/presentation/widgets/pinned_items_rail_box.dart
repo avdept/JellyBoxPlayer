@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
-import 'package:jplayer/src/core/downloads/download_paths.dart';
-import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -15,8 +13,7 @@ import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/custom_navigation_rail.dart';
 import 'package:jplayer/src/presentation/widgets/frosted_panel.dart';
-import 'package:jplayer/src/providers/connectivity_provider.dart';
-import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:jplayer/src/presentation/widgets/pinned_item_actions.dart';
 
 const _openDelay = Duration(milliseconds: 120);
 const _closeDelay = Duration(milliseconds: 250);
@@ -206,13 +203,6 @@ class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox> {
   }
 }
 
-ImageProvider _coverOf(WidgetRef ref, PinnedItem pin, {required int size}) {
-  final local = DownloadPaths.coverFile(pin.itemId)?.uri;
-  return ref
-      .read(imageServiceProvider)
-      .artworkImage(local ?? pin.imageUrl, size: size);
-}
-
 class _DeckEntry {
   _DeckEntry(this.pin, this.controller, this.slot, this.depth, this.sequence);
 
@@ -332,7 +322,7 @@ class _PinnedIconState extends ConsumerState<_PinnedIcon>
             _DeckCardView(
               key: ValueKey(entry),
               entry: entry,
-              image: _coverOf(ref, entry.pin, size: 64),
+              image: pinnedItemCover(ref, entry.pin, size: 64),
             ),
           if (widget.pins.isNotEmpty)
             Positioned(
@@ -575,15 +565,7 @@ class _PinnedCardState extends ConsumerState<_PinnedCard> {
 
   PinnedItem get _pin => widget.pin;
 
-  String get _kindLabel => switch (_pin.kind) {
-    ItemKind.song => 'Song',
-    ItemKind.album => 'Album',
-    ItemKind.artist => 'Artist',
-    ItemKind.playlist => 'Playlist',
-    _ => '',
-  };
-
-  ImageProvider get _image => _coverOf(ref, _pin, size: 256);
+  ImageProvider get _image => pinnedItemCover(ref, _pin, size: 256);
 
   bool get _isSourcePlaying => switch (ref.watch(
     queueSourceStatus(_pin.itemId),
@@ -595,20 +577,9 @@ class _PinnedCardState extends ConsumerState<_PinnedCard> {
   ScaffoldMessengerState? get _messenger => ScaffoldMessenger.maybeOf(context);
 
   Future<LibraryItem?> _resolve(ScaffoldMessengerState? messenger) async {
-    void notify(String message) =>
-        messenger?.showSnackBar(SnackBar(content: Text(message)));
-    if (ref.read(isOfflineProvider)) {
-      notify('Not available offline');
-      return null;
-    }
     setState(() => _isLoading = true);
     try {
-      return await ref
-          .read(mediaServerClientProvider)
-          .getItem(_pin.itemId, kind: _pin.kind);
-    } on Object {
-      notify('Could not open "${_pin.name}"');
-      return null;
+      return await resolvePinnedItem(ref, _pin, messenger: messenger);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -637,27 +608,9 @@ class _PinnedCardState extends ConsumerState<_PinnedCard> {
     final toggled = toggleQueueSource(ref, _pin.itemId);
     if (toggled != null) return toggled;
     final messenger = _messenger;
-    final notifier = ref.read(setPlaybackProvider.notifier);
     final item = await _resolve(messenger);
     if (item == null) return;
-    try {
-      final result = await switch (item.kind) {
-        ItemKind.album => notifier.playAlbum(item),
-        ItemKind.artist => notifier.playArtist(item),
-        ItemKind.playlist => notifier.playPlaylist(item),
-        ItemKind.song => notifier.playSongs(item, [item]),
-        _ => Future.value(SetPlaybackResult.busy),
-      };
-      if (result == SetPlaybackResult.empty) {
-        messenger?.showSnackBar(
-          SnackBar(content: Text('Nothing to play in "${item.name}"')),
-        );
-      }
-    } on Object {
-      messenger?.showSnackBar(
-        SnackBar(content: Text('Could not start playing "${item.name}"')),
-      );
-    }
+    await playResolvedPinnedItem(ref, item, messenger: messenger);
   }
 
   void _showMenu(Offset position) {
@@ -752,7 +705,7 @@ class _PinnedCardState extends ConsumerState<_PinnedCard> {
                   ),
                 ),
                 Text(
-                  _kindLabel,
+                  pinnedItemKindLabel(_pin.kind),
                   maxLines: 1,
                   style: TextStyle(
                     fontSize: _cardKindSize,

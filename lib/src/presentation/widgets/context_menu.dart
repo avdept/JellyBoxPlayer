@@ -352,10 +352,9 @@ List<ContextMenuAction> contextMenuActions(
           item.albumId != null ? actions.goToAlbum() : null,
         ContextMenuEntry.metadataLinks => actions.metadataLinks(),
         ContextMenuEntry.pin =>
-          isDesktop &&
-                  ref.read(settingProvider(AppSetting.pinsEnabled)) &&
+          ref.read(settingProvider(AppSetting.pinsEnabled)) &&
                   PinsNotifier.canPin(item)
-              ? actions.pin()
+              ? actions.pin(isDesktop: isDesktop)
               : null,
         ContextMenuEntry.removeFromQueue ||
         ContextMenuEntry.removeFromPlaylist ||
@@ -879,18 +878,23 @@ class _ContextMenuActions {
     );
   }
 
-  ContextMenuAction pin() => ContextMenuAction(
+  ContextMenuAction pin({required bool isDesktop}) => ContextMenuAction(
     entry: ContextMenuEntry.pin,
     icon: _PinState(item: item, builder: _pinIcon),
-    label: _PinState(item: item, builder: _pinLabel),
+    label: _PinState(
+      item: item,
+      builder: (isPinned) => _pinLabel(isPinned, isDesktop: isDesktop),
+    ),
     run: () => ref.read(pinsProvider.notifier).toggle(item),
   );
 
   static Widget _pinIcon(bool isPinned) =>
       Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined);
 
-  static Widget _pinLabel(bool isPinned) =>
-      Text(isPinned ? 'Unpin from sidebar' : 'Pin to sidebar');
+  static Widget _pinLabel(bool isPinned, {required bool isDesktop}) {
+    final place = isDesktop ? 'sidebar' : 'home';
+    return Text(isPinned ? 'Unpin from $place' : 'Pin to $place');
+  }
 
   ContextMenuAction goToArtist() => ContextMenuAction(
     entry: ContextMenuEntry.goToArtist,
