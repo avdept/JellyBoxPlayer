@@ -1,6 +1,7 @@
 export 'download_task/download_task.dart';
 export 'filter/filter.dart';
 export 'ephemeral_playlist/ephemeral_playlist_id.dart';
+export 'ephemeral_playlist/user_playlist.dart';
 export 'generated_playlist/generated_playlist.dart';
 export 'instant_mix/instant_mix.dart';
 export 'items_page/items_page.dart';

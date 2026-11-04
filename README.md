@@ -18,7 +18,7 @@
 [![Follow @_avdept](https://img.shields.io/badge/@__avdept-000000?logo=x&logoColor=white)](https://x.com/_avdept)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/avdept)
 
-[Download](#download) · [Screenshots](#screenshots) · [Features](#features) · [Development](#development)
+[Website](https://jellybox.app) · [Download](#download) · [Screenshots](#screenshots) · [Features](#features) · [Development](#development)
 
 <img src="./docs/screenshots/desktop-and-mobile.png" width="100%" alt="JellyBox on macOS and Android, showing the home page with recently added albums, mixes made for you and recently played">
 

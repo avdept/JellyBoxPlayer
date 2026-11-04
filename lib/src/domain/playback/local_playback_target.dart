@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
+import 'package:jplayer/src/core/audio/session_play.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -173,7 +174,7 @@ class LocalPlaybackTarget
       index: _playerIndexOf(initialIndex) ?? 0,
       position: initialPosition,
     );
-    if (loaded && autoPlay) unawaited(_player.play());
+    if (loaded && autoPlay) unawaited(playWithSession(_player));
   }
 
   Future<bool> _setSources(
@@ -375,7 +376,7 @@ class LocalPlaybackTarget
     );
     if (!loaded) return;
     _emit();
-    if (_wantsPlay) unawaited(_player.play());
+    if (_wantsPlay) unawaited(playWithSession(_player));
   }
 
   void _cancelRetry() {
@@ -460,7 +461,7 @@ class LocalPlaybackTarget
       );
       await _player.pause();
     }
-    await _player.play();
+    await playWithSession(_player);
   }
 
   @override
@@ -940,7 +941,7 @@ class LocalPlaybackTarget
       index: _playerIndexOf(index) ?? 0,
       position: position,
     );
-    if (loaded && wantsPlay) unawaited(_player.play());
+    if (loaded && wantsPlay) unawaited(playWithSession(_player));
   }
 
   Future<void> _slide() async {

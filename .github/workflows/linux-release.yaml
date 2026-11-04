@@ -67,12 +67,19 @@ jobs:
         include:
           # `arch` is the Flutter build output directory (build/linux/<arch>);
           # the rest are the per-packager spellings of the same machine.
-          - runner: ubuntu-24.04
+          #
+          # The runner is the oldest Ubuntu LTS GitHub still offers, on purpose:
+          # bundle-libs.sh copies the host's GTK/glib/libstdc++ into the bundle,
+          # and those carry the host's glibc symbol versions with them. Built on
+          # 24.04 the AppImage needed GLIBC_2.38 and refused to start on 22.04
+          # (the AppImage catalog tests on exactly that release); built on 22.04
+          # it runs on everything with glibc >= 2.35.
+          - runner: ubuntu-22.04
             arch: x64
             appimage_arch: x86_64
             deb_arch: amd64
             rpm_arch: x86_64
-          - runner: ubuntu-24.04-arm
+          - runner: ubuntu-22.04-arm
             arch: arm64
             appimage_arch: aarch64
             deb_arch: arm64
@@ -136,11 +143,14 @@ jobs:
           cd build/linux/${{ matrix.arch }}/release/bundle
           tar czf "$GITHUB_WORKSPACE/jellybox-linux-${{ matrix.arch }}.tar.gz" .
 
+      # Named after the app, not the platform: the AppImage catalog rejects
+      # "linux" in the file name (every AppImage is for Linux). Unversioned so
+      # the website's releases/latest/download links keep resolving.
       - name: Build AppImage
         run: |
           ./linux/packaging/make-appimage.sh \
             build/linux/${{ matrix.arch }}/release/bundle \
-            "$GITHUB_WORKSPACE/jellybox-linux-${{ matrix.appimage_arch }}.AppImage" \
+            "$GITHUB_WORKSPACE/JellyBox-${{ matrix.appimage_arch }}.AppImage" \
             "${{ needs.version.outputs.version }}"
 
       - name: Build .deb package
@@ -165,7 +175,7 @@ jobs:
           name: jellybox-linux-${{ matrix.arch }}
           path: |
             jellybox-linux-${{ matrix.arch }}.tar.gz
-            jellybox-linux-${{ matrix.appimage_arch }}.AppImage
+            JellyBox-${{ matrix.appimage_arch }}.AppImage
             jellybox-linux-${{ matrix.deb_arch }}.deb
             jellybox-linux-${{ matrix.rpm_arch }}.rpm
 

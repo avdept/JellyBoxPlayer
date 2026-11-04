@@ -108,6 +108,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _requalifyGeneration = 0;
 
   RemotePlayback? remote;
+  var _localPlays = 0;
+
+  Future<void> playingHere(Future<void> Function() action) async {
+    _localPlays++;
+    try {
+      await action();
+    } finally {
+      _localPlays--;
+    }
+  }
 
   @override
   set state(PlaybackState value) {
@@ -693,7 +703,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool keepStreamsOffline = false,
   }) async {
     final elsewhere = remote;
-    if (elsewhere != null && autoPlay && initialPosition == null) {
+    if (elsewhere != null &&
+        _localPlays == 0 &&
+        autoPlay &&
+        initialPosition == null) {
       final request = PlayRequest(
         song: playSong,
         songs: songs,

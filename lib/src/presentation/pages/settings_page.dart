@@ -200,6 +200,14 @@ class SettingsPage extends ConsumerWidget {
                     if (ref.watch(cloudAvailableProvider)) ...[
                       _sectionHeader('Jellybox Cloud'),
                       const JellyboxCloudSettings(),
+                      if (!device.isDesktop)
+                        _settingCheckbox(
+                          ref: ref,
+                          setting: AppSetting.carTakesQueue,
+                          label:
+                              'Continue the other device\'s queue here when '
+                              'the car connects',
+                        ),
                     ],
                     _sectionHeader('General'),
                     if (kDebugMode) _settingsButton(context),
@@ -771,7 +779,7 @@ class SettingsPage extends ConsumerWidget {
                 .read(appSettingsProvider.notifier)
                 .setEnabled(setting, value: value ?? false),
           ),
-          Text(label),
+          Flexible(child: Text(label)),
         ],
       ),
     );

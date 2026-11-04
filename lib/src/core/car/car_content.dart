@@ -5,7 +5,9 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
@@ -16,6 +18,7 @@ import 'package:jplayer/src/domain/providers/items_filter_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
+import 'package:jplayer/src/domain/providers/user_playlists_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
@@ -107,7 +110,7 @@ class CarContent {
   final _changes = StreamController<void>.broadcast();
   String? _lastSongsKey;
   ProviderSubscription<AsyncValue<List<GeneratedPlaylist>>>? _mixesSub;
-  ProviderSubscription<AsyncValue<LibraryPage>>? _likedSongsSub;
+  ProviderSubscription<AsyncValue<List<LibraryItem>>>? _userPlaylistsSub;
   ProviderSubscription<AsyncValue<List<LibraryItem>>>? _favouriteAlbumsSub;
 
   Stream<void> get contentChanged => _changes.stream;
@@ -166,7 +169,7 @@ class CarContent {
       );
       return resp.items;
     });
-    return _withLikedSongs(items).take(limit).toList();
+    return _withUserPlaylists(items).take(limit).toList();
   }
 
   List<CarEntry> favouriteAlbums({required int limit}) {
@@ -196,20 +199,21 @@ class CarContent {
     ];
   }
 
-  List<CarEntry> _withLikedSongs(List<LibraryItem> playlists) => [
-    ?_likedSongs(),
+  List<CarEntry> _withUserPlaylists(List<LibraryItem> playlists) => [
+    ..._userPlaylists(),
     ...playlists.map(entry),
   ];
 
-  CarEntry? _likedSongs() {
-    _likedSongsSub ??= _ref.listen(
-      favouriteSongsProvider,
+  List<CarEntry> _userPlaylists() {
+    _userPlaylistsSub ??= _ref.listen(
+      availableUserPlaylistsProvider,
       (previous, next) => _notifyChanged(),
     );
-    final page = _ref.read(favouriteSongsProvider).valueOrNull;
-    final liked = _ref.read(likedSongsPlaylistProvider);
-    if (page == null || page.items.isEmpty || liked == null) return null;
-    return _setEntry(liked, const []);
+    final items = _ref.read(availableUserPlaylistsProvider).valueOrNull;
+    return [
+      for (final item in items ?? const <LibraryItem>[])
+        _setEntry(item, const []),
+    ];
   }
 
   Future<CarPage> list({
@@ -329,9 +333,11 @@ class CarContent {
       _songLists[key] = startIndex == 0 ? items : [...previous, ...items];
       _lastSongsKey = key;
     }
-    final showLiked = type == 'playlists' && term.isEmpty && startIndex == 0;
+    final firstPage = type == 'playlists' && term.isEmpty && startIndex == 0;
     return CarPage(
-      entries: showLiked ? _withLikedSongs(items) : items.map(entry).toList(),
+      entries: firstPage
+          ? _withUserPlaylists(items)
+          : items.map(entry).toList(),
       sort: filter,
       hasMore: items.length >= pageSize,
     );
@@ -413,20 +419,28 @@ class CarContent {
     final item = await _resolve(type, id);
     if (item == null) return;
     final playback = _ref.read(setPlaybackProvider.notifier);
-    switch (_setType(type, item)) {
-      case 'liked':
-        await playback.playFavouriteSongs(item);
-      case 'playlist':
-        await playback.playPlaylist(item);
-      case 'mix':
-        await playback.playGeneratedPlaylist(item);
-      case 'artist':
-        await playback.playArtist(item);
-      case 'album':
-        await playback.playAlbum(item);
-      case 'song':
-        await playSong(item, context: songContext);
-    }
+    await _ref.read(playbackProvider.notifier).playingHere(() async {
+      switch (_setType(type, item)) {
+        case 'liked':
+          await playback.playFavouriteSongs(item);
+        case 'playlist':
+          await playback.playPlaylist(item);
+        case 'mix':
+          await playback.playGeneratedPlaylist(item);
+        case 'artist':
+          await playback.playArtist(item);
+        case 'album':
+          await playback.playAlbum(item);
+        case 'song':
+          await playSong(item, context: songContext);
+      }
+    });
+  }
+
+  Future<void> carConnected() async {
+    if (!_ref.read(settingProvider(AppSetting.carTakesQueue))) return;
+    if (!_ref.read(playingElsewhereProvider)) return;
+    await _ref.read(outputControllerProvider).playHere();
   }
 
   static String _setType(String type, LibraryItem item) => switch (type) {
@@ -483,7 +497,11 @@ class CarContent {
   Future<LibraryItem?> _resolve(String type, String id) async {
     final cached = _items[id];
     if (cached != null) return cached;
-    if (isLikedSongsId(id)) return _ref.read(likedSongsPlaylistProvider);
+    final userPlaylist = UserPlaylist.of(id);
+    if (userPlaylist != null) {
+      final userId = _ref.read(currentUserProvider)?.userId;
+      return userId == null ? null : userPlaylist.itemFor(userId);
+    }
     if (type == 'mix') {
       final playlists = _ref.read(todaysPlaylistsProvider).valueOrNull;
       return playlists?.where((p) => p.item.id == id).firstOrNull?.item;

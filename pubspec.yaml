@@ -1,7 +1,7 @@
 name: jplayer
 description: Jellyfin client
 publish_to: "none"
-version: 2.11.1+135
+version: 2.11.2+135
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -114,6 +114,8 @@ dev_dependencies:
 dependency_overrides:
   audio_session:
     path: ./packages/audio_session
+  audio_service:
+    path: ./packages/audio_service
 
 flutter:
   uses-material-design: true

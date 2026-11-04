@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/audio/session_play.dart';
 import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/providers/audio_handler.dart';
@@ -33,7 +34,7 @@ final playerProvider = Provider<AudioPlayer>((ref) {
   // the notification icon (falls back to the opaque launcher icon).
   final isMobile = Platform.isIOS || Platform.isAndroid;
   if (isMobile) {
-    JustAudioBackground.playHandler = player.play;
+    JustAudioBackground.playHandler = () => playWithSession(player);
     ref.onDispose(() => JustAudioBackground.playHandler = null);
   }
   if (!isMobile && !_audioServiceInitialized) {

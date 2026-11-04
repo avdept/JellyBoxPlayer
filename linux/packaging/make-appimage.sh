@@ -18,6 +18,13 @@ sed "s|@VERSION@|$VERSION|" "$SCRIPT_DIR/com.prodigytech.jellybox.desktop" > "$A
 install -m644 "$SCRIPT_DIR/jellybox.png" "$APPDIR/jellybox.png"
 ln -sf jellybox.png "$APPDIR/.DirIcon"
 
+# The same AppStream metainfo the Flatpak ships; appdir-lint warns without it
+# and the catalog page takes its summary and screenshots from here.
+mkdir -p "$APPDIR/usr/share/metainfo"
+sed -e "s|@VERSION@|$VERSION|" -e "s|@DATE@|$(date -u +%Y-%m-%d)|" \
+  "$SCRIPT_DIR/flatpak/com.prodigytech.jellybox.metainfo.xml" \
+  > "$APPDIR/usr/share/metainfo/com.prodigytech.jellybox.metainfo.xml"
+
 # appimagetool is itself an AppImage, so it has to match the host arch.
 case "$(uname -m)" in
   x86_64)  TOOL_ARCH=x86_64 ;;
