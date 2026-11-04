@@ -24,6 +24,7 @@ class CustomNavigationRail extends StatefulWidget {
     this.itemHeight = 48,
     this.padding = EdgeInsets.zero,
     this.leading,
+    this.secondary,
     this.trailing,
     super.key,
   });
@@ -45,6 +46,7 @@ class CustomNavigationRail extends StatefulWidget {
   final double itemHeight;
   final EdgeInsets padding;
   final Widget? leading;
+  final Widget? secondary;
   final Widget? trailing;
 
   @override
@@ -130,6 +132,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail>
                 ],
                 for (var index = 0; index < destinations.length; index++)
                   _itemView(index),
+                ?widget.secondary,
                 const Spacer(),
                 ?trailing,
               ],

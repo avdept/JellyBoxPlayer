@@ -54,6 +54,8 @@ export 'offline_notice.dart';
 export 'plugin_notice_banner.dart';
 export 'hover_icon_button.dart';
 export 'hover_zoom.dart';
+export 'pinned_items_button.dart';
+export 'pinned_items_rail_box.dart';
 export 'play_button.dart';
 export 'playlist_controls.dart';
 export 'collection_download_button.dart';

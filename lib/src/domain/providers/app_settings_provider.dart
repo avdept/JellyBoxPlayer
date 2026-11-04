@@ -57,6 +57,8 @@ enum AppSetting {
   discordRichPresence('discord_rich_presence'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
+  pinsEnabled('pins_enabled', defaultValue: true),
+  pinLongevity('pin_longevity', defaultValue: 'days14'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
   lidarrUrl('lidarr_url', defaultValue: '', syncs: false),
   lidarrRootFolder('lidarr_root_folder', defaultValue: '', syncs: false),
@@ -162,6 +164,15 @@ final contentUpdateIntervalProvider = Provider<ContentUpdateInterval>(
         AppSetting.contentUpdateInterval,
       )] ??
       ContentUpdateInterval.min5,
+);
+
+final pinLongevityProvider = Provider<PinLongevity>(
+  (ref) =>
+      PinLongevity.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.pinLongevity],
+        AppSetting.pinLongevity,
+      )] ??
+      PinLongevity.days14,
 );
 
 final keepScreenOnProvider = Provider<KeepScreenOn>(

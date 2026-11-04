@@ -89,11 +89,11 @@ class AlbumCardShimmer extends StatelessWidget {
           ),
         ),
         ShimmerBox(
-          height: (device.isTablet ? 24 : 16) * 1.1,
+          height: AlbumView.titleFontSize * 1.1,
           width: width * 0.8,
         ),
         ShimmerBox(
-          height: (device.isTablet ? 22 : 14) * 1.1,
+          height: AlbumView.subtitleFontSize * 1.1,
           width: width * 0.55,
         ),
       ],

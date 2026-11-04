@@ -12,6 +12,7 @@ export 'layout.dart';
 export 'lyrics_alignment.dart';
 export 'lyrics_blur.dart';
 export 'network_exceptions.dart';
+export 'pin_longevity.dart';
 export 'playback_status.dart';
 export 'player_time_display.dart';
 export 'start_page.dart';
