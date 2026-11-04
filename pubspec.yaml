@@ -114,6 +114,8 @@ dev_dependencies:
 dependency_overrides:
   audio_session:
     path: ./packages/audio_session
+  audio_service:
+    path: ./packages/audio_service
 
 flutter:
   uses-material-design: true

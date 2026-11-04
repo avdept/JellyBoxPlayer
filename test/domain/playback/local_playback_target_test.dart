@@ -1065,6 +1065,17 @@ void main() {
       verifyNever(player.pause);
       verify(player.play).called(1);
     });
+
+    test('- a refused audio session leaves the player paused', () async {
+      reportPlayer(playing: false, processingState: ProcessingState.ready);
+      when(player.play).thenAnswer(
+        (_) async => throw PlatformException(code: 'Session activation failed'),
+      );
+
+      await target.play();
+
+      verifyInOrder([player.play, player.pause]);
+    });
   });
 
   group('reorder', () {
