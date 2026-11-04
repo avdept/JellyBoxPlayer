@@ -8,14 +8,18 @@ class FrostedPanel extends ConsumerWidget {
   const FrostedPanel({
     required this.child,
     this.color,
+    this.scrim,
     this.borderRadius = BorderRadius.zero,
     this.blur = 24,
     this.elevation = 0,
     super.key,
   });
 
+  static const Color sidebarScrim = Colors.black54;
+
   final Widget child;
   final Color? color;
+  final Color? scrim;
   final BorderRadius borderRadius;
   final double blur;
   final double elevation;
@@ -29,9 +33,10 @@ class FrostedPanel extends ConsumerWidget {
                 theme.bottomSheetTheme.backgroundColor ??
                 Colors.black)
             .withValues(alpha: 0.88);
+    final scrim = this.scrim;
 
     return Material(
-      color: tint,
+      color: scrim == null ? tint : Color.alphaBlend(tint, scrim),
       surfaceTintColor: Colors.transparent,
       elevation: elevation,
       borderRadius: borderRadius,

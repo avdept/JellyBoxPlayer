@@ -39,7 +39,7 @@ class SidebarOverlay extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 child: Opacity(
                   opacity: value,
-                  child: const ColoredBox(color: Colors.black54),
+                  child: const ColoredBox(color: FrostedPanel.sidebarScrim),
                 ),
               ),
             ),

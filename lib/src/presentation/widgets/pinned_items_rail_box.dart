@@ -17,6 +17,8 @@ import 'package:jplayer/src/presentation/widgets/pinned_item_actions.dart';
 
 const _openDelay = Duration(milliseconds: 120);
 const _closeDelay = Duration(milliseconds: 250);
+const _slideOutDuration = Duration(milliseconds: 220);
+const _slideInDuration = Duration(milliseconds: 160);
 const _barGap = 8.0;
 const _cardWidth = 104.0;
 const _cardSpacing = 12.0;
@@ -67,9 +69,20 @@ class PinnedItemsRailBox extends ConsumerStatefulWidget {
   ConsumerState<PinnedItemsRailBox> createState() => _PinnedItemsRailBoxState();
 }
 
-class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox> {
+class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox>
+    with SingleTickerProviderStateMixin {
   final _link = LayerLink();
   final _controller = OverlayPortalController();
+  late final _slide = AnimationController(
+    vsync: this,
+    duration: _slideOutDuration,
+    reverseDuration: _slideInDuration,
+  )..addStatusListener(_onSlideStatus);
+  late final _reveal = CurvedAnimation(
+    parent: _slide,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
   Timer? _timer;
   var _hovering = false;
   var _menuOpen = false;
@@ -83,7 +96,15 @@ class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox> {
   @override
   void dispose() {
     _timer?.cancel();
+    _reveal.dispose();
+    _slide.dispose();
     super.dispose();
+  }
+
+  void _onSlideStatus(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed && _controller.isShowing) {
+      _controller.hide();
+    }
   }
 
   void _onEnterBox() {
@@ -119,12 +140,14 @@ class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox> {
 
   void _show() {
     _timer?.cancel();
-    if (mounted && !_controller.isShowing) _controller.show();
+    if (!mounted) return;
+    if (!_controller.isShowing) _controller.show();
+    _slide.forward().ignore();
   }
 
   void _hide() {
     _timer?.cancel();
-    if (mounted && _controller.isShowing) _controller.hide();
+    if (mounted && _controller.isShowing) _slide.reverse().ignore();
   }
 
   double _availableWidth(BuildContext context) {
@@ -147,20 +170,18 @@ class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox> {
       child: MouseRegion(
         onEnter: (_) => _onEnterBar(),
         onExit: (_) => _onExit(),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          builder: (context, value, child) => Opacity(
-            opacity: value,
-            child: Transform.translate(
-              offset: Offset(-12 * (1 - value), 0),
+        child: ClipRect(
+          child: AnimatedBuilder(
+            animation: _reveal,
+            builder: (context, child) => Align(
+              alignment: Alignment.centerRight,
+              widthFactor: _reveal.value,
               child: child,
             ),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: _availableWidth(context)),
-            child: _PinnedItemsBar(host: _host),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: _availableWidth(context)),
+              child: _PinnedItemsBar(host: _host),
+            ),
           ),
         ),
       ),
@@ -190,7 +211,7 @@ class _PinnedItemsRailBoxState extends ConsumerState<PinnedItemsRailBox> {
                 pins: pins.take(_stackedCovers).toList(),
                 total: count,
               ),
-              label: Text(count > 0 ? 'Pinned ($count)' : 'Pinned'),
+              label: const Text('Pins'),
               foregroundColor: theme.colorScheme.onPrimary,
               fontSize: 16,
               height: _buttonHeight,
@@ -438,6 +459,7 @@ class _PinnedItemsBar extends ConsumerWidget {
 
     return FrostedPanel(
       elevation: 12,
+      scrim: FrostedPanel.sidebarScrim,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: EdgeInsets.fromLTRB(12, 12, pins.isEmpty ? 12 : 0, 12),

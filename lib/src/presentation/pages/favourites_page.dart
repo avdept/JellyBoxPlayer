@@ -168,10 +168,7 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
       _sectionHeader(searchCategoryLabel(category)),
       SliverToBoxAdapter(
         child: SizedBox(
-          height: AlbumCardMetrics.height(
-            cardWidth,
-            isTablet: _device.isTablet,
-          ),
+          height: AlbumCardMetrics.height(cardWidth),
           child: HorizontalScrollRegion(
             controlsHeight: cardWidth,
             builder: (context, controller) => ListView.separated(

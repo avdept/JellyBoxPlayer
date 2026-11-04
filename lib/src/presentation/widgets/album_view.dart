@@ -28,6 +28,8 @@ class AlbumView extends ConsumerStatefulWidget {
   });
 
   static const coverTextSpacing = 6.0;
+  static const titleFontSize = 16.0;
+  static const subtitleFontSize = 14.0;
 
   final LibraryItem album;
   final bool showArtist;
@@ -76,9 +78,8 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
 
   @override
   Widget build(BuildContext context) {
-    final deviceType = getDeviceType(MediaQuery.sizeOf(context));
-    final isTablet = deviceType == DeviceScreenType.tablet;
-    final isDesktop = deviceType == DeviceScreenType.desktop;
+    final isDesktop =
+        getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.desktop;
 
     final card = GestureDetector(
       onLongPress: (!isDesktop && widget.optionsBuilder != null)
@@ -129,16 +130,13 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                     Positioned(
                       top: 8,
                       left: 8,
-                      child: DownloadBadgeIcon(
-                        item: widget.album,
-                        size: isTablet ? 28 : 22,
-                      ),
+                      child: DownloadBadgeIcon(item: widget.album),
                     ),
                   if (widget.onPlayPressed != null)
                     Positioned(
                       right: 8,
                       bottom: 8,
-                      child: _playButton(isTablet ? 48 : 40),
+                      child: _playButton(40),
                     ),
                 ],
               ),
@@ -153,10 +151,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                         ? CrossAxisAlignment.start
                         : CrossAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _titleText(isTablet: isTablet),
-                      _subtitleWidget(isTablet: isTablet),
-                    ],
+                    children: [_titleText(), _subtitleWidget()],
                   ),
                 ),
                 widget.trailing!,
@@ -168,10 +163,7 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
-              children: [
-                _titleText(isTablet: isTablet),
-                _subtitleWidget(isTablet: isTablet),
-              ],
+              children: [_titleText(), _subtitleWidget()],
             ),
         ],
       ),
@@ -189,10 +181,10 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
     );
   }
 
-  Widget _titleText({required bool isTablet}) => Text(
+  Widget _titleText() => Text(
     widget.album.name,
-    style: TextStyle(
-      fontSize: isTablet ? 24 : 16,
+    style: const TextStyle(
+      fontSize: AlbumView.titleFontSize,
       fontWeight: FontWeight.w500,
       height: 1.2,
       overflow: TextOverflow.ellipsis,
@@ -200,13 +192,13 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
     maxLines: 1,
   );
 
-  Widget _subtitleWidget({required bool isTablet}) => Text(
+  Widget _subtitleWidget() => Text(
     _subtitleText,
-    style: TextStyle(
-      fontSize: isTablet ? 22 : 14,
+    style: const TextStyle(
+      fontSize: AlbumView.subtitleFontSize,
       fontWeight: FontWeight.w400,
       height: 1.2,
-      color: const Color.fromARGB(130, 255, 255, 255),
+      color: Color.fromARGB(130, 255, 255, 255),
       overflow: TextOverflow.ellipsis,
     ).merge(widget.subTextStyle),
     maxLines: 1,

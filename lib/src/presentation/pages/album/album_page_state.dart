@@ -492,10 +492,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     required Future<void> Function(LibraryItem) onLike,
   }) {
     final cardWidth = AlbumCardMetrics.width(device);
-    final cardHeight = AlbumCardMetrics.height(
-      cardWidth,
-      isTablet: device.isTablet,
-    );
+    final cardHeight = AlbumCardMetrics.height(cardWidth);
 
     return [
       SliverToBoxAdapter(

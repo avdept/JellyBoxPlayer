@@ -117,10 +117,7 @@ class SearchResultsSliver extends ConsumerWidget {
           alignment: Alignment.centerLeft,
           child: SizedBox(
             width: cardWidth,
-            height: AlbumCardMetrics.height(
-              cardWidth,
-              isTablet: device.isTablet,
-            ),
+            height: AlbumCardMetrics.height(cardWidth),
             child: AlbumView(
               album: mixItem,
               showArtist: false,
@@ -226,7 +223,7 @@ class SearchResultsSliver extends ConsumerWidget {
 
     return SliverToBoxAdapter(
       child: SizedBox(
-        height: AlbumCardMetrics.height(cardWidth, isTablet: device.isTablet),
+        height: AlbumCardMetrics.height(cardWidth),
         child: HorizontalScrollRegion(
           controlsHeight: cardWidth,
           builder: (context, controller) => ListView.separated(
