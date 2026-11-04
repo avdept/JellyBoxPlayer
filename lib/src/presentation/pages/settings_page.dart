@@ -65,6 +65,12 @@ class SettingsPage extends ConsumerWidget {
     LyricsAlignment.right: 'Right',
   };
 
+  static const Map<LyricsBlur, String> _lyricsBlurLabels = {
+    LyricsBlur.off: 'Disabled',
+    LyricsBlur.medium: 'Medium',
+    LyricsBlur.hard: 'Hard',
+  };
+
   static const Map<StartPage, String> _startPageLabels = {
     StartPage.home: 'Home',
     StartPage.browse: 'Browse',
@@ -94,6 +100,13 @@ class SettingsPage extends ConsumerWidget {
     ContentUpdateInterval.min15: '15 minutes',
     ContentUpdateInterval.min30: '30 minutes',
     ContentUpdateInterval.never: 'Never',
+  };
+
+  static const Map<PinLongevity, String> _pinLongevityLabels = {
+    PinLongevity.days7: '7 days',
+    PinLongevity.days14: '14 days',
+    PinLongevity.days30: '30 days',
+    PinLongevity.infinite: 'Infinite',
   };
 
   static const Map<ForwardCacheLimit, String> _forwardCacheLabels = {
@@ -194,6 +207,14 @@ class SettingsPage extends ConsumerWidget {
                     if (ref.watch(cloudAvailableProvider)) ...[
                       _sectionHeader('Jellybox Cloud'),
                       const JellyboxCloudSettings(),
+                      if (!device.isDesktop)
+                        _settingCheckbox(
+                          ref: ref,
+                          setting: AppSetting.carTakesQueue,
+                          label:
+                              'Continue the other device\'s queue here when '
+                              'the car connects',
+                        ),
                     ],
                     _sectionHeader('General'),
                     if (kDebugMode) _settingsButton(context),
@@ -237,6 +258,25 @@ class SettingsPage extends ConsumerWidget {
                       context,
                       'How often the home page refreshes and downloaded '
                       'playlists check your server for changes.',
+                    ),
+                    _sectionHeader('Pins'),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.pinsEnabled,
+                      label: 'Enable pins',
+                    ),
+                    _settingDropdown<PinLongevity>(
+                      context: context,
+                      label: 'Pins longevity',
+                      value: ref.watch(pinLongevityProvider),
+                      options: _pinLongevityLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.pinLongevity, value.name),
+                    ),
+                    _settingNote(
+                      context,
+                      'Auto expire pins to keep it always fresh.',
                     ),
                     _sectionHeader('UI'),
                     _settingDropdown<StartPage>(
@@ -438,6 +478,11 @@ class SettingsPage extends ConsumerWidget {
                               value.name,
                             ),
                       ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModeRememberLyrics,
+                        label: 'Remember lyrics mode',
+                      ),
                     ],
                     if (supportsDiscordPresence) ...[
                       _sectionHeader('Discord'),
@@ -449,6 +494,20 @@ class SettingsPage extends ConsumerWidget {
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
+                    if (ref.watch(lidarrAvailableProvider)) ...[
+                      _sectionHeader('Lidarr'),
+                      const LidarrSettings(),
+                    ],
+                    if (ref.watch(installedCatalogSourcesProvider).firstOrNull
+                        case final catalog?) ...[
+                      _sectionHeader('Discover'),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.catalogDiscovery,
+                        label: 'Discover music on ${catalog.brand.name}',
+                      ),
+                      _settingNote(context, catalog.brand.description),
+                    ],
                     _sectionHeader('Lyrics'),
                     _settingDropdown<LyricsAlignment>(
                       context: context,
@@ -458,6 +517,15 @@ class SettingsPage extends ConsumerWidget {
                       onChanged: (value) => ref
                           .read(appSettingsProvider.notifier)
                           .setValue(AppSetting.lyricsAlignment, value.name),
+                    ),
+                    _settingDropdown<LyricsBlur>(
+                      context: context,
+                      label: 'Blur of other lines',
+                      value: ref.watch(lyricsBlurProvider),
+                      options: _lyricsBlurLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.lyricsBlur, value.name),
                     ),
                     _settingCheckbox(
                       ref: ref,
@@ -737,7 +805,7 @@ class SettingsPage extends ConsumerWidget {
                 .read(appSettingsProvider.notifier)
                 .setEnabled(setting, value: value ?? false),
           ),
-          Text(label),
+          Flexible(child: Text(label)),
         ],
       ),
     );

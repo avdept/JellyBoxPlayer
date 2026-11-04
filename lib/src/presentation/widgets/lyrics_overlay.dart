@@ -127,7 +127,9 @@ class _LyricsPanel extends ConsumerWidget {
             HoverIconButton(
               onPressed: () {
                 ref.read(lyricsVisibleProvider.notifier).state = false;
-                ref.read(studioModeLyricsProvider.notifier).state = true;
+                ref
+                    .read(appSettingsProvider.notifier)
+                    .setEnabled(AppSetting.studioModeLyrics, value: true);
                 ref.read(studioModeVisibleProvider.notifier).state = true;
               },
               color: Colors.white,
@@ -300,6 +302,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
 
         final isSynced = lyrics!.isSynced;
         final textAlign = _textAlign;
+        final blur = ref.watch(lyricsBlurProvider);
 
         return ScrollConfiguration(
           behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -320,6 +323,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
                         isSynced: isSynced,
                         offset: lyrics.offset,
                         textAlign: textAlign,
+                        blur: blur,
                       ),
                   ],
                 ),
@@ -337,6 +341,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     required bool isSynced,
     required Duration offset,
     required TextAlign textAlign,
+    required LyricsBlur blur,
   }) {
     final isActive = isSynced && index == _activeLine;
     final start = line.start;
@@ -345,9 +350,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     final distance = (isSynced && _activeLine >= 0 && !isActive)
         ? (index - _activeLine).abs()
         : 0;
-    final blurSigma = distance == 0
-        ? 0.0
-        : (0.3 + 0.7 * distance).clamp(0.0, 4.0);
+    final blurSigma = distance == 0 ? 0.0 : blur.sigmaFor(distance);
     final fade = distance == 0
         ? 0.4
         : (0.45 - 0.03 * distance).clamp(0.25, 0.45);

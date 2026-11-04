@@ -19,5 +19,4 @@ final sessionScopedProviders = <ProviderOrFamily>[
   carFilterProvider,
   lyricsVisibleProvider,
   studioModeVisibleProvider,
-  studioModeLyricsProvider,
 ];

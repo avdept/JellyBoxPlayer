@@ -55,6 +55,7 @@ class PlayHistoryDatabase {
   Future<List<PlayCountRow>> topPlayed({
     required Duration window,
     required int limit,
+    int minPlays = 1,
     DateTime Function() now = DateTime.now,
   }) async {
     final userId = this.userId;
@@ -63,11 +64,13 @@ class PlayHistoryDatabase {
     final rows = await db.rawQuery(
       'SELECT SongId, COUNT(*) AS PlayCount, MAX(PlayedAt) AS LastPlayed '
       'FROM $_plays WHERE ServerId = ? AND UserId = ? AND PlayedAt >= ? '
-      'GROUP BY SongId ORDER BY PlayCount DESC, LastPlayed DESC LIMIT ?',
+      'GROUP BY SongId HAVING PlayCount >= ? '
+      'ORDER BY PlayCount DESC, LastPlayed DESC LIMIT ?',
       [
         _serverId,
         userId,
         now().toUtc().subtract(window).millisecondsSinceEpoch,
+        minPlays,
         limit,
       ],
     );
@@ -86,19 +89,23 @@ class PlayHistoryDatabase {
 
   Future<int> trackedSongCount({
     required Duration window,
+    int minPlays = 1,
     DateTime Function() now = DateTime.now,
   }) async {
     final userId = this.userId;
     if (userId == null) return 0;
     final db = await _database;
     final rows = await db.rawQuery(
-      'SELECT COUNT(DISTINCT p.SongId) AS TrackedCount FROM $_plays p '
+      'SELECT COUNT(*) AS TrackedCount FROM '
+      '(SELECT p.SongId FROM $_plays p '
       'JOIN $_songs s ON s.ServerId = p.ServerId AND s.SongId = p.SongId '
-      'WHERE p.ServerId = ? AND p.UserId = ? AND p.PlayedAt >= ?',
+      'WHERE p.ServerId = ? AND p.UserId = ? AND p.PlayedAt >= ? '
+      'GROUP BY p.SongId HAVING COUNT(*) >= ?)',
       [
         _serverId,
         userId,
         now().toUtc().subtract(window).millisecondsSinceEpoch,
+        minPlays,
       ],
     );
     return Sqflite.firstIntValue(rows) ?? 0;

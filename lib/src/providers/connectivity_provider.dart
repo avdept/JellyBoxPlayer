@@ -7,11 +7,14 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/api/subsonic/subsonic_api.dart';
+import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/data/providers/dio_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/current_server_type_provider.dart';
 import 'package:jplayer/src/providers/server_addresses_provider.dart';
 
 class ConnectivityNotifier extends StateNotifier<bool> {
@@ -43,6 +46,9 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     _routeArtwork();
     _ref.listen<User?>(currentUserProvider, (previous, next) {
       if (previous == null && next != null) unawaited(refresh());
+    });
+    _ref.listen<ServerType?>(currentServerTypeProvider, (previous, next) {
+      if (next != null && next != previous) unawaited(refresh());
     });
     unawaited(refresh());
   }
@@ -246,11 +252,16 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   }
 
   Future<bool> _answers(Dio client, String url, {bool relayed = false}) async {
+    final subsonic =
+        _ref.read(currentServerTypeProvider) == ServerType.subsonic;
     try {
-      final response = await client.getUri<void>(
-        Uri.parse(url),
+      final response = await client.getUri<Object?>(
+        subsonic
+            ? SubsonicApi(client, baseUrl: url).uri('ping.view')
+            : Uri.parse(url),
         options: Options(followRedirects: false, validateStatus: (_) => true),
       );
+      if (subsonic) return SubsonicApi.envelopeOf(response.data) != null;
       final status = response.statusCode ?? 0;
       if (status == 401 || status == 403) return false;
       return !relayed || status < 500;

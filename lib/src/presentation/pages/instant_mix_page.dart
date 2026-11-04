@@ -98,6 +98,8 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
             songs: shown,
             set: widget.mix,
             showPosition: true,
+            showAlbum: true,
+            showCover: true,
             edgePadding: device.isMobile ? 16 : 30,
             onItemUpdated: (song) =>
                 ref.read(instantMixesProvider.notifier).updateSong(mixId, song),

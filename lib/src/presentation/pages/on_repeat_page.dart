@@ -26,7 +26,7 @@ class OnRepeatPage extends ConsumerWidget {
     final imageService = ref.read(imageServiceProvider);
 
     return MixPageScaffold(
-      name: onRepeatName,
+      name: UserPlaylist.onRepeat.name,
       subtitle: 'Most played in the last 30 days',
       songs: items,
       coverImages: [if (onRepeat != null) imageService.itemImage(onRepeat)],
@@ -69,6 +69,8 @@ class OnRepeatPage extends ConsumerWidget {
                 songs: list,
                 set: isOffline ? onRepeat : null,
                 showPosition: true,
+                showAlbum: true,
+                showCover: true,
                 edgePadding: edgePadding,
                 onItemUpdated: ref
                     .read(onRepeatSongsProvider.notifier)

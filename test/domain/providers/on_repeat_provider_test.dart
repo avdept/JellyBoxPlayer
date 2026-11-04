@@ -49,6 +49,7 @@ void main() {
       () => history.topPlayed(
         window: any(named: 'window'),
         limit: any(named: 'limit'),
+        minPlays: any(named: 'minPlays'),
       ),
     ).thenAnswer(
       (_) async => [
@@ -81,6 +82,7 @@ void main() {
         () => history.topPlayed(
           window: onRepeatWindow,
           limit: onRepeatSongsLimit,
+          minPlays: onRepeatMinimumPlays,
         ),
       ).called(1);
     },
@@ -149,7 +151,10 @@ void main() {
   test('- the home card hides below the minimum and shows at it', () async {
     final counts = [onRepeatMinimumSongs - 1, onRepeatMinimumSongs];
     when(
-      () => history.trackedSongCount(window: any(named: 'window')),
+      () => history.trackedSongCount(
+        window: any(named: 'window'),
+        minPlays: onRepeatMinimumPlays,
+      ),
     ).thenAnswer((_) async => counts.removeAt(0));
     final container = createProviderContainer(
       overrides: [
@@ -165,7 +170,7 @@ void main() {
     container.read(playHistoryChangedProvider.notifier).state++;
     final card = await container.read(onRepeatCardProvider.future);
 
-    expect(card?.name, onRepeatName);
+    expect(card?.name, UserPlaylist.onRepeat.name);
   });
 
   test('- empty history asks nobody for anything', () async {

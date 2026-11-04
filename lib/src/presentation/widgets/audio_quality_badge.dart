@@ -6,6 +6,7 @@ class AudioQualityBadge extends StatelessWidget {
     this.codec,
     this.bitRate,
     this.sampleRate,
+    this.label,
     this.backgroundColor,
     this.textColor,
     this.fontSize = 10,
@@ -34,6 +35,7 @@ class AudioQualityBadge extends StatelessWidget {
   final String? codec;
   final int? bitRate;
   final int? sampleRate;
+  final String? label;
   final Color? backgroundColor;
   final Color? textColor;
   final double fontSize;
@@ -52,10 +54,12 @@ class AudioQualityBadge extends StatelessWidget {
       if (freqLabel != null) freqLabel,
     ].join('/');
 
-    final label = [
-      if (codec != null) codec!.toUpperCase(),
-      if (qualityParts.isNotEmpty) qualityParts,
-    ].join(' ');
+    final label =
+        this.label ??
+        [
+          if (codec != null) codec!.toUpperCase(),
+          if (qualityParts.isNotEmpty) qualityParts,
+        ].join(' ');
 
     if (label.isEmpty) return const SizedBox.shrink();
 

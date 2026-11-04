@@ -89,11 +89,11 @@ class AlbumCardShimmer extends StatelessWidget {
           ),
         ),
         ShimmerBox(
-          height: (device.isTablet ? 24 : 16) * 1.1,
+          height: AlbumView.titleFontSize * 1.1,
           width: width * 0.8,
         ),
         ShimmerBox(
-          height: (device.isTablet ? 22 : 14) * 1.1,
+          height: AlbumView.subtitleFontSize * 1.1,
           width: width * 0.55,
         ),
       ],
@@ -151,6 +151,57 @@ class AlbumCardsGridShimmer extends StatelessWidget {
       width: AlbumCardMetrics.maxWidth(device),
       device: device,
     ),
+  );
+}
+
+class ArtistCardsRowShimmer extends StatelessWidget {
+  const ArtistCardsRowShimmer({
+    required this.size,
+    required this.device,
+    this.count = 6,
+    this.horizontalPadding = 0,
+    super.key,
+  });
+
+  final double size;
+  final DeviceType device;
+  final int count;
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: size + 52,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      itemCount: count,
+      separatorBuilder: (context, index) =>
+          SizedBox(width: AlbumCardMetrics.carouselSpacing(device)),
+      itemBuilder: (context, index) => SizedBox(
+        width: size,
+        child: Column(
+          children: [
+            ShimmerBox(width: size, height: size, radius: size / 2),
+            const SizedBox(height: 12),
+            ShimmerBox(width: size * 0.6, height: 15 * 1.2),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class SectionHeaderShimmer extends StatelessWidget {
+  const SectionHeaderShimmer({this.width = 96, this.height = 20, super.key});
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: ShimmerBox(width: width, height: height, radius: 6),
   );
 }
 
@@ -236,25 +287,15 @@ class SectionsShimmer extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       for (var index = 0; index < cardRows; index++) ...[
-        const _SectionHeaderShimmer(),
+        const SectionHeaderShimmer(),
         AlbumCardsRowShimmer(device: device, count: 4),
         SizedBox(height: device.isMobile ? 16 : 24),
       ],
       if (songRows > 0) ...[
-        const _SectionHeaderShimmer(),
+        const SectionHeaderShimmer(),
         SongRowsShimmer(device: device, count: songRows),
       ],
     ],
-  );
-}
-
-class _SectionHeaderShimmer extends StatelessWidget {
-  const _SectionHeaderShimmer();
-
-  @override
-  Widget build(BuildContext context) => const Padding(
-    padding: EdgeInsets.symmetric(vertical: 8),
-    child: ShimmerBox(width: 96, height: 20, radius: 6),
   );
 }
 

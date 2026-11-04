@@ -271,7 +271,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                           child: Center(child: Text("There's no songs yet.")),
                         ),
                       SliverFixedExtentList.builder(
-                        itemExtent: _device.isMobile ? 62 : 72,
+                        itemExtent: SongRowView.numberedHeight,
                         itemBuilder: (context, index) => ValueListenableBuilder(
                           valueListenable: _playingSongId,
                           builder: (context, songId, other) {
@@ -288,6 +288,8 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                     sourceId: widget.playlist.id,
                                   ),
                               position: index + 1,
+                              showCover: true,
+                              showAlbum: true,
                               edgePadding: _device.isMobile ? 16 : 30,
                               onLikePressed: _onSongLikePressed,
                               onRatingChanged: _onSongRated,

@@ -164,6 +164,7 @@ class _WindowResizeFrameState extends State<WindowResizeFrame>
   @override
   void initState() {
     super.initState();
+    if (!needsWindowResizeFrame) return;
     windowManager.addListener(this);
     unawaited(_syncWindowState());
   }
@@ -201,7 +202,7 @@ class _WindowResizeFrameState extends State<WindowResizeFrame>
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
+    if (needsWindowResizeFrame) windowManager.removeListener(this);
     super.dispose();
   }
 }

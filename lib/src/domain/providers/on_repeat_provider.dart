@@ -9,20 +9,17 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
-const onRepeatName = 'On repeat';
 const onRepeatWindow = Duration(days: 30);
-const onRepeatSongsLimit = 200;
+const onRepeatSongsLimit = 100;
+const onRepeatMinimumPlays = 2;
 const onRepeatMinimumSongs = 20;
 
 final playHistoryChangedProvider = StateProvider<int>((ref) => 0);
 
 typedef OnRepeatSnapshot = ({List<String> ids, List<LibraryItem> songs});
 
-LibraryItem onRepeatPlaylistFor(String userId) => LibraryItem(
-  id: EphemeralPlaylistId.onRepeat(userId),
-  name: onRepeatName,
-  kind: ItemKind.playlist,
-);
+LibraryItem onRepeatPlaylistFor(String userId) =>
+    UserPlaylist.onRepeat.itemFor(userId);
 
 bool isOnRepeatId(String id) => EphemeralPlaylistId.isOnRepeat(id);
 
@@ -38,7 +35,10 @@ final AutoDisposeFutureProvider<LibraryItem?> onRepeatCardProvider =
       ref.watch(playHistoryChangedProvider);
       final count = await ref
           .watch(playHistoryDatabaseProvider)
-          .trackedSongCount(window: onRepeatWindow);
+          .trackedSongCount(
+            window: onRepeatWindow,
+            minPlays: onRepeatMinimumPlays,
+          );
       return count >= onRepeatMinimumSongs ? playlist : null;
     });
 
@@ -47,6 +47,7 @@ Future<OnRepeatSnapshot> onRepeatSnapshotOf(Ref ref) async {
   final top = await history.topPlayed(
     window: onRepeatWindow,
     limit: onRepeatSongsLimit,
+    minPlays: onRepeatMinimumPlays,
   );
   final ids = [for (final row in top) row.songId];
   final stored = await history.playedSongsByIds(ids);

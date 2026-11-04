@@ -92,6 +92,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     CPNowPlayingTemplate.shared.add(self)
     applyNowPlayingButtons()
     reload()
+    CarPlayBridge.shared.carConnected()
   }
 
   func templateApplicationScene(
@@ -268,9 +269,76 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         title: entry["title"] as? String ?? "Albums",
         artistId: id
       )
+    } else if opensSongList(playType: playType, entry: entry) {
+      pushSongList(playType: playType, entry: entry)
     } else {
       CarPlayBridge.shared.play(type: playType, id: id)
       pushNowPlaying()
+    }
+  }
+
+  private func opensSongList(playType: String, entry: [String: Any]) -> Bool {
+    switch playType {
+    case "playlist", "mix":
+      return true
+    case "download":
+      return entry["kind"] as? String == "playlist"
+    default:
+      return false
+    }
+  }
+
+  private func pushSongList(playType: String, entry: [String: Any]) {
+    guard let id = entry["id"] as? String else { return }
+    let title = entry["title"] as? String ?? ""
+    let template = CPListTemplate(title: title, sections: [])
+    template.emptyViewTitleVariants = ["Loading…"]
+    interfaceController?.pushTemplate(template, animated: true) { _, error in
+      if let error { NSLog("[CarPlay] push failed: %@", error.localizedDescription) }
+    }
+    let context = "\(playType):\(id)"
+    CarPlayBridge.shared.fetch("getSongs", arguments: ["type": playType, "id": id]) {
+      [weak self] data in
+      guard let self else { return }
+      template.emptyViewTitleVariants = ["Nothing here yet"]
+      let entries = data?["items"] as? [[String: Any]] ?? []
+      let playAll = CPListItem(
+        text: "Play All",
+        detailText: nil,
+        image: UIImage(systemName: "play.circle")
+      )
+      playAll.handler = { [weak self] _, completion in
+        CarPlayBridge.shared.play(type: playType, id: id)
+        self?.pushNowPlaying()
+        completion()
+      }
+      var pairs = [(id: String, item: CPListItem)]()
+      let songs = entries.prefix(CPListTemplate.maximumItemCount - 1).compactMap {
+        song -> CPListItem? in
+        guard let songId = song["id"] as? String, let songTitle = song["title"] as? String
+        else { return nil }
+        let subtitle = song["subtitle"] as? String
+        let item = CPListItem(
+          text: songTitle,
+          detailText: (subtitle?.isEmpty ?? true) ? nil : subtitle,
+          image: self.placeholderImage
+        )
+        item.handler = { [weak self] _, completion in
+          CarPlayBridge.shared.play(type: "song", id: songId, context: context)
+          self?.pushNowPlaying()
+          completion()
+        }
+        if let artworkUrl = song["artworkUrl"] as? String {
+          self.loadArtwork(from: artworkUrl) { image in
+            item.setImage(image)
+          }
+        }
+        pairs.append((id: songId, item: item))
+        return item
+      }
+      self.trackedItems["set"] = pairs
+      template.updateSections([CPListSection(items: songs.isEmpty ? [] : [playAll] + songs)])
+      self.applyPlaybackState()
     }
   }
 
@@ -561,7 +629,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     let songId = CarPlayBridge.shared.playingSongId
     let playing = CarPlayBridge.shared.isPlaying
     for (bucket, pairs) in trackedItems {
-      let target = bucket == "queue" ? songId : setId
+      let target = bucket == "queue" || bucket == "set" ? songId : setId
       for entry in pairs {
         entry.item.isPlaying = playing && entry.id == target
       }

@@ -39,6 +39,8 @@ enum ContextMenuEntry {
   removeFromQueue,
   removeFromPlaylist,
   deletePlaylist,
+  addToLidarr,
+  pin,
 }
 
 const contextMenuLayout =
@@ -51,6 +53,7 @@ const contextMenuLayout =
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
           ContextMenuEntry.metadataLinks,
@@ -62,6 +65,7 @@ const contextMenuLayout =
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.metadataLinks,
         ],
@@ -71,6 +75,7 @@ const contextMenuLayout =
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
           ContextMenuEntry.metadataLinks,
@@ -80,6 +85,7 @@ const contextMenuLayout =
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
           ContextMenuEntry.metadataLinks,
@@ -89,6 +95,7 @@ const contextMenuLayout =
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.goToAlbum,
           ContextMenuEntry.metadataLinks,
@@ -102,6 +109,7 @@ const contextMenuLayout =
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.goToArtist,
           ContextMenuEntry.metadataLinks,
         ],
@@ -111,6 +119,7 @@ const contextMenuLayout =
           ContextMenuEntry.play,
           ContextMenuEntry.instantMix,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
           ContextMenuEntry.metadataLinks,
         ],
       },
@@ -119,6 +128,7 @@ const contextMenuLayout =
           ContextMenuEntry.play,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
+          ContextMenuEntry.pin,
         ],
       },
       ItemKind.genre: {
@@ -341,9 +351,15 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.goToAlbum =>
           item.albumId != null ? actions.goToAlbum() : null,
         ContextMenuEntry.metadataLinks => actions.metadataLinks(),
+        ContextMenuEntry.pin =>
+          ref.read(settingProvider(AppSetting.pinsEnabled)) &&
+                  PinsNotifier.canPin(item)
+              ? actions.pin(isDesktop: isDesktop)
+              : null,
         ContextMenuEntry.removeFromQueue ||
         ContextMenuEntry.removeFromPlaylist ||
-        ContextMenuEntry.deletePlaylist => null,
+        ContextMenuEntry.deletePlaylist ||
+        ContextMenuEntry.addToLidarr => null,
       },
   ].nonNulls.toList();
 }
@@ -361,6 +377,7 @@ void showContextMenu(
   BuildContext context, {
   required Offset position,
   required List<ContextMenuAction> actions,
+  VoidCallback? onClosed,
 }) {
   if (actions.isEmpty) return;
   final overlay = Navigator.of(context).overlay!;
@@ -371,7 +388,10 @@ void showContextMenu(
       child: _AnimatedMenu(
         actions: actions,
         openAt: overlayBox.globalToLocal(position),
-        onClosed: entry.remove,
+        onClosed: () {
+          entry.remove();
+          onClosed?.call();
+        },
         builder: (_, _, _) => const SizedBox.expand(),
       ),
     ),
@@ -858,6 +878,24 @@ class _ContextMenuActions {
     );
   }
 
+  ContextMenuAction pin({required bool isDesktop}) => ContextMenuAction(
+    entry: ContextMenuEntry.pin,
+    icon: _PinState(item: item, builder: _pinIcon),
+    label: _PinState(
+      item: item,
+      builder: (isPinned) => _pinLabel(isPinned, isDesktop: isDesktop),
+    ),
+    run: () => ref.read(pinsProvider.notifier).toggle(item),
+  );
+
+  static Widget _pinIcon(bool isPinned) =>
+      Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined);
+
+  static Widget _pinLabel(bool isPinned, {required bool isDesktop}) {
+    final place = isDesktop ? 'sidebar' : 'home';
+    return Text(isPinned ? 'Unpin from $place' : 'Pin to $place');
+  }
+
   ContextMenuAction goToArtist() => ContextMenuAction(
     entry: ContextMenuEntry.goToArtist,
     icon: const Icon(CupertinoIcons.person),
@@ -927,6 +965,17 @@ class _SvgIcon extends StatelessWidget {
       colorFilter: ColorFilter.mode(theme.color!, BlendMode.srcIn),
     );
   }
+}
+
+class _PinState extends ConsumerWidget {
+  const _PinState({required this.item, required this.builder});
+
+  final LibraryItem item;
+  final Widget Function(bool isPinned) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      builder(ref.watch(isPinnedProvider(item.id)));
 }
 
 class _DownloadState extends ConsumerWidget {

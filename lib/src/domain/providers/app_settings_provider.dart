@@ -16,6 +16,8 @@ enum AppSetting {
     'studio_mode_lyrics_placement',
     defaultValue: 'right',
   ),
+  studioModeRememberLyrics('studio_mode_remember_lyrics'),
+  studioModeLyrics('studio_mode_lyrics', syncs: false),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),
@@ -31,7 +33,9 @@ enum AppSetting {
   letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
+  lyricsBlur('lyrics_blur', defaultValue: 'medium'),
   lrclibLyrics('lrclib_lyrics', defaultValue: true),
+  catalogDiscovery('catalog_discovery', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
   repeatMode('repeat_mode', defaultValue: 'off', syncs: false),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
@@ -49,10 +53,26 @@ enum AppSetting {
     syncs: false,
   ),
   downloadSyncOnCellular('download_sync_on_cellular', syncs: false),
+  carTakesQueue('car_takes_queue', syncs: false),
   discordRichPresence('discord_rich_presence'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
+  pinsEnabled('pins_enabled', defaultValue: true),
+  pinLongevity('pin_longevity', defaultValue: 'days14'),
   rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
+  lidarrUrl('lidarr_url', defaultValue: '', syncs: false),
+  lidarrRootFolder('lidarr_root_folder', defaultValue: '', syncs: false),
+  lidarrQualityProfile(
+    'lidarr_quality_profile',
+    defaultValue: '',
+    syncs: false,
+  ),
+  lidarrMetadataProfile(
+    'lidarr_metadata_profile',
+    defaultValue: '',
+    syncs: false,
+  ),
+  lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   telemetryOptOut('telemetry_opt_out');
@@ -146,6 +166,15 @@ final contentUpdateIntervalProvider = Provider<ContentUpdateInterval>(
       ContentUpdateInterval.min5,
 );
 
+final pinLongevityProvider = Provider<PinLongevity>(
+  (ref) =>
+      PinLongevity.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.pinLongevity],
+        AppSetting.pinLongevity,
+      )] ??
+      PinLongevity.days14,
+);
+
 final keepScreenOnProvider = Provider<KeepScreenOn>(
   (ref) =>
       KeepScreenOn.values.asNameMap()[_asString(
@@ -180,6 +209,15 @@ final lyricsAlignmentProvider = Provider<LyricsAlignment>(
         AppSetting.lyricsAlignment,
       )] ??
       LyricsAlignment.center,
+);
+
+final lyricsBlurProvider = Provider<LyricsBlur>(
+  (ref) =>
+      LyricsBlur.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.lyricsBlur],
+        AppSetting.lyricsBlur,
+      )] ??
+      LyricsBlur.medium,
 );
 
 final playerTimeDisplayProvider = Provider<PlayerTimeDisplay>(

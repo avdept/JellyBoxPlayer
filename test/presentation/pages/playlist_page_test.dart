@@ -147,7 +147,7 @@ void main() {
         expect(
           find.descendant(
             of: songFinder,
-            matching: find.text(songUT.albumArtist ?? ''),
+            matching: find.textContaining(songUT.albumArtist ?? ''),
           ),
           findsOneWidget,
         );

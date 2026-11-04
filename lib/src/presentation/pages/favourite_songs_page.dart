@@ -80,7 +80,7 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
     final imageService = ref.read(imageServiceProvider);
 
     return MixPageScaffold(
-      name: likedSongsName,
+      name: UserPlaylist.likedSongs.name,
       songs: items,
       songCount: total,
       coverImages: [if (liked != null) imageService.itemImage(liked)],
@@ -147,6 +147,8 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
                 songs: list,
                 set: isOffline ? liked : null,
                 showPosition: true,
+                showAlbum: true,
+                showCover: true,
                 edgePadding: edgePadding,
                 onItemUpdated: isOffline
                     ? (_) {}

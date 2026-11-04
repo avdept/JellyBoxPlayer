@@ -188,6 +188,9 @@ class _MainPageState extends ConsumerState<MainPage> {
                       _collapseButton(sidebarCollapsed),
                     ],
                   ),
+                  secondary: ref.watch(settingProvider(AppSetting.pinsEnabled))
+                      ? const PinnedItemsRailBox()
+                      : null,
                   trailing: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,

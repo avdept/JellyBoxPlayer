@@ -28,10 +28,10 @@ class DownloadsPage extends StatelessWidget {
 
   SliverGridDelegate _gridDelegate(DeviceType device) =>
       SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: device.isTablet ? 360 : 200,
+        maxCrossAxisExtent: 200,
         mainAxisSpacing: device.isMobile ? 15 : 24,
-        crossAxisSpacing: device.isMobile ? 8 : (device.isTablet ? 56 : 28),
-        childAspectRatio: device.isTablet ? 360 / 413 : 175 / 215.7,
+        crossAxisSpacing: device.isMobile ? 8 : 28,
+        childAspectRatio: 175 / 215.7,
       );
 
   void _onAlbumTap(BuildContext context, DownloadedAlbum album) =>

@@ -242,6 +242,34 @@ void main() {
     expect(bare.images.primary, 'ar-ar2');
   });
 
+  test('ids that already name their type are used as cover ids', () {
+    final album = SubsonicAlbumDTO.fromJson({
+      'id': 'album-4',
+      'name': 'Blue',
+      'artistId': 'artist-1',
+      'artist': 'Joni Mitchell',
+    }).toLibraryItem();
+    final artist = SubsonicArtistDTO.fromJson({
+      'id': 'artist-1',
+      'name': 'Joni Mitchell',
+    }).toLibraryItem();
+    final playlist = SubsonicPlaylistDTO.fromJson({
+      'id': 'pl-7',
+      'name': 'Road trip',
+    }).toLibraryItem();
+
+    expect(album.images.primary, 'album-4');
+    expect(artist.images.primary, 'artist-1');
+    expect(playlist.images.primary, 'pl-7');
+    expect(
+      subsonicArtIdFor(
+        'deadbeef-1234-4abc-8def-0123456789ab',
+        prefix: subsonicPlaylistArtPrefix,
+      ),
+      'pl-deadbeef-1234-4abc-8def-0123456789ab',
+    );
+  });
+
   test('SubsonicPlaylistDTO.toLibraryItem maps playlist fields', () {
     final playlist = SubsonicPlaylistDTO.fromJson({
       'id': 'pl1',

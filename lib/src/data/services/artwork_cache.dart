@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class ArtworkCache extends CacheManager {
@@ -13,11 +16,17 @@ class ArtworkCache extends CacheManager {
 
   static const key = 'jellyboxArtwork';
 
+  static const _textLike = {'.json', '.xml', '.html', '.htm', '.txt'};
+
   static final ArtworkCache instance = ArtworkCache._();
 
   static ArtworkRoute route = const ArtworkRoute();
 
   static String cacheKeyFor(String url) => route.keyFor(url);
+
+  static bool isArtwork(FileServiceResponse response) =>
+      response.statusCode != HttpStatus.ok ||
+      !_textLike.contains(response.fileExtension.toLowerCase());
 
   Future<String?> pathFor(String url) async {
     final cacheKey = cacheKeyFor(url);
@@ -64,6 +73,20 @@ class ArtworkRoute {
 
 class _RoutedFileService extends HttpFileService {
   @override
-  Future<FileServiceResponse> get(String url, {Map<String, String>? headers}) =>
-      super.get(ArtworkCache.route.fetchUrl(url), headers: headers);
+  Future<FileServiceResponse> get(
+    String url, {
+    Map<String, String>? headers,
+  }) async {
+    final response = await super.get(
+      ArtworkCache.route.fetchUrl(url),
+      headers: headers,
+    );
+    if (ArtworkCache.isArtwork(response)) return response;
+    unawaited(response.content.drain<void>().catchError((_) {}));
+    throw HttpExceptionWithStatus(
+      HttpStatus.unsupportedMediaType,
+      'Expected an image, got ${response.fileExtension}',
+      uri: Uri.parse(url),
+    );
+  }
 }

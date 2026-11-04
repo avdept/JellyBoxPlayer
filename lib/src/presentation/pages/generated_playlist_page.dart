@@ -83,6 +83,8 @@ class GeneratedPlaylistPage extends ConsumerWidget {
             songs: shown,
             set: today.hasValue ? null : playlist,
             showPosition: true,
+            showAlbum: true,
+            showCover: true,
             edgePadding: edgePadding,
             onItemUpdated: today.hasValue
                 ? ref

@@ -240,6 +240,19 @@ void main() {
     expect(playback.state.status, PlaybackStatus.playing);
   });
 
+  test('a play started from the car stays here', () async {
+    final playback = playbackWith(playsElsewhere: true);
+
+    await playback.playingHere(
+      () => playback.play(songs[1], songs, album, sourceId: 'playlist-1'),
+    );
+    await playback.play(songs[0], songs, album);
+
+    expect(target.loads.single.index, 1);
+    expect(playback.state.status, PlaybackStatus.playing);
+    expect(elsewhere.single.index, 0);
+  });
+
   test('queue edits while another device renders go there', () async {
     final playback = playbackWith(playsElsewhere: true);
 

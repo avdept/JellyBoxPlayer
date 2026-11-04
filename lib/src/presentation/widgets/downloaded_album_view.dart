@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 @visibleForTesting
 class DownloadedAlbumViewKeys {
@@ -171,9 +170,6 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet =
-        getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.tablet;
-
     return AlbumView(
       album: widget.item,
       onTap: (widget.onTap != null) ? (_) => widget.onTap!.call() : null,
@@ -194,7 +190,7 @@ class _DownloadedItemViewState extends ConsumerState<DownloadedItemView> {
             visualDensity: VisualDensity.compact,
           ),
           tooltip: 'Remove download',
-          iconSize: isTablet ? 24 : 20,
+          iconSize: 20,
           icon: const Icon(JPlayer.trash_2),
         ),
       ),

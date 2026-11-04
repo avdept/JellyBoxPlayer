@@ -87,9 +87,19 @@ final class CarPlayBridge {
     }
   }
 
-  func play(type: String, id: String) {
+  func play(type: String, id: String, context: String? = nil) {
+    var arguments: [String: Any] = ["type": type, "id": id]
+    if let context {
+      arguments["context"] = context
+    }
     DispatchQueue.main.async {
-      self.channel?.invokeMethod("play", arguments: ["type": type, "id": id])
+      self.channel?.invokeMethod("play", arguments: arguments)
+    }
+  }
+
+  func carConnected() {
+    DispatchQueue.main.async {
+      self.channel?.invokeMethod("carConnected", arguments: nil)
     }
   }
 

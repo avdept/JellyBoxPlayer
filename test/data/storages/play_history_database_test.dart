@@ -77,6 +77,26 @@ void main() {
     },
   );
 
+  test('- songs below the minimum play count are left out', () async {
+    final history = historyFor();
+    await history.addPlays([
+      play('once'),
+      play('twice', daysAgo: 2),
+      play('twice', daysAgo: 3),
+      play('twice-but-old', daysAgo: 4),
+      play('twice-but-old', daysAgo: 40),
+    ]);
+
+    final top = await history.topPlayed(
+      window: const Duration(days: 30),
+      limit: 10,
+      minPlays: 2,
+      now: () => now,
+    );
+
+    expect([for (final row in top) row.songId], ['twice']);
+  });
+
   test('- breaks play count ties by most recent play', () async {
     final history = historyFor();
     await history.addPlays([
@@ -161,8 +181,14 @@ void main() {
       window: const Duration(days: 30),
       now: () => now,
     );
+    final repeated = await history.trackedSongCount(
+      window: const Duration(days: 30),
+      minPlays: 2,
+      now: () => now,
+    );
 
     expect(count, 2);
+    expect(repeated, 1);
   });
 
   test(

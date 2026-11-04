@@ -1,6 +1,8 @@
 export 'album/album_page.dart';
 export 'artist_page.dart';
 export 'browse_page.dart';
+export 'catalog/catalog_album_page.dart';
+export 'catalog/catalog_artist_page.dart';
 export 'color_pallete_page.dart';
 export 'downloads_page.dart';
 export 'favourite_songs_page.dart';

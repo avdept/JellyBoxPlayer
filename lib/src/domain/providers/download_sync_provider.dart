@@ -124,12 +124,8 @@ class DownloadSync {
 
   Future<void> _syncOne(DownloadManager manager, LibraryItem playlist) async {
     final parsed = EphemeralPlaylistId.parse(playlist.id);
-    final kind = parsed?.kind;
-    const userScoped = {
-      EphemeralPlaylistKind.likedSongs,
-      EphemeralPlaylistKind.onRepeat,
-    };
-    if (userScoped.contains(kind) &&
+    final userPlaylist = UserPlaylist.of(playlist.id);
+    if (userPlaylist != null &&
         parsed!.key != _ref.read(currentUserProvider)?.userId) {
       return;
     }
@@ -141,7 +137,7 @@ class DownloadSync {
       final changed = await manager.syncPlaylist(
         playlist,
         songs,
-        keepLocalOrder: kind == EphemeralPlaylistKind.likedSongs,
+        keepLocalOrder: userPlaylist?.keepsLocalOrder ?? false,
       );
       if (changed) debugPrint('[DownloadSync] updated "${playlist.name}"');
     } on Object catch (error) {

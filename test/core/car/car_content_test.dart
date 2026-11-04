@@ -1,8 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
+import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
+import 'package:jplayer/src/domain/providers/user_playlists_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'car_test_fixtures.dart';
@@ -28,6 +32,46 @@ void main() {
       ).captured.cast<LibraryQuery>();
       expect(queries.map((q) => q.startIndex), [0, 100]);
       expect(queries.first.sort, ItemSort.name);
+    });
+
+    test('- puts the user playlists that have songs first', () async {
+      final env = CarTestEnv(favouriteSongs: [song('s1')], onRepeat: true);
+      final content = CarContent(env.container);
+      env.stubPlaylists([playlist('p1')]);
+      await env.container.read(availableUserPlaylistsProvider.future);
+
+      final page = await content.list(type: 'playlists');
+
+      expect(page.entries.map((e) => e.id), [
+        likedSongsPlaylistFor('user-1').id,
+        onRepeatPlaylistFor('user-1').id,
+        'p1',
+      ]);
+      expect(page.entries[1].title, UserPlaylist.onRepeat.name);
+    });
+
+    test('- hides a user playlist that has nothing in it', () async {
+      final env = CarTestEnv(favouriteSongs: [song('s1')]);
+      final content = CarContent(env.container);
+      env.stubPlaylists([playlist('p1')]);
+      await env.container.read(availableUserPlaylistsProvider.future);
+
+      final page = await content.list(type: 'playlists');
+
+      expect(page.entries.map((e) => e.id), [
+        likedSongsPlaylistFor('user-1').id,
+        'p1',
+      ]);
+    });
+
+    test('- plays On repeat as a playlist', () async {
+      final env = CarTestEnv(onRepeat: true);
+      final content = CarContent(env.container);
+      final onRepeat = onRepeatPlaylistFor('user-1');
+
+      await content.play('playlist', onRepeat.id);
+
+      verify(() => env.setPlayback.playPlaylist(onRepeat)).called(1);
     });
 
     test('- adds appears-on albums to an artist page once', () async {
@@ -76,6 +120,19 @@ void main() {
       ).called(1);
     });
 
+    test('- keeps a play from the car on this device', () async {
+      final env = CarTestEnv(playingElsewhere: true);
+      final content = CarContent(env.container);
+      when(
+        () => env.client.getItem('a9', kind: ItemKind.album),
+      ).thenAnswer((_) async => album('a9'));
+
+      await content.play('album', 'a9');
+
+      verify(() => env.playbackNotifier.playingHere(any())).called(1);
+      verify(() => env.setPlayback.playAlbum(album('a9'))).called(1);
+    });
+
     test('- plays a song with the list it was shown in as the queue', () async {
       final env = CarTestEnv();
       final content = CarContent(env.container);
@@ -94,6 +151,44 @@ void main() {
       ).captured;
       expect((call[0] as LibraryItem).id, 's2');
       expect((call[1] as List<LibraryItem>).map((s) => s.id), ['s1', 's2']);
+    });
+  });
+
+  group('CarContent.carConnected', () {
+    test('- brings the session here when the setting is on', () async {
+      final env = CarTestEnv(playingElsewhere: true);
+      final content = CarContent(env.container);
+      await env.container.read(sharedPreferencesProvider.future);
+      env.container
+          .read(appSettingsProvider.notifier)
+          .setEnabled(AppSetting.carTakesQueue, value: true);
+      when(env.outputController.playHere).thenAnswer((_) async {});
+
+      await content.carConnected();
+
+      verify(env.outputController.playHere).called(1);
+    });
+
+    test('- leaves the other device alone by default', () async {
+      final env = CarTestEnv(playingElsewhere: true);
+      final content = CarContent(env.container);
+
+      await content.carConnected();
+
+      verifyNever(env.outputController.playHere);
+    });
+
+    test('- does nothing when nothing plays elsewhere', () async {
+      final env = CarTestEnv();
+      final content = CarContent(env.container);
+      await env.container.read(sharedPreferencesProvider.future);
+      env.container
+          .read(appSettingsProvider.notifier)
+          .setEnabled(AppSetting.carTakesQueue, value: true);
+
+      await content.carConnected();
+
+      verifyNever(env.outputController.playHere);
     });
   });
 

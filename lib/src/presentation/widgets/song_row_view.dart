@@ -30,6 +30,8 @@ class SongRowView extends ConsumerWidget {
     this.onRatingChanged,
     this.optionsBuilder,
     this.position,
+    this.showCover,
+    this.showAlbum = false,
     this.secondaryTextColor,
     this.playingColor,
     this.trailing,
@@ -48,6 +50,10 @@ class SongRowView extends ConsumerWidget {
 
   final int? position;
 
+  final bool? showCover;
+
+  final bool showAlbum;
+
   final Color? secondaryTextColor;
 
   final Widget? trailing;
@@ -56,6 +62,8 @@ class SongRowView extends ConsumerWidget {
 
   final SongRowViewKeys? testKeys;
 
+  static const double numberedHeight = 64;
+
   String get formattedDuration {
     final duration = song.duration;
     final negativeSign = duration.isNegative ? '-' : '';
@@ -63,6 +71,17 @@ class SongRowView extends ConsumerWidget {
     final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
     final twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
     return '$negativeSign${duration.inHours > 0 ? '${twoDigits(duration.inHours)}:' : ''}$twoDigitMinutes:$twoDigitSeconds';
+  }
+
+  String get subtitleLabel {
+    if (!showAlbum) return song.artistLabel;
+    final album = song.albumName?.trim() ?? '';
+    final year = song.productionYear;
+    return [
+      song.artistLabel,
+      if (album.isNotEmpty) album,
+      if (year != null && year > 0) year.toString(),
+    ].where((part) => part.isNotEmpty).join(' · ');
   }
 
   ImageProvider _coverImage(WidgetRef ref) =>
@@ -75,7 +94,7 @@ class SongRowView extends ConsumerWidget {
     final isMobile = deviceType == DeviceScreenType.mobile;
     final isTablet = deviceType == DeviceScreenType.tablet;
     final isDesktop = deviceType == DeviceScreenType.desktop;
-    final imageSize = isMobile ? 46.0 : 56.0;
+    final imageSize = isMobile || position != null ? 46.0 : 56.0;
     final horizontal = edgePadding ?? 0;
     final isDownloaded = ref
         .watch(isSongDownloadedProvider(song.id))
@@ -91,6 +110,31 @@ class SongRowView extends ConsumerWidget {
     final canRate = isDesktop && onRatingChanged != null;
     final showRating =
         ratingsSupported && (canRate || song.userData.rating > 0);
+    final cover = showCover ?? position == null;
+
+    Widget coverImage() => ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Image(
+        image: _coverImage(ref),
+        width: imageSize,
+        height: imageSize,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          Images.album,
+          width: imageSize,
+          height: imageSize,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+
+    Widget positionText() => Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 18),
+        child: Text('$position', textAlign: TextAlign.end),
+      ),
+    );
 
     return GestureDetector(
       onLongPress: (!isDesktop && optionsBuilder != null)
@@ -119,26 +163,15 @@ class SongRowView extends ConsumerWidget {
           optionsBuilder != null ? 4 : horizontal,
           8,
         ),
-        leading: position != null
-            ? Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: Text('$position'),
-              )
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image(
-                  image: _coverImage(ref),
-                  width: imageSize,
-                  height: imageSize,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Image.asset(
-                    Images.album,
-                    width: imageSize,
-                    height: imageSize,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+        leading: switch ((position != null, cover)) {
+          (true, true) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [positionText(), coverImage()],
+          ),
+          (true, false) => positionText(),
+          (false, true) => coverImage(),
+          (false, false) => null,
+        },
         leadingToTitle: isMobile ? 12 : 16,
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -186,12 +219,10 @@ class SongRowView extends ConsumerWidget {
         ),
         subtitle: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
           children: [
             Flexible(
               child: Text(
-                song.artistLabel,
+                subtitleLabel,
                 maxLines: 1,
                 style: TextStyle(
                   fontSize: isTablet ? 16 : 12,

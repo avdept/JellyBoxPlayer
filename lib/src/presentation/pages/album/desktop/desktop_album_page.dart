@@ -43,33 +43,17 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              navBar(),
-              Expanded(
-                child: CustomScrollbar(
-                  controller: scrollController,
-                  child: CustomScrollView(
-                    controller: scrollController,
-                    slivers: [
-                      if (device.isDesktop)
-                        _headerSliver()
-                      else
-                        ..._tabletHeaderSlivers(),
-                      ...contentSlivers(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return DesktopPageColumn(
+      controller: scrollController,
+      titleKey: titleKey,
+      title: album.name,
+      previousPageTitle: 'Albums',
+      edgePadding: edgePadding,
+      titleFontSize: navTitleFontSize,
+      slivers: [
+        if (device.isDesktop) _headerSliver() else ..._tabletHeaderSlivers(),
+        ...contentSlivers(),
+      ],
     );
   }
 

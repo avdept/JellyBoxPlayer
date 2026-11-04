@@ -24,10 +24,10 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
 
   SliverGridDelegate get _gridDelegate =>
       SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: _device.isTablet ? 360 : 200,
+        maxCrossAxisExtent: 200,
         mainAxisSpacing: _device.isMobile ? 15 : 24,
-        crossAxisSpacing: _device.isMobile ? 8 : (_device.isTablet ? 56 : 28),
-        childAspectRatio: _device.isTablet ? 360 / 413 : 175 / 215.7,
+        crossAxisSpacing: _device.isMobile ? 8 : 28,
+        childAspectRatio: 175 / 215.7,
       );
 
   Future<void> _onAlbumLikePressed(LibraryItem album) async {
