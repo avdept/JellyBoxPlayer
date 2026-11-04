@@ -9,7 +9,6 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
-const onRepeatName = 'On repeat';
 const onRepeatWindow = Duration(days: 30);
 const onRepeatSongsLimit = 200;
 const onRepeatMinimumSongs = 20;
@@ -18,11 +17,8 @@ final playHistoryChangedProvider = StateProvider<int>((ref) => 0);
 
 typedef OnRepeatSnapshot = ({List<String> ids, List<LibraryItem> songs});
 
-LibraryItem onRepeatPlaylistFor(String userId) => LibraryItem(
-  id: EphemeralPlaylistId.onRepeat(userId),
-  name: onRepeatName,
-  kind: ItemKind.playlist,
-);
+LibraryItem onRepeatPlaylistFor(String userId) =>
+    UserPlaylist.onRepeat.itemFor(userId);
 
 bool isOnRepeatId(String id) => EphemeralPlaylistId.isOnRepeat(id);
 

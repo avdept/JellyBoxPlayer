@@ -14,13 +14,8 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const favouritesLimit = 100;
 
-const likedSongsName = 'Liked songs';
-
-LibraryItem likedSongsPlaylistFor(String userId) => LibraryItem(
-  id: EphemeralPlaylistId.likedSongs(userId),
-  name: likedSongsName,
-  kind: ItemKind.playlist,
-);
+LibraryItem likedSongsPlaylistFor(String userId) =>
+    UserPlaylist.likedSongs.itemFor(userId);
 
 bool isLikedSongsId(String id) => EphemeralPlaylistId.isLikedSongs(id);
 

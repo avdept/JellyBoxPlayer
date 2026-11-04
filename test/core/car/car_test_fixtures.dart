@@ -7,12 +7,15 @@ import 'package:jplayer/src/data/backend/media_server_capabilities.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/providers/artist_scope_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_albums_provider.dart';
 import 'package:jplayer/src/domain/providers/downloaded_playlists_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
@@ -60,6 +63,8 @@ class FakePlaybackNotifier extends StateNotifier<PlaybackState>
   FakePlaybackNotifier(super.state);
 }
 
+class MockOutputController extends Mock implements OutputController {}
+
 LibraryItem album(String id, {String artist = 'Artist'}) => LibraryItem(
   id: id,
   name: 'Album $id',
@@ -102,10 +107,12 @@ class CarTestEnv {
     bool offline = false,
     List<GeneratedPlaylist> mixes = const [],
     List<LibraryItem> favouriteSongs = const [],
+    bool onRepeat = false,
     List<LibraryItem> favouriteAlbums = const [],
     List<DownloadedAlbum> downloads = const [],
     List<DownloadedPlaylist> downloadedPlaylists = const [],
     PlaybackState? playback,
+    bool playingElsewhere = false,
   }) {
     SharedPreferences.setMockInitialValues({});
     offlineState = StateProvider<bool>((_) => offline);
@@ -149,6 +156,9 @@ class CarTestEnv {
         favouriteSongsProvider.overrideWith(
           (_) async => LibraryPage(items: favouriteSongs),
         ),
+        onRepeatCardProvider.overrideWith(
+          (_) async => onRepeat ? onRepeatPlaylistFor('user-1') : null,
+        ),
         favouriteAlbumsProvider.overrideWith((_) async => favouriteAlbums),
         downloadedAlbumsProvider.overrideWith((_) async => downloads),
         downloadedPlaylistsProvider.overrideWith(
@@ -157,6 +167,8 @@ class CarTestEnv {
         setPlaybackProvider.overrideWith((_) => setPlayback),
         playbackProvider.overrideWith((_) => playbackNotifier),
         playerProvider.overrideWithValue(player),
+        playingElsewhereProvider.overrideWithValue(playingElsewhere),
+        outputControllerProvider.overrideWithValue(outputController),
       ],
     );
   }
@@ -165,6 +177,7 @@ class CarTestEnv {
   late final StateProvider<bool> offlineState;
   final player = MockAudioPlayer();
   final setPlayback = FakeSetPlayback();
+  final outputController = MockOutputController();
   late FakePlaybackNotifier playbackNotifier;
   late final ProviderContainer container;
 
@@ -178,6 +191,10 @@ class CarTestEnv {
       ),
     ).thenAnswer((_) async {});
     when(() => playbackNotifier.resume()).thenAnswer((_) async {});
+    when(() => playbackNotifier.playingHere(any())).thenAnswer(
+      (invocation) =>
+          (invocation.positionalArguments.single as Future<void> Function())(),
+    );
     when(
       () => playbackNotifier.setShuffle(enabled: any(named: 'enabled')),
     ).thenAnswer((_) async {});

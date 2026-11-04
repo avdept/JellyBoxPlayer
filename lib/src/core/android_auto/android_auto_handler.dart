@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
@@ -99,6 +100,7 @@ class AndroidAutoHandler implements AudioBrowseDelegate {
   ]) async {
     final parent = AutoMediaId.parse(parentMediaId);
     if (parent == null) return const [];
+    if (parent.type == AutoMediaId.root) unawaited(_content.carConnected());
     return switch (parent.type) {
       AutoMediaId.root => _root(),
       AutoMediaId.recent => _recent(),

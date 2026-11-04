@@ -34,10 +34,19 @@ class CarPlayHandler {
         _ => const <String, dynamic>{},
       };
       switch (call.method) {
+        case 'carConnected':
+          await _content.carConnected();
+          return null;
         case 'getHome':
           return _home();
         case 'getList':
           return _list(args);
+        case 'getSongs':
+          final songs = await _content.songsOf(
+            args['type'] as String,
+            args['id'] as String,
+          );
+          return {'items': _maps(songs)};
         case 'getDownloads':
           final downloads = await _content.downloads();
           return {
@@ -57,7 +66,11 @@ class CarPlayHandler {
           }
           return null;
         case 'play':
-          await _content.play(args['type'] as String, args['id'] as String);
+          await _content.play(
+            args['type'] as String,
+            args['id'] as String,
+            songContext: args['context'] as String?,
+          );
           return null;
         case 'setSort':
           _content.setSort(args['field'] as String?);
@@ -93,9 +106,7 @@ class CarPlayHandler {
         fireImmediately: true,
         (previous, next) {
           final index = next.currentMediaIndex;
-          final song = index != null
-              ? next.songs.elementAtOrNull(index)
-              : null;
+          final song = index != null ? next.songs.elementAtOrNull(index) : null;
           _notifyPlaybackState(
             setId: next.album?.id,
             songId: song?.id,
@@ -228,6 +239,7 @@ class CarPlayHandler {
     'id': entry.id,
     'title': entry.title,
     'subtitle': entry.subtitle,
+    'kind': entry.item.kind.name,
     if (entry.artUri != null) 'artworkUrl': entry.artUri.toString(),
   };
 }

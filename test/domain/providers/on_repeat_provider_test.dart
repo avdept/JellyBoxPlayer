@@ -165,7 +165,7 @@ void main() {
     container.read(playHistoryChangedProvider.notifier).state++;
     final card = await container.read(onRepeatCardProvider.future);
 
-    expect(card?.name, onRepeatName);
+    expect(card?.name, UserPlaylist.onRepeat.name);
   });
 
   test('- empty history asks nobody for anything', () async {

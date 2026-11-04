@@ -30,12 +30,8 @@ class ImageService {
       return _client().imageUri(item, kind: kind, size: size);
     }
 
-    if (EphemeralPlaylistId.isLikedSongs(item.id)) {
-      return assetUri(Images.likedSongs);
-    }
-    if (EphemeralPlaylistId.isOnRepeat(item.id)) {
-      return assetUri(Images.onRepeat);
-    }
+    final cover = UserPlaylist.of(item.id)?.cover;
+    if (cover != null) return assetUri(cover);
     final downloaded = DownloadPaths.coverFile(item.albumId ?? item.id);
     if (downloaded != null) return downloaded.uri;
     if (!item.images.hasCover) return null;

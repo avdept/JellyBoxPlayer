@@ -4,6 +4,7 @@ import 'package:jplayer/src/core/android_auto/auto_media_id.dart';
 import 'package:jplayer/src/core/car/car_content.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/user_playlists_provider.dart';
 import 'package:just_audio/just_audio.dart' show LoopMode;
 import 'package:mocktail/mocktail.dart';
 
@@ -108,7 +109,7 @@ void main() {
       when(
         env.setPlayback.favouriteSongs,
       ).thenAnswer((_) async => [song('s1')]);
-      await env.container.read(favouriteSongsProvider.future);
+      await env.container.read(availableUserPlaylistsProvider.future);
 
       expect(await ids(handler, AutoMediaId.home), [
         liked,

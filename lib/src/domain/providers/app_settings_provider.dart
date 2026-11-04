@@ -49,6 +49,7 @@ enum AppSetting {
     syncs: false,
   ),
   downloadSyncOnCellular('download_sync_on_cellular', syncs: false),
+  carTakesQueue('car_takes_queue', syncs: false),
   discordRichPresence('discord_rich_presence'),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
