@@ -69,7 +69,7 @@ jobs:
           # the rest are the per-packager spellings of the same machine.
           #
           # The runner is the oldest Ubuntu LTS GitHub still offers, on purpose:
-          # bundle-libs.sh copies the host's GTK/glib/libstdc++ into the bundle,
+          # bundle-libs.sh copies the host's GTK/glib stack into the bundle,
           # and those carry the host's glibc symbol versions with them. Built on
           # 24.04 the AppImage needed GLIBC_2.38 and refused to start on 22.04
           # (the AppImage catalog tests on exactly that release); built on 22.04

@@ -27,7 +27,21 @@ if [ ! -f "$LIB_DIR/gdk-pixbuf-2.0/loaders.cache" ]; then
   exit 1
 fi
 
-EXCLUDE_RE='^(linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libnvidia.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*)$'
+# libstdc++/libgcc_s stay host-provided like the GL stack, because the host's
+# GL driver runs inside our process: Mesa's libEGL_mesa pulls in LLVM/SPIRV-Tools
+# built against the host's (newer) libstdc++, and a bundled copy from the
+# builder shadows it via RPATH. The driver then fails to load
+# ("GLIBCXX_3.4.32 not found"), libepoxy finds no EGL extensions, and GTK
+# aborts at startup with "No provider of eglGetPlatformDisplayEXT found".
+# The bundle needs nothing newer than the builder's own libstdc++, so every
+# host that meets the glibc floor already has a new enough one.
+#
+# fontconfig/freetype are host-provided too: fontconfig parses the host's
+# /etc/fonts, and an older bundled copy rejects syntax newer releases write
+# there (e.g. "invalid attribute 'xsi:nil'" in 48-guessfamily.conf), dropping
+# those rules and with them the generic-family fallbacks. freetype goes with
+# it because the host fontconfig is built against the host freetype.
+EXCLUDE_RE='^(libfontconfig\.so.*|libfreetype\.so.*|linux-vdso\.so.*|ld-linux.*\.so.*|libc\.so.*|libm\.so.*|libdl\.so.*|libpthread\.so.*|librt\.so.*|libresolv\.so.*|libnsl\.so.*|libutil\.so.*|libnss_.*|libGL\.so.*|libGLX.*|libEGL.*|libGLdispatch.*|libgbm\.so.*|libdrm.*|libnvidia.*|libwayland-egl.*|libwayland-client.*|libwayland-cursor.*|libstdc\+\+\.so.*|libgcc_s\.so.*)$'
 
 # Emits "<soname>\t<resolved-path>" for each non-excluded dependency of $1.
 resolve_deps() {
