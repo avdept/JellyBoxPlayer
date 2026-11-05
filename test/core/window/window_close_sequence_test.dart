@@ -9,8 +9,8 @@ void main() {
     final calls = <String>[];
     final sequence = WindowCloseSequence(
       steps: [
-        () async => calls.add('report'),
-        () async => calls.add('dispose'),
+        CloseStep(() async => calls.add('report')),
+        CloseStep(() async => calls.add('dispose')),
       ],
       destroy: () async => calls.add('destroy'),
     );
@@ -24,8 +24,8 @@ void main() {
     final calls = <String>[];
     final sequence = WindowCloseSequence(
       steps: [
-        () async => throw StateError('server unreachable'),
-        () async => calls.add('dispose'),
+        CloseStep(() async => throw StateError('server unreachable')),
+        CloseStep(() async => calls.add('dispose')),
       ],
       destroy: () async => calls.add('destroy'),
     );
@@ -35,11 +35,17 @@ void main() {
     expect(calls, ['dispose', 'destroy']);
   });
 
-  test('a hung step is abandoned after the timeout', () {
+  test('a hung step is abandoned after its own timeout', () {
     fakeAsync((async) {
       final calls = <String>[];
       final sequence = WindowCloseSequence(
-        steps: [() => Completer<void>().future],
+        steps: [
+          CloseStep(() => Completer<void>().future),
+          CloseStep(
+            () => Completer<void>().future,
+            timeout: const Duration(seconds: 10),
+          ),
+        ],
         destroy: () async => calls.add('destroy'),
       );
 
@@ -48,6 +54,9 @@ void main() {
       expect(calls, isEmpty);
 
       async.elapse(const Duration(seconds: 2));
+      expect(calls, isEmpty);
+
+      async.elapse(const Duration(seconds: 9));
       expect(calls, ['destroy']);
     });
   });
@@ -56,7 +65,7 @@ void main() {
     var destroyed = 0;
     final gate = Completer<void>();
     final sequence = WindowCloseSequence(
-      steps: [() => gate.future],
+      steps: [CloseStep(() => gate.future)],
       destroy: () async => destroyed++,
     );
 

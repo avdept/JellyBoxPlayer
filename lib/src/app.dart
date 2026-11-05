@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/window/shutdown_hooks.dart';
 import 'package:jplayer/src/core/window/window_close_sequence.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
@@ -95,8 +96,8 @@ class _AppState extends ConsumerState<App>
     if (_closesWindowItself) {
       _closeSequence = WindowCloseSequence(
         steps: [
-          () => ref.read(playbackProvider.notifier).reportExit(),
-          () => ref.read(playerProvider).dispose(),
+          CloseStep(() => ref.read(playbackProvider.notifier).reportExit()),
+          CloseStep(_disposePlayers, timeout: const Duration(seconds: 10)),
         ],
         destroy: windowManager.destroy,
       );
@@ -109,6 +110,13 @@ class _AppState extends ConsumerState<App>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
   bool get _closesWindowItself => Platform.isLinux;
+
+  Future<void> _disposePlayers() async {
+    await Future.wait([
+      ref.read(playerProvider).dispose(),
+      ShutdownHooks.instance.run(),
+    ]);
+  }
 
   @override
   void onWindowClose() {
