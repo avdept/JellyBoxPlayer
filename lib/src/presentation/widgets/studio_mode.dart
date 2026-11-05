@@ -555,10 +555,10 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
           (false, false) => 'No lyrics for this track',
         },
         icon: isLookingUp
-            ? const LyricsLookupIndicator()
+            ? const LyricsLookupIndicator(icon: Icon(Icons.lyrics_outlined))
             : const Icon(Icons.lyrics_outlined),
         selectedIcon: isLookingUp
-            ? const LyricsLookupIndicator()
+            ? const LyricsLookupIndicator(icon: Icon(Icons.lyrics))
             : const Icon(Icons.lyrics),
         isSelected: showLyrics,
       );
