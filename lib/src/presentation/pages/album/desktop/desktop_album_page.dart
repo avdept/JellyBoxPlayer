@@ -108,6 +108,7 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
                       ),
                     ),
                   ),
+                  albumRatingStars(size: 22, spacing: 2),
                 ],
               ),
               Padding(
@@ -148,6 +149,7 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
                 ),
               ),
             ),
+            albumRatingStars(size: 26, spacing: 4),
           ],
         ),
         Builder(

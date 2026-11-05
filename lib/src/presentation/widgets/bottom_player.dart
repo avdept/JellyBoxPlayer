@@ -627,6 +627,9 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     size: 30,
     spacing: _isMobile ? 8 : 4,
     padding: const EdgeInsets.only(bottom: 16),
+    touchPadding: _isMobile
+        ? const EdgeInsets.symmetric(horizontal: 30)
+        : EdgeInsets.zero,
     alignment: _isMobile ? Alignment.center : Alignment.centerLeft,
   );
 
@@ -634,6 +637,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     required double size,
     required double spacing,
     required EdgeInsets padding,
+    EdgeInsets touchPadding = EdgeInsets.zero,
     Alignment? alignment,
   }) => Consumer(
     builder: (context, ref, _) {
@@ -646,6 +650,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         rating: song?.userData.rating ?? 0,
         size: size,
         spacing: spacing,
+        touchPadding: touchPadding,
         color: _theme.colorScheme.primary,
         emptyColor: _theme.colorScheme.onPrimary.withValues(alpha: 0.35),
         onChanged: song == null || isOffline
@@ -663,11 +668,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
 
   Future<void> _onRateCurrent(LibraryItem song, int rating) async {
     final saved = await ref.read(barControlsProvider).rate(song, rating);
-    if (!saved && mounted) {
+    if (saved) return;
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('This action needs a connection')),
       );
     }
+    throw StateError('Rating not saved');
   }
 
   Future<void> _onLikeCurrent(LibraryItem song) async {

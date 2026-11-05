@@ -7,6 +7,7 @@ import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
+import 'package:jplayer/src/presentation/widgets/rating_stars.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 
 const _dragBlur = 8.0;
@@ -83,7 +84,9 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
 
   Future<void> _rate(LibraryItem song, int rating) async {
     final saved = await ref.read(barControlsProvider).rate(song, rating);
-    if (!saved) _showOfflineNotice();
+    if (saved) return;
+    _showOfflineNotice();
+    throw StateError('Rating not saved');
   }
 
   void _showOfflineNotice() {
@@ -184,7 +187,7 @@ class _QueueRow extends ConsumerStatefulWidget {
   final bool isDesktop;
   final VoidCallback onTap;
   final VoidCallback onLikePressed;
-  final ValueChanged<int> onRatingChanged;
+  final RatingChanged onRatingChanged;
   final Future<void> Function() onRemove;
 
   @override

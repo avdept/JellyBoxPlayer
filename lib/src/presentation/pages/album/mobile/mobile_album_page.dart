@@ -108,6 +108,11 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
           builder: (context) =>
               albumArtists(DefaultTextStyle.of(context).style),
         ),
+        albumRatingStars(
+          size: 24,
+          spacing: 4,
+          padding: const EdgeInsets.only(top: 6),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
