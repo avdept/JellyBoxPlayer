@@ -364,6 +364,7 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
   Widget _lyricsButton() => Consumer(
     builder: (context, ref, _) {
       final hasLyrics = ref.watch(currentSongHasLyricsProvider);
+      final isLookingUp = ref.watch(lyricsLookupPendingProvider);
       return HoverIconButton(
         onPressed: hasLyrics || _panel == _Panel.lyrics
             ? () => _showPanel(_Panel.lyrics)
@@ -371,9 +372,17 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
         color: _foreground,
         disabledColor: _foreground.withValues(alpha: 0.3),
         iconSize: 24,
-        tooltip: hasLyrics ? 'Lyrics' : 'No lyrics for this track',
-        icon: const Icon(Icons.lyrics_outlined),
-        selectedIcon: const Icon(Icons.lyrics),
+        tooltip: switch ((hasLyrics, isLookingUp)) {
+          (true, _) => 'Lyrics',
+          (false, true) => 'Looking for lyrics',
+          (false, false) => 'No lyrics for this track',
+        },
+        icon: isLookingUp
+            ? const LyricsLookupIndicator(icon: Icon(Icons.lyrics_outlined))
+            : const Icon(Icons.lyrics_outlined),
+        selectedIcon: isLookingUp
+            ? const LyricsLookupIndicator(icon: Icon(Icons.lyrics))
+            : const Icon(Icons.lyrics),
         isSelected: _panel == _Panel.lyrics,
       );
     },

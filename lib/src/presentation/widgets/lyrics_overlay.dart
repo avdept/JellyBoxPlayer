@@ -6,13 +6,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
+import 'package:jplayer/src/presentation/widgets/loading_icon.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
+
+class LyricsLookupIndicator extends StatelessWidget {
+  const LyricsLookupIndicator({required this.icon, super.key});
+
+  final Widget icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return LoadingIcon(
+      icon: icon,
+      spinner: SpinKitWave(
+        size: (IconTheme.of(context).size ?? 24) * 0.5,
+        itemCount: 4,
+        color: Colors.red,
+      ),
+    );
+  }
+}
 
 class LyricsView extends ConsumerWidget {
   const LyricsView({

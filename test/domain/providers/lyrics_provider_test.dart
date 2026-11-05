@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/lyrics/lrclib_client.dart';
@@ -191,6 +192,32 @@ void main() {
 
       expect(result, isNull);
       verifyZeroInteractions(lrclib);
+    });
+
+    test('- shows a pending lookup only while LRCLIB is retrying', () async {
+      final retrying = ValueNotifier(false);
+      final answer = Completer<List<LrclibTrack>>();
+      when(() => lrclib.retrying).thenReturn(retrying);
+      when(() => mockClient.getLyrics('song-1')).thenAnswer((_) async => null);
+      when(
+        () => lrclib.search(trackName: 'song-1', artistName: 'Artist'),
+      ).thenAnswer((_) => answer.future);
+      final container = lrclibContainer(enabled: true)
+        ..listen(lyricsLookupPendingProvider, (_, _) {})
+        ..listen(currentSongHasLyricsProvider, (_, _) {});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(lyricsLookupPendingProvider), isFalse);
+
+      retrying.value = true;
+      expect(container.read(lyricsLookupPendingProvider), isTrue);
+
+      answer.complete([const LrclibTrack(id: 1, plainLyrics: 'Line')]);
+      await container.read(lyricsProvider('song-1').future);
+      retrying.value = false;
+
+      expect(container.read(lyricsLookupPendingProvider), isFalse);
+      expect(container.read(currentSongHasLyricsProvider), isTrue);
     });
 
     test('- still answers when the backend has no lyrics support', () async {

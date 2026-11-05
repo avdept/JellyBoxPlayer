@@ -542,6 +542,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     builder: (context, ref, _) {
       final hasLyrics = ref.watch(currentSongHasLyricsProvider);
       final showLyrics = ref.watch(studioModeLyricsProvider);
+      final isLookingUp = ref.watch(lyricsLookupPendingProvider);
       return HoverIconButton(
         onPressed: hasLyrics || showLyrics ? _toggleLyrics : null,
         color: Colors.white,
@@ -550,10 +551,15 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
         tooltip: switch ((hasLyrics, showLyrics)) {
           (_, true) => 'Hide lyrics',
           (true, false) => 'Lyrics',
+          (false, false) when isLookingUp => 'Looking for lyrics',
           (false, false) => 'No lyrics for this track',
         },
-        icon: const Icon(Icons.lyrics_outlined),
-        selectedIcon: const Icon(Icons.lyrics),
+        icon: isLookingUp
+            ? const LyricsLookupIndicator(icon: Icon(Icons.lyrics_outlined))
+            : const Icon(Icons.lyrics_outlined),
+        selectedIcon: isLookingUp
+            ? const LyricsLookupIndicator(icon: Icon(Icons.lyrics))
+            : const Icon(Icons.lyrics),
         isSelected: showLyrics,
       );
     },

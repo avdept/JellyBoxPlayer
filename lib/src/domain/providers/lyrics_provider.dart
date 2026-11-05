@@ -35,6 +35,20 @@ final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
   return resolveLyrics(sources, request);
 });
 
+final lrclibRetryingProvider = Provider<bool>((ref) {
+  final retrying = ref.watch(lrclibClientProvider).retrying;
+  void sync() => ref.state = retrying.value;
+  retrying.addListener(sync);
+  ref.onDispose(() => retrying.removeListener(sync));
+  return retrying.value;
+});
+
+final lyricsLookupPendingProvider = Provider<bool>((ref) {
+  final song = ref.watch(barSongProvider);
+  if (song == null || !ref.watch(lrclibRetryingProvider)) return false;
+  return ref.watch(lyricsProvider(song.id)).isLoading;
+});
+
 final lyricsVisibleProvider = StateProvider<bool>((ref) => false);
 
 final currentSongHasLyricsProvider = Provider<bool>((ref) {

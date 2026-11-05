@@ -45,6 +45,7 @@ export 'library_selector_button.dart';
 export 'library_view.dart';
 export 'listenbrainz_connect_form.dart';
 export 'listenbrainz_settings.dart';
+export 'loading_icon.dart';
 export 'login_logo.dart';
 export 'lyrics_overlay.dart';
 export 'now_playing_glow.dart';
