@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -169,6 +170,7 @@ class _LyricsBody extends ConsumerStatefulWidget {
 class _LyricsBodyState extends ConsumerState<_LyricsBody>
     with SingleTickerProviderStateMixin {
   static const _maxExtrapolation = Duration(milliseconds: 1500);
+  static const _userScrollCooldown = Duration(seconds: 5);
 
   final _clock = ValueNotifier<Duration>(Duration.zero);
   final _scrollController = ScrollController();
@@ -179,6 +181,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
   List<GlobalKey> _lineKeys = const [];
   int _activeLine = -1;
   int _autoScrolls = 0;
+  Timer? _resumeAutoScroll;
   bool _didInitialSync = false;
 
   @override
@@ -205,6 +208,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     _ticker.dispose();
     _clock.dispose();
     _scrollController.dispose();
+    _resumeAutoScroll?.cancel();
     super.dispose();
   }
 
@@ -252,7 +256,20 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     _scrollToActiveLine();
   }
 
+  bool _onScroll(ScrollNotification notification) {
+    if (notification is UserScrollNotification &&
+        notification.direction != ScrollDirection.idle) {
+      _resumeAutoScroll?.cancel();
+      _resumeAutoScroll = Timer(_userScrollCooldown, () {
+        _resumeAutoScroll = null;
+        if (mounted) _scrollToActiveLine();
+      });
+    }
+    return _autoScrolls > 0;
+  }
+
   void _scrollToActiveLine() {
+    if (_resumeAutoScroll != null) return;
     if (_activeLine < 0 || _activeLine >= _lineKeys.length) return;
     final lineContext = _lineKeys[_activeLine].currentContext;
     if (lineContext == null) return;
@@ -309,7 +326,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
           child: Scrollbar(
             controller: _scrollController,
             child: NotificationListener<ScrollNotification>(
-              onNotification: (_) => _autoScrolls > 0,
+              onNotification: _onScroll,
               child: SingleChildScrollView(
                 controller: _scrollController,
                 padding: widget.padding,
