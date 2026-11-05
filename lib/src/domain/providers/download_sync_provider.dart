@@ -28,6 +28,9 @@ class DownloadSync {
       ) {
         if (previous != next && next) syncAll();
       })
+      ..listen<bool>(manualOfflineProvider, (previous, next) {
+        if (previous != next && !next) syncAll();
+      })
       ..listen<User?>(currentUserProvider, (previous, next) {
         if (next != null && next.userId != previous?.userId) syncAll();
       })
@@ -114,6 +117,7 @@ class DownloadSync {
   Future<bool> _canSync() async {
     if (_disposed) return false;
     if (_ref.read(isOfflineProvider)) return false;
+    if (_ref.read(manualOfflineProvider)) return false;
     if (_ref.read(currentUserProvider) == null) return false;
     if (_ref.read(settingProvider(AppSetting.downloadSyncOnCellular))) {
       return true;

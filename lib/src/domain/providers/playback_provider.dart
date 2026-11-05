@@ -51,6 +51,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         _scheduleRequalify();
       }
     });
+    _ref.listen<bool>(manualOfflineProvider, (previous, next) {
+      if (next && previous != next) unawaited(dropStreams());
+    });
+  }
+
+  Future<void> dropStreams() async {
+    final current = state.currentMediaIndex;
+    final playing = current == null ? null : _tracks.elementAtOrNull(current);
+    if (playing != null && !playing.isLocalFile) await stop();
+    for (var index = _tracks.length - 1; index >= 0; index--) {
+      if (_tracks[index].isLocalFile) continue;
+      await removeFromQueue(index);
+    }
   }
 
   void _scheduleRequalify() {
@@ -157,7 +170,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (song != null &&
           album != null &&
           _localSongIds.contains(song.id) &&
-          !_ref.read(isOfflineProvider)) {
+          !_ref.read(isOfflineProvider) &&
+          !_ref.read(manualOfflineProvider)) {
         _recoveringLostCache = true;
         unawaited(_recoverFromLostCache(song, album));
         return;
@@ -258,6 +272,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   Future<void> _onTrackLoadFailure(TrackLoadFailure failure) async {
     if (_target.kind != PlaybackTargetKind.local) return;
     if (_ref.read(isOfflineProvider)) return;
+    if (_ref.read(manualOfflineProvider)) return;
     final itemId = failure.itemId;
     if (itemId == null || _localSongIds.contains(itemId)) return;
 
@@ -964,6 +979,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final localPath =
         downloadedPath ?? (target.supportsLocalFiles ? cachedPath : null);
 
+    if (localPath == null && _ref.read(manualOfflineProvider)) return null;
     if (localPath == null &&
         !keepStreamOffline &&
         _ref.read(isOfflineProvider)) {

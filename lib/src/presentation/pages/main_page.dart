@@ -145,9 +145,11 @@ class _MainPageState extends ConsumerState<MainPage> {
     });
     final currentIndex = widget.shell.currentIndex;
     final isOffline = ref.watch(isOfflineProvider);
+    final manualOffline = ref.watch(manualOfflineProvider);
     final pluginNotice = ref.watch(visiblePluginNoticeProvider);
     final update = ref.watch(visibleUpdateProvider);
-    final hasBanner = isOffline || pluginNotice != null || update != null;
+    final hasBanner =
+        isOffline || manualOffline || pluginNotice != null || update != null;
     final sidebarCollapsed = ref.watch(
       settingProvider(AppSetting.sidebarCollapsed),
     );
@@ -220,6 +222,8 @@ class _MainPageState extends ConsumerState<MainPage> {
                   children: [
                     if (isOffline)
                       const OfflineBanner()
+                    else if (manualOffline)
+                      const ManualOfflineBanner()
                     else if (pluginNotice != null)
                       PluginNoticeBanner(notice: pluginNotice)
                     else if (update != null)

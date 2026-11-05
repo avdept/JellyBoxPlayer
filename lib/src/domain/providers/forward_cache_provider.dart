@@ -29,6 +29,14 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     _ref.listen<bool>(isOfflineProvider, (previous, next) {
       if (previous != next && !next) _schedule();
     });
+    _ref.listen<bool>(manualOfflineProvider, (previous, next) {
+      if (previous == next) return;
+      if (next) {
+        unawaited(_cancelInFlight());
+      } else {
+        _schedule();
+      }
+    });
     _schedule();
   }
 
@@ -104,6 +112,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     final limit = _ref.read(forwardCacheLimitProvider);
     if (!limit.isEnabled) return null;
     if (_ref.read(isOfflineProvider)) return null;
+    if (_ref.read(manualOfflineProvider)) return null;
     if (!_ref.read(playbackProvider.notifier).supportsLocalFiles) return null;
 
     final database = _ref.read(queueCacheDatabaseProvider);

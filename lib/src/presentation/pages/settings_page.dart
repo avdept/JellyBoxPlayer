@@ -204,6 +204,17 @@ class SettingsPage extends ConsumerWidget {
                     const ServerAccountList(),
                     _sectionHeader('Connection'),
                     const ServerAddressSettings(),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.offlineModeToggle,
+                      label: 'Show offline mode toggle',
+                    ),
+                    _settingNote(
+                      context,
+                      'Adds a button on the home page that stops all '
+                      'streaming, downloads and caching. Only downloaded '
+                      'songs play while it is on.',
+                    ),
                     if (ref.watch(cloudAvailableProvider)) ...[
                       _sectionHeader('Jellybox Cloud'),
                       const JellyboxCloudSettings(),
