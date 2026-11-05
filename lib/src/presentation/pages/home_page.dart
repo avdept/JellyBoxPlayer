@@ -240,6 +240,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 showName: true,
               ),
               const Spacer(),
+              if (ref.watch(settingProvider(AppSetting.offlineModeToggle))) ...[
+                OfflineModeButton(iconSize: _device.isDesktop ? 24 : 28),
+                const SizedBox(width: 12),
+              ],
               if (!_device.isDesktop &&
                   ref.watch(settingProvider(AppSetting.pinsEnabled))) ...[
                 const PinnedItemsButton(),

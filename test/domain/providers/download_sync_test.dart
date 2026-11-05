@@ -224,6 +224,46 @@ void main() {
       );
     });
 
+    test('- stops a download when offline mode is switched on', () async {
+      final container = createContainer();
+      await container.read(sharedPreferencesProvider.future);
+      final manager = container.read(downloadManagerProvider);
+      onDownload = (song) async {
+        if (song.id != 'b') return;
+        container.read(appSettingsProvider.notifier)
+          ..setEnabled(AppSetting.offlineModeToggle, value: true)
+          ..setEnabled(AppSetting.manualOffline, value: true);
+      };
+
+      await manager.downloadPlaylist(
+        playlist,
+        ['a', 'b', 'c'].map(_song).toList(),
+      );
+
+      expect(fetched, ['a', 'b']);
+      expect(await database.isPlaylistDownloaded(playlist.id), isFalse);
+      expect(await database.getDownloadedSongs(), isEmpty);
+    });
+
+    test('- refuses to start while manually offline', () async {
+      final container = createContainer(
+        settings: jsonEncode({
+          AppSetting.offlineModeToggle.key: true,
+          AppSetting.manualOffline.key: true,
+        }),
+      );
+      await container.read(sharedPreferencesProvider.future);
+
+      await container
+          .read(downloadManagerProvider)
+          .downloadPlaylist(
+            playlist,
+            ['a'].map(_song).toList(),
+          );
+
+      expect(fetched, isEmpty);
+    });
+
     test('- stops a sync when the playlist is removed', () async {
       final container = createContainer();
       await downloadPlaylist(container, ['a']);
@@ -280,6 +320,24 @@ void main() {
       expect(fetched, isEmpty);
 
       network.use(NetworkType.wifi);
+      await settle();
+      expect(fetched, ['b']);
+    });
+
+    test('- waits while manually offline', () async {
+      final container = await signedIn();
+      container.read(appSettingsProvider.notifier)
+        ..setEnabled(AppSetting.offlineModeToggle, value: true)
+        ..setEnabled(AppSetting.manualOffline, value: true);
+      serverSongs = ['a', 'b'].map(_song).toList();
+
+      container.read(downloadSyncProvider);
+      await settle();
+      expect(fetched, isEmpty);
+
+      container
+          .read(appSettingsProvider.notifier)
+          .setEnabled(AppSetting.manualOffline, value: false);
       await settle();
       expect(fetched, ['b']);
     });

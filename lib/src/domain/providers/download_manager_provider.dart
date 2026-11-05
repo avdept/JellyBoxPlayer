@@ -13,6 +13,7 @@ import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/services/download_service.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
@@ -25,24 +26,37 @@ class DownloadManager {
     required DownloadActivityNotifier activity,
     required DownloadsRevision revision,
     required MediaServerClient Function() client,
+    bool Function()? blocked,
   }) : _service = service,
        _database = database,
        _activity = activity,
        _revision = revision,
-       _client = client;
+       _client = client,
+       _blocked = blocked ?? _never;
+
+  static bool _never() => false;
 
   final DownloadService _service;
   final DownloadDatabase _database;
   final DownloadActivityNotifier _activity;
   final DownloadsRevision _revision;
   final MediaServerClient Function() _client;
+  final bool Function() _blocked;
   final _active = <String>{};
   final _cancelled = <String>{};
   final _currentSong = <String, String>{};
+  final _fetching = <String>{};
+
+  Future<void> cancelAll() async {
+    _cancelled.addAll(_active);
+    for (final id in _fetching.toList()) {
+      await _service.cancelDownload(id);
+    }
+  }
 
   Future<void> downloadSong(LibraryItem song) =>
       _attempt('downloadSong', () async {
-        if (song.isRadioStream) return;
+        if (song.isRadioStream || _blocked()) return;
         final client = _client();
         final file = await _downloadSongFile(song, client);
         if (file == null) return;
@@ -59,6 +73,7 @@ class DownloadManager {
 
   Future<void> downloadAlbum(LibraryItem album, List<LibraryItem> songs) =>
       _attempt('downloadAlbum', () async {
+        if (_blocked()) return;
         final client = _client();
         await _downloadCollection(album.id, _downloadable(songs), (
           stored,
@@ -75,16 +90,17 @@ class DownloadManager {
   Future<void> downloadPlaylist(
     LibraryItem playlist,
     List<LibraryItem> songs,
-  ) => _attempt(
-    'downloadPlaylist',
-    () => _storePlaylist(playlist, _downloadable(songs)),
-  );
+  ) => _attempt('downloadPlaylist', () async {
+    if (_blocked()) return;
+    await _storePlaylist(playlist, _downloadable(songs));
+  });
 
   Future<bool> syncPlaylist(
     LibraryItem playlist,
     List<LibraryItem> songs, {
     bool keepLocalOrder = false,
   }) async {
+    if (_blocked()) return false;
     final wantedSongs = _downloadable(songs);
     final localIds = await _database.getPlaylistSongIds(playlist.id);
     final ordered = keepLocalOrder
@@ -173,6 +189,7 @@ class DownloadManager {
 
     try {
       for (final (index, song) in songs.indexed) {
+        if (_blocked()) _cancelled.add(id);
         if (_cancelled.contains(id)) break;
         _currentSong[id] = song.id;
         final existing = await _existingDownload(song);
@@ -243,9 +260,11 @@ class DownloadManager {
     void report() =>
         onProgress?.call((task.progress.value ?? 0).clamp(0.0, 1.0));
     task.progress.addListener(report);
+    _fetching.add(task.id);
     try {
       await _waitForDownloadCompletion(task);
     } finally {
+      _fetching.remove(task.id);
       task.progress.removeListener(report);
     }
     if (task.status.value != DownloadStatus.completed) {
@@ -276,12 +295,17 @@ class DownloadManager {
   }
 }
 
-final downloadManagerProvider = Provider<DownloadManager>(
-  (ref) => DownloadManager(
+final downloadManagerProvider = Provider<DownloadManager>((ref) {
+  final manager = DownloadManager(
     service: ref.watch(downloadServiceProvider),
     database: ref.watch(downloadDatabaseProvider),
     activity: ref.watch(downloadActivityProvider.notifier),
     revision: ref.watch(downloadsRevisionProvider.notifier),
     client: () => ref.read(mediaServerClientProvider),
-  ),
-);
+    blocked: () => ref.read(manualOfflineProvider),
+  );
+  ref.listen<bool>(manualOfflineProvider, (previous, next) {
+    if (next && previous != next) unawaited(manager.cancelAll());
+  });
+  return manager;
+});
