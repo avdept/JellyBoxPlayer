@@ -13,6 +13,26 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
+class LyricsLookupIndicator extends StatelessWidget {
+  const LyricsLookupIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final iconTheme = IconTheme.of(context);
+    final size = iconTheme.size ?? 24;
+    return SizedBox.square(
+      dimension: size,
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.12),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: iconTheme.color,
+        ),
+      ),
+    );
+  }
+}
+
 class LyricsView extends ConsumerWidget {
   const LyricsView({
     this.padding = const EdgeInsets.symmetric(vertical: 24),
