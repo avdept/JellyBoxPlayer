@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,7 +47,7 @@ class SongRowView extends ConsumerWidget {
   final Color? playingColor;
   final void Function(LibraryItem)? onTap;
   final void Function(LibraryItem)? onLikePressed;
-  final void Function(LibraryItem, int)? onRatingChanged;
+  final FutureOr<void> Function(LibraryItem, int)? onRatingChanged;
   final List<ContextMenuAction> Function(BuildContext)? optionsBuilder;
 
   final int? position;

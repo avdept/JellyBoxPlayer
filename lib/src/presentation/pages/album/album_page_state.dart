@@ -34,6 +34,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   String? description;
   bool descriptionExpanded = false;
   late bool isFavorite;
+  late int albumRating;
   late final ImageService imageService;
   late ThemeData theme;
   late DeviceType device;
@@ -44,6 +45,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   void initState() {
     super.initState();
     isFavorite = album.userData.isFavorite;
+    albumRating = album.userData.rating;
     description = album.overview;
     imageService = ref.read(imageServiceProvider);
     unawaited(_loadSongs());
@@ -146,8 +148,11 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
     final text = fresh.overview?.trim();
-    if (!mounted || text == null || text.isEmpty) return;
-    setState(() => description = text);
+    if (!mounted) return;
+    setState(() {
+      albumRating = fresh.userData.rating;
+      if (text != null && text.isNotEmpty) description = text;
+    });
   }
 
   List<LibraryItem> _sortedByIndex(List<LibraryItem> items) =>
@@ -345,6 +350,41 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     ),
     isSelected: isFavorite,
   );
+
+  Widget albumRatingStars({
+    required double size,
+    required double spacing,
+    EdgeInsets padding = const EdgeInsets.only(left: 10),
+  }) {
+    if (!ref.watch(ratingsEnabledProvider)) return const SizedBox.shrink();
+    final isOffline = ref.watch(isOfflineProvider);
+    return Padding(
+      padding: padding,
+      child: RatingStars(
+        rating: albumRating,
+        size: size,
+        spacing: spacing,
+        color: theme.colorScheme.primary,
+        emptyColor: theme.colorScheme.onPrimary.withValues(alpha: 0.35),
+        onChanged: isOffline ? null : _onRateAlbum,
+      ),
+    );
+  }
+
+  Future<void> _onRateAlbum(int rating) async {
+    if (ref.read(isOfflineProvider)) {
+      showOfflineSnackBar();
+      return;
+    }
+    final previous = albumRating;
+    setState(() => albumRating = rating);
+    try {
+      await rateItem(ref, album, rating);
+    } on Object {
+      if (mounted) setState(() => albumRating = previous);
+      showOfflineSnackBar();
+    }
+  }
 
   Future<void> _onLikeAlbumPressed() async {
     if (ref.read(isOfflineProvider)) {
@@ -588,7 +628,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       await rateItem(ref, song, rating);
     } on Object {
       showOfflineSnackBar();
-      return;
+      rethrow;
     }
     unawaited(_getSongs());
   }
