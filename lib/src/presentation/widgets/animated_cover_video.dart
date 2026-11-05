@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:jplayer/src/core/animated_artwork/hls_variant_resolver.dart';
+import 'package:jplayer/src/core/window/shutdown_hooks.dart';
 import 'package:video_player/video_player.dart';
 
 const _maxTargetWidth = 1080;
@@ -49,9 +50,15 @@ class _AnimatedCoverVideoState extends State<AnimatedCoverVideo>
       final previous = _controller;
       _ready = false;
       _controller = null;
-      unawaited(previous?.dispose());
+      _release(previous);
       unawaited(_start());
     }
+  }
+
+  void _release(VideoPlayerController? controller) {
+    if (controller == null) return;
+    ShutdownHooks.instance.remove(controller);
+    unawaited(controller.dispose());
   }
 
   static VideoPlayerController _controllerFor(Uri url) =>
@@ -77,17 +84,18 @@ class _AnimatedCoverVideoState extends State<AnimatedCoverVideo>
       if (_stale(generation)) return;
       controller = _controllerFor(source);
       _controller = controller;
+      ShutdownHooks.instance.add(controller, controller.dispose);
       await controller.initialize();
       await controller.setLooping(true);
       await controller.setVolume(0);
       await controller.play();
     } on Object catch (error) {
       debugPrint('[AnimatedCover] could not play $url: $error');
-      if (_stale(generation)) unawaited(controller?.dispose());
+      if (_stale(generation)) _release(controller);
       return;
     }
     if (_stale(generation)) {
-      unawaited(controller.dispose());
+      _release(controller);
       return;
     }
     setState(() => _ready = true);
@@ -110,7 +118,7 @@ class _AnimatedCoverVideoState extends State<AnimatedCoverVideo>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    unawaited(_controller?.dispose());
+    _release(_controller);
     super.dispose();
   }
 

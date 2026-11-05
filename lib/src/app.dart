@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/window/shutdown_hooks.dart';
+import 'package:jplayer/src/core/window/window_close_sequence.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
@@ -28,6 +30,7 @@ import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
 import 'package:jplayer/src/presentation/widgets/playback_keyboard_shortcuts.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/base_url_provider.dart';
+import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:jplayer/src/screen_factory.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -75,6 +78,7 @@ class _AppState extends ConsumerState<App>
   Timer? _moveTimer;
   AppLifecycleListener? _lifecycleListener;
   var _playbackRestoreStarted = false;
+  late final WindowCloseSequence _closeSequence;
 
   @override
   void initState() {
@@ -89,11 +93,36 @@ class _AppState extends ConsumerState<App>
     initRoutes();
     WidgetsBinding.instance.addObserver(this);
     if (_tracksWindowPlacement) windowManager.addListener(this);
+    if (_closesWindowItself) {
+      _closeSequence = WindowCloseSequence(
+        steps: [
+          CloseStep(() => ref.read(playbackProvider.notifier).reportExit()),
+          CloseStep(_disposePlayers, timeout: const Duration(seconds: 10)),
+        ],
+        destroy: windowManager.destroy,
+      );
+      unawaited(windowManager.setPreventClose(true));
+    }
     _watchDayRollover();
   }
 
   bool get _tracksWindowPlacement =>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
+  bool get _closesWindowItself => Platform.isLinux;
+
+  Future<void> _disposePlayers() async {
+    await Future.wait([
+      ref.read(playerProvider).dispose(),
+      ShutdownHooks.instance.run(),
+    ]);
+  }
+
+  @override
+  void onWindowClose() {
+    if (!_closesWindowItself) return;
+    unawaited(_closeSequence());
+  }
 
   @override
   void onWindowMoved() {
