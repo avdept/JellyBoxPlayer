@@ -8,6 +8,9 @@ import 'package:optional_features/catalog.dart';
 class ScreenFactory {
   const ScreenFactory();
 
+  static LocalKey _pageKey(GoRouterState router, String kind, String id) =>
+      ValueKey('${router.pageKey.value}:$kind:$id');
+
   Page<void> albumPage(
     BuildContext context,
     GoRouterState router,
@@ -18,7 +21,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['album'] as Map<String, dynamic>);
 
     return CupertinoPage(
-      key: ValueKey('album:${album.id}'),
+      key: _pageKey(router, 'album', album.id),
       child: AlbumPage(album: album),
     );
   }
@@ -33,7 +36,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['artist'] as Map<String, dynamic>);
 
     return CupertinoPage(
-      key: ValueKey('artist:${artist.id}'),
+      key: _pageKey(router, 'artist', artist.id),
       child: ArtistPage(artist: artist),
     );
   }
@@ -68,7 +71,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['genre'] as Map<String, dynamic>);
 
     return CupertinoPage(
-      key: ValueKey('genre:${genre.id}'),
+      key: _pageKey(router, 'genre', genre.id),
       child: GenreAlbumsPage(genre: genre),
     );
   }
@@ -83,7 +86,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['playlist'] as Map<String, dynamic>);
 
     return CupertinoPage(
-      key: ValueKey('generated-playlist:${playlist.id}'),
+      key: _pageKey(router, 'generated-playlist', playlist.id),
       child: GeneratedPlaylistPage(playlist: playlist),
     );
   }
@@ -98,7 +101,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['mix'] as Map<String, dynamic>);
 
     return CupertinoPage(
-      key: ValueKey('mix:${mix.id}'),
+      key: _pageKey(router, 'mix', mix.id),
       child: InstantMixPage(mix: mix),
     );
   }
@@ -231,7 +234,7 @@ class ScreenFactory {
         : LibraryItem.fromJson(params['playlist'] as Map<String, dynamic>);
 
     return CupertinoPage(
-      key: ValueKey('playlist:${playlist.id}'),
+      key: _pageKey(router, 'playlist', playlist.id),
       child: PlaylistPage(playlist: playlist),
     );
   }
