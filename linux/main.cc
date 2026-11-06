@@ -1,4 +1,6 @@
 #include <glib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "my_application.h"
 
@@ -25,6 +27,14 @@ static void isolate_gdk_pixbuf_loaders() {
 int main(int argc, char** argv) {
   isolate_gdk_pixbuf_loaders();
 
-  g_autoptr(MyApplication) app = my_application_new();
-  return g_application_run(G_APPLICATION(app), argc, argv);
+  MyApplication* app = my_application_new();
+  int status = g_application_run(G_APPLICATION(app), argc, argv);
+  g_object_unref(app);
+
+  // By now the window is gone, the Flutter engine has shut down and the Dart
+  // close sequence has released the players. Leave without running atexit
+  // handlers: NVIDIA's libEGL destructor segfaults tearing down the GL state
+  // the engine left behind, and libmpv threads may still be winding down.
+  fflush(nullptr);
+  _exit(status);
 }
