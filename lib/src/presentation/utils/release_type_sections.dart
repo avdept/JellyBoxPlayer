@@ -1,8 +1,13 @@
 import 'package:jplayer/src/domain/models/models.dart';
 
 class ReleaseTypeSection {
-  const ReleaseTypeSection({required this.label, required this.albums});
+  const ReleaseTypeSection({
+    required this.primary,
+    required this.label,
+    required this.albums,
+  });
 
+  final String primary;
   final String label;
   final List<LibraryItem> albums;
 }
@@ -42,7 +47,11 @@ List<ReleaseTypeSection> releaseTypeSections(List<LibraryItem> albums) {
     });
   return [
     for (final group in ordered)
-      ReleaseTypeSection(label: group.label, albums: group.albums),
+      ReleaseTypeSection(
+        primary: group.primary,
+        label: group.label,
+        albums: group.albums,
+      ),
   ];
 }
 

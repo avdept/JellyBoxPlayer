@@ -64,6 +64,16 @@ class InstantMixDatabase {
     );
   }
 
+  Future<void> deleteMix(String id) async {
+    if (userId == null) return;
+    final db = await _database;
+    await db.delete(
+      _table,
+      where: 'Id = ? AND ServerId = ? AND UserId = ?',
+      whereArgs: [id, _serverId, userId],
+    );
+  }
+
   Future<void> deleteAll() async {
     final db = await _database;
     await db.delete(_table, where: 'ServerId = ?', whereArgs: [_serverId]);

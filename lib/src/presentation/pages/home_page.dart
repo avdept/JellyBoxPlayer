@@ -316,7 +316,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onPlayPressed: _onPlayRecentlyPlayed,
                 coverBuilder: _instantMixCover,
                 optionsBuilder: _cardOptions(recentlyPlayedAlbumsProvider),
-                hasOptions: (item) => !isInstantMixId(item.id),
                 onRetry: () => ref.invalidate(recentlyPlayedAlbumsProvider),
                 onRefresh: () =>
                     ref.refresh(recentlyPlayedAlbumsProvider.future),
