@@ -33,7 +33,11 @@ dependencies:
   # See packages/just_audio_background/CHANGELOG.md.
   just_audio_background:
     path: ./packages/just_audio_background
-  just_audio_media_kit: any
+  # Vendored fork of just_audio_media_kit 2.1.0: upstream inserts land at the
+  # end of mpv's playlist (off-by-one in the move after add), which broke
+  # "Play next" on Linux/Windows. See packages/just_audio_media_kit/CHANGELOG.md.
+  just_audio_media_kit:
+    path: ./packages/just_audio_media_kit
   # Resolved to the vendored fork in packages/audio_session through
   # dependency_overrides below (just_audio depends on it too).
   audio_session: any

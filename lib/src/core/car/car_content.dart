@@ -409,9 +409,9 @@ class CarContent {
     final entity = EntityFilter.values.asNameMap()[field];
     if (entity == null) return;
     final filter = sort;
-    final desc = filter.orderBy == entity
+    final desc = filter.orderBy == entity && entity != EntityFilter.rating
         ? !filter.desc
-        : entity == EntityFilter.dateCreated;
+        : entity == EntityFilter.dateCreated || entity == EntityFilter.rating;
     _ref.read(carFilterProvider.notifier).filter(field: entity, desc: desc);
   }
 

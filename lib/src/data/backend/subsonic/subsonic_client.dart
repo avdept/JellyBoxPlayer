@@ -57,6 +57,7 @@ class SubsonicClient implements MediaServerClient {
   static const extensionRetryInterval = Duration(minutes: 5);
   static const playedAlbumsScanLimit = 25;
   static const genreSetScanLimit = 500;
+  static const ratedAlbumsScanLimit = 500;
   static const minimumPlayDuration = Duration(minutes: 4);
 
   static const _defaultImageSize = 420;
@@ -65,6 +66,7 @@ class SubsonicClient implements MediaServerClient {
     similarAlbums: false,
     playlistFavourites: false,
     ratings: true,
+    albumRatingSort: true,
     likedTimestamp: true,
   );
 
@@ -82,6 +84,7 @@ class SubsonicClient implements MediaServerClient {
   final _artistIndex =
       <String?, ({DateTime fetchedAt, List<SubsonicArtistDTO> artists})>{};
   final _albumIndex = <String?, _SubsonicAlbumIndex>{};
+  final _ratedAlbums = <String?, _RatedAlbumsIndex>{};
   final _startedAt = <String, DateTime>{};
 
   @override
@@ -175,6 +178,8 @@ class SubsonicClient implements MediaServerClient {
       return subsonicOpenPage(albums, startIndex: query.startIndex);
     }
 
+    if (query.sort == ItemSort.rating) return _albumsByRating(query);
+
     final albums = await _api.getAlbumList2(
       type: subsonicAlbumListType(query.sort),
       size: query.limit,
@@ -185,6 +190,77 @@ class SubsonicClient implements MediaServerClient {
       [for (final album in albums) album.toLibraryItem()],
       startIndex: query.startIndex,
     );
+  }
+
+  Future<LibraryPage> _albumsByRating(LibraryQuery query) async {
+    final cached = query.startIndex == 0 ? null : _ratedAlbums[query.libraryId];
+    final index = cached ?? await _loadRatedAlbums(query.libraryId);
+    final albums = <SubsonicAlbumDTO>[
+      ...index.rated.skip(query.startIndex).take(query.limit),
+    ];
+    if (albums.length < query.limit) {
+      albums.addAll(
+        await _unratedAlbums(
+          index,
+          from: max(0, query.startIndex - index.rated.length),
+          count: query.limit - albums.length,
+        ),
+      );
+    }
+    return subsonicOpenPage(
+      [for (final album in albums) album.toLibraryItem()],
+      startIndex: query.startIndex,
+    );
+  }
+
+  Future<_RatedAlbumsIndex> _loadRatedAlbums(String? libraryId) async {
+    final index = _RatedAlbumsIndex(libraryId);
+    var offset = 0;
+    while (true) {
+      final batch = await _api.getAlbumList2(
+        type: subsonicAlbumListType(ItemSort.rating),
+        size: ratedAlbumsScanLimit,
+        offset: offset,
+        musicFolderId: libraryId,
+      );
+      for (final album in batch) {
+        if (index.ratedIds.add(album.id)) index.rated.add(album);
+      }
+      if (batch.length < ratedAlbumsScanLimit) break;
+      offset += batch.length;
+    }
+    return _ratedAlbums[libraryId] = index;
+  }
+
+  Future<List<SubsonicAlbumDTO>> _unratedAlbums(
+    _RatedAlbumsIndex index, {
+    required int from,
+    required int count,
+  }) async {
+    final start = index.checkpoints.keys.where((k) => k <= from).reduce(max);
+    var seen = start;
+    var offset = index.checkpoints[start]!;
+    final size = min(ratedAlbumsScanLimit, count + index.ratedIds.length);
+    final result = <SubsonicAlbumDTO>[];
+    while (result.length < count) {
+      final batch = await _api.getAlbumList2(
+        type: subsonicAlbumListType(ItemSort.name),
+        size: size,
+        offset: offset,
+        musicFolderId: index.libraryId,
+      );
+      for (final album in batch) {
+        offset++;
+        if (index.ratedIds.contains(album.id)) continue;
+        if (seen >= from) result.add(album);
+        seen++;
+        index.checkpoints[seen] = offset;
+        if (result.length == count) return result;
+      }
+      index.checkpoints[seen] = offset;
+      if (batch.length < size) break;
+    }
+    return result;
   }
 
   Future<List<SubsonicAlbumDTO>> _artistOwnAlbums(String artistId) async {
@@ -831,8 +907,10 @@ class SubsonicClient implements MediaServerClient {
       favorite ? _api.star(itemId) : _api.unstar(itemId);
 
   @override
-  Future<void> setRating(String itemId, int rating) =>
-      _api.setRating(itemId, rating.clamp(0, 5));
+  Future<void> setRating(String itemId, int rating) {
+    _ratedAlbums.clear();
+    return _api.setRating(itemId, rating.clamp(0, 5));
+  }
 
   @override
   Future<void> createPlaylist(PlaylistData values) async {
@@ -1077,4 +1155,13 @@ class _SubsonicAlbumIndex {
   final DateTime fetchedAt;
   int? total;
   final keys = <int, String?>{};
+}
+
+class _RatedAlbumsIndex {
+  _RatedAlbumsIndex(this.libraryId);
+
+  final String? libraryId;
+  final rated = <SubsonicAlbumDTO>[];
+  final ratedIds = <String>{};
+  final checkpoints = <int, int>{0: 0};
 }

@@ -12,6 +12,7 @@ String mediaBrowserSort(ItemSort sort, {ItemKind target = ItemKind.album}) =>
       ItemSort.dateLastContentAdded => 'DateLastContentAdded',
       ItemSort.albumOrder => 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
       ItemSort.random => 'Random',
+      ItemSort.rating => 'SortName',
     };
 
 String mediaBrowserSortOrder(SortDirection direction) => switch (direction) {

@@ -2,7 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 
-enum PlaylistSongSort { playlistOrder, title, artist, album }
+enum PlaylistSongSort { playlistOrder, title, artist, album, rating }
 
 class PlaylistSongOrder {
   const PlaylistSongOrder({
@@ -17,7 +17,10 @@ class PlaylistSongOrder {
 
   PlaylistSongOrder select(PlaylistSongSort next) => next == sort
       ? PlaylistSongOrder(sort: sort, descending: !descending)
-      : PlaylistSongOrder(sort: next);
+      : PlaylistSongOrder(
+          sort: next,
+          descending: next == PlaylistSongSort.rating,
+        );
 
   List<LibraryItem> apply(List<LibraryItem> songs) {
     if (isDefault) return songs;
@@ -38,6 +41,8 @@ class PlaylistSongOrder {
       final byAlbum = _compareText(a.albumName ?? '', b.albumName ?? '');
       return byAlbum != 0 ? byAlbum : LibraryItem.compareAlbumOrder(a, b);
     },
+    PlaylistSongSort.rating => (a, b) =>
+        a.userData.rating.compareTo(b.userData.rating),
   };
 
   static int _compareText(String a, String b) =>
