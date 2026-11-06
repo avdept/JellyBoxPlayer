@@ -657,6 +657,17 @@ void main() {
       expect(seedsOf(restartedSession), ['s1', 's2']);
     });
 
+    test('- a removed mix is gone now and after a restart', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, ['s1', 's2']);
+      session.read(instantMixesProvider.notifier).remove(mixId('s1'));
+      await flush(session);
+
+      expect(seedsOf(session), ['s2']);
+      final restartedSession = await signedIn('user-1');
+      expect(seedsOf(restartedSession), ['s2']);
+    });
+
     test('- another user does not see them', () async {
       final session = await signedIn('user-1');
       await createMixes(session, ['s1']);

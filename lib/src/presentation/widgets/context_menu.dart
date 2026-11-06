@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -11,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/metadata_link_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -39,6 +41,7 @@ enum ContextMenuEntry {
   removeFromQueue,
   removeFromPlaylist,
   deletePlaylist,
+  removeMix,
   addToLidarr,
   pin,
 }
@@ -105,6 +108,7 @@ const contextMenuLayout =
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
           ContextMenuEntry.instantMix,
+          ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.playNext,
           ContextMenuEntry.addToQueue,
           ContextMenuEntry.download,
@@ -118,6 +122,7 @@ const contextMenuLayout =
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
           ContextMenuEntry.instantMix,
+          ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.like,
           ContextMenuEntry.pin,
           ContextMenuEntry.metadataLinks,
@@ -129,6 +134,7 @@ const contextMenuLayout =
           ContextMenuEntry.download,
           ContextMenuEntry.like,
           ContextMenuEntry.pin,
+          ContextMenuEntry.removeMix,
         ],
       },
       ItemKind.genre: {
@@ -356,6 +362,8 @@ List<ContextMenuAction> contextMenuActions(
                   PinsNotifier.canPin(item)
               ? actions.pin(isDesktop: isDesktop)
               : null,
+        ContextMenuEntry.removeMix =>
+          isInstantMixId(item.id) ? actions.removeMix() : null,
         ContextMenuEntry.removeFromQueue ||
         ContextMenuEntry.removeFromPlaylist ||
         ContextMenuEntry.deletePlaylist ||
@@ -668,17 +676,22 @@ class _ContextMenuActions {
     label: Text(switch (item.kind) {
       ItemKind.album => 'Play album',
       ItemKind.artist => 'Play artist',
-      ItemKind.playlist => 'Play playlist',
+      ItemKind.playlist =>
+        isInstantMixId(item.id) ? 'Play mix' : 'Play playlist',
       ItemKind.genre => 'Play genre',
       _ => 'Play',
     }),
     run: () async {
       final notifier = ref.read(setPlaybackProvider.notifier);
+      final mix = isInstantMixId(item.id)
+          ? ref.read(instantMixesProvider.notifier).byId(item.id)
+          : null;
       try {
         final result = await switch (item.kind) {
           ItemKind.album => notifier.playAlbum(item),
           ItemKind.artist => notifier.playArtist(item),
           ItemKind.genre => notifier.playGenre(item),
+          ItemKind.playlist when mix != null => notifier.playInstantMix(mix),
           ItemKind.playlist => notifier.playPlaylist(item),
           _ => Future.value(SetPlaybackResult.busy),
         };
@@ -702,11 +715,77 @@ class _ContextMenuActions {
         isDesktop: _isDesktop,
       );
       if (playlist == null || !_mounted) return;
-      await ref
-          .read(mediaServerClientProvider)
-          .addPlaylistItems(playlistId: playlist.id, itemIds: [item.id]);
+      final List<List<LibraryItem>> batches;
+      try {
+        batches = item.kind == ItemKind.artist
+            ? await _artistAlbumSongs()
+            : [await _queueableSongs()];
+      } on Object {
+        _showSnackBar('Could not add "${item.name}" to playlist');
+        return;
+      }
+      final client = ref.read(mediaServerClientProvider);
+      var added = 0;
+      try {
+        for (final songs in batches) {
+          if (songs.isEmpty) continue;
+          await client.addPlaylistItems(
+            playlistId: playlist.id,
+            itemIds: [for (final song in songs) song.id],
+          );
+          added += songs.length;
+        }
+      } on Object {
+        if (added > 0) ref.read(downloadSyncProvider).syncPlaylist(playlist.id);
+        _showSnackBar('Could not add "${item.name}" to playlist');
+        return;
+      }
+      if (added == 0) {
+        _showSnackBar('Nothing to add from "${item.name}"');
+        return;
+      }
       ref.read(downloadSyncProvider).syncPlaylist(playlist.id);
-      _showSnackBar('Successfully added to playlist');
+      _showSnackBar(
+        item.kind == ItemKind.song
+            ? 'Successfully added to playlist'
+            : 'Added $added songs to playlist',
+      );
+    },
+  );
+
+  static const _playlistReleaseTypes = {'album', 'ep', 'single'};
+  static const _albumSongsConcurrency = 4;
+
+  Future<List<List<LibraryItem>>> _artistAlbumSongs() async {
+    final page = await ref
+        .read(mediaServerClientProvider)
+        .getAlbums(
+          LibraryQuery(
+            sort: ItemSort.releaseDate,
+            direction: SortDirection.descending,
+            artistIds: [item.id],
+          ),
+        );
+    final albums = [
+      for (final section in releaseTypeSections(page.items))
+        if (_playlistReleaseTypes.contains(section.primary)) ...section.albums,
+    ];
+    final playback = ref.read(setPlaybackProvider.notifier);
+    return [
+      for (final chunk in albums.slices(_albumSongsConcurrency))
+        ...await Future.wait([
+          for (final album in chunk) playback.albumSongs(album.id),
+        ]),
+    ];
+  }
+
+  ContextMenuAction removeMix() => ContextMenuAction(
+    entry: ContextMenuEntry.removeMix,
+    icon: const Icon(Icons.delete_outline),
+    label: const Text('Remove mix'),
+    run: () async {
+      ref.read(instantMixesProvider.notifier).remove(item.id);
+      _showSnackBar('Removed "${item.name}"');
     },
   );
 

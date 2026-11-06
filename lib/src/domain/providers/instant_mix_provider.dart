@@ -124,6 +124,15 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
     if (mix != null) _remember(mix);
   }
 
+  void remove(String id) {
+    state = [
+      for (final mix in state)
+        if (mix.item.id != id) mix,
+    ];
+    _fresh.remove(id);
+    _database.deleteMix(id).ignore();
+  }
+
   void updateSong(String mixId, LibraryItem updated) {
     final mix = byId(mixId);
     if (mix == null) return;

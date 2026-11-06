@@ -22,7 +22,6 @@ class ItemCarousel extends StatelessWidget {
     required this.onItemTap,
     this.onPlayPressed,
     this.optionsBuilder,
-    this.hasOptions,
     this.onRetry,
     this.onRefresh,
     this.onTitleTap,
@@ -39,7 +38,6 @@ class ItemCarousel extends StatelessWidget {
   final Future<void> Function(LibraryItem)? onPlayPressed;
   final List<ContextMenuAction> Function(BuildContext, LibraryItem)?
   optionsBuilder;
-  final bool Function(LibraryItem)? hasOptions;
   final VoidCallback? onRetry;
   final Future<void> Function()? onRefresh;
   final VoidCallback? onTitleTap;
@@ -163,7 +161,7 @@ class ItemCarousel extends StatelessWidget {
       coverOverride: coverBuilder?.call(item),
       onTap: onItemTap,
       onPlayPressed: onPlayPressed,
-      optionsBuilder: builder == null || !(hasOptions?.call(item) ?? true)
+      optionsBuilder: builder == null
           ? null
           : (context) => builder(context, item),
     );
