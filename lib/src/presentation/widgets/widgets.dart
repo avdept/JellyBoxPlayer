@@ -41,6 +41,8 @@ export 'keep_screen_awake.dart';
 export 'labeled_text_field.dart';
 export 'letter_ruler.dart';
 export 'landscape_player.dart';
+export 'lastfm_connect_form.dart';
+export 'lastfm_settings.dart';
 export 'library_selector_button.dart';
 export 'library_view.dart';
 export 'listenbrainz_connect_form.dart';

@@ -435,6 +435,8 @@ void main() {
         final container = await start({
           ...signedInTo(accountA, accounts: [accountA]),
           'listenbrainz_token': 'lb',
+          'lastfm_session_key': 'fm',
+          'lastfm_api_key': 'fmkey',
         });
 
         await container.read(authProvider.notifier).removeAccount('A');
@@ -444,6 +446,8 @@ void main() {
         expect(await storage.read(key: 'serverId'), isNull);
         expect(await storage.read(key: 'authToken'), isNull);
         expect(await storage.read(key: 'listenbrainz_token'), 'lb');
+        expect(await storage.read(key: 'lastfm_session_key'), 'fm');
+        expect(await storage.read(key: 'lastfm_api_key'), 'fmkey');
       },
     );
 
