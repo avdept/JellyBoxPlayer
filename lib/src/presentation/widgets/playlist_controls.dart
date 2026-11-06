@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
@@ -9,11 +10,15 @@ import 'package:jplayer/src/presentation/widgets/play_button.dart';
 import 'package:jplayer/src/presentation/widgets/sort_menu_button.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
-Map<PlaylistSongSort, String> playlistSortOptions(String defaultLabel) => {
+Map<PlaylistSongSort, String> playlistSortOptions(
+  String defaultLabel, {
+  bool ratings = false,
+}) => {
   PlaylistSongSort.playlistOrder: defaultLabel,
   PlaylistSongSort.title: 'Title',
   PlaylistSongSort.artist: 'Artist',
   PlaylistSongSort.album: 'Album',
+  if (ratings) PlaylistSongSort.rating: 'Rating',
 };
 
 class PlaylistControls extends StatelessWidget {
@@ -68,7 +73,7 @@ class PlaylistControls extends StatelessWidget {
   }
 }
 
-class PlaylistSortButton extends StatelessWidget {
+class PlaylistSortButton extends ConsumerWidget {
   const PlaylistSortButton({
     required this.order,
     required this.onChanged,
@@ -81,10 +86,14 @@ class PlaylistSortButton extends StatelessWidget {
   final String defaultLabel;
 
   @override
-  Widget build(BuildContext context) => SortMenuButton<PlaylistSongSort>(
-    options: playlistSortOptions(defaultLabel),
-    selected: order.sort,
-    descending: order.descending,
-    onSelected: (sort) => onChanged(order.select(sort)),
-  );
+  Widget build(BuildContext context, WidgetRef ref) =>
+      SortMenuButton<PlaylistSongSort>(
+        options: playlistSortOptions(
+          defaultLabel,
+          ratings: ref.watch(ratingsEnabledProvider),
+        ),
+        selected: order.sort,
+        descending: order.descending,
+        onSelected: (sort) => onChanged(order.select(sort)),
+      );
 }

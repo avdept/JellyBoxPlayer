@@ -4,6 +4,7 @@ enum EntityFilter {
   dateCreated,
   dateLiked,
   random,
+  rating,
 }
 
 enum ArtistFilter {

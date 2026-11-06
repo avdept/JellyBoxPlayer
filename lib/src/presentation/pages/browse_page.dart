@@ -79,10 +79,12 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     EntityFilter.albumArtist: 'Album Artist',
     EntityFilter.sortName: 'Name',
     EntityFilter.random: 'Random',
+    EntityFilter.rating: 'Rating',
   };
 
   Map<EntityFilter, bool> get _defaultSorting => {
     EntityFilter.dateCreated: true,
+    EntityFilter.rating: true,
     EntityFilter.sortName: false,
   };
 
@@ -789,11 +791,13 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     return _filtersLabels[filter] ?? '???';
   }
 
-  List<EntityFilter> getFilterItems() => switch (_currentView.value) {
-    ItemList.albums => const [
+  List<EntityFilter> getFilterItems({bool albumRatingSort = false}) =>
+      switch (_currentView.value) {
+    ItemList.albums => [
       EntityFilter.sortName,
       EntityFilter.albumArtist,
       EntityFilter.dateCreated,
+      if (albumRatingSort) EntityFilter.rating,
       EntityFilter.random,
     ],
     ItemList.artists => const [
@@ -817,7 +821,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
 
   void _applyProviderFilter(EntityFilter? value) {
     final filter = ref.read(filterProvider);
-    if (filter.orderBy == value) {
+    if (filter.orderBy == value && value != EntityFilter.rating) {
       ref
           .read(filterProvider.notifier)
           .filter(field: value!, desc: !filter.desc);
@@ -833,13 +837,18 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     builder: (context, view, child) => Consumer(
       builder: (context, ref, child) {
         final filter = ref.watch(filterProvider);
+        final albumRatingSort = ref.watch(
+          serverCapabilitiesProvider.select((c) => c.albumRatingSort),
+        );
         return AppDropdown<EntityFilter>(
           icon: Icons.sort,
           iconSize: _headerIconSize,
           value: filter.orderBy,
           onChanged: _applyProviderFilter,
           entries: [
-            for (final value in getFilterItems())
+            for (final value in getFilterItems(
+              albumRatingSort: albumRatingSort,
+            ))
               AppDropdownEntry(
                 value: value,
                 label: _filterLabel(value),

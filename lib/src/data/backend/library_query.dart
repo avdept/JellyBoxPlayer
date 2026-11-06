@@ -11,6 +11,7 @@ enum ItemSort {
   dateLastContentAdded,
   albumOrder,
   random,
+  rating,
 }
 
 enum SortDirection { ascending, descending }
@@ -95,6 +96,7 @@ extension EntityFilterSort on EntityFilter {
     EntityFilter.dateCreated => ItemSort.dateCreated,
     EntityFilter.dateLiked => ItemSort.dateLiked,
     EntityFilter.random => ItemSort.random,
+    EntityFilter.rating => ItemSort.rating,
   };
 }
 

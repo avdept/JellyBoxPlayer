@@ -316,6 +316,53 @@ void main() {
       expect(page.totalRecordCount, 2);
     });
 
+    test(
+      '- by rating list the rated albums first, then the rest by name',
+      () async {
+        const byName = ['b1', 'r2', 'b2', 'b3', 'r1', 'b4', 'b5'];
+        server.on('getAlbumList2', (uri) {
+          final type = uri.queryParameters['type'];
+          final offset = int.parse(uri.queryParameters['offset'] ?? '0');
+          final size = int.parse(uri.queryParameters['size']!);
+          final ids = type == 'highest'
+              ? const ['r1', 'r2']
+              : byName.skip(offset).take(size).toList();
+          return subsonicOk({
+            'albumList2': {
+              'album': [for (final id in ids) albumJson(id, name: id)],
+            },
+          });
+        });
+        const query = LibraryQuery(
+          libraryId: '1',
+          sort: ItemSort.rating,
+          direction: SortDirection.descending,
+          limit: 4,
+        );
+
+        final first = await client.getAlbums(query);
+        final second = await client.getAlbums(query.copyWith(startIndex: 4));
+        final third = await client.getAlbums(query.copyWith(startIndex: 8));
+
+        expect(first.items.map((a) => a.id), ['r1', 'r2', 'b1', 'b2']);
+        expect(second.items.map((a) => a.id), ['b3', 'b4', 'b5']);
+        expect(third.items, isEmpty);
+        final calls = server.calls('getAlbumList2');
+        expect(calls.first.queryParameters['type'], 'highest');
+        expect(calls.first.queryParameters['musicFolderId'], '1');
+        expect(
+          calls.where((c) => c.queryParameters['type'] == 'highest'),
+          hasLength(1),
+        );
+        expect(
+          calls
+              .where((c) => c.queryParameters['type'] == 'alphabeticalByName')
+              .map((c) => c.queryParameters['offset']),
+          ['0', '3', '7'],
+        );
+      },
+    );
+
     test('- by genre use the genre name', () async {
       server.ok('getAlbumList2', {
         'albumList2': {

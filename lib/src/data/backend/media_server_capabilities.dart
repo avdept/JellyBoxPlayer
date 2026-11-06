@@ -8,6 +8,7 @@ class MediaServerCapabilities {
     this.playlistFavourites = true,
     this.soundSearch = false,
     this.ratings = false,
+    this.albumRatingSort = false,
     this.likedTimestamp = false,
     this.artistScopes = const {ArtistScope.albumArtists},
   });
@@ -18,6 +19,7 @@ class MediaServerCapabilities {
   final bool playlistFavourites;
   final bool soundSearch;
   final bool ratings;
+  final bool albumRatingSort;
   final bool likedTimestamp;
   final Set<ArtistScope> artistScopes;
 
@@ -28,6 +30,7 @@ class MediaServerCapabilities {
     bool? playlistFavourites,
     bool? soundSearch,
     bool? ratings,
+    bool? albumRatingSort,
     bool? likedTimestamp,
     Set<ArtistScope>? artistScopes,
   }) => MediaServerCapabilities(
@@ -37,6 +40,7 @@ class MediaServerCapabilities {
     playlistFavourites: playlistFavourites ?? this.playlistFavourites,
     soundSearch: soundSearch ?? this.soundSearch,
     ratings: ratings ?? this.ratings,
+    albumRatingSort: albumRatingSort ?? this.albumRatingSort,
     likedTimestamp: likedTimestamp ?? this.likedTimestamp,
     artistScopes: artistScopes ?? this.artistScopes,
   );

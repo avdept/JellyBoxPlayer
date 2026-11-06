@@ -8,6 +8,7 @@ LibraryItem _song(
   String artist = '',
   String album = '',
   int track = 0,
+  int rating = 0,
 }) => LibraryItem(
   id: id,
   name: name,
@@ -15,6 +16,7 @@ LibraryItem _song(
   albumArtist: artist,
   albumName: album,
   indexNumber: track,
+  userData: PlaybackUserData(rating: rating),
 );
 
 void main() {
@@ -50,6 +52,18 @@ void main() {
     test('- groups by album and follows track order inside it', () {
       const order = PlaylistSongOrder(sort: PlaylistSongSort.album);
       expect(ids(order.apply(songs)), ['2', '4', '3', '1']);
+    });
+
+    test('- rating starts highest first', () {
+      final rated = [
+        _song('1', name: 'a', rating: 2),
+        _song('2', name: 'b'),
+        _song('3', name: 'c', rating: 5),
+        _song('4', name: 'd', rating: 2),
+      ];
+      final order = const PlaylistSongOrder().select(PlaylistSongSort.rating);
+      expect(order.descending, isTrue);
+      expect(ids(order.apply(rated)), ['3', '4', '1', '2']);
     });
 
     test('- picking the same sort again flips its direction', () {

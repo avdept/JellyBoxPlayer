@@ -16,6 +16,7 @@ String subsonicAlbumListType(ItemSort sort) => switch (sort) {
   ItemSort.datePlayed => subsonicRecentListType,
   ItemSort.playCount => subsonicFrequentListType,
   ItemSort.random => 'random',
+  ItemSort.rating => 'highest',
   ItemSort.releaseDate ||
   ItemSort.dateLiked ||
   ItemSort.dateLastContentAdded ||
@@ -158,6 +159,8 @@ Comparator<SubsonicAlbumDTO>? subsonicAlbumComparator(ItemSort sort) =>
         subsonicStarredAt(a.starred),
         subsonicStarredAt(b.starred),
       ),
+      ItemSort.rating => (a, b) =>
+          (a.userRating ?? 0).compareTo(b.userRating ?? 0),
       ItemSort.name || ItemSort.albumOrder => (a, b) => subsonicCompareNames(
         a.sortName ?? a.name,
         b.sortName ?? b.name,
@@ -215,5 +218,7 @@ Comparator<SubsonicChildDTO>? subsonicSongComparator(ItemSort sort) =>
         subsonicStarredAt(a.starred),
         subsonicStarredAt(b.starred),
       ),
+      ItemSort.rating => (a, b) =>
+          (a.userRating ?? 0).compareTo(b.userRating ?? 0),
       ItemSort.dateLastContentAdded || ItemSort.albumOrder => null,
     };
