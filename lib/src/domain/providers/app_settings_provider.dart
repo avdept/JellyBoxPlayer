@@ -77,6 +77,7 @@ enum AppSetting {
   lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
+  lastFmUser('lastfm_user', defaultValue: ''),
   telemetryOptOut('telemetry_opt_out');
 
   const AppSetting(this.key, {this.defaultValue = false, this.syncs = true});
