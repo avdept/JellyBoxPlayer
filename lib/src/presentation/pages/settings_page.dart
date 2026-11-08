@@ -505,6 +505,8 @@ class SettingsPage extends ConsumerWidget {
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),
+                    _sectionHeader('Last.fm'),
+                    const LastFmSettings(),
                     if (ref.watch(lidarrAvailableProvider)) ...[
                       _sectionHeader('Lidarr'),
                       const LidarrSettings(),

@@ -18,6 +18,7 @@ import 'package:jplayer/src/core/diagnostics/device_log.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/home_widget/now_playing_widget_sync.dart';
 import 'package:jplayer/src/core/home_widget/widget_commands.dart';
+import 'package:jplayer/src/core/lastfm/lastfm_scrobbler.dart';
 import 'package:jplayer/src/core/listenbrainz/listenbrainz_scrobbler.dart';
 import 'package:jplayer/src/core/scrobbling/play_history_scrobbler.dart';
 import 'package:jplayer/src/core/scrobbling/scrobble_handler.dart';
@@ -204,6 +205,7 @@ Future<void> main() async {
     container,
     scrobblers: [
       ListenBrainzScrobbler(container, clientVersion: appInfo.version),
+      LastFmScrobbler(container),
       PlayHistoryScrobbler(container),
     ],
   );

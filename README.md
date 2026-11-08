@@ -141,6 +141,7 @@ JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://
 - [x] Audio quality badge, so you always know whether you're getting the original file
 - [x] Landscape now-playing layout on phones
 - [x] ListenBrainz scrobbling - listens and now-playing go to your ListenBrainz account - see [ListenBrainz](./docs/listenbrainz.md)
+- [x] Last.fm scrobbling - bring your own Last.fm API key and connect your account from Settings
 
 **Offline**
 - [x] Download albums and tracks for offline listening
