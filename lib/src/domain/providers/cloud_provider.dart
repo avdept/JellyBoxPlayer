@@ -156,6 +156,7 @@ class _RemotePlayback implements RemotePlayback {
     index: request.index,
     albumId: request.album.id,
     sourceId: request.sourceId,
+    position: request.position,
   );
 
   @override
