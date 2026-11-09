@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppSetting {
@@ -30,6 +32,7 @@ enum AppSetting {
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
+  browseSort('browse_sort', defaultValue: <String, Object>{}),
   letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
@@ -123,6 +126,20 @@ final browseLayoutProvider = Provider<BrowseLayout>(
       )] ??
       BrowseLayout.cards,
 );
+
+final ProviderFamily<Filter, ItemList> browseSortProvider =
+    Provider.family<Filter, ItemList>(
+      (ref, view) =>
+          _browseSortOf(
+            ref.watch(appSettingsProvider)[AppSetting.browseSort],
+            ref.watch(currentServerIdProvider),
+            view,
+          ) ??
+          Filter(
+            orderBy: view.defaultSortField,
+            desc: view.defaultSortDescending,
+          ),
+    );
 
 final artistBrowseScopeProvider = Provider<ArtistScope>(
   (ref) =>
@@ -257,6 +274,29 @@ String _asString(Object? value, AppSetting setting) {
   return resolved is String ? resolved : '';
 }
 
+Map<String, Object?> _stringKeyed(Object? raw) {
+  if (raw case final Map<Object?, Object?> map) {
+    return {
+      for (final entry in map.entries)
+        if (entry.key case final String key) key: entry.value,
+    };
+  }
+  return const {};
+}
+
+Filter? _browseSortOf(Object? raw, String? serverId, ItemList view) {
+  if (serverId == null) return null;
+  if (_stringKeyed(_stringKeyed(raw)[serverId])[view.name] case {
+    'field': final String field,
+    'desc': final bool desc,
+  }) {
+    if (EntityFilter.values.asNameMap()[field] case final orderBy?) {
+      return Filter(orderBy: orderBy, desc: desc);
+    }
+  }
+  return null;
+}
+
 double _asDouble(Object? value, AppSetting setting) {
   final resolved = value ?? setting.defaultValue;
   return resolved is num ? resolved.toDouble() : 0;
@@ -319,6 +359,17 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
       };
     }
     return const {};
+  }
+
+  void setBrowseSort(String serverId, ItemList view, Filter filter) {
+    final all = _stringKeyed(state[AppSetting.browseSort]);
+    _store(AppSetting.browseSort, {
+      ...all,
+      serverId: {
+        ..._stringKeyed(all[serverId]),
+        view.name: {'field': filter.orderBy.name, 'desc': filter.desc},
+      },
+    });
   }
 
   String valueOf(AppSetting setting) => _asString(state[setting], setting);

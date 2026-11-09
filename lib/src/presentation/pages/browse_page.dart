@@ -14,6 +14,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 
 class BrowsePage extends ConsumerStatefulWidget {
   const BrowsePage({super.key});
@@ -341,28 +342,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     _searchFocusNode.addListener(_onSearchFocusChanged);
     final initialView = ref.read(defaultBrowseTabProvider);
     _currentView = ValueNotifier(initialView)
-      ..addListener(() {
-        final view = _currentView.value;
-        ref
-            .read(filterProvider.notifier)
-            .filter(
-              field: view.defaultSortField,
-              desc: view.defaultSortDescending,
-            );
-      });
+      ..addListener(() => _restoreSort(_currentView.value));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final filter = ref.read(filterProvider);
-      if (filter.orderBy == initialView.defaultSortField &&
-          filter.desc == initialView.defaultSortDescending) {
-        return;
-      }
-      ref
-          .read(filterProvider.notifier)
-          .filter(
-            field: initialView.defaultSortField,
-            desc: initialView.defaultSortDescending,
-          );
+      if (ref.read(filterProvider) == _savedSort(initialView)) return;
+      _restoreSort(initialView);
     });
     _availableFilters = {
       for (final value in EntityFilter.values) value: false,
@@ -791,8 +775,10 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     return _filtersLabels[filter] ?? '???';
   }
 
-  List<EntityFilter> getFilterItems({bool albumRatingSort = false}) =>
-      switch (_currentView.value) {
+  List<EntityFilter> getFilterItems(
+    ItemList view, {
+    bool albumRatingSort = false,
+  }) => switch (view) {
     ItemList.albums => [
       EntityFilter.sortName,
       EntityFilter.albumArtist,
@@ -819,17 +805,42 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     ],
   };
 
+  Filter _savedSort(ItemList view) {
+    final saved = ref.read(browseSortProvider(view));
+    final offered = getFilterItems(
+      view,
+      albumRatingSort: ref.read(serverCapabilitiesProvider).albumRatingSort,
+    );
+    if (offered.contains(saved.orderBy)) return saved;
+    return Filter(
+      orderBy: view.defaultSortField,
+      desc: view.defaultSortDescending,
+    );
+  }
+
+  void _restoreSort(ItemList view) {
+    final sort = _savedSort(view);
+    ref
+        .read(filterProvider.notifier)
+        .filter(field: sort.orderBy, desc: sort.desc);
+  }
+
   void _applyProviderFilter(EntityFilter? value) {
+    if (value == null) return;
     final filter = ref.read(filterProvider);
-    if (filter.orderBy == value && value != EntityFilter.rating) {
-      ref
-          .read(filterProvider.notifier)
-          .filter(field: value!, desc: !filter.desc);
-    } else {
-      ref
-          .read(filterProvider.notifier)
-          .filter(field: value!, desc: _defaultSorting[value] ?? false);
-    }
+    final desc = filter.orderBy == value && value != EntityFilter.rating
+        ? !filter.desc
+        : _defaultSorting[value] ?? false;
+    ref.read(filterProvider.notifier).filter(field: value, desc: desc);
+    final serverId = ref.read(currentServerIdProvider);
+    if (serverId == null) return;
+    ref
+        .read(appSettingsProvider.notifier)
+        .setBrowseSort(
+          serverId,
+          _currentView.value,
+          Filter(orderBy: value, desc: desc),
+        );
   }
 
   Widget _filterButton() => ValueListenableBuilder(
@@ -847,6 +858,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           onChanged: _applyProviderFilter,
           entries: [
             for (final value in getFilterItems(
+              view,
               albumRatingSort: albumRatingSort,
             ))
               AppDropdownEntry(
