@@ -24,12 +24,14 @@ class PlayRequest {
     required this.songs,
     required this.album,
     this.sourceId,
+    this.position = Duration.zero,
   });
 
   final LibraryItem song;
   final List<LibraryItem> songs;
   final LibraryItem album;
   final String? sourceId;
+  final Duration position;
 
   int get index {
     final found = songs.indexWhere((candidate) => candidate.id == song.id);

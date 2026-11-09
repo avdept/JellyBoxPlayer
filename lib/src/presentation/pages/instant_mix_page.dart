@@ -9,6 +9,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/mix_page_scaffold.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_controls.dart';
 import 'package:jplayer/src/presentation/widgets/collection_download_button.dart';
+import 'package:jplayer/src/presentation/widgets/resume_set_button.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -61,6 +62,7 @@ class _InstantMixPageState extends ConsumerState<InstantMixPage> {
         for (final song in songs.take(4)) imageService.itemImage(song),
       ],
       isPlayLoading: ref.watch(setPlaybackProvider) == mixId,
+      resume: ResumeSetButton(item: widget.mix),
       onPlay: () {
         final playback = ref.read(setPlaybackProvider.notifier);
         if (!order.isDefault && shown.isNotEmpty) {

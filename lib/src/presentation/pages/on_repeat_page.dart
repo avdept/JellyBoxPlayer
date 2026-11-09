@@ -7,6 +7,7 @@ import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/collection_download_button.dart';
 import 'package:jplayer/src/presentation/widgets/mix_page_scaffold.dart';
+import 'package:jplayer/src/presentation/widgets/resume_set_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
@@ -32,6 +33,7 @@ class OnRepeatPage extends ConsumerWidget {
       coverImages: [if (onRepeat != null) imageService.itemImage(onRepeat)],
       isPlayLoading:
           onRepeat != null && ref.watch(setPlaybackProvider) == onRepeat.id,
+      resume: onRepeat == null ? null : ResumeSetButton(item: onRepeat),
       onPlay: () {
         if (onRepeat == null || items.isEmpty) return;
         ref

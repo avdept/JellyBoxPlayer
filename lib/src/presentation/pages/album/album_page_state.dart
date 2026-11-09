@@ -312,6 +312,8 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     year: album.productionYear,
   );
 
+  Widget resumeAlbumButton() => ResumeSetButton(item: album);
+
   Widget playAlbumButton() => PlayButton(
     isLoading: ref.watch(setPlaybackProvider) == album.id,
     onPressed: _onPlayAlbumPressed,

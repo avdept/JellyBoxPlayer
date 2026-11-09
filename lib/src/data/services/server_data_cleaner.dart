@@ -6,6 +6,7 @@ import 'package:jplayer/src/data/storages/pins_database.dart';
 import 'package:jplayer/src/data/storages/play_history_database.dart';
 import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/data/storages/queue_cache_database.dart';
+import 'package:jplayer/src/data/storages/resume_point_database.dart';
 
 typedef DownloadSummary = ({int songs, int bytes});
 
@@ -44,6 +45,7 @@ class ServerDataCleaner {
     await InstantMixDatabase(_database).deleteAll();
     await PlayHistoryDatabase(_database).deleteAll();
     await PinsDatabase(_database).deleteAll();
+    await ResumePointDatabase(_database).deleteAll();
     await PlaybackStorage().clear(_database.serverId);
   }
 }

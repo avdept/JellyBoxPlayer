@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -11,6 +12,7 @@ import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -54,21 +56,46 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
   List<LibraryItem> _byIndexNumber(List<LibraryItem> songs) =>
       [...songs]..sort(LibraryItem.compareAlbumOrder);
 
-  Future<SetPlaybackResult> playArtist(LibraryItem artist) => _play(
-    setItem: artist,
-    fetchSongs: () async {
-      final resp = await _ref
-          .read(mediaServerClientProvider)
-          .getSongsOfSet(
-            LibraryQuery(
-              artistIds: [artist.id],
-              sort: ItemSort.albumOrder,
-              limit: _setSongsLimit,
-            ),
-          );
-      return resp.items;
-    },
-  );
+  Future<SetPlaybackResult> playArtist(LibraryItem artist) =>
+      _play(setItem: artist, fetchSongs: () => artistSongs(artist.id));
+
+  Future<List<LibraryItem>> artistSongs(String artistId) async {
+    final resp = await _ref
+        .read(mediaServerClientProvider)
+        .getSongsOfSet(
+          LibraryQuery(
+            artistIds: [artistId],
+            sort: ItemSort.albumOrder,
+            limit: _setSongsLimit,
+          ),
+        );
+    return resp.items;
+  }
+
+  Future<SetPlaybackResult> resume(ResumePoint point) {
+    final item = point.item;
+    if (isInstantMixId(item.id)) {
+      _ref.read(instantMixesProvider.notifier).touch(item.id);
+    }
+    return _play(
+      setItem: item,
+      fetchSongs: () => _songsOf(item),
+      startAt: point,
+    );
+  }
+
+  Future<List<LibraryItem>> _songsOf(LibraryItem set) => switch (set.kind) {
+    ItemKind.album => albumSongs(set.id),
+    ItemKind.artist => artistSongs(set.id),
+    ItemKind.playlist when isLikedSongsId(set.id) => favouriteSongs(),
+    ItemKind.playlist => _orderedPlaylistSongs(set.id),
+    _ => Future.value(const []),
+  };
+
+  Future<List<LibraryItem>> _orderedPlaylistSongs(String playlistId) async {
+    final songs = await playlistSongs(playlistId);
+    return _ref.read(playlistSongOrderProvider(playlistId)).apply(songs);
+  }
 
   Future<SetPlaybackResult> playGenre(LibraryItem genre) => _play(
     setItem: genre,
@@ -166,6 +193,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
     required Future<List<LibraryItem>> Function() fetchSongs,
     String? keepPlaying,
     bool shuffleModeOff = false,
+    ResumePoint? startAt,
   }) async {
     if (state != null) return SetPlaybackResult.busy;
     state = setItem.id;
@@ -175,6 +203,20 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       final playback = _ref.read(playbackProvider.notifier);
       if (shuffleModeOff && _ref.read(playbackProvider).shuffleEnabled) {
         await playback.setShuffle(enabled: false);
+      }
+      final start = startAt == null
+          ? null
+          : songs.firstWhereOrNull((song) => song.id == startAt.songId);
+      if (start != null) {
+        await playback.play(
+          start,
+          songs,
+          setItem,
+          sourceId: setItem.id,
+          initialPosition: startAt!.position,
+          resuming: true,
+        );
+        return SetPlaybackResult.started;
       }
       if (keepPlaying != null &&
           _currentSongId() == keepPlaying &&

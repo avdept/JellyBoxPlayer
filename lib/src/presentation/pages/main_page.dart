@@ -9,6 +9,7 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/providers/dev_tools_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -66,6 +67,23 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     return RailTooltip(
       message: 'Support',
+      enabled: collapsed,
+      child: button,
+    );
+  }
+
+  Widget _devButton(bool collapsed) {
+    final button = RailItemButton(
+      onPressed: () => context.pushNamed(Routes.devQueues.name),
+      icon: const Icon(Icons.bug_report_outlined),
+      label: const Text('Dev'),
+      foregroundColor: _theme.colorScheme.onPrimary,
+      fontSize: 16,
+      horizontalPadding: 30,
+    );
+
+    return RailTooltip(
+      message: 'Saved queues (debug)',
       enabled: collapsed,
       child: button,
     );
@@ -197,6 +215,8 @@ class _MainPageState extends ConsumerState<MainPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (ref.watch(devToolsEnabledProvider))
+                        _devButton(sidebarCollapsed),
                       _supportButton(sidebarCollapsed),
                       _logoutButton(sidebarCollapsed),
                     ],

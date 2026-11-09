@@ -4,6 +4,7 @@ export 'browse_page.dart';
 export 'catalog/catalog_album_page.dart';
 export 'catalog/catalog_artist_page.dart';
 export 'color_pallete_page.dart';
+export 'dev_queues_page.dart';
 export 'downloads_page.dart';
 export 'favourite_songs_page.dart';
 export 'favourites_page.dart';

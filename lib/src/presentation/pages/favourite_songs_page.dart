@@ -13,6 +13,7 @@ import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/mix_page_scaffold.dart';
 import 'package:jplayer/src/presentation/widgets/collection_download_button.dart';
+import 'package:jplayer/src/presentation/widgets/resume_set_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
 import 'package:jplayer/src/presentation/widgets/sort_menu_button.dart';
@@ -86,6 +87,7 @@ class _FavouriteSongsPageState extends ConsumerState<FavouriteSongsPage> {
       coverImages: [if (liked != null) imageService.itemImage(liked)],
       isPlayLoading:
           liked != null && ref.watch(setPlaybackProvider) == liked.id,
+      resume: liked == null ? null : ResumeSetButton(item: liked),
       onPlay: () {
         if (liked == null) return;
         ref

@@ -26,6 +26,7 @@ class PlaylistControls extends StatelessWidget {
     required this.onPlay,
     required this.onShuffle,
     this.isPlayLoading = false,
+    this.resume,
     this.download,
     this.sort,
     super.key,
@@ -34,6 +35,7 @@ class PlaylistControls extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onShuffle;
   final bool isPlayLoading;
+  final Widget? resume;
   final Widget? download;
   final Widget? sort;
 
@@ -64,6 +66,7 @@ class PlaylistControls extends StatelessWidget {
             tooltip: 'Shuffle play',
             onPressed: isPlayLoading ? null : onShuffle,
           ),
+          ?resume,
           ?download,
           const Spacer(),
           ?sort,

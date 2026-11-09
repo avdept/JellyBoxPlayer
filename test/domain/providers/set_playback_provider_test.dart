@@ -3,9 +3,12 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/data/backend/media_server_client.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../provider_container.dart';
@@ -15,6 +18,8 @@ class _FakePlayback extends StateNotifier<PlaybackState>
     implements PlaybackNotifier {
   _FakePlayback(super.state);
 }
+
+class _MockMediaServerClient extends Mock implements MediaServerClient {}
 
 const _playlist = LibraryItem(
   id: 'pl',
@@ -33,7 +38,10 @@ void main() {
     registerFallbackValue(<LibraryItem>[]);
   });
 
-  ProviderContainer containerWith({bool shuffleEnabled = false}) {
+  ProviderContainer containerWith({
+    bool shuffleEnabled = false,
+    List<Override> extra = const [],
+  }) {
     playback = _FakePlayback(
       PlaybackState(
         album: null,
@@ -53,6 +61,16 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
+      () => playback.play(
+        any(),
+        any(),
+        any(),
+        sourceId: any(named: 'sourceId'),
+        initialPosition: any(named: 'initialPosition'),
+        resuming: any(named: 'resuming'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => playback.setShuffle(enabled: any(named: 'enabled')),
     ).thenAnswer((_) async {});
     return createProviderContainer(
@@ -61,6 +79,7 @@ void main() {
         setPlaybackProvider.overrideWith(
           (ref) => SetPlaybackNotifier(ref, random: Random(7)),
         ),
+        ...extra,
       ],
     );
   }
@@ -128,6 +147,81 @@ void main() {
           sourceId: any(named: 'sourceId'),
         ),
       );
+    });
+  });
+
+  group('resume', () {
+    late _MockMediaServerClient client;
+
+    ResumePoint pointAt(String songId) => (
+      item: _playlist,
+      songId: songId,
+      songName: 'Song $songId',
+      songIndex: 4,
+      songCount: songs.length,
+      position: const Duration(seconds: 75),
+      updatedAt: DateTime.utc(2026, 11, 9),
+    );
+
+    ProviderContainer resumeContainer(List<LibraryItem> stored) {
+      client = _MockMediaServerClient();
+      when(
+        () => client.getPlaylistSongs(_playlist.id),
+      ).thenAnswer((_) async => LibraryPage(items: stored));
+      return containerWith(
+        extra: [
+          mediaServerClientProvider.overrideWith((_) => client),
+          isOfflineProvider.overrideWithValue(false),
+        ],
+      );
+    }
+
+    test('- starts the saved song at the saved position', () async {
+      final container = resumeContainer(songs);
+
+      final result = await container
+          .read(setPlaybackProvider.notifier)
+          .resume(pointAt('4'));
+
+      expect(result, SetPlaybackResult.started);
+      verify(
+        () => playback.play(
+          songs[4],
+          songs,
+          _playlist,
+          sourceId: _playlist.id,
+          initialPosition: const Duration(seconds: 75),
+          resuming: true,
+        ),
+      ).called(1);
+    });
+
+    test('- starts from the top when the saved song is gone', () async {
+      final container = resumeContainer(songs);
+
+      final result = await container
+          .read(setPlaybackProvider.notifier)
+          .resume(pointAt('gone'));
+
+      expect(result, SetPlaybackResult.started);
+      verify(
+        () => playback.play(
+          songs.first,
+          songs,
+          _playlist,
+          sourceId: _playlist.id,
+        ),
+      ).called(1);
+    });
+
+    test('- reports an empty set', () async {
+      final container = resumeContainer(const []);
+
+      final result = await container
+          .read(setPlaybackProvider.notifier)
+          .resume(pointAt('4'));
+
+      expect(result, SetPlaybackResult.empty);
     });
   });
 }
