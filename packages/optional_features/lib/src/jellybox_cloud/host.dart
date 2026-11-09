@@ -63,6 +63,7 @@ abstract class CloudHost<S> {
     required int index,
     required S? album,
     required String? sourceId,
+    required Duration position,
   });
 
   Future<bool> enqueue({required List<S> songs, required bool playNext});

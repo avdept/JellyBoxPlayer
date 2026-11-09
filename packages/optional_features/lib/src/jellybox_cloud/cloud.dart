@@ -97,6 +97,7 @@ class JellyboxCloud<S> {
     required int index,
     String? albumId,
     String? sourceId,
+    Duration position = Duration.zero,
   }) async => false;
 
   Future<bool> enqueueOnRenderer({

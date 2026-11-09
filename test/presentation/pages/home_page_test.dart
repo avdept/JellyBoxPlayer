@@ -88,7 +88,7 @@ void main() {
     (index) => GeneratedPlaylist(
       item: LibraryItem(
         id: 'generated-$index',
-        name: '${faker.lorem.word()} mix',
+        name: '${faker.lorem.word()} mix $index',
         kind: ItemKind.playlist,
       ),
       coverSongs: const [],

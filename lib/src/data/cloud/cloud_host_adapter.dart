@@ -140,6 +140,7 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
     required int index,
     required LibraryItem? album,
     required String? sourceId,
+    required Duration position,
   }) => _ref
       .read(playbackProvider.notifier)
       .play(
@@ -147,6 +148,7 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
         songs,
         album ?? placeholderAlbumFor(songs[index]),
         sourceId: sourceId,
+        initialPosition: position > Duration.zero ? position : null,
       );
 
   @override
