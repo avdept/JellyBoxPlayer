@@ -3,6 +3,7 @@ import 'package:jplayer/src/core/exceptions/exceptions.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
@@ -57,19 +58,20 @@ final AutoDisposeFutureProvider<List<LibraryItem>> recentlyAddedAlbumsProvider =
       );
     });
 
-final AutoDisposeFutureProvider<List<LibraryItem>>
-recentlyUpdatedPlaylistsProvider = FutureProvider.autoDispose((ref) async {
-  if (ref.watch(isOfflineProvider)) throw const OfflineException();
-  final api = ref.watch(mediaServerClientProvider);
-  final userId = ref.watch(currentUserProvider)?.userId;
-  if (userId == null) return const [];
+final AutoDisposeFutureProvider<List<LibraryItem>> homePlaylistsProvider =
+    FutureProvider.autoDispose((ref) async {
+      if (ref.watch(isOfflineProvider)) throw const OfflineException();
+      final api = ref.watch(mediaServerClientProvider);
+      final userId = ref.watch(currentUserProvider)?.userId;
+      if (userId == null) return const [];
 
-  final page = await api.getPlaylists(
-    const LibraryQuery(
-      sort: ItemSort.dateLastContentAdded,
-      direction: SortDirection.descending,
-      limit: homeSectionLimit,
-    ),
-  );
-  return page.items;
-});
+      final sort = ref.watch(homePlaylistSortProvider);
+      final page = await api.getPlaylists(
+        LibraryQuery(
+          sort: sort.orderBy.itemSort,
+          direction: sortDirectionOf(descending: sort.desc),
+          limit: homeSectionLimit,
+        ),
+      );
+      return page.items;
+    });

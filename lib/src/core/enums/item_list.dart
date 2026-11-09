@@ -30,4 +30,31 @@ enum ItemList {
   final EntityFilter defaultSortField;
 
   final bool defaultSortDescending;
+
+  List<EntityFilter> sortOptions({bool albumRatingSort = false}) =>
+      switch (this) {
+        ItemList.albums => [
+          EntityFilter.sortName,
+          EntityFilter.albumArtist,
+          EntityFilter.dateCreated,
+          if (albumRatingSort) EntityFilter.rating,
+          EntityFilter.random,
+        ],
+        ItemList.artists => const [
+          EntityFilter.sortName,
+          EntityFilter.dateCreated,
+        ],
+        ItemList.genres => const [EntityFilter.sortName],
+        ItemList.playlists => const [
+          EntityFilter.dateLastContentAdded,
+          EntityFilter.sortName,
+          EntityFilter.dateCreated,
+        ],
+        ItemList.songs => const [
+          EntityFilter.sortName,
+          EntityFilter.dateCreated,
+          EntityFilter.albumArtist,
+          EntityFilter.random,
+        ],
+      };
 }

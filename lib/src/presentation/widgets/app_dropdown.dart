@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,6 +79,32 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
     );
   }
 
+  double _fitWidth(BuildContext context, ThemeData theme) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final base = theme.textTheme.bodyMedium ?? const TextStyle();
+    var widest = 0.0;
+    var leading = 0.0;
+    var trailing = 0.0;
+    for (final entry in widget.entries) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: entry.label,
+          style: base.copyWith(
+            fontSize: entry.isHeader ? 12 : 14,
+            fontWeight: entry.isHeader ? FontWeight.w600 : null,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+      )..layout();
+      widest = max(widest, painter.width);
+      painter.dispose();
+      if (entry.leadingBuilder != null) leading = 32;
+      if (entry.trailingBuilder != null) trailing = 24;
+    }
+    return max(widget.width, widest + leading + trailing + 52);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -88,7 +116,7 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
           overlayColor: WidgetStatePropertyAll(Colors.transparent),
         ),
         dropdownStyleData: DropdownStyleData(
-          width: widget.width,
+          width: _fitWidth(context, theme),
           padding: const EdgeInsets.all(8),
           offset: const Offset(0, -8),
           maxHeight: 480,

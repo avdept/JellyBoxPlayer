@@ -10,3 +10,10 @@ abstract class Filter with _$Filter {
     @Default(false) bool desc,
   }) = _Filter;
 }
+
+extension FilterSelect on Filter {
+  Filter select(EntityFilter next) =>
+      next == orderBy && next != EntityFilter.rating
+      ? copyWith(desc: !desc)
+      : Filter(orderBy: next, desc: next.defaultDescending);
+}

@@ -255,88 +255,10 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     return [
       for (final section in releaseTypeSections(_albums)) ...[
         _sectionHeading(section.label),
-        SliverPadding(
-          padding: EdgeInsets.only(
-            top: 16,
-            right: _device.isMobile ? 16 : _horizontalPadding,
-            left: _device.isMobile ? 16 : _horizontalPadding,
-            bottom: 16,
-          ),
-          sliver: SliverGrid.builder(
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: _device.isMobile ? 200 : 160,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: _device.isMobile ? 8 : 16,
-              childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
-            ),
-            itemBuilder: (context, index) => AlbumView(
-              showArtist: false,
-              album: section.albums[index],
-              subtitle: section.albums[index].productionYear?.toString(),
-              alignTextStart: true,
-              optionsBuilder: (context) => contextMenuActions(
-                context,
-                ref,
-                section.albums[index],
-                scope: ContextMenuScope.browse,
-                onLike: _onAlbumLikePressed,
-              ),
-              onTap: (album) => context.pushNamed(
-                branchAwareName(context, Routes.album),
-                extra: {
-                  'album': album,
-                  'artist': widget.artist,
-                },
-              ),
-              onPlayPressed: _onAlbumPlayPressed,
-              mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
-              subTextStyle: const TextStyle(fontSize: 14),
-            ),
-            itemCount: section.albums.length,
-          ),
-        ),
+        _albumGrid(section.albums),
       ],
       if (_appearsOn.isNotEmpty) _sectionHeading('Appears On'),
-      SliverPadding(
-        padding: EdgeInsets.only(
-          top: 16,
-          right: _device.isMobile ? 16 : _horizontalPadding,
-          left: _device.isMobile ? 16 : _horizontalPadding,
-          bottom: 16,
-        ),
-        sliver: SliverGrid.builder(
-          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: _device.isMobile ? 175 : 220,
-            mainAxisSpacing: _device.isTablet ? 24 : 12,
-            crossAxisSpacing: _device.isMobile ? 8 : 16,
-            childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
-          ),
-          itemBuilder: (context, index) => AlbumView(
-            showArtist: false,
-            album: _appearsOn[index],
-            subtitle: _appearsOn[index].productionYear?.toString(),
-            alignTextStart: true,
-            optionsBuilder: (context) => contextMenuActions(
-              context,
-              ref,
-              _appearsOn[index],
-              scope: ContextMenuScope.browse,
-              onLike: _onAlbumLikePressed,
-            ),
-            onTap: (album) => context.pushNamed(
-              branchAwareName(context, Routes.album),
-              extra: {
-                'album': album,
-                'artist': widget.artist,
-              },
-            ),
-            onPlayPressed: _onAlbumPlayPressed,
-            mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
-            subTextStyle: const TextStyle(fontSize: 14),
-          ),
-          itemCount: _appearsOn.length,
-        ),
-      ),
+      _albumGrid(_appearsOn),
       ..._missingAlbumsWidgets(),
       SliverToBoxAdapter(
         child: SimilarArtistsRow(
@@ -355,6 +277,34 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   );
 
   bool get _discoveryEnabled => ref.watch(catalogSourcesProvider).isNotEmpty;
+
+  Widget _albumGrid(List<LibraryItem> albums) => SliverPadding(
+    padding: _gridPadding,
+    sliver: SliverGrid.builder(
+      gridDelegate: _albumGridDelegate,
+      itemCount: albums.length,
+      itemBuilder: (context, index) => AlbumView(
+        showArtist: false,
+        album: albums[index],
+        subtitle: albums[index].productionYear?.toString(),
+        alignTextStart: true,
+        optionsBuilder: (context) => contextMenuActions(
+          context,
+          ref,
+          albums[index],
+          scope: ContextMenuScope.browse,
+          onLike: _onAlbumLikePressed,
+        ),
+        onTap: (album) => context.pushNamed(
+          branchAwareName(context, Routes.album),
+          extra: {'album': album, 'artist': widget.artist},
+        ),
+        onPlayPressed: _onAlbumPlayPressed,
+        mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
+        subTextStyle: const TextStyle(fontSize: 14),
+      ),
+    ),
+  );
 
   EdgeInsets get _gridPadding => EdgeInsets.only(
     top: 16,

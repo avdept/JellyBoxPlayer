@@ -1,5 +1,6 @@
 export 'app_settings_provider.dart';
 export 'artist_scope_provider.dart';
+export 'browse_view_request_provider.dart';
 export 'catalog_preview_provider.dart';
 export 'catalog_provider.dart';
 export 'current_day_provider.dart';
