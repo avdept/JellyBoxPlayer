@@ -75,20 +75,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     ItemList.songs: 'Songs',
   };
 
-  Map<EntityFilter, String> get _filtersLabels => {
-    EntityFilter.dateCreated: 'Date Added',
-    EntityFilter.albumArtist: 'Album Artist',
-    EntityFilter.sortName: 'Name',
-    EntityFilter.random: 'Random',
-    EntityFilter.rating: 'Rating',
-  };
-
-  Map<EntityFilter, bool> get _defaultSorting => {
-    EntityFilter.dateCreated: true,
-    EntityFilter.rating: true,
-    EntityFilter.sortName: false,
-  };
-
   void _onAlbumTap(LibraryItem album) {
     context.pushNamed(
       Routes.album.name,
@@ -340,11 +326,14 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
   void initState() {
     super.initState();
     _searchFocusNode.addListener(_onSearchFocusChanged);
-    final initialView = ref.read(defaultBrowseTabProvider);
+    final ItemList initialView =
+        ref.read(browseViewRequestProvider) ??
+        ref.read(defaultBrowseTabProvider);
     _currentView = ValueNotifier(initialView)
       ..addListener(() => _restoreSort(_currentView.value));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      ref.read(browseViewRequestProvider.notifier).state = null;
       if (ref.read(filterProvider) == _savedSort(initialView)) return;
       _restoreSort(initialView);
     });
@@ -401,6 +390,11 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       defaultBrowseTabProvider,
       (previous, next) => _currentView.value = next,
     );
+    ref.listen(browseViewRequestProvider, (previous, next) {
+      if (next == null) return;
+      _currentView.value = next;
+      ref.read(browseViewRequestProvider.notifier).state = null;
+    });
     return Scaffold(
       key: _scaffoldKey,
       body: ValueListenableBuilder(
@@ -771,44 +765,9 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     ArtistScope.allArtists => 'Artists',
   };
 
-  String _filterLabel(EntityFilter filter) {
-    return _filtersLabels[filter] ?? '???';
-  }
-
-  List<EntityFilter> getFilterItems(
-    ItemList view, {
-    bool albumRatingSort = false,
-  }) => switch (view) {
-    ItemList.albums => [
-      EntityFilter.sortName,
-      EntityFilter.albumArtist,
-      EntityFilter.dateCreated,
-      if (albumRatingSort) EntityFilter.rating,
-      EntityFilter.random,
-    ],
-    ItemList.artists => const [
-      EntityFilter.sortName,
-      EntityFilter.dateCreated,
-    ],
-    ItemList.genres => const [
-      EntityFilter.sortName,
-    ],
-    ItemList.playlists => const [
-      EntityFilter.sortName,
-      EntityFilter.dateCreated,
-    ],
-    ItemList.songs => const [
-      EntityFilter.sortName,
-      EntityFilter.dateCreated,
-      EntityFilter.albumArtist,
-      EntityFilter.random,
-    ],
-  };
-
   Filter _savedSort(ItemList view) {
     final saved = ref.read(browseSortProvider(view));
-    final offered = getFilterItems(
-      view,
+    final offered = view.sortOptions(
       albumRatingSort: ref.read(serverCapabilitiesProvider).albumRatingSort,
     );
     if (offered.contains(saved.orderBy)) return saved;
@@ -827,20 +786,15 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
 
   void _applyProviderFilter(EntityFilter? value) {
     if (value == null) return;
-    final filter = ref.read(filterProvider);
-    final desc = filter.orderBy == value && value != EntityFilter.rating
-        ? !filter.desc
-        : _defaultSorting[value] ?? false;
-    ref.read(filterProvider.notifier).filter(field: value, desc: desc);
+    final next = ref.read(filterProvider).select(value);
+    ref
+        .read(filterProvider.notifier)
+        .filter(field: next.orderBy, desc: next.desc);
     final serverId = ref.read(currentServerIdProvider);
     if (serverId == null) return;
     ref
         .read(appSettingsProvider.notifier)
-        .setBrowseSort(
-          serverId,
-          _currentView.value,
-          Filter(orderBy: value, desc: desc),
-        );
+        .setBrowseSort(serverId, _currentView.value, next);
   }
 
   Widget _filterButton() => ValueListenableBuilder(
@@ -857,13 +811,12 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
           value: filter.orderBy,
           onChanged: _applyProviderFilter,
           entries: [
-            for (final value in getFilterItems(
-              view,
+            for (final value in view.sortOptions(
               albumRatingSort: albumRatingSort,
             ))
               AppDropdownEntry(
                 value: value,
-                label: _filterLabel(value),
+                label: value.label,
                 trailingBuilder: (color) => Icon(
                   filter.desc ? Icons.arrow_upward : Icons.arrow_downward,
                   color: color,

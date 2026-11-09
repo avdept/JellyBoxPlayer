@@ -114,6 +114,7 @@ void main() {
     bool generatedDisabled = false,
     ContentUpdateInterval? updateInterval,
     VoidCallback? onRecentlyAddedFetch,
+    bool playlistsFromServer = false,
   }) {
     return createTestApp(
       providerContainer: createProviderContainer(
@@ -141,9 +142,10 @@ void main() {
             onRecentlyAddedFetch?.call();
             return recentlyAdded ?? createItems(3, ItemKind.album);
           }),
-          recentlyUpdatedPlaylistsProvider.overrideWith(
-            (_) async => playlists ?? createItems(3, ItemKind.playlist),
-          ),
+          if (!playlistsFromServer)
+            homePlaylistsProvider.overrideWith(
+              (_) async => playlists ?? createItems(3, ItemKind.playlist),
+            ),
           frequentlyPlayedAlbumsProvider.overrideWith(
             (_) async => frequentlyPlayed ?? createItems(3, ItemKind.album),
           ),
@@ -180,8 +182,10 @@ void main() {
     bool generatedDisabled = false,
     ContentUpdateInterval? updateInterval,
     VoidCallback? onRecentlyAddedFetch,
+    bool playlistsFromServer = false,
+    Size size = const Size(390, 2000),
   }) async {
-    widgetTester.view.physicalSize = const Size(390, 2000);
+    widgetTester.view.physicalSize = size;
     widgetTester.view.devicePixelRatio = 1;
     addTearDown(widgetTester.view.reset);
 
@@ -198,6 +202,7 @@ void main() {
         generatedDisabled: generatedDisabled,
         updateInterval: updateInterval,
         onRecentlyAddedFetch: onRecentlyAddedFetch,
+        playlistsFromServer: playlistsFromServer,
       ),
     );
     await widgetTester.pump(Duration.zero);
@@ -241,6 +246,55 @@ void main() {
   }
 
   group('HomePage', () {
+    for (final size in const [Size(390, 2000), Size(1400, 2400)]) {
+      testWidgets(
+        '- refetches playlists with the sort picked in the header at $size',
+        (
+          widgetTester,
+        ) async {
+          when(() => mockClient.getPlaylists(any())).thenAnswer(
+            (_) async => LibraryPage(
+              items: createItems(3, ItemKind.playlist),
+              totalRecordCount: 3,
+            ),
+          );
+          await pumpHome(widgetTester, playlistsFromServer: true, size: size);
+          await widgetTester.pumpAndSettle();
+
+          final sortButton = find.descendant(
+            of: find.ancestor(
+              of: find.text('Playlists'),
+              matching: find.byType(ItemCarousel),
+            ),
+            matching: find.byIcon(Icons.sort),
+          );
+          expect(sortButton, findsOneWidget);
+          await widgetTester.tap(sortButton);
+          await widgetTester.pumpAndSettle();
+          await widgetTester.tap(find.text('Name').last);
+          await widgetTester.pumpAndSettle();
+
+          var queries = verify(
+            () => mockClient.getPlaylists(captureAny()),
+          ).captured.cast<LibraryQuery>();
+          expect(queries.last.sort, ItemSort.name);
+          expect(queries.last.direction, SortDirection.ascending);
+          expect(sortButton, findsOneWidget);
+
+          await widgetTester.tap(sortButton);
+          await widgetTester.pumpAndSettle();
+          await widgetTester.tap(find.text('Name').last);
+          await widgetTester.pumpAndSettle();
+
+          queries = verify(
+            () => mockClient.getPlaylists(captureAny()),
+          ).captured.cast<LibraryQuery>();
+          expect(queries.last.sort, ItemSort.name);
+          expect(queries.last.direction, SortDirection.descending);
+        },
+      );
+    }
+
     testWidgets('- shows every section that has content', (
       widgetTester,
     ) async {
@@ -442,7 +496,7 @@ void main() {
       expect(find.text('Recently added'), findsNothing);
     });
 
-    testWidgets('- gives only the favourites section a chevron', (
+    testWidgets('- gives only favourites and playlists a title chevron', (
       widgetTester,
     ) async {
       await pumpHome(widgetTester);
@@ -451,14 +505,16 @@ void main() {
         of: find.byType(ClickableWidget),
         matching: find.byIcon(Icons.chevron_right),
       );
-      expect(titleChevron, findsOneWidget);
-      expect(
-        find.ancestor(
-          of: titleChevron,
-          matching: find.widgetWithText(ItemCarousel, 'Favourites'),
-        ),
-        findsOneWidget,
-      );
+      expect(titleChevron, findsNWidgets(2));
+      for (final title in ['Favourites', 'Playlists']) {
+        expect(
+          find.ancestor(
+            of: titleChevron,
+            matching: find.widgetWithText(ItemCarousel, title),
+          ),
+          findsOneWidget,
+        );
+      }
     });
 
     testWidgets('- rebuilds the mixes from the debug action', (

@@ -33,6 +33,11 @@ enum AppSetting {
   defaultStartPage('default_start_page', defaultValue: 'home'),
   browseLayout('browse_layout', defaultValue: 'cards'),
   browseSort('browse_sort', defaultValue: <String, Object>{}),
+  homePlaylistSort('home_playlist_sort', defaultValue: 'dateLastContentAdded'),
+  homePlaylistSortDescending(
+    'home_playlist_sort_descending',
+    defaultValue: true,
+  ),
   letterRuler('letter_ruler', defaultValue: true),
   artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
@@ -140,6 +145,22 @@ final ProviderFamily<Filter, ItemList> browseSortProvider =
             desc: view.defaultSortDescending,
           ),
     );
+
+final homePlaylistSortProvider = Provider<Filter>((ref) {
+  final settings = ref.watch(appSettingsProvider);
+  return Filter(
+    orderBy:
+        EntityFilter.values.asNameMap()[_asString(
+          settings[AppSetting.homePlaylistSort],
+          AppSetting.homePlaylistSort,
+        )] ??
+        EntityFilter.dateLastContentAdded,
+    desc: _asBool(
+      settings[AppSetting.homePlaylistSortDescending],
+      AppSetting.homePlaylistSortDescending,
+    ),
+  );
+});
 
 final artistBrowseScopeProvider = Provider<ArtistScope>(
   (ref) =>
@@ -361,6 +382,11 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
     return const {};
   }
 
+  void setHomePlaylistSort(Filter filter) => _storeAll({
+    AppSetting.homePlaylistSort: filter.orderBy.name,
+    AppSetting.homePlaylistSortDescending: filter.desc,
+  });
+
   void setBrowseSort(String serverId, ItemList view, Filter filter) {
     final all = _stringKeyed(state[AppSetting.browseSort]);
     _store(AppSetting.browseSort, {
@@ -386,9 +412,15 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
   void toggle(AppSetting setting) =>
       setEnabled(setting, value: !isEnabled(setting));
 
-  void _store(AppSetting setting, Object value) {
-    if (state[setting] == value) return;
-    state = {...state, setting: value};
+  void _store(AppSetting setting, Object value) => _storeAll({setting: value});
+
+  void _storeAll(Map<AppSetting, Object> values) {
+    final changed = {
+      for (final entry in values.entries)
+        if (state[entry.key] != entry.value) entry.key: entry.value,
+    };
+    if (changed.isEmpty) return;
+    state = {...state, ...changed};
     final prefs = _prefs;
     if (prefs == null) return;
     unawaited(

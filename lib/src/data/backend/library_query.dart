@@ -94,6 +94,7 @@ extension EntityFilterSort on EntityFilter {
     EntityFilter.sortName => ItemSort.name,
     EntityFilter.albumArtist => ItemSort.albumArtist,
     EntityFilter.dateCreated => ItemSort.dateCreated,
+    EntityFilter.dateLastContentAdded => ItemSort.dateLastContentAdded,
     EntityFilter.dateLiked => ItemSort.dateLiked,
     EntityFilter.random => ItemSort.random,
     EntityFilter.rating => ItemSort.rating,

@@ -162,6 +162,29 @@ class _HomePageState extends ConsumerState<HomePage> {
     color: Theme.of(context).colorScheme.onPrimary,
   );
 
+  Widget _playlistSortButton() {
+    final sort = ref.watch(homePlaylistSortProvider);
+    return AppDropdown<EntityFilter>(
+      icon: Icons.sort,
+      iconSize: _device.isDesktop ? 20 : null,
+      value: sort.orderBy,
+      onChanged: (value) => ref
+          .read(appSettingsProvider.notifier)
+          .setHomePlaylistSort(sort.select(value)),
+      entries: [
+        for (final value in ItemList.playlists.sortOptions())
+          AppDropdownEntry(
+            value: value,
+            label: value.label,
+            trailingBuilder: (color) => Icon(
+              sort.desc ? Icons.arrow_upward : Icons.arrow_downward,
+              color: color,
+            ),
+          ),
+      ],
+    );
+  }
+
   void _onRecentlyPlayedTap(LibraryItem item) {
     if (!isInstantMixId(item.id)) return _onAlbumTap(item);
     ref.read(instantMixesProvider.notifier).touch(item.id);
@@ -239,13 +262,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _onFavouritesTap() =>
       context.pushNamed(branchAwareName(context, Routes.favourites));
 
+  void _onPlaylistsTap() {
+    ref.read(browseViewRequestProvider.notifier).state = ItemList.playlists;
+    context.goNamed(Routes.browse.name);
+  }
+
   void _refresh() {
     _refreshFavourites();
     ref
       ..invalidate(recentlyPlayedAlbumsProvider)
       ..invalidate(frequentlyPlayedAlbumsProvider)
       ..invalidate(recentlyAddedAlbumsProvider)
-      ..invalidate(recentlyUpdatedPlaylistsProvider)
+      ..invalidate(homePlaylistsProvider)
       ..invalidate(todaysPlaylistsProvider);
   }
 
@@ -253,6 +281,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
     final resumePoints = ref.watch(resumePointsProvider);
+    final serverPlaylists = ref.watch(homePlaylistsProvider);
+    final playlists =
+        (serverPlaylists.isLoading && serverPlaylists.hasValue
+                ? AsyncValue.data(serverPlaylists.requireValue)
+                : serverPlaylists)
+            .whenData(
+              (list) => [
+                ?ref.watch(likedSongsPlaylistProvider),
+                ?ref.watch(onRepeatCardProvider).valueOrNull,
+                ...list,
+              ],
+            );
 
     return ScrollablePageScaffold(
       useGradientBackground: true,
@@ -381,23 +421,18 @@ class _HomePageState extends ConsumerState<HomePage> {
           SliverToBoxAdapter(
             child: ItemCarousel(
               title: 'Playlists',
-              items: ref
-                  .watch(recentlyUpdatedPlaylistsProvider)
-                  .whenData(
-                    (list) => [
-                      ?ref.watch(likedSongsPlaylistProvider),
-                      ?ref.watch(onRepeatCardProvider).valueOrNull,
-                      ...list,
-                    ],
-                  ),
+              items: playlists,
+              onTitleTap: _onPlaylistsTap,
               device: _device,
               horizontalPadding: _horizontalPadding,
               onItemTap: _onPlaylistTap,
               onPlayPressed: _onPlayPlaylist,
-              optionsBuilder: _cardOptions(recentlyUpdatedPlaylistsProvider),
-              onRetry: () => ref.invalidate(recentlyUpdatedPlaylistsProvider),
-              onRefresh: () =>
-                  ref.refresh(recentlyUpdatedPlaylistsProvider.future),
+              optionsBuilder: _cardOptions(homePlaylistsProvider),
+              onRetry: () => ref.invalidate(homePlaylistsProvider),
+              onRefresh: () => ref.refresh(homePlaylistsProvider.future),
+              trailing: (playlists.valueOrNull?.isNotEmpty ?? false)
+                  ? _playlistSortButton()
+                  : null,
             ),
           ),
           SliverToBoxAdapter(

@@ -408,11 +408,10 @@ class CarContent {
   void setSort(String? field) {
     final entity = EntityFilter.values.asNameMap()[field];
     if (entity == null) return;
-    final filter = sort;
-    final desc = filter.orderBy == entity && entity != EntityFilter.rating
-        ? !filter.desc
-        : entity == EntityFilter.dateCreated || entity == EntityFilter.rating;
-    _ref.read(carFilterProvider.notifier).filter(field: entity, desc: desc);
+    final next = sort.select(entity);
+    _ref
+        .read(carFilterProvider.notifier)
+        .filter(field: next.orderBy, desc: next.desc);
   }
 
   Future<void> play(String type, String id, {String? songContext}) async {

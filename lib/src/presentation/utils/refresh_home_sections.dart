@@ -4,7 +4,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 extension RefreshHomeSections on WidgetRef {
   void refreshHomeSections() {
     invalidate(recentlyAddedAlbumsProvider);
-    invalidate(recentlyUpdatedPlaylistsProvider);
+    invalidate(homePlaylistsProvider);
     invalidate(frequentlyPlayedAlbumsProvider);
     if (!read(settingProvider(AppSetting.recentlyPlayedHidden))) {
       invalidate(recentlyPlayedAlbumsProvider);

@@ -15,6 +15,7 @@ import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/item_list_providers.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/browse_view_request_provider.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/presentation/pages/browse_page.dart';
@@ -181,9 +182,12 @@ void main() {
     BrowseLayout? layout,
     MediaServerCapabilities capabilities = bothArtistScopes,
     ArtistScope? scope,
+    ItemList? requestedView,
   }) => createTestApp(
     providerContainer: createProviderContainer(
       overrides: [
+        if (requestedView != null)
+          browseViewRequestProvider.overrideWith((_) => requestedView),
         itemListProvider.overrideWith(createItemListMock),
         currentLibraryProvider.overrideWith(() => mockCurrentLibraryNotifier),
         librariesProvider.overrideWith(() => mockLibrariesNotifier),
@@ -230,6 +234,21 @@ void main() {
   });
 
   group('BrowsePage layout', () {
+    testWidgets('- opens on the requested tab instead of the default', (
+      widgetTester,
+    ) async {
+      await widgetTester.pumpWidget(
+        getWidgetUT(requestedView: ItemList.playlists),
+      );
+      await widgetTester.pump(Duration.zero);
+
+      expect(
+        find.text(mockPlaylists.pages.values.first.first.name),
+        findsOneWidget,
+      );
+      expect(find.text(mockAlbums.pages.values.first.first.name), findsNothing);
+    });
+
     testWidgets('- shows cards by default', (widgetTester) async {
       await widgetTester.pumpWidget(getWidgetUT());
       await widgetTester.pump(Duration.zero);
