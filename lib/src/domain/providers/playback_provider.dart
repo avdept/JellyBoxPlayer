@@ -23,6 +23,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
+import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
 import 'package:jplayer/src/domain/providers/review_prompt_provider.dart';
 import 'package:jplayer/src/domain/providers/stream_preference_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
@@ -101,6 +102,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   StreamSubscription<TrackLoadFailure>? _loadFailureSubscription;
   TargetPlaybackState _targetState = TargetPlaybackState.idle;
   DateTime? _lastPositionSave;
+  String? _resumePointKey;
+  String? _resumePointSong;
+  DateTime? _lastResumePointSave;
+  static const _resumePointInterval = Duration(seconds: 15);
   int? _reportedIndex;
   var _reportedPositionMs = 0;
   var _startReported = false;
@@ -370,6 +375,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           _saveToStorage(
             songId: currentSong.id,
             positionMs: targetState.position.inMilliseconds,
+            periodic: true,
           ),
         );
       }
@@ -390,8 +396,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
       final first = state.songs.elementAtOrNull(0);
       if (first != null && state.album != null) {
-        unawaited(_saveToStorage(songId: first.id, positionMs: 0));
+        unawaited(
+          _saveToStorage(songId: first.id, positionMs: 0, resume: false),
+        );
       }
+      unawaited(_clearResumePoint(state.sourceId));
       if (_target.kind == PlaybackTargetKind.local) {
         unawaited(_rewindToQueueStart());
       }
@@ -716,17 +725,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool autoPlay = true,
     bool reshuffle = true,
     bool keepStreamsOffline = false,
+    bool resuming = false,
   }) async {
     final elsewhere = remote;
     if (elsewhere != null &&
         _localPlays == 0 &&
         autoPlay &&
-        initialPosition == null) {
+        (initialPosition == null || resuming)) {
       final request = PlayRequest(
         song: playSong,
         songs: songs,
         album: album,
         sourceId: sourceId,
+        position: initialPosition ?? Duration.zero,
       );
       if (await elsewhere.play(request)) return;
     }
@@ -837,6 +848,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           positionMs: startPosition.inMilliseconds,
           songs: playableSongs,
           album: album,
+          resume: autoPlay,
         ),
       );
     } catch (e, st) {
@@ -1690,6 +1702,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     required int positionMs,
     List<LibraryItem>? songs,
     LibraryItem? album,
+    bool resume = true,
+    bool periodic = false,
   }) async {
     final serverId = _ref.read(currentServerIdProvider);
     final effectiveSongs = songs ?? state.songs;
@@ -1699,6 +1713,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         effectiveSongs.isEmpty ||
         effectiveAlbum == null) {
       return;
+    }
+    if (resume) {
+      unawaited(
+        _saveResumePoint(
+          songId: songId,
+          positionMs: positionMs,
+          songs: effectiveSongs,
+          set: effectiveAlbum,
+          periodic: periodic,
+        ),
+      );
     }
     if (songs == null &&
         album == null &&
@@ -1723,6 +1748,60 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       shuffle: state.shuffleEnabled,
       unshuffledOrder: _unshuffledOrder,
     );
+  }
+
+  Future<void> _saveResumePoint({
+    required String songId,
+    required int positionMs,
+    required List<LibraryItem> songs,
+    required LibraryItem set,
+    bool periodic = false,
+  }) async {
+    final sourceId = state.sourceId;
+    if (sourceId == null || sourceId != set.id || !canResume(set)) return;
+    final index = songs.indexWhere((song) => song.id == songId);
+    if (index < 0) return;
+    final now = DateTime.now();
+    final song = '$sourceId/$songId';
+    final lastSave = _lastResumePointSave;
+    if (periodic &&
+        song == _resumePointSong &&
+        lastSave != null &&
+        now.difference(lastSave) < _resumePointInterval) {
+      return;
+    }
+    final point = (
+      item: set,
+      songId: songId,
+      songName: songs[index].name,
+      songIndex: index,
+      songCount: songs.length,
+      position: Duration(milliseconds: positionMs),
+      updatedAt: now,
+    );
+    try {
+      await _ref.read(resumePointDatabaseProvider).save(point);
+    } on Object {
+      return;
+    }
+    _resumePointSong = song;
+    _lastResumePointSave = now;
+    final key = '$sourceId/$songId/${isResumable(point)}';
+    if (_resumePointKey == key) return;
+    _resumePointKey = key;
+    _ref.read(resumePointsChangedProvider.notifier).state++;
+  }
+
+  Future<void> _clearResumePoint(String? sourceId) async {
+    if (sourceId == null) return;
+    try {
+      await _ref.read(resumePointDatabaseProvider).delete(sourceId);
+    } on Object {
+      return;
+    }
+    _resumePointKey = null;
+    _resumePointSong = null;
+    _ref.read(resumePointsChangedProvider.notifier).state++;
   }
 
   void _adoptSavedShuffle(PlaybackSnapshot snapshot) {
@@ -1894,6 +1973,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           positionMs: session.position.inMilliseconds,
           songs: resolved.songs,
           album: snapshot.album,
+          resume: session.playing,
         ),
       );
       return true;

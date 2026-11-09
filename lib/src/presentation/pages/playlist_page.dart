@@ -472,6 +472,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
           .ignore();
     },
     isPlayLoading: ref.watch(setPlaybackProvider) == widget.playlist.id,
+    resume: ResumeSetButton(item: widget.playlist),
     download: _downloadAlbumButton(),
     sort: PlaylistSortButton(
       order: _order,

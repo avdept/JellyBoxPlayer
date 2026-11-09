@@ -19,3 +19,4 @@ export 'library_item/playback_user_data.dart';
 export 'lyrics/lyrics.dart';
 export 'paged_items/paged_items.dart';
 export 'playback_state/playback_state.dart';
+export 'resume_point/resume_point.dart';

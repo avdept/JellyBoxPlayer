@@ -193,6 +193,32 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  void _onResumeItemTap(LibraryItem item) {
+    switch (item.kind) {
+      case ItemKind.artist:
+        context.pushNamed(
+          branchAwareName(context, Routes.artist),
+          extra: {'artist': item},
+        );
+      case ItemKind.playlist when isInstantMixId(item.id):
+        _onRecentlyPlayedTap(item);
+      case ItemKind.playlist:
+        _onPlaylistTap(item);
+      case ItemKind.album ||
+          ItemKind.song ||
+          ItemKind.genre ||
+          ItemKind.library ||
+          ItemKind.unknown:
+        _onAlbumTap(item);
+    }
+  }
+
+  Future<void> _onResume(LibraryItem item) async {
+    final point = ref.read(resumePointProvider(item.id));
+    if (point == null) return;
+    await resumeSet(context, ref, point);
+  }
+
   void _onFavouriteTap(LibraryItem item) =>
       item.kind == ItemKind.playlist ? _onPlaylistTap(item) : _onAlbumTap(item);
 
@@ -226,6 +252,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
+    final resumePoints = ref.watch(resumePointsProvider);
 
     return ScrollablePageScaffold(
       useGradientBackground: true,
@@ -303,6 +330,21 @@ class _HomePageState extends ConsumerState<HomePage> {
                 trailing: ref.watch(devToolsEnabledProvider)
                     ? _regenerateButton()
                     : null,
+              ),
+            ),
+          if (resumePoints.isNotEmpty)
+            SliverToBoxAdapter(
+              child: ItemCarousel(
+                title: 'Jump back in',
+                items: AsyncValue.data([
+                  for (final point in resumePoints) point.item,
+                ]),
+                device: _device,
+                horizontalPadding: _horizontalPadding,
+                onItemTap: _onResumeItemTap,
+                onPlayPressed: _onResume,
+                coverBuilder: _instantMixCover,
+                optionsBuilder: _setOptions,
               ),
             ),
           if (!ref.watch(settingProvider(AppSetting.recentlyPlayedHidden)))

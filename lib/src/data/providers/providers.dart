@@ -5,6 +5,7 @@ export 'generated_playlist_database_provider.dart';
 export 'instant_mix_database_provider.dart';
 export 'pins_database_provider.dart';
 export 'play_history_database_provider.dart';
+export 'resume_point_database_provider.dart';
 export 'media_server_client_provider.dart';
 export 'queue_cache_database_provider.dart';
 export 'queue_cache_service_provider.dart';

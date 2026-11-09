@@ -34,6 +34,7 @@ export 'now_playing_provider.dart';
 export 'on_repeat_provider.dart';
 export 'output_route_provider.dart';
 export 'pins_provider.dart';
+export 'resume_points_provider.dart';
 export 'playback_provider.dart';
 export 'player_bar_provider.dart';
 export 'playlist_song_order_provider.dart';

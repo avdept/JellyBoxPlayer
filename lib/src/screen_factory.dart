@@ -215,6 +215,15 @@ class ScreenFactory {
     );
   }
 
+  Page<void> devQueuesPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    return const NoTransitionPage(
+      child: DevQueuesPage(),
+    );
+  }
+
   Page<void> palettePage(
     BuildContext context,
     GoRouterState router,

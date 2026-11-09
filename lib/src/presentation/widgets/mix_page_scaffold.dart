@@ -21,6 +21,7 @@ class MixPageScaffold extends StatefulWidget {
     this.subtitle,
     this.previousPageTitle,
     this.isPlayLoading = false,
+    this.resume,
     this.songCount,
     this.onLoadMore,
     this.sort,
@@ -36,6 +37,7 @@ class MixPageScaffold extends StatefulWidget {
   final VoidCallback onPlay;
   final VoidCallback onShuffle;
   final bool isPlayLoading;
+  final Widget? resume;
   final int? songCount;
   final Future<void> Function()? onLoadMore;
   final Widget? sort;
@@ -251,6 +253,7 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
         onPlay: widget.onPlay,
         onShuffle: widget.onShuffle,
         isPlayLoading: widget.isPlayLoading,
+        resume: widget.resume,
         download: widget.actions.isEmpty
             ? null
             : Row(mainAxisSize: MainAxisSize.min, children: widget.actions),

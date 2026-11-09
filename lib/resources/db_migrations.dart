@@ -30,4 +30,6 @@ class DbMigrations {
   static const String catalogArtistLinksV14 =
       'assets/db/migrations/catalog_artist_links_v14.sql';
   static const String pinsV15 = 'assets/db/migrations/pins_v15.sql';
+  static const String resumePointsV16 =
+      'assets/db/migrations/resume_points_v16.sql';
 }

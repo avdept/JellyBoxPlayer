@@ -63,6 +63,7 @@ export 'pinned_items_button.dart';
 export 'pinned_items_rail_box.dart';
 export 'play_button.dart';
 export 'playlist_controls.dart';
+export 'resume_set_button.dart';
 export 'collection_download_button.dart';
 export 'play_pause_button.dart';
 export 'playback_keyboard_shortcuts.dart';

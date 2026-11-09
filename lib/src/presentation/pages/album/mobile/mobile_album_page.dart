@@ -120,6 +120,7 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                resumeAlbumButton(),
                 downloadAlbumButton(),
                 likeAlbumButton(),
                 SizedBox.square(dimension: 38, child: playAlbumButton()),

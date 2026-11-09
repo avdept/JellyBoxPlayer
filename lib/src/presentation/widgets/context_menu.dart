@@ -21,6 +21,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_picker_sheet.dart';
+import 'package:jplayer/src/presentation/widgets/resume_set_button.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,6 +29,7 @@ enum ContextMenuScope { browse, albumPage, playlistPage, nowPlaying, queue }
 
 enum ContextMenuEntry {
   play,
+  resume,
   addToPlaylist,
   playNext,
   addToQueue,
@@ -107,6 +109,7 @@ const contextMenuLayout =
       ItemKind.album: {
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
+          ContextMenuEntry.resume,
           ContextMenuEntry.instantMix,
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.playNext,
@@ -121,6 +124,7 @@ const contextMenuLayout =
       ItemKind.artist: {
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
+          ContextMenuEntry.resume,
           ContextMenuEntry.instantMix,
           ContextMenuEntry.addToPlaylist,
           ContextMenuEntry.like,
@@ -131,6 +135,7 @@ const contextMenuLayout =
       ItemKind.playlist: {
         ContextMenuScope.browse: [
           ContextMenuEntry.play,
+          ContextMenuEntry.resume,
           ContextMenuEntry.download,
           ContextMenuEntry.like,
           ContextMenuEntry.pin,
@@ -341,6 +346,12 @@ List<ContextMenuAction> contextMenuActions(
     for (final entry in contextMenuEntries(item, scope))
       switch (entry) {
         ContextMenuEntry.play => actions.play(),
+        ContextMenuEntry.resume => switch (ref.read(
+          resumePointProvider(item.id),
+        )) {
+          final point? => actions.resume(point),
+          null => null,
+        },
         ContextMenuEntry.addToPlaylist => actions.addToPlaylist(),
         ContextMenuEntry.playNext => actions.playNext(),
         ContextMenuEntry.addToQueue => actions.addToQueue(),
@@ -702,6 +713,13 @@ class _ContextMenuActions {
         _showSnackBar('Could not start playing "${item.name}"');
       }
     },
+  );
+
+  ContextMenuAction resume(ResumePoint point) => ContextMenuAction(
+    entry: ContextMenuEntry.resume,
+    icon: const Icon(Icons.play_circle_outline),
+    label: Text('Resume · ${point.songName}'),
+    run: () => resumeSet(context, ref, point),
   );
 
   ContextMenuAction addToPlaylist() => ContextMenuAction(
