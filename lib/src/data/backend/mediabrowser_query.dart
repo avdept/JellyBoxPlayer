@@ -29,6 +29,8 @@ List<String> mediaBrowserFilters(Set<ItemFilterFlag> filters) => [
     },
 ];
 
+const albumListFields = {ItemField.externalIds, ItemField.genres};
+
 List<String> mediaBrowserFields(Set<ItemField> fields) => [
   for (final field in fields)
     switch (field) {

@@ -90,6 +90,7 @@ class JellyfinClient implements MediaServerClient {
     genreIds: query.genreIds,
     filters: mediaBrowserFilters(query.filters),
     ids: query.ids,
+    fields: mediaBrowserFields(albumListFields),
     nameLessThan: nameLessThan,
   );
 
@@ -273,6 +274,14 @@ class JellyfinClient implements MediaServerClient {
     yield* _hydratePlaylist(ids);
   }
 
+  static const _itemFields = [
+    'MediaSources',
+    'ArtistItems',
+    'ProviderIds',
+    'Overview',
+    'Genres',
+  ];
+
   static const _playlistBatchSize = 100;
   static const _playlistBatchConcurrency = 2;
   static const _playlistSongFields = [
@@ -446,7 +455,10 @@ class JellyfinClient implements MediaServerClient {
 
   @override
   Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async {
-    final response = await _api.getItem(itemId: itemId);
+    final response = await _api.getItem(
+      itemId: itemId,
+      fields: _itemFields,
+    );
     return response.data.toJellyfinLibraryItem();
   }
 

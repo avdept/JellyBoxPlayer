@@ -183,6 +183,9 @@ void main() {
       () => mockDownloadDatabase.getDownloadedSongs(any()),
     ).thenAnswer((_) async => []);
     when(
+      () => mockDownloadDatabase.updateDownloadedAlbum(any()),
+    ).thenAnswer((_) async {});
+    when(
       () => mockGetSongs(albumId: mockAlbum.id),
     ).thenAnswer((_) async => mockSongs);
     when(
@@ -195,6 +198,22 @@ void main() {
   });
 
   group('AlbumPage', () {
+    testWidgets('- shows the genres the server returns for the album', (
+      widgetTester,
+    ) async {
+      when(
+        () => mockMediaServerClient.getItem(mockAlbum.id, kind: ItemKind.album),
+      ).thenAnswer(
+        (_) async => mockAlbum.copyWith(genres: ['Rock', 'Shoegaze']),
+      );
+
+      await widgetTester.pumpWidget(getWidgetUT(album: mockAlbum));
+      await widgetTester.pump(Duration.zero);
+      await widgetTester.pump(Duration.zero);
+
+      expect(find.text('Rock, Shoegaze'), findsOneWidget);
+    });
+
     testWidgets(
       '- displays album details',
       (widgetTester) async {

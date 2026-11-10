@@ -74,6 +74,7 @@ class EmbyClient implements MediaServerClient {
     genreIds: query.genreIds,
     filters: mediaBrowserFilters(query.filters),
     ids: query.ids,
+    fields: mediaBrowserFields(albumListFields),
     nameLessThan: nameLessThan,
   );
 
@@ -358,7 +359,17 @@ class EmbyClient implements MediaServerClient {
 
   @override
   Future<LibraryItem> getItem(String itemId, {required ItemKind kind}) async {
-    final response = await _api.getItem(userId: userId, itemId: itemId);
+    final response = await _api.getItem(
+      userId: userId,
+      itemId: itemId,
+      fields: const [
+        'MediaSources',
+        'ArtistItems',
+        'ProviderIds',
+        'Overview',
+        'Genres',
+      ],
+    );
     return response.data.toEmbyLibraryItem();
   }
 

@@ -145,6 +145,27 @@ void main() {
       expect(await emby.isAlbumDownloaded(album.id), isFalse);
     });
 
+    test('- refreshes the stored snapshot of a downloaded album', () async {
+      final db = DownloadDatabase(serverId: 'server-a');
+      final album = buildAlbum();
+
+      await db.insertDownloadedAlbum(album, files: [songFile]);
+      await db.updateDownloadedAlbum(
+        album.copyWith(genres: ['Rock', 'Shoegaze']),
+      );
+
+      final stored = await db.getDownloadedAlbums();
+      expect(stored.single.item.genres, ['Rock', 'Shoegaze']);
+    });
+
+    test('- ignores snapshot updates for albums not downloaded', () async {
+      final db = DownloadDatabase(serverId: 'server-a');
+
+      await db.updateDownloadedAlbum(buildAlbum().copyWith(genres: ['Rock']));
+
+      expect(await db.getDownloadedAlbums(), isEmpty);
+    });
+
     test('- reports downloaded ids for the current server only', () async {
       final jellyfin = DownloadDatabase(serverId: 'server-a');
       final emby = DownloadDatabase(serverId: 'server-b');

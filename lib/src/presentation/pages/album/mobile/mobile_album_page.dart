@@ -108,6 +108,9 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
           builder: (context) =>
               albumArtists(DefaultTextStyle.of(context).style),
         ),
+        Builder(
+          builder: (context) => albumGenres(DefaultTextStyle.of(context).style),
+        ),
         albumRatingStars(
           size: 24,
           spacing: 4,
