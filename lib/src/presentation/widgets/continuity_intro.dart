@@ -64,23 +64,14 @@ class ContinuityIntro extends StatelessWidget {
         children: [
           const ModalFormHeader('Jellybox Cloud'),
           const SizedBox(height: 8),
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final paragraph in _paragraphs)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        paragraph,
-                        style: TextStyle(fontSize: 14, color: muted),
-                      ),
-                    ),
-                ],
+          for (final paragraph in _paragraphs)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                paragraph,
+                style: TextStyle(fontSize: 14, color: muted),
               ),
             ),
-          ),
           Row(
             children: [
               _link(context, 'Discord', discordUri),

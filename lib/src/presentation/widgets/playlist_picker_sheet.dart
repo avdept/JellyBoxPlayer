@@ -103,9 +103,11 @@ class PlaylistPickerSheet extends ConsumerWidget {
     ),
     child: Padding(
       padding: const EdgeInsets.all(12),
-      child: SizedBox(
-        width: isDesktop ? 380 : double.infinity,
-        child: child,
+      child: SingleChildScrollView(
+        child: SizedBox(
+          width: isDesktop ? 380 : double.infinity,
+          child: child,
+        ),
       ),
     ),
   );
@@ -131,6 +133,11 @@ Future<LibraryItem?> showPlaylistPicker(
     ),
     context: context,
     useRootNavigator: true,
+    isScrollControlled: true,
+    constraints: BoxConstraints(
+      maxWidth: 640,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+    ),
     clipBehavior: Clip.antiAlias,
     builder: (context) =>
         dismissOnEscape(context, const PlaylistPickerSheet(isDesktop: false)),

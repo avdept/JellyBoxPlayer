@@ -46,6 +46,10 @@ Future<T?> showFormModal<T>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
+    constraints: BoxConstraints(
+      maxWidth: 640,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+    ),
     backgroundColor: Colors.grey[900],
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
@@ -55,7 +59,9 @@ Future<T?> showFormModal<T>(
         top: 12,
         bottom: 16 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      child: dismissOnEscape(context, builder(context)),
+      child: SingleChildScrollView(
+        child: dismissOnEscape(context, builder(context)),
+      ),
     ),
   );
 }

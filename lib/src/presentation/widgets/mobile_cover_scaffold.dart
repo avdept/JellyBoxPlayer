@@ -64,7 +64,7 @@ class _MobileCoverScaffoldState extends State<MobileCoverScaffold> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _coverExtent = MediaQuery.sizeOf(context).width;
+    _coverExtent = MediaQuery.sizeOf(context).shortestSide;
     _navBarHeight =
         MediaQuery.paddingOf(context).top + kMinInteractiveDimensionCupertino;
     _fade.inset = _navBarHeight;

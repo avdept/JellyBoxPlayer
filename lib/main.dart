@@ -86,7 +86,7 @@ Future<void> main() async {
     customRefinedBreakpoints: const RefinedBreakpoints(),
   );
 
-  if (supportsLandscapePlayer) {
+  if (locksIdlePhonesToPortrait) {
     final view = WidgetsBinding.instance.platformDispatcher.implicitView;
     final size = view == null
         ? Size.zero

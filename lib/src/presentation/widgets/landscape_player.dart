@@ -40,7 +40,11 @@ const List<DeviceOrientation> _systemOrientations = [];
 bool get supportsLandscapePlayer =>
     !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
+bool get locksIdlePhonesToPortrait => !kIsWeb && Platform.isIOS;
+
 bool isPhoneSize(Size size) => DeviceType.fromScreenSize(size).isMobile;
+
+final landscapePlayerCollapsedProvider = StateProvider<bool>((ref) => false);
 
 enum _Panel { player, lyrics, queue }
 
@@ -59,8 +63,29 @@ class LandscapePlayerScope extends ConsumerStatefulWidget {
       _LandscapePlayerScopeState();
 }
 
-class _LandscapePlayerScopeState extends ConsumerState<LandscapePlayerScope> {
+class _LandscapePlayerScopeState extends ConsumerState<LandscapePlayerScope>
+    with WidgetsBindingObserver {
   List<DeviceOrientation>? _appliedOrientations;
+  bool _showsPlayer = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Future<bool> didPopRoute() async {
+    if (!_showsPlayer) return false;
+    ref.read(landscapePlayerCollapsedProvider.notifier).state = true;
+    return true;
+  }
 
   void _applyOrientations(List<DeviceOrientation> orientations) {
     if (identical(_appliedOrientations, orientations)) return;
@@ -68,27 +93,42 @@ class _LandscapePlayerScopeState extends ConsumerState<LandscapePlayerScope> {
     unawaited(SystemChrome.setPreferredOrientations(orientations));
   }
 
+  void _expandAfterFrame() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (mounted) {
+      ref.read(landscapePlayerCollapsedProvider.notifier).state = false;
+    }
+  });
+
   @override
   Widget build(BuildContext context) {
     if (!isPhoneSize(MediaQuery.sizeOf(context))) {
       _applyOrientations(_systemOrientations);
+      _showsPlayer = false;
       return widget.child;
     }
 
     final hasSong = ref.watch(
       barMediaItemProvider.select((song) => song != null),
     );
-    _applyOrientations(hasSong ? _phoneOrientations : _portraitOrientations);
+    _applyOrientations(
+      !locksIdlePhonesToPortrait
+          ? _systemOrientations
+          : hasSong
+          ? _phoneOrientations
+          : _portraitOrientations,
+    );
 
     final isLandscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
+    final collapsed = ref.watch(landscapePlayerCollapsedProvider);
+    if (collapsed && !(hasSong && isLandscape)) _expandAfterFrame();
+    _showsPlayer = hasSong && isLandscape && !collapsed;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         widget.child,
-        if (hasSong && isLandscape)
-          const Positioned.fill(child: LandscapePlayer()),
+        if (_showsPlayer) const Positioned.fill(child: LandscapePlayer()),
       ],
     );
   }
@@ -356,9 +396,18 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
       data: const IconThemeData(size: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [_lyricsButton(), _queueButton()],
+        children: [_lyricsButton(), _collapseButton(), _queueButton()],
       ),
     ),
+  );
+
+  Widget _collapseButton() => HoverIconButton(
+    onPressed: () =>
+        ref.read(landscapePlayerCollapsedProvider.notifier).state = true,
+    color: _foreground,
+    iconSize: 28,
+    tooltip: 'Close player',
+    icon: const Icon(Icons.keyboard_arrow_down),
   );
 
   Widget _lyricsButton() => Consumer(

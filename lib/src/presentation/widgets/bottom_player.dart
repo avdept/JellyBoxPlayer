@@ -48,10 +48,14 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   late bool _isMobile;
   late bool _isDesktop;
   late bool _isLandscape;
+  ModalSheetRoute<void>? _sheetRoute;
 
   Future<void> _onExpand() {
-    if (_isMobile && _isLandscape) return Future<void>.value();
-    final route = ModalSheetRoute<void>(
+    if (_isMobile && _isLandscape) {
+      ref.read(landscapePlayerCollapsedProvider.notifier).state = false;
+      return Future<void>.value();
+    }
+    final route = _sheetRoute = ModalSheetRoute<void>(
       builder: (context) => SafeArea(
         minimum: EdgeInsets.only(
           top: _isMobile ? 0 : 20,
@@ -145,6 +149,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   }
 
   void _onSheetClosed() {
+    _sheetRoute = null;
     _queueShown.value = false;
     if (mounted) ref.read(lyricsVisibleProvider.notifier).state = false;
   }
@@ -387,6 +392,15 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
     final deviceType = getDeviceType(_screenSize);
     _isMobile = deviceType == DeviceScreenType.mobile;
     _isDesktop = deviceType == DeviceScreenType.desktop;
+
+    final route = _sheetRoute;
+    if (_isMobile && _isLandscape && route != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && route.isActive) {
+          Navigator.of(context, rootNavigator: true).removeRoute(route);
+        }
+      });
+    }
   }
 
   @override

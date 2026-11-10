@@ -570,6 +570,11 @@ Future<void> showContextMenuSheet(
   await showModalBottomSheet<void>(
     context: context,
     useRootNavigator: true,
+    isScrollControlled: true,
+    constraints: BoxConstraints(
+      maxWidth: 640,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+    ),
     backgroundColor: Colors.grey[900],
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
@@ -578,15 +583,17 @@ Future<void> showContextMenuSheet(
       sheetContext,
       SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final action in actions)
-              action.toListTile(
-                context,
-                onSelected: () => Navigator.of(sheetContext).pop(),
-              ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final action in actions)
+                action.toListTile(
+                  context,
+                  onSelected: () => Navigator.of(sheetContext).pop(),
+                ),
+            ],
+          ),
         ),
       ),
     ),
