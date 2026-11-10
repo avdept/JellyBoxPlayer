@@ -365,6 +365,16 @@ class DownloadDatabase {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  Future<void> updateDownloadedAlbum(LibraryItem album) async {
+    final db = await database;
+    await db.update(
+      'Albums',
+      {'Data': jsonEncode(album.toJson())},
+      where: 'Id = ? AND ServerId = ?',
+      whereArgs: [album.id, serverId],
+    );
+  }
+
   Future<void> insertDownloadedPlaylist(
     LibraryItem playlist, {
     required List<LibraryItem> songs,
@@ -693,11 +703,15 @@ class DownloadDatabase {
     final paths = <String, String>{};
     const chunkSize = 500;
     for (var start = 0; start < wanted.length; start += chunkSize) {
-      final chunk = wanted.sublist(start, min(start + chunkSize, wanted.length));
+      final chunk = wanted.sublist(
+        start,
+        min(start + chunkSize, wanted.length),
+      );
       final results = await db.query(
         'Downloads',
         columns: ['Id', 'FilePath'],
-        where: 'ServerId = ? AND Id IN (${List.filled(chunk.length, '?').join(', ')})',
+        where:
+            'ServerId = ? AND Id IN (${List.filled(chunk.length, '?').join(', ')})',
         whereArgs: [serverId, ...chunk],
       );
       for (final row in results) {

@@ -35,6 +35,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   bool descriptionExpanded = false;
   late bool isFavorite;
   late int albumRating;
+  late List<String> genres;
   late final ImageService imageService;
   late ThemeData theme;
   late DeviceType device;
@@ -46,6 +47,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     super.initState();
     isFavorite = album.userData.isFavorite;
     albumRating = album.userData.rating;
+    genres = album.genres;
     description = album.overview;
     imageService = ref.read(imageServiceProvider);
     unawaited(_loadSongs());
@@ -147,10 +149,12 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     } on Object {
       return;
     }
+    unawaited(ref.read(downloadDatabaseProvider).updateDownloadedAlbum(fresh));
     final text = fresh.overview?.trim();
     if (!mounted) return;
     setState(() {
       albumRating = fresh.userData.rating;
+      if (fresh.genres.isNotEmpty) genres = fresh.genres;
       if (text != null && text.isNotEmpty) description = text;
     });
   }
@@ -308,6 +312,23 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
           child: Text(a.name),
         );
       }).toList(),
+    );
+  }
+
+  Widget albumGenres(TextStyle style) {
+    if (genres.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        genres.join(', '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style.copyWith(
+          fontSize: 13,
+          fontWeight: FontWeight.normal,
+          color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
+        ),
+      ),
     );
   }
 

@@ -111,11 +111,12 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
                   albumRatingStars(size: 22, spacing: 2),
                 ],
               ),
+              albumArtists(
+                const TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
+              ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
-                child: albumArtists(
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w300),
-                ),
+                child: albumGenres(const TextStyle(fontSize: 15)),
               ),
               Row(children: [albumDetails()]),
             ],
@@ -155,6 +156,9 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
         Builder(
           builder: (context) =>
               albumArtists(DefaultTextStyle.of(context).style),
+        ),
+        Builder(
+          builder: (context) => albumGenres(DefaultTextStyle.of(context).style),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
