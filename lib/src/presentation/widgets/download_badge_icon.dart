@@ -4,6 +4,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/download_badge_provider.dart';
+import 'package:jplayer/src/presentation/widgets/downloaded_icon.dart';
 
 class DownloadBadgeIcon extends ConsumerWidget {
   const DownloadBadgeIcon({
@@ -18,22 +19,17 @@ class DownloadBadgeIcon extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final badge = ref.watch(downloadBadgeProvider((item.kind, item.id)));
-    if (badge == null) return const SizedBox.shrink();
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Colors.black54,
-        shape: BoxShape.circle,
-      ),
-      child: switch (badge) {
-        DownloadBadge.downloaded => Icon(
-          Icons.cloud_download_sharp,
-          color: Colors.white,
-          size: size * 0.65,
+    return switch (badge) {
+      null => const SizedBox.shrink(),
+      DownloadBadge.downloaded => DownloadedIcon(size: size),
+      DownloadBadge.downloading => Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(
+          color: Colors.black54,
+          shape: BoxShape.circle,
         ),
-        DownloadBadge.downloading => Stack(
+        child: Stack(
           alignment: Alignment.center,
           children: [
             SizedBox.square(
@@ -48,7 +44,7 @@ class DownloadBadgeIcon extends ConsumerWidget {
             Icon(JPlayer.download, color: Colors.grey, size: size * 0.5),
           ],
         ),
-      },
-    );
+      ),
+    };
   }
 }
