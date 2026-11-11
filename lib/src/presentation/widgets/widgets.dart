@@ -35,6 +35,7 @@ export 'custom_scrollbar.dart';
 export 'desktop_window_chrome.dart';
 export 'download_badge_icon.dart';
 export 'downloaded_album_view.dart';
+export 'downloaded_icon.dart';
 export 'flip_panel.dart';
 export 'form_modal.dart';
 export 'gradient_background.dart';

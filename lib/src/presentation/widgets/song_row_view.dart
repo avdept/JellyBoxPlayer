@@ -265,10 +265,9 @@ class SongRowView extends ConsumerWidget {
                 builder: (context, status, _) {
                   if ((isDownloaded ?? false) ||
                       status == DownloadStatus.completed) {
-                    return Icon(
-                      Icons.check_circle,
+                    return DownloadedIcon(
                       key: testKeys?.downloadedIcon,
-                      color: Colors.green,
+                      size: isTablet ? 22 : 20,
                     );
                   }
                   if (!currentTask.isDownloadingNow) {
@@ -294,10 +293,9 @@ class SongRowView extends ConsumerWidget {
                 },
               )
             else if (isDownloaded ?? false)
-              Icon(
-                Icons.check_circle,
+              DownloadedIcon(
                 key: testKeys?.downloadedIcon,
-                color: Colors.green,
+                size: isTablet ? 22 : 20,
               ),
             if (isDesktop)
               HoverIconButton(

@@ -925,7 +925,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
       final currentTask = ref.watch(songDownloadTaskProvider(currentSong.id));
 
       if (isDownloaded == true) {
-        return Icon(Icons.check_circle, color: Colors.green);
+        return DownloadedIcon(size: _isMobile ? 26 : 24);
       }
 
       if (currentTask != null) {
