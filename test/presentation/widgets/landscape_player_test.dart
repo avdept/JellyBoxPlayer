@@ -145,21 +145,32 @@ void main() {
       return requested;
     }
 
-    testWidgets('- keeps the phone in portrait while the queue is empty', (
-      tester,
-    ) async {
-      final requested = await pumpScope(tester, state: PlaybackState.initial());
+    const iOS = TargetPlatformVariant({TargetPlatform.iOS});
 
-      expect(requested.last, ['DeviceOrientation.portraitUp']);
-      expect(find.byType(LandscapePlayer), findsNothing);
-    });
+    testWidgets(
+      '- keeps the phone in portrait while the queue is empty',
+      (tester) async {
+        final requested = await pumpScope(
+          tester,
+          state: PlaybackState.initial(),
+        );
 
-    testWidgets('- opens landscape up once a track is loaded', (tester) async {
-      final requested = await pumpScope(tester, state: _state);
+        expect(requested.last, ['DeviceOrientation.portraitUp']);
+        expect(find.byType(LandscapePlayer), findsNothing);
+      },
+      variant: iOS,
+    );
 
-      expect(requested.last, contains('DeviceOrientation.landscapeLeft'));
-      expect(requested.last, contains('DeviceOrientation.landscapeRight'));
-    });
+    testWidgets(
+      '- opens landscape up once a track is loaded',
+      (tester) async {
+        final requested = await pumpScope(tester, state: _state);
+
+        expect(requested.last, contains('DeviceOrientation.landscapeLeft'));
+        expect(requested.last, contains('DeviceOrientation.landscapeRight'));
+      },
+      variant: iOS,
+    );
   });
 
   group('LandscapePlayer', () {

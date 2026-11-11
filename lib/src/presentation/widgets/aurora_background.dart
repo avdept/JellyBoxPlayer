@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer' as dev;
-import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -10,6 +9,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/presentation/widgets/studio_clock.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -68,18 +68,20 @@ Future<ui.Image> blurArtwork(
 }
 
 class AuroraPainter extends CustomPainter {
-  AuroraPainter({required this.shader, required this.phase})
-    : super(repaint: phase);
+  AuroraPainter({required this.shader, required this.clock})
+    : super(repaint: clock);
+
+  static const cycleSeconds = 90.0;
 
   final ui.FragmentShader shader;
-  final ValueListenable<double> phase;
+  final ValueListenable<double> clock;
 
   @override
   void paint(Canvas canvas, Size size) {
     shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
-      ..setFloat(2, phase.value);
+      ..setFloat(2, (clock.value / cycleSeconds) % 1);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
 
@@ -98,28 +100,18 @@ class AuroraBackground extends ConsumerStatefulWidget {
 }
 
 class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
-  static const double _playingSpeed = 1 / 90;
-  static const double _pausedSpeed = 1 / 450;
-  static const double _speedRampSeconds = 1.5;
-  static const _phaseInterval = Duration(milliseconds: 66);
   static const _crossfade = Duration(milliseconds: 800);
 
-  final _phase = ValueNotifier<double>(0);
-  final _phaseWatch = Stopwatch();
-  Timer? _phaseTimer;
+  late final StudioClock _clock;
   ui.FragmentShader? _shader;
   ui.Image? _blurredArt;
   String? _displayedSongId;
   String? _pendingSongId;
-  double _speed = _pausedSpeed;
-  double _speedScale = AnimationSpeed.medium.multiplier;
-  bool _isPlaying = false;
 
   @override
   void initState() {
     super.initState();
-    _isPlaying = ref.read(playbackProvider).status.isPlaying;
-    _speed = _isPlaying ? _playingSpeed : _pausedSpeed;
+    _clock = StudioClock(playing: ref.read(playbackProvider).status.isPlaying);
     _applyAnimationSpeed(ref.read(animationSpeedProvider));
     ref.listenManual(
       animationSpeedProvider,
@@ -127,7 +119,7 @@ class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
     );
     ref.listenManual(
       playbackProvider.select((state) => state.status.isPlaying),
-      (_, playing) => _isPlaying = playing,
+      (_, playing) => _clock.isPlaying = playing,
     );
     ref.listenManual(nowPlayingProvider, (_, song) => _prepareArtwork(song));
     unawaited(_prepareArtwork(ref.read(nowPlayingProvider)));
@@ -143,37 +135,14 @@ class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
 
   @override
   void dispose() {
-    _phaseTimer?.cancel();
-    _phase.dispose();
+    _clock.dispose();
     _shader?.dispose();
     _blurredArt?.dispose();
     super.dispose();
   }
 
-  void _applyAnimationSpeed(AnimationSpeed speed) {
-    _speedScale = speed.multiplier;
-    if (!widget.animate || !speed.isAnimated) {
-      _phaseTimer?.cancel();
-      _phaseTimer = null;
-      _phaseWatch
-        ..stop()
-        ..reset();
-      return;
-    }
-    if (_phaseTimer != null) return;
-    _phaseWatch
-      ..reset()
-      ..start();
-    _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
-  }
-
-  void _onPhaseTick(Timer timer) {
-    final dt = _phaseWatch.elapsedMicroseconds / 1e6;
-    _phaseWatch.reset();
-    final target = (_isPlaying ? _playingSpeed : _pausedSpeed) * _speedScale;
-    _speed += (target - _speed) * (1 - exp(-dt / _speedRampSeconds));
-    _phase.value = (_phase.value + dt * _speed) % 1;
-  }
+  void _applyAnimationSpeed(AnimationSpeed speed) =>
+      _clock.run(animate: widget.animate, speedScale: speed.multiplier);
 
   Future<void> _prepareArtwork(MediaItem? song) async {
     final id = song?.id;
@@ -230,7 +199,7 @@ class _AuroraBackgroundState extends ConsumerState<AuroraBackground> {
             : SizedBox.expand(
                 child: RepaintBoundary(
                   child: CustomPaint(
-                    painter: AuroraPainter(shader: shader, phase: _phase),
+                    painter: AuroraPainter(shader: shader, clock: _clock),
                   ),
                 ),
               ),

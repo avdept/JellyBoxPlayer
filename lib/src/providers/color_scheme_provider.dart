@@ -9,6 +9,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 // Example image provider - this could be any provider that supplies an image
 final imageSchemeProvider = StateProvider<ImageProvider>((ref) {
@@ -36,6 +37,21 @@ final AutoDisposeFutureProvider<ColorScheme?> artworkSchemeProvider =
         return await ColorScheme.fromImageProvider(
           provider: ref.read(imageServiceProvider).artworkImage(artUri),
           brightness: Brightness.dark,
+        );
+      } on Object {
+        return null;
+      }
+    });
+
+final AutoDisposeFutureProvider<PaletteGenerator?> artworkPaletteProvider =
+    FutureProvider.autoDispose<PaletteGenerator?>((ref) async {
+      final artUri = ref.watch(currentArtUriProvider);
+      if (artUri == null) return null;
+      try {
+        return await PaletteGenerator.fromImageProvider(
+          ref.read(imageServiceProvider).artworkImage(artUri),
+          size: const Size(128, 128),
+          maximumColorCount: 12,
         );
       } on Object {
         return null;

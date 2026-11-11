@@ -40,7 +40,8 @@ const List<DeviceOrientation> _systemOrientations = [];
 bool get supportsLandscapePlayer =>
     !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
-bool get locksIdlePhonesToPortrait => !kIsWeb && Platform.isIOS;
+bool get locksIdlePhonesToPortrait =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
 bool isPhoneSize(Size size) => DeviceType.fromScreenSize(size).isMobile;
 

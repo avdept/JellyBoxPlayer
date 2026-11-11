@@ -131,6 +131,8 @@ flutter:
 
   shaders:
     - shaders/studio_aurora.frag
+    - shaders/paper/fluid.frag
+    - shaders/paper/flow.frag
 
   fonts:
     - family: Gilroy

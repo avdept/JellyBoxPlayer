@@ -24,6 +24,8 @@ abstract class CatalogSource {
     Iterable<String> albumTitles = const [],
   });
 
+  Future<List<CatalogArtist>> searchArtists(String query, {int limit = 20});
+
   Future<CatalogArtist?> artist(String id);
 
   Future<List<CatalogArtist>> relatedArtists(String artistId, {int limit = 20});

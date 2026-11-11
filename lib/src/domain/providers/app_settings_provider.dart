@@ -19,6 +19,7 @@ enum AppSetting {
     defaultValue: 'right',
   ),
   studioModeRememberLyrics('studio_mode_remember_lyrics'),
+  studioModeBackground('studio_mode_background', defaultValue: 'aurora'),
   studioModeLyrics('studio_mode_lyrics', syncs: false),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
@@ -247,6 +248,15 @@ final studioLyricsPlacementProvider = Provider<StudioLyricsPlacement>(
         AppSetting.studioModeLyricsPlacement,
       )] ??
       StudioLyricsPlacement.right,
+);
+
+final studioBackgroundProvider = Provider<StudioBackground>(
+  (ref) =>
+      StudioBackground.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.studioModeBackground],
+        AppSetting.studioModeBackground,
+      )] ??
+      StudioBackground.aurora,
 );
 
 final lyricsAlignmentProvider = Provider<LyricsAlignment>(

@@ -9,12 +9,14 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
+import 'package:jplayer/src/presentation/widgets/artist_avatar_card.dart';
 import 'package:jplayer/src/presentation/widgets/clickable_widget.dart';
 import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/search_songs_sliver.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
+import 'package:jplayer/src/presentation/widgets/similar_artists_row.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -42,8 +44,14 @@ class SearchResultsSliver extends ConsumerWidget {
     };
     final soundMatches = ref.watch(soundSearchProvider);
     final soundItems = soundMatches.valueOrNull ?? const <LibraryItem>[];
+    final localArtists =
+        sections[ItemList.artists]?.valueOrNull?.items ?? const <LibraryItem>[];
+    final catalogArtists = ref
+        .watch(catalogArtistSearchProvider)
+        .whenData((found) => catalogArtistsOutsideLibrary(found, localArtists));
     final hasItems =
         soundItems.isNotEmpty ||
+        (catalogArtists.valueOrNull?.isNotEmpty ?? false) ||
         sections.values.any(
           (section) => section.valueOrNull?.items.isNotEmpty ?? false,
         );
@@ -52,6 +60,7 @@ class SearchResultsSliver extends ConsumerWidget {
       final isSearching =
           isPending ||
           soundMatches.isLoading ||
+          catalogArtists.isLoading ||
           sections.values.any((section) => section.isLoading);
       if (isSearching) {
         return SliverToBoxAdapter(child: SectionsShimmer(device: device));
@@ -77,7 +86,7 @@ class SearchResultsSliver extends ConsumerWidget {
     return SliverMainAxisGroup(
       slivers: [
         ..._soundMixSection(context, ref, device, soundItems),
-        for (final entry in sections.entries)
+        for (final entry in sections.entries) ...[
           ..._section(
             context: context,
             ref: ref,
@@ -85,7 +94,29 @@ class SearchResultsSliver extends ConsumerWidget {
             category: entry.key,
             items: entry.value.valueOrNull?.items ?? const [],
           ),
+          if (entry.key == ItemList.artists)
+            _catalogArtistsSection(ref, device, catalogArtists),
+        ],
       ],
+    );
+  }
+
+  Widget _catalogArtistsSection(
+    WidgetRef ref,
+    DeviceType device,
+    AsyncValue<List<SimilarArtist>> artists,
+  ) {
+    if (ref.watch(catalogSourcesProvider).isEmpty) {
+      return const SliverToBoxAdapter();
+    }
+    return SliverToBoxAdapter(
+      child: SimilarArtistsRow(
+        artists: artists,
+        device: device,
+        title: "Artists you don't track",
+        titleFontSize: 18,
+        showPlaceholder: true,
+      ),
     );
   }
 
@@ -218,6 +249,10 @@ class SearchResultsSliver extends ConsumerWidget {
     ItemList category,
     List<LibraryItem> items,
   ) {
+    if (category == ItemList.artists) {
+      return _artistsRow(context, ref, device, items);
+    }
+
     final cardWidth = AlbumCardMetrics.width(device);
     final spacing = AlbumCardMetrics.crossAxisSpacing(device);
 
@@ -237,10 +272,48 @@ class SearchResultsSliver extends ConsumerWidget {
               width: cardWidth,
               child: AlbumView(
                 album: items[index],
-                showArtist: category == ItemList.artists,
+                showArtist: false,
                 onTap: (item) => openSearchResult(context, ref, category, item),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _artistsRow(
+    BuildContext context,
+    WidgetRef ref,
+    DeviceType device,
+    List<LibraryItem> items,
+  ) {
+    final size = ArtistAvatarCard.avatarSize(device);
+    final spacing = AlbumCardMetrics.carouselSpacing(device);
+    final imageService = ref.read(imageServiceProvider);
+
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: ArtistAvatarCard.cardHeight(size),
+        child: HorizontalScrollRegion(
+          controlsHeight: size,
+          builder: (context, controller) => ListView.separated(
+            controller: controller,
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            padding: EdgeInsets.zero,
+            itemCount: items.length,
+            separatorBuilder: (context, index) => SizedBox(width: spacing),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return ArtistAvatarCard(
+                name: item.name,
+                size: size,
+                image: imageService.itemImage(item),
+                onTap: () =>
+                    openSearchResult(context, ref, ItemList.artists, item),
+              );
+            },
           ),
         ),
       ),

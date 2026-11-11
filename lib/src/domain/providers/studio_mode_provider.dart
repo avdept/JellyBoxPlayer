@@ -9,6 +9,9 @@ import 'package:jplayer/src/domain/providers/playback_provider.dart';
 bool get supportsWindowFullscreen =>
     !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
 
+bool get supportsKeepScreenOn =>
+    !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
 const minWindowSize = kDebugMode ? Size(360, 600) : Size(1280, 800);
 
 final studioModeVisibleProvider = StateProvider<bool>((ref) => false);

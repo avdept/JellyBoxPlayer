@@ -124,6 +124,31 @@ catalogRelatedArtistsProvider = FutureProvider.autoDispose
       ];
     });
 
+final AutoDisposeFutureProvider<List<CatalogArtist>>
+catalogArtistSearchProvider = FutureProvider.autoDispose<List<CatalogArtist>>(
+  (ref) async {
+    final source = ref.watch(catalogSourcesProvider).firstOrNull;
+    if (source == null) return const [];
+    final query = ref.watch(searchProvider)?.trim() ?? '';
+    if (query.isEmpty) return const [];
+    return source.searchArtists(query);
+  },
+);
+
+List<SimilarArtist> catalogArtistsOutsideLibrary(
+  List<CatalogArtist> found,
+  Iterable<LibraryItem> library,
+) {
+  final owned = {for (final item in library) normalizeCatalogName(item.name)};
+  final seen = <String>{};
+  return [
+    for (final artist in found)
+      if (normalizeCatalogName(artist.name) case final name
+          when name.isNotEmpty && !owned.contains(name) && seen.add(name))
+        (artist: artist, owned: null),
+  ];
+}
+
 final AutoDisposeFutureProviderFamily<List<CatalogAlbum>, CatalogKey>
 catalogAlbumsProvider = FutureProvider.autoDispose
     .family<List<CatalogAlbum>, CatalogKey>((ref, key) async {

@@ -1,0 +1,1 @@
+enum StudioBackground { aurora, fluid }

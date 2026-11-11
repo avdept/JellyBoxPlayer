@@ -3,6 +3,7 @@ import 'dart:developer' as dev;
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,12 @@ import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/presentation/widgets/play_pause_button.dart';
 import 'package:jplayer/src/presentation/widgets/position_labels.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
+import 'package:jplayer/src/presentation/widgets/studio_clock.dart';
+import 'package:jplayer/src/core/shaders/shaders.dart';
+import 'package:jplayer/src/domain/providers/shader_config_provider.dart';
+import 'package:jplayer/src/presentation/widgets/fluid_background.dart';
+import 'package:jplayer/src/presentation/widgets/keep_screen_awake.dart';
+import 'package:jplayer/src/presentation/widgets/studio_tuning_panel.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -61,14 +68,9 @@ class _StudioModeView extends ConsumerStatefulWidget {
 class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   static const _splitDuration = Duration(milliseconds: 450);
   static const Curve _splitCurve = Curves.easeInOutCubic;
-  static const double _playingSpeed = 1 / 90;
-  static const double _pausedSpeed = 1 / 450;
-  static const double _speedRampSeconds = 1.5;
-  static const _phaseInterval = Duration(milliseconds: 66);
   final _isPlaying = ValueNotifier<bool>(false);
-  final _backgroundPhase = ValueNotifier<double>(0);
-  final _phaseWatch = Stopwatch();
-  Timer? _phaseTimer;
+  final _pointer = ValueNotifier<Offset?>(null);
+  late final StudioClock _clock;
   MediaItem? _currentSong;
   String? _displayedSongId;
   String? _pendingSongId;
@@ -76,8 +78,6 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   ImageProvider _coverImage = const AssetImage(Images.album);
   ui.FragmentShader? _auroraShader;
   ui.Image? _blurredArt;
-  double _backgroundSpeed = _pausedSpeed;
-  double _speedScale = AnimationSpeed.medium.multiplier;
   Timer? _hideTimer;
   bool _controlsVisible = true;
   bool _lyricsMounted = false;
@@ -90,7 +90,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     unawaited(_enterWindowFullscreen());
     final playing = ref.read(playbackProvider).status == PlaybackStatus.playing;
     _isPlaying.value = playing;
-    _backgroundSpeed = playing ? _playingSpeed : _pausedSpeed;
+    _clock = StudioClock(playing: playing);
     _applyAnimationSpeed(ref.read(animationSpeedProvider));
     ref.listenManual(
       animationSpeedProvider,
@@ -106,7 +106,10 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       playbackProvider.select(
         (state) => state.status == PlaybackStatus.playing,
       ),
-      (_, playing) => _isPlaying.value = playing,
+      (_, playing) {
+        _isPlaying.value = playing;
+        _clock.isPlaying = playing;
+      },
     );
     _pokeControls();
   }
@@ -176,33 +179,8 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     }());
   }
 
-  void _applyAnimationSpeed(AnimationSpeed speed) {
-    _speedScale = speed.multiplier;
-    if (!speed.isAnimated) {
-      _phaseTimer?.cancel();
-      _phaseTimer = null;
-      _phaseWatch
-        ..stop()
-        ..reset();
-      return;
-    }
-    if (_phaseTimer != null) return;
-    _phaseWatch
-      ..reset()
-      ..start();
-    _phaseTimer = Timer.periodic(_phaseInterval, _onPhaseTick);
-  }
-
-  void _onPhaseTick(Timer timer) {
-    final dt = _phaseWatch.elapsedMicroseconds / 1e6;
-    _phaseWatch.reset();
-    final target =
-        (_isPlaying.value ? _playingSpeed : _pausedSpeed) * _speedScale;
-    _backgroundSpeed +=
-        (target - _backgroundSpeed) * (1 - exp(-dt / _speedRampSeconds));
-    _backgroundPhase.value =
-        (_backgroundPhase.value + dt * _backgroundSpeed) % 1;
-  }
+  void _applyAnimationSpeed(AnimationSpeed speed) =>
+      _clock.run(animate: speed.isAnimated, speedScale: speed.multiplier);
 
   void _pokeControls() {
     _hideTimer?.cancel();
@@ -226,12 +204,24 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
 
   void _onPointerUp(PointerUpEvent event) {
     _activePointers = max(0, _activePointers - 1);
+    if (event.kind != PointerDeviceKind.mouse) _pointer.value = null;
     _pokeControls();
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
     _activePointers = max(0, _activePointers - 1);
+    if (event.kind != PointerDeviceKind.mouse) _pointer.value = null;
     _pokeControls();
+  }
+
+  ShaderConfig? get _tunableShader =>
+      studioShaderFor(ref.watch(studioBackgroundProvider));
+
+  bool get _hasTuning => _tunableShader != null;
+
+  void _toggleTuning() {
+    final panel = ref.read(studioTuningPanelProvider.notifier);
+    panel.state = !panel.state;
   }
 
   void _toggleLyrics() => ref
@@ -272,27 +262,41 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       child: Focus(
         autofocus: true,
         child: MouseRegion(
-          onHover: (_) => _pokeControls(),
+          onHover: (event) {
+            _pointer.value = event.localPosition;
+            _pokeControls();
+          },
+          onExit: (_) => _pointer.value = null,
           cursor: _controlsVisible
               ? MouseCursor.defer
               : SystemMouseCursors.none,
           child: Listener(
             behavior: HitTestBehavior.translucent,
             onPointerDown: _onPointerDown,
-            onPointerMove: (_) => _pokeControls(),
+            onPointerMove: (event) {
+              _pointer.value = event.localPosition;
+              _pokeControls();
+            },
             onPointerUp: _onPointerUp,
             onPointerCancel: _onPointerCancel,
             child: Stack(
               fit: StackFit.expand,
               children: [
                 const ColoredBox(color: Colors.black),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 800),
-                  child: KeyedSubtree(
-                    key: ValueKey(_displayedSongId),
-                    child: _animatedBackground(),
+                if (supportsKeepScreenOn) const KeepScreenAwake(),
+                switch (ref.watch(studioBackgroundProvider)) {
+                  StudioBackground.fluid => FluidBackground(
+                    animate: ref.watch(animationSpeedProvider).isAnimated,
+                    pointer: _pointer,
                   ),
-                ),
+                  StudioBackground.aurora => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 800),
+                    child: KeyedSubtree(
+                      key: ValueKey(_displayedSongId),
+                      child: _animatedBackground(),
+                    ),
+                  ),
+                },
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 800),
                   child: motionCover == null
@@ -373,7 +377,11 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                                       opacity: lyricsShown ? 1 : 0,
                                       duration: _splitDuration,
                                       child: _lyricsMounted
-                                          ? _lyricsFace()
+                                          ? _lyricsFace(
+                                              scrimFrom: onLeft
+                                                  ? Alignment.centerRight
+                                                  : Alignment.centerLeft,
+                                            )
                                           : const SizedBox.shrink(),
                                     ),
                                   ),
@@ -398,6 +406,17 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (_hasTuning) ...[
+                          HoverIconButton(
+                            onPressed: _toggleTuning,
+                            color: Colors.white,
+                            iconSize: 24,
+                            tooltip: 'Flow tuning',
+                            isSelected: ref.watch(studioTuningPanelProvider),
+                            icon: const Icon(Icons.tune),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                         _lyricsButton(),
                         const SizedBox(width: 4),
                         HoverIconButton(
@@ -411,6 +430,13 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
                     ),
                   ),
                 ),
+                if (_tunableShader case final shader?
+                    when ref.watch(studioTuningPanelProvider))
+                  Positioned(
+                    top: 48,
+                    left: 16,
+                    child: StudioTuningPanel(shader: shader),
+                  ),
               ],
             ),
           ),
@@ -534,9 +560,29 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     ),
   );
 
-  Widget _lyricsFace() => const LyricsView(
-    padding: EdgeInsets.symmetric(horizontal: 48, vertical: 72),
-  );
+  Widget _lyricsFace({Alignment? scrimFrom}) {
+    const lyrics = LyricsView(
+      padding: EdgeInsets.symmetric(horizontal: 48, vertical: 72),
+    );
+    if (ref.watch(studioBackgroundProvider) == StudioBackground.aurora) {
+      return lyrics;
+    }
+    final scrim = Colors.black.withValues(alpha: 0.55);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scrimFrom == null ? scrim : null,
+        gradient: scrimFrom == null
+            ? null
+            : LinearGradient(
+                begin: scrimFrom,
+                end: Alignment(-scrimFrom.x, -scrimFrom.y),
+                colors: [Colors.transparent, scrim, scrim],
+                stops: const [0, 0.18, 1],
+              ),
+      ),
+      child: lyrics,
+    );
+  }
 
   Widget _lyricsButton() => Consumer(
     builder: (context, ref, _) {
@@ -571,7 +617,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     return SizedBox.expand(
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: AuroraPainter(shader: shader, phase: _backgroundPhase),
+          painter: AuroraPainter(shader: shader, clock: _clock),
         ),
       ),
     );
@@ -688,8 +734,8 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
       );
     }
     _hideTimer?.cancel();
-    _phaseTimer?.cancel();
-    _backgroundPhase.dispose();
+    _clock.dispose();
+    _pointer.dispose();
     _auroraShader?.dispose();
     _blurredArt?.dispose();
     _isPlaying.dispose();

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
+import 'package:jplayer/src/presentation/widgets/artist_avatar_card.dart';
 
 class ShimmerBox extends StatefulWidget {
   const ShimmerBox({this.width, this.height, this.radius = 4, super.key});
@@ -154,6 +155,33 @@ class AlbumCardsGridShimmer extends StatelessWidget {
   );
 }
 
+class ArtistCardsGridShimmer extends StatelessWidget {
+  const ArtistCardsGridShimmer({
+    required this.device,
+    this.count = 8,
+    super.key,
+  });
+
+  final DeviceType device;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = ArtistAvatarCard.avatarSize(device);
+    return SliverGrid.builder(
+      gridDelegate: ArtistAvatarCard.gridDelegate(device),
+      itemCount: count,
+      itemBuilder: (context, index) => Column(
+        children: [
+          ShimmerBox(width: size, height: size, radius: size / 2),
+          const SizedBox(height: 12),
+          ShimmerBox(width: size * 0.6, height: 15 * 1.2),
+        ],
+      ),
+    );
+  }
+}
+
 class ArtistCardsRowShimmer extends StatelessWidget {
   const ArtistCardsRowShimmer({
     required this.size,
@@ -170,7 +198,7 @@ class ArtistCardsRowShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: size + 52,
+    height: ArtistAvatarCard.cardHeight(size),
     child: ListView.separated(
       scrollDirection: Axis.horizontal,
       physics: const NeverScrollableScrollPhysics(),
