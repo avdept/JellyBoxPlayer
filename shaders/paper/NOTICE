@@ -1,0 +1,24 @@
+JellyBox vendors common/sizing.glsl and common/utils.glsl, plus the 128x128
+noise texture at assets/images/paper_noise.png, from the paper_shaders Flutter
+package (https://github.com/AndreFrelicot/paper-shaders-flutter), licensed
+under the Apache License, Version 2.0 (see LICENSE next to this file).
+
+fluid.frag is a JellyBox modification of that package's warp.frag (the Paper
+Shaders "warp" effect) that reads a pointer flow map. flow.frag is JellyBox
+code modelled on the Flowmap extra of ogl (https://github.com/oframe/ogl,
+MIT License).
+
+Original NOTICE from paper_shaders:
+
+paper_shaders
+
+This package is a Flutter runtime shader port of Paper Shaders
+(https://github.com/paper-design/shaders), licensed under the
+Apache License, Version 2.0. Shader source, algorithms, presets,
+the 128x128 noise texture asset, test images, and image-processing
+resources are derived from the original work.
+
+Original NOTICE from Paper Shaders:
+
+  Powered by Paper Shaders:
+  https://shaders.paper.design

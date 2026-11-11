@@ -53,6 +53,11 @@ class SettingsPage extends ConsumerWidget {
     AnimationSpeed.fast: 'Fast',
   };
 
+  static const Map<StudioBackground, String> _studioBackgroundLabels = {
+    StudioBackground.aurora: 'Aurora',
+    StudioBackground.fluid: 'Fluid',
+  };
+
   static const Map<StudioLyricsPlacement, String> _studioLyricsLabels = {
     StudioLyricsPlacement.right: 'Right side',
     StudioLyricsPlacement.left: 'Left side',
@@ -477,6 +482,23 @@ class SettingsPage extends ConsumerWidget {
                         setting: AppSetting.studioModeCoverOverVideo,
                         label: 'Show cover art over video background',
                       ),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.studioModeRememberLyrics,
+                        label: 'Remember lyrics mode',
+                      ),
+                      _settingDropdown<StudioBackground>(
+                        context: context,
+                        label: 'Background',
+                        value: ref.watch(studioBackgroundProvider),
+                        options: _studioBackgroundLabels,
+                        onChanged: (value) => ref
+                            .read(appSettingsProvider.notifier)
+                            .setValue(
+                              AppSetting.studioModeBackground,
+                              value.name,
+                            ),
+                      ),
                       _settingDropdown<StudioLyricsPlacement>(
                         context: context,
                         label: 'Show lyrics',
@@ -489,11 +511,21 @@ class SettingsPage extends ConsumerWidget {
                               value.name,
                             ),
                       ),
-                      _settingCheckbox(
-                        ref: ref,
-                        setting: AppSetting.studioModeRememberLyrics,
-                        label: 'Remember lyrics mode',
-                      ),
+                      if (supportsKeepScreenOn) ...[
+                        _settingDropdown<KeepScreenOn>(
+                          context: context,
+                          label: 'Keep the screen on',
+                          value: ref.watch(keepScreenOnProvider),
+                          options: _keepScreenOnLabels,
+                          onChanged: (value) => ref
+                              .read(appSettingsProvider.notifier)
+                              .setValue(AppSetting.keepScreenOn, value.name),
+                        ),
+                        _settingNote(
+                          context,
+                          'Applies while Studio Mode is open.',
+                        ),
+                      ],
                     ],
                     if (supportsDiscordPresence) ...[
                       _sectionHeader('Discord'),

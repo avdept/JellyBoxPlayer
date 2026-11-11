@@ -48,6 +48,30 @@ void main() {
     });
   });
 
+  group('catalogArtistsOutsideLibrary', () {
+    CatalogArtist found(String id, String name) =>
+        CatalogArtist(source: 'test', id: id, name: name);
+
+    test('drops artists the library search already found', () {
+      final result = catalogArtistsOutsideLibrary(
+        [found('1', 'Simon & Garfunkel'), found('2', 'Simone')],
+        [artist('a', 'Simon and Garfunkel')],
+      );
+
+      expect(result.map((entry) => entry.artist.id), ['2']);
+      expect(result.single.owned, isNull);
+    });
+
+    test('keeps one namesake and skips unnamed hits', () {
+      final result = catalogArtistsOutsideLibrary(
+        [found('1', 'Nirvana'), found('2', 'NIRVANA'), found('3', '  ')],
+        const [],
+      );
+
+      expect(result.map((entry) => entry.artist.id), ['1']);
+    });
+  });
+
   group('missingAlbums', () {
     CatalogAlbum album(
       String id,

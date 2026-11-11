@@ -9,6 +9,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class SearchResultsPage extends ConsumerStatefulWidget {
   const SearchResultsPage({required this.category, super.key});
@@ -44,6 +45,53 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
           )
         : Text(error.toString()),
   );
+
+  List<ContextMenuAction> _options(
+    BuildContext context,
+    WidgetRef ref,
+    LibraryItem item,
+  ) => contextMenuActions(
+    context,
+    ref,
+    item,
+    scope: ContextMenuScope.browse,
+    onLike: _onItemLikePressed,
+  );
+
+  Widget _albumsGrid(WidgetRef ref, List<LibraryItem> items) =>
+      SliverGrid.builder(
+        gridDelegate: AlbumCardMetrics.gridDelegate(_device),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return AlbumView(
+            album: item,
+            showArtist: false,
+            optionsBuilder: (context) => _options(context, ref, item),
+            onTap: (item) =>
+                openSearchResult(context, ref, widget.category, item),
+          );
+        },
+      );
+
+  Widget _artistsGrid(WidgetRef ref, List<LibraryItem> items) {
+    final size = ArtistAvatarCard.avatarSize(_device);
+    final imageService = ref.read(imageServiceProvider);
+    return SliverGrid.builder(
+      gridDelegate: ArtistAvatarCard.gridDelegate(_device),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return ArtistAvatarCard(
+          name: item.name,
+          size: size,
+          image: imageService.itemImage(item),
+          optionsBuilder: (context) => _options(context, ref, item),
+          onTap: () => openSearchResult(context, ref, ItemList.artists, item),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,38 +156,19 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
                 searchItemsProvider(widget.category),
               );
               return provider.when(
-                data: (list) => widget.category == ItemList.songs
-                    ? const SearchSongsSliver()
-                    : SliverGrid.builder(
-                        gridDelegate: AlbumCardMetrics.gridDelegate(_device),
-                        itemBuilder: (context, index) {
-                          final item = list.items[index];
-                          return AlbumView(
-                            album: item,
-                            showArtist: widget.category == ItemList.artists,
-                            optionsBuilder: (context) => contextMenuActions(
-                              context,
-                              ref,
-                              item,
-                              scope: ContextMenuScope.browse,
-                              onLike: _onItemLikePressed,
-                            ),
-                            onTap: (item) => openSearchResult(
-                              context,
-                              ref,
-                              widget.category,
-                              item,
-                            ),
-                          );
-                        },
-                        itemCount: list.items.length,
-                      ),
+                data: (list) => switch (widget.category) {
+                  ItemList.songs => const SearchSongsSliver(),
+                  ItemList.artists => _artistsGrid(ref, list.items),
+                  _ => _albumsGrid(ref, list.items),
+                },
                 error: (error, stackTrace) => _error(ref, error),
-                loading: () => widget.category == ItemList.songs
-                    ? SliverToBoxAdapter(
-                        child: SongRowsShimmer(device: _device, count: 8),
-                      )
-                    : AlbumCardsGridShimmer(device: _device),
+                loading: () => switch (widget.category) {
+                  ItemList.songs => SliverToBoxAdapter(
+                    child: SongRowsShimmer(device: _device, count: 8),
+                  ),
+                  ItemList.artists => ArtistCardsGridShimmer(device: _device),
+                  _ => AlbumCardsGridShimmer(device: _device),
+                },
               );
             },
           ),

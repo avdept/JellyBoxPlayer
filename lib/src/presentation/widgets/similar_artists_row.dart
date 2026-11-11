@@ -5,11 +5,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/providers/catalog_provider.dart';
+import 'package:jplayer/src/domain/providers/lidarr_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/album_card_metrics.dart';
+import 'package:jplayer/src/presentation/widgets/artist_avatar_card.dart';
 import 'package:jplayer/src/presentation/widgets/catalog_actions.dart';
 import 'package:jplayer/src/presentation/widgets/catalog_source_badge.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
@@ -38,6 +39,8 @@ class SimilarArtistsRow extends StatelessWidget {
   const SimilarArtistsRow({
     required this.artists,
     required this.device,
+    this.title = 'Similar artists',
+    this.titleFontSize,
     this.horizontalPadding = 0,
     this.showPlaceholder = false,
     super.key,
@@ -45,10 +48,12 @@ class SimilarArtistsRow extends StatelessWidget {
 
   final AsyncValue<List<SimilarArtist>> artists;
   final DeviceType device;
+  final String title;
+  final double? titleFontSize;
   final double horizontalPadding;
   final bool showPlaceholder;
 
-  double get _avatarSize => AlbumCardMetrics.carouselWidth(device) * 0.8;
+  double get _avatarSize => ArtistAvatarCard.avatarSize(device);
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +61,6 @@ class SimilarArtistsRow extends StatelessWidget {
     final loading = showPlaceholder && artists.isLoading;
     if (list.isEmpty && !loading) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
     final spacing = AlbumCardMetrics.carouselSpacing(device);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,9 +73,9 @@ class SimilarArtistsRow extends StatelessWidget {
             12,
           ),
           child: Text(
-            'Similar artists',
+            title,
             style: TextStyle(
-              fontSize: device.isMobile ? 20 : 24,
+              fontSize: titleFontSize ?? (device.isMobile ? 20 : 24),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -84,7 +88,7 @@ class SimilarArtistsRow extends StatelessWidget {
           )
         else
           SizedBox(
-            height: _avatarSize + 52,
+            height: ArtistAvatarCard.cardHeight(_avatarSize),
             child: HorizontalScrollRegion(
               controlsHeight: _avatarSize,
               controlsInset: horizontalPadding / 2,
@@ -97,7 +101,6 @@ class SimilarArtistsRow extends StatelessWidget {
                 itemBuilder: (context, index) => _ArtistCard(
                   artist: list[index],
                   size: _avatarSize,
-                  theme: theme,
                   onTap: () => openSimilarArtist(context, list[index]),
                 ),
               ),
@@ -109,85 +112,38 @@ class SimilarArtistsRow extends StatelessWidget {
   }
 }
 
-class _ArtistCard extends StatelessWidget {
+class _ArtistCard extends ConsumerWidget {
   const _ArtistCard({
     required this.artist,
     required this.size,
-    required this.theme,
     required this.onTap,
   });
 
   final SimilarArtist artist;
   final double size;
-  final ThemeData theme;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final picture = artist.artist.pictureUrl;
-    return CatalogContextMenuRegion(
+    final owned = artist.owned;
+    final target = owned == null ? LidarrArtistTarget(artist.artist) : null;
+    final lidarr = target != null && ref.watch(lidarrAvailableProvider);
+    return ArtistAvatarCard(
+      name: artist.artist.name,
+      size: size,
+      image: picture == null ? null : CachedNetworkImageProvider(picture),
+      subtitle: owned != null ? 'In your library' : null,
+      badge: owned == null
+          ? CatalogSourceBadge(
+              source: artist.artist.source,
+              size: max(22, size * 0.22),
+            )
+          : null,
       onTap: onTap,
-      target: artist.owned == null ? LidarrArtistTarget(artist.artist) : null,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: SizedBox(
-          width: size,
-          child: Column(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  ClipOval(
-                    child: Image(
-                      image: picture == null
-                          ? const AssetImage(Images.artistSample)
-                          : CachedNetworkImageProvider(picture),
-                      width: size,
-                      height: size,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                        Images.artistSample,
-                        width: size,
-                        height: size,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  if (artist.owned == null)
-                    Positioned(
-                      top: size * 0.04,
-                      right: size * 0.04,
-                      child: CatalogSourceBadge(
-                        source: artist.artist.source,
-                        size: max(22, size * 0.22),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                artist.artist.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (artist.owned != null)
-                Text(
-                  'In your library',
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+      optionsBuilder: lidarr
+          ? (context) => catalogItemActions(context, target)
+          : null,
     );
   }
 }
