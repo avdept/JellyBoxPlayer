@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/core/diagnostics/device_log.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -35,6 +36,8 @@ class SupportPage extends StatelessWidget {
       unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
 
   static bool get _canShareFiles => Platform.isAndroid || Platform.isIOS;
+
+  static bool get _showDonate => !Platform.isAndroid || kSideloadBuild;
 
   Future<void> _sendLog(BuildContext context) async {
     final log = DeviceLog.current;
@@ -155,15 +158,16 @@ class SupportPage extends StatelessWidget {
                     subtitle: 'Report a bug or request a feature',
                     onTap: () => _open(_issuesUri),
                   ),
-                  _tile(
-                    theme: theme,
-                    icon: Icons.coffee_outlined,
-                    title: 'Donate',
-                    subtitle:
-                        'This will help me to buy new devices to develop '
-                        'for and test on',
-                    onTap: () => _open(_donateUri),
-                  ),
+                  if (_showDonate)
+                    _tile(
+                      theme: theme,
+                      icon: Icons.coffee_outlined,
+                      title: 'Donate',
+                      subtitle:
+                          'This will help me to buy new devices to develop '
+                          'for and test on',
+                      onTap: () => _open(_donateUri),
+                    ),
                 ],
               ),
             ),
