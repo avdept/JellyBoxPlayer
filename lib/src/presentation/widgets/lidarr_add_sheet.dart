@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/lidarr_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
+import 'package:jplayer/src/presentation/widgets/lidarr_connect_form.dart';
 import 'package:optional_features/lidarr.dart';
 
 Future<void> showLidarrAddSheet(BuildContext context, LidarrTarget target) =>
@@ -121,17 +120,11 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
           const SizedBox(height: 12),
           if (!connected) ...[
             Text(
-              'Connect your Lidarr server in Settings first.',
+              'Connect your Lidarr server first.',
               style: TextStyle(fontSize: 14, color: muted),
             ),
-            const SizedBox(height: 16),
-            ModalFormActions(
-              submitLabel: 'Open Settings',
-              onSubmit: () {
-                Navigator.of(context).pop();
-                unawaited(context.pushNamed(Routes.settings.name));
-              },
-            ),
+            const SizedBox(height: 8),
+            LidarrConnectForm.embedded(onConnected: () => unawaited(_load())),
           ] else if (plan == null && _error == null) ...[
             Row(
               children: [

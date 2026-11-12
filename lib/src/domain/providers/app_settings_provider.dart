@@ -85,6 +85,7 @@ enum AppSetting {
     syncs: false,
   ),
   lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
+  lidarrHideAddButton('lidarr_hide_add_button', syncs: false),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   lastFmUser('lastfm_user', defaultValue: ''),

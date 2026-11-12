@@ -45,6 +45,7 @@ enum ContextMenuEntry {
   deletePlaylist,
   removeMix,
   addToLidarr,
+  preview,
   pin,
 }
 
@@ -378,7 +379,8 @@ List<ContextMenuAction> contextMenuActions(
         ContextMenuEntry.removeFromQueue ||
         ContextMenuEntry.removeFromPlaylist ||
         ContextMenuEntry.deletePlaylist ||
-        ContextMenuEntry.addToLidarr => null,
+        ContextMenuEntry.addToLidarr ||
+        ContextMenuEntry.preview => null,
       },
   ].nonNulls.toList();
 }

@@ -9,10 +9,17 @@ import 'package:jplayer/src/presentation/widgets/labeled_text_field.dart';
 class LidarrConnectForm extends ConsumerStatefulWidget {
   const LidarrConnectForm({
     this.padding = const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+    this.onConnected,
     super.key,
   });
 
+  const LidarrConnectForm.embedded({required this.onConnected, super.key})
+    : padding = EdgeInsets.zero;
+
   final EdgeInsets padding;
+  final VoidCallback? onConnected;
+
+  bool get embedded => onConnected != null;
 
   @override
   ConsumerState<LidarrConnectForm> createState() => _LidarrConnectFormState();
@@ -44,7 +51,11 @@ class _LidarrConnectFormState extends ConsumerState<LidarrConnectForm> {
         .connect(_urlController.text, _apiKeyController.text);
     if (!mounted) return;
     if (connected) {
-      Navigator.of(context).pop();
+      if (widget.onConnected case final onConnected?) {
+        onConnected();
+      } else {
+        Navigator.of(context).pop();
+      }
       return;
     }
     setState(() {
@@ -63,8 +74,10 @@ class _LidarrConnectFormState extends ConsumerState<LidarrConnectForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('Connect Lidarr'),
-          const SizedBox(height: 8),
+          if (!widget.embedded) ...[
+            const ModalFormHeader('Connect Lidarr'),
+            const SizedBox(height: 8),
+          ],
           Text(
             'The API key is under Settings > General in Lidarr.',
             style: TextStyle(
@@ -79,7 +92,7 @@ class _LidarrConnectFormState extends ConsumerState<LidarrConnectForm> {
             placeholder: 'http://lidarr.home:8686',
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.next,
-            autofocus: true,
+            autofocus: !widget.embedded,
           ),
           const SizedBox(height: 12),
           LabeledTextField(

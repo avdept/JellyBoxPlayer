@@ -26,33 +26,39 @@ class CatalogContextMenuRegion extends ConsumerWidget {
   const CatalogContextMenuRegion({
     required this.child,
     this.target,
+    this.actionsBuilder,
     this.onTap,
     super.key,
   });
 
   final Widget child;
   final LidarrTarget? target;
+  final List<ContextMenuAction> Function(BuildContext context)? actionsBuilder;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final target = this.target;
-    final enabled = target != null && ref.watch(lidarrAvailableProvider);
+    final actions =
+        actionsBuilder ??
+        (target != null && ref.watch(lidarrAddVisibleProvider)
+            ? (context) => catalogItemActions(context, target)
+            : null);
     final isDesktop =
         getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.desktop;
     return GestureDetector(
       onTap: onTap,
-      onLongPress: isDesktop || !enabled
+      onLongPress: isDesktop || actions == null
           ? null
           : () => showLongPressContextMenuSheet(
               context,
-              actions: catalogItemActions(context, target),
+              actions: actions(context),
             ),
-      onSecondaryTapUp: enabled
+      onSecondaryTapUp: actions != null
           ? (details) => showContextMenu(
               context,
               position: details.globalPosition,
-              actions: catalogItemActions(context, target),
+              actions: actions(context),
             )
           : null,
       behavior: HitTestBehavior.opaque,
@@ -68,7 +74,7 @@ class AddToLidarrButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(lidarrAvailableProvider)) return const SizedBox.shrink();
+    if (!ref.watch(lidarrAddVisibleProvider)) return const SizedBox.shrink();
     final status = switch (target) {
       LidarrAlbumTarget(:final album) =>
         ref
