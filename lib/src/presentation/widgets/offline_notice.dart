@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,13 +11,11 @@ import 'package:jplayer/src/providers/server_addresses_provider.dart';
 class OfflineNotice extends ConsumerWidget {
   const OfflineNotice({
     required this.message,
-    this.onRetry,
     this.showDownloadsLink = false,
     super.key,
   });
 
   final String message;
-  final FutureOr<void> Function()? onRetry;
   final bool showDownloadsLink;
 
   @override
@@ -40,6 +36,28 @@ class OfflineNotice extends ConsumerWidget {
       ),
     );
 
+    final actions = <Widget>[
+      if (showDownloadsLink)
+        TextButton(
+          style: buttonStyle,
+          onPressed: () => context.goNamed(Routes.downloads.name),
+          child: const Text('Open downloads'),
+        ),
+      if (isOffline && addresses != null)
+        TextButton(
+          style: buttonStyle,
+          onPressed: () => showFormModal<void>(
+            context,
+            builder: (context) => const RemoteAddressForm(),
+          ),
+          child: Text(
+            addresses.remote == null
+                ? 'Add remote address'
+                : 'Change remote address',
+          ),
+        ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
       child: Column(
@@ -56,42 +74,23 @@ class OfflineNotice extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 16, height: 1.3),
           ),
-          const SizedBox(height: 4),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: isDesktop ? 16 : 0,
-            children: [
-              TextButton(
-                style: buttonStyle,
-                onPressed: () async {
-                  await ref.read(connectivityProvider.notifier).refresh();
-                  await onRetry?.call();
-                },
-                child: const Text('Try again'),
-              ),
-              if (showDownloadsLink)
-                TextButton(
-                  style: buttonStyle,
-                  onPressed: () => context.goNamed(Routes.downloads.name),
-                  child: const Text('Open downloads'),
-                ),
-              if (isOffline && addresses != null)
-                TextButton(
-                  style: buttonStyle,
-                  onPressed: () => unawaited(
-                    showFormModal<void>(
-                      context,
-                      builder: (context) => const RemoteAddressForm(),
-                    ),
-                  ),
-                  child: Text(
-                    addresses.remote == null
-                        ? 'Add remote address'
-                        : 'Change remote address',
-                  ),
-                ),
-            ],
-          ),
+          const SizedBox(height: 12),
+          if (isDesktop)
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              children: actions,
+            )
+          else
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (index, action) in actions.indexed) ...[
+                  if (index > 0) const SizedBox(height: 12),
+                  action,
+                ],
+              ],
+            ),
         ],
       ),
     );

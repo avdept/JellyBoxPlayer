@@ -73,11 +73,13 @@ class StreamTargetProfile {
     required this.supportsHls,
     this.preferHlsContainers = const {},
     this.preference = StreamPreference.original,
+    this.toFile = false,
   });
 
   factory StreamTargetProfile.localPlayer({
     bool? isAndroid,
     bool? isDarwin,
+    bool toFile = false,
     bool supportsHls = true,
   }) {
     final android = isAndroid ?? Platform.isAndroid;
@@ -102,11 +104,16 @@ class StreamTargetProfile {
       lossyTranscode: TranscodeTarget.aac,
       losslessTranscode: TranscodeTarget.flac,
       supportsHls: supportsHls,
+      toFile: toFile,
     );
   }
 
   factory StreamTargetProfile.download({bool? isAndroid}) =>
-      StreamTargetProfile.localPlayer(isAndroid: isAndroid, supportsHls: false);
+      StreamTargetProfile.localPlayer(
+        isAndroid: isAndroid,
+        supportsHls: false,
+        toFile: true,
+      );
 
   factory StreamTargetProfile.renderer({
     required Set<String> sinkMimeTypes,
@@ -153,6 +160,7 @@ class StreamTargetProfile {
   final bool supportsHls;
   final Set<String> preferHlsContainers;
   final StreamPreference preference;
+  final bool toFile;
 
   int? get maxBitRate => preference.maxBitRate;
 
@@ -166,6 +174,7 @@ class StreamTargetProfile {
         supportsHls: supportsHls,
         preferHlsContainers: preferHlsContainers,
         preference: preference,
+        toFile: toFile,
       );
 
   StreamTargetProfile withoutHls() => StreamTargetProfile(
@@ -174,6 +183,7 @@ class StreamTargetProfile {
     losslessTranscode: losslessTranscode,
     supportsHls: false,
     preference: preference,
+    toFile: toFile,
   );
 
   bool prefersHls({required String? container}) =>

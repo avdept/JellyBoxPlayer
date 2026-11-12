@@ -162,15 +162,6 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   List<LibraryItem> _sortedByIndex(List<LibraryItem> items) =>
       [...items]..sort(LibraryItem.compareAlbumOrder);
 
-  Future<void> _retryLoad() async {
-    setState(() {
-      isLoadingSongs = true;
-      loadFailed = false;
-    });
-    await ref.read(connectivityProvider.notifier).refresh();
-    if (mounted) await _getSongs(silent: false);
-  }
-
   List<Widget> contentSlivers() => [
     if (songs.isEmpty)
       SliverToBoxAdapter(child: _songsPlaceholder())
@@ -286,7 +277,6 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       message: ref.watch(isOfflineProvider)
           ? "You're offline and this album isn't downloaded."
           : 'Could not load this album.',
-      onRetry: _retryLoad,
     );
   }
 

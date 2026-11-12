@@ -119,6 +119,34 @@ void main() {
     ),
   );
 
+  group('DownloadDatabase (lyrics)', () {
+    test(
+      '- keeps lyrics with the download',
+      () async {
+        final db = DownloadDatabase(serverId: 'server-a');
+        final withLyrics = buildSong();
+        final without = buildSong();
+        const lyrics = Lyrics(
+          isSynced: true,
+          lines: [LyricLine(text: 'hello', start: Duration(seconds: 1))],
+        );
+
+        await db.insertDownloadedSong(
+          withLyrics,
+          file: songFile,
+          lyrics: lyrics,
+        );
+        await db.insertDownloadedSong(without, file: newSongFile());
+
+        final stored = await db.lyricsOf(withLyrics.id);
+        expect(stored?.isSynced, isTrue);
+        expect(stored?.lines.single.text, 'hello');
+        expect(stored?.lines.single.start, const Duration(seconds: 1));
+        expect(await db.lyricsOf(without.id), isNull);
+      },
+    );
+  });
+
   group('DownloadDatabase (server scoping)', () {
     test('- hides another server\'s downloads', () async {
       final jellyfin = DownloadDatabase(serverId: 'server-a');

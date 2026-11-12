@@ -4,6 +4,7 @@ import 'package:jplayer/src/core/audio/audio_container_mime.dart';
 import 'package:jplayer/src/core/audio/audio_stream_profile.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/listenbrainz/listenbrainz_client.dart';
 import 'package:jplayer/src/data/api/api.dart';
 import 'package:jplayer/src/data/backend/emby/mappers/emby_item_mapper.dart';
 import 'package:jplayer/src/data/backend/item_image_ref.dart';
@@ -17,6 +18,7 @@ import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_home.dart';
 import 'package:jplayer/src/data/backend/mediabrowser_query.dart';
+import 'package:jplayer/src/data/backend/mediabrowser_top_songs.dart';
 import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/playlist_songs_batch.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
@@ -33,8 +35,10 @@ class EmbyClient implements MediaServerClient {
     required this.userId,
     required this.token,
     required this.deviceId,
+    ListenBrainzClient? listenBrainz,
   }) : _api = EmbyApi(dio, baseUrl: baseUrl),
-       _baseUrl = baseUrl;
+       _baseUrl = baseUrl,
+       _listenBrainz = listenBrainz ?? ListenBrainzClient();
 
   static const _defaultImageSize = 420;
   static const _sizeParams = {'MaxWidth', 'MaxHeight'};
@@ -49,6 +53,7 @@ class EmbyClient implements MediaServerClient {
 
   final EmbyApi _api;
   final String _baseUrl;
+  final ListenBrainzClient _listenBrainz;
   final String userId;
   final String token;
   final String deviceId;
@@ -281,6 +286,15 @@ class EmbyClient implements MediaServerClient {
     );
     return response.data.toEmbyLibraryPage().items;
   }
+
+  @override
+  Future<List<LibraryItem>> getTopSongs(LibraryItem artist, {int limit = 10}) =>
+      mediaBrowserTopSongs(
+        this,
+        artist,
+        listenBrainz: _listenBrainz,
+        limit: limit,
+      );
 
   @override
   Future<List<LibraryItem>> getLatestAlbums({

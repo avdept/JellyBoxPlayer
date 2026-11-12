@@ -324,6 +324,27 @@ void main() {
       expect(delivered.bitRate, 256000);
     });
 
+    test('never reports more than a lossy source holds', () {
+      const opus = AudioSourceInfo(
+        container: 'ogg',
+        codec: 'opus',
+        bitRate: 92000,
+        sampleRate: 48000,
+        channels: 2,
+      );
+      final profile = AudioStreamProfile.forSource(
+        sourceContainer: opus.container,
+        sourceCodec: opus.codec,
+        sourceBitRate: opus.bitRate,
+        target: StreamTargetProfile.localPlayer(
+          isAndroid: false,
+        ).withPreference(const StreamPreference(maxBitRate: 128)),
+      );
+
+      expect(profile.requiresTranscode, isTrue);
+      expect(profile.deliveredQuality(opus, transcodes: true).bitRate, 92000);
+    });
+
     test('keeps the source resolution through a lossless transcode', () {
       const alac = AudioSourceInfo(
         container: 'm4a',

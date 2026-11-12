@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:background_downloader/background_downloader.dart' as bd;
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
@@ -55,6 +56,7 @@ class DownloadService {
     LibraryItem song,
     MediaServerClient client, {
     required String deviceId,
+    StreamPreference preference = StreamPreference.original,
   }) async {
     await getDownloadDirectory();
     final albumId = song.albumId;
@@ -70,7 +72,7 @@ class DownloadService {
     final resolved = await client.resolveStreamSource(
       song,
       playSessionId: 'download-$deviceId-${song.id}',
-      target: StreamTargetProfile.download(),
+      target: StreamTargetProfile.download().withPreference(preference),
     );
 
     final fileName = DownloadPaths.fileName(song.id, resolved.outputContainer);
@@ -87,6 +89,7 @@ class DownloadService {
       url: resolved.uri.toString(),
       destination: destination,
     );
+    if (resolved.requiresTranscode) task.delivered = resolved.delivered;
 
     _tasks[song.id] = task;
     unawaited(_startDownload(task, albumSubdir, fileName));

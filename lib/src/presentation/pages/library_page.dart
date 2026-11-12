@@ -137,7 +137,6 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
             message: ref.watch(isOfflineProvider)
                 ? "You're offline, so your libraries can't be loaded."
                 : 'Could not load your libraries.',
-            onRetry: () => ref.invalidate(librariesProvider),
             showDownloadsLink: true,
           ),
         ),

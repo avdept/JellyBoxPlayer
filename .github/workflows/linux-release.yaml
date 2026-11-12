@@ -94,6 +94,7 @@ jobs:
         if: matrix.arch == 'x64'
         with:
           channel: stable
+          flutter-version: 3.47.9
 
       - name: Private package
         uses: ./.github/actions/optional-features
