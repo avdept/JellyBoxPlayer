@@ -534,6 +534,21 @@ class SettingsPage extends ConsumerWidget {
                         setting: AppSetting.discordRichPresence,
                         label: 'Share what I am listening to on Discord',
                       ),
+                      if (ref.watch(
+                        settingProvider(AppSetting.discordRichPresence),
+                      )) ...[
+                        _settingCheckbox(
+                          ref: ref,
+                          setting: AppSetting.discordAlbumArt,
+                          label: 'Show album covers on Discord',
+                        ),
+                        _settingNote(
+                          context,
+                          'Covers are looked up on MusicBrainz by album and '
+                          'artist, so they can differ from the artwork on '
+                          'your server. Your server address is never shared.',
+                        ),
+                      ],
                     ],
                     _sectionHeader('ListenBrainz'),
                     const ListenBrainzSettings(),

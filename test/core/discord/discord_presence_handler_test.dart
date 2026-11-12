@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jplayer/src/core/discord/discord_artwork.dart';
 import 'package:jplayer/src/core/discord/discord_frame.dart';
 import 'package:jplayer/src/core/discord/discord_presence_client.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
 import 'package:jplayer/src/core/discord/discord_transport.dart';
+import 'package:jplayer/src/core/musicbrainz/cover_art_finder.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/discord_artwork_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
 class _StubPlayback extends StateNotifier<PlaybackState>
@@ -85,9 +88,18 @@ void main() {
   late _FakeTransport transport;
   late AppSettingsNotifier settings;
   late ProviderContainer container;
+  late List<CoverArtQuery> lookups;
+  late Completer<String?> cover;
+
+  Object? largeImage() {
+    final activity = transport.activities.last!;
+    return (activity['assets']! as Map<String, Object?>)['large_image'];
+  }
 
   setUp(() {
     DiscordPresenceHandler.reset();
+    lookups = [];
+    cover = Completer<String?>();
     playback = _StubPlayback();
     transport = _FakeTransport();
     settings = AppSettingsNotifier(null);
@@ -95,6 +107,14 @@ void main() {
       overrides: [
         playbackProvider.overrideWith((ref) => playback),
         appSettingsProvider.overrideWith((ref) => settings),
+        discordArtworkProvider.overrideWith(
+          (ref) => DiscordArtwork(
+            find: (query) {
+              lookups.add(query);
+              return cover.future;
+            },
+          ),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -224,5 +244,96 @@ void main() {
     await pumpEventQueue();
 
     expect(transport.activities.last, isNull);
+  });
+
+  group('album covers', () {
+    const found = 'https://coverartarchive.org/release-group/abc/front-500';
+
+    setUp(
+      () => settings.setEnabled(AppSetting.discordAlbumArt, value: true),
+    );
+
+    test('shows the app logo while the cover is looked up', () async {
+      await enable();
+      playback.current = stateWith(PlaybackStatus.playing);
+      await pumpEventQueue();
+
+      expect(largeImage(), 'jellybox');
+      expect(lookups.single.artist, 'Portishead');
+      expect(lookups.single.album, 'Dummy');
+    });
+
+    test('republishes with the cover once it is found', () async {
+      await enable();
+      playback.current = stateWith(PlaybackStatus.playing);
+      await pumpEventQueue();
+
+      cover.complete(found);
+      await pumpEventQueue();
+
+      expect(largeImage(), found);
+      expect(transport.activities.last, containsPair('details', 'Sour Times'));
+    });
+
+    test('keeps the logo when no cover exists', () async {
+      await enable();
+      playback.current = stateWith(PlaybackStatus.playing);
+      await pumpEventQueue();
+      final published = transport.activities.length;
+
+      cover.complete(null);
+      await pumpEventQueue();
+
+      expect(largeImage(), 'jellybox');
+      expect(transport.activities, hasLength(published));
+    });
+
+    test('looks an album up once across its tracks', () async {
+      await enable();
+      playback.current = stateWith(PlaybackStatus.playing);
+      await pumpEventQueue();
+      cover.complete(found);
+      await pumpEventQueue();
+
+      playback.current = stateWith(PlaybackStatus.playing).copyWith(
+        songs: [songNamed('song-2', 'Roads')],
+      );
+      await pumpEventQueue();
+
+      expect(lookups, hasLength(1));
+      expect(transport.activities.last, containsPair('details', 'Roads'));
+      expect(largeImage(), found);
+    });
+
+    test('never looks covers up unless the setting is on', () async {
+      settings.setEnabled(AppSetting.discordAlbumArt, value: false);
+      await enable();
+      playback.current = stateWith(PlaybackStatus.playing);
+      await pumpEventQueue();
+
+      expect(lookups, isEmpty);
+      expect(largeImage(), 'jellybox');
+    });
+
+    test('drops the cover when the setting is switched off', () async {
+      await enable();
+      playback.current = stateWith(PlaybackStatus.playing);
+      cover.complete(found);
+      await pumpEventQueue();
+      expect(largeImage(), found);
+
+      settings.setEnabled(AppSetting.discordAlbumArt, value: false);
+      await pumpEventQueue();
+
+      expect(largeImage(), 'jellybox');
+    });
+  });
+
+  test('leaves covers off by default', () async {
+    await enable();
+    playback.current = stateWith(PlaybackStatus.playing);
+    await pumpEventQueue();
+
+    expect(lookups, isEmpty);
   });
 }
