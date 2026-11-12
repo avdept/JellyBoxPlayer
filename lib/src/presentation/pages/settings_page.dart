@@ -555,6 +555,11 @@ class SettingsPage extends ConsumerWidget {
                     if (ref.watch(lidarrAvailableProvider)) ...[
                       _sectionHeader('Lidarr'),
                       const LidarrSettings(),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.lidarrHideAddButton,
+                        label: 'Hide "Add to Lidarr"',
+                      ),
                     ],
                     if (ref.watch(installedCatalogSourcesProvider).firstOrNull
                         case final catalog?) ...[

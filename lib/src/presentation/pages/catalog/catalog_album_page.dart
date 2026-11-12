@@ -146,7 +146,6 @@ class _CatalogAlbumPageState extends ConsumerState<CatalogAlbumPage> {
             final active = preview.track == track.key;
             return _TrackRow(
               track: track,
-              target: LidarrAlbumTarget(album),
               position: track.trackNumber ?? index + 1,
               status: !active
                   ? _PreviewStatus.idle
@@ -360,7 +359,6 @@ enum _PreviewStatus { idle, loading, playing }
 class _TrackRow extends StatefulWidget {
   const _TrackRow({
     required this.track,
-    required this.target,
     required this.position,
     required this.status,
     required this.progress,
@@ -371,7 +369,6 @@ class _TrackRow extends StatefulWidget {
   });
 
   final CatalogTrack track;
-  final LidarrTarget target;
   final int position;
   final _PreviewStatus status;
   final ValueListenable<double> progress;
@@ -401,7 +398,7 @@ class _TrackRowState extends State<_TrackRow> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: CatalogContextMenuRegion(
-        target: widget.target,
+        actionsBuilder: playable ? _actions : null,
         child: SimpleListTile(
           onTap: widget.onTap,
           hoverColor: onPrimary.withValues(alpha: 0.06),
@@ -467,15 +464,26 @@ class _TrackRowState extends State<_TrackRow> {
                   color: secondary,
                 ),
               ),
-              ContextMenuButton(
-                actionsBuilder: (context) =>
-                    catalogItemActions(context, widget.target),
-              ),
+              if (playable) ContextMenuButton(actionsBuilder: _actions),
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<ContextMenuAction> _actions(BuildContext context) {
+    final onTap = widget.onTap;
+    final active = widget.status != _PreviewStatus.idle;
+    return [
+      if (onTap != null)
+        ContextMenuAction(
+          entry: ContextMenuEntry.preview,
+          icon: Icon(active ? Icons.stop_rounded : Icons.play_arrow_rounded),
+          label: Text(active ? 'Stop preview' : 'Preview'),
+          run: () async => onTap(),
+        ),
+    ];
   }
 
   Widget _leading(Color faded, bool playable) {
