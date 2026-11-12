@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
+import 'package:jplayer/src/domain/models/library_item/audio_source_info.dart';
 
 part 'download_task.freezed.dart';
 
@@ -22,6 +23,8 @@ abstract class DownloadTask with _$DownloadTask {
 
   @override
   final ValueNotifier<double?> progress = ValueNotifier(0);
+
+  AudioSourceInfo? delivered;
 
   bool get isDownloadingNow => const {
     DownloadStatus.downloading,

@@ -39,8 +39,7 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
     null => const AssetImage(Images.artistSample),
   };
 
-  double get _horizontalPadding =>
-      _device.isMobile ? 16 : (_device.isTablet ? 64 : 40);
+  double get _horizontalPadding => _device.isDesktop ? 40 : 16;
 
   double get _headerHeight =>
       _device.isMobile ? 250 : (_device.isTablet ? 340 : 360);

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/listenbrainz/listenbrainz_popularity.dart';
 import 'package:jplayer/src/core/scrobbling/scrobbler.dart';
 
 abstract final class ListenType {
@@ -93,6 +94,25 @@ class ListenBrainzClient {
         options: _options(token),
       ),
     );
+  }
+
+  Future<List<ListenBrainzRecording>> topRecordingsForArtist(
+    String artistMbid, {
+    String apiUrl = defaultApiUrl,
+  }) async {
+    final response = await _request(
+      () => _dio.get<Object?>(
+        '$apiUrl/1/popularity/top-recordings-for-artist/$artistMbid',
+        options: Options(responseType: ResponseType.json),
+      ),
+    );
+    final data = response.data;
+    if (data is! List) return const [];
+    return [
+      for (final entry in data)
+        if (entry is Map)
+          ListenBrainzRecording.fromJson(entry.cast<String, Object?>()),
+    ];
   }
 
   Options _options(String token) => Options(

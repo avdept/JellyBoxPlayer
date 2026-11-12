@@ -101,14 +101,15 @@ class _ArtistHeaderAppBarState extends State<ArtistHeaderAppBar> {
             alignment: Alignment.topCenter,
             clipBehavior: Clip.none,
             children: [
-              if (widget.backdrop case final backdrop?)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: widget.isMobile ? -60 : 0,
-                  height: widget.isMobile ? 340 : widget.headerHeight,
-                  child: backdrop,
-                ),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: widget.isMobile ? -60 : 0,
+                height: widget.isMobile ? 340 : widget.headerHeight,
+                child:
+                    widget.backdrop ??
+                    ColoredBox(color: theme.scaffoldBackgroundColor),
+              ),
               Padding(
                 padding: EdgeInsets.only(
                   left: widget.isMobile ? 20 : widget.horizontalPadding,

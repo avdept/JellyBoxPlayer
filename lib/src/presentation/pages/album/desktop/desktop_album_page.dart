@@ -30,7 +30,7 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
   AlbumPageKeys? get testKeys => widget.testKeys;
 
   @override
-  double get edgePadding => 30;
+  double get edgePadding => device.isTablet ? 16 : 30;
 
   @override
   double get navTitleFontSize => 20;

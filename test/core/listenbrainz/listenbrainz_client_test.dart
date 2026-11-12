@@ -175,6 +175,41 @@ void main() {
     );
   });
 
+  test('topRecordingsForArtist reads the public popularity endpoint', () async {
+    respond(200, [
+      {
+        'recording_mbid': 'mb-roads',
+        'recording_name': 'Roads',
+        'total_listen_count': 100,
+      },
+      {
+        'recording_mbid': 'mb-glory',
+        'recording_name': 'Glory Box',
+        'total_listen_count': 90,
+      },
+    ]);
+
+    final recordings = await client.topRecordingsForArtist('artist-mbid');
+
+    expect(recordings.map((r) => r.mbid), ['mb-roads', 'mb-glory']);
+    final request = sentRequest();
+    expect(request.method, 'GET');
+    expect(
+      request.uri.toString(),
+      'https://api.listenbrainz.org/1/popularity/top-recordings-for-artist/artist-mbid',
+    );
+    expect(request.headers.containsKey('Authorization'), isFalse);
+  });
+
+  test(
+    'topRecordingsForArtist returns nothing for an unexpected body',
+    () async {
+      respond(200, {'error': 'nope'});
+
+      expect(await client.topRecordingsForArtist('artist-mbid'), isEmpty);
+    },
+  );
+
   test('maps HTTP statuses onto scrobble failures', () {
     expect(ScrobbleException.fromStatus(401, 'nope').isUnauthorized, isTrue);
     expect(ScrobbleException.fromStatus(400, 'bad').isRejected, isTrue);

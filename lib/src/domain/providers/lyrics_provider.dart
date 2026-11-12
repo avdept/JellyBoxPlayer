@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/http/user_agent.dart';
+import 'package:jplayer/src/core/lyrics/downloaded_lyrics_source.dart';
 import 'package:jplayer/src/core/lyrics/lrclib_client.dart';
 import 'package:jplayer/src/core/lyrics/lrclib_lyrics_source.dart';
 import 'package:jplayer/src/core/lyrics/lyrics_source.dart';
@@ -25,9 +26,12 @@ final lyricsSourcesProvider = Provider<List<LyricsSource>>(
 );
 
 final lyricsProvider = FutureProviderFamily<Lyrics?, String>((ref, itemId) {
-  if (ref.watch(isOfflineProvider)) return Future.value();
-  final sources = ref.watch(lyricsSourcesProvider);
-  if (sources.isEmpty) return Future.value();
+  final downloaded = DownloadedLyricsSource(
+    ref.watch(downloadDatabaseProvider).lyricsOf,
+  );
+  final sources = ref.watch(isOfflineProvider)
+      ? [downloaded]
+      : [...ref.watch(lyricsSourcesProvider), downloaded];
   final song = ref.read(barSongProvider);
   final request = song != null && song.id == itemId
       ? LyricsRequest.forSong(song)

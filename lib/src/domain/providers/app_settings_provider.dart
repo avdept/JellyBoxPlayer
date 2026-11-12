@@ -61,6 +61,7 @@ enum AppSetting {
     defaultValue: 'original',
     syncs: false,
   ),
+  downloadQuality('download_quality', defaultValue: 'original', syncs: false),
   downloadSyncOnCellular('download_sync_on_cellular', syncs: false),
   offlineModeToggle('offline_mode_toggle', syncs: false),
   manualOffline('manual_offline', syncs: false),
@@ -196,6 +197,10 @@ final streamQualityWifiProvider = Provider<StreamQuality>(
 
 final streamQualityCellularProvider = Provider<StreamQuality>(
   (ref) => _streamQuality(ref, AppSetting.streamQualityCellular),
+);
+
+final downloadQualityProvider = Provider<StreamQuality>(
+  (ref) => _streamQuality(ref, AppSetting.downloadQuality),
 );
 
 StreamQuality _streamQuality(Ref ref, AppSetting setting) =>

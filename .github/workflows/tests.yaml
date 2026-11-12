@@ -9,6 +9,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.9
 
       - name: Check the tree builds without the private package
         run: ./tool/check_public_pubspec.sh

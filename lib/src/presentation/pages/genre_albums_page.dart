@@ -118,9 +118,6 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
                       ? OfflineNotice(
                           message:
                               "You're offline. This genre needs a connection.",
-                          onRetry: () => ref.invalidate(
-                            genreAlbumsProvider(widget.genre.id),
-                          ),
                           showDownloadsLink: true,
                         )
                       : Text(error.toString()),

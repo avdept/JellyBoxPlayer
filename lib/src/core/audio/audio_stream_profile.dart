@@ -106,12 +106,22 @@ class AudioStreamProfile {
         channels: source?.channels,
       );
     }
-    final kbps = switch ((bitRateCap, bitRateCeiling)) {
+    var kbps = switch ((bitRateCap, bitRateCeiling)) {
       (final int requested, final int ceiling) when ceiling < requested =>
         ceiling,
       (final int requested, _) => requested,
       _ => null,
     };
+    final sourceKbps = source?.bitRate;
+    final sourceCodec = source?.codec?.toLowerCase();
+    final lossySource =
+        sourceKbps != null &&
+        sourceKbps > 0 &&
+        sourceCodec != null &&
+        !_losslessCodecs.contains(sourceCodec);
+    if (lossySource && (kbps == null || sourceKbps < kbps * 1000)) {
+      kbps = (sourceKbps / 1000).round();
+    }
     final sampleRate = source?.sampleRate;
     return AudioSourceInfo(
       container: transcodingContainer,

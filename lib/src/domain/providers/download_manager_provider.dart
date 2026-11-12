@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
+import 'package:jplayer/src/core/lyrics/lyrics_source.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -17,6 +19,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/download_activity_provider.dart';
 import 'package:jplayer/src/domain/providers/downloads_revision_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
+import 'package:jplayer/src/domain/providers/lyrics_provider.dart';
 import 'package:jplayer/src/providers/download_service_provider.dart';
 
 class DownloadManager {
@@ -27,14 +30,22 @@ class DownloadManager {
     required DownloadsRevision revision,
     required MediaServerClient Function() client,
     bool Function()? blocked,
+    StreamPreference Function()? preference,
+    List<LyricsSource> Function()? lyricsSources,
   }) : _service = service,
        _database = database,
        _activity = activity,
        _revision = revision,
        _client = client,
-       _blocked = blocked ?? _never;
+       _blocked = blocked ?? _never,
+       _preference = preference ?? _original,
+       _lyricsSources = lyricsSources ?? _noLyrics;
 
   static bool _never() => false;
+
+  static StreamPreference _original() => StreamPreference.original;
+
+  static List<LyricsSource> _noLyrics() => const [];
 
   final DownloadService _service;
   final DownloadDatabase _database;
@@ -42,6 +53,8 @@ class DownloadManager {
   final DownloadsRevision _revision;
   final MediaServerClient Function() _client;
   final bool Function() _blocked;
+  final StreamPreference Function() _preference;
+  final List<LyricsSource> Function() _lyricsSources;
   final _active = <String>{};
   final _cancelled = <String>{};
   final _currentSong = <String, String>{};
@@ -58,9 +71,13 @@ class DownloadManager {
       _attempt('downloadSong', () async {
         if (song.isRadioStream || _blocked()) return;
         final client = _client();
-        final file = await _downloadSongFile(song, client);
-        if (file == null) return;
-        await _database.insertDownloadedSong(song, file: file);
+        final fetched = await _downloadSongFile(song, client);
+        if (fetched == null) return;
+        await _database.insertDownloadedSong(
+          fetched.song,
+          file: fetched.file,
+          lyrics: fetched.lyrics,
+        );
         final albumId = song.albumId;
         if (albumId != null) {
           await _service.downloadAlbumCover(
@@ -194,23 +211,36 @@ class DownloadManager {
         _currentSong[id] = song.id;
         final existing = await _existingDownload(song);
         if (existing == null && _cancelled.contains(id)) break;
-        final file =
-            existing ??
-            await _downloadSongFile(
-              song,
-              client,
-              onProgress: (value) => _activity.setCollectionProgress(
-                id,
-                (index + value) / songs.length,
-              ),
-              isCancelled: () => _cancelled.contains(id),
-            );
+        var entry = song;
+        var file = existing;
+        Lyrics? lyrics;
+        if (file == null) {
+          final fetched = await _downloadSongFile(
+            song,
+            client,
+            onProgress: (value) => _activity.setCollectionProgress(
+              id,
+              (index + value) / songs.length,
+            ),
+            isCancelled: () => _cancelled.contains(id),
+          );
+          if (fetched != null) {
+            file = fetched.file;
+            entry = fetched.song;
+            lyrics = fetched.lyrics;
+          }
+        }
         _activity.setCollectionProgress(id, (index + 1) / songs.length);
         if (file == null) continue;
 
-        stored.add((song, file));
+        stored.add((entry, file));
         if (existing == null) {
-          await _database.insertDownloadedSong(song, file: file, pending: true);
+          await _database.insertDownloadedSong(
+            entry,
+            file: file,
+            pending: true,
+            lyrics: lyrics,
+          );
           inserted.add(song.id);
         }
       }
@@ -243,13 +273,18 @@ class DownloadManager {
     return file.existsSync() ? file : null;
   }
 
-  Future<File?> _downloadSongFile(
+  Future<({File file, LibraryItem song, Lyrics? lyrics})?> _downloadSongFile(
     LibraryItem song,
     MediaServerClient client, {
     void Function(double progress)? onProgress,
     bool Function()? isCancelled,
   }) async {
-    final task = await _service.downloadSong(song, client, deviceId: deviceId);
+    final task = await _service.downloadSong(
+      song,
+      client,
+      deviceId: deviceId,
+      preference: _preference(),
+    );
     _activity
       ..pruneSettled()
       ..trackSong(task);
@@ -271,7 +306,24 @@ class DownloadManager {
       _activity.untrackSong(task.id);
       return null;
     }
-    return File(task.destination);
+    final delivered = task.delivered;
+    return (
+      file: File(task.destination),
+      song: delivered == null ? song : song.copyWith(audioSources: [delivered]),
+      lyrics: await _lookupLyrics(song),
+    );
+  }
+
+  Future<Lyrics?> _lookupLyrics(LibraryItem song) async {
+    try {
+      final sources = _lyricsSources();
+      if (sources.isEmpty) return null;
+      final lyrics = await resolveLyrics(sources, LyricsRequest.forSong(song));
+      return lyrics == null || lyrics.isEmpty ? null : lyrics;
+    } on Object catch (error) {
+      debugPrint('[Download] lyrics for "${song.name}" failed: $error');
+      return null;
+    }
   }
 
   Future<void> _waitForDownloadCompletion(DownloadTask task) {
@@ -303,6 +355,10 @@ final downloadManagerProvider = Provider<DownloadManager>((ref) {
     revision: ref.watch(downloadsRevisionProvider.notifier),
     client: () => ref.read(mediaServerClientProvider),
     blocked: () => ref.read(manualOfflineProvider),
+    preference: () => StreamPreference(
+      maxBitRate: ref.read(downloadQualityProvider).maxBitRate,
+    ),
+    lyricsSources: () => ref.read(lyricsSourcesProvider),
   );
   ref.listen<bool>(manualOfflineProvider, (previous, next) {
     if (next && previous != next) unawaited(manager.cancelAll());

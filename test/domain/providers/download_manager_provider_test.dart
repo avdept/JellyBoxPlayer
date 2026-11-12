@@ -4,6 +4,8 @@ import 'package:faker_dart/faker_dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/main.dart';
+import 'package:jplayer/src/core/audio/stream_preference.dart';
+import 'package:jplayer/src/core/lyrics/lyrics_source.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/providers/download_database_provider.dart';
@@ -18,6 +20,18 @@ import 'package:mocktail/mocktail.dart';
 import '../../provider_container.dart';
 
 class MockDownloadService extends Mock implements DownloadService {}
+
+class _FixedLyrics implements LyricsSource {
+  const _FixedLyrics(this.lyrics);
+
+  final Lyrics lyrics;
+
+  @override
+  String get id => 'fixed';
+
+  @override
+  Future<Lyrics?> fetch(LyricsRequest request) async => lyrics;
+}
 
 class MockDownloadDatabase extends Mock implements DownloadDatabase {}
 
@@ -76,8 +90,12 @@ void main() {
 
   void stubDownloads(DownloadStatus status) {
     when(
-      () =>
-          service.downloadSong(any(), any(), deviceId: any(named: 'deviceId')),
+      () => service.downloadSong(
+        any(),
+        any(),
+        deviceId: any(named: 'deviceId'),
+        preference: any(named: 'preference'),
+      ),
     ).thenAnswer((invocation) async {
       final item = invocation.positionalArguments.first as LibraryItem;
       return createDownloadTask(id: item.id, status: status);
@@ -89,6 +107,8 @@ void main() {
     registerFallbackValue(FakeFile());
     registerFallbackValue(<String>[]);
     registerFallbackValue(MockMediaServerClient());
+    registerFallbackValue(StreamPreference.original);
+    registerFallbackValue(const Lyrics());
   });
 
   setUp(() {
@@ -100,6 +120,7 @@ void main() {
         downloadServiceProvider.overrideWith((_) => service),
         downloadDatabaseProvider.overrideWithValue(database),
         mediaServerClientProvider.overrideWith((_) => client),
+        lyricsSourcesProvider.overrideWithValue(const []),
       ],
     );
     deviceId = mockDeviceId;
@@ -108,6 +129,7 @@ void main() {
         any(),
         file: any(named: 'file'),
         pending: any(named: 'pending'),
+        lyrics: any(named: 'lyrics'),
       ),
     ).thenAnswer((_) async => 1);
     when(
@@ -136,17 +158,106 @@ void main() {
       await manager().downloadSong(mockSong);
 
       verify(
-        () => service.downloadSong(mockSong, client, deviceId: mockDeviceId),
+        () => service.downloadSong(
+          mockSong,
+          client,
+          deviceId: mockDeviceId,
+          preference: any(named: 'preference'),
+        ),
       ).called(1);
       verify(
         () => database.insertDownloadedSong(
           mockSong,
           file: any(named: 'file'),
           pending: false,
+          lyrics: any(named: 'lyrics'),
         ),
       ).called(1);
       verify(() => service.downloadAlbumCover(mockAlbum.id, any())).called(1);
       expect(revision(), 1);
+    });
+
+    test('- stores the downloaded quality instead of the original', () async {
+      when(
+        () => service.downloadSong(
+          any(),
+          any(),
+          deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            createDownloadTask(status: DownloadStatus.completed)
+              ..delivered = AudioSourceInfo(
+                container: 'mp3',
+                codec: 'mp3',
+                bitRate: 128000,
+              ),
+      );
+
+      await manager().downloadSong(mockSong);
+
+      final stored =
+          verify(
+                () => database.insertDownloadedSong(
+                  captureAny(),
+                  file: any(named: 'file'),
+                  pending: any(named: 'pending'),
+                  lyrics: any(named: 'lyrics'),
+                ),
+              ).captured.single
+              as LibraryItem;
+      expect(stored.id, mockSong.id);
+      expect(stored.audioSources.single.codec, 'mp3');
+      expect(stored.audioSources.single.bitRate, 128000);
+    });
+
+    test('- stores the song lyrics with the download', () async {
+      stubDownloads(DownloadStatus.completed);
+      const lyrics = Lyrics(lines: [LyricLine(text: 'hello')]);
+      final withLyrics = createProviderContainer(
+        overrides: [
+          downloadServiceProvider.overrideWith((_) => service),
+          downloadDatabaseProvider.overrideWithValue(database),
+          mediaServerClientProvider.overrideWith((_) => client),
+          lyricsSourcesProvider.overrideWithValue([_FixedLyrics(lyrics)]),
+        ],
+      );
+
+      await withLyrics.read(downloadManagerProvider).downloadSong(mockSong);
+
+      verify(
+        () => database.insertDownloadedSong(
+          mockSong,
+          file: any(named: 'file'),
+          pending: false,
+          lyrics: lyrics,
+        ),
+      ).called(1);
+    });
+
+    test('- downloads at the configured download quality', () async {
+      stubDownloads(DownloadStatus.completed);
+      final capped = createProviderContainer(
+        overrides: [
+          downloadServiceProvider.overrideWith((_) => service),
+          downloadDatabaseProvider.overrideWithValue(database),
+          mediaServerClientProvider.overrideWith((_) => client),
+          downloadQualityProvider.overrideWithValue(StreamQuality.kbps128),
+        ],
+      );
+      addTearDown(capped.dispose);
+
+      await capped.read(downloadManagerProvider).downloadSong(mockSong);
+
+      verify(
+        () => service.downloadSong(
+          mockSong,
+          client,
+          deviceId: mockDeviceId,
+          preference: const StreamPreference(maxBitRate: 128),
+        ),
+      ).called(1);
     });
 
     test('- stores nothing when the song download fails', () async {
@@ -159,6 +270,7 @@ void main() {
           any(),
           file: any(named: 'file'),
           pending: any(named: 'pending'),
+          lyrics: any(named: 'lyrics'),
         ),
       );
       expect(revision(), 0);
@@ -181,6 +293,7 @@ void main() {
           any(),
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       );
       expect(revision(), 0);
@@ -203,6 +316,7 @@ void main() {
           radio,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       );
       final stored = verify(
@@ -226,13 +340,19 @@ void main() {
 
       for (final item in songs) {
         verify(
-          () => service.downloadSong(item, client, deviceId: mockDeviceId),
+          () => service.downloadSong(
+            item,
+            client,
+            deviceId: mockDeviceId,
+            preference: any(named: 'preference'),
+          ),
         ).called(1);
         verify(
           () => database.insertDownloadedSong(
             item,
             file: any(named: 'file'),
             pending: true,
+            lyrics: any(named: 'lyrics'),
           ),
         ).called(1);
       }
@@ -261,6 +381,7 @@ void main() {
           song('a'),
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       );
       verify(
@@ -268,6 +389,7 @@ void main() {
           song('b'),
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).called(1);
       final files =
@@ -334,6 +456,7 @@ void main() {
           any(),
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       );
       expect(revision(), 0);
@@ -370,6 +493,7 @@ void main() {
             any(),
             any(),
             deviceId: any(named: 'deviceId'),
+            preference: any(named: 'preference'),
           ),
         ).thenAnswer((invocation) async {
           final item = invocation.positionalArguments.first as LibraryItem;
@@ -385,6 +509,7 @@ void main() {
             song('a'),
             any(),
             deviceId: any(named: 'deviceId'),
+            preference: any(named: 'preference'),
           ),
         );
         await pumpEventQueue();
@@ -400,6 +525,7 @@ void main() {
             song('b'),
             any(),
             deviceId: any(named: 'deviceId'),
+            preference: any(named: 'preference'),
           ),
         );
         await pumpEventQueue();
@@ -431,6 +557,7 @@ void main() {
           first,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -441,6 +568,7 @@ void main() {
           second,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).thenThrow(const SocketException('offline'));
 
@@ -476,6 +604,7 @@ void main() {
           first,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -486,6 +615,7 @@ void main() {
           second,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).thenAnswer((_) async {
         await manager().deletePlaylist(playlist.id);
@@ -507,6 +637,7 @@ void main() {
           second,
           file: any(named: 'file'),
           pending: any(named: 'pending'),
+          lyrics: any(named: 'lyrics'),
         ),
       );
     });
@@ -530,6 +661,7 @@ void main() {
           first,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).thenAnswer((_) async => firstTask);
       when(
@@ -537,6 +669,7 @@ void main() {
           second,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       ).thenAnswer((_) async => secondTask);
       when(() => service.cancelDownload(second.id)).thenAnswer((_) async {
@@ -549,6 +682,7 @@ void main() {
           second,
           any(),
           deviceId: any(named: 'deviceId'),
+          preference: any(named: 'preference'),
         ),
       );
       await manager().deletePlaylist(playlist.id);

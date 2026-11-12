@@ -598,7 +598,6 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     message:
                         "You're offline. Your library will be back "
                         'once the server is reachable.',
-                    onRetry: () => ref.invalidate(itemListProvider(value)),
                     showDownloadsLink: true,
                   )
                 : Text(error.toString()),
