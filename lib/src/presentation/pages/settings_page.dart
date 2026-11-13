@@ -559,7 +559,7 @@ class SettingsPage extends ConsumerWidget {
                           context,
                           'Covers are looked up on MusicBrainz by album and '
                           'artist, so they can differ from the artwork on '
-                          'your server. Your server address is never shared.',
+                          'your server.',
                         ),
                       ],
                     ],
