@@ -67,7 +67,7 @@ enum AppSetting {
   manualOffline('manual_offline', syncs: false),
   carTakesQueue('car_takes_queue', syncs: false),
   discordRichPresence('discord_rich_presence'),
-  discordAlbumArt('discord_album_art'),
+  discordAlbumArt('discord_album_art',  defaultValue: true),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
   contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
   pinsEnabled('pins_enabled', defaultValue: true),
