@@ -104,11 +104,11 @@ jobs:
       # flutter-action installs from releases_linux.json, which only ever
       # contains x64 archives — there is no Linux arm64 Flutter SDK tarball to
       # download. The engine *does* publish linux-arm64 artifacts, so on arm we
-      # clone the SDK at the stable tag and let precache fetch them.
+      # clone the SDK at the pinned tag and let precache fetch them.
       - name: Install Flutter SDK (arm64)
         if: matrix.arch == 'arm64'
         run: |
-          git clone --depth 1 --branch stable \
+          git clone --depth 1 --branch 3.47.9 \
             https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
 
