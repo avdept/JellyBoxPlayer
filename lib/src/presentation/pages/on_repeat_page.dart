@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_filter.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -24,6 +25,10 @@ class OnRepeatPage extends ConsumerWidget {
     final onRepeat = ref.watch(onRepeatPlaylistProvider);
     final songs = ref.watch(onRepeatSongsProvider);
     final items = songs.valueOrNull ?? const <LibraryItem>[];
+    final query = ref.watch(
+      playlistSearchQueryProvider(EphemeralPlaylistId.onRepeatPrefix),
+    );
+    final shown = filterSongsByQuery(items, query);
     final imageService = ref.read(imageServiceProvider);
 
     return MixPageScaffold(
@@ -48,6 +53,15 @@ class OnRepeatPage extends ConsumerWidget {
             .shufflePlay(onRepeat, () async => items)
             .ignore();
       },
+      onSearchChanged: (next) =>
+          ref
+                  .read(
+                    playlistSearchQueryProvider(
+                      EphemeralPlaylistId.onRepeatPrefix,
+                    ).notifier,
+                  )
+                  .state =
+              next,
       actions: [
         if (onRepeat != null)
           CollectionDownloadButton(
@@ -66,9 +80,15 @@ class OnRepeatPage extends ConsumerWidget {
                   child: Text('Nothing played in the last 30 days.'),
                 ),
               )
+            else if (shown.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text('No songs match.')),
+              )
             else
               SongListSliver(
-                songs: list,
+                songs: shown,
+                queue: list,
                 set: isOffline ? onRepeat : null,
                 showPosition: true,
                 showAlbum: true,
