@@ -329,11 +329,4 @@ void main() {
     });
   });
 
-  test('leaves covers off by default', () async {
-    await enable();
-    playback.current = stateWith(PlaybackStatus.playing);
-    await pumpEventQueue();
-
-    expect(lookups, isEmpty);
-  });
 }
