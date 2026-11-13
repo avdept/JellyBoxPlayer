@@ -5,9 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/core/discord/discord_activity.dart';
+import 'package:jplayer/src/core/discord/discord_artwork.dart';
 import 'package:jplayer/src/core/discord/discord_presence_client.dart';
+import 'package:jplayer/src/core/musicbrainz/cover_art_finder.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/discord_artwork_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart'
@@ -25,6 +28,7 @@ class DiscordPresenceHandler {
 
   static DiscordPresenceClient? _client;
   static ProviderContainer? _container;
+  static DiscordArtwork? _artwork;
   static String? _timelineId;
   static DateTime? _timelineStart;
   static DateTime? _timelineEnd;
@@ -46,6 +50,10 @@ class DiscordPresenceHandler {
         fireImmediately: true,
         (previous, next) => _onEnabledChanged(enabled: next),
       )
+      ..listen(
+        settingProvider(AppSetting.discordAlbumArt),
+        (previous, next) => _update(),
+      )
       ..listen(nowPlayingProvider, (previous, next) => _update())
       ..listen(playbackProvider, (previous, next) => _update());
   }
@@ -54,6 +62,8 @@ class DiscordPresenceHandler {
   static void reset() {
     _client = null;
     _container = null;
+    _artwork?.onCoverFound = null;
+    _artwork = null;
     _resetTimeline();
   }
 
@@ -97,10 +107,31 @@ class DiscordPresenceHandler {
       title: song.title,
       artist: song.artist,
       album: song.album,
-      largeImage: _artworkAsset,
+      largeImage: _coverFor(song, state) ?? _artworkAsset,
       start: timeline.start,
       end: timeline.end,
     );
+  }
+
+  static String? _coverFor(MediaItem item, PlaybackState state) {
+    final container = _container;
+    if (container == null ||
+        !container.read(settingProvider(AppSetting.discordAlbumArt))) {
+      return null;
+    }
+
+    final song = state.songs.elementAtOrNull(state.currentMediaIndex ?? -1);
+    if (song == null || song.id != item.id) return null;
+    final query = CoverArtQuery.forSong(song, album: state.album);
+    if (query == null) return null;
+
+    final artwork = _artwork ?? _createArtwork(container);
+    return artwork.coverFor(query);
+  }
+
+  static DiscordArtwork _createArtwork(ProviderContainer container) {
+    final artwork = container.read<DiscordArtwork>(discordArtworkProvider);
+    return _artwork = artwork..onCoverFound = _update;
   }
 
   static bool _isAudible(MediaItem song, PlaybackState state) =>

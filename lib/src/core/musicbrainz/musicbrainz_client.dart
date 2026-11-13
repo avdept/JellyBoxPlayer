@@ -98,6 +98,27 @@ class MusicBrainzClient {
     return pickReleaseMatch(releases, barcode: barcode, artistName: artistName);
   }
 
+  Future<List<MusicBrainzReleaseGroup>> searchReleaseGroups({
+    required String artist,
+    required String album,
+    int limit = 5,
+  }) async {
+    final json = await _get('/release-group', {
+      'query':
+          'releasegroup:"${_phrase(album)}" AND artist:"${_phrase(artist)}"',
+      'limit': '$limit',
+    });
+    return [
+      for (final group in json['release-groups'] as List<dynamic>? ?? [])
+        MusicBrainzReleaseGroup.fromJson(group as Map<String, dynamic>),
+    ];
+  }
+
+  static String _phrase(String value) => value.replaceAllMapped(
+    RegExp(r'[\\"]'),
+    (match) => '\\${match[0]}',
+  );
+
   static List<MusicBrainzRelease> _decode(String json) => [
     for (final release in jsonDecode(json) as List<dynamic>)
       MusicBrainzRelease.fromJson(release as Map<String, dynamic>),
