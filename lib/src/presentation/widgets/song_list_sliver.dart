@@ -13,6 +13,7 @@ class SongListSliver extends ConsumerStatefulWidget {
   const SongListSliver({
     required this.songs,
     required this.onItemUpdated,
+    this.queue,
     this.limit,
     this.edgePadding,
     this.set,
@@ -25,6 +26,7 @@ class SongListSliver extends ConsumerStatefulWidget {
 
   final List<LibraryItem> songs;
   final void Function(LibraryItem updated) onItemUpdated;
+  final List<LibraryItem>? queue;
   final int? limit;
   final double? edgePadding;
   final LibraryItem? set;
@@ -117,7 +119,7 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
   ) => SongRowView(
     song: song,
     isPlaying: currentSongId == song.id,
-    onTap: (song) => _onSongTap(song, visible),
+    onTap: (song) => _onSongTap(song, widget.queue ?? visible),
     onLikePressed: _onLikePressed,
     onRatingChanged: _onRatingChanged,
     position: widget.showPosition ? index + 1 : null,

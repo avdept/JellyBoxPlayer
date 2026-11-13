@@ -25,6 +25,7 @@ class MixPageScaffold extends StatefulWidget {
     this.songCount,
     this.onLoadMore,
     this.sort,
+    this.onSearchChanged,
     this.actions = const [],
     super.key,
   });
@@ -41,6 +42,7 @@ class MixPageScaffold extends StatefulWidget {
   final int? songCount;
   final Future<void> Function()? onLoadMore;
   final Widget? sort;
+  final ValueChanged<String>? onSearchChanged;
   final List<Widget> actions;
   final List<Widget> slivers;
 
@@ -258,6 +260,7 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
             ? null
             : Row(mainAxisSize: MainAxisSize.min, children: widget.actions),
         sort: widget.sort,
+        onSearchChanged: widget.onSearchChanged,
       ),
     ),
   );

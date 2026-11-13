@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_filter.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/playlist_songs_source.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
@@ -31,7 +32,11 @@ class GeneratedPlaylistPage extends ConsumerWidget {
     final items =
         today.valueOrNull ?? downloaded.valueOrNull ?? const <LibraryItem>[];
     final order = ref.watch(playlistSongOrderProvider(playlist.id));
-    final shown = order.apply(items);
+    final ordered = order.apply(items);
+    final shown = filterSongsByQuery(
+      ordered,
+      ref.watch(playlistSearchQueryProvider(playlist.id)),
+    );
     final coverSongs = ref
         .watch(todaysPlaylistsProvider)
         .valueOrNull
@@ -52,7 +57,7 @@ class GeneratedPlaylistPage extends ConsumerWidget {
         final playback = ref.read(setPlaybackProvider.notifier);
         (order.isDefault
                 ? playback.playGeneratedPlaylist(playlist)
-                : playback.playSongs(playlist, shown))
+                : playback.playSongs(playlist, ordered))
             .ignore();
       },
       onShuffle: () {
@@ -70,6 +75,9 @@ class GeneratedPlaylistPage extends ConsumerWidget {
             ref.read(playlistSongOrderProvider(playlist.id).notifier).state =
                 next,
       ),
+      onSearchChanged: (query) =>
+          ref.read(playlistSearchQueryProvider(playlist.id).notifier).state =
+              query,
       actions: [
         CollectionDownloadButton(
           item: playlist,
@@ -78,9 +86,15 @@ class GeneratedPlaylistPage extends ConsumerWidget {
         ),
       ],
       slivers: [
-        if (items.isNotEmpty)
+        if (items.isNotEmpty && shown.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text('No songs match.')),
+          )
+        else if (items.isNotEmpty)
           SongListSliver(
             songs: shown,
+            queue: ordered,
             set: today.hasValue ? null : playlist,
             showPosition: true,
             showAlbum: true,

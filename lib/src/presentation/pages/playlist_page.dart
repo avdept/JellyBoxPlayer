@@ -13,6 +13,7 @@ import 'package:jplayer/src/domain/providers/download_sync_provider.dart';
 import 'package:jplayer/src/domain/providers/favourites_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
+import 'package:jplayer/src/domain/providers/playlist_song_filter.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -167,7 +168,11 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shown = _order.apply(songs);
+    final ordered = _order.apply(songs);
+    final shown = filterSongsByQuery(
+      ordered,
+      ref.watch(playlistSearchQueryProvider(widget.playlist.id)),
+    );
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -270,6 +275,11 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                           hasScrollBody: false,
                           child: Center(child: Text("There's no songs yet.")),
                         ),
+                      if (songs.isNotEmpty && shown.isEmpty)
+                        const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(child: Text('No songs match.')),
+                        ),
                       SliverFixedExtentList.builder(
                         itemExtent: SongRowView.numberedHeight,
                         itemBuilder: (context, index) => ValueListenableBuilder(
@@ -283,7 +293,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                                   .read(playbackProvider.notifier)
                                   .play(
                                     song,
-                                    shown,
+                                    ordered,
                                     widget.playlist,
                                     sourceId: widget.playlist.id,
                                   ),
@@ -482,6 +492,11 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
                   .state =
               next,
     ),
+    onSearchChanged: (query) =>
+        ref
+                .read(playlistSearchQueryProvider(widget.playlist.id).notifier)
+                .state =
+            query,
   );
 
   Future<void> _onPlayPlaylistPressed() async {
