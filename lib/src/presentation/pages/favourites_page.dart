@@ -38,14 +38,6 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
     _device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   }
 
-  void _refresh() {
-    ref
-      ..invalidate(favouriteAlbumsProvider)
-      ..invalidate(favouriteArtistsProvider)
-      ..invalidate(favouritePlaylistsProvider)
-      ..invalidate(favouriteSongsProvider);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
@@ -98,7 +90,6 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
               message:
                   "You're offline. Your favourites will be back "
                   'once the server is reachable.',
-              onRetry: _refresh,
               showDownloadsLink: true,
             ),
           )

@@ -64,6 +64,7 @@ export 'offline_mode_button.dart';
 export 'offline_notice.dart';
 export 'plugin_notice_banner.dart';
 export 'hover_icon_button.dart';
+export 'hover_text_button.dart';
 export 'hover_zoom.dart';
 export 'pinned_items_button.dart';
 export 'pinned_items_rail_box.dart';

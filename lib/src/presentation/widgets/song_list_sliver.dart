@@ -19,6 +19,7 @@ class SongListSliver extends ConsumerStatefulWidget {
     this.showPosition = false,
     this.showAlbum = false,
     this.showCover,
+    this.asColumn = false,
     super.key,
   });
 
@@ -30,6 +31,7 @@ class SongListSliver extends ConsumerStatefulWidget {
   final bool showPosition;
   final bool showAlbum;
   final bool? showCover;
+  final bool asColumn;
 
   @override
   ConsumerState<SongListSliver> createState() => _SongListSliverState();
@@ -76,7 +78,11 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
   @override
   Widget build(BuildContext context) {
     final songs = widget.songs;
-    if (songs.isEmpty) return const SliverToBoxAdapter();
+    if (songs.isEmpty) {
+      return widget.asColumn
+          ? const SizedBox.shrink()
+          : const SliverToBoxAdapter();
+    }
 
     final currentSongId = ref.watch(
       barSongProvider.select((song) => song?.id),
@@ -86,29 +92,44 @@ class _SongListSliverState extends ConsumerState<SongListSliver> {
         ? songs.sublist(0, limit)
         : songs;
 
+    if (widget.asColumn) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var index = 0; index < visible.length; index++)
+            _row(visible[index], index, visible, currentSongId),
+        ],
+      );
+    }
+
     return SliverList.builder(
       itemCount: visible.length,
-      itemBuilder: (context, index) {
-        final song = visible[index];
-        return SongRowView(
-          song: song,
-          isPlaying: currentSongId == song.id,
-          onTap: (song) => _onSongTap(song, visible),
-          onLikePressed: _onLikePressed,
-          onRatingChanged: _onRatingChanged,
-          position: widget.showPosition ? index + 1 : null,
-          showAlbum: widget.showAlbum,
-          showCover: widget.showCover,
-          edgePadding: widget.edgePadding,
-          optionsBuilder: (context) => contextMenuActions(
-            context,
-            ref,
-            song,
-            scope: ContextMenuScope.browse,
-            onLike: _onLikePressed,
-          ),
-        );
-      },
+      itemBuilder: (context, index) =>
+          _row(visible[index], index, visible, currentSongId),
     );
   }
+
+  Widget _row(
+    LibraryItem song,
+    int index,
+    List<LibraryItem> visible,
+    String? currentSongId,
+  ) => SongRowView(
+    song: song,
+    isPlaying: currentSongId == song.id,
+    onTap: (song) => _onSongTap(song, visible),
+    onLikePressed: _onLikePressed,
+    onRatingChanged: _onRatingChanged,
+    position: widget.showPosition ? index + 1 : null,
+    showAlbum: widget.showAlbum,
+    showCover: widget.showCover,
+    edgePadding: widget.edgePadding,
+    optionsBuilder: (context) => contextMenuActions(
+      context,
+      ref,
+      song,
+      scope: ContextMenuScope.browse,
+      onLike: _onLikePressed,
+    ),
+  );
 }

@@ -365,6 +365,34 @@ class SettingsPage extends ConsumerWidget {
                         'Wi-Fi only.',
                       ),
                     ],
+                    _sectionHeader('Downloads'),
+                    _settingDropdown<StreamQuality>(
+                      context: context,
+                      label: 'Download quality',
+                      value: ref.watch(downloadQualityProvider),
+                      options: _streamQualityLabels,
+                      onChanged: (value) => ref
+                          .read(appSettingsProvider.notifier)
+                          .setValue(AppSetting.downloadQuality, value.name),
+                    ),
+                    _settingNote(
+                      context,
+                      'Songs above the limit are converted by your server '
+                      'before they are saved. Applies to new downloads only.',
+                    ),
+                    if (deviceHasCellular) ...[
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.downloadSyncOnCellular,
+                        label: 'Update downloaded playlists on cellular',
+                      ),
+                      _settingNote(
+                        context,
+                        'Downloaded playlists follow your server: new songs '
+                        'are downloaded and removed songs are deleted. '
+                        'Otherwise this only happens on Wi-Fi.',
+                      ),
+                    ],
                     _sectionHeader('Streaming'),
                     _settingDropdown<StreamQuality>(
                       context: context,
@@ -391,23 +419,8 @@ class SettingsPage extends ConsumerWidget {
                     _settingNote(
                       context,
                       'Songs above the limit are converted by your server. '
-                      'Changes apply from the next song. Downloads always '
-                      'keep the original quality.',
+                      'Changes apply from the next song.',
                     ),
-                    if (deviceHasCellular) ...[
-                      _sectionHeader('Downloads'),
-                      _settingCheckbox(
-                        ref: ref,
-                        setting: AppSetting.downloadSyncOnCellular,
-                        label: 'Update downloaded playlists on cellular',
-                      ),
-                      _settingNote(
-                        context,
-                        'Downloaded playlists follow your server: new songs '
-                        'are downloaded and removed songs are deleted. '
-                        'Otherwise this only happens on Wi-Fi.',
-                      ),
-                    ],
                     _sectionHeader('Cache'),
                     _settingDropdown<ForwardCacheLimit>(
                       context: context,
@@ -557,6 +570,11 @@ class SettingsPage extends ConsumerWidget {
                     if (ref.watch(lidarrAvailableProvider)) ...[
                       _sectionHeader('Lidarr'),
                       const LidarrSettings(),
+                      _settingCheckbox(
+                        ref: ref,
+                        setting: AppSetting.lidarrHideAddButton,
+                        label: 'Hide "Add to Lidarr"',
+                      ),
                     ],
                     if (ref.watch(installedCatalogSourcesProvider).firstOrNull
                         case final catalog?) ...[

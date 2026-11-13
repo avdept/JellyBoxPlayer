@@ -106,8 +106,6 @@ class GeneratedPlaylistPage extends ConsumerWidget {
               padding: EdgeInsets.symmetric(horizontal: edgePadding),
               child: OfflineNotice(
                 message: "You're offline, so playlists need a connection.",
-                onRetry: () =>
-                    ref.invalidate(todaysPlaylistSongsProvider(playlist.id)),
                 showDownloadsLink: true,
               ),
             ),

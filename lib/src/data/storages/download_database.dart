@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/downloads/download_paths.dart';
+import 'package:jplayer/src/core/lyrics/lyrics_codec.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -17,7 +18,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 16;
+  static const _schemaVersion = 17;
 
   static String? databaseDirectory;
 
@@ -91,6 +92,7 @@ class DownloadDatabase {
     await _migrateToV14(db);
     await _migrateToV15(db);
     await _migrateToV16(db);
+    await _migrateToV17(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -109,7 +111,15 @@ class DownloadDatabase {
     if (oldVersion < 14) await _migrateToV14(db);
     if (oldVersion < 15) await _migrateToV15(db);
     if (oldVersion < 16) await _migrateToV16(db);
+    if (oldVersion < 17) await _migrateToV17(db);
   }
+
+  Future<void> _migrateToV17(Database db) => _addColumn(
+    db,
+    table: 'Downloads',
+    column: 'Lyrics',
+    sql: 'ALTER TABLE Downloads ADD COLUMN Lyrics TEXT',
+  );
 
   Future<void> _migrateToV16(Database db) async {
     await db.execute(await rootBundle.loadString(DbMigrations.resumePointsV16));
@@ -302,6 +312,7 @@ class DownloadDatabase {
     LibraryItem song, {
     required File file,
     bool pending = false,
+    Lyrics? lyrics,
   }) async {
     final db = await database;
     return db.insert('Downloads', {
@@ -316,7 +327,26 @@ class DownloadDatabase {
       'DownloadDate': DateTime.now().millisecondsSinceEpoch,
       'Data': jsonEncode(song.toJson()),
       'Pending': pending ? 1 : 0,
+      'Lyrics': lyrics == null ? null : jsonEncode(lyricsToJson(lyrics)),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Lyrics?> lyricsOf(String id) async {
+    final db = await database;
+    final rows = await db.query(
+      'Downloads',
+      columns: ['Lyrics'],
+      where: 'Id = ? AND ServerId = ?',
+      whereArgs: [id, serverId],
+    );
+    final stored = rows.firstOrNull?['Lyrics'] as String?;
+    if (stored == null) return null;
+    try {
+      final json = jsonDecode(stored);
+      return json is Map<String, Object?> ? lyricsFromJson(json) : null;
+    } on FormatException {
+      return null;
+    }
   }
 
   Future<List<String>> pendingSongIds() async {

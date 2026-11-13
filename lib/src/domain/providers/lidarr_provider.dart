@@ -167,6 +167,12 @@ final lidarrAvailableProvider = Provider<bool>(
   (ref) => LidarrClient(baseUrl: '', apiKey: '').available,
 );
 
+final lidarrAddVisibleProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(lidarrAvailableProvider) &&
+      !ref.watch(settingProvider(AppSetting.lidarrHideAddButton)),
+);
+
 final lidarrAccountProvider =
     StateNotifierProvider<LidarrAccountNotifier, LidarrAccount>(
       LidarrAccountNotifier.new,

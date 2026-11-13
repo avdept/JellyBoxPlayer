@@ -174,6 +174,19 @@ class SubsonicApi {
     return SubsonicSongListDTO.fromJson(_section(body, 'songsByGenre')).song;
   }
 
+  Future<List<SubsonicChildDTO>> getTopSongs({
+    required String artist,
+    String? id,
+    int count = 50,
+  }) async {
+    final body = await call('getTopSongs', {
+      'artist': artist,
+      'id': id,
+      'count': count,
+    });
+    return SubsonicSongListDTO.fromJson(_section(body, 'topSongs')).song;
+  }
+
   Future<List<SubsonicChildDTO>> getSimilarSongs({
     required String id,
     int count = 50,

@@ -267,16 +267,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     context.goNamed(Routes.browse.name);
   }
 
-  void _refresh() {
-    _refreshFavourites();
-    ref
-      ..invalidate(recentlyPlayedAlbumsProvider)
-      ..invalidate(frequentlyPlayedAlbumsProvider)
-      ..invalidate(recentlyAddedAlbumsProvider)
-      ..invalidate(homePlaylistsProvider)
-      ..invalidate(todaysPlaylistsProvider);
-  }
-
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
@@ -334,7 +324,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 message:
                     "You're offline. Your library will be back "
                     'once the server is reachable.',
-                onRetry: _refresh,
                 showDownloadsLink: true,
               ),
             ),

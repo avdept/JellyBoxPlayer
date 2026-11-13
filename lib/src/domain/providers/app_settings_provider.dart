@@ -61,6 +61,7 @@ enum AppSetting {
     defaultValue: 'original',
     syncs: false,
   ),
+  downloadQuality('download_quality', defaultValue: 'original', syncs: false),
   downloadSyncOnCellular('download_sync_on_cellular', syncs: false),
   offlineModeToggle('offline_mode_toggle', syncs: false),
   manualOffline('manual_offline', syncs: false),
@@ -85,6 +86,7 @@ enum AppSetting {
     syncs: false,
   ),
   lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
+  lidarrHideAddButton('lidarr_hide_add_button', syncs: false),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   lastFmUser('lastfm_user', defaultValue: ''),
@@ -197,6 +199,10 @@ final streamQualityWifiProvider = Provider<StreamQuality>(
 
 final streamQualityCellularProvider = Provider<StreamQuality>(
   (ref) => _streamQuality(ref, AppSetting.streamQualityCellular),
+);
+
+final downloadQualityProvider = Provider<StreamQuality>(
+  (ref) => _streamQuality(ref, AppSetting.downloadQuality),
 );
 
 StreamQuality _streamQuality(Ref ref, AppSetting setting) =>

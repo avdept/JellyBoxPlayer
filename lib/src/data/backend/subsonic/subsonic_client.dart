@@ -47,6 +47,7 @@ class SubsonicClient implements MediaServerClient {
   }
 
   static const songLyricsExtension = 'songLyrics';
+  static const topSongsByArtistIdExtension = 'topSongsByArtistId';
   static const playbackReportExtension = 'playbackReport';
   static const directPlayFormat = 'raw';
   static const lossyTranscodeFormat = 'mp3';
@@ -701,6 +702,21 @@ class SubsonicClient implements MediaServerClient {
   }) async => _songItems(await _api.getSimilarSongs(id: itemId, count: limit));
 
   @override
+  Future<List<LibraryItem>> getTopSongs(
+    LibraryItem artist, {
+    int limit = 10,
+  }) async {
+    final byId = await _supports(topSongsByArtistIdExtension);
+    return _songItems(
+      await _api.getTopSongs(
+        artist: artist.name,
+        id: byId ? artist.id : null,
+        count: limit,
+      ),
+    );
+  }
+
+  @override
   Future<List<LibraryItem>> searchBySound(
     String query, {
     int limit = 50,
@@ -1015,6 +1031,7 @@ class SubsonicClient implements MediaServerClient {
       song.id,
       format: format,
       maxBitRate: lossless ? null : bitRate,
+      estimateContentLength: !target.toFile,
     );
     return StreamSource(
       uri: _api.resolve(location),
@@ -1025,11 +1042,7 @@ class SubsonicClient implements MediaServerClient {
       requiresTranscode: true,
       delivered: lossless
           ? delivered
-          : delivered.copyWith(
-              container: format,
-              codec: format,
-              bitRate: bitRate * 1000,
-            ),
+          : delivered.copyWith(container: format, codec: format),
     );
   }
 

@@ -40,7 +40,6 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
     child: ref.watch(isOfflineProvider)
         ? OfflineNotice(
             message: "You're offline, so search needs a connection.",
-            onRetry: () => ref.invalidate(searchItemsProvider(widget.category)),
             showDownloadsLink: true,
           )
         : Text(error.toString()),

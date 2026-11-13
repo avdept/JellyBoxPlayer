@@ -59,6 +59,24 @@ void main() {
       isAndroid: false,
     ).withPreference(StreamPreference(maxBitRate: kbps));
 
+    test('- asks for a content length estimate only for the player', () async {
+      final played = await client.resolveStreamSource(
+        song(),
+        playSessionId: 'session-1',
+        target: capped(128),
+      );
+      final fetched = await client.resolveStreamSource(
+        song(),
+        playSessionId: 'session-1',
+        target: StreamTargetProfile.download(
+          isAndroid: false,
+        ).withPreference(const StreamPreference(maxBitRate: 128)),
+      );
+
+      expect(played.uri.queryParameters['estimateContentLength'], 'true');
+      expect(fetched.uri.queryParameters['estimateContentLength'], 'false');
+    });
+
     test('- re-encodes to the cap when the source is over it', () async {
       final source = await client.resolveStreamSource(
         song(),
@@ -1306,6 +1324,43 @@ void main() {
       server.ok('getSimilarSongs', {'similarSongs': <String, Object?>{}});
 
       expect(await client.getInstantMix('song-1'), isEmpty);
+    });
+  });
+
+  group('getTopSongs', () {
+    LibraryItem artist() => const LibraryItem(
+      id: 'artist-1',
+      name: 'Portishead',
+      kind: ItemKind.artist,
+    );
+
+    test('- asks by artist name when the id extension is missing', () async {
+      extensions(['songLyrics']);
+      server.ok('getTopSongs', {
+        'topSongs': {
+          'song': [childJson('song-1'), childJson('song-2')],
+        },
+      });
+
+      final songs = await client.getTopSongs(artist(), limit: 7);
+
+      final uri = server.calls('getTopSongs').single;
+      expect(uri.queryParameters['artist'], 'Portishead');
+      expect(uri.queryParameters.containsKey('id'), isFalse);
+      expect(uri.queryParameters['count'], '7');
+      expect(songs.map((song) => song.id), ['song-1', 'song-2']);
+      expect(songs.first.kind, ItemKind.song);
+    });
+
+    test('- adds the artist id when the server supports it', () async {
+      extensions([SubsonicClient.topSongsByArtistIdExtension]);
+      server.ok('getTopSongs', {'topSongs': <String, Object?>{}});
+
+      expect(await client.getTopSongs(artist()), isEmpty);
+
+      final uri = server.calls('getTopSongs').single;
+      expect(uri.queryParameters['artist'], 'Portishead');
+      expect(uri.queryParameters['id'], 'artist-1');
     });
   });
 

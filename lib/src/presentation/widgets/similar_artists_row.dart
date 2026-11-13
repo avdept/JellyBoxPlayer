@@ -128,7 +128,7 @@ class _ArtistCard extends ConsumerWidget {
     final picture = artist.artist.pictureUrl;
     final owned = artist.owned;
     final target = owned == null ? LidarrArtistTarget(artist.artist) : null;
-    final lidarr = target != null && ref.watch(lidarrAvailableProvider);
+    final lidarr = target != null && ref.watch(lidarrAddVisibleProvider);
     return ArtistAvatarCard(
       name: artist.artist.name,
       size: size,
