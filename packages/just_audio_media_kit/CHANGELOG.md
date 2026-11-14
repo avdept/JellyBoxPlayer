@@ -1,3 +1,10 @@
+## 2.1.0+jellybox.2 (LOCAL FORK)
+
+- mpv log messages go through `debugPrint` instead of `print`, so they
+  land in the in-app device log, and the default level is `warn` so
+  audio output warnings ("Audio device underrun detected", ao/wasapi
+  errors) are captured. Tracks issue #476 (Windows FLAC stutter).
+
 ## 2.1.0+jellybox.1 (LOCAL FORK)
 
 - PATCH: `concatenatingInsertAll` moved the appended entry from index

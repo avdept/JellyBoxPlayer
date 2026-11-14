@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion><major>1</major><minor>0</minor></specVersion>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:ZonePlayer:1</deviceType>
+    <friendlyName>192.168.1.40 - Sonos Play:5</friendlyName>
+    <manufacturer>Sonos, Inc.</manufacturer>
+    <manufacturerURL>http://www.sonos.com</manufacturerURL>
+    <modelNumber>S12</modelNumber>
+    <modelDescription>Sonos Play:5</modelDescription>
+    <modelName>Sonos Play:5</modelName>
+    <modelURL>http://www.sonos.com/products/zoneplayers/S12</modelURL>
+    <softwareVersion>85.0-66270</softwareVersion>
+    <swGen>2</swGen>
+    <UDN>uuid:RINCON_48A6B826F33201400</UDN>
+    <iconList>
+      <icon>
+        <id>0</id>
+        <mimetype>image/png</mimetype>
+        <width>48</width>
+        <height>48</height>
+        <depth>24</depth>
+        <url>/img/icon-S12.png</url>
+      </icon>
+    </iconList>
+    <roomName>Living Room</roomName>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:ZoneGroupTopology:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:ZoneGroupTopology</serviceId>
+        <controlURL>/ZoneGroupTopology/Control</controlURL>
+        <eventSubURL>/ZoneGroupTopology/Event</eventSubURL>
+        <SCPDURL>/xml/ZoneGroupTopology1.xml</SCPDURL>
+      </service>
+    </serviceList>
+    <deviceList>
+      <device>
+        <deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType>
+        <friendlyName>Living Room - Sonos Play:5 Media Renderer</friendlyName>
+        <manufacturer>Sonos, Inc.</manufacturer>
+        <modelNumber>S12</modelNumber>
+        <modelName>Sonos Play:5</modelName>
+        <UDN>uuid:RINCON_48A6B826F33201400_MR</UDN>
+        <serviceList>
+          <service>
+            <serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+            <serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>
+            <controlURL>/MediaRenderer/RenderingControl/Control</controlURL>
+            <eventSubURL>/MediaRenderer/RenderingControl/Event</eventSubURL>
+            <SCPDURL>/xml/RenderingControl1.xml</SCPDURL>
+          </service>
+          <service>
+            <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
+            <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
+            <controlURL>/MediaRenderer/ConnectionManager/Control</controlURL>
+            <eventSubURL>/MediaRenderer/ConnectionManager/Event</eventSubURL>
+            <SCPDURL>/xml/ConnectionManager1.xml</SCPDURL>
+          </service>
+          <service>
+            <serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
+            <serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>
+            <controlURL>/MediaRenderer/AVTransport/Control</controlURL>
+            <eventSubURL>/MediaRenderer/AVTransport/Event</eventSubURL>
+            <SCPDURL>/xml/AVTransport1.xml</SCPDURL>
+          </service>
+          <service>
+            <serviceType>urn:schemas-upnp-org:service:GroupRenderingControl:1</serviceType>
+            <serviceId>urn:upnp-org:serviceId:GroupRenderingControl</serviceId>
+            <controlURL>/MediaRenderer/GroupRenderingControl/Control</controlURL>
+            <eventSubURL>/MediaRenderer/GroupRenderingControl/Event</eventSubURL>
+            <SCPDURL>/xml/GroupRenderingControl1.xml</SCPDURL>
+          </service>
+        </serviceList>
+      </device>
+    </deviceList>
+  </device>
+</root>

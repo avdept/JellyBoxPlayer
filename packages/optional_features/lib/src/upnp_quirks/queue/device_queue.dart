@@ -16,6 +16,7 @@ class QueuedTrack {
     required this.duration,
     this.artist,
     this.album,
+    this.artUri,
   });
 
   final Uri uri;
@@ -24,6 +25,7 @@ class QueuedTrack {
   final Duration duration;
   final String? artist;
   final String? album;
+  final Uri? artUri;
 }
 
 class DeviceQueueContext {

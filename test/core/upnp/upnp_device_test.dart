@@ -11,6 +11,40 @@ void main() {
   final location = Uri.parse('http://172.20.2.138:9197/dmr');
 
   group('UpnpDevice.parse', () {
+    test('- picks the device icon and keeps the root UDN of a Sonos', () {
+      final sonos = Uri.parse(
+        'http://192.168.1.40:1400/xml/device_description.xml',
+      );
+      final device = UpnpDevice.parse(
+        fixture('sonos_like_description.xml'),
+        location: sonos,
+      )!;
+
+      expect(device.udn, 'uuid:RINCON_48A6B826F33201400');
+      expect(device.displayName, 'Living Room');
+      expect(
+        device.iconUrl,
+        Uri.parse('http://192.168.1.40:1400/img/icon-S12.png'),
+      );
+      expect(device.serviceOfType('ZoneGroupTopology'), isNotNull);
+      expect(
+        device.serviceOfType('AVTransport')!.controlUrl.path,
+        '/MediaRenderer/AVTransport/Control',
+      );
+    });
+
+    test('- resolves the largest icon against the description URL', () {
+      final device = UpnpDevice.parse(
+        fixture('samsung_dmr_description.xml'),
+        location: location,
+      )!;
+
+      expect(
+        device.iconUrl,
+        Uri.parse('http://172.20.2.138:9197/icon_LRG.jpg'),
+      );
+    });
+
     test('- reads the services of a real Samsung DMR', () {
       final device = UpnpDevice.parse(
         fixture('samsung_dmr_description.xml'),

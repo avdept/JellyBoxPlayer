@@ -46,6 +46,8 @@ class MockRenderingControl extends Mock implements RenderingControl {}
 
 class MockDeviceQueue extends Mock implements DeviceQueue {}
 
+class MockSpeakerGroups extends Mock implements SpeakerGroups {}
+
 void main() {
   late MockAvTransport transport;
   late MockRenderingControl control;
@@ -829,6 +831,42 @@ void main() {
         captured.where((entry) => entry.startsWith('upnp.queue.load')),
         hasLength(1),
       );
+    });
+  });
+
+  group('a speaker that plays to a group', () {
+    late MockSpeakerGroups groups;
+
+    setUp(() {
+      groups = MockSpeakerGroups();
+      when(() => groups.setGroupVolume(any(), any())).thenAnswer((_) async {});
+      when(() => groups.groupVolume(any())).thenAnswer((_) async => 45);
+      target = UpnpPlaybackTarget(
+        UpnpRenderer(
+          device: device,
+          avTransport: transport,
+          renderingControl: control,
+          groups: groups,
+        ),
+        pollInterval: pollInterval,
+      );
+    });
+
+    test('- sets the group volume instead of its own while grouped', () async {
+      target.playsToGroup = true;
+
+      await target.setVolume(0.5);
+
+      verify(() => groups.setGroupVolume('uuid:tv', 50)).called(1);
+      verifyNever(() => control.setVolume(any()));
+      expect(await target.currentVolume(), 0.45);
+    });
+
+    test('- falls back to its own volume once alone again', () async {
+      await target.setVolume(0.5);
+
+      verify(() => control.setVolume(50)).called(1);
+      verifyNever(() => groups.setGroupVolume(any(), any()));
     });
   });
 
