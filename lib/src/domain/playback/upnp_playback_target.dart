@@ -49,6 +49,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   var _gaveUpWaiting = false;
   var _pollGeneration = 0;
   var _disposed = false;
+  bool playsToGroup = false;
 
   AvTransport get _transport => renderer.avTransport;
 
@@ -197,6 +198,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     duration: track.duration,
     artist: track.artist,
     album: track.album,
+    artUri: track.artUri,
   );
 
   @override
@@ -485,22 +487,35 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     await skipTo(_index - 1);
   }
 
+  SpeakerGroups? get _groupVolume => playsToGroup ? renderer.groups : null;
+
   @override
   Future<void> setVolume(double level) async {
+    final wire = _quirks.volumeToWire(level).round();
+    final groups = _groupVolume;
+    if (groups != null) {
+      await _command(
+        'setGroupVolume',
+        () => groups.setGroupVolume(renderer.id, wire),
+      );
+      return;
+    }
     final control = renderer.renderingControl;
     if (control == null) return;
-    await _command(
-      'setVolume',
-      () => control.setVolume(_quirks.volumeToWire(level).round()),
-    );
+    await _command('setVolume', () => control.setVolume(wire));
   }
 
   @override
   Future<double?> currentVolume() async {
+    final groups = _groupVolume;
     final control = renderer.renderingControl;
-    if (control == null) return null;
+    if (groups == null && control == null) return null;
     try {
-      final value = await _run(control.volume);
+      final value = await _run(
+        () => groups != null
+            ? groups.groupVolume(renderer.id)
+            : control!.volume(),
+      );
       return value == null ? null : _quirks.volumeFromWire(value);
     } on Object catch (error) {
       diagnostics.trail(

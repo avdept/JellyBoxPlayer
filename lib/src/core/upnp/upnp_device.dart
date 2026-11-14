@@ -31,6 +31,7 @@ class UpnpDevice {
     this.modelName,
     this.modelNumber,
     this.roomName,
+    this.iconUrl,
   });
 
   static UpnpDevice? parse(String xml, {required Uri location}) {
@@ -79,7 +80,24 @@ class UpnpDevice {
       modelName: _text(device, 'modelName'),
       modelNumber: _text(device, 'modelNumber'),
       roomName: _text(device, 'roomName'),
+      iconUrl: _icon(device, baseUri),
     );
+  }
+
+  static Uri? _icon(XmlElement device, Uri base) {
+    Uri? best;
+    var bestWidth = -1;
+    for (final icon in device.descendantElements) {
+      if (icon.localName != 'icon') continue;
+      final url = _text(icon, 'url');
+      final mime = _text(icon, 'mimetype')?.toLowerCase() ?? '';
+      if (url == null || !mime.startsWith('image/')) continue;
+      final width = int.tryParse(_text(icon, 'width') ?? '') ?? 0;
+      if (width <= bestWidth) continue;
+      bestWidth = width;
+      best = base.resolve(url);
+    }
+    return best;
   }
 
   final String udn;
@@ -91,6 +109,7 @@ class UpnpDevice {
   final String? modelName;
   final String? modelNumber;
   final String? roomName;
+  final Uri? iconUrl;
 
   String get host => location.host;
 

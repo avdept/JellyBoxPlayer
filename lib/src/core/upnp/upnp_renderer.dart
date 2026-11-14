@@ -19,6 +19,7 @@ class UpnpRenderer {
     this.fingerprint = const DeviceFingerprint(),
     this.quirks = DeviceQuirks.defaults,
     this.queueDriver,
+    this.groups,
   });
 
   final UpnpDevice device;
@@ -28,6 +29,7 @@ class UpnpRenderer {
   final DeviceFingerprint fingerprint;
   final DeviceQuirks quirks;
   final DeviceQueue? queueDriver;
+  final SpeakerGroups? groups;
 
   Set<String> get playableMimeTypes => quirks.playableMimeTypes(sinkMimeTypes);
 
@@ -35,6 +37,10 @@ class UpnpRenderer {
       quirks.queueOverride ?? detectQueue(fingerprint);
 
   bool get holdsQueue => queueDriver != null;
+
+  bool get isGroupable => groups != null;
+
+  Uri? get iconUrl => device.iconUrl;
 
   String get id => device.udn;
 
@@ -150,12 +156,11 @@ class UpnpControlPoint {
       },
     );
 
+    final context = _context(device, transportService);
+
     return UpnpRenderer(
-      queueDriver: _queueDriver(
-        device,
-        transportService,
-        quirks.queueOverride ?? kind,
-      ),
+      queueDriver: buildDeviceQueue(quirks.queueOverride ?? kind, context),
+      groups: buildSpeakerGroups(fingerprint, context),
       device: device,
       avTransport: AvTransport(
         soap: _soap,
@@ -174,27 +179,21 @@ class UpnpControlPoint {
     );
   }
 
-  DeviceQueue? _queueDriver(
-    UpnpDevice device,
-    UpnpService transport,
-    DeviceQueueKind kind,
-  ) => buildDeviceQueue(
-    kind,
-    DeviceQueueContext(
-      udn: device.udn,
-      transportControlUrl: transport.controlUrl,
-      controlUrls: {
-        for (final service in device.services)
-          service.shortType: service.controlUrl,
-      },
-      invoke: (controlUrl, serviceType, action, arguments) => _soap.invoke(
-        controlUrl: controlUrl,
-        serviceType: serviceType,
-        action: action,
-        arguments: arguments,
-      ),
-    ),
-  );
+  DeviceQueueContext _context(UpnpDevice device, UpnpService transport) =>
+      DeviceQueueContext(
+        udn: device.udn,
+        transportControlUrl: transport.controlUrl,
+        controlUrls: {
+          for (final service in device.services)
+            service.shortType: service.controlUrl,
+        },
+        invoke: (controlUrl, serviceType, action, arguments) => _soap.invoke(
+          controlUrl: controlUrl,
+          serviceType: serviceType,
+          action: action,
+          arguments: arguments,
+        ),
+      );
 
   Future<UpnpDevice?> _fetchDevice(Uri location) async {
     try {

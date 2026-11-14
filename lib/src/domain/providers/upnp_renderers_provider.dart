@@ -55,6 +55,16 @@ class UpnpRenderersNotifier extends StateNotifier<UpnpDiscoveryState> {
     await done.future;
   }
 
+  void adopt(UpnpRenderer renderer) {
+    if (!mounted || state.renderers.any((known) => known.id == renderer.id)) {
+      return;
+    }
+    state = UpnpDiscoveryState(
+      renderers: _sorted([...state.renderers, renderer]),
+      scanning: state.scanning,
+    );
+  }
+
   List<UpnpRenderer> _sorted(Iterable<UpnpRenderer> renderers) =>
       renderers.toList()..sort((a, b) {
         final byName = a.name.toLowerCase().compareTo(b.name.toLowerCase());

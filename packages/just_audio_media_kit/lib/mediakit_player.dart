@@ -2,6 +2,7 @@ library just_audio_media_kit;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
 import 'package:logging/logging.dart';
@@ -170,8 +171,7 @@ class MediaKitPlayer extends AudioPlayerPlatform {
         _dataController.add(PlayerDataMessage(speed: rate));
       }),
       _player.stream.log.listen((event) {
-        // ignore: avoid_print
-        print("MPV: [${event.level}] ${event.prefix}: ${event.text}");
+        debugPrint('[mpv ${event.level}] ${event.prefix}: ${event.text}');
       }),
     ];
   }

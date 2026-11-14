@@ -14,10 +14,12 @@ import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
 import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/playback/speaker_clusters.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
 import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/output_route_provider.dart';
+import 'package:jplayer/src/domain/providers/speaker_groups_provider.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/adaptive_dialog_action.dart';
@@ -56,7 +58,10 @@ final activeDeviceProvider = Provider<ActiveDevice?>((ref) {
         : (name: route.name, icon: outputRouteIcon(route.kind));
   }
   return (
-    name: target.name,
+    name: switch (target) {
+      UpnpPlaybackTarget() => _speakerGroupName(ref, target),
+      _ => target.name,
+    },
     icon: switch (target) {
       UpnpPlaybackTarget() => rendererIcon(target.renderer),
       CastPlaybackTarget() => castDeviceIcon(target.device),
@@ -64,6 +69,16 @@ final activeDeviceProvider = Provider<ActiveDevice?>((ref) {
     },
   );
 });
+
+String _speakerGroupName(Ref ref, UpnpPlaybackTarget target) {
+  final group = ref.watch(
+    speakerGroupsProvider.select(
+      (state) => state.topology.groupOf(target.id),
+    ),
+  );
+  final others = (group?.visibleMembers.length ?? 1) - 1;
+  return others > 0 ? '${target.name} + $others' : target.name;
+}
 
 class PlaybackTargetButton extends ConsumerStatefulWidget {
   const PlaybackTargetButton({
@@ -308,6 +323,7 @@ class PlaybackTargetMenu extends ConsumerStatefulWidget {
 
 class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   CastDevicesNotifier? _cast;
+  SpeakerGroupsNotifier? _household;
 
   @override
   void initState() {
@@ -317,6 +333,9 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
       final cast = ref.read(castDevicesProvider.notifier);
       _cast = cast;
       cast.start();
+      final household = ref.read(speakerGroupsProvider.notifier);
+      _household = household;
+      household.watch();
       unawaited(ref.read(upnpRenderersProvider.notifier).refresh());
     });
   }
@@ -324,6 +343,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   @override
   void dispose() {
     _cast?.stop();
+    _household?.unwatch();
     super.dispose();
   }
 
@@ -392,6 +412,29 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     setState(() => _connecting = null);
   }
 
+  Future<void> _selectCluster(SpeakerCluster cluster) async {
+    final coordinator = cluster.coordinator;
+    if (coordinator != null) return _selectRenderer(coordinator);
+    final location = cluster.coordinatorLocation;
+    if (location == null) return;
+    final placeholder = cluster.members.first.id;
+    setState(() => _connecting = placeholder);
+    final described = await ref
+        .read(upnpControlPointProvider)
+        .describe(location);
+    if (!mounted) return;
+    setState(() => _connecting = null);
+    if (described == null) return;
+    ref.read(upnpRenderersProvider.notifier).adopt(described);
+    await _connectTo(UpnpPlaybackTarget(described));
+  }
+
+  void _join(UpnpRenderer renderer) =>
+      unawaited(ref.read(speakerGroupsProvider.notifier).join(renderer.id));
+
+  void _leave(UpnpRenderer renderer) =>
+      unawaited(ref.read(speakerGroupsProvider.notifier).leave(renderer.id));
+
   void _rescan() {
     _cast?.refresh();
     unawaited(ref.read(upnpRenderersProvider.notifier).refresh());
@@ -419,6 +462,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final active = ref.watch(playbackTargetProvider);
+    final household = ref.watch(speakerGroupsProvider);
     final discovery = ref.watch(upnpRenderersProvider);
     final cast = ref.watch(castDevicesProvider);
     final conductor = ref.watch(cloudProvider);
@@ -520,14 +564,21 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             if (elsewhere == null && active.id == 'cast:${device.deviceID}')
               _volume,
           ],
-          for (final renderer in renderers) ...[
-            _rendererTile(
-              renderer,
-              selected: elsewhere == null && active.id == renderer.id,
-              host: host,
-            ),
-            if (elsewhere == null && active.id == renderer.id) _volume,
-          ],
+          ..._speakerSection(
+            renderers,
+            household,
+            active: elsewhere == null ? active : null,
+            host: host,
+          ),
+          for (final renderer in renderers)
+            if (!renderer.isGroupable) ...[
+              _rendererTile(
+                renderer,
+                selected: elsewhere == null && active.id == renderer.id,
+                host: host,
+              ),
+              if (elsewhere == null && active.id == renderer.id) _volume,
+            ],
           if (renderers.isEmpty &&
               cast.devices.isEmpty &&
               conductor.targets.isEmpty &&
@@ -615,6 +666,111 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   Widget get _volume => const DeviceVolumeSlider(
     padding: EdgeInsets.only(left: 12, right: 16, bottom: 4),
   );
+
+  List<Widget> _speakerSection(
+    List<UpnpRenderer> renderers,
+    SpeakerGroupsState household, {
+    required PlaybackTarget? active,
+    required ControlPointHost host,
+  }) {
+    final clusters = speakerClusters(renderers, household.topology);
+    if (clusters.isEmpty) return const [];
+    final activeId = active is UpnpPlaybackTarget && active.renderer.isGroupable
+        ? active.id
+        : null;
+
+    return [
+      for (final cluster in clusters)
+        _speakerCluster(
+          cluster,
+          household,
+          activeId: activeId,
+          isActive: activeId != null && cluster.contains(activeId),
+          host: host,
+        ),
+    ];
+  }
+
+  Widget _speakerCluster(
+    SpeakerCluster cluster,
+    SpeakerGroupsState household, {
+    required String? activeId,
+    required bool isActive,
+    required ControlPointHost host,
+  }) {
+    final together = cluster.members.length > 1;
+    final children = <Widget>[
+      if (isActive && together)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+          child: Text(
+            'Group volume',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ),
+      if (isActive && together) _volume,
+      for (final renderer in cluster.members) ...[
+        _speakerTile(
+          renderer,
+          cluster,
+          household,
+          selected: renderer.id == activeId,
+          isActive: isActive,
+          canJoin: activeId != null && !isActive,
+          host: host,
+        ),
+        if (isActive && together) _SpeakerVolumeSlider(renderer.id),
+        if (isActive && !together && renderer.id == activeId) _volume,
+      ],
+    ];
+    if (!together) return Column(children: children);
+    return _ClusterCard(highlighted: isActive, children: children);
+  }
+
+  Widget _speakerTile(
+    UpnpRenderer renderer,
+    SpeakerCluster cluster,
+    SpeakerGroupsState household, {
+    required bool selected,
+    required bool isActive,
+    required bool canJoin,
+    required ControlPointHost host,
+  }) {
+    final blocked = castingBlockedReason(
+      deviceHoldsQueue: renderer.holdsQueue,
+      host: host,
+    );
+    final busy =
+        _connecting == renderer.id || household.busy.contains(renderer.id);
+    final isCoordinator = renderer.id == cluster.coordinator?.id;
+
+    Widget? action;
+    if (!busy && canJoin && blocked == null) {
+      action = _GroupAction.join(onPressed: () => _join(renderer));
+    } else if (!busy && isActive && !selected) {
+      action = _GroupAction.leave(onPressed: () => _leave(renderer));
+    }
+
+    final subtitle = cluster.members.length > 1 || !isCoordinator
+        ? renderer.model
+        : [renderer.host, ?renderer.model].join(' · ');
+
+    return _TargetTile(
+      icon: rendererIcon(renderer),
+      image: renderer.iconUrl,
+      badge: _dlnaBadge,
+      title: renderer.name,
+      subtitle: blocked ?? subtitle,
+      selected: selected,
+      busy: busy,
+      action: action,
+      onTap: blocked != null || _connecting != null
+          ? null
+          : isActive
+          ? widget.onDone
+          : () => unawaited(_selectCluster(cluster)),
+    );
+  }
 
   Widget _rendererTile(
     UpnpRenderer renderer, {
@@ -735,16 +891,20 @@ class _TargetTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.badge,
+    this.image,
     this.subtitle,
     this.busy = false,
+    this.action,
   });
 
   final IconData icon;
   final IconData? badge;
+  final Uri? image;
   final String title;
   final String? subtitle;
   final bool selected;
   final bool busy;
+  final Widget? action;
   final VoidCallback? onTap;
 
   @override
@@ -759,7 +919,7 @@ class _TargetTile extends StatelessWidget {
       dense: true,
       enabled: !disabled,
       hoverColor: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-      leading: _TileIcon(icon: icon, badge: badge, tint: tint),
+      leading: _TileIcon(icon: icon, image: image, badge: badge, tint: tint),
       title: Text(title, style: TextStyle(color: tint)),
       subtitle: subtitle == null
           ? null
@@ -774,13 +934,121 @@ class _TargetTile extends StatelessWidget {
               dimension: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : selected
-          ? Icon(Icons.check, size: 18, color: theme.colorScheme.primary)
-          : null,
+          : action ??
+                (selected
+                    ? Icon(
+                        Icons.check,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      )
+                    : null),
       onTap: onTap,
     );
 
     return Material(type: MaterialType.transparency, child: tile);
+  }
+}
+
+class _GroupAction extends StatelessWidget {
+  const _GroupAction.join({required this.onPressed})
+    : icon = Icons.add_circle_outline_rounded,
+      tooltip = 'Join group';
+
+  const _GroupAction.leave({required this.onPressed})
+    : icon = Icons.remove_circle_outline_rounded,
+      tooltip = 'Leave group';
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => HoverIconButton(
+    onPressed: onPressed,
+    tooltip: tooltip,
+    iconSize: 20,
+    color: Theme.of(context).colorScheme.onSurface,
+    icon: Icon(icon),
+  );
+}
+
+class _ClusterCard extends StatelessWidget {
+  const _ClusterCard({required this.children, required this.highlighted});
+
+  final List<Widget> children;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tint = highlighted ? scheme.primary : scheme.onSurface;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: tint.withValues(alpha: highlighted ? 0.06 : 0.04),
+          border: Border.all(
+            color: tint.withValues(alpha: highlighted ? 0.35 : 0.12),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeakerVolumeSlider extends ConsumerWidget {
+  const _SpeakerVolumeSlider(this.speakerId);
+
+  final String speakerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final volume = ref.watch(
+      speakerGroupsProvider.select((state) => state.volumes[speakerId]),
+    );
+    final notifier = ref.read(speakerGroupsProvider.notifier);
+    final tint = theme.colorScheme.onSurface.withValues(alpha: 0.7);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, right: 16, bottom: 2),
+      child: Row(
+        children: [
+          Icon(Icons.volume_down_rounded, size: 16, color: tint),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 3,
+                activeTrackColor: tint,
+                inactiveTrackColor: tint.withValues(alpha: 0.25),
+                thumbColor: tint,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              ),
+              child: Slider(
+                value: (volume ?? 0) / 100,
+                onChanged: volume == null
+                    ? null
+                    : (value) => unawaited(
+                        notifier.setMemberVolume(
+                          speakerId,
+                          value,
+                          settle: false,
+                        ),
+                      ),
+                onChangeEnd: (value) =>
+                    unawaited(notifier.setMemberVolume(speakerId, value)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -789,15 +1057,39 @@ class _TileIcon extends StatelessWidget {
     required this.icon,
     required this.badge,
     required this.tint,
+    this.image,
   });
 
   final IconData icon;
   final IconData? badge;
+  final Uri? image;
   final Color? tint;
 
   @override
   Widget build(BuildContext context) {
-    final glyph = Icon(icon, color: tint, size: 20);
+    final fallback = Icon(icon, color: tint, size: 20);
+    final picture = image;
+    final glyph = picture == null
+        ? fallback
+        : SizedBox.square(
+            dimension: 20,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurface.withValues(
+                  alpha: 0.14,
+                ),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Image.network(
+                  '$picture',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => fallback,
+                ),
+              ),
+            ),
+          );
     final mark = badge;
     if (mark == null) return glyph;
 
@@ -853,6 +1145,7 @@ Map<String, Object?> _reportEntry(UpnpRenderer renderer) {
     },
     'queue': renderer.queueKind.name,
     'queueDriven': renderer.holdsQueue,
+    'groups': renderer.isGroupable,
     'quirks': renderer.quirks.toJson(),
     'rules': rulesFor(fingerprint).map((rule) => rule.name).toList(),
   };
