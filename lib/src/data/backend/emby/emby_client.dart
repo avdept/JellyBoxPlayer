@@ -526,6 +526,9 @@ class EmbyClient implements MediaServerClient {
       sourceContainer: audioSource?.container,
       sourceCodec: audioSource?.codec,
       sourceBitRate: audioSource?.bitRate,
+      sourceSampleRate: audioSource?.sampleRate,
+      sourceBitDepth: audioSource?.bitDepth,
+      sourceChannels: audioSource?.channels,
     );
 
     final transcodes = forceTranscode || profile.requiresTranscode;
@@ -541,6 +544,8 @@ class EmbyClient implements MediaServerClient {
     final location = Uri(
       path: useHls
           ? 'Audio/${song.id}/main.m3u8'
+          : target.extensionInPath
+          ? 'Audio/${song.id}/stream.$outputContainer'
           : 'Audio/${song.id}/universal',
       queryParameters: {
         'UserId': userId,
@@ -553,11 +558,17 @@ class EmbyClient implements MediaServerClient {
           'MaxStreamingBitrate': '${kbps * 1000}',
           'AudioBitRate': '${kbps * 1000}',
         },
+        if (profile.sampleRateCap case final int hz when transcodes)
+          'AudioSampleRate': '$hz',
+        if (profile.channelCap case final int channels when transcodes)
+          'TranscodingMaxAudioChannels': '$channels',
         if (useHls) ...{
           'SegmentContainer': profile.hlsSegmentContainer,
           'TranscodeReasons': 'AudioCodecNotSupported',
           if (startPosition != null)
             'StartTimeTicks': '${startPosition.inMicroseconds * 10}',
+        } else if (target.extensionInPath) ...{
+          'static': transcodes ? 'false' : 'true',
         } else ...{
           'TranscodingProtocol': 'http',
           'TranscodingContainer': transcodingContainer,

@@ -5,6 +5,7 @@ class DeviceFingerprint {
     this.modelNumber,
     this.deviceType,
     this.friendlyName,
+    this.softwareGeneration,
     this.actions = const {},
     this.sinkMimeTypes = const {},
     this.services = const {},
@@ -15,6 +16,7 @@ class DeviceFingerprint {
   final String? modelNumber;
   final String? deviceType;
   final String? friendlyName;
+  final String? softwareGeneration;
   final Set<String> actions;
   final Set<String> sinkMimeTypes;
   final Set<String> services;
@@ -32,6 +34,7 @@ class DeviceFingerprint {
     modelName: modelName,
     modelNumber: modelNumber,
     deviceType: deviceType,
+    softwareGeneration: softwareGeneration,
     actions: actions,
     sinkMimeTypes: sinkMimeTypes,
     services: services,
@@ -43,6 +46,7 @@ class DeviceFingerprint {
     if (modelNumber != null) 'modelNumber': modelNumber,
     if (deviceType != null) 'deviceType': deviceType,
     if (friendlyName != null) 'friendlyName': friendlyName,
+    if (softwareGeneration != null) 'softwareGeneration': softwareGeneration,
     'actions': actions.toList()..sort(),
     'sinkMimeTypes': sinkMimeTypes.toList()..sort(),
     'services': services.toList()..sort(),

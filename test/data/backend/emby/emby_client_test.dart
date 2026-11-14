@@ -109,6 +109,24 @@ void main() {
     );
 
     test(
+      '- serves a renderer that wants extensions a static file URL',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'mp3', codec: 'mp3'),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.renderer(
+            sinkMimeTypes: const {'audio/mpeg'},
+          ).constrained(extensionInPath: true),
+        );
+
+        expect(source.uri.path, '/Audio/song-1/stream.mp3');
+        expect(source.uri.queryParameters['static'], 'true');
+        expect(source.uri.queryParameters['api_key'], 'token-1');
+        expect(source.uri.queryParameters.containsKey('Container'), isFalse);
+      },
+    );
+
+    test(
       '- transcodes an unsupported container to HLS in ts segments',
       () async {
         final source = await client.resolveStreamSource(

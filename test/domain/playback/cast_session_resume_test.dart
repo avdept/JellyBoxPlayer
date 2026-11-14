@@ -5,7 +5,10 @@ import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/data/storages/cast_session_storage.dart';
 import 'package:jplayer/src/domain/playback/cast_session_resume.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:optional_features/upnp_quirks.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../fakes/fake_speaker_groups.dart';
 
 class _MockControlPoint extends Mock implements UpnpControlPoint {}
 
@@ -72,6 +75,58 @@ void main() {
     when(
       () => controlPoint.discoverRenderers(timeout: any(named: 'timeout')),
     ).thenAnswer((_) => const Stream<UpnpRenderer>.empty());
+  });
+
+  test('- follows a grouped speaker to its coordinator', () async {
+    final kitchen = speaker('Kitchen');
+    final living = speaker('Living');
+    final groups = FakeSpeakerGroups([
+      [living, kitchen],
+    ]);
+    final member = UpnpRenderer(
+      device: UpnpDevice(
+        udn: 'uuid:kef',
+        friendlyName: 'Kitchen',
+        deviceType: 'urn:schemas-upnp-org:device:ZonePlayer:1',
+        location: location,
+        services: const [],
+      ),
+      avTransport: transport,
+      groups: FakeSpeakerGroups([
+        [
+          living,
+          SpeakerGroupMember(
+            id: 'uuid:kef',
+            name: 'Kitchen',
+            location: location,
+          ),
+        ],
+      ]),
+    );
+    final coordinator = UpnpRenderer(
+      device: UpnpDevice(
+        udn: living.id,
+        friendlyName: 'Living',
+        deviceType: 'urn:schemas-upnp-org:device:ZonePlayer:1',
+        location: living.location,
+        services: const [],
+      ),
+      avTransport: transport,
+      groups: groups,
+    );
+    when(() => controlPoint.describe(location)).thenAnswer((_) async => member);
+    when(
+      () => controlPoint.describe(living.location),
+    ).thenAnswer((_) async => coordinator);
+    deviceReports(
+      AvTransportState.playing,
+      trackUri: 'http://jelly.local/Audio/1/stream',
+    );
+    await saveSession();
+
+    final session = await resume.find('srv');
+
+    expect(session?.renderer.id, living.id);
   });
 
   test('- returns nothing without a saved session', () async {

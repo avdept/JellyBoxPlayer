@@ -46,6 +46,8 @@ class MockRenderingControl extends Mock implements RenderingControl {}
 
 class MockDeviceQueue extends Mock implements DeviceQueue {}
 
+class MockSpeakerGroups extends Mock implements SpeakerGroups {}
+
 void main() {
   late MockAvTransport transport;
   late MockRenderingControl control;
@@ -286,6 +288,60 @@ void main() {
 
       await target.pollNow();
       verifyNever(() => transport.seek(any(), unit: any(named: 'unit')));
+    });
+
+    test('- never writes the stream query string into the log', () async {
+      await start([track(1)]);
+      deviceReports(
+        AvTransportState.playing,
+        trackUri:
+            'http://jelly.local:8096/Audio/song-1/universal?ApiKey=secret-1',
+      );
+      await target.pollNow();
+
+      expect(trails.join('\n'), isNot(contains('secret-1')));
+      expect(
+        trails,
+        anyElement(
+          contains('(http://jelly.local:8096/Audio/song-1/universal)'),
+        ),
+      );
+    });
+
+    test('- retries a resume seek the device is not ready for', () async {
+      var attempts = 0;
+      when(() => transport.seek(any(), unit: any(named: 'unit'))).thenAnswer((
+        _,
+      ) async {
+        if (++attempts < 3) throw refused('Seek');
+      });
+
+      await start([track(1)], at: const Duration(seconds: 20));
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+      await target.pollNow();
+      await target.pollNow();
+      await target.pollNow();
+
+      verify(
+        () => transport.seek(const Duration(seconds: 20), unit: 'REL_TIME'),
+      ).called(3);
+      expect(trails, anyElement(contains('trying again next poll')));
+      expect(trails, anyElement(startsWith('resume seek to 0:00:20')));
+    });
+
+    test('- gives up on a resume seek refused for another reason', () async {
+      when(
+        () => transport.seek(any(), unit: any(named: 'unit')),
+      ).thenThrow(refused('Seek', '711'));
+
+      await start([track(1)], at: const Duration(seconds: 20));
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+      await target.pollNow();
+
+      verify(() => transport.seek(any(), unit: any(named: 'unit'))).called(1);
+      expect(trails, anyElement(contains('giving up')));
     });
 
     test('- keeps playing when the device refuses the resume seek', () async {
@@ -626,6 +682,165 @@ void main() {
       expect(captured, isEmpty);
     });
 
+    test('- skips every seek inside a transcode when a rule says so', () async {
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(seekTranscodes: false),
+        ),
+      );
+      final transcoded = TargetTrack(
+        itemId: 'song-9',
+        uri: Uri.parse('http://jelly.local:8096/Audio/song-9/universal?t=1'),
+        mimeType: 'audio/mpeg',
+        isHls: false,
+        title: 'Track 9',
+        duration: const Duration(minutes: 3),
+        transcoded: true,
+      );
+
+      await start([transcoded], at: const Duration(seconds: 30));
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+      await target.seek(const Duration(seconds: 50));
+
+      verifyNever(() => transport.seek(any(), unit: any(named: 'unit')));
+      expect(target.state.canSeek, isFalse);
+    });
+
+    test(
+      '- hands a transcode over as a radio stream when a rule says so',
+      () async {
+        await useTarget(
+          () => quirkyTargetWith(
+            quirks: const DeviceQuirks(transcodeAsRadio: true),
+          ),
+        );
+        final transcoded = TargetTrack(
+          itemId: 'song-9',
+          uri: Uri.parse('http://jelly.local:8096/Audio/song-9/universal?t=1'),
+          mimeType: 'audio/mpeg',
+          isHls: false,
+          title: 'Track 9',
+          duration: const Duration(minutes: 3),
+          transcoded: true,
+        );
+        final radio = Uri.parse(
+          'x-rincon-mp3radio://jelly.local:8096/Audio/song-9/universal?t=1',
+        );
+
+        await start([track(1), transcoded]);
+
+        expectStarted(1);
+        final next =
+            verify(
+                  () => transport.setNextUri(
+                    radio,
+                    metadata: captureAny(named: 'metadata'),
+                  ),
+                ).captured.single
+                as String;
+        expect(next, contains('x-rincon-mp3radio://jelly.local'));
+
+        deviceReports(AvTransportState.playing, trackUri: '$radio');
+        await target.pollNow();
+
+        expect(target.state.currentIndex, 1);
+      },
+    );
+
+    test(
+      '- keeps a FLAC transcode on plain http under the radio rule',
+      () async {
+        await useTarget(
+          () => quirkyTargetWith(
+            quirks: const DeviceQuirks(transcodeAsRadio: true),
+          ),
+        );
+        final lossless = TargetTrack(
+          itemId: 'song-7',
+          uri: Uri.parse('http://jelly.local:8096/Audio/song-7/stream.flac'),
+          mimeType: 'audio/flac',
+          isHls: false,
+          title: 'Track 7',
+          duration: const Duration(minutes: 3),
+          transcoded: true,
+        );
+
+        expect(target.deliveryUri(lossless), lossless.uri);
+      },
+    );
+    test('- direct-plays formats a rule vouches for beyond the sink', () async {
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(knownMimeTypes: {'audio/flac'}),
+        ),
+      );
+
+      expect(target.streamProfile.canDirectPlay(container: 'flac'), isTrue);
+      expect(target.streamProfile.canDirectPlay(container: 'mp3'), isTrue);
+      expect(
+        target.streamProfile.transcodeFor(isLossless: true).container,
+        'flac',
+      );
+    });
+
+    test(
+      '- passes renderer limits and the URL shape into the profile',
+      () async {
+        await useTarget(
+          () => quirkyTargetWith(
+            quirks: const DeviceQuirks(
+              urlNeedsExtension: true,
+              maxSampleRate: 48000,
+              maxBitDepth: 24,
+              maxChannels: 2,
+            ),
+          ),
+        );
+
+        expect(target.streamProfile.extensionInPath, isTrue);
+        expect(target.streamProfile.exceedsLimits(sampleRate: 96000), isTrue);
+        expect(target.streamProfile.exceedsLimits(sampleRate: 48000), isFalse);
+      },
+    );
+
+    test('- leaves https transcodes and direct streams alone', () async {
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(transcodeAsRadio: true),
+        ),
+      );
+      final secure = TargetTrack(
+        itemId: 'song-8',
+        uri: Uri.parse('https://jelly.example/Audio/song-8/universal'),
+        mimeType: 'audio/mpeg',
+        isHls: false,
+        title: 'Track 8',
+        duration: const Duration(minutes: 3),
+        transcoded: true,
+      );
+
+      expect(target.deliveryUri(secure), secure.uri);
+      expect(target.deliveryUri(track(1)), track(1).uri);
+    });
+
+    test('- still seeks a direct stream under the same rule', () async {
+      await useTarget(
+        () => quirkyTargetWith(
+          quirks: const DeviceQuirks(seekTranscodes: false),
+        ),
+      );
+
+      await start([track(1)], at: const Duration(seconds: 30));
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+
+      verify(
+        () => transport.seek(const Duration(seconds: 30), unit: 'REL_TIME'),
+      ).called(1);
+      expect(target.state.canSeek, isTrue);
+    });
+
     test('- still advances the queue without prefetching', () async {
       await useTarget(
         () => quirkyTargetWith(
@@ -829,6 +1044,35 @@ void main() {
         captured.where((entry) => entry.startsWith('upnp.queue.load')),
         hasLength(1),
       );
+    });
+  });
+
+  group('a speaker that plays to a group', () {
+    late MockSpeakerGroups groups;
+
+    setUp(() {
+      groups = MockSpeakerGroups();
+      when(() => groups.setGroupVolume(any(), any())).thenAnswer((_) async {});
+      when(() => groups.groupVolume(any())).thenAnswer((_) async => 45);
+      target = UpnpPlaybackTarget(
+        UpnpRenderer(
+          device: device,
+          avTransport: transport,
+          renderingControl: control,
+          groups: groups,
+        ),
+        pollInterval: pollInterval,
+      );
+    });
+
+    test('- sets the group volume instead of its own while grouped', () async {
+      target.playsToGroup = true;
+
+      await target.setVolume(0.5);
+
+      verify(() => groups.setGroupVolume('uuid:tv', 50)).called(1);
+      verifyNever(() => control.setVolume(any()));
+      expect(await target.currentVolume(), 0.45);
     });
   });
 

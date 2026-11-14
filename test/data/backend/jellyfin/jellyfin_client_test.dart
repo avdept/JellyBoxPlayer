@@ -36,20 +36,31 @@ void main() {
     );
   });
 
-  LibraryItem songWith({String? container, String? codec, int? bitRate}) =>
-      ItemDTO.fromJson({
-        'Id': 'song-1',
-        'Name': 'Roads',
-        'Type': 'Audio',
-        'MediaSources': [
+  LibraryItem songWith({
+    String? container,
+    String? codec,
+    int? bitRate,
+    int? sampleRate,
+    int? bitDepth,
+  }) => ItemDTO.fromJson({
+    'Id': 'song-1',
+    'Name': 'Roads',
+    'Type': 'Audio',
+    'MediaSources': [
+      {
+        'Container': container,
+        'MediaStreams': [
           {
-            'Container': container,
-            'MediaStreams': [
-              {'Type': 'Audio', 'Codec': codec, 'BitRate': bitRate},
-            ],
+            'Type': 'Audio',
+            'Codec': codec,
+            'BitRate': bitRate,
+            'SampleRate': sampleRate,
+            'BitDepth': bitDepth,
           },
         ],
-      }).toLibraryItem();
+      },
+    ],
+  }).toLibraryItem();
 
   LibraryItem imageSong({
     String? primary,
@@ -285,6 +296,51 @@ void main() {
           source.uri.queryParameters.containsKey('SegmentContainer'),
           isFalse,
         );
+      },
+    );
+
+    test(
+      '- serves a renderer that wants extensions a static file URL',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(container: 'flac', codec: 'flac', sampleRate: 44100),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.renderer(
+            sinkMimeTypes: const {'audio/mpeg', 'audio/flac'},
+          ).constrained(extensionInPath: true, maxSampleRate: 48000),
+        );
+
+        expect(source.uri.path, '/Audio/song-1/stream.flac');
+        expect(source.uri.queryParameters['static'], 'true');
+        expect(source.uri.queryParameters['ApiKey'], 'token-1');
+        expect(source.uri.queryParameters['MediaSourceId'], 'song-1');
+        expect(source.uri.queryParameters.containsKey('Container'), isFalse);
+        expect(source.requiresTranscode, isFalse);
+        expect(source.mimeType, 'audio/flac');
+      },
+    );
+
+    test(
+      '- transcodes hi-res FLAC for a limited renderer, with the extension',
+      () async {
+        final source = await client.resolveStreamSource(
+          songWith(
+            container: 'flac',
+            codec: 'flac',
+            sampleRate: 96000,
+            bitDepth: 24,
+          ),
+          playSessionId: 'session-1',
+          target: StreamTargetProfile.renderer(
+            sinkMimeTypes: const {'audio/mpeg', 'audio/flac'},
+          ).constrained(extensionInPath: true, maxSampleRate: 48000),
+        );
+
+        expect(source.uri.path, '/Audio/song-1/stream.flac');
+        expect(source.uri.queryParameters['static'], 'false');
+        expect(source.uri.queryParameters['AudioCodec'], 'flac');
+        expect(source.uri.queryParameters['AudioSampleRate'], '48000');
+        expect(source.requiresTranscode, isTrue);
       },
     );
 
