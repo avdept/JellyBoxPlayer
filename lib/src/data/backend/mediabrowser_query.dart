@@ -39,3 +39,26 @@ List<String> mediaBrowserFields(Set<ItemField> fields) => [
       ItemField.externalIds => 'ProviderIds',
     },
 ];
+
+const mediaBrowserIdBatchSize = 100;
+const mediaBrowserIdBatchConcurrency = 2;
+
+Future<List<T>> mediaBrowserFetchByIds<T>(
+  List<String> ids,
+  Future<T> Function(List<String> batch) fetch,
+) async {
+  final batches = [
+    for (var start = 0; start < ids.length; start += mediaBrowserIdBatchSize)
+      ids.skip(start).take(mediaBrowserIdBatchSize).toList(),
+  ];
+  final pages = <T>[];
+  for (
+    var start = 0;
+    start < batches.length;
+    start += mediaBrowserIdBatchConcurrency
+  ) {
+    final round = batches.skip(start).take(mediaBrowserIdBatchConcurrency);
+    pages.addAll(await Future.wait([for (final batch in round) fetch(batch)]));
+  }
+  return pages;
+}

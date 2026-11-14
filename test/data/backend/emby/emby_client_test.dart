@@ -609,4 +609,66 @@ void main() {
       expect(songs.first.kind, ItemKind.song);
     });
   });
+
+  group('getItemsByIds', () {
+    late MockHttpClientAdapter adapter;
+    late EmbyClient idsClient;
+
+    setUp(() {
+      adapter = MockHttpClientAdapter();
+      idsClient = EmbyClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        baseUrl: 'http://emby.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+      when(() => adapter.fetch(any(), any(), any())).thenAnswer((invocation) {
+        final options = invocation.positionalArguments.first as RequestOptions;
+        final ids = options.uri.queryParameters['Ids']!.split(',');
+        return Future.value(
+          ResponseBody.fromString(
+            jsonEncode({
+              'Items': [
+                for (final id in ids.reversed)
+                  if (id != 'missing') {'Id': id, 'Name': id, 'Type': 'Audio'},
+              ],
+            }),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          ),
+        );
+      });
+    });
+
+    List<Uri> requested() => [
+      for (final options in verify(
+        () => adapter.fetch(captureAny(), any(), any()),
+      ).captured)
+        (options as RequestOptions).uri,
+    ];
+
+    test('splits a long id list over several requests', () async {
+      final ids = [for (var i = 0; i < 250; i++) 'song-$i'];
+
+      final items = await idsClient.getItemsByIds(ids);
+
+      final uris = requested();
+      expect(uris, hasLength(3));
+      expect(uris.map((uri) => uri.queryParameters['Ids']!.split(',').length), [
+        100,
+        100,
+        50,
+      ]);
+      expect(items.map((item) => item.id), ids);
+    });
+
+    test('keeps the requested order and drops unknown ids', () async {
+      final items = await idsClient.getItemsByIds(['b', 'missing', 'a']);
+
+      expect(items.map((item) => item.id), ['b', 'a']);
+    });
+  });
 }

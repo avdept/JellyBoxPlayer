@@ -452,14 +452,15 @@ class JellyfinClient implements MediaServerClient {
   Future<List<LibraryItem>> getItemsByIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
 
-    final response = await _api.getItemsByIds(
-      userId: userId,
-      ids: ids.join(','),
+    final pages = await mediaBrowserFetchByIds(
+      ids,
+      (batch) => _api.getItemsByIds(userId: userId, ids: batch.join(',')),
     );
-    final items = response.data.items.map(
-      (item) => item.toJellyfinLibraryItem(),
-    );
-    final byId = {for (final item in items) item.id: item};
+    final byId = {
+      for (final page in pages)
+        for (final item in page.data.items)
+          item.id: item.toJellyfinLibraryItem(),
+    };
 
     return [
       for (final id in ids)
