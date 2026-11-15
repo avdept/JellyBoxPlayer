@@ -34,6 +34,8 @@ class AudioStreamProfile {
     required this.hlsSegmentContainer,
     required this.useHls,
     this.bitRateCap,
+    this.sampleRateCap,
+    this.channelCap,
   });
 
   factory AudioStreamProfile.forSource({
@@ -41,6 +43,9 @@ class AudioStreamProfile {
     String? sourceContainer,
     String? sourceCodec,
     int? sourceBitRate,
+    int? sourceSampleRate,
+    int? sourceBitDepth,
+    int? sourceChannels,
   }) {
     final codec = sourceCodec?.toLowerCase();
     final container = _normalizeContainer(sourceContainer);
@@ -48,14 +53,38 @@ class AudioStreamProfile {
     final cap = target.maxBitRate;
     final exceedsCap =
         cap != null && (sourceBitRate == null || sourceBitRate > cap * 1000);
+    final exceedsLimits = target.exceedsLimits(
+      sampleRate: sourceSampleRate,
+      bitDepth: sourceBitDepth,
+      channels: sourceChannels,
+    );
 
     final isLossless = codec != null && _losslessCodecs.contains(codec);
-    final transcode = exceedsCap
+    final exceedsBitDepth = target.exceedsLimits(bitDepth: sourceBitDepth);
+    final transcode = exceedsCap || exceedsBitDepth
         ? target.lossyTarget
         : target.transcodeFor(isLossless: isLossless);
 
     final directPlays =
-        !exceedsCap && target.canDirectPlay(container: container, codec: codec);
+        !exceedsCap &&
+        !exceedsLimits &&
+        target.canDirectPlay(container: container, codec: codec);
+    final maxSampleRate = target.maxSampleRate;
+    final sampleRateCap =
+        !directPlays &&
+            maxSampleRate != null &&
+            sourceSampleRate != null &&
+            sourceSampleRate > maxSampleRate
+        ? maxSampleRate
+        : null;
+    final maxChannels = target.maxChannels;
+    final channelCap =
+        !directPlays &&
+            maxChannels != null &&
+            sourceChannels != null &&
+            sourceChannels > maxChannels
+        ? maxChannels
+        : null;
     final outputContainer = directPlays && container != null
         ? container
         : transcode.container;
@@ -68,6 +97,8 @@ class AudioStreamProfile {
       requiresTranscode: !directPlays,
       hlsSegmentContainer: transcode.hlsSegmentContainer,
       bitRateCap: cap,
+      sampleRateCap: sampleRateCap,
+      channelCap: channelCap,
       useHls:
           target.supportsHls &&
           (!directPlays || target.prefersHls(container: container)),
@@ -82,6 +113,8 @@ class AudioStreamProfile {
   final String hlsSegmentContainer;
   final bool useHls;
   final int? bitRateCap;
+  final int? sampleRateCap;
+  final int? channelCap;
 
   static const _maxLossySampleRate = 48000;
 

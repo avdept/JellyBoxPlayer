@@ -19,6 +19,69 @@ void main() {
       expect(profile.outputContainer, 'flac');
     });
 
+    test('transcodes a source above the renderer limits, losslessly', () {
+      final target = StreamTargetProfile.renderer(
+        sinkMimeTypes: const {'audio/mpeg', 'audio/flac'},
+      ).constrained(maxSampleRate: 48000, maxBitDepth: 24, maxChannels: 2);
+
+      final hiRes = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        sourceSampleRate: 96000,
+        sourceBitDepth: 24,
+        sourceChannels: 2,
+        target: target,
+      );
+      final cd = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        sourceSampleRate: 44100,
+        sourceBitDepth: 16,
+        sourceChannels: 2,
+        target: target,
+      );
+      final unknown = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        target: target,
+      );
+
+      expect(hiRes.requiresTranscode, isTrue);
+      expect(hiRes.transcodingAudioCodec, 'flac');
+      expect(hiRes.outputContainer, 'flac');
+      expect(hiRes.sampleRateCap, 48000);
+      expect(hiRes.channelCap, isNull);
+      expect(cd.requiresTranscode, isFalse);
+      expect(cd.sampleRateCap, isNull);
+      expect(unknown.requiresTranscode, isFalse);
+    });
+
+    test('goes lossy when only the bit depth is over the limit', () {
+      final target = StreamTargetProfile.renderer(
+        sinkMimeTypes: const {'audio/mpeg', 'audio/flac'},
+      ).constrained(maxBitDepth: 16, maxChannels: 2);
+
+      final deep = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        sourceSampleRate: 44100,
+        sourceBitDepth: 24,
+        target: target,
+      );
+      final wide = AudioStreamProfile.forSource(
+        sourceContainer: 'flac',
+        sourceCodec: 'flac',
+        sourceChannels: 6,
+        target: target,
+      );
+
+      expect(deep.requiresTranscode, isTrue);
+      expect(deep.transcodingAudioCodec, 'mp3');
+      expect(deep.sampleRateCap, isNull);
+      expect(wide.transcodingAudioCodec, 'flac');
+      expect(wide.channelCap, 2);
+    });
+
     test('direct-plays ALAC everywhere else', () {
       final profile = AudioStreamProfile.forSource(
         sourceContainer: 'm4a',

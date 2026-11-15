@@ -38,12 +38,13 @@ class CastSessionResume {
     final session = await _storage.load(serverId);
     if (session == null) return null;
 
-    final renderer = await _findRenderer(session);
-    if (renderer == null) {
+    final found = await _findRenderer(session);
+    if (found == null) {
       debugPrint('[Playback] ${session.name} is gone; dropping cast session');
       await _storage.clear(serverId);
       return null;
     }
+    final renderer = await _coordinatorOf(found);
 
     try {
       final info = await renderer.avTransport.transportInfo().timeout(
@@ -75,6 +76,32 @@ class CastSessionResume {
       debugPrint('[Playback] probing ${session.name} failed: $error');
       await _storage.clear(serverId);
       return null;
+    }
+  }
+
+  Future<UpnpRenderer> _coordinatorOf(UpnpRenderer renderer) async {
+    final groups = renderer.groups;
+    if (groups == null) return renderer;
+    try {
+      final topology = await groups.topology().timeout(probeTimeout);
+      final coordinatorId = topology.coordinatorOf(renderer.id);
+      final location = topology.member(coordinatorId ?? '')?.location;
+      if (coordinatorId == null ||
+          coordinatorId == renderer.id ||
+          location == null) {
+        return renderer;
+      }
+      debugPrint(
+        '[Playback] ${renderer.name} plays in a group; '
+        'following its coordinator',
+      );
+      final coordinator = await _controlPoint
+          .describe(location)
+          .timeout(probeTimeout);
+      return coordinator ?? renderer;
+    } on Object catch (error) {
+      debugPrint('[Playback] topology of ${renderer.name} failed: $error');
+      return renderer;
     }
   }
 

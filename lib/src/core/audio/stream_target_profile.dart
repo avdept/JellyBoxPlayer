@@ -74,6 +74,10 @@ class StreamTargetProfile {
     this.preferHlsContainers = const {},
     this.preference = StreamPreference.original,
     this.toFile = false,
+    this.extensionInPath = false,
+    this.maxSampleRate,
+    this.maxBitDepth,
+    this.maxChannels,
   });
 
   factory StreamTargetProfile.localPlayer({
@@ -161,8 +165,39 @@ class StreamTargetProfile {
   final Set<String> preferHlsContainers;
   final StreamPreference preference;
   final bool toFile;
+  final bool extensionInPath;
+  final int? maxSampleRate;
+  final int? maxBitDepth;
+  final int? maxChannels;
 
   int? get maxBitRate => preference.maxBitRate;
+
+  bool exceedsLimits({int? sampleRate, int? bitDepth, int? channels}) {
+    bool over(int? value, int? limit) =>
+        value != null && limit != null && value > limit;
+    return over(sampleRate, maxSampleRate) ||
+        over(bitDepth, maxBitDepth) ||
+        over(channels, maxChannels);
+  }
+
+  StreamTargetProfile constrained({
+    bool? extensionInPath,
+    int? maxSampleRate,
+    int? maxBitDepth,
+    int? maxChannels,
+  }) => StreamTargetProfile(
+    directPlay: directPlay,
+    lossyTranscode: lossyTranscode,
+    losslessTranscode: losslessTranscode,
+    supportsHls: supportsHls,
+    preferHlsContainers: preferHlsContainers,
+    preference: preference,
+    toFile: toFile,
+    extensionInPath: extensionInPath ?? this.extensionInPath,
+    maxSampleRate: maxSampleRate ?? this.maxSampleRate,
+    maxBitDepth: maxBitDepth ?? this.maxBitDepth,
+    maxChannels: maxChannels ?? this.maxChannels,
+  );
 
   TranscodeTarget get lossyTarget => preference.codec ?? lossyTranscode;
 
@@ -175,7 +210,27 @@ class StreamTargetProfile {
         preferHlsContainers: preferHlsContainers,
         preference: preference,
         toFile: toFile,
+        extensionInPath: extensionInPath,
+        maxSampleRate: maxSampleRate,
+        maxBitDepth: maxBitDepth,
+        maxChannels: maxChannels,
       );
+
+  StreamTargetProfile withoutLosslessTranscode() => StreamTargetProfile(
+    directPlay: directPlay,
+    lossyTranscode: lossyTranscode.container == 'flac'
+        ? TranscodeTarget.mp3
+        : lossyTranscode,
+    losslessTranscode: null,
+    supportsHls: supportsHls,
+    preferHlsContainers: preferHlsContainers,
+    preference: preference,
+    toFile: toFile,
+    extensionInPath: extensionInPath,
+    maxSampleRate: maxSampleRate,
+    maxBitDepth: maxBitDepth,
+    maxChannels: maxChannels,
+  );
 
   StreamTargetProfile withoutHls() => StreamTargetProfile(
     directPlay: directPlay,
@@ -184,6 +239,10 @@ class StreamTargetProfile {
     supportsHls: false,
     preference: preference,
     toFile: toFile,
+    extensionInPath: extensionInPath,
+    maxSampleRate: maxSampleRate,
+    maxBitDepth: maxBitDepth,
+    maxChannels: maxChannels,
   );
 
   bool prefersHls({required String? container}) =>

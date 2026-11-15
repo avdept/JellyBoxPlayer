@@ -46,9 +46,12 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   var _idlePolls = 0;
   DateTime? _waitingSince;
   Duration? _pendingSeek;
+  var _pendingSeekRefusals = 0;
   var _gaveUpWaiting = false;
   var _pollGeneration = 0;
   var _disposed = false;
+  AvTransportState? _loggedState;
+  bool playsToGroup = false;
 
   AvTransport get _transport => renderer.avTransport;
 
@@ -71,8 +74,27 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   PlaybackTargetKind get kind => PlaybackTargetKind.upnp;
 
   @override
-  StreamTargetProfile get streamProfile =>
-      StreamTargetProfile.renderer(sinkMimeTypes: renderer.playableMimeTypes);
+  StreamTargetProfile get streamProfile {
+    return StreamTargetProfile.renderer(
+      sinkMimeTypes: renderer.playableMimeTypes,
+    ).constrained(
+      extensionInPath: _quirks.urlNeedsExtension,
+      maxSampleRate: _quirks.maxSampleRate,
+      maxBitDepth: _quirks.maxBitDepth,
+      maxChannels: _quirks.maxChannels,
+    );
+  }
+
+  static const radioScheme = 'x-rincon-mp3radio';
+  static const _radioMimeTypes = {'audio/mpeg', 'audio/aac'};
+
+  Uri deliveryUri(TargetTrack track) =>
+      _quirks.transcodeAsRadio &&
+          track.transcoded &&
+          track.uri.scheme == 'http' &&
+          _radioMimeTypes.contains(track.mimeType.toLowerCase())
+      ? track.uri.replace(scheme: radioScheme)
+      : track.uri;
 
   @override
   bool get supportsLocalFiles => false;
@@ -166,7 +188,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
         ),
       );
       _pendingSeek =
-          autoPlay && initialPosition > Duration.zero && _transport.supportsSeek
+          autoPlay && initialPosition > Duration.zero && _canSeek(_currentTrack)
           ? initialPosition
           : null;
     } on Object catch (error, stackTrace) {
@@ -187,16 +209,29 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       return;
     }
 
+    diagnostics.trail(
+      'queue handed to ${renderer.model ?? 'a renderer'} at $_index: '
+      '${_delivery(_currentTrack)}, resume seek '
+      '${_pendingSeek == null ? 'none' : '$_pendingSeek'}',
+      category: 'upnp',
+      data: {
+        'tracks': _tracks.length,
+        'autoPlay': autoPlay,
+        'positionSeconds': initialPosition.inSeconds,
+        'resumeSeek': _pendingSeek != null,
+      },
+    );
     if (autoPlay) _startPolling();
   }
 
   QueuedTrack _queuedTrack(TargetTrack track) => QueuedTrack(
-    uri: track.uri,
+    uri: deliveryUri(track),
     mimeType: track.mimeType,
     title: track.title,
     duration: track.duration,
     artist: track.artist,
     album: track.album,
+    artUri: track.artUri,
   );
 
   @override
@@ -225,15 +260,47 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     _emit(status: PlaybackStatus.stopped, position: Duration.zero);
   }
 
+  bool _canSeek(TargetTrack? track) =>
+      _transport.supportsSeek &&
+      (track == null || !track.transcoded || _quirks.seekTranscodes);
+
   @override
   Future<void> seek(Duration position) async {
-    if (!_transport.supportsSeek) return;
+    if (!_canSeek(_currentTrack)) {
+      diagnostics.trail(
+        'seek to $position skipped: ${_delivery(_currentTrack)} is not '
+        'seekable here',
+        category: 'upnp',
+      );
+      return;
+    }
     final ok = await _command(
       'seek',
       () => _transport.seek(position, unit: _quirks.seekUnit.wireName),
     );
+    diagnostics.trail(
+      'seek to $position ${ok ? 'accepted' : 'refused'}',
+      category: 'upnp',
+    );
     if (!ok) return;
     _emit(position: position);
+  }
+
+  static String _withoutQuery(String? raw) {
+    final uri = Uri.tryParse(raw ?? '');
+    if (uri == null || raw == null || raw.isEmpty) return 'no uri';
+    if (!uri.hasAuthority) return raw.split('?').first;
+    final port = uri.hasPort ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$port${uri.path}';
+  }
+
+  String _delivery(TargetTrack? track) {
+    if (track == null) return 'no track';
+    final uri = deliveryUri(track);
+    final kind = track.transcoded ? 'transcoded' : 'direct';
+    final static = uri.queryParameters['static'];
+    return '${track.mimeType} $kind ${uri.scheme}://${uri.host}${uri.path}'
+        '${static == null ? '' : ' static=$static'}';
   }
 
   Future<void> _playWhenReady() async {
@@ -485,22 +552,35 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     await skipTo(_index - 1);
   }
 
+  SpeakerGroups? get _groupVolume => playsToGroup ? renderer.groups : null;
+
   @override
   Future<void> setVolume(double level) async {
+    final wire = _quirks.volumeToWire(level).round();
+    final groups = _groupVolume;
+    if (groups != null) {
+      await _command(
+        'setGroupVolume',
+        () => groups.setGroupVolume(renderer.id, wire),
+      );
+      return;
+    }
     final control = renderer.renderingControl;
     if (control == null) return;
-    await _command(
-      'setVolume',
-      () => control.setVolume(_quirks.volumeToWire(level).round()),
-    );
+    await _command('setVolume', () => control.setVolume(wire));
   }
 
   @override
   Future<double?> currentVolume() async {
+    final groups = _groupVolume;
     final control = renderer.renderingControl;
-    if (control == null) return null;
+    if (groups == null && control == null) return null;
     try {
-      final value = await _run(control.volume);
+      final value = await _run(
+        () => groups != null
+            ? groups.groupVolume(renderer.id)
+            : control!.volume(),
+      );
       return value == null ? null : _quirks.volumeFromWire(value);
     } on Object catch (error) {
       diagnostics.trail(
@@ -545,10 +625,13 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     try {
       if (_quirks.stopBeforeSetUri) await _run(_transport.stopTransport);
       await _run(
-        () => _transport.setUri(track.uri, metadata: _metadataFor(track)),
+        () => _transport.setUri(
+          deliveryUri(track),
+          metadata: _metadataFor(track),
+        ),
       );
       if (autoPlay) await _run(_playWhenReady);
-      _pendingSeek = position > Duration.zero && _transport.supportsSeek
+      _pendingSeek = position > Duration.zero && _canSeek(track)
           ? position
           : null;
     } on Object catch (error, stackTrace) {
@@ -569,7 +652,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       : buildDidlLite(
           itemId: track.itemId,
           title: track.title,
-          uri: track.uri,
+          uri: deliveryUri(track),
           mimeType: track.mimeType,
           duration: track.duration,
           artist: track.artist,
@@ -586,7 +669,10 @@ class UpnpPlaybackTarget implements PlaybackTarget {
 
     try {
       await _run(
-        () => _transport.setNextUri(next.uri, metadata: _metadataFor(next)),
+        () => _transport.setNextUri(
+          deliveryUri(next),
+          metadata: _metadataFor(next),
+        ),
       );
     } on Object catch (error, stackTrace) {
       unawaited(
@@ -601,17 +687,37 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     }
   }
 
+  static const _resumeSeekRetries = 3;
+
   Future<void> _applyPendingSeek() async {
     final position = _pendingSeek;
     if (position == null) return;
-    _pendingSeek = null;
     try {
       await _run(
         () => _transport.seek(position, unit: _quirks.seekUnit.wireName),
       );
-    } on Object catch (error) {
+      _pendingSeek = null;
+      _pendingSeekRefusals = 0;
+      diagnostics.trail('resume seek to $position accepted', category: 'upnp');
+    } on UpnpSoapFault catch (fault) {
+      _pendingSeekRefusals++;
+      final again =
+          fault.errorCode == '701' && _pendingSeekRefusals < _resumeSeekRetries;
+      if (!again) {
+        _pendingSeek = null;
+        _pendingSeekRefusals = 0;
+      }
       diagnostics.trail(
-        'resume seek refused: $error',
+        'resume seek refused: $fault'
+        '${again ? ', trying again next poll' : ', giving up'}',
+        category: 'upnp',
+        data: {'error': '$fault', 'attempt': _pendingSeekRefusals},
+      );
+    } on Object catch (error) {
+      _pendingSeek = null;
+      _pendingSeekRefusals = 0;
+      diagnostics.trail(
+        'resume seek refused: $error, giving up',
         category: 'upnp',
         data: {'error': '$error'},
       );
@@ -701,6 +807,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     if (_disposed || generation != _pollGeneration) return;
 
     final playedThrough = _adoptTrackFromDevice(positionInfo.trackUri);
+    _logTransition(info.state, positionInfo);
     if (info.state.isPlaying) _sawPlaying = true;
     if (_stalled(info.state)) return;
     if (info.state.isPlaying) await _applyPendingSeek();
@@ -725,6 +832,17 @@ class UpnpPlaybackTarget implements PlaybackTarget {
         ),
       );
     }
+  }
+
+  void _logTransition(AvTransportState state, AvPositionInfo position) {
+    if (state == _loggedState) return;
+    _loggedState = state;
+    diagnostics.trail(
+      'transport ${state.name} at ${position.position} '
+      'track ${_index + 1}/${_tracks.length} '
+      '(${_withoutQuery(position.trackUri)})',
+      category: 'upnp',
+    );
   }
 
   Future<void> _advanceIfEnded(AvTransportState state) async {
@@ -760,7 +878,9 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   }
 
   int _indexOfUri(Uri playing) {
-    final exact = _tracks.indexWhere((track) => track.uri == playing);
+    final exact = _tracks.indexWhere(
+      (track) => track.uri == playing || deliveryUri(track) == playing,
+    );
     if (exact >= 0) return exact;
     return _tracks.indexWhere(
       (track) =>
@@ -819,7 +939,7 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       position: position ?? _state.position,
       currentIndex: currentIndex ?? _index,
       duration: duration ?? _state.duration,
-      canSeek: _transport.supportsSeek,
+      canSeek: _canSeek(_currentTrack),
       completed: completed,
     );
     _controller.add(_state);

@@ -8,19 +8,22 @@ class QuirkRule {
     required this.apply,
     this.matchAny = const [],
     this.requireAll = const [],
+    this.when,
   });
 
   final String name;
   final String evidence;
   final List<String> matchAny;
   final List<String> requireAll;
+  final bool Function(DeviceFingerprint fingerprint)? when;
   final DeviceQuirks Function(DeviceQuirks base) apply;
 
   bool matches(DeviceFingerprint fingerprint) {
     final haystack = fingerprint.searchable;
     if (haystack.isEmpty) return false;
     if (matchAny.isNotEmpty && !matchAny.any(haystack.contains)) return false;
-    return requireAll.every(haystack.contains);
+    if (!requireAll.every(haystack.contains)) return false;
+    return when?.call(fingerprint) ?? true;
   }
 }
 

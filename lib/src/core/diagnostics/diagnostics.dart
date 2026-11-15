@@ -14,7 +14,7 @@ class Diagnostics {
     Map<String, String> tags = const {},
     Map<String, Object?> extra = const {},
   }) async {
-    debugPrintThrottled('[$operation] $error');
+    debugPrint('[$operation] $error');
     if (!Sentry.isEnabled) return;
 
     await Sentry.captureException(
@@ -35,7 +35,7 @@ class Diagnostics {
     String message, {
     Map<String, Object?> data = const {},
   }) async {
-    debugPrintThrottled('[report] $message $data');
+    debugPrint('[report] $message $data');
     if (!Sentry.isEnabled) return;
 
     await Sentry.captureMessage(
@@ -52,7 +52,7 @@ class Diagnostics {
     String category = 'app',
     Map<String, Object?> data = const {},
   }) {
-    debugPrintThrottled('[$category] $message');
+    debugPrint('[$category] $message');
     if (!Sentry.isEnabled) return;
 
     unawaited(

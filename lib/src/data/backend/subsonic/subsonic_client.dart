@@ -1006,6 +1006,9 @@ class SubsonicClient implements MediaServerClient {
       sourceContainer: audioSource?.container,
       sourceCodec: audioSource?.codec,
       sourceBitRate: audioSource?.bitRate,
+      sourceSampleRate: audioSource?.sampleRate,
+      sourceBitDepth: audioSource?.bitDepth,
+      sourceChannels: audioSource?.channels,
     );
 
     if (!forceTranscode && !profile.requiresTranscode) {

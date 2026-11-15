@@ -16,6 +16,7 @@ class QueuedTrack {
     required this.duration,
     this.artist,
     this.album,
+    this.artUri,
   });
 
   final Uri uri;
@@ -24,7 +25,10 @@ class QueuedTrack {
   final Duration duration;
   final String? artist;
   final String? album;
+  final Uri? artUri;
 }
+
+typedef QueueLog = void Function(String message);
 
 class DeviceQueueContext {
   const DeviceQueueContext({
@@ -32,12 +36,14 @@ class DeviceQueueContext {
     required this.transportControlUrl,
     required this.invoke,
     this.controlUrls = const {},
+    this.log,
   });
 
   final String udn;
   final Uri transportControlUrl;
   final QueueInvoke invoke;
   final Map<String, Uri> controlUrls;
+  final QueueLog? log;
 
   Uri? controlUrlFor(String shortServiceType) => controlUrls[shortServiceType];
 }

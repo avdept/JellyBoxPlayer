@@ -92,7 +92,10 @@ void main() {
     final art = Uri.parse('http://jelly.local:8096/Items/x/Images/Primary');
     final item = itemOf(build(artUri: art));
 
-    expect(item.getElement('albumArtURI', namespace: upnpNs)?.innerText, '$art');
+    expect(
+      item.getElement('albumArtURI', namespace: upnpNs)?.innerText,
+      '$art',
+    );
   });
 
   test('- leaves out a duration it does not know', () {
@@ -105,9 +108,9 @@ void main() {
   });
 
   test('- states seek and transcode support in protocolInfo', () {
-    String protocolInfo(String didl) => itemOf(didl)
-        .getElement('res', namespace: didlNs)!
-        .getAttribute('protocolInfo')!;
+    String protocolInfo(String didl) => itemOf(
+      didl,
+    ).getElement('res', namespace: didlNs)!.getAttribute('protocolInfo')!;
 
     expect(
       protocolInfo(build()),

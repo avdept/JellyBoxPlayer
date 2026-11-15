@@ -118,6 +118,20 @@ void main() {
       expect(target.transcodeFor(isLossless: true).container, 'flac');
       expect(target.transcodeFor(isLossless: false).container, 'flac');
     });
+    test('- can be told to transcode lossy only', () {
+      final flacOnly = StreamTargetProfile.renderer(
+        sinkMimeTypes: const {'audio/flac'},
+      ).withoutLosslessTranscode();
+      final usual = StreamTargetProfile.renderer(
+        sinkMimeTypes: const {'audio/mpeg', 'audio/flac'},
+      ).withoutLosslessTranscode();
+
+      expect(flacOnly.transcodeFor(isLossless: true).container, 'mp3');
+      expect(usual.transcodeFor(isLossless: true).container, 'mp3');
+      expect(usual.transcodeFor(isLossless: false).container, 'mp3');
+      expect(usual.canDirectPlay(container: 'flac'), isTrue);
+    });
+
     test('- reads a real Samsung DMR sink list', () {
       final target = StreamTargetProfile.renderer(
         sinkMimeTypes: const {
