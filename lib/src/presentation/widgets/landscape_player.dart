@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/lyrics_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
@@ -38,7 +39,7 @@ const List<DeviceOrientation> _phoneOrientations = [
 const List<DeviceOrientation> _systemOrientations = [];
 
 bool get supportsLandscapePlayer =>
-    !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    !kIsWeb && !TvMode.isTv && (Platform.isAndroid || Platform.isIOS);
 
 bool get locksIdlePhonesToPortrait =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;

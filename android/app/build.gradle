@@ -97,4 +97,5 @@ dependencies {
     implementation "com.google.android.exoplayer:exoplayer-smoothstreaming:$exoplayer_version"
 
     implementation 'com.android.support:multidex:1.0.3'
+    implementation 'androidx.tvprovider:tvprovider:1.0.0'
 }

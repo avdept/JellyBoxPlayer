@@ -34,7 +34,7 @@ class BlurredCoverArt extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image(image: image, fit: BoxFit.cover),
+              Image(image: image, fit: BoxFit.cover, gaplessPlayback: true),
               if (overlay != null) overlay!,
               ShaderMask(
                 shaderCallback: (bounds) => LinearGradient(
@@ -50,7 +50,11 @@ class BlurredCoverArt extends StatelessWidget {
                     sigmaY: sigma,
                     tileMode: TileMode.mirror,
                   ),
-                  child: Image(image: image, fit: BoxFit.cover),
+                  child: Image(
+                    image: image,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  ),
                 ),
               ),
               DecoratedBox(

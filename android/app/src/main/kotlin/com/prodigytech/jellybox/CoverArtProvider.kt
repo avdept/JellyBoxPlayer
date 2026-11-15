@@ -24,6 +24,9 @@ class CoverArtProvider : ContentProvider() {
         val segments = uri.pathSegments
         if (segments.size == 2 && segments[0] == REMOTE) return remoteCover(segments[1])
         if (segments.size == 2 && segments[0] == ASSET) return assetCover(segments[1])
+        if (segments.size == 2 && segments[0] == TvHomeChannel.COVER_SEGMENT) {
+            return channelCover(segments[1])
+        }
         val albumId = segments.singleOrNull()
             ?: throw FileNotFoundException(uri.toString())
         val context = context ?: throw FileNotFoundException("No context")
@@ -31,6 +34,13 @@ class CoverArtProvider : ContentProvider() {
         val cover = File(File(musicRoot, albumId), "cover.jpg").canonicalFile
         val insideRoot = cover.parentFile?.parentFile == musicRoot
         if (!insideRoot || !cover.isFile) throw FileNotFoundException(uri.toString())
+        return ParcelFileDescriptor.open(cover, ParcelFileDescriptor.MODE_READ_ONLY)
+    }
+
+    private fun channelCover(albumId: String): ParcelFileDescriptor {
+        val context = context ?: throw FileNotFoundException("No context")
+        val cover = TvHomeChannel.coverFile(context, albumId)?.takeIf { it.isFile }
+            ?: throw FileNotFoundException(albumId)
         return ParcelFileDescriptor.open(cover, ParcelFileDescriptor.MODE_READ_ONLY)
     }
 

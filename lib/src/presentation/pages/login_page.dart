@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/data/params/params.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
+import 'package:jplayer/src/presentation/tv/pages/tv_login_view.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -43,6 +45,19 @@ class LoginPageState extends ConsumerState<LoginPage> {
   DiscoveredServer? _selectedServer;
   bool _manualEntry = false;
   bool _submitting = false;
+
+  TextEditingController get serverUrlController => _serverUrlInputController;
+  TextEditingController get loginController => _emailInputController;
+  TextEditingController get passwordController => _passwordInputController;
+  FocusNode get serverUrlFocusNode => _serverUrlFocusNode;
+  DiscoveredServer? get selectedServer => _selectedServer;
+  bool get quickConnectAvailable => _resolvedQuickConnect;
+  bool get serverResolved => _resolvedServerType != null;
+  ServerType? get resolvedServerType => _resolvedServerType;
+  String? get serverProductName =>
+      _apiChoices.firstOrNull?.productName ?? _resolvedProductName;
+
+  void editSelectedServer() => _editSelectedServer();
 
   @override
   void initState() {
@@ -123,9 +138,6 @@ class LoginPageState extends ConsumerState<LoginPage> {
       _resolvedQuickConnect = server.quickConnect;
     });
   }
-
-  String? get _serverProductName =>
-      _apiChoices.firstOrNull?.productName ?? _resolvedProductName;
 
   void _selectApi(ServerIdentity identity) {
     setState(() {
@@ -310,6 +322,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     ref.listen(serverDiscoveryProvider, (_, next) => _onDiscoveryChanged(next));
+    if (TvMode.isTv) return TvLoginView(state: this);
     return WindowResizeFrame(
       child: Scaffold(
         body: Stack(
@@ -356,7 +369,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                     children: [
                       LoginLogo(
                         serverType: _resolvedServerType,
-                        productName: _serverProductName,
+                        productName: serverProductName,
                       ),
                       const SizedBox(height: 63),
                       _serverURLField(),

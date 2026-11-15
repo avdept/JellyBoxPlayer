@@ -192,14 +192,14 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
                 position: index + 1,
                 edgePadding: edgePadding,
                 playingColor: playingRowColor,
-                onLikePressed: _onSongLikePressed,
+                onLikePressed: onSongLikePressed,
                 onRatingChanged: _onSongRated,
                 optionsBuilder: (context) => contextMenuActions(
                   context,
                   ref,
                   song,
                   scope: ContextMenuScope.albumPage,
-                  onLike: _onSongLikePressed,
+                  onLike: onSongLikePressed,
                 ),
               );
             },
@@ -332,10 +332,10 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   Widget playAlbumButton() => PlayButton(
     isLoading: ref.watch(setPlaybackProvider) == album.id,
-    onPressed: _onPlayAlbumPressed,
+    onPressed: onPlayAlbumPressed,
   );
 
-  Future<void> _onPlayAlbumPressed() async {
+  Future<void> onPlayAlbumPressed() async {
     try {
       final result = await ref
           .read(setPlaybackProvider.notifier)
@@ -355,7 +355,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   Widget likeAlbumButton() => IconButton(
-    onPressed: _onLikeAlbumPressed,
+    onPressed: onLikeAlbumPressed,
     icon: Icon(CupertinoIcons.heart, color: theme.colorScheme.onPrimary),
     selectedIcon: Icon(
       CupertinoIcons.heart_fill,
@@ -399,7 +399,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     }
   }
 
-  Future<void> _onLikeAlbumPressed() async {
+  Future<void> onLikeAlbumPressed() async {
     if (ref.read(isOfflineProvider)) {
       showOfflineSnackBar();
       return;
@@ -614,7 +614,7 @@ mixin AlbumPageState<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (key != null) ref.invalidate(moreFromArtistProvider(key));
   }
 
-  Future<void> _onSongLikePressed(LibraryItem song) async {
+  Future<void> onSongLikePressed(LibraryItem song) async {
     if (ref.read(isOfflineProvider)) {
       showOfflineSnackBar();
       return;

@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/generated/l10n.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/core/window/shutdown_hooks.dart';
 import 'package:jplayer/src/core/window/window_close_sequence.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -236,6 +237,12 @@ class _AppState extends ConsumerState<App>
           name: Routes.library.name,
           pageBuilder: widget.screenFactory.libraryPage,
         ),
+        GoRoute(
+          path: Routes.nowPlaying.path,
+          name: Routes.nowPlaying.name,
+          parentNavigatorKey: _rootNavigatorKey,
+          pageBuilder: widget.screenFactory.nowPlayingPage,
+        ),
         StatefulShellRoute.indexedStack(
           pageBuilder: widget.screenFactory.mainPage,
           branches: [
@@ -458,7 +465,7 @@ class _AppState extends ConsumerState<App>
 
     return MaterialApp.router(
       scaffoldMessengerKey: _scaffoldMessengerKey,
-      theme: Themes.red,
+      theme: TvMode.isTv ? Themes.tv : Themes.red,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         DefaultWidgetsLocalizations.delegate,
