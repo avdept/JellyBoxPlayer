@@ -21,6 +21,7 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
@@ -104,6 +105,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   DateTime? _lastPositionSave;
   String? _resumePointKey;
   String? _resumePointSong;
+  String? _queueLibraryId;
   DateTime? _lastResumePointSave;
   static const _resumePointInterval = Duration(seconds: 15);
   int? _reportedIndex;
@@ -741,6 +743,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
       if (await elsewhere.play(request)) return;
     }
+    _queueLibraryId = _currentLibraryId;
     final generation = ++_queueGeneration;
     try {
       final resolved = await _resolveQueue(
@@ -1313,6 +1316,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         ? state.songs.elementAtOrNull(startIndex)
         : null;
     if (playing == null) return false;
+    _queueLibraryId = _currentLibraryId;
 
     final upcoming = [
       for (final song in songs)
@@ -1779,8 +1783,11 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       position: Duration(milliseconds: positionMs),
       updatedAt: now,
     );
+    _queueLibraryId ??= _currentLibraryId;
     try {
-      await _ref.read(resumePointDatabaseProvider).save(point);
+      await _ref
+          .read(resumePointDatabaseProvider)
+          .save(point, libraryId: _queueLibraryId);
     } on Object {
       return;
     }
@@ -1791,6 +1798,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _resumePointKey = key;
     _ref.read(resumePointsChangedProvider.notifier).state++;
   }
+
+  String? get _currentLibraryId =>
+      _ref.read(currentLibraryProvider).valueOrNull?.id;
 
   Future<void> _clearResumePoint(String? sourceId) async {
     if (sourceId == null) return;

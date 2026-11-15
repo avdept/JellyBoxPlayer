@@ -8,6 +8,7 @@ class ResumePointDatabase {
   ResumePointDatabase(this._owner, {this.userId});
 
   static const _table = 'ResumePoints';
+  static const _unknownLibrary = '';
 
   final DownloadDatabase _owner;
   final String? userId;
@@ -16,13 +17,14 @@ class ResumePointDatabase {
 
   String get _serverId => _owner.serverId;
 
-  Future<void> save(ResumePoint point) async {
+  Future<void> save(ResumePoint point, {String? libraryId}) async {
     if (userId == null) return;
     final db = await _database;
     await db.insert(_table, {
       'ServerId': _serverId,
       'UserId': userId,
       'SourceId': point.item.id,
+      'LibraryId': libraryId ?? _unknownLibrary,
       'Item': jsonEncode(
         point.item.copyWith(userData: const PlaybackUserData()).toJson(),
       ),
@@ -37,6 +39,7 @@ class ResumePointDatabase {
 
   Future<ResumePoint?> get(
     String sourceId, {
+    String? libraryId,
     Duration? maxAge,
     DateTime Function() now = DateTime.now,
   }) async {
@@ -46,14 +49,21 @@ class ResumePointDatabase {
       _table,
       where:
           'ServerId = ? AND UserId = ? AND SourceId = ? AND UpdatedAt >= ? '
-          'AND ${_resumableClause()}',
-      whereArgs: [_serverId, userId, sourceId, _cutoff(maxAge, now)],
+          'AND ${_resumableClause()} AND ${_libraryClause(libraryId)}',
+      whereArgs: [
+        _serverId,
+        userId,
+        sourceId,
+        _cutoff(maxAge, now),
+        ?libraryId,
+      ],
       limit: 1,
     );
     return rows.isEmpty ? null : _fromRow(rows.single);
   }
 
   Future<List<ResumePoint>> recent({
+    String? libraryId,
     Duration? maxAge,
     int limit = 20,
     DateTime Function() now = DateTime.now,
@@ -64,8 +74,8 @@ class ResumePointDatabase {
       _table,
       where:
           'ServerId = ? AND UserId = ? AND UpdatedAt >= ? '
-          'AND ${_resumableClause()}',
-      whereArgs: [_serverId, userId, _cutoff(maxAge, now)],
+          'AND ${_resumableClause()} AND ${_libraryClause(libraryId)}',
+      whereArgs: [_serverId, userId, _cutoff(maxAge, now), ?libraryId],
       orderBy: 'UpdatedAt DESC',
       limit: limit,
     );
@@ -99,10 +109,15 @@ class ResumePointDatabase {
     await db.delete(_table, where: 'ServerId = ?', whereArgs: [_serverId]);
   }
 
+  static String _libraryClause(String? libraryId) => libraryId == null
+      ? '1'
+      : "(LibraryId = ? OR LibraryId = '$_unknownLibrary')";
+
   static String _resumableClause() =>
       '(SongIndex > 0 OR PositionMs >= ${resumePointMinPosition.inMilliseconds})';
 
-  static int _cutoff(Duration? maxAge, DateTime Function() now) => maxAge == null
+  static int _cutoff(Duration? maxAge, DateTime Function() now) =>
+      maxAge == null
       ? 0
       : now().toUtc().subtract(maxAge).millisecondsSinceEpoch;
 

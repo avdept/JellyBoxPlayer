@@ -18,7 +18,7 @@ class DownloadDatabase {
     @visibleForTesting Database? db,
   }) : _db = db;
 
-  static const _schemaVersion = 17;
+  static const _schemaVersion = 18;
 
   static String? databaseDirectory;
 
@@ -93,6 +93,7 @@ class DownloadDatabase {
     await _migrateToV15(db);
     await _migrateToV16(db);
     await _migrateToV17(db);
+    await _migrateToV18(db);
   }
 
   Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
@@ -112,7 +113,16 @@ class DownloadDatabase {
     if (oldVersion < 15) await _migrateToV15(db);
     if (oldVersion < 16) await _migrateToV16(db);
     if (oldVersion < 17) await _migrateToV17(db);
+    if (oldVersion < 18) await _migrateToV18(db);
   }
+
+  Future<void> _migrateToV18(Database db) => _addColumn(
+    db,
+    table: 'ResumePoints',
+    column: 'LibraryId',
+    sql:
+        "ALTER TABLE ResumePoints ADD COLUMN LibraryId TEXT NOT NULL DEFAULT ''",
+  );
 
   Future<void> _migrateToV17(Database db) => _addColumn(
     db,
