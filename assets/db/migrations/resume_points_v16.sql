@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS ResumePoints (
     ServerId TEXT NOT NULL,
     UserId TEXT NOT NULL,
     SourceId TEXT NOT NULL,
+    LibraryId TEXT NOT NULL DEFAULT '',
     Item TEXT NOT NULL,
     SongId TEXT NOT NULL,
     SongName TEXT NOT NULL,

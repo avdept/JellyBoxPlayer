@@ -15,6 +15,7 @@ import 'package:jplayer/src/data/storages/resume_point_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -25,6 +26,21 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+class _Library extends CurrentLibraryNotifier {
+  _Library(this._id);
+
+  final String _id;
+
+  @override
+  FutureOr<LibraryItem?> build() {
+    ref.keepAlive();
+    return LibraryItem(id: _id, name: _id, kind: ItemKind.library);
+  }
+
+  @override
+  Future<void> setLibrary(LibraryItem lib) async => state = AsyncData(lib);
+}
 
 class _FakeTarget implements PlaybackTarget {
   final _controller = StreamController<TargetPlaybackState>.broadcast();
@@ -162,9 +178,11 @@ void main() {
     when(() => client.reportPlaybackProgress(any())).thenAnswer((_) async {});
   });
 
-  ProviderContainer newContainer() {
+  ProviderContainer newContainer({String? libraryId}) {
     final container = ProviderContainer(
       overrides: [
+        if (libraryId != null)
+          currentLibraryProvider.overrideWith(() => _Library(libraryId)),
         localPlaybackTargetProvider.overrideWithValue(target),
         mediaServerClientProvider.overrideWith((_) => client),
         isOfflineProvider.overrideWithValue(false),
@@ -216,6 +234,38 @@ void main() {
     expect(point.position, const Duration(seconds: 40));
     expect(point.item.id, album.id);
     expect(bumps, isNotEmpty);
+  });
+
+  test('- the point belongs to the library the queue started in', () async {
+    final container = newContainer(libraryId: 'lib-1');
+    final playback = container.read(playbackProvider.notifier);
+
+    await playback.play(songs.first, songs, album, sourceId: album.id);
+    target.emit(
+      const TargetPlaybackState(
+        status: PlaybackStatus.playing,
+        position: Duration(seconds: 40),
+        currentIndex: 1,
+      ),
+    );
+    await pumpEventQueue();
+
+    expect(await stored().get(album.id, libraryId: 'lib-2'), isNull);
+    expect((await stored().get(album.id, libraryId: 'lib-1'))?.songId, 'b');
+
+    await container
+        .read(currentLibraryProvider.notifier)
+        .setLibrary(
+          const LibraryItem(id: 'lib-2', name: 'lib-2', kind: ItemKind.library),
+        );
+    await playback.seek(const Duration(minutes: 2));
+    await pumpEventQueue();
+
+    expect(
+      (await stored().get(album.id, libraryId: 'lib-1'))?.position,
+      const Duration(minutes: 2),
+    );
+    expect(await stored().get(album.id, libraryId: 'lib-2'), isNull);
   });
 
   test('- periodic ticks within 15 s do not rewrite the point', () async {

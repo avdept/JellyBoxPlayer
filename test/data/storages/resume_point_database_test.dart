@@ -163,6 +163,37 @@ void main() {
     expect(await pointsFor().get('theirs'), isNull);
   });
 
+  test('- points are scoped to the library they were played in', () async {
+    final points = pointsFor();
+    await points.save(point('rock'), libraryId: 'lib-1');
+    await points.save(point('kids'), libraryId: 'lib-2');
+    await points.save(point('legacy'));
+
+    expect(
+      (await points.recent(libraryId: 'lib-1')).map((p) => p.item.id),
+      unorderedEquals(['rock', 'legacy']),
+    );
+    expect(
+      (await points.recent(libraryId: 'lib-2')).map((p) => p.item.id),
+      unorderedEquals(['kids', 'legacy']),
+    );
+    expect(
+      (await points.recent()).map((p) => p.item.id),
+      unorderedEquals(['rock', 'kids', 'legacy']),
+    );
+    expect(await points.get('kids', libraryId: 'lib-1'), isNull);
+    expect((await points.get('legacy', libraryId: 'lib-1'))?.item.id, 'legacy');
+  });
+
+  test('- replaying a legacy point stamps its library', () async {
+    final points = pointsFor();
+    await points.save(point('a'));
+    await points.save(point('a'), libraryId: 'lib-1');
+
+    expect(await points.get('a', libraryId: 'lib-2'), isNull);
+    expect((await points.get('a', libraryId: 'lib-1'))?.item.id, 'a');
+  });
+
   test('- without a user nothing is stored or read', () async {
     final anonymous = pointsFor(userId: null);
     await anonymous.save(point('a'));
