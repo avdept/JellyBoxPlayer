@@ -2,6 +2,7 @@ export 'tv_button.dart';
 export 'tv_card.dart';
 export 'tv_collection_scaffold.dart';
 export 'tv_focusable.dart';
+export 'tv_library_selector.dart';
 export 'tv_mini_player.dart';
 export 'tv_navigation_rail.dart';
 export 'tv_options_dialog.dart';

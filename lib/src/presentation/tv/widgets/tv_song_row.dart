@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/tv_focusable.dart';
@@ -14,6 +15,8 @@ class TvSongRow extends StatelessWidget {
     this.onSelect,
     this.onLongSelect,
     this.autofocus = false,
+    this.focusNode,
+    this.cover,
     super.key,
   });
 
@@ -24,6 +27,10 @@ class TvSongRow extends StatelessWidget {
   final VoidCallback? onSelect;
   final VoidCallback? onLongSelect;
   final bool autofocus;
+  final FocusNode? focusNode;
+  final ImageProvider? cover;
+
+  static const _coverSize = 40.0;
 
   @override
   Widget build(BuildContext context) {
@@ -33,17 +40,18 @@ class TvSongRow extends StatelessWidget {
       onSelect: onSelect,
       onLongSelect: onLongSelect,
       autofocus: autofocus,
+      focusNode: focusNode,
       debugLabel: 'song:${song.name}',
       builder: (context, focused) {
-        final foreground = focused ? Colors.black : Colors.white;
-        final muted = focused ? Colors.black54 : Colors.white60;
+        final muted = focused ? Colors.white70 : Colors.white60;
+        final highlight = focused ? Colors.white : accent;
         return AnimatedContainer(
           duration: TvTokens.focusDuration,
           curve: TvTokens.focusCurve,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: focused
-                ? Colors.white
+                ? TvTokens.listFocus(context)
                 : (isPlaying ? Colors.white10 : Colors.transparent),
             borderRadius: TvTokens.cardRadius,
           ),
@@ -52,13 +60,31 @@ class TvSongRow extends StatelessWidget {
               SizedBox(
                 width: 28,
                 child: isPlaying
-                    ? Icon(Icons.graphic_eq_rounded, size: 18, color: accent)
+                    ? Icon(Icons.graphic_eq_rounded, size: 18, color: highlight)
                     : Text(
                         position?.toString() ?? '',
                         style: TextStyle(fontSize: 13, color: muted),
                       ),
               ),
               const SizedBox(width: 12),
+              if (cover case final cover?) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image(
+                    image: cover,
+                    width: _coverSize,
+                    height: _coverSize,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      Images.album,
+                      width: _coverSize,
+                      height: _coverSize,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +96,7 @@ class TvSongRow extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: isPlaying && !focused ? accent : foreground,
+                        color: isPlaying && !focused ? accent : Colors.white,
                       ),
                     ),
                     if (showArtist && song.artistLabel.isNotEmpty)
@@ -85,7 +111,7 @@ class TvSongRow extends StatelessWidget {
               ),
               if (song.userData.isFavorite) ...[
                 const SizedBox(width: 12),
-                Icon(CupertinoIcons.heart_fill, size: 14, color: accent),
+                Icon(CupertinoIcons.heart_fill, size: 14, color: highlight),
               ],
               const SizedBox(width: 16),
               Text(

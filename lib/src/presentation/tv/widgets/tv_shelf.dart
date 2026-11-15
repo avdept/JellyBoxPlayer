@@ -40,6 +40,7 @@ class TvShelf extends StatelessWidget {
   final bool hideWhenEmpty;
 
   static const _verticalInset = 14.0;
+  static const _glowOverflow = 32.0;
   static const _textBlock = 48.0;
   static const double height =
       TvTokens.cardWidth + _verticalInset * 2 + _textBlock;
@@ -75,29 +76,33 @@ class TvShelf extends StatelessWidget {
   Widget _list(List<LibraryItem> list) {
     if (list.isEmpty) return _message(emptyLabel);
     return FocusTraversalGroup(
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: _verticalInset,
+      child: ClipRect(
+        clipper: const _HorizontalClipper(overflow: _glowOverflow),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: _verticalInset,
+          ),
+          itemCount: list.length,
+          separatorBuilder: (_, _) => const SizedBox(width: TvTokens.cardGap),
+          itemBuilder: (context, index) {
+            final item = list[index];
+            return TvCard(
+              title: item.name,
+              subtitle: subtitleFor?.call(item),
+              image: imageFor(item),
+              cover: coverFor?.call(item),
+              autofocus: autofocusFirst && index == 0,
+              playsOnSelect: playsOnSelect?.call(item) ?? false,
+              onSelect: onSelect == null ? null : () => onSelect!(item),
+              onLongSelect: onLongSelect == null
+                  ? null
+                  : () => onLongSelect!(item),
+            );
+          },
         ),
-        itemCount: list.length,
-        separatorBuilder: (_, _) => const SizedBox(width: TvTokens.cardGap),
-        itemBuilder: (context, index) {
-          final item = list[index];
-          return TvCard(
-            title: item.name,
-            subtitle: subtitleFor?.call(item),
-            image: imageFor(item),
-            cover: coverFor?.call(item),
-            autofocus: autofocusFirst && index == 0,
-            playsOnSelect: playsOnSelect?.call(item) ?? false,
-            onSelect: onSelect == null ? null : () => onSelect!(item),
-            onLongSelect: onLongSelect == null
-                ? null
-                : () => onLongSelect!(item),
-          );
-        },
       ),
     );
   }
@@ -151,4 +156,18 @@ class TvShelf extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _HorizontalClipper extends CustomClipper<Rect> {
+  const _HorizontalClipper({required this.overflow});
+
+  final double overflow;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, -overflow, size.width, size.height + overflow);
+
+  @override
+  bool shouldReclip(_HorizontalClipper oldClipper) =>
+      oldClipper.overflow != overflow;
 }

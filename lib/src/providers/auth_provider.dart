@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jplayer/main.dart';
 import 'package:jplayer/src/core/network/certificate_trust.dart';
+import 'package:jplayer/src/core/platform/tv_home_channel.dart';
 import 'package:jplayer/src/data/backend/media_server_backends.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/backend/media_server_exception.dart';
@@ -427,6 +428,7 @@ class AuthNotifier extends AsyncNotifier<bool?> {
         _storage.deleteAll(),
         ref.read(certificateTrustProvider).clear(),
         ArtworkCache.instance.emptyCache(),
+        TvHomeChannel.clear(),
       ]);
       if (lastServerUrl != null) await _rememberServerUrl(lastServerUrl);
     } finally {

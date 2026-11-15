@@ -46,11 +46,36 @@ class _TvAlbumPageState extends ConsumerState<TvAlbumPage> with AlbumPageState {
   @override
   double get sectionTitleFontSize => 18;
 
-  void _playSong(LibraryItem song) => unawaited(
-    ref
+  Future<void> _playAlbum() async {
+    final SetPlaybackResult result;
+    try {
+      result = await ref.read(setPlaybackProvider.notifier).playAlbum(album);
+    } on Object catch (_) {
+      _notify('Could not start playing "${album.name}"');
+      return;
+    }
+    if (result == SetPlaybackResult.empty) {
+      _notify('Nothing to play in "${album.name}"');
+      return;
+    }
+    if (result == SetPlaybackResult.started && mounted) {
+      unawaited(context.pushNamed(Routes.nowPlaying.name));
+    }
+  }
+
+  void _notify(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _playSong(LibraryItem song) async {
+    await ref
         .read(playbackProvider.notifier)
-        .play(song, songs, album, sourceId: album.id),
-  );
+        .play(song, songs, album, sourceId: album.id);
+    if (mounted) unawaited(context.pushNamed(Routes.nowPlaying.name));
+  }
 
   void _songOptions(LibraryItem song) => unawaited(
     showTvItemOptions(
@@ -75,7 +100,6 @@ class _TvAlbumPageState extends ConsumerState<TvAlbumPage> with AlbumPageState {
   Widget build(BuildContext context) {
     final busy = ref.watch(setPlaybackProvider) == album.id;
     return TvCollectionScaffold(
-      backdrop: albumCover,
       cover: Image(image: albumCover, fit: BoxFit.cover),
       title: album.name,
       subtitle: album.artistLabel,
@@ -87,7 +111,7 @@ class _TvAlbumPageState extends ConsumerState<TvAlbumPage> with AlbumPageState {
           primary: true,
           autofocus: true,
           busy: busy,
-          onSelect: () => unawaited(onPlayAlbumPressed()),
+          onSelect: () => unawaited(_playAlbum()),
         ),
         TvButton(
           label: isFavorite ? 'Liked' : 'Like',
@@ -136,7 +160,7 @@ class _TvAlbumPageState extends ConsumerState<TvAlbumPage> with AlbumPageState {
                     song: song,
                     position: index + 1,
                     isPlaying: playingId == song.id,
-                    onSelect: () => _playSong(song),
+                    onSelect: () => unawaited(_playSong(song)),
                     onLongSelect: () => _songOptions(song),
                   ),
                 ),
@@ -181,7 +205,7 @@ class _TvAlbumPageState extends ConsumerState<TvAlbumPage> with AlbumPageState {
           horizontalPadding: 16,
           imageFor: (item) =>
               ref.read(imageServiceProvider).itemImage(item, size: 400),
-          subtitleFor: (item) => item.artistLabel,
+          subtitleFor: (item) => item.albumArtist,
           onSelect: _openAlbum,
         ),
       );

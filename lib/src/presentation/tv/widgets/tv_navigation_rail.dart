@@ -42,7 +42,6 @@ class TvNavigationRail extends StatefulWidget {
 
 class _TvNavigationRailState extends State<TvNavigationRail> {
   final _scope = FocusScopeNode(debugLabel: 'tv-rail');
-  bool _expanded = false;
 
   @override
   void dispose() {
@@ -50,10 +49,7 @@ class _TvNavigationRailState extends State<TvNavigationRail> {
     super.dispose();
   }
 
-  void _onFocusChange(bool focused) {
-    setState(() => _expanded = focused);
-    widget.onFocusChange?.call(focused);
-  }
+  void _onFocusChange(bool focused) => widget.onFocusChange?.call(focused);
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (widget.onExit == null || event is KeyUpEvent) {
@@ -83,24 +79,18 @@ class _TvNavigationRailState extends State<TvNavigationRail> {
       onFocusChange: _onFocusChange,
       onKeyEvent: _onKey,
       child: FocusTraversalGroup(
-        child: AnimatedContainer(
-          duration: TvTokens.focusDuration,
-          curve: TvTokens.focusCurve,
-          width: _expanded
-              ? TvTokens.railExpandedWidth
-              : TvTokens.railCollapsedWidth,
-          color: TvTokens.railBackground,
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+        child: Container(
+          width: TvTokens.railWidth,
+          color: Theme.of(context).navigationRailTheme.backgroundColor,
+          padding: const EdgeInsets.symmetric(vertical: 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Logo(expanded: _expanded),
+              const _Logo(),
               const SizedBox(height: 24),
-              for (final item in widget.items)
-                _RailButton(item: item, expanded: _expanded),
+              for (final item in widget.items) _RailButton(item: item),
               const Spacer(),
-              for (final item in widget.footer)
-                _RailButton(item: item, expanded: _expanded),
+              for (final item in widget.footer) _RailButton(item: item),
             ],
           ),
         ),
@@ -110,101 +100,51 @@ class _TvNavigationRailState extends State<TvNavigationRail> {
 }
 
 class _Logo extends StatelessWidget {
-  const _Logo({required this.expanded});
-
-  final bool expanded;
+  const _Logo();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        children: [
-          SvgPicture.asset(SvgPictures.jellyboxLogo, width: 40, height: 40),
-          Expanded(
-            child: ClipRect(
-              child: AnimatedOpacity(
-                duration: TvTokens.focusDuration,
-                opacity: expanded ? 1 : 0,
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 12),
-                  child: Text(
-                    'JellyBox',
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.clip,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Center(
+      child: SvgPicture.asset(SvgPictures.jellyboxLogo, width: 40, height: 40),
     );
   }
 }
 
 class _RailButton extends StatelessWidget {
-  const _RailButton({required this.item, required this.expanded});
+  const _RailButton({required this.item});
 
   final TvRailItem item;
-  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
 
-    return TvFocusable(
-      onSelect: item.onSelect,
-      focusNode: item.focusNode,
-      scrollOnFocus: false,
-      debugLabel: 'rail:${item.label}',
-      builder: (context, focused) {
-        final foreground = focused
-            ? Colors.black
-            : (item.selected ? accent : Colors.white);
-        return AnimatedContainer(
+    return Semantics(
+      label: item.label,
+      button: true,
+      child: TvFocusable(
+        onSelect: item.onSelect,
+        focusNode: item.focusNode,
+        scrollOnFocus: false,
+        debugLabel: 'rail:${item.label}',
+        builder: (context, focused) => AnimatedContainer(
           duration: TvTokens.focusDuration,
           curve: TvTokens.focusCurve,
-          height: 44,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 13),
-          decoration: BoxDecoration(
-            color: focused
-                ? Colors.white
-                : (item.selected ? Colors.white12 : Colors.transparent),
-            borderRadius: TvTokens.cardRadius,
+          height: 48,
+          color: focused
+              ? Colors.white
+              : (item.selected ? TvTokens.railSelected : Colors.transparent),
+          child: Center(
+            child: Icon(
+              item.icon,
+              size: 22,
+              color: focused
+                  ? Colors.black
+                  : (item.selected ? accent : Colors.white),
+            ),
           ),
-          child: Row(
-            children: [
-              Icon(item.icon, size: 22, color: foreground),
-              Expanded(
-                child: ClipRect(
-                  child: AnimatedOpacity(
-                    duration: TvTokens.focusDuration,
-                    opacity: expanded ? 1 : 0,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 14),
-                      child: Text(
-                        item.label,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.clip,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: foreground,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

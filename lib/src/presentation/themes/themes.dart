@@ -98,6 +98,7 @@ abstract class Themes {
   );
 
   static final ThemeData tv = red.copyWith(
+    scaffoldBackgroundColor: const Color(0xFF121212),
     visualDensity: VisualDensity.standard,
     focusColor: Colors.white24,
     splashFactory: NoSplash.splashFactory,

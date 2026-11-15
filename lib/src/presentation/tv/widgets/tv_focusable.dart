@@ -52,6 +52,7 @@ class _TvFocusableState extends State<TvFocusable> {
   FocusNode? _ownNode;
   Timer? _longPress;
   bool _longFired = false;
+  bool _pressed = false;
   bool _focused = false;
 
   FocusNode get _node =>
@@ -80,6 +81,7 @@ class _TvFocusableState extends State<TvFocusable> {
     if (!TvFocusable.selectKeys.contains(key)) return KeyEventResult.ignored;
 
     if (event is KeyDownEvent) {
+      _pressed = true;
       _longFired = false;
       _longPress?.cancel();
       if (widget.onLongSelect != null) {
@@ -90,6 +92,7 @@ class _TvFocusableState extends State<TvFocusable> {
       }
       return KeyEventResult.handled;
     }
+    if (!_pressed) return KeyEventResult.handled;
     // Android sends a held key as repeats; the first one is the long press.
     if (event is KeyRepeatEvent) {
       if (!_longFired && widget.onLongSelect != null) {
@@ -102,6 +105,7 @@ class _TvFocusableState extends State<TvFocusable> {
     if (event is KeyUpEvent) {
       _longPress?.cancel();
       if (!_longFired) widget.onSelect?.call();
+      _pressed = false;
       _longFired = false;
       return KeyEventResult.handled;
     }
@@ -110,6 +114,10 @@ class _TvFocusableState extends State<TvFocusable> {
 
   void _onFocusChange(bool focused) {
     if (!mounted) return;
+    if (!focused) {
+      _longPress?.cancel();
+      _pressed = false;
+    }
     setState(() => _focused = focused);
     widget.onFocusChange?.call(focused);
     if (!focused || !widget.scrollOnFocus) return;

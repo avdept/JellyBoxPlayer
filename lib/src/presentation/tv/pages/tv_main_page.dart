@@ -6,9 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/platform/tv_home_channel.dart';
+import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
-import 'package:jplayer/src/presentation/widgets/offline_banner.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
@@ -22,6 +25,8 @@ class TvMainPage extends ConsumerStatefulWidget {
 }
 
 class _TvMainPageState extends ConsumerState<TvMainPage> {
+  static const _settingsBranch = 2;
+
   final _homeNode = FocusNode(debugLabel: 'rail:Home');
   final _signOutNode = FocusNode(debugLabel: 'rail:Sign out');
   final _contentNode = FocusScopeNode(debugLabel: 'tv-content');
@@ -33,11 +38,42 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
   void initState() {
     super.initState();
     FocusManager.instance.addListener(_trackContentFocus);
+    TvHomeChannel.listen((albumId) => unawaited(_openAlbum(albumId)));
+    unawaited(_openPendingAlbum());
+    ref.listenManual<bool>(isOfflineProvider, (_, offline) {
+      if (!offline) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_railFocused) _homeNode.requestFocus();
+      });
+    }, fireImmediately: true);
+  }
+
+  Future<void> _openPendingAlbum() async {
+    final albumId = await TvHomeChannel.takePendingAlbum();
+    if (albumId != null) await _openAlbum(albumId);
+  }
+
+  Future<void> _openAlbum(String albumId) async {
+    final LibraryItem album;
+    try {
+      album = await ref
+          .read(mediaServerClientProvider)
+          .getItem(albumId, kind: ItemKind.album);
+    } on Object catch (error) {
+      debugPrint('[TvMainPage] could not open album $albumId: $error');
+      return;
+    }
+    if (!mounted) return;
+    widget.shell.goBranch(0);
+    unawaited(
+      context.pushNamed(Routes.homeAlbum.name, extra: {'album': album}),
+    );
   }
 
   @override
   void dispose() {
     FocusManager.instance.removeListener(_trackContentFocus);
+    TvHomeChannel.stopListening();
     _homeNode.dispose();
     _signOutNode.dispose();
     _contentNode.dispose();
@@ -171,9 +207,10 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
               ],
               footer: [
                 TvRailItem(
-                  icon: Icons.library_music_outlined,
-                  label: 'Switch library',
-                  onSelect: () => context.goNamed(Routes.library.name),
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  selected: widget.shell.currentIndex == _settingsBranch,
+                  onSelect: () => widget.shell.goBranch(_settingsBranch),
                 ),
                 TvRailItem(
                   icon: JPlayer.log_out,
@@ -187,21 +224,56 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
             Expanded(
               child: Column(
                 children: [
-                  if (isOffline) const OfflineBanner(),
                   Expanded(
-                    child: FocusScope(
-                      node: _contentNode,
-                      onKeyEvent: _onContentKey,
-                      child: widget.shell,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ExcludeFocus(
+                          excluding: isOffline,
+                          child: FocusScope(
+                            node: _contentNode,
+                            onKeyEvent: _onContentKey,
+                            child: widget.shell,
+                          ),
+                        ),
+                        if (isOffline) const _OfflineScreen(),
+                      ],
                     ),
                   ),
-                  FocusScope(
-                    node: _playerNode,
-                    onKeyEvent: _onPlayerKey,
-                    child: const TvMiniPlayer(),
-                  ),
+                  if (ref.watch(settingProvider(AppSetting.tvMiniPlayer)))
+                    FocusScope(
+                      node: _playerNode,
+                      onKeyEvent: _onPlayerKey,
+                      child: const TvMiniPlayer(),
+                    ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OfflineScreen extends StatelessWidget {
+  const _OfflineScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: TvTokens.pageBackground,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_rounded, size: 56, color: Colors.white54),
+            SizedBox(height: 20),
+            Text("You're offline", style: TvTokens.title),
+            SizedBox(height: 8),
+            Text(
+              'JellyBox will reconnect when your server is reachable.',
+              style: TextStyle(fontSize: 15, color: Colors.white70),
             ),
           ],
         ),

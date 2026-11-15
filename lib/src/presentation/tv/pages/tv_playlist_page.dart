@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
+import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
@@ -17,7 +19,7 @@ import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
-enum TvPlaylistSource { playlist, likedSongs, generated }
+enum TvPlaylistSource { playlist, likedSongs, onRepeat, generated }
 
 class TvPlaylistPage extends ConsumerStatefulWidget {
   const TvPlaylistPage({
@@ -59,8 +61,8 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
     try {
       final songs = await switch (widget.source) {
         TvPlaylistSource.playlist => _loadPlaylistSongs(),
-        TvPlaylistSource.likedSongs =>
-          ref.read(favouriteSongsProvider.future).then((page) => page.items),
+        TvPlaylistSource.likedSongs || TvPlaylistSource.onRepeat =>
+          ref.read(playlistSongsSourceProvider).songsOf(playlist.id),
         TvPlaylistSource.generated => ref.read(
           todaysPlaylistSongsProvider(playlist.id).future,
         ),
@@ -91,14 +93,20 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
   Future<void> _playAll() async {
     final notifier = ref.read(setPlaybackProvider.notifier);
     final result = await switch (widget.source) {
-      TvPlaylistSource.playlist => notifier.playPlaylist(playlist),
+      TvPlaylistSource.playlist ||
+      TvPlaylistSource.onRepeat => notifier.playPlaylist(playlist),
       TvPlaylistSource.likedSongs => notifier.playFavouriteSongs(playlist),
       TvPlaylistSource.generated => notifier.playGeneratedPlaylist(playlist),
     };
-    if (result == SetPlaybackResult.empty && mounted) {
+    if (!mounted) return;
+    if (result == SetPlaybackResult.empty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Nothing to play in "${playlist.name}"')),
       );
+      return;
+    }
+    if (result == SetPlaybackResult.started) {
+      unawaited(context.pushNamed(Routes.nowPlaying.name));
     }
   }
 
@@ -109,11 +117,12 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
     await playback.play(_songs.first, _songs, playlist, sourceId: playlist.id);
   }
 
-  void _playSong(LibraryItem song) => unawaited(
-    ref
+  Future<void> _playSong(LibraryItem song) async {
+    await ref
         .read(playbackProvider.notifier)
-        .play(song, _songs, playlist, sourceId: playlist.id),
-  );
+        .play(song, _songs, playlist, sourceId: playlist.id);
+    if (mounted) unawaited(context.pushNamed(Routes.nowPlaying.name));
+  }
 
   Future<void> _toggleLike(LibraryItem song) async {
     final updated = await toggleFavourite(ref, song);
@@ -142,17 +151,12 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
   @override
   Widget build(BuildContext context) {
     final images = ref.read(imageServiceProvider);
-    final hasCover = playlist.images.hasCover;
+    final hasCover =
+        playlist.images.hasCover || UserPlaylist.of(playlist.id) != null;
     final coverSongs = _songs.take(4).toList();
-    final backdrop = hasCover
-        ? images.itemImage(playlist, size: 800)
-        : (coverSongs.isEmpty
-              ? images.itemImage(playlist)
-              : images.itemImage(coverSongs.first, size: 800));
     final busy = ref.watch(setPlaybackProvider) == playlist.id;
 
     return TvCollectionScaffold(
-      backdrop: backdrop,
       cover: hasCover || coverSongs.isEmpty
           ? Image(
               image: images.itemImage(playlist, size: 600),
@@ -166,6 +170,7 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
       subtitle: switch (widget.source) {
         TvPlaylistSource.playlist => 'Playlist',
         TvPlaylistSource.likedSongs => 'Your liked songs',
+        TvPlaylistSource.onRepeat => 'Your most played songs, last 30 days',
         TvPlaylistSource.generated => 'Made for you',
       },
       details: _details(),
@@ -243,8 +248,13 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
       );
     }
     if (_songs.isEmpty) {
-      return const Center(
-        child: Text("There's no songs yet.", style: TvTokens.body),
+      return Center(
+        child: Text(
+          widget.source == TvPlaylistSource.onRepeat
+              ? 'Nothing played in the last 30 days.'
+              : "There's no songs yet.",
+          style: TvTokens.body,
+        ),
       );
     }
     return FocusTraversalGroup(
@@ -259,8 +269,9 @@ class _TvPlaylistPageState extends ConsumerState<TvPlaylistPage> {
           return TvSongRow(
             song: song,
             position: index + 1,
+            cover: ref.read(imageServiceProvider).itemImage(song),
             isPlaying: _current != null && _current!.id == song.id,
-            onSelect: () => _playSong(song),
+            onSelect: () => unawaited(_playSong(song)),
             onLongSelect: () => _songOptions(song),
           );
         },

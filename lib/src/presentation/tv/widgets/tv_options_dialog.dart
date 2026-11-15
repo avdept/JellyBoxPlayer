@@ -81,8 +81,9 @@ class TvOptionsDialog extends StatelessWidget {
                 ),
               const SizedBox(height: 14),
               for (final (index, action) in actions.indexed)
-                _OptionRow(
-                  action: action,
+                TvOptionRow(
+                  icon: action.icon,
+                  label: action.label,
                   autofocus: index == 0,
                   onSelect: () => Navigator.of(context).pop(action),
                 ),
@@ -94,16 +95,21 @@ class TvOptionsDialog extends StatelessWidget {
   }
 }
 
-class _OptionRow extends StatelessWidget {
-  const _OptionRow({
-    required this.action,
+class TvOptionRow extends StatelessWidget {
+  const TvOptionRow({
+    required this.icon,
+    required this.label,
     required this.onSelect,
     this.autofocus = false,
+    this.trailing,
+    super.key,
   });
 
-  final ContextMenuAction action;
+  final Widget icon;
+  final Widget label;
   final VoidCallback onSelect;
   final bool autofocus;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -112,30 +118,33 @@ class _OptionRow extends StatelessWidget {
       autofocus: autofocus,
       scrollOnFocus: false,
       builder: (context, focused) {
-        final foreground = focused ? Colors.black : Colors.white;
         return AnimatedContainer(
           duration: TvTokens.focusDuration,
           curve: TvTokens.focusCurve,
           margin: const EdgeInsets.only(bottom: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: focused ? Colors.white : Colors.transparent,
+            color: focused ? TvTokens.listFocus(context) : Colors.transparent,
             borderRadius: TvTokens.cardRadius,
           ),
-          child: Row(
-            children: [
-              IconTheme.merge(
-                data: IconThemeData(size: 20, color: foreground),
-                child: action.icon,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: DefaultTextStyle.merge(
-                  style: TextStyle(fontSize: 15, color: foreground),
-                  child: action.label,
+          child: IconTheme.merge(
+            data: const IconThemeData(size: 20, color: Colors.white),
+            child: Row(
+              children: [
+                icon,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: DefaultTextStyle.merge(
+                    style: const TextStyle(fontSize: 15, color: Colors.white),
+                    child: label,
+                  ),
                 ),
-              ),
-            ],
+                if (trailing case final trailing?) ...[
+                  const SizedBox(width: 14),
+                  trailing,
+                ],
+              ],
+            ),
           ),
         );
       },

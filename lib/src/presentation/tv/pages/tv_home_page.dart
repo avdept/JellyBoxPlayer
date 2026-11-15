@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/platform/tv_home_channel.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
@@ -14,6 +15,7 @@ import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
+import 'package:jplayer/src/presentation/widgets/resume_set_button.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
@@ -30,6 +32,20 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
   @override
   void initState() {
     super.initState();
+    ref.listenManual<AsyncValue<List<LibraryItem>>>(
+      recentlyAddedAlbumsProvider,
+      (_, albums) {
+        final list = albums.valueOrNull;
+        if (list == null) return;
+        unawaited(
+          TvHomeChannel.publishRecentlyAdded(
+            list,
+            ref.read(imageServiceProvider),
+          ),
+        );
+      },
+      fireImmediately: true,
+    );
     ref.listenManual(
       contentUpdateIntervalProvider,
       (_, interval) => _scheduleUpdates(interval),
@@ -71,6 +87,10 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
       );
       return;
     }
+    if (isOnRepeatId(playlist.id)) {
+      unawaited(context.pushNamed(branchAwareName(context, Routes.onRepeat)));
+      return;
+    }
     ref.read(currentPlaylistProvider.notifier).setPlaylist(playlist);
     unawaited(
       context.pushNamed(
@@ -97,6 +117,12 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
   void _onRecentlyPlayed(LibraryItem item) => isInstantMixId(item.id)
       ? unawaited(_playInstantMix(item))
       : _openAlbum(item);
+
+  void _resume(LibraryItem item) {
+    final point = ref.read(resumePointProvider(item.id));
+    if (point == null) return;
+    unawaited(resumeSet(context, ref, point));
+  }
 
   void _onFavourite(LibraryItem item) =>
       item.kind == ItemKind.playlist ? _openPlaylist(item) : _openAlbum(item);
@@ -148,44 +174,34 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
-    final library = ref.watch(currentLibraryProvider).valueOrNull;
+    final resumePoints = ref.watch(resumePointsProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: TvTokens.pagePaddingV),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              TvTokens.pagePaddingH,
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+              TvTokens.pagePaddingH - 6,
               0,
               TvTokens.pagePaddingH,
               20,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Text('Home', style: TvTokens.title),
-                if (library != null) ...[
-                  const SizedBox(width: 14),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(library.name, style: TvTokens.caption),
-                  ),
-                ],
-              ],
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TvLibrarySelector(),
             ),
           ),
           if (isOffline)
-            Padding(
-              padding: const EdgeInsets.symmetric(
+            const Padding(
+              padding: EdgeInsets.symmetric(
                 horizontal: TvTokens.pagePaddingH,
               ),
               child: OfflineNotice(
                 message:
                     "You're offline. Your library will be back "
                     'once the server is reachable.',
-                showDownloadsLink: true,
               ),
             )
           else ...[
@@ -193,7 +209,7 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
               title: 'Recently added',
               items: ref.watch(recentlyAddedAlbumsProvider),
               imageFor: _image,
-              subtitleFor: (item) => item.artistLabel,
+              subtitleFor: (item) => item.albumArtist,
               autofocusFirst: true,
               onSelect: _openAlbum,
               onLongSelect: _options(recentlyAddedAlbumsProvider),
@@ -210,12 +226,28 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
                 onSelect: _openGenerated,
                 onRetry: () => ref.invalidate(todaysPlaylistsProvider),
               ),
+            if (resumePoints.isNotEmpty)
+              TvShelf(
+                title: 'Jump back in',
+                items: AsyncData([
+                  for (final point in resumePoints) point.item,
+                ]),
+                imageFor: _image,
+                subtitleFor: (item) => item.albumArtist,
+                coverFor: _instantMixCover,
+                playsOnSelect: (_) => true,
+                onSelect: _resume,
+                onLongSelect: (item) {
+                  if (EphemeralPlaylistId.isEphemeral(item.id)) return;
+                  _options(resumePointsProvider)(item);
+                },
+              ),
             if (!ref.watch(settingProvider(AppSetting.recentlyPlayedHidden)))
               TvShelf(
                 title: 'Recently played',
                 items: ref.watch(recentlyPlayedItemsProvider),
                 imageFor: _image,
-                subtitleFor: (item) => item.artistLabel,
+                subtitleFor: (item) => item.albumArtist,
                 coverFor: _instantMixCover,
                 playsOnSelect: (item) => isInstantMixId(item.id),
                 onSelect: _onRecentlyPlayed,
@@ -230,7 +262,7 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
                 title: 'Favourites',
                 items: ref.watch(homeFavouritesProvider),
                 imageFor: _image,
-                subtitleFor: (item) => item.artistLabel,
+                subtitleFor: (item) => item.albumArtist,
                 onSelect: _onFavourite,
                 onLongSelect: _options(homeFavouritesProvider),
                 onRetry: _refreshFavourites,
@@ -241,7 +273,11 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
               items: ref
                   .watch(homePlaylistsProvider)
                   .whenData(
-                    (list) => [?ref.watch(likedSongsPlaylistProvider), ...list],
+                    (list) => [
+                      ?ref.watch(likedSongsPlaylistProvider),
+                      ?ref.watch(onRepeatCardProvider).valueOrNull,
+                      ...list,
+                    ],
                   ),
               imageFor: _image,
               onSelect: _openPlaylist,
@@ -255,7 +291,7 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
               title: 'Frequently played',
               items: ref.watch(frequentlyPlayedAlbumsProvider),
               imageFor: _image,
-              subtitleFor: (item) => item.artistLabel,
+              subtitleFor: (item) => item.albumArtist,
               onSelect: _openAlbum,
               onLongSelect: _options(frequentlyPlayedAlbumsProvider),
               onRetry: () => ref.invalidate(frequentlyPlayedAlbumsProvider),
