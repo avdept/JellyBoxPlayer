@@ -44,6 +44,7 @@ enum AppSetting {
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
   lyricsBlur('lyrics_blur', defaultValue: 'medium'),
   lrclibLyrics('lrclib_lyrics', defaultValue: true),
+  fanartArtistBackgrounds('fanart_artist_backgrounds', defaultValue: true),
   catalogDiscovery('catalog_discovery', defaultValue: true),
   playerVolume('player_volume', defaultValue: 1.0),
   repeatMode('repeat_mode', defaultValue: 'off', syncs: false),

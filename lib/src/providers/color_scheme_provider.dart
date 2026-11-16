@@ -79,6 +79,20 @@ coverEdgeColorProvider = FutureProvider.autoDispose.family<Color?, LibraryItem>(
   },
 );
 
+final AutoDisposeFutureProviderFamily<Color?, Uri> artworkEdgeColorProvider =
+    FutureProvider.autoDispose.family<Color?, Uri>((
+      ref,
+      uri,
+    ) async {
+      try {
+        return await bottomEdgeColor(
+          ref.read(imageServiceProvider).artworkImage(uri),
+        );
+      } on Object {
+        return null;
+      }
+    });
+
 Future<Color?> bottomEdgeColor(
   ImageProvider provider, {
   double fraction = 0.15,

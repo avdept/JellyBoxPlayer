@@ -132,12 +132,31 @@ void main() {
         await widgetTester.pumpWidget(getWidgetUT(artist: mockArtist));
         await widgetTester.pump(Duration.zero);
         expect(find.text(mockArtist.name), findsAtLeastNWidgets(1));
-        expect(
-          find.text(
-            mockArtist.overview ?? 'This artist does not have any information.',
-          ),
-          findsOneWidget,
-        );
+        expect(find.text('Read more'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '- a long biography shows two lines and expands on Read more',
+      (widgetTester) async {
+        final bio = List.filled(20, 'Formed in a garage.').join(' ');
+        final artist = mockArtist.copyWith(overview: bio);
+        await widgetTester.pumpWidget(getWidgetUT(artist: artist));
+        await widgetTester.pump(Duration.zero);
+        expect(find.text(bio), findsOneWidget);
+        expect(find.byType(SelectableText), findsNothing);
+
+        await widgetTester.tap(find.text('Read more'));
+        await widgetTester.pump();
+
+        expect(find.byType(SelectableText), findsOneWidget);
+        expect(find.text('Read less'), findsOneWidget);
+
+        await widgetTester.tap(find.text('Read less'));
+        await widgetTester.pump();
+
+        expect(find.byType(SelectableText), findsNothing);
+        expect(find.text('Read more'), findsOneWidget);
       },
     );
 
@@ -149,6 +168,8 @@ void main() {
         ).thenAnswer((_) async => mockAppearsOn.copyWith(items: const []));
         await widgetTester.pumpWidget(getWidgetUT(artist: mockArtist));
         await widgetTester.pump(Duration.zero);
+        await widgetTester.scrollUntilVisible(find.text('Albums'), 200);
+        await widgetTester.pump();
         final albumUT = mockAlbums.items.first;
         final albumFinder = find.byType(AlbumView);
         expect(albumFinder, findsWidgets);
@@ -156,6 +177,7 @@ void main() {
           find.descendant(of: albumFinder, matching: find.text(albumUT.name)),
           findsOneWidget,
         );
+        expect(find.text('Newest release'), findsNothing);
         expect(find.text('Albums'), findsOneWidget);
         expect(find.text('Appears On'), findsNothing);
       },
@@ -169,6 +191,8 @@ void main() {
         ).thenAnswer((_) async => mockAlbums.copyWith(items: const []));
         await widgetTester.pumpWidget(getWidgetUT(artist: mockArtist));
         await widgetTester.pump(Duration.zero);
+        await widgetTester.scrollUntilVisible(find.text('Appears On'), 200);
+        await widgetTester.pump();
         final albumUT = mockAppearsOn.items.first;
         final albumFinder = find.byType(AlbumView);
         expect(albumFinder, findsWidgets);

@@ -567,6 +567,16 @@ class SettingsPage extends ConsumerWidget {
                     const ListenBrainzSettings(),
                     _sectionHeader('Last.fm'),
                     const LastFmSettings(),
+                    _sectionHeader('fanart.tv'),
+                    _settingCheckbox(
+                      ref: ref,
+                      setting: AppSetting.fanartArtistBackgrounds,
+                      label: 'Show fanart.tv backgrounds on artist pages',
+                    ),
+                    if (ref.watch(
+                      settingProvider(AppSetting.fanartArtistBackgrounds),
+                    ))
+                      const FanartSettings(),
                     if (ref.watch(lidarrAvailableProvider)) ...[
                       _sectionHeader('Lidarr'),
                       const LidarrSettings(),

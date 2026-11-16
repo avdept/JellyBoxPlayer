@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ class ScrollablePageScaffold extends StatefulWidget {
     this.navigationBar,
     this.loadMoreData,
     this.contentPadding = EdgeInsets.zero,
+    this.background,
+    this.backgroundColor,
     this.slivers = const [],
     this.showScrollbar = true,
     super.key,
@@ -21,6 +24,8 @@ class ScrollablePageScaffold extends StatefulWidget {
   final Future<void> Function()? loadMoreData;
   final PreferredSizeWidget? navigationBar;
   final EdgeInsets contentPadding;
+  final Widget? background;
+  final Color? backgroundColor;
   final List<Widget>? slivers;
 
   @override
@@ -38,6 +43,10 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
   bool get _hasExternalController => widget.controller != null;
 
   double get _appBarHeight => widget.navigationBar?.preferredSize.height ?? 0;
+
+  double get _backgroundScroll => _effectiveScrollController.hasClients
+      ? max(0, _effectiveScrollController.offset).roundToDouble()
+      : 0;
 
   void _onScroll() {
     _blurAppBar.value = _effectiveScrollController.offset > 0;
@@ -74,6 +83,7 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: widget.backgroundColor,
       body: widget.useGradientBackground
           ? GradientBackground(child: _body())
           : _body(),
@@ -109,6 +119,20 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
 
   Widget _body() => Stack(
     children: [
+      if (widget.background case final background?)
+        Positioned(
+          left: 0,
+          top: 0,
+          right: 0,
+          child: ListenableBuilder(
+            listenable: _effectiveScrollController,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(0, -_backgroundScroll),
+              child: child,
+            ),
+            child: background,
+          ),
+        ),
       SafeArea(
         child: MediaQuery(
           data: _mediaQuery.copyWith(
