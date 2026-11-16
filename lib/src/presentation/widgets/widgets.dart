@@ -49,6 +49,7 @@ export 'letter_ruler.dart';
 export 'landscape_player.dart';
 export 'lastfm_connect_form.dart';
 export 'lastfm_settings.dart';
+export 'fanart_settings.dart';
 export 'library_selector_button.dart';
 export 'library_view.dart';
 export 'listenbrainz_connect_form.dart';

@@ -9,12 +9,7 @@ class ArtistHeaderAppBar extends StatefulWidget {
     required this.titleKey,
     required this.name,
     required this.titleImage,
-    required this.image,
-    required this.panel,
-    required this.headerHeight,
-    required this.horizontalPadding,
-    required this.isMobile,
-    this.backdrop,
+    this.barColor,
     super.key,
   });
 
@@ -22,12 +17,7 @@ class ArtistHeaderAppBar extends StatefulWidget {
   final GlobalKey titleKey;
   final String name;
   final ImageProvider titleImage;
-  final Widget image;
-  final Widget panel;
-  final double headerHeight;
-  final double horizontalPadding;
-  final bool isMobile;
-  final Widget? backdrop;
+  final Color? barColor;
 
   @override
   State<ArtistHeaderAppBar> createState() => _ArtistHeaderAppBarState();
@@ -38,6 +28,12 @@ class _ArtistHeaderAppBarState extends State<ArtistHeaderAppBar> {
     controller: widget.controller,
     titleKey: widget.titleKey,
   );
+
+  static const _barFadeDistance = 48.0;
+
+  double get _barOpacity => widget.controller.hasClients
+      ? (widget.controller.offset / _barFadeDistance).clamp(0.0, 1.0)
+      : 0;
 
   @override
   void dispose() {
@@ -77,68 +73,83 @@ class _ArtistHeaderAppBarState extends State<ArtistHeaderAppBar> {
           ],
         ),
       ),
-      floating: true,
       pinned: true,
-      expandedHeight: widget.headerHeight,
       backgroundColor: Colors.transparent,
-      flexibleSpace: ValueListenableBuilder(
-        valueListenable: _fade,
-        builder: (context, opacity, child) => ClipRect(
+      surfaceTintColor: Colors.transparent,
+      scrolledUnderElevation: 0,
+      flexibleSpace: ListenableBuilder(
+        listenable: widget.controller,
+        builder: (context, _) => ClipRect(
           child: BackdropFilter(
-            enabled: opacity > 0,
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            enabled: _barOpacity > 0,
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: ColoredBox(
-              color: theme.scaffoldBackgroundColor.withValues(
-                alpha: 0.8 * opacity,
-              ),
-              child: child,
+              color: (widget.barColor ?? theme.scaffoldBackgroundColor)
+                  .withValues(alpha: 0.9 * _barOpacity),
+              child: const SizedBox.expand(),
             ),
-          ),
-        ),
-        child: FlexibleSpaceBar(
-          collapseMode: CollapseMode.pin,
-          background: Stack(
-            alignment: Alignment.topCenter,
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                top: widget.isMobile ? -60 : 0,
-                height: widget.isMobile ? 340 : widget.headerHeight,
-                child:
-                    widget.backdrop ??
-                    ColoredBox(color: theme.scaffoldBackgroundColor),
-              ),
-              Padding(
-                padding: EdgeInsets.only(
-                  left: widget.isMobile ? 20 : widget.horizontalPadding,
-                  top: 60,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: AspectRatio(aspectRatio: 1, child: widget.image),
-                    ),
-                    Flexible(
-                      flex: 3,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: widget.isMobile
-                              ? 16
-                              : widget.horizontalPadding,
-                        ),
-                        child: widget.panel,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
     );
   }
+}
+
+class ArtistHeaderBody extends StatelessWidget {
+  const ArtistHeaderBody({
+    required this.image,
+    required this.panel,
+    required this.headerHeight,
+    required this.horizontalPadding,
+    required this.isMobile,
+    super.key,
+  });
+
+  static const avatarSize = 120.0;
+  static const avatarTop = 32.0;
+
+  final Widget image;
+  final Widget panel;
+  final double headerHeight;
+  final double horizontalPadding;
+  final bool isMobile;
+
+  @override
+  Widget build(BuildContext context) => SliverToBoxAdapter(
+    child: SizedBox(
+      height: headerHeight - kToolbarHeight,
+      child: isMobile ? _mobile() : _desktop(),
+    ),
+  );
+
+  Widget _mobile() => Padding(
+    padding: const EdgeInsets.only(left: 20, top: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Flexible(child: AspectRatio(aspectRatio: 1, child: image)),
+        Flexible(
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+            child: panel,
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _desktop() => Padding(
+    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: avatarTop),
+        SizedBox.square(dimension: avatarSize, child: image),
+        const Spacer(),
+        panel,
+        const SizedBox(height: 8),
+      ],
+    ),
+  );
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,13 +9,19 @@ import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/catalog_provider.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/fanart_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 const _topSongsPreview = 5;
-const _topSongsFadeHeight = 34.0;
+const double heroAspectRatio = 16 / 9;
+const double mobileShadeStartFraction = 0.45;
+const double maxShadeStartFraction = 0.6;
+const int _shadeSteps = 12;
 const _seeMoreHeight = 40.0;
 
 class ArtistPage extends ConsumerStatefulWidget {
@@ -31,6 +39,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   List<LibraryItem> _appearsOn = [];
   List<LibraryItem> _topSongs = const [];
   var _showAllTopSongs = false;
+  var _showFullBio = false;
   late LibraryItem _artist = widget.artist;
 
   late Size _screenSize;
@@ -166,51 +175,85 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   double get _horizontalPadding => _device.isDesktop ? 40 : 16;
 
   double get _headerHeight =>
-      _device.isMobile ? 250 : (_device.isTablet ? 340 : 360);
+      _device.isMobile ? 250 : (_device.isTablet ? 400 : 440);
+
+  double _shadeStart(double heroHeight) => _device.isMobile
+      ? heroHeight * mobileShadeStartFraction
+      : min(
+          kToolbarHeight +
+              ArtistHeaderBody.avatarTop +
+              ArtistHeaderBody.avatarSize,
+          heroHeight * maxShadeStartFraction,
+        );
 
   @override
   Widget build(BuildContext context) {
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(end: _tint ?? Colors.transparent),
+      duration: const Duration(milliseconds: 600),
+      builder: (context, tint, _) => _page(
+        Color.alphaBlend(tint!, _theme.scaffoldBackgroundColor),
+      ),
+    );
+  }
+
+  Widget _page(Color base) {
     return ScrollablePageScaffold(
       controller: _scrollController,
+      backgroundColor: base,
+      background: _backdropUri == null
+          ? null
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final height = constraints.maxWidth / heroAspectRatio;
+                return SizedBox(height: height, child: _hero(base, height));
+              },
+            ),
       slivers: [
         ArtistHeaderAppBar(
+          barColor: base,
           controller: _scrollController,
           titleKey: _titleKey,
           name: widget.artist.name,
           titleImage: ref.read(imageServiceProvider).itemImage(widget.artist),
+        ),
+        ArtistHeaderBody(
           image: _mainImage(),
-          backdrop: widget.artist.images.backdrops.isNotEmpty
-              ? _headerImage()
-              : null,
           headerHeight: _headerHeight,
           horizontalPadding: _horizontalPadding,
           isMobile: _device.isMobile,
           panel: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
                       key: _titleKey,
                       widget.artist.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: _device.isMobile ? 18 : 20,
+                        fontSize: _device.isMobile ? 22 : 44,
                         fontWeight: FontWeight.w700,
+                        height: 1.1,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   _playButton(),
                 ],
               ),
-              DefaultTextStyle(
-                style: TextStyle(fontSize: _device.isMobile ? 14 : 16),
-                child: _infoText(),
-              ),
+              if (!_showFullBio)
+                if (_artist.overview case final overview?)
+                  _bioExcerpt(overview),
             ],
           ),
         ),
-        ..._topSongsWidgets(),
+        if (_showFullBio)
+          if (_artist.overview case final overview?) _fullBio(overview),
+        if (_device.isMobile) ..._topSongsWidgets() else _popularAndNewest(),
         ..._albumsWidgets(),
       ],
     );
@@ -222,27 +265,88 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     super.dispose();
   }
 
-  Widget _headerImage() => Container(
-    decoration: BoxDecoration(
-      color: _theme.scaffoldBackgroundColor,
-      image: DecorationImage(
-        image: ref
-            .read(imageServiceProvider)
-            .itemImage(widget.artist, kind: ImageKind.backdrop),
-        fit: BoxFit.fitWidth,
-      ),
-    ),
-    foregroundDecoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          _theme.scaffoldBackgroundColor.withOpacity(0),
-          _theme.scaffoldBackgroundColor.withOpacity(1),
+  Uri? get _backdropUri =>
+      _fanartBackground ??
+      ref
+          .read(imageServiceProvider)
+          .itemUri(widget.artist, kind: ImageKind.backdrop);
+
+  Color? get _tint {
+    if (!ref.watch(settingProvider(AppSetting.albumArtTint))) return null;
+    final backdrop = _backdropUri;
+    if (backdrop == null) return null;
+    final color = ref.watch(artworkEdgeColorProvider(backdrop)).valueOrNull;
+    if (color == null) return null;
+    return Color.lerp(Colors.black, color, 0.5);
+  }
+
+  Uri? get _fanartBackground {
+    if (!ref.watch(fanartArtistBackgroundsProvider)) return null;
+    final id = fanartArtistId(_artist);
+    if (id == null) return null;
+    return ref
+        .watch(fanartArtistImagesProvider(id))
+        .valueOrNull
+        ?.backgrounds
+        .firstOrNull
+        ?.uri;
+  }
+
+  Widget _hero(Color base, double height) {
+    final images = ref.read(imageServiceProvider);
+    final server = images.itemUri(widget.artist, kind: ImageKind.backdrop);
+    final fanart = _fanartBackground;
+    return Container(
+      color: base,
+      foregroundDecoration: BoxDecoration(gradient: _shade(base, height)),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (server != null) _heroImage(images.artworkImage(server)),
+          if (fanart != null)
+            _heroImage(images.artworkImage(fanart), fadeIn: true),
         ],
       ),
-    ),
+    );
+  }
+
+  Widget _heroImage(ImageProvider image, {bool fadeIn = false}) => Image(
+    image: image,
+    fit: BoxFit.cover,
+    alignment: Alignment.topCenter,
+    gaplessPlayback: true,
+    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+    frameBuilder: !fadeIn
+        ? null
+        : (context, child, frame, wasSynchronouslyLoaded) =>
+              wasSynchronouslyLoaded
+              ? child
+              : AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(milliseconds: 400),
+                  child: child,
+                ),
   );
+
+  LinearGradient _shade(Color base, double height) {
+    final start = _shadeStart(height) / height;
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      stops: [
+        0,
+        for (var i = 0; i <= _shadeSteps; i++)
+          start + (1 - start) * i / _shadeSteps,
+      ],
+      colors: [
+        base.withValues(alpha: 0),
+        for (var i = 0; i <= _shadeSteps; i++)
+          base.withValues(
+            alpha: Curves.easeOutCubic.transform(i / _shadeSteps),
+          ),
+      ],
+    );
+  }
 
   Widget _mainImage() => ClipOval(
     child: Image(
@@ -251,111 +355,71 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     ),
   );
 
-  static const _bioLines = 5;
+  static const _bioExcerptLines = 2;
 
-  Widget _infoText() {
-    final text =
-        _artist.overview ?? 'This artist does not have any information.';
-    final style = _theme.textTheme.bodySmall?.copyWith(
-      fontSize: 14,
-      height: 1.2,
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final painter = TextPainter(
-          text: TextSpan(text: text, style: style),
-          maxLines: _bioLines,
-          textDirection: Directionality.of(context),
-          textScaler: MediaQuery.textScalerOf(context),
-        )..layout(maxWidth: constraints.maxWidth);
-        final overflows = painter.didExceedMaxLines;
-        painter.dispose();
+  TextStyle? get _bioStyle =>
+      _theme.textTheme.bodySmall?.copyWith(fontSize: 14, height: 1.3);
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                text,
-                maxLines: _bioLines,
-                overflow: TextOverflow.ellipsis,
-                softWrap: true,
-                style: style,
-              ),
-              if (overflows)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _showBio(text),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(
-                      'Read more',
-                      style: style?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  Widget _bioExcerpt(String text) => LayoutBuilder(
+    builder: (context, constraints) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: _bioStyle),
+        maxLines: _bioExcerptLines,
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(maxWidth: constraints.maxWidth);
+      final overflows = painter.didExceedMaxLines;
+      painter.dispose();
 
-  Future<void> _showBio(String text) {
-    final style = _theme.textTheme.bodyMedium?.copyWith(
-      fontSize: 15,
-      height: 1.4,
-    );
-    if (!_device.isDesktop) {
-      return showFormModal<void>(
-        context,
-        builder: (context) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ModalFormHeader(_artist.name),
-              const SizedBox(height: 12),
-              SelectableText(text, style: style),
-            ],
-          ),
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              text,
+              maxLines: _bioExcerptLines,
+              overflow: TextOverflow.ellipsis,
+              style: _bioStyle,
+            ),
+            if (overflows) _bioToggle('Read more'),
+          ],
         ),
       );
-    }
-    return showAppDialog<void>(
-      context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: SizedBox(
-          width: 560,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ModalFormHeader(_artist.name),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: Focus(
-                    autofocus: true,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: SelectableText(text, style: style),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+    },
+  );
+
+  Widget _fullBio(String text) => SliverToBoxAdapter(
+    child: Padding(
+      padding: EdgeInsets.only(
+        left: _device.isMobile ? 16 : _horizontalPadding,
+        right: _device.isMobile ? 16 : _horizontalPadding,
+        top: 8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SelectableText(text, style: _bioStyle),
+          _bioToggle('Read less'),
+        ],
+      ),
+    ),
+  );
+
+  Widget _bioToggle(String label) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: () => setState(() => _showFullBio = !_showFullBio),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(
+        label,
+        style: _bioStyle?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: _theme.colorScheme.onPrimary,
         ),
       ),
-    );
-  }
+    ),
+  );
 
   Widget _playButton() => SizedBox(
     height: 48,
@@ -364,6 +428,112 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       onPressed: _onArtistPlayPressed,
     ),
   );
+
+  Widget _popularAndNewest() => SliverPadding(
+    padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
+    sliver: SliverToBoxAdapter(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          child: _topSongs.isEmpty
+              ? const SizedBox(width: double.infinity)
+              : Row(
+                  key: const ValueKey('popular'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _popularColumn()),
+                    if (_device.isDesktop) ...[
+                      const SizedBox(width: 40),
+                      Expanded(child: _newestColumn()),
+                    ],
+                  ],
+                ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _popularColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeading(
+          label: 'Popular',
+          fontSize: 24,
+          padding: EdgeInsets.only(top: 8),
+        ),
+        SongListSliver(
+          songs: _topSongs,
+          limit: _showAllTopSongs ? null : _topSongsPreview,
+          edgePadding: 0,
+          showPosition: true,
+          showCover: true,
+          asColumn: true,
+          onItemUpdated: _onTopSongUpdated,
+        ),
+        if (_topSongs.length > _topSongsPreview)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: HoverTextButton(
+              label: _showAllTopSongs ? 'See less' : 'See more',
+              onPressed: _onSeeMorePressed,
+              fontSize: 15,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _newestColumn() {
+    final card = _newestReleaseCard();
+    if (card == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeading(
+          label: 'Newest release',
+          fontSize: 24,
+          padding: EdgeInsets.only(top: 8),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: SizedBox(
+            width: 160,
+            height: 160 / _albumTileAspectRatio,
+            child: card,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget? _newestReleaseCard() {
+    final owned = _albums.firstOrNull;
+    final missing = _newestMissingAlbum;
+    if (missing != null &&
+        (owned?.productionYear == null ||
+            missing.releaseDate!.year > owned!.productionYear!)) {
+      return CatalogAlbumCard(
+        album: missing,
+        muted: true,
+        subtitle: 'Not in your library',
+        onTap: () => context.pushNamed(
+          branchAwareName(context, Routes.catalogAlbum),
+          extra: {'album': missing},
+        ),
+      );
+    }
+    return owned == null ? null : _albumCard(owned);
+  }
+
+  CatalogAlbum? get _newestMissingAlbum {
+    if (!_discoveryEnabled) return null;
+    final albums = ref.watch(missingAlbumsProvider(_catalogKey)).valueOrNull;
+    return albums?.where((album) => album.releaseDate != null).firstOrNull;
+  }
 
   List<Widget> _topSongsWidgets() {
     if (_topSongs.isEmpty) return const [];
@@ -400,66 +570,11 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       ];
     }
 
-    if (!canExpand) {
-      return [_sectionHeading('Popular'), SliverToBoxAdapter(child: songs)];
-    }
-
     return [
       _sectionHeading('Popular'),
-      SliverToBoxAdapter(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: _seeMoreHeight / 2),
-              child: songs,
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: _topSongsFadeHeight + _seeMoreHeight / 2,
-              child: IgnorePointer(child: _topSongsFade()),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: _seeMoreHeight,
-              child: Center(child: _seeMoreButton()),
-            ),
-          ],
-        ),
-      ),
+      SliverToBoxAdapter(child: songs),
+      if (canExpand) SliverToBoxAdapter(child: _seeMoreButton()),
     ];
-  }
-
-  Widget _topSongsFade() {
-    const veilEnd =
-        _topSongsFadeHeight / (_topSongsFadeHeight + _seeMoreHeight / 2);
-    final background = _theme.scaffoldBackgroundColor;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            background.withValues(alpha: 0),
-            background.withValues(alpha: 0.12),
-            background.withValues(alpha: 0.45),
-            background.withValues(alpha: 0.85),
-            background,
-          ],
-          stops: const [
-            0,
-            veilEnd * 0.3,
-            veilEnd * 0.6,
-            veilEnd * 0.85,
-            veilEnd,
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _seeMoreButton() => SizedBox(
@@ -516,27 +631,29 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     sliver: SliverGrid.builder(
       gridDelegate: _albumGridDelegate,
       itemCount: albums.length,
-      itemBuilder: (context, index) => AlbumView(
-        showArtist: false,
-        album: albums[index],
-        subtitle: albums[index].productionYear?.toString(),
-        alignTextStart: true,
-        optionsBuilder: (context) => contextMenuActions(
-          context,
-          ref,
-          albums[index],
-          scope: ContextMenuScope.browse,
-          onLike: _onAlbumLikePressed,
-        ),
-        onTap: (album) => context.pushNamed(
-          branchAwareName(context, Routes.album),
-          extra: {'album': album, 'artist': widget.artist},
-        ),
-        onPlayPressed: _onAlbumPlayPressed,
-        mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
-        subTextStyle: const TextStyle(fontSize: 14),
-      ),
+      itemBuilder: (context, index) => _albumCard(albums[index]),
     ),
+  );
+
+  Widget _albumCard(LibraryItem album) => AlbumView(
+    showArtist: false,
+    album: album,
+    subtitle: album.productionYear?.toString(),
+    alignTextStart: true,
+    optionsBuilder: (context) => contextMenuActions(
+      context,
+      ref,
+      album,
+      scope: ContextMenuScope.browse,
+      onLike: _onAlbumLikePressed,
+    ),
+    onTap: (album) => context.pushNamed(
+      branchAwareName(context, Routes.album),
+      extra: {'album': album, 'artist': widget.artist},
+    ),
+    onPlayPressed: _onAlbumPlayPressed,
+    mainTextStyle: TextStyle(fontSize: _device.isMobile ? 16 : 14),
+    subTextStyle: const TextStyle(fontSize: 14),
   );
 
   EdgeInsets get _gridPadding => EdgeInsets.only(
@@ -551,8 +668,10 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         maxCrossAxisExtent: _device.isMobile ? 200 : 160,
         mainAxisSpacing: 12,
         crossAxisSpacing: _device.isMobile ? 8 : 16,
-        childAspectRatio: _device.isMobile ? 175 / 225 : 120 / 163,
+        childAspectRatio: _albumTileAspectRatio,
       );
+
+  double get _albumTileAspectRatio => _device.isMobile ? 175 / 225 : 120 / 163;
 
   List<Widget> _missingAlbumsWidgets() {
     if (!_discoveryEnabled) return const [];

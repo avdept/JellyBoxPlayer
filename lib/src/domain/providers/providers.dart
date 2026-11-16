@@ -27,6 +27,7 @@ export 'items_filter_provider.dart';
 export 'account_libraries_provider.dart';
 export 'libraries_provider.dart';
 export 'lastfm_account_provider.dart';
+export 'fanart_provider.dart';
 export 'lidarr_provider.dart';
 export 'listenbrainz_account_provider.dart';
 export 'lyrics_provider.dart';

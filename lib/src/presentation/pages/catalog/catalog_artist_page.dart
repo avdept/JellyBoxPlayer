@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/presentation/pages/artist_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
@@ -44,6 +45,8 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
   double get _headerHeight =>
       _device.isMobile ? 250 : (_device.isTablet ? 340 : 360);
 
+  double get _backdropHeight => _screenSize.width / heroAspectRatio;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -63,26 +66,28 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
     final albums = ref.watch(catalogAlbumsProvider(_artist.key));
     return ScrollablePageScaffold(
       controller: _scrollController,
+      background: _artist.pictureUrl == null
+          ? null
+          : Opacity(
+              opacity: 0.35,
+              child: BlurredCoverArt(
+                image: _picture,
+                width: _screenSize.width,
+                height: _backdropHeight,
+                blurStart: 0,
+              ),
+            ),
       slivers: [
         ArtistHeaderAppBar(
           controller: _scrollController,
           titleKey: _titleKey,
           name: _artist.name,
           titleImage: _picture,
+        ),
+        ArtistHeaderBody(
           image: ClipOval(
             child: Image(image: _picture, fit: BoxFit.cover),
           ),
-          backdrop: _artist.pictureUrl == null
-              ? null
-              : Opacity(
-                  opacity: 0.35,
-                  child: BlurredCoverArt(
-                    image: _picture,
-                    width: _screenSize.width,
-                    height: _device.isMobile ? 340 : _headerHeight,
-                    blurStart: 0,
-                  ),
-                ),
           headerHeight: _headerHeight,
           horizontalPadding: _horizontalPadding,
           isMobile: _device.isMobile,

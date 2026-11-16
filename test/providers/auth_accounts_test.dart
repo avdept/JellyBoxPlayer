@@ -437,6 +437,7 @@ void main() {
           'listenbrainz_token': 'lb',
           'lastfm_session_key': 'fm',
           'lastfm_api_key': 'fmkey',
+          'fanart_api_key': 'fakey',
         });
 
         await container.read(authProvider.notifier).removeAccount('A');
@@ -448,6 +449,7 @@ void main() {
         expect(await storage.read(key: 'listenbrainz_token'), 'lb');
         expect(await storage.read(key: 'lastfm_session_key'), 'fm');
         expect(await storage.read(key: 'lastfm_api_key'), 'fmkey');
+        expect(await storage.read(key: 'fanart_api_key'), 'fakey');
       },
     );
 
