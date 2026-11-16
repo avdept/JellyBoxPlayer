@@ -16,6 +16,7 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/playback/speaker_clusters.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_devices_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/output_route_provider.dart';
@@ -524,7 +525,11 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               selected: onThisDevice,
               onTap: _selectLocal,
             ),
-          if (ref.watch(cloudAvailableProvider) && conductor.account == null)
+          if (ref.watch(cloudAvailableProvider) &&
+              conductor.account == null &&
+              !ref.watch(
+                settingProvider(AppSetting.hideContinuityInCastPicker),
+              ))
             _TargetTile(
               icon: Icons.cloud_off_outlined,
               title: 'Continuity not available',

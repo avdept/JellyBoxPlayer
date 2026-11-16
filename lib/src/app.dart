@@ -373,6 +373,11 @@ class _AppState extends ConsumerState<App>
                   pageBuilder: widget.screenFactory.settingsPage,
                   routes: [
                     GoRoute(
+                      path: Routes.settingsSection.path,
+                      name: Routes.settingsSection.name,
+                      pageBuilder: widget.screenFactory.settingsSectionPage,
+                    ),
+                    GoRoute(
                       path: Routes.palette.path,
                       name: Routes.palette.name,
                       pageBuilder: widget.screenFactory.palettePage,

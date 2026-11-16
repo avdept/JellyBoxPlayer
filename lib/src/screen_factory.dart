@@ -287,6 +287,19 @@ class ScreenFactory {
     );
   }
 
+  Page<void> settingsSectionPage(
+    BuildContext context,
+    GoRouterState router,
+  ) {
+    final section =
+        SettingsSection.byName(router.pathParameters['section']) ??
+        SettingsSection.servers;
+    return CupertinoPage(
+      key: ValueKey(section),
+      child: SettingsSectionPage(section: section),
+    );
+  }
+
   Page<void> supportPage(
     BuildContext context,
     GoRouterState router,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/remote_access.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/providers/server_addresses_provider.dart';
 
 class PluginNoticeBanner extends ConsumerWidget {
@@ -37,11 +38,12 @@ class PluginNoticeBanner extends ConsumerWidget {
                   ),
                 ),
               ),
-              IconButton(
+              HoverIconButton(
                 tooltip: 'Dismiss',
-                visualDensity: VisualDensity.compact,
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
                 iconSize: 16,
                 color: foreground,
+                hoverColor: foreground,
                 icon: const Icon(Icons.close),
                 onPressed: () =>
                     ref.read(dismissedPluginNoticeProvider.notifier).state =

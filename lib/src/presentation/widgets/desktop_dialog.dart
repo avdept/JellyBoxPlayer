@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
 class DesktopDialog extends StatelessWidget {
   const DesktopDialog({required this.title, required this.child, super.key});
@@ -21,11 +22,11 @@ class DesktopDialog extends StatelessWidget {
                   fontSize: 20,
                 ),
               ),
-              IconButton(
-                icon: Icon(Icons.close),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+              HoverIconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Close',
+                iconSize: 24,
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),

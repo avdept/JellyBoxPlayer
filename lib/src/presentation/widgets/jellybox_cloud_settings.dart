@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/widgets/continuity_intro.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_connect_form.dart';
+import 'package:jplayer/src/presentation/widgets/link_privacy_sheet.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/current_server_type_provider.dart';
 import 'package:jplayer/src/providers/server_addresses_provider.dart';
@@ -47,6 +48,12 @@ class JellyboxCloudSettings extends ConsumerWidget {
           ),
         ),
         const _ServerConnectionRow(),
+        TextButton.icon(
+          onPressed: () => unawaited(LinkPrivacySheet.show(context)),
+          style: _buttonStyle,
+          icon: const Icon(Icons.privacy_tip_outlined),
+          label: const Text('What Link sees'),
+        ),
       ],
     );
   }

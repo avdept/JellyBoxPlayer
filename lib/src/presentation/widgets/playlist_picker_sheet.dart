@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 
 class PlaylistPickerSheet extends ConsumerWidget {
@@ -42,8 +43,10 @@ class PlaylistPickerSheet extends ConsumerWidget {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              IconButton(
+              HoverIconButton(
                 icon: const Icon(Icons.close),
+                tooltip: 'Close',
+                iconSize: 24,
                 onPressed: () => Navigator.pop(context),
               ),
             ],

@@ -1,18 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
-Widget dismissOnEscape(BuildContext context, Widget child) => Focus(
-  onKeyEvent: (node, event) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
-      Navigator.of(context).pop();
-      return KeyEventResult.handled;
+Widget dismissOnEscape(BuildContext context, Widget child) =>
+    _DismissOnEscape(child: child);
+
+class _DismissOnEscape extends StatefulWidget {
+  const _DismissOnEscape({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_DismissOnEscape> createState() => _DismissOnEscapeState();
+}
+
+class _DismissOnEscapeState extends State<_DismissOnEscape> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  bool _onKey(KeyEvent event) {
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.escape ||
+        !mounted ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return false;
     }
-    return KeyEventResult.ignored;
-  },
-  child: child,
-);
+    Navigator.of(context).pop();
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
 
 Future<T?> showAppDialog<T>(
   BuildContext context, {
@@ -25,6 +54,7 @@ Future<T?> showAppDialog<T>(
 Future<T?> showFormModal<T>(
   BuildContext context, {
   required WidgetBuilder builder,
+  double width = 360,
 }) {
   final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
   if (device.isDesktop) {
@@ -32,11 +62,14 @@ Future<T?> showFormModal<T>(
       context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: SizedBox(
-          width: 360,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: width,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
-            child: builder(context),
+            child: SingleChildScrollView(child: builder(context)),
           ),
         ),
       ),
@@ -82,19 +115,13 @@ class ModalFormHeader extends StatelessWidget {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
         ),
-        IconButton(
+        HoverIconButton(
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Close',
-          visualDensity: VisualDensity.compact,
-          style: ButtonStyle(
-            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-            splashFactory: NoSplash.splashFactory,
-            iconColor: WidgetStateProperty.resolveWith(
-              (states) => states.contains(WidgetState.hovered)
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onPrimary.withValues(alpha: 0.6),
-            ),
-          ),
+          color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
+          hoverColor: theme.colorScheme.onPrimary,
+          iconSize: 24,
+          style: const ButtonStyle(visualDensity: VisualDensity.compact),
           icon: const Icon(Icons.close),
         ),
       ],
