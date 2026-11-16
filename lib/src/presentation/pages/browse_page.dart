@@ -395,6 +395,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       _currentView.value = next;
       ref.read(browseViewRequestProvider.notifier).state = null;
     });
+    ref.listen(browseTabSelectedProvider, (previous, next) => _closeSearch());
     return Scaffold(
       key: _scaffoldKey,
       body: ValueListenableBuilder(

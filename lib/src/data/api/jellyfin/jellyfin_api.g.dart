@@ -613,12 +613,18 @@ class _JellyfinApi implements JellyfinApi {
     required String userId,
     String limit = '100',
     List<String> fields = const ['MediaSources', 'ProviderIds'],
+    bool enableUserData = true,
+    bool enableImages = true,
+    List<String> enableImageTypes = const ['Primary'],
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'userId': userId,
       r'Limit': limit,
       r'Fields': fields,
+      r'EnableUserData': enableUserData,
+      r'EnableImages': enableImages,
+      r'EnableImageTypes': enableImageTypes,
     };
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;

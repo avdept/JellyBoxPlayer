@@ -707,6 +707,9 @@ void main() {
         'MediaSources',
         'ProviderIds',
       ]);
+      expect(uri.queryParameters['EnableUserData'], 'true');
+      expect(uri.queryParameters['EnableImages'], 'true');
+      expect(uri.queryParametersAll['EnableImageTypes'], ['Primary']);
       expect(songs.map((song) => song.id), ['song-1', 'song-2']);
       expect(songs.first.kind, ItemKind.song);
     });
