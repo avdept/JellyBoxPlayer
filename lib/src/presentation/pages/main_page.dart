@@ -108,6 +108,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   void _navigateToItem(int index) {
     ref.read(lyricsVisibleProvider.notifier).state = false;
+    if (index == 1) ref.read(browseTabSelectedProvider.notifier).state++;
     widget.shell.goBranch(
       index,
       initialLocation: index == widget.shell.currentIndex,

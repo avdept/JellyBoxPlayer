@@ -155,6 +155,10 @@ abstract class JellyfinApi {
     @Query('Limit') String limit = '100',
     @Query('Fields')
     List<String> fields = const ['MediaSources', 'ProviderIds'],
+    @Query('EnableUserData') bool enableUserData = true,
+    @Query('EnableImages') bool enableImages = true,
+    @Query('EnableImageTypes')
+    List<String> enableImageTypes = const ['Primary'],
   });
 
   @GET('/MusicGenres')
