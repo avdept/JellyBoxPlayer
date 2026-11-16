@@ -6,6 +6,7 @@ enum Routes {
   addServer('/add-server'),
   library('/library'),
   settings('/settings'),
+  settingsSection('section/:section'),
   downloads('/downloads'),
   nowPlaying('/now-playing'),
   home('/home'),
