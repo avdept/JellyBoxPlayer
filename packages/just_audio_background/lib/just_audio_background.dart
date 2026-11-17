@@ -125,6 +125,13 @@ class JustAudioBackground {
     _audioHandler.playHandler = handler;
   }
 
+  /// Hands the media session to [handler] while audio plays on another
+  /// device (a renderer, a Cast receiver, another JellyBox); null gives it
+  /// back to the local player.
+  static set remoteHandler(AudioHandler? handler) {
+    _audioHandler.remoteHandler = handler;
+  }
+
   static set customActionHandler(
     Future<dynamic> Function(String name, Map<String, dynamic>? extras)?
         handler,
@@ -154,12 +161,32 @@ class JustAudioBackground {
 class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
   _BrowsingSwitchAudioHandler() : super(BaseAudioHandler());
 
-  bool get _awaitingPlayer => !identical(inner, _playerAudioHandler);
+  AudioHandler? _remote;
+
+  bool get _awaitingPlayer =>
+      _remote == null && !identical(inner, _playerAudioHandler);
 
   Future<void> Function()? playHandler;
 
+  set remoteHandler(AudioHandler? handler) {
+    if (identical(_remote, handler)) return;
+    _remote = handler;
+    debugPrint('[Session] remote handler ${handler == null ? 'off' : 'on'}');
+    if (handler != null) {
+      inner = handler;
+      return;
+    }
+    _playerAudioHandler.androidPlaybackInfo.add(LocalAndroidPlaybackInfo());
+    inner = _playerAudioHandler;
+  }
+
+  void playerReady() {
+    if (_remote == null) inner = _playerAudioHandler;
+  }
+
   @override
   Future<void> play() async {
+    if (_remote != null) return inner.play();
     if (_awaitingPlayer) {
       debugPrint('[Session] play arrived before the player; remembered');
       return JustAudioBackground.rememberPlay();
@@ -181,7 +208,9 @@ class _BrowsingSwitchAudioHandler extends SwitchAudioHandler {
       '(playing=${_playerAudioHandler._playing}, '
       'awaitingPlayer=$_awaitingPlayer)',
     );
-    if (button == MediaButton.media && !_playerAudioHandler._playing) {
+    if (_remote == null &&
+        button == MediaButton.media &&
+        !_playerAudioHandler._playing) {
       return play();
     }
     return super.click(button);
@@ -383,11 +412,11 @@ class _JustAudioPlayer extends AudioPlayerPlatform {
   _JustAudioPlayer({required this.initRequest}) : super(initRequest.id) {
     eventController.onCancel = _playerAudioHandler.cancelStreamSubscriptions;
     _playerAudioHandler._initPlayer(initRequest);
-    _audioHandler.inner = _playerAudioHandler;
-    _audioHandler.customEvent
+    _audioHandler.playerReady();
+    _playerAudioHandler.customEvent
         .whereType<PlaybackEventMessage>()
         .listen(eventController.add);
-    _audioHandler.customEvent
+    _playerAudioHandler.customEvent
         .whereType<_PlayingEvent>()
         .map((event) => event.playing)
         .distinct()
@@ -396,10 +425,11 @@ class _JustAudioPlayer extends AudioPlayerPlatform {
     });
   }
 
-  PlaybackState get playbackState => _audioHandler.playbackState.nvalue!;
+  PlaybackState get playbackState =>
+      _playerAudioHandler.playbackState.nvalue!;
 
   Future<void> release() async {
-    await _audioHandler.stop();
+    await _playerAudioHandler.stop();
   }
 
   @override
@@ -422,7 +452,7 @@ class _JustAudioPlayer extends AudioPlayerPlatform {
 
   @override
   Future<PauseResponse> pause(PauseRequest request) async {
-    await _audioHandler.pause();
+    await _playerAudioHandler.pause();
     return PauseResponse();
   }
 
@@ -451,7 +481,7 @@ class _JustAudioPlayer extends AudioPlayerPlatform {
 
   @override
   Future<SetLoopModeResponse> setLoopMode(SetLoopModeRequest request) async {
-    await _audioHandler
+    await _playerAudioHandler
         .setRepeatMode(AudioServiceRepeatMode.values[request.loopMode.index]);
     return SetLoopModeResponse();
   }
