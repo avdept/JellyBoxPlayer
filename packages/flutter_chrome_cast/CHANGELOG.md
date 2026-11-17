@@ -1,3 +1,14 @@
+## 1.4.8+jellybox.2 (LOCAL FORK)
+
+Android:
+
+* The SDK's own media notification and `MediaSession` are off
+  (`CastMediaOptions` with `setMediaSessionEnabled(false)` and no
+  `NotificationOptions`). The app publishes the Cast session through its own
+  audio_service session instead, so Chromecast, UPnP and Link all share one
+  lock-screen widget and one remote-volume provider, and two sessions never
+  compete for the volume keys.
+
 ## 1.4.8+jellybox.1 (LOCAL FORK)
 
 Trimmed copy of flutter_chrome_cast 1.4.8 (BSD-3-Clause, see LICENSE).

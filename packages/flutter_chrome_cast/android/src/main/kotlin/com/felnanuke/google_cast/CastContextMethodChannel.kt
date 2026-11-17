@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastOptions
 import com.google.android.gms.cast.framework.media.CastMediaOptions
-import com.google.android.gms.cast.framework.media.NotificationOptions
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -166,15 +165,11 @@ class CastContextMethodChannel : FlutterPlugin, MethodChannel.MethodCallHandler 
     }
 
 
-    private fun mediaOptions(): CastMediaOptions {
-        val notifications = NotificationOptions.Builder()
-        appContext.packageManager.getLaunchIntentForPackage(appContext.packageName)
-            ?.component?.className
-            ?.let { notifications.setTargetActivityClassName(it) }
-        return CastMediaOptions.Builder()
-            .setNotificationOptions(notifications.build())
+    private fun mediaOptions(): CastMediaOptions =
+        CastMediaOptions.Builder()
+            .setMediaSessionEnabled(false)
+            .setNotificationOptions(null)
             .build()
-    }
 
     private fun setSharedInstance(arguments: Any?, result: MethodChannel.Result) {
         try {

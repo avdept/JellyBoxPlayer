@@ -1,3 +1,15 @@
+## 0.0.1-beta.17+jellybox.8 (LOCAL FORK)
+
+* PATCH: `JustAudioBackground.remoteHandler` hands the media session to an
+  app-supplied `AudioHandler` while audio plays on another device, so the
+  notification, lock-screen controls, remote volume (`androidPlaybackInfo`)
+  and the foreground service follow the renderer. The local player's handler
+  keeps running underneath: `_JustAudioPlayer` now talks to it directly
+  (events, pause, stop, repeat mode) instead of going through the switch, and
+  a player created while the remote handler is installed no longer takes the
+  session back (`playerReady`). Clearing the remote handler re-emits
+  `LocalAndroidPlaybackInfo` so the phone's volume keys return to the phone.
+
 ## 0.0.1-beta.17+jellybox.7 (LOCAL FORK)
 
 * PATCH: `[Session]` log lines (via `debugPrint`, so they reach the app's
