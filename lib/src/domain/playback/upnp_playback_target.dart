@@ -50,12 +50,13 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   var _gaveUpWaiting = false;
   var _pollGeneration = 0;
   var _disposed = false;
+  var _queueRefused = false;
   AvTransportState? _loggedState;
   bool playsToGroup = false;
 
   AvTransport get _transport => renderer.avTransport;
 
-  DeviceQueue? get _deviceQueue => renderer.queueDriver;
+  DeviceQueue? get _deviceQueue => _queueRefused ? null : renderer.queueDriver;
 
   DeviceQuirks get _quirks => renderer.quirks;
 
@@ -205,7 +206,15 @@ class UpnpPlaybackTarget implements PlaybackTarget {
           },
         ),
       );
-      _emit(status: PlaybackStatus.error);
+      _queueRefused = true;
+      diagnostics.trail(
+        'queue of ${_tracks.length} refused by '
+        '${renderer.model ?? 'the renderer'} ($error) at '
+        '${_delivery(_currentTrack)}, falling back to one track at a time',
+        category: 'upnp',
+        data: {'error': '$error', 'tracks': _tracks.length},
+      );
+      await _startTrack(_index, position: initialPosition, autoPlay: autoPlay);
       return;
     }
 
@@ -675,6 +684,11 @@ class UpnpPlaybackTarget implements PlaybackTarget {
         ),
       );
     } on Object catch (error, stackTrace) {
+      diagnostics.trail(
+        'next track ${_delivery(next)} refused: $error',
+        category: 'upnp',
+        data: {'error': '$error'},
+      );
       unawaited(
         diagnostics.capture(
           error,
@@ -822,6 +836,11 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       if (playedThrough) await _pushNextUri();
       await _advanceIfEnded(info.state);
     } on Object catch (error, stackTrace) {
+      diagnostics.trail(
+        'advance from track ${_index + 1}/${_tracks.length} failed: $error',
+        category: 'upnp',
+        data: {'error': '$error'},
+      );
       unawaited(
         diagnostics.capture(
           error,
