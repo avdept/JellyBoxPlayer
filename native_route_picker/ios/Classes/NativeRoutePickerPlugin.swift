@@ -1,6 +1,7 @@
 import AVFoundation
 import AVKit
 import Flutter
+import MediaPlayer
 import UIKit
 
 public class NativeRoutePickerPlugin: NSObject, FlutterPlugin {
@@ -23,14 +24,23 @@ public class NativeRoutePickerPlugin: NSObject, FlutterPlugin {
       name: "native_route_picker/output_route",
       binaryMessenger: registrar.messenger()
     ).setStreamHandler(OutputRouteStream())
+
+    FlutterEventChannel(
+      name: "native_route_picker/volume_buttons",
+      binaryMessenger: registrar.messenger()
+    ).setStreamHandler(instance.volumeButtons)
   }
 
   static let viewType = "native_route_picker/view"
 
   private var presenter: AVRoutePickerView?
+  private let volumeButtons = VolumeButtonCapture()
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
+    case "captureVolumeButtons":
+      volumeButtons.setEnabled(call.arguments as? Bool ?? false)
+      result(nil)
     case "showOutputSwitcher":
       let args = call.arguments as? [String: Any]
       result(
@@ -63,6 +73,100 @@ public class NativeRoutePickerPlugin: NSObject, FlutterPlugin {
     }
     button.sendActions(for: .touchUpInside)
     return true
+  }
+}
+
+/// Turns the hardware volume buttons into up/down events without moving the
+/// phone's own volume. iOS has no API for this, so the system level is parked
+/// mid-range behind a hidden MPVolumeView (which also hides the system HUD),
+/// each change is reported as a press and the level is put straight back.
+/// Only active while the app is in the foreground; the user's original level
+/// is restored on resign/stop.
+class VolumeButtonCapture: NSObject, FlutterStreamHandler {
+  private let volumeView = MPVolumeView(
+    frame: CGRect(x: -2000, y: -2000, width: 1, height: 1))
+  private var observation: NSKeyValueObservation?
+  private var lifecycle: [NSObjectProtocol] = []
+  private var sink: FlutterEventSink?
+  private var enabled = false
+  private var pinned: Float = 0.5
+  private var restoreTo: Float?
+
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink)
+    -> FlutterError?
+  {
+    sink = events
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    sink = nil
+    return nil
+  }
+
+  func setEnabled(_ on: Bool) {
+    guard on != enabled else { return }
+    enabled = on
+    let center = NotificationCenter.default
+    if on {
+      lifecycle = [
+        center.addObserver(
+          forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.attach() },
+        center.addObserver(
+          forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.detach() },
+      ]
+      if UIApplication.shared.applicationState == .active { attach() }
+    } else {
+      lifecycle.forEach(center.removeObserver)
+      lifecycle = []
+      detach()
+    }
+  }
+
+  private var keyWindow: UIWindow? {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap { $0.windows }
+      .first { $0.isKeyWindow }
+  }
+
+  private func attach() {
+    guard observation == nil, let window = keyWindow else { return }
+    window.insertSubview(volumeView, at: 0)
+    let session = AVAudioSession.sharedInstance()
+    let current = session.outputVolume
+    restoreTo = current
+    pinned = min(max(current, 0.25), 0.75)
+    if abs(pinned - current) > 0.001 { apply(pinned) }
+    observation = session.observe(\.outputVolume, options: [.new]) { [weak self] session, _ in
+      self?.changed(session.outputVolume)
+    }
+  }
+
+  private func detach() {
+    observation = nil
+    if let level = restoreTo { apply(level) }
+    restoreTo = nil
+    let view = volumeView
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { view.removeFromSuperview() }
+  }
+
+  private func changed(_ level: Float) {
+    if abs(level - pinned) < 0.001 { return }
+    sink?(level > pinned ? "up" : "down")
+    apply(pinned)
+  }
+
+  private func apply(_ level: Float) {
+    let view = volumeView
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+      guard let slider = view.subviews.first(where: { $0 is UISlider }) as? UISlider else {
+        return
+      }
+      slider.value = level
+    }
   }
 }
 
