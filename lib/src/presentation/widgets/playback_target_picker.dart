@@ -558,7 +558,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               icon: castDeviceIcon(device),
               badge: _castBadge,
               title: device.friendlyName,
-              subtitle: device.modelName,
+              subtitle: ['Chromecast', ?device.modelName].join(' · '),
               selected:
                   elsewhere == null && active.id == 'cast:${device.deviceID}',
               busy: _connecting == 'cast:${device.deviceID}',
@@ -574,6 +574,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             household,
             active: elsewhere == null ? active : null,
             host: host,
+            sharedNames: _sharedNames(renderers),
           ),
           for (final renderer in renderers)
             if (!renderer.isGroupable) ...[
@@ -581,6 +582,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 renderer,
                 selected: elsewhere == null && active.id == renderer.id,
                 host: host,
+                sharedNames: _sharedNames(renderers),
               ),
               if (elsewhere == null && active.id == renderer.id) _volume,
             ],
@@ -672,11 +674,27 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     padding: EdgeInsets.only(left: 12, right: 16, bottom: 4),
   );
 
+  static Set<String> _sharedNames(List<UpnpRenderer> renderers) {
+    final seen = <String>{};
+    return {
+      for (final renderer in renderers)
+        if (!seen.add(renderer.name)) renderer.name,
+    };
+  }
+
+  static String _dlnaSubtitle(UpnpRenderer renderer, Set<String> sharedNames) =>
+      [
+        'DLNA',
+        if (sharedNames.contains(renderer.name)) renderer.host,
+        ?renderer.model,
+      ].join(' · ');
+
   List<Widget> _speakerSection(
     List<UpnpRenderer> renderers,
     SpeakerGroupsState household, {
     required PlaybackTarget? active,
     required ControlPointHost host,
+    required Set<String> sharedNames,
   }) {
     final clusters = speakerClusters(renderers, household.topology);
     if (clusters.isEmpty) return const [];
@@ -692,6 +710,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
           activeId: activeId,
           isActive: activeId != null && cluster.contains(activeId),
           host: host,
+          sharedNames: sharedNames,
         ),
     ];
   }
@@ -702,6 +721,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     required String? activeId,
     required bool isActive,
     required ControlPointHost host,
+    required Set<String> sharedNames,
   }) {
     final together = cluster.members.length > 1;
     final children = <Widget>[
@@ -723,6 +743,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
           isActive: isActive,
           canJoin: activeId != null && !isActive,
           host: host,
+          sharedNames: sharedNames,
         ),
         if (isActive && together) _SpeakerVolumeSlider(renderer.id),
         if (isActive && !together && renderer.id == activeId) _volume,
@@ -740,6 +761,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     required bool isActive,
     required bool canJoin,
     required ControlPointHost host,
+    required Set<String> sharedNames,
   }) {
     final blocked = castingBlockedReason(
       deviceHoldsQueue: renderer.holdsQueue,
@@ -758,7 +780,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
     final subtitle = cluster.members.length > 1 || !isCoordinator
         ? renderer.model
-        : [renderer.host, ?renderer.model].join(' · ');
+        : _dlnaSubtitle(renderer, sharedNames);
 
     return _TargetTile(
       icon: rendererIcon(renderer),
@@ -781,6 +803,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     UpnpRenderer renderer, {
     required bool selected,
     required ControlPointHost host,
+    required Set<String> sharedNames,
   }) {
     final blocked = castingBlockedReason(
       deviceHoldsQueue: renderer.holdsQueue,
@@ -791,7 +814,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
       icon: rendererIcon(renderer),
       badge: _dlnaBadge,
       title: renderer.name,
-      subtitle: blocked ?? [renderer.host, ?renderer.model].join(' · '),
+      subtitle: blocked ?? _dlnaSubtitle(renderer, sharedNames),
       selected: selected,
       busy: _connecting == renderer.id,
       onTap: blocked == null && _connecting == null
