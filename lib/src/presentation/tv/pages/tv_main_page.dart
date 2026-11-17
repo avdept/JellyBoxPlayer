@@ -25,6 +25,7 @@ class TvMainPage extends ConsumerStatefulWidget {
 }
 
 class _TvMainPageState extends ConsumerState<TvMainPage> {
+  static const _browseBranch = 1;
   static const _settingsBranch = 2;
 
   final _homeNode = FocusNode(debugLabel: 'rail:Home');
@@ -198,6 +199,15 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
                   selected: widget.shell.currentIndex == 0,
                   focusNode: _homeNode,
                   onSelect: _goHome,
+                ),
+                TvRailItem(
+                  icon: Icons.grid_view_rounded,
+                  label: 'Browse',
+                  selected: widget.shell.currentIndex == _browseBranch,
+                  onSelect: () => widget.shell.goBranch(
+                    _browseBranch,
+                    initialLocation: widget.shell.currentIndex == _browseBranch,
+                  ),
                 ),
                 TvRailItem(
                   icon: JPlayer.play_circle_outlined,

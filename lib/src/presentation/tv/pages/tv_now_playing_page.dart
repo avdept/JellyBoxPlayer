@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
@@ -11,8 +12,6 @@ import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/audio_quality_badge.dart';
-import 'package:jplayer/src/presentation/widgets/blurred_cover_art.dart';
-import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -32,14 +31,47 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
 
   final _queueButton = FocusNode(debugLabel: 'now-playing:queue');
   bool _queueOpen = false;
+  bool _queueBuilt = false;
+
+  final _probe = Stopwatch()..start();
+  late final TimingsCallback _timings = _onTimings;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('[tvnp] init');
+    SchedulerBinding.instance.addTimingsCallback(_timings);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => debugPrint('[tvnp] first frame +${_probe.elapsedMilliseconds}ms'),
+    );
+  }
+
+  void _onTimings(List<FrameTiming> timings) {
+    for (final t in timings) {
+      if (t.totalSpan.inMilliseconds < 40) continue;
+      debugPrint(
+        '[tvnp] slow frame +${_probe.elapsedMilliseconds}ms '
+        'build=${t.buildDuration.inMilliseconds} '
+        'raster=${t.rasterDuration.inMilliseconds} '
+        'total=${t.totalSpan.inMilliseconds}',
+      );
+    }
+    if (_probe.elapsedMilliseconds > 5000) {
+      SchedulerBinding.instance.removeTimingsCallback(_timings);
+    }
+  }
 
   @override
   void dispose() {
+    SchedulerBinding.instance.removeTimingsCallback(_timings);
     _queueButton.dispose();
     super.dispose();
   }
 
-  void _openQueue() => setState(() => _queueOpen = true);
+  void _openQueue() => setState(() {
+    _queueOpen = true;
+    _queueBuilt = true;
+  });
 
   void _closeQueue() {
     setState(() => _queueOpen = false);
@@ -72,9 +104,9 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
     }
 
     final controls = ref.read(barControlsProvider);
-    final art = ref
-        .read(imageServiceProvider)
-        .artworkImage(item.artUri, size: 800);
+    final images = ref.read(imageServiceProvider);
+    final art = images.artworkImage(item.artUri, size: 512);
+    final backdrop = images.artworkImage(item.artUri, size: 128);
 
     return PopScope(
       canPop: !_queueOpen,
@@ -82,64 +114,56 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
         if (!didPop) _closeQueue();
       },
       child: Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) => Stack(
-            fit: StackFit.expand,
-            children: [
-              BlurredCoverArt(
-                image: art,
-                width: constraints.maxWidth,
-                height: constraints.maxHeight,
-                background: Colors.black,
-                blurStart: 0,
-                sigma: 70,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            TvBackdrop(image: backdrop),
+            ExcludeFocus(
+              excluding: _queueOpen,
+              child: _Player(
+                item: item,
+                art: art,
+                controls: controls,
+                queueButton: _queueButton,
+                onQueue: _openQueue,
               ),
-              const ColoredBox(color: Color(0x99000000)),
-              ExcludeFocus(
-                excluding: _queueOpen,
-                child: _Player(
-                  item: item,
-                  art: art,
-                  controls: controls,
-                  queueButton: _queueButton,
-                  onQueue: _openQueue,
-                ),
-              ),
-              TweenAnimationBuilder<double>(
-                tween: Tween(end: _queueOpen ? 1 : 0),
-                duration: _slide,
-                curve: Curves.easeOutCubic,
-                builder: (context, value, panel) => Stack(
-                  children: [
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: ColoredBox(
-                          color: Colors.black.withValues(alpha: 0.54 * value),
-                        ),
+            ),
+            TweenAnimationBuilder<double>(
+              tween: Tween(end: _queueOpen ? 1 : 0),
+              duration: _slide,
+              curve: Curves.easeOutCubic,
+              builder: (context, value, panel) => Stack(
+                children: [
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: ColoredBox(
+                        color: Colors.black.withValues(alpha: 0.54 * value),
                       ),
                     ),
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: -_queueWidth * (1 - value),
-                      width: _queueWidth,
-                      child: Visibility(
-                        visible: value > 0,
-                        maintainState: true,
-                        child: panel!,
-                      ),
-                    ),
-                  ],
-                ),
-                child: ExcludeFocus(
-                  excluding: !_queueOpen,
-                  child: FocusScope(
-                    child: _Queue(controls: controls, open: _queueOpen),
                   ),
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: -_queueWidth * (1 - value),
+                    width: _queueWidth,
+                    child: _queueBuilt
+                        ? Visibility(
+                            visible: value > 0,
+                            maintainState: true,
+                            child: panel!,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+              child: ExcludeFocus(
+                excluding: !_queueOpen,
+                child: FocusScope(
+                  child: _Queue(controls: controls, open: _queueOpen),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -448,6 +472,12 @@ class _QueueState extends ConsumerState<_Queue> {
   int? _shownIndex;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.open) _focusCurrent();
+  }
+
+  @override
   void didUpdateWidget(_Queue oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.open && !oldWidget.open) _focusCurrent();
@@ -498,11 +528,8 @@ class _QueueState extends ConsumerState<_Queue> {
     if (index >= 0) _revealCurrent(index);
 
     final theme = Theme.of(context);
-    final tint =
-        (ref.watch(artworkSchemeProvider).valueOrNull?.surface ??
-                theme.bottomSheetTheme.backgroundColor ??
-                Colors.black)
-            .withValues(alpha: 0.88);
+    final tint = (theme.bottomSheetTheme.backgroundColor ?? Colors.black)
+        .withValues(alpha: 0.88);
 
     return Material(
       color: tint,
@@ -620,7 +647,9 @@ class _QueueRow extends ConsumerWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: Image(
-                image: ref.read(imageServiceProvider).itemImage(song),
+                image: ref
+                    .read(imageServiceProvider)
+                    .itemImage(song, size: 128),
                 width: _coverSize,
                 height: _coverSize,
                 fit: BoxFit.cover,

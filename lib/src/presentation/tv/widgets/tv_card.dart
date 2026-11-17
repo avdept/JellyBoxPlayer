@@ -13,6 +13,7 @@ class TvCard extends StatelessWidget {
     this.autofocus = false,
     this.width = TvTokens.cardWidth,
     this.playsOnSelect = false,
+    this.circular = false,
     super.key,
   });
 
@@ -27,6 +28,9 @@ class TvCard extends StatelessWidget {
   final double width;
 
   final bool playsOnSelect;
+  final bool circular;
+
+  static const _circle = BorderRadius.all(Radius.circular(999));
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +42,13 @@ class TvCard extends StatelessWidget {
         autofocus: autofocus,
         debugLabel: 'card:$title',
         builder: (context, focused) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: circular
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.start,
           children: [
             TvFocusFrame(
               focused: focused,
+              borderRadius: circular ? _circle : TvTokens.cardRadius,
               child: AspectRatio(
                 aspectRatio: 1,
                 child: Stack(
@@ -66,6 +73,7 @@ class TvCard extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: circular ? TextAlign.center : TextAlign.start,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -79,6 +87,7 @@ class TvCard extends StatelessWidget {
                 subtitle!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                textAlign: circular ? TextAlign.center : TextAlign.start,
                 style: TvTokens.caption,
               ),
           ],
