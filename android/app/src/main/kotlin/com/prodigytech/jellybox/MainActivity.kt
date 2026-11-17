@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
+import android.view.KeyEvent
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -14,10 +15,13 @@ import java.util.concurrent.Executors
 class MainActivity : AudioServiceActivity() {
     companion object {
         private const val PLATFORM_CHANNEL = "jellybox/platform"
+        private const val VOLUME_KEYS_CHANNEL = "jellybox/volume_keys"
     }
 
     private val channelWorker = Executors.newSingleThreadExecutor()
     private var platformChannel: MethodChannel? = null
+    private var volumeKeysChannel: MethodChannel? = null
+    private var captureVolumeKeys = false
     private var pendingAlbumId: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -54,6 +58,35 @@ class MainActivity : AudioServiceActivity() {
                     }
                 }
             }
+        volumeKeysChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, VOLUME_KEYS_CHANNEL)
+            .apply {
+                setMethodCallHandler { call, result ->
+                    when (call.method) {
+                        "setCapture" -> {
+                            captureVolumeKeys = call.arguments as? Boolean ?: false
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+            }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (captureVolumeKeys) {
+            val direction = when (event.keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP -> "up"
+                KeyEvent.KEYCODE_VOLUME_DOWN -> "down"
+                else -> null
+            }
+            if (direction != null) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    volumeKeysChannel?.invokeMethod("press", direction)
+                }
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onNewIntent(intent: Intent) {

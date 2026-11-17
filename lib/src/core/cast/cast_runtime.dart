@@ -24,6 +24,7 @@ Future<void> initializeCast() async {
                   ),
                   disableDiscoveryAutostart: true,
                   startDiscoveryAfterFirstTapOnCastButton: false,
+                  physicalVolumeButtonsWillControlDeviceVolume: false,
                 )
               : GoogleCastOptionsAndroid(
                   appId: GoogleCastDiscoveryCriteria.kDefaultApplicationId,

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 enum OutputRouteKind { builtIn, airPlay, bluetooth, wired, car, other }
 
+enum VolumeButton { up, down }
+
 @immutable
 class OutputRoute {
   const OutputRoute({required this.kind, required this.name});
@@ -31,6 +33,10 @@ class NativeRoutePicker {
 
   static const _outputRoute = EventChannel('native_route_picker/output_route');
 
+  static const _volumeButtons = EventChannel(
+    'native_route_picker/volume_buttons',
+  );
+
   static Stream<OutputRoute> get outputRoute => _outputRoute
       .receiveBroadcastStream()
       .map((value) {
@@ -46,6 +52,19 @@ class NativeRoutePicker {
   static Stream<double> get outputVolume => _outputVolume
       .receiveBroadcastStream()
       .map((value) => (value as num).toDouble());
+
+  /// Hardware volume button presses while [captureVolumeButtons] is on.
+  static Stream<VolumeButton> get volumeButtons => _volumeButtons
+      .receiveBroadcastStream()
+      .map((value) => value == 'up' ? VolumeButton.up : VolumeButton.down);
+
+  /// iOS only. While on, the hardware volume buttons no longer move the
+  /// phone's own volume: the system level is parked mid-range behind a hidden
+  /// MPVolumeView, each press is reported on [volumeButtons] and the level is
+  /// put back. The phone's original volume is restored when capture ends or
+  /// the app leaves the foreground.
+  static Future<void> captureVolumeButtons(bool enabled) =>
+      _channel.invokeMethod<void>('captureVolumeButtons', enabled);
 
   static Future<bool> showOutputSwitcher({Offset? anchor}) async {
     if (!isSupported) return false;

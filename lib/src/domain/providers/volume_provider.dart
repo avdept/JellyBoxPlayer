@@ -88,6 +88,16 @@ class VolumeNotifier extends StateNotifier<VolumeState> {
     return _target.setVolume(level);
   }
 
+  Future<void> syncFromTarget() async {
+    if (pinnedToFull || _target.kind == PlaybackTargetKind.local) return;
+    final level = await _target.currentVolume();
+    if (!mounted || level == null) return;
+    final clamped = level.clamp(0.0, 1.0);
+    if (clamped == 0 && state.muted) return;
+    if (clamped > 0) _lastAudibleLevel = clamped;
+    state = VolumeState(level: clamped);
+  }
+
   Future<void> toggleMute() async {
     if (pinnedToFull) return;
     if (!state.muted) {

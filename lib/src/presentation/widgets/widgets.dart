@@ -105,6 +105,7 @@ export 'swipeable_artwork.dart';
 export 'update_banner.dart';
 export 'updatify_bell.dart';
 export 'volume_control.dart';
+export 'volume_hud.dart';
 export 'rating_stars.dart';
 export 'album_details_row.dart';
 export 'artist_header_app_bar.dart';
