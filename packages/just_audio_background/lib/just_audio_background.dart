@@ -1225,8 +1225,20 @@ extension AudioSourceExtension on AudioSourceMessage {
         childIndicesList.add(childIndices);
         offset += childIndices.length;
       }
+      final order = self.shuffleOrder;
+      final consistent = order.length == childIndicesList.length &&
+          order.toSet().length == order.length &&
+          order.every((index) => index >= 0 && index < childIndicesList.length);
+      if (!consistent) {
+        debugPrint(
+          '[Session] shuffle order $order does not fit '
+          '${childIndicesList.length} children; using queue order',
+        );
+      }
       final indices = <int>[];
-      for (final index in self.shuffleOrder) {
+      for (final index in consistent
+          ? order
+          : List.generate(childIndicesList.length, (i) => i)) {
         indices.addAll(childIndicesList[index]);
       }
       return indices;

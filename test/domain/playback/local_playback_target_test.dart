@@ -974,6 +974,56 @@ void main() {
         },
       );
 
+      test(
+        '- a load that overtakes a stuck one gets its own shuffle order',
+        () async {
+          final stuck = Completer<Duration?>();
+          final orders = <QueueShuffleOrder>[];
+          when(
+            () => player.setAudioSources(
+              any(),
+              initialIndex: any(named: 'initialIndex'),
+              initialPosition: any(named: 'initialPosition'),
+              preload: any(named: 'preload'),
+              shuffleOrder: any(named: 'shuffleOrder'),
+            ),
+          ).thenAnswer((invocation) {
+            final sources =
+                invocation.positionalArguments.first as List<AudioSource>;
+            final order =
+                invocation.namedArguments[#shuffleOrder] as QueueShuffleOrder
+                  ..clear()
+                  ..insert(0, sources.length);
+            orders.add(order);
+            return orders.length == 1 ? stuck.future : Future.value();
+          });
+          final retrying = targetThatRetries(loadTimeout: later);
+
+          final restore = retrying.load(
+            [trackWith()],
+            initialIndex: 0,
+            initialPosition: Duration.zero,
+            autoPlay: false,
+          );
+          await retrying.load(
+            List.filled(12, trackWith()),
+            initialIndex: 0,
+            initialPosition: Duration.zero,
+            autoPlay: true,
+          );
+          stuck.complete();
+          await restore;
+
+          expect(orders, hasLength(2));
+          expect(identical(orders[0], orders[1]), isFalse);
+          expect(orders[0].indices, [0]);
+          expect(
+            orders[1].indices,
+            unorderedEquals(List.generate(12, (i) => i)),
+          );
+        },
+      );
+
       test('- a stale load cannot undo a newer one', () async {
         final stuck = Completer<Duration?>();
         var calls = 0;

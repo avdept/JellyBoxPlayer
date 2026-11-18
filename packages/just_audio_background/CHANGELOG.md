@@ -1,3 +1,14 @@
+## 0.0.1-beta.17+jellybox.9 (LOCAL FORK)
+
+* PATCH: a `ConcatenatingAudioSourceMessage` whose `shuffleOrder` is not a
+  permutation of its children falls back to queue order (with a `[Session]`
+  log line) instead of throwing a `RangeError` from `shuffleIndices`.
+  just_audio 0.10.6 hands the handler its live shuffle list by reference
+  (ryanheise/just_audio#1573), so a message kept across a queue replacement
+  could point at a list sized for the next queue. The app avoids the sharing
+  by giving every load its own `QueueShuffleOrder`; this keeps a stale message
+  harmless if it happens again (JellyBoxPlayer#489).
+
 ## 0.0.1-beta.17+jellybox.8 (LOCAL FORK)
 
 * PATCH: `JustAudioBackground.remoteHandler` hands the media session to an

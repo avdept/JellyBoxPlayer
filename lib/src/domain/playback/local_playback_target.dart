@@ -85,7 +85,7 @@ class LocalPlaybackTarget
   final Duration _stopTimeout;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
   final _failures = StreamController<TrackLoadFailure>.broadcast();
-  final _shuffleOrder = QueueShuffleOrder();
+  QueueShuffleOrder _shuffleOrder = QueueShuffleOrder();
 
   late final List<StreamSubscription<Object?>> _subscriptions;
   final _sincePositionEmit = Stopwatch();
@@ -185,6 +185,7 @@ class LocalPlaybackTarget
     final generation = ++_generation;
     _inFlight = generation;
     bool current() => generation == _generation;
+    final shuffleOrder = _shuffleOrder = QueueShuffleOrder();
     final clock = Stopwatch()..start();
     try {
       await _player
@@ -193,7 +194,7 @@ class LocalPlaybackTarget
             initialIndex: index,
             initialPosition: position,
             preload: true,
-            shuffleOrder: _shuffleOrder,
+            shuffleOrder: shuffleOrder,
           )
           .timeout(_loadTimeout);
       if (!current()) return false;
