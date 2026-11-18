@@ -16,6 +16,7 @@ import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 
 class TvBrowsePage extends ConsumerStatefulWidget {
@@ -76,6 +77,30 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
     ref
         .read(filterProvider.notifier)
         .filter(field: sort.orderBy, desc: sort.desc);
+  }
+
+  List<EntityFilter> _sortOptions(ItemList view) => view.sortOptions(
+    albumRatingSort: ref.read(serverCapabilitiesProvider).albumRatingSort,
+  );
+
+  Future<void> _chooseSort() async {
+    final view = _view;
+    final current = ref.read(filterProvider);
+    final chosen = await showDialog<EntityFilter>(
+      context: context,
+      builder: (context) => _SortDialog(
+        options: _sortOptions(view),
+        current: current,
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    final next = ref.read(filterProvider).select(chosen);
+    ref
+        .read(filterProvider.notifier)
+        .filter(field: next.orderBy, desc: next.desc);
+    final serverId = ref.read(currentServerIdProvider);
+    if (serverId == null) return;
+    ref.read(appSettingsProvider.notifier).setBrowseSort(serverId, view, next);
   }
 
   void _selectView(ItemList view) {
@@ -188,6 +213,12 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
     ),
   );
 
+  String _label(ItemList view) =>
+      view == ItemList.artists &&
+          ref.watch(effectiveArtistScopeProvider) == ArtistScope.albumArtists
+      ? 'Album Artists'
+      : searchCategoryLabel(view);
+
   @override
   Widget build(BuildContext context) {
     final query = ref.watch(searchProvider)?.trim() ?? '';
@@ -212,7 +243,7 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
               children: [
                 for (final view in ItemList.values) ...[
                   _Tab(
-                    label: searchCategoryLabel(view),
+                    label: _label(view),
                     selected: view == _view,
                     autofocus: view == _view,
                     onSelect: () => _selectView(view),
@@ -220,6 +251,13 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
                   const SizedBox(width: 8),
                 ],
                 const Spacer(),
+                TvIconButton(
+                  icon: Icons.sort_rounded,
+                  size: 40,
+                  iconSize: 20,
+                  onSelect: () => unawaited(_chooseSort()),
+                ),
+                const SizedBox(width: 8),
                 TvIconButton(
                   icon: _searchOpen ? JPlayer.close : JPlayer.search,
                   size: 40,
@@ -347,7 +385,7 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
           for (final category in searchCategories)
             if (category != ItemList.songs)
               TvShelf(
-                title: searchCategoryLabel(category),
+                title: _label(category),
                 items: results[category]!.whenData((page) => page.items),
                 imageFor: _image,
                 subtitleFor: category == ItemList.albums
@@ -406,6 +444,53 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
           ),
         )
       : const _Message('Could not load this list');
+}
+
+class _SortDialog extends StatelessWidget {
+  const _SortDialog({required this.options, required this.current});
+
+  final List<EntityFilter> options;
+  final Filter current;
+
+  @override
+  Widget build(BuildContext context) => Dialog(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sort by',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 14),
+            for (final option in options)
+              TvOptionRow(
+                icon: Icon(
+                  option == current.orderBy
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                ),
+                label: Text(option.label),
+                trailing: option == current.orderBy
+                    ? Icon(
+                        current.desc
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
+                        size: 18,
+                      )
+                    : null,
+                autofocus: option == current.orderBy,
+                onSelect: () => Navigator.of(context).pop(option),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _Tab extends StatelessWidget {

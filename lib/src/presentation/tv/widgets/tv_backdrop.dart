@@ -110,19 +110,14 @@ class _TvBackdropState extends State<TvBackdrop> {
 
   void _load() {
     final image = widget.image;
-    final probe = Stopwatch()..start();
-    debugPrint('[tvnp] backdrop load');
     unawaited(
       TvBackdrop.of(image).then(
         (rendered) {
-          debugPrint('[tvnp] backdrop ready +${probe.elapsedMilliseconds}ms');
           if (mounted && widget.image == image) {
             setState(() => _image = rendered);
           }
         },
-        onError: (Object error) => debugPrint(
-          '[tvnp] backdrop failed +${probe.elapsedMilliseconds}ms $error',
-        ),
+        onError: (Object _) {},
       ),
     );
   }
