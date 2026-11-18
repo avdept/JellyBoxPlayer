@@ -49,8 +49,11 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   var _pendingSeekRefusals = 0;
   var _gaveUpWaiting = false;
   var _pollGeneration = 0;
+  var _polling = false;
   var _disposed = false;
   var _queueRefused = false;
+  var _queuePositioned = true;
+  Duration? _parkedAt;
   AvTransportState? _loggedState;
   bool playsToGroup = false;
 
@@ -173,6 +176,8 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     _idlePolls = 0;
     _gaveUpWaiting = false;
     _pollGeneration++;
+    _queuePositioned = true;
+    _parkedAt = null;
     _emit(
       status: autoPlay ? PlaybackStatus.buffering : PlaybackStatus.paused,
       position: initialPosition,
@@ -192,6 +197,10 @@ class UpnpPlaybackTarget implements PlaybackTarget {
           autoPlay && initialPosition > Duration.zero && _canSeek(_currentTrack)
           ? initialPosition
           : null;
+      if (!autoPlay) {
+        _queuePositioned = false;
+        _parkedAt = initialPosition;
+      }
     } on Object catch (error, stackTrace) {
       unawaited(
         diagnostics.capture(
@@ -247,6 +256,18 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   Future<void> play() async {
     _stopRequested = false;
     _gaveUpWaiting = false;
+    if (_deviceQueue != null && !_queuePositioned) {
+      final resumeAt = _parkedAt ?? Duration.zero;
+      _pendingSeek = resumeAt > Duration.zero && _canSeek(_currentTrack)
+          ? resumeAt
+          : null;
+      diagnostics.trail(
+        'queue was parked at ${_index + 1}; selecting it before Play',
+        category: 'upnp',
+      );
+      await skipTo(_index);
+      return;
+    }
     final ok = await _command('play', _playWhenReady);
     if (!ok) return;
     _emit(status: PlaybackStatus.playing);
@@ -404,6 +425,8 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     _sawPlaying = false;
     _idlePolls = 0;
     _gaveUpWaiting = false;
+    _queuePositioned = true;
+    _parkedAt = null;
     _emit(
       status: PlaybackStatus.buffering,
       currentIndex: index,
@@ -787,7 +810,16 @@ class UpnpPlaybackTarget implements PlaybackTarget {
   Future<void> pollNow() => _pollOnce();
 
   Future<void> _pollOnce() async {
-    if (_disposed) return;
+    if (_disposed || _polling) return;
+    _polling = true;
+    try {
+      await _pollDevice();
+    } finally {
+      _polling = false;
+    }
+  }
+
+  Future<void> _pollDevice() async {
     final generation = _pollGeneration;
     final AvTransportInfo info;
     final AvPositionInfo positionInfo;

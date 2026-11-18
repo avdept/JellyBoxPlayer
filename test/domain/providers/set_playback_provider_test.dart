@@ -120,7 +120,7 @@ void main() {
           .shufflePlay(_playlist, () async => songs);
 
       verifyInOrder([
-        () => playback.setShuffle(enabled: false),
+        () => playback.adoptShuffle(enabled: false),
         () => playback.play(
           any(),
           any(),
@@ -128,6 +128,7 @@ void main() {
           sourceId: any(named: 'sourceId'),
         ),
       ]);
+      verifyNever(() => playback.setShuffle(enabled: any(named: 'enabled')));
     });
 
     test('- leaves playback alone when the playlist is empty', () async {

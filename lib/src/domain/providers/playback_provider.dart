@@ -35,7 +35,10 @@ import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
 
 class PlaybackNotifier extends StateNotifier<PlaybackState> {
-  PlaybackNotifier(this._ref) : super(PlaybackState.initial()) {
+  PlaybackNotifier(
+    this._ref, {
+    this.queueEditTimeout = const Duration(seconds: 15),
+  }) : super(PlaybackState.initial()) {
     _target = _destination = _ref.read(playbackTargetProvider);
     _listenToTarget();
     _ref.listen<PlaybackTarget>(playbackTargetProvider, (_, next) {
@@ -88,6 +91,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   static const _stallGrace = Duration(seconds: 6);
 
   final Ref _ref;
+  final Duration queueEditTimeout;
   final _playSessionIds = <String, String>{};
   final _localSongIds = <String>{};
   final _streamFallbackIds = <String>{};
@@ -565,8 +569,20 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> _editQueue(Future<void> Function() edit) async {
     _queueEditsInFlight++;
+    final clock = Stopwatch()..start();
     try {
-      await edit();
+      await edit().timeout(queueEditTimeout);
+      if (clock.elapsed > const Duration(seconds: 2)) {
+        debugPrint(
+          '[Playback] queue edit on ${_target.name} took '
+          '${clock.elapsed.inSeconds}s',
+        );
+      }
+    } on TimeoutException {
+      debugPrint(
+        '[Playback] queue edit on ${_target.name} gave no answer in '
+        '${queueEditTimeout.inSeconds}s; following the player again',
+      );
     } finally {
       _queueEditsInFlight--;
       if (_queueEditsInFlight == 0) {

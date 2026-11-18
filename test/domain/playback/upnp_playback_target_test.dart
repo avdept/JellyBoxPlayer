@@ -663,6 +663,38 @@ void main() {
 
       expect(target.state.status, PlaybackStatus.error);
     });
+
+    test('- waits for a slow answer instead of piling polls up', () async {
+      await start([track(1)]);
+      when(transport.transportInfo).thenAnswer((_) async {
+        await pump(10);
+        return const AvTransportInfo(
+          state: AvTransportState.playing,
+          status: 'OK',
+        );
+      });
+
+      await pump(12);
+
+      verify(transport.transportInfo).called(lessThan(3));
+    });
+
+    test('- an unreachable device stops the polling for good', () async {
+      await start([track(1)]);
+      when(transport.transportInfo).thenAnswer((_) async {
+        await pump(2);
+        throw Exception('device gone');
+      });
+
+      await pump(30);
+
+      expect(target.state.status, PlaybackStatus.error);
+      expect(capturedFor('poll'), hasLength(1));
+      expect(
+        trails.where((entry) => entry.contains('poll failed')),
+        hasLength(3),
+      );
+    });
   });
 
   group('manufacturer quirks', () {
@@ -1025,6 +1057,51 @@ void main() {
 
       verify(() => deviceQueue.skipTo(1)).called(1);
       expect(target.state.currentIndex, 1);
+    });
+
+    test('- a paused hand-over selects its track on the first play', () async {
+      await useTarget(() => queueDrivenTarget());
+
+      await start(
+        [track(1), track(2), track(3)],
+        index: 2,
+        at: const Duration(seconds: 30),
+        autoPlay: false,
+      );
+      verify(
+        () => deviceQueue.load(any(), startIndex: 2, autoPlay: false),
+      ).called(1);
+      verifyNever(() => deviceQueue.skipTo(any()));
+
+      await target.play();
+
+      verify(() => deviceQueue.skipTo(2)).called(1);
+      verifyNever(transport.play);
+      expect(target.state.currentIndex, 2);
+
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+
+      verify(
+        () => transport.seek(
+          const Duration(seconds: 30),
+          unit: any(named: 'unit'),
+        ),
+      ).called(1);
+    });
+
+    test('- a play after a paused hand-over asks the device once', () async {
+      await useTarget(() => queueDrivenTarget());
+
+      await start([track(1), track(2)], index: 1, autoPlay: false);
+      await target.play();
+      deviceReports(AvTransportState.playing);
+      await target.pollNow();
+      await target.pause();
+      await target.play();
+
+      verify(() => deviceQueue.skipTo(1)).called(1);
+      verify(transport.play).called(1);
     });
 
     test(
