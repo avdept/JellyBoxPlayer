@@ -279,12 +279,14 @@ final AutoDisposeFutureProvider<LidarrPlacement?> lidarrPlacementProvider =
       );
     });
 
-enum LidarrEntityState { notAdded, added }
+enum LidarrEntityState { notAdded, added, monitored, downloading, downloaded }
 
 class LidarrEntityStatus {
-  const LidarrEntityStatus(this.state);
+  const LidarrEntityStatus(this.state, {this.progress, this.albumId});
 
   final LidarrEntityState state;
+  final double? progress;
+  final int? albumId;
 }
 
 typedef LidarrAlbumKey = ({String? upc, String? artistName});
@@ -306,8 +308,34 @@ lidarrAlbumStatusProvider = FutureProvider.autoDispose
       if (album == null) {
         return const LidarrEntityStatus(LidarrEntityState.notAdded);
       }
-      return const LidarrEntityStatus(LidarrEntityState.added);
+      if (album.isDownloaded) {
+        return LidarrEntityStatus(
+          LidarrEntityState.downloaded,
+          albumId: album.id,
+        );
+      }
+      final active = await _queued(client, album);
+      if (active != null) {
+        return LidarrEntityStatus(
+          LidarrEntityState.downloading,
+          progress: active.progress,
+          albumId: album.id,
+        );
+      }
+      return LidarrEntityStatus(
+        album.monitored ? LidarrEntityState.monitored : LidarrEntityState.added,
+        albumId: album.id,
+      );
     });
+
+Future<LidarrQueueItem?> _queued(LidarrClient client, LidarrAlbum album) async {
+  try {
+    final queue = await client.queue(artistIds: [album.artistId]);
+    return queue.where((item) => item.albumId == album.id).firstOrNull;
+  } on Object {
+    return null;
+  }
+}
 
 final AutoDisposeFutureProvider<List<LidarrArtist>> lidarrArtistsProvider =
     FutureProvider.autoDispose<List<LidarrArtist>>((
@@ -440,6 +468,11 @@ class LidarrAdder {
     await _client.addArtist(artist, defaults: defaults, search: search);
     _refreshStatuses();
     return LidarrAddOutcome.added;
+  }
+
+  Future<void> searchAlbum(int albumId) async {
+    await _client.searchAlbum(albumId);
+    _refreshStatuses();
   }
 
   void _refreshStatuses() {
