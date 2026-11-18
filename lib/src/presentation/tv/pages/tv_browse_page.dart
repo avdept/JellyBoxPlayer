@@ -35,11 +35,18 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
   final _searchController = TextEditingController();
   final _searchField = FocusNode(debugLabel: 'browse:search-field');
   final _searchButton = FocusNode(debugLabel: 'browse:search');
+  final _body = FocusNode(debugLabel: 'browse:body', skipTraversal: true);
+  final Map<ItemList, FocusNode> _tabNodes = {
+    for (final view in ItemList.values)
+      view: FocusNode(debugLabel: 'browse:tab:${view.name}'),
+  };
   Timer? _debounce;
+  bool _bodyFocused = false;
 
   @override
   void initState() {
     super.initState();
+    FocusManager.instance.addListener(_trackFocus);
     _view =
         ref.read(browseViewRequestProvider) ??
         ref.read(defaultBrowseTabProvider);
@@ -53,11 +60,32 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
 
   @override
   void dispose() {
+    FocusManager.instance.removeListener(_trackFocus);
     _debounce?.cancel();
     _searchController.dispose();
     _searchField.dispose();
     _searchButton.dispose();
+    _body.dispose();
+    for (final node in _tabNodes.values) {
+      node.dispose();
+    }
     super.dispose();
+  }
+
+  void _trackFocus() {
+    final focus = FocusManager.instance.primaryFocus;
+    final inBody = focus != null && focus.ancestors.contains(_body);
+    if (inBody != _bodyFocused && mounted) {
+      setState(() => _bodyFocused = inBody);
+    }
+  }
+
+  void _onBack() {
+    if (_searchOpen) {
+      _closeSearch();
+    } else {
+      _tabNodes[_view]!.requestFocus();
+    }
   }
 
   Filter _savedSort(ItemList view) {
@@ -225,9 +253,9 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
     final showResults = _searchOpen && query.isNotEmpty;
 
     return PopScope(
-      canPop: !_searchOpen,
+      canPop: !_searchOpen && !_bodyFocused,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _closeSearch();
+        if (!didPop) _onBack();
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -246,6 +274,7 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
                     label: _label(view),
                     selected: view == _view,
                     autofocus: view == _view,
+                    focusNode: _tabNodes[view],
                     onSelect: () => _selectView(view),
                   ),
                   const SizedBox(width: 8),
@@ -285,11 +314,14 @@ class _TvBrowsePageState extends ConsumerState<TvBrowsePage> {
               ),
             ),
           Expanded(
-            child: showResults
-                ? _results(query)
-                : _view == ItemList.songs
-                ? _songs()
-                : _grid(_view),
+            child: Focus(
+              focusNode: _body,
+              child: showResults
+                  ? _results(query)
+                  : _view == ItemList.songs
+                  ? _songs()
+                  : _grid(_view),
+            ),
           ),
         ],
       ),
@@ -499,11 +531,13 @@ class _Tab extends StatelessWidget {
     required this.selected,
     required this.onSelect,
     this.autofocus = false,
+    this.focusNode,
   });
 
   final String label;
   final bool selected;
   final bool autofocus;
+  final FocusNode? focusNode;
   final VoidCallback onSelect;
 
   @override
@@ -512,6 +546,7 @@ class _Tab extends StatelessWidget {
     return TvFocusable(
       onSelect: onSelect,
       autofocus: autofocus,
+      focusNode: focusNode,
       scrollOnFocus: false,
       debugLabel: 'browse:$label',
       builder: (context, focused) => AnimatedContainer(

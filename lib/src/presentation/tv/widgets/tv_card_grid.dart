@@ -71,42 +71,58 @@ class TvCardGrid extends StatelessWidget {
       );
       final cardWidth =
           (available - (columns - 1) * TvTokens.cardGap) / columns;
-      return FocusTraversalGroup(
-        child: GridView.builder(
-          shrinkWrap: shrinkWrap,
-          physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
-          padding: padding,
-          clipBehavior: Clip.none,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: TvTokens.cardGap,
-            mainAxisSpacing: _rowGap,
-            mainAxisExtent: cardWidth + _textBlock,
-          ),
-          itemCount: itemCount,
-          itemBuilder: (context, index) {
-            if (onNearEnd != null && index >= itemCount - columns * 2) {
-              onNearEnd!();
-            }
-            final item = itemAt(index);
-            if (item == null) return _Placeholder(width: cardWidth);
-            return TvCard(
-              title: item.name,
-              subtitle: subtitleFor?.call(item),
-              image: imageFor?.call(item),
-              width: cardWidth,
-              circular: circular,
-              autofocus: autofocusFirst && index == 0,
-              onSelect: onSelect == null ? null : () => onSelect!(item),
-              onLongSelect: onLongSelect == null
-                  ? null
-                  : () => onLongSelect!(item),
-            );
-          },
+      final grid = GridView.builder(
+        shrinkWrap: shrinkWrap,
+        physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
+        padding: padding,
+        clipBehavior: Clip.none,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
+          crossAxisSpacing: TvTokens.cardGap,
+          mainAxisSpacing: _rowGap,
+          mainAxisExtent: cardWidth + _textBlock,
         ),
+        itemCount: itemCount,
+        itemBuilder: (context, index) {
+          if (onNearEnd != null && index >= itemCount - columns * 2) {
+            onNearEnd!();
+          }
+          final item = itemAt(index);
+          if (item == null) return _Placeholder(width: cardWidth);
+          return TvCard(
+            title: item.name,
+            subtitle: subtitleFor?.call(item),
+            image: imageFor?.call(item),
+            width: cardWidth,
+            circular: circular,
+            autofocus: autofocusFirst && index == 0,
+            onSelect: onSelect == null ? null : () => onSelect!(item),
+            onLongSelect: onLongSelect == null
+                ? null
+                : () => onLongSelect!(item),
+          );
+        },
+      );
+      return FocusTraversalGroup(
+        child: shrinkWrap
+            ? grid
+            : ClipRect(clipper: const _VerticalClipper(), child: grid),
       );
     },
   );
+}
+
+class _VerticalClipper extends CustomClipper<Rect> {
+  const _VerticalClipper();
+
+  static const _overflow = 32.0;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(-_overflow, 0, size.width + _overflow, size.height);
+
+  @override
+  bool shouldReclip(_VerticalClipper oldClipper) => false;
 }
 
 class _Placeholder extends StatelessWidget {
