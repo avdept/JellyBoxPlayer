@@ -6,13 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/audio_quality_badge.dart';
-import 'package:jplayer/src/presentation/widgets/blurred_cover_art.dart';
-import 'package:jplayer/src/providers/color_scheme_provider.dart';
+import 'package:jplayer/src/presentation/widgets/lyrics_overlay.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -29,9 +29,11 @@ class TvNowPlayingPage extends ConsumerStatefulWidget {
 class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
   static const _queueWidth = 400.0;
   static const _slide = Duration(milliseconds: 250);
+  static const double _contentPadding = TvTokens.pagePaddingH + 16;
 
   final _queueButton = FocusNode(debugLabel: 'now-playing:queue');
   bool _queueOpen = false;
+  bool _queueBuilt = false;
 
   @override
   void dispose() {
@@ -39,7 +41,15 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
     super.dispose();
   }
 
-  void _openQueue() => setState(() => _queueOpen = true);
+  void _openQueue() => setState(() {
+    _queueOpen = true;
+    _queueBuilt = true;
+  });
+
+  void _toggleLyrics() {
+    final lyrics = ref.read(lyricsVisibleProvider.notifier);
+    lyrics.state = !lyrics.state;
+  }
 
   void _closeQueue() {
     setState(() => _queueOpen = false);
@@ -72,74 +82,127 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
     }
 
     final controls = ref.read(barControlsProvider);
-    final art = ref
-        .read(imageServiceProvider)
-        .artworkImage(item.artUri, size: 800);
+    final images = ref.read(imageServiceProvider);
+    final art = images.artworkImage(item.artUri, size: 512);
+    final backdrop = images.artworkImage(item.artUri, size: 128);
+    final lyricsOn = ref.watch(lyricsVisibleProvider);
 
     return PopScope(
-      canPop: !_queueOpen,
+      canPop: !_queueOpen && !lyricsOn,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _closeQueue();
+        if (didPop) return;
+        if (_queueOpen) {
+          _closeQueue();
+        } else {
+          _toggleLyrics();
+        }
       },
       child: Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) => Stack(
-            fit: StackFit.expand,
-            children: [
-              BlurredCoverArt(
-                image: art,
-                width: constraints.maxWidth,
-                height: constraints.maxHeight,
-                background: Colors.black,
-                blurStart: 0,
-                sigma: 70,
-              ),
-              const ColoredBox(color: Color(0x99000000)),
-              ExcludeFocus(
-                excluding: _queueOpen,
-                child: _Player(
-                  item: item,
-                  art: art,
-                  controls: controls,
-                  queueButton: _queueButton,
-                  onQueue: _openQueue,
-                ),
-              ),
-              TweenAnimationBuilder<double>(
-                tween: Tween(end: _queueOpen ? 1 : 0),
-                duration: _slide,
-                curve: Curves.easeOutCubic,
-                builder: (context, value, panel) => Stack(
-                  children: [
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: ColoredBox(
-                          color: Colors.black.withValues(alpha: 0.54 * value),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            TvBackdrop(image: backdrop),
+            ExcludeFocus(
+              excluding: _queueOpen,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      _contentPadding,
+                      TvTokens.pagePaddingV,
+                      _contentPadding,
+                      0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TvIconButton(
+                          icon: lyricsOn
+                              ? Icons.lyrics_rounded
+                              : Icons.lyrics_outlined,
+                          size: _Player.buttonSize,
+                          iconSize: _Player.iconSize,
+                          selected: lyricsOn,
+                          onSelect: _toggleLyrics,
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        TvIconButton(
+                          icon: Icons.format_list_bulleted_rounded,
+                          size: _Player.buttonSize,
+                          iconSize: _Player.iconSize,
+                          focusNode: _queueButton,
+                          onSelect: _openQueue,
+                        ),
+                      ],
                     ),
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: -_queueWidth * (1 - value),
-                      width: _queueWidth,
-                      child: Visibility(
-                        visible: value > 0,
-                        maintainState: true,
-                        child: panel!,
-                      ),
-                    ),
-                  ],
-                ),
-                child: ExcludeFocus(
-                  excluding: !_queueOpen,
-                  child: FocusScope(
-                    child: _Queue(controls: controls, open: _queueOpen),
                   ),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _Player(
+                            item: item,
+                            art: art,
+                            controls: controls,
+                            split: lyricsOn,
+                          ),
+                        ),
+                        if (lyricsOn)
+                          const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                0,
+                                0,
+                                _contentPadding,
+                                TvTokens.pagePaddingV,
+                              ),
+                              child: LyricsView(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TweenAnimationBuilder<double>(
+              tween: Tween(end: _queueOpen ? 1 : 0),
+              duration: _slide,
+              curve: Curves.easeOutCubic,
+              builder: (context, value, panel) => Stack(
+                children: [
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: ColoredBox(
+                        color: Colors.black.withValues(alpha: 0.54 * value),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    right: -_queueWidth * (1 - value),
+                    width: _queueWidth,
+                    child: _queueBuilt
+                        ? Visibility(
+                            visible: value > 0,
+                            maintainState: true,
+                            child: panel!,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+              child: ExcludeFocus(
+                excluding: !_queueOpen,
+                child: FocusScope(
+                  child: _Queue(controls: controls, open: _queueOpen),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -151,19 +214,18 @@ class _Player extends ConsumerWidget {
     required this.item,
     required this.art,
     required this.controls,
-    required this.queueButton,
-    required this.onQueue,
+    required this.split,
   });
 
   final MediaItem item;
   final ImageProvider art;
   final BarControls controls;
-  final FocusNode queueButton;
-  final VoidCallback onQueue;
+  final bool split;
 
-  static const _coverSize = 220.0;
-  static const _button = 36.0;
-  static const _icon = 18.0;
+  static const buttonSize = 36.0;
+  static const iconSize = 18.0;
+  static const double _button = buttonSize;
+  static const double _icon = iconSize;
   static final TextStyle _timeStyle = TvTokens.caption.copyWith(
     fontFeatures: const [FontFeature.tabularFigures()],
   );
@@ -175,26 +237,21 @@ class _Player extends ConsumerWidget {
     final progress = ref.watch(barProgressProvider);
     final shuffle = ref.watch(barShuffleProvider);
     final repeat = ref.watch(barRepeatProvider);
+    final elsewhere = ref.watch(remoteRendererProvider);
     final accent = Theme.of(context).colorScheme.primary;
 
+    final coverSize = split ? 170.0 : 220.0;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: TvTokens.pagePaddingH + 16,
-        vertical: TvTokens.pagePaddingV,
+      padding: const EdgeInsets.fromLTRB(
+        _TvNowPlayingPageState._contentPadding,
+        0,
+        _TvNowPlayingPageState._contentPadding,
+        TvTokens.pagePaddingV,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: TvIconButton(
-              icon: Icons.queue_music_rounded,
-              size: _button,
-              iconSize: _icon,
-              focusNode: queueButton,
-              onSelect: onQueue,
-            ),
-          ),
           Expanded(
             child: Row(
               children: [
@@ -202,8 +259,8 @@ class _Player extends ConsumerWidget {
                   borderRadius: TvTokens.panelRadius,
                   child: Image(
                     image: art,
-                    width: _coverSize,
-                    height: _coverSize,
+                    width: coverSize,
+                    height: coverSize,
                     fit: BoxFit.cover,
                     gaplessPlayback: true,
                   ),
@@ -218,8 +275,8 @@ class _Player extends ConsumerWidget {
                         item.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 28,
+                        style: TextStyle(
+                          fontSize: split ? 22 : 28,
                           fontWeight: FontWeight.w700,
                           height: 1.15,
                         ),
@@ -234,6 +291,31 @@ class _Player extends ConsumerWidget {
                           color: Colors.white70,
                         ),
                       ),
+                      if (elsewhere != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cast_connected_rounded,
+                              size: 16,
+                              color: accent,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Playing on ${elsewhere.name}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -325,7 +407,15 @@ class _Player extends ConsumerWidget {
                     unawaited(controls.setRepeat(_nextRepeat(repeat))),
               ),
               const Spacer(),
-              const SizedBox.square(dimension: _button),
+              TvIconButton(
+                icon: elsewhere == null
+                    ? Icons.cast_rounded
+                    : Icons.cast_connected_rounded,
+                size: _button,
+                iconSize: _icon,
+                selected: elsewhere != null,
+                onSelect: () => unawaited(TvPlayOnDialog.show(context)),
+              ),
             ],
           ),
         ],
@@ -448,6 +538,12 @@ class _QueueState extends ConsumerState<_Queue> {
   int? _shownIndex;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.open) _focusCurrent();
+  }
+
+  @override
   void didUpdateWidget(_Queue oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.open && !oldWidget.open) _focusCurrent();
@@ -498,11 +594,8 @@ class _QueueState extends ConsumerState<_Queue> {
     if (index >= 0) _revealCurrent(index);
 
     final theme = Theme.of(context);
-    final tint =
-        (ref.watch(artworkSchemeProvider).valueOrNull?.surface ??
-                theme.bottomSheetTheme.backgroundColor ??
-                Colors.black)
-            .withValues(alpha: 0.88);
+    final tint = (theme.bottomSheetTheme.backgroundColor ?? Colors.black)
+        .withValues(alpha: 0.88);
 
     return Material(
       color: tint,
@@ -620,7 +713,9 @@ class _QueueRow extends ConsumerWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: Image(
-                image: ref.read(imageServiceProvider).itemImage(song),
+                image: ref
+                    .read(imageServiceProvider)
+                    .itemImage(song, size: 128),
                 width: _coverSize,
                 height: _coverSize,
                 fit: BoxFit.cover,

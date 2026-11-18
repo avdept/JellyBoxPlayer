@@ -11,6 +11,7 @@ class TvCollectionScaffold extends ConsumerStatefulWidget {
     required this.body,
     this.subtitle,
     this.details,
+    this.circularCover = false,
     super.key,
   });
 
@@ -20,9 +21,11 @@ class TvCollectionScaffold extends ConsumerStatefulWidget {
   final Widget? details;
   final List<Widget> actions;
   final Widget body;
+  final bool circularCover;
 
   static const panelWidth = 272.0;
   static const coverSize = 240.0;
+  static const gap = 36.0;
 
   @override
   ConsumerState<TvCollectionScaffold> createState() =>
@@ -125,11 +128,14 @@ class _TvCollectionScaffoldState extends ConsumerState<TvCollectionScaffold> {
                   child: _panel(),
                 ),
               ),
-              const SizedBox(width: 36),
+              const SizedBox(width: TvCollectionScaffold.gap),
               Expanded(
                 child: Focus(
                   focusNode: _bodyNode,
-                  child: widget.body,
+                  child: ClipRect(
+                    clipper: const _BodyClipper(),
+                    child: widget.body,
+                  ),
                 ),
               ),
             ],
@@ -147,7 +153,9 @@ class _TvCollectionScaffoldState extends ConsumerState<TvCollectionScaffold> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: TvTokens.panelRadius,
+            borderRadius: widget.circularCover
+                ? BorderRadius.circular(TvCollectionScaffold.coverSize)
+                : TvTokens.panelRadius,
             child: SizedBox.square(
               dimension: TvCollectionScaffold.coverSize,
               child: widget.cover,
@@ -199,4 +207,15 @@ class _CollectionTraversalPolicy extends ReadingOrderTraversalPolicy {
     if (leavesPage(currentNode, direction)) return false;
     return super.inDirection(currentNode, direction);
   }
+}
+
+class _BodyClipper extends CustomClipper<Rect> {
+  const _BodyClipper();
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(-TvCollectionScaffold.gap, 0, size.width, size.height);
+
+  @override
+  bool shouldReclip(_BodyClipper oldClipper) => false;
 }

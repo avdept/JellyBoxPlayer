@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
@@ -279,12 +280,13 @@ final lyricsAlignmentProvider = Provider<LyricsAlignment>(
 );
 
 final lyricsBlurProvider = Provider<LyricsBlur>(
-  (ref) =>
-      LyricsBlur.values.asNameMap()[_asString(
-        ref.watch(appSettingsProvider)[AppSetting.lyricsBlur],
-        AppSetting.lyricsBlur,
-      )] ??
-      LyricsBlur.medium,
+  (ref) => TvMode.isTv
+      ? LyricsBlur.off
+      : LyricsBlur.values.asNameMap()[_asString(
+              ref.watch(appSettingsProvider)[AppSetting.lyricsBlur],
+              AppSetting.lyricsBlur,
+            )] ??
+            LyricsBlur.medium,
 );
 
 final playerTimeDisplayProvider = Provider<PlayerTimeDisplay>(

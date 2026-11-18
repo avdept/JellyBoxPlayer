@@ -80,6 +80,15 @@ class JellyboxCloud<S> {
 
   Future<void> signOut() async {}
 
+  Future<bool> linkDevice({
+    required String address,
+    required void Function(DeviceLinkStart start) onCode,
+  }) async => false;
+
+  void cancelDeviceLink() {}
+
+  Future<String?> approveDevice(String code) async => null;
+
   void forgetAccount() {}
 
   Future<void> networkChanged() async {}

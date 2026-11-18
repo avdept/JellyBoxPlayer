@@ -95,6 +95,15 @@ class CloudNotifier extends StateNotifier<CloudState> {
 
   Future<void> signOut() => _cloud.signOut();
 
+  Future<bool> linkDevice({
+    required String address,
+    required void Function(DeviceLinkStart start) onCode,
+  }) => _cloud.linkDevice(address: address, onCode: onCode);
+
+  void cancelDeviceLink() => _cloud.cancelDeviceLink();
+
+  Future<String?> approveDevice(String code) => _cloud.approveDevice(code);
+
   Future<bool> handoffTo(String deviceId) => _cloud.handoffTo(deviceId);
 
   bool? sameBackend(ConductorDevice device) => _cloud.sameBackend(device);
@@ -183,6 +192,8 @@ class _RemotePlayback implements RemotePlayback {
   @override
   Future<bool> remove(int index) => _cloud.removeOnRenderer(index);
 }
+
+final playbackArrivedProvider = StateProvider<int>((ref) => 0);
 
 final cloudAvailableProvider = Provider<bool>(
   (ref) => ref.watch(cloudProvider.notifier).available,

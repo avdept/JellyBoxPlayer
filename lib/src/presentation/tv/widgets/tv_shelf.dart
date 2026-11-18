@@ -18,6 +18,7 @@ class TvShelf extends StatelessWidget {
     this.playsOnSelect,
     this.onRetry,
     this.autofocusFirst = false,
+    this.circular = false,
     this.horizontalPadding = TvTokens.pagePaddingH,
     this.emptyLabel = 'Nothing here yet',
     this.hideWhenEmpty = true,
@@ -34,6 +35,7 @@ class TvShelf extends StatelessWidget {
   final bool Function(LibraryItem item)? playsOnSelect;
   final VoidCallback? onRetry;
   final bool autofocusFirst;
+  final bool circular;
   final double horizontalPadding;
   final String emptyLabel;
 
@@ -95,6 +97,7 @@ class TvShelf extends StatelessWidget {
               image: imageFor(item),
               cover: coverFor?.call(item),
               autofocus: autofocusFirst && index == 0,
+              circular: circular,
               playsOnSelect: playsOnSelect?.call(item) ?? false,
               onSelect: onSelect == null ? null : () => onSelect!(item),
               onLongSelect: onLongSelect == null

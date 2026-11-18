@@ -57,32 +57,57 @@ class TvSongRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-              SizedBox(
-                width: 28,
-                child: isPlaying
-                    ? Icon(Icons.graphic_eq_rounded, size: 18, color: highlight)
-                    : Text(
-                        position?.toString() ?? '',
-                        style: TextStyle(fontSize: 13, color: muted),
-                      ),
-              ),
-              const SizedBox(width: 12),
+              if (position != null) ...[
+                SizedBox(
+                  width: 28,
+                  child: isPlaying
+                      ? Icon(
+                          Icons.graphic_eq_rounded,
+                          size: 18,
+                          color: highlight,
+                        )
+                      : Text(
+                          position.toString(),
+                          style: TextStyle(fontSize: 13, color: muted),
+                        ),
+                ),
+                const SizedBox(width: 12),
+              ],
               if (cover case final cover?) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image(
-                    image: cover,
-                    width: _coverSize,
-                    height: _coverSize,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      Images.album,
-                      width: _coverSize,
-                      height: _coverSize,
-                      fit: BoxFit.cover,
-                    ),
+                  child: Stack(
+                    children: [
+                      Image(
+                        image: cover,
+                        width: _coverSize,
+                        height: _coverSize,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                              Images.album,
+                              width: _coverSize,
+                              height: _coverSize,
+                              fit: BoxFit.cover,
+                            ),
+                      ),
+                      if (isPlaying && position == null)
+                        const Positioned.fill(
+                          child: ColoredBox(
+                            color: Colors.black54,
+                            child: Icon(
+                              Icons.graphic_eq_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
+                const SizedBox(width: 12),
+              ] else if (position == null && isPlaying) ...[
+                Icon(Icons.graphic_eq_rounded, size: 18, color: highlight),
                 const SizedBox(width: 12),
               ],
               Expanded(

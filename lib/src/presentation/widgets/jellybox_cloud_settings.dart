@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/widgets/continuity_intro.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_connect_form.dart';
+import 'package:jplayer/src/presentation/widgets/link_device_form.dart';
 import 'package:jplayer/src/presentation/widgets/link_privacy_sheet.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/current_server_type_provider.dart';
@@ -47,6 +48,18 @@ class JellyboxCloudSettings extends ConsumerWidget {
             account == null ? 'Connect' : 'Connected as ${account.email}',
           ),
         ),
+        if (account != null)
+          TextButton.icon(
+            onPressed: () => unawaited(
+              showFormModal<bool>(
+                context,
+                builder: (context) => const LinkDeviceForm(),
+              ),
+            ),
+            style: _buttonStyle,
+            icon: const Icon(Icons.tv_outlined),
+            label: const Text('Link a TV'),
+          ),
         const _ServerConnectionRow(),
         TextButton.icon(
           onPressed: () => unawaited(LinkPrivacySheet.show(context)),

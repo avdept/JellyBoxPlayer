@@ -9,6 +9,7 @@ import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/platform/tv_home_channel.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
@@ -25,6 +26,7 @@ class TvMainPage extends ConsumerStatefulWidget {
 }
 
 class _TvMainPageState extends ConsumerState<TvMainPage> {
+  static const _browseBranch = 1;
   static const _settingsBranch = 2;
 
   final _homeNode = FocusNode(debugLabel: 'rail:Home');
@@ -40,12 +42,22 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
     FocusManager.instance.addListener(_trackContentFocus);
     TvHomeChannel.listen((albumId) => unawaited(_openAlbum(albumId)));
     unawaited(_openPendingAlbum());
-    ref.listenManual<bool>(isOfflineProvider, (_, offline) {
-      if (!offline) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_railFocused) _homeNode.requestFocus();
-      });
-    }, fireImmediately: true);
+    ref
+      ..listenManual<int>(playbackArrivedProvider, (_, _) => _showNowPlaying())
+      ..listenManual<bool>(isOfflineProvider, (_, offline) {
+        if (!offline) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_railFocused) _homeNode.requestFocus();
+        });
+      }, fireImmediately: true);
+  }
+
+  void _showNowPlaying() {
+    if (!mounted) return;
+    final router = GoRouter.of(context);
+    final location = router.routerDelegate.currentConfiguration.uri.path;
+    if (location == Routes.nowPlaying.path) return;
+    unawaited(context.pushNamed(Routes.nowPlaying.name));
   }
 
   Future<void> _openPendingAlbum() async {
@@ -198,6 +210,15 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
                   selected: widget.shell.currentIndex == 0,
                   focusNode: _homeNode,
                   onSelect: _goHome,
+                ),
+                TvRailItem(
+                  icon: Icons.grid_view_rounded,
+                  label: 'Browse',
+                  selected: widget.shell.currentIndex == _browseBranch,
+                  onSelect: () => widget.shell.goBranch(
+                    _browseBranch,
+                    initialLocation: widget.shell.currentIndex == _browseBranch,
+                  ),
                 ),
                 TvRailItem(
                   icon: JPlayer.play_circle_outlined,
