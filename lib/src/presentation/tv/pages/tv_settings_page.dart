@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
@@ -17,6 +20,8 @@ class TvSettingsPage extends ConsumerWidget {
     );
     final miniPlayer = ref.watch(settingProvider(AppSetting.tvMiniPlayer));
     final browseTab = ref.watch(defaultBrowseTabProvider);
+    final cloudAvailable = ref.watch(cloudAvailableProvider);
+    final account = ref.watch(cloudProvider.select((state) => state.account));
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -57,9 +62,97 @@ class TvSettingsPage extends ConsumerWidget {
           onChanged: (tab) =>
               settings.setValue(AppSetting.defaultBrowseTab, tab.name),
         ),
+        if (cloudAvailable) ...[
+          const SizedBox(height: 24),
+          const Text('Jellybox Link', style: TvTokens.sectionTitle),
+          const SizedBox(height: 8),
+          if (account == null)
+            _TvActionRow(
+              label: 'Connect',
+              detail: 'Type a code on your phone',
+              icon: Icons.cloud_outlined,
+              onSelect: () => _connect(context),
+            )
+          else ...[
+            _TvActionRow(
+              label: 'Connected as ${account.email}',
+              icon: Icons.cloud_done,
+            ),
+            const SizedBox(height: 8),
+            _TvActionRow(
+              label: 'Disconnect',
+              icon: Icons.logout_rounded,
+              onSelect: () =>
+                  unawaited(ref.read(cloudProvider.notifier).signOut()),
+            ),
+          ],
+        ],
       ],
     );
   }
+
+  Future<void> _connect(BuildContext context) async {
+    final linked = await TvLinkDialog.show(context);
+    if (linked && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connected to Jellybox Link')),
+      );
+    }
+  }
+}
+
+class _TvActionRow extends StatelessWidget {
+  const _TvActionRow({
+    required this.label,
+    required this.icon,
+    this.detail,
+    this.onSelect,
+  });
+
+  final String label;
+  final IconData icon;
+  final String? detail;
+  final VoidCallback? onSelect;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 560),
+    child: TvFocusable(
+      enabled: onSelect != null,
+      onSelect: onSelect,
+      debugLabel: 'setting:$label',
+      builder: (context, focused) => AnimatedContainer(
+        duration: TvTokens.focusDuration,
+        curve: TvTokens.focusCurve,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: focused ? TvTokens.listFocus(context) : Colors.white10,
+          borderRadius: TvTokens.cardRadius,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (detail case final detail?) ...[
+              Text(detail, style: TvTokens.caption),
+              const SizedBox(width: 8),
+            ],
+            if (onSelect != null)
+              const Icon(Icons.chevron_right_rounded, size: 20),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _TvSwitchRow extends StatelessWidget {

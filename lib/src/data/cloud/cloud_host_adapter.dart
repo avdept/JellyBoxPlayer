@@ -5,10 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/main.dart' as app show deviceId;
+import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -22,7 +24,7 @@ String continuityDeviceName() {
   if (kIsWeb) return 'Browser';
   if (Platform.isMacOS) return 'Mac';
   if (Platform.isIOS) return 'iPhone';
-  if (Platform.isAndroid) return 'Android phone';
+  if (Platform.isAndroid) return TvMode.isTv ? 'Android TV' : 'Android phone';
   if (Platform.isWindows) return 'Windows PC';
   if (Platform.isLinux) return 'Linux desktop';
   return 'JellyBox';
@@ -30,6 +32,7 @@ String continuityDeviceName() {
 
 String continuityPlatformName() {
   if (kIsWeb) return 'web';
+  if (Platform.isAndroid && TvMode.isTv) return 'androidtv';
   return Platform.operatingSystem;
 }
 
@@ -121,6 +124,7 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
     required bool autoPlay,
     required bool shuffle,
   }) async {
+    _ref.read(playbackArrivedProvider.notifier).state++;
     final playback = _ref.read(playbackProvider.notifier);
     await playback.play(
       songs[index],
@@ -141,15 +145,18 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
     required LibraryItem? album,
     required String? sourceId,
     required Duration position,
-  }) => _ref
-      .read(playbackProvider.notifier)
-      .play(
-        songs[index],
-        songs,
-        album ?? placeholderAlbumFor(songs[index]),
-        sourceId: sourceId,
-        initialPosition: position > Duration.zero ? position : null,
-      );
+  }) {
+    _ref.read(playbackArrivedProvider.notifier).state++;
+    return _ref
+        .read(playbackProvider.notifier)
+        .play(
+          songs[index],
+          songs,
+          album ?? placeholderAlbumFor(songs[index]),
+          sourceId: sourceId,
+          initialPosition: position > Duration.zero ? position : null,
+        );
+  }
 
   @override
   Future<bool> enqueue({

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/tv_button.dart';
@@ -20,6 +21,7 @@ class TvMiniPlayer extends ConsumerWidget {
 
     final playing = ref.watch(barPlayingProvider);
     final progress = ref.watch(barProgressProvider);
+    final elsewhere = ref.watch(remoteRendererProvider);
     final controls = ref.read(barControlsProvider);
     final art = ref
         .read(imageServiceProvider)
@@ -96,10 +98,19 @@ class TvMiniPlayer extends ConsumerWidget {
                                         ),
                                       ),
                                       Text(
-                                        item.artist ?? '',
+                                        elsewhere != null
+                                            ? 'Playing on ${elsewhere.name}'
+                                            : item.artist ?? '',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TvTokens.caption,
+                                        style: elsewhere != null
+                                            ? TvTokens.caption.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                                fontWeight: FontWeight.w600,
+                                              )
+                                            : TvTokens.caption,
                                       ),
                                     ],
                                   ),

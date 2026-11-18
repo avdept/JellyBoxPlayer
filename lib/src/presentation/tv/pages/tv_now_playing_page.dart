@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
@@ -236,6 +237,7 @@ class _Player extends ConsumerWidget {
     final progress = ref.watch(barProgressProvider);
     final shuffle = ref.watch(barShuffleProvider);
     final repeat = ref.watch(barRepeatProvider);
+    final elsewhere = ref.watch(remoteRendererProvider);
     final accent = Theme.of(context).colorScheme.primary;
 
     final coverSize = split ? 170.0 : 220.0;
@@ -289,6 +291,31 @@ class _Player extends ConsumerWidget {
                           color: Colors.white70,
                         ),
                       ),
+                      if (elsewhere != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.cast_connected_rounded,
+                              size: 16,
+                              color: accent,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Playing on ${elsewhere.name}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -380,7 +407,15 @@ class _Player extends ConsumerWidget {
                     unawaited(controls.setRepeat(_nextRepeat(repeat))),
               ),
               const Spacer(),
-              const SizedBox.square(dimension: _button),
+              TvIconButton(
+                icon: elsewhere == null
+                    ? Icons.cast_rounded
+                    : Icons.cast_connected_rounded,
+                size: _button,
+                iconSize: _icon,
+                selected: elsewhere != null,
+                onSelect: () => unawaited(TvPlayOnDialog.show(context)),
+              ),
             ],
           ),
         ],

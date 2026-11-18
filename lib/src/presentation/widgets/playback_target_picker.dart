@@ -810,6 +810,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 IconData conductorDeviceIcon(String platform) => switch (platform) {
   'ios' => Icons.phone_iphone,
   'android' => Icons.phone_android,
+  'androidtv' => Icons.tv_rounded,
   'macos' => Icons.laptop_mac,
   'windows' => Icons.laptop_windows,
   'linux' => Icons.computer,

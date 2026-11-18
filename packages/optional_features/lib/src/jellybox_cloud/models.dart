@@ -100,3 +100,13 @@ class ContinuityAccount {
 
   Uri get endpoint => Uri.parse(serverUrl);
 }
+
+class DeviceLinkStart {
+  const DeviceLinkStart({
+    required this.code,
+    this.expiresIn = const Duration(minutes: 10),
+  });
+
+  final String code;
+  final Duration expiresIn;
+}
