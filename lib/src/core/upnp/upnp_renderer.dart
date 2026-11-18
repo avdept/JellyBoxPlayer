@@ -144,23 +144,28 @@ class UpnpControlPoint {
       services: {for (final service in device.services) service.type},
     );
     final quirks = quirksFor(fingerprint);
-    final kind = detectQueue(fingerprint);
+    final kind = quirks.queueOverride ?? detectQueue(fingerprint);
+    final rules = rulesFor(fingerprint).map((rule) => rule.name).toList();
+    final context = _context(device, transportService);
+    final queueDriver = buildDeviceQueue(kind, context);
 
     _diagnostics.trail(
-      'renderer described',
+      'renderer described: ${device.manufacturer ?? 'unknown maker'} '
+      '${device.modelName ?? 'unknown model'}, queue ${kind.name} '
+      '${queueDriver == null ? 'without' : 'with'} a driver, rules $rules, '
+      'next-URI ${actions.contains('SetNextAVTransportURI') ? 'yes' : 'no'}, '
+      'services ${device.services.map((s) => s.shortType).toList()}',
       category: 'upnp',
       data: {
         ...fingerprint.redacted().toJson(),
         'quirks': quirks.toJson(),
-        'queue': (quirks.queueOverride ?? kind).name,
-        'rules': rulesFor(fingerprint).map((rule) => rule.name).toList(),
+        'queue': kind.name,
+        'rules': rules,
       },
     );
 
-    final context = _context(device, transportService);
-
     return UpnpRenderer(
-      queueDriver: buildDeviceQueue(quirks.queueOverride ?? kind, context),
+      queueDriver: queueDriver,
       groups: buildSpeakerGroups(fingerprint, context),
       device: device,
       avTransport: AvTransport(

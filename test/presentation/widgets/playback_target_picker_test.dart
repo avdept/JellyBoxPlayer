@@ -388,7 +388,8 @@ void main() {
     expect(find.text('Play on'), findsOneWidget);
     expect(find.text('This device'), findsOneWidget);
     expect(find.text('[TV1476] ROOM 7005'), findsOneWidget);
-    expect(find.text('10.0.0.9 · HG55BU800EUXEN'), findsOneWidget);
+    expect(find.text('DLNA · HG55BU800EUXEN'), findsOneWidget);
+    expect(find.textContaining('10.0.0.9'), findsNothing);
     expect(find.text('Kitchen'), findsOneWidget);
     expect(find.text('No DLNA devices found on this network.'), findsNothing);
   });
@@ -792,7 +793,7 @@ void main() {
     );
   });
 
-  testWidgets('- tells three identical speakers apart by address', (
+  testWidgets('- shows the address only when speakers share a name', (
     tester,
   ) async {
     await pumpPicker(
@@ -811,9 +812,9 @@ void main() {
 
     expect(find.text('Office'), findsOneWidget);
     expect(find.text('Sonos Play:5'), findsNWidgets(2));
-    expect(find.text('10.0.0.11 · Play:5'), findsOneWidget);
-    expect(find.text('10.0.0.12 · Play:5'), findsOneWidget);
-    expect(find.text('10.0.0.13 · Play:5'), findsOneWidget);
+    expect(find.text('DLNA · 10.0.0.11 · Play:5'), findsOneWidget);
+    expect(find.text('DLNA · 10.0.0.12 · Play:5'), findsOneWidget);
+    expect(find.text('DLNA · Play:5'), findsOneWidget);
   });
 
   group('sharing the device list', () {
@@ -1103,7 +1104,7 @@ void main() {
 
     expect(tile.enabled, isTrue);
     expect(tile.onTap, isNotNull);
-    expect(find.text('10.0.0.9 · QE85'), findsOneWidget);
+    expect(find.text('DLNA · QE85'), findsOneWidget);
     expect(
       find.text('Needs a speaker that holds its own queue'),
       findsNothing,

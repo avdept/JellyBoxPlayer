@@ -1027,24 +1027,66 @@ void main() {
       expect(target.state.currentIndex, 1);
     });
 
-    test('- surfaces an error when the hand-over is refused', () async {
-      await useTarget(() => queueDrivenTarget());
-      when(
-        () => deviceQueue.load(
-          any(),
-          startIndex: any(named: 'startIndex'),
-          autoPlay: any(named: 'autoPlay'),
-        ),
-      ).thenThrow(Exception('ParseXmltoPlayList error'));
+    test(
+      '- falls back to one track at a time when the hand-over is refused',
+      () async {
+        await useTarget(() => queueDrivenTarget());
+        when(
+          () => deviceQueue.load(
+            any(),
+            startIndex: any(named: 'startIndex'),
+            autoPlay: any(named: 'autoPlay'),
+          ),
+        ).thenThrow(Exception('ParseXmltoPlayList error'));
 
-      await start([track(1)]);
+        await start([track(1), track(2)], index: 1);
 
-      expect(target.state.status, PlaybackStatus.error);
-      expect(
-        captured.where((entry) => entry.startsWith('upnp.queue.load')),
-        hasLength(1),
-      );
-    });
+        expect(target.state.status, isNot(PlaybackStatus.error));
+        expectStarted(2);
+        expect(capturedFor('queue.load'), hasLength(1));
+        expect(
+          trails,
+          contains(contains('falling back to one track at a time')),
+        );
+
+        deviceReports(AvTransportState.playing);
+        await target.pollNow();
+        await target.seekToPrevious();
+
+        expectStarted(1);
+        verifyNever(() => deviceQueue.skipTo(any()));
+        verify(
+          () => deviceQueue.load(
+            any(),
+            startIndex: any(named: 'startIndex'),
+            autoPlay: any(named: 'autoPlay'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '- reports the hand-over failure and the fallback failure apart',
+      () async {
+        await useTarget(() => queueDrivenTarget());
+        when(
+          () => deviceQueue.load(
+            any(),
+            startIndex: any(named: 'startIndex'),
+            autoPlay: any(named: 'autoPlay'),
+          ),
+        ).thenThrow(Exception('ParseXmltoPlayList error'));
+        when(
+          () => transport.setUri(any(), metadata: any(named: 'metadata')),
+        ).thenThrow(refused('SetAVTransportURI', '716'));
+
+        await start([track(1)]);
+
+        expect(target.state.status, PlaybackStatus.error);
+        expect(capturedFor('queue.load'), hasLength(1));
+        expect(capturedFor('setUri'), hasLength(1));
+      },
+    );
   });
 
   group('a speaker that plays to a group', () {
