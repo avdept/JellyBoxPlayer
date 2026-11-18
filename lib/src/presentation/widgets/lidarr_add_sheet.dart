@@ -34,6 +34,7 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
   var _selected = 0;
   var _monitorArtist = true;
   var _submitting = false;
+  var _confirmingMonitor = false;
 
   @override
   void initState() {
@@ -50,6 +51,27 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
       if (!mounted) return;
       setState(() => _error = _describe(error));
     }
+  }
+
+  void _onAdd() {
+    final plan = _plan;
+    if (plan == null) return;
+    final confirmed = ref.read(
+      settingProvider(AppSetting.lidarrMonitorArtistConfirmed),
+    );
+    if (_artistIsNew(plan) && _monitorArtist && !confirmed) {
+      setState(() => _confirmingMonitor = true);
+      return;
+    }
+    unawaited(_submit());
+  }
+
+  void _confirmMonitor() {
+    ref
+        .read(appSettingsProvider.notifier)
+        .setEnabled(AppSetting.lidarrMonitorArtistConfirmed, value: true);
+    setState(() => _confirmingMonitor = false);
+    unawaited(_submit());
   }
 
   Future<void> _submit() async {
@@ -108,6 +130,24 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
     final connected = ref.watch(lidarrClientProvider) != null;
     final placement = ref.watch(lidarrPlacementProvider);
     final plan = _plan;
+    final status = switch (widget.target) {
+      LidarrAlbumTarget(:final album) =>
+        ref
+            .watch(
+              lidarrAlbumStatusProvider((
+                upc: album.upc,
+                artistName: album.artistName,
+              )),
+            )
+            .valueOrNull,
+      LidarrArtistTarget() => null,
+    };
+    final inLidarr =
+        plan != null &&
+        plan.exact &&
+        _alreadyAdded(plan) &&
+        status != null &&
+        status.state != LidarrEntityState.notAdded;
 
     return SafeArea(
       top: false,
@@ -116,9 +156,39 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ModalFormHeader('Add to Lidarr'),
+          ModalFormHeader(inLidarr ? widget.target.title : 'Add to Lidarr'),
           const SizedBox(height: 12),
-          if (!connected) ...[
+          if (_confirmingMonitor) ...[
+            Text(
+              'Monitoring the artist tells Lidarr to monitor every album '
+              'by ${plan?.albums[_selected].artist?.name ?? 'this artist'}, '
+              'not only this one. Lidarr will also keep adding new '
+              'releases as they come out.',
+              style: TextStyle(fontSize: 14, color: muted),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Uncheck "Monitor artist" to add only this album. '
+              'This notice is shown once.',
+              style: TextStyle(fontSize: 13, color: muted),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _confirmingMonitor = false),
+                  style: ModalFormActions.buttonStyle(context),
+                  child: const Text('Back'),
+                ),
+                TextButton(
+                  onPressed: _confirmMonitor,
+                  style: ModalFormActions.buttonStyle(context, primary: true),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            ),
+          ] else if (!connected) ...[
             Text(
               'Connect your Lidarr server first.',
               style: TextStyle(fontSize: 14, color: muted),
@@ -146,7 +216,12 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
                   'Lidarr could not find "${widget.target.title}".',
                   style: TextStyle(fontSize: 14, color: muted),
                 )
-              else ...[
+              else if (inLidarr) ...[
+                Text(
+                  _statusLine(status),
+                  style: TextStyle(fontSize: 14, color: muted),
+                ),
+              ] else ...[
                 Text(
                   plan.exact
                       ? 'Lidarr will add:'
@@ -189,15 +264,25 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
             if (plan != null && plan.candidateCount > 0 && !_alreadyAdded(plan))
               ModalFormActions(
                 submitLabel: 'Add',
-                onSubmit: placement.valueOrNull == null
-                    ? () {}
-                    : () => unawaited(_submit()),
+                onSubmit: placement.valueOrNull == null ? () {} : _onAdd,
                 busy: _submitting || placement.isLoading,
               ),
           ],
         ],
       ),
     );
+  }
+
+  String _statusLine(LidarrEntityStatus status) {
+    final title = widget.target.title;
+    return switch (status.state) {
+      LidarrEntityState.monitored => 'Lidarr monitors "$title"',
+      LidarrEntityState.downloading =>
+        'Lidarr adds "$title" at ${((status.progress ?? 0) * 100).round()}%',
+      LidarrEntityState.downloaded => 'Lidarr added "$title"',
+      LidarrEntityState.added || LidarrEntityState.notAdded =>
+        'Lidarr has "$title" but does not monitor it',
+    };
   }
 
   bool _alreadyAdded(LidarrAddPlan plan) => plan.albums.isNotEmpty
@@ -232,12 +317,24 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
           added: artist.isAdded,
         ),
     ];
+    if (rows.length == 1) {
+      final row = rows.single;
+      return [
+        ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            row.title,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: row.subtitle.isEmpty ? null : Text(row.subtitle),
+        ),
+      ];
+    }
     return [
       RadioGroup<int>(
         groupValue: _selected,
-        onChanged: rows.length == 1
-            ? (_) {}
-            : (value) => setState(() => _selected = value ?? 0),
+        onChanged: (value) => setState(() => _selected = value ?? 0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

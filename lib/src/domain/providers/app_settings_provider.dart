@@ -91,6 +91,10 @@ enum AppSetting {
   ),
   lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
   lidarrHideAddButton('lidarr_hide_add_button', syncs: false),
+  lidarrMonitorArtistConfirmed(
+    'lidarr_monitor_artist_confirmed',
+    syncs: false,
+  ),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   lastFmUser('lastfm_user', defaultValue: ''),
