@@ -40,10 +40,73 @@ class DownloadPaths {
     final existing = _root;
     if (existing != null) return existing;
 
-    final documents = await getApplicationDocumentsDirectory();
-    final musicDir = Directory(p.join(documents.path, musicDirectoryName));
+    final documents = await _documentsDirectory();
+    final musicDir = Directory(p.join(documents, musicDirectoryName));
     if (!musicDir.existsSync()) await musicDir.create(recursive: true);
     return _root = musicDir.path;
+  }
+
+  static Future<String> _documentsDirectory() async {
+    try {
+      return (await getApplicationDocumentsDirectory()).path;
+    } on MissingPlatformDirectoryException catch (e) {
+      final environment = Platform.environment;
+      final fallback = documentsFallback(
+        environment: environment,
+        userDirs: _readUserDirs(environment),
+      );
+      debugPrint('DownloadPaths: $e, falling back to $fallback');
+      return fallback ?? (await getApplicationSupportDirectory()).path;
+    }
+  }
+
+  static String? _readUserDirs(Map<String, String> environment) {
+    final config = environment['XDG_CONFIG_HOME'];
+    final home = environment['HOME'];
+    final base = (config != null && config.isNotEmpty)
+        ? config
+        : (home != null && home.isNotEmpty)
+        ? p.join(home, '.config')
+        : null;
+    if (base == null) return null;
+    try {
+      final file = File(p.join(base, 'user-dirs.dirs'));
+      return file.existsSync() ? file.readAsStringSync() : null;
+    } on FileSystemException {
+      return null;
+    }
+  }
+
+  @visibleForTesting
+  static String? documentsFallback({
+    required Map<String, String> environment,
+    String? userDirs,
+  }) {
+    final fromEnv = environment['XDG_DOCUMENTS_DIR'];
+    if (fromEnv != null && fromEnv.isNotEmpty) return fromEnv;
+
+    final home = environment['HOME'];
+    final hasHome = home != null && home.isNotEmpty;
+
+    if (userDirs != null) {
+      final line = RegExp(
+        r'^\s*XDG_DOCUMENTS_DIR\s*=\s*"([^"]*)"\s*$',
+        multiLine: true,
+      ).firstMatch(userDirs);
+      final value = line?.group(1);
+      if (value != null) {
+        if (value.startsWith(r'$HOME')) {
+          if (hasHome) {
+            final rest = value.substring(5).replaceFirst(RegExp('^/+'), '');
+            if (rest.isNotEmpty) return p.join(home, rest);
+          }
+        } else if (p.isAbsolute(value)) {
+          return value;
+        }
+      }
+    }
+
+    return hasHome ? p.join(home, 'Documents') : null;
   }
 
   static String segment(String id) {

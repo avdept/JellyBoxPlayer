@@ -335,4 +335,55 @@ void main() {
       );
     });
   });
+
+  group('documentsFallback', () {
+    String? resolve(Map<String, String> environment, [String? userDirs]) =>
+        DownloadPaths.documentsFallback(
+          environment: environment,
+          userDirs: userDirs,
+        );
+
+    test('prefers XDG_DOCUMENTS_DIR from the environment', () {
+      expect(
+        resolve(
+          {'XDG_DOCUMENTS_DIR': '/data/docs', 'HOME': '/home/a'},
+          r'XDG_DOCUMENTS_DIR="$HOME/Dokumente"',
+        ),
+        '/data/docs',
+      );
+    });
+
+    test('reads a localized folder from user-dirs.dirs', () {
+      const userDirs = r'''
+# This file is written by xdg-user-dirs-update
+XDG_DESKTOP_DIR="$HOME/Schreibtisch"
+XDG_DOCUMENTS_DIR="$HOME/Dokumente"
+''';
+      expect(resolve({'HOME': '/home/a'}, userDirs), '/home/a/Dokumente');
+    });
+
+    test('accepts an absolute path in user-dirs.dirs', () {
+      expect(
+        resolve({'HOME': '/home/a'}, 'XDG_DOCUMENTS_DIR="/mnt/docs"'),
+        '/mnt/docs',
+      );
+    });
+
+    test('falls back to ~/Documents when user-dirs.dirs has no entry', () {
+      expect(resolve({'HOME': '/home/a'}), '/home/a/Documents');
+      expect(
+        resolve({'HOME': '/home/a'}, r'XDG_MUSIC_DIR="$HOME/Music"'),
+        '/home/a/Documents',
+      );
+      expect(
+        resolve({'HOME': '/home/a'}, r'XDG_DOCUMENTS_DIR="$HOME/"'),
+        '/home/a/Documents',
+      );
+    });
+
+    test('returns null without HOME so the caller uses app support', () {
+      expect(resolve({}), isNull);
+      expect(resolve({}, r'XDG_DOCUMENTS_DIR="$HOME/Dokumente"'), isNull);
+    });
+  });
 }

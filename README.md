@@ -187,8 +187,10 @@ flatpak install ./jellybox-linux-x86_64.flatpak
 **Other packages** - the release bundle expects a few shared libraries. On Debian/Ubuntu:
 
 ```bash
-sudo apt-get install libmpv-dev mpv libasound2-dev libsecret-1-dev libsqlite3-dev libjsoncpp-dev libcurl4-openssl-dev libdbus-1-dev
+sudo apt-get install libmpv-dev mpv libasound2-dev libsecret-1-dev libsqlite3-dev libjsoncpp-dev libcurl4-openssl-dev libdbus-1-dev xdg-user-dirs
 ```
+
+JellyBox uses `xdg-user-dirs` to find your Documents folder, where downloads are stored. Most desktop installs already have it, but minimal setups (Arch, some tiling-WM setups) may not. Install it with `sudo pacman -S xdg-user-dirs` on Arch or `sudo dnf install xdg-user-dirs` on Fedora.
 
 Note: Recently I bundled libs with app, but I need more folks to actually test it on different distros.
 
