@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
+import android.os.Bundle
 import android.view.KeyEvent
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -23,6 +24,11 @@ class MainActivity : AudioServiceActivity() {
     private var volumeKeysChannel: MethodChannel? = null
     private var captureVolumeKeys = false
     private var pendingAlbumId: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        CrashLog.install(this)
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

@@ -71,6 +71,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   Dio? _prober;
   String? _selected;
   Set<String> _down = const {};
+  String? _loggedVerdict;
   DateTime? _relayCheckedAt;
   DateTime? _suspectedOfflineAt;
   Timer? _offlineConfirm;
@@ -147,6 +148,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
   void _forgetServer() {
     _selected = null;
     _down = const {};
+    _loggedVerdict = null;
     _relayCheckedAt = null;
     _dismissOfflineSuspicion();
   }
@@ -194,7 +196,11 @@ class ConnectivityNotifier extends StateNotifier<bool> {
       return '$host ${_down.contains(url) ? 'down' : 'up'}';
     }
 
-    debugPrint('[Connectivity] probe: ${candidates.map(verdict).join(', ')}');
+    final verdicts = candidates.map(verdict).join(', ');
+    if (verdicts != _loggedVerdict) {
+      _loggedVerdict = verdicts;
+      debugPrint('[Connectivity] probe: $verdicts');
+    }
     if (up == null) {
       _settleOffline(started);
     } else {
