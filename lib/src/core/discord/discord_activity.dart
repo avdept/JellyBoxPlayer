@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 
 const discordListeningActivityType = 2;
 
+const _statusDisplayState = 1;
+const _statusDisplayDetails = 2;
+
 const _maxFieldBytes = 128;
 const _minFieldLength = 2;
 
@@ -43,6 +46,9 @@ class DiscordActivity {
 
   Map<String, Object?> toJson() => {
     'type': discordListeningActivityType,
+    'status_display_type': state == null
+        ? _statusDisplayDetails
+        : _statusDisplayState,
     'details': details,
     'state': ?state,
     if (largeImage case final image?)

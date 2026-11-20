@@ -17,6 +17,7 @@ void main() {
 
       expect(activity.toJson(), {
         'type': 2,
+        'status_display_type': 1,
         'details': 'Bloom',
         'state': 'Radiohead',
         'assets': {
@@ -30,7 +31,11 @@ void main() {
     test('omits absent artist, artwork and timestamps', () {
       final activity = DiscordActivity.listening(title: 'Bloom');
 
-      expect(activity.toJson(), {'type': 2, 'details': 'Bloom'});
+      expect(activity.toJson(), {
+        'type': 2,
+        'status_display_type': 2,
+        'details': 'Bloom',
+      });
     });
 
     test('compares by value so repeat updates can be skipped', () {
