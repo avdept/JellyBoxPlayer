@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
+import 'package:jplayer/src/core/audio/volume_fade.dart';
 import 'package:just_audio/just_audio.dart';
 
 class JellyBoxAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -57,13 +58,13 @@ class JellyBoxAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
-    await _player.play();
+    await VolumeFade.of(_player).play();
     _updatePlaybackState();
   }
 
   @override
   Future<void> pause() async {
-    await _player.pause();
+    await VolumeFade.of(_player).pause();
     _updatePlaybackState();
   }
 
@@ -77,7 +78,7 @@ class JellyBoxAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToPrevious() => _player.smartSeekToPrevious();
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() => VolumeFade.of(_player).stop();
 
   PlaybackState _transformEvent() {
     return PlaybackState(

@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
-import 'package:jplayer/src/core/audio/session_play.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
+import 'package:jplayer/src/core/audio/volume_fade.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:just_audio/just_audio.dart';
@@ -38,7 +37,8 @@ class LocalPlaybackTarget
        _offlineRetryEvery = offlineRetryEvery,
        _skipAfter = skipAfter,
        _loadTimeout = loadTimeout,
-       _stopTimeout = stopTimeout {
+       _stopTimeout = stopTimeout,
+       _fade = VolumeFade.of(_player) {
     _subscriptions = [
       _player.currentIndexStream.distinct().listen((index) {
         _emit();
@@ -73,6 +73,7 @@ class LocalPlaybackTarget
   ];
 
   final AudioPlayer _player;
+  final VolumeFade _fade;
   final Duration? _idleStopAfter;
   final bool Function()? _isOnline;
   final Stream<bool> Function()? _onlineChanges;
@@ -174,7 +175,7 @@ class LocalPlaybackTarget
       index: _playerIndexOf(initialIndex) ?? 0,
       position: initialPosition,
     );
-    if (loaded && autoPlay) unawaited(playWithSession(_player));
+    if (loaded && autoPlay) unawaited(_fade.play());
   }
 
   Future<bool> _setSources(
@@ -377,7 +378,7 @@ class LocalPlaybackTarget
     );
     if (!loaded) return;
     _emit();
-    if (_wantsPlay) unawaited(playWithSession(_player));
+    if (_wantsPlay) unawaited(_fade.play());
   }
 
   void _cancelRetry() {
@@ -462,7 +463,7 @@ class LocalPlaybackTarget
       );
       await _player.pause();
     }
-    await playWithSession(_player);
+    await _fade.play();
   }
 
   @override
@@ -472,7 +473,7 @@ class LocalPlaybackTarget
     _cancelRetry();
     _syncHold();
     if (_pending != null) _emit();
-    await _player.pause();
+    await _fade.pause();
   }
 
   @override
@@ -482,7 +483,7 @@ class LocalPlaybackTarget
     _cancelRetry();
     _syncHold();
     _pending = null;
-    await _player.stop();
+    await _fade.stop();
   }
 
   @override
@@ -776,16 +777,10 @@ class LocalPlaybackTarget
   }
 
   @override
-  Future<void> setVolume(double level) async {
-    try {
-      await _player.setVolume(level);
-    } on MissingPluginException {
-      debugPrint('[LocalTarget] volume noted; player is between sessions');
-    }
-  }
+  Future<void> setVolume(double level) => _fade.setLevel(level);
 
   @override
-  Future<double?> currentVolume() async => _player.volume;
+  Future<double?> currentVolume() async => _fade.level;
 
   @override
   Future<void> dispose() async {
@@ -942,7 +937,7 @@ class LocalPlaybackTarget
       index: _playerIndexOf(index) ?? 0,
       position: position,
     );
-    if (loaded && wantsPlay) unawaited(playWithSession(_player));
+    if (loaded && wantsPlay) unawaited(_fade.play());
   }
 
   Future<void> _slide() async {
