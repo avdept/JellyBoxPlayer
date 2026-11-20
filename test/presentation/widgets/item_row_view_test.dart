@@ -25,7 +25,7 @@ class _FakePlayback extends StateNotifier<PlaybackState>
   }
 
   @override
-  Future<void> resume() async {
+  Future<void> resume({bool userAction = false}) async {
     calls.add('resume');
     state = state.copyWith(status: PlaybackStatus.playing);
   }

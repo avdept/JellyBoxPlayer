@@ -28,7 +28,7 @@ class _TvPlayOnDialogState extends ConsumerState<TvPlayOnDialog> {
   OutputController get _outputs => ref.read(outputControllerProvider);
 
   void _playHere() {
-    unawaited(_outputs.playHere());
+    unawaited(_outputs.chooseHere());
     Navigator.of(context).pop();
   }
 

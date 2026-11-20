@@ -37,7 +37,7 @@ class CastReceiverSkipping implements Exception {
       '$deviceName skipped $skipped tracks in a row without playing any';
 }
 
-class CastPlaybackTarget implements PlaybackTarget {
+class CastPlaybackTarget with Reconnectable implements PlaybackTarget {
   CastPlaybackTarget(
     this.device, {
     this.diagnostics = const Diagnostics(),
@@ -110,6 +110,20 @@ class CastPlaybackTarget implements PlaybackTarget {
 
   GoogleCastSessionManagerPlatformInterface get _sessions =>
       _injectedSessions ?? GoogleCastSessionManager.instance;
+
+  @override
+  PlaybackTarget reconnected() => CastPlaybackTarget(
+    device,
+    diagnostics: diagnostics,
+    attemptTimeout: attemptTimeout,
+    pollInterval: pollInterval,
+    discoverySettle: discoverySettle,
+    sessionGrace: sessionGrace,
+    client: _injectedClient,
+    sessions: _injectedSessions,
+    discovery: _discovery,
+    feed: _injectedFeed,
+  );
 
   @override
   String get id => 'cast:${device.deviceID}';

@@ -11,7 +11,7 @@ import 'package:jplayer/src/core/upnp/upnp_soap_client.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:optional_features/upnp_quirks.dart';
 
-class UpnpPlaybackTarget implements PlaybackTarget {
+class UpnpPlaybackTarget with Reconnectable implements PlaybackTarget {
   UpnpPlaybackTarget(
     this.renderer, {
     Duration? pollInterval,
@@ -67,6 +67,14 @@ class UpnpPlaybackTarget implements PlaybackTarget {
       _deviceQueue == null &&
       _quirks.queueNextTrack &&
       _transport.supportsNextUri;
+
+  @override
+  PlaybackTarget reconnected() => UpnpPlaybackTarget(
+    renderer,
+    pollInterval: pollInterval,
+    startTimeout: startTimeout,
+    diagnostics: diagnostics,
+  );
 
   @override
   String get id => renderer.id;

@@ -11,6 +11,7 @@ import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/domain/playback/cast_playback_target.dart';
 import 'package:jplayer/src/domain/playback/control_point_host_provider.dart';
+import 'package:jplayer/src/domain/playback/default_output.dart';
 import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
@@ -354,7 +355,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   String? _connecting;
 
   void _selectLocal() {
-    unawaited(_outputs.playHere());
+    unawaited(_outputs.chooseHere());
     widget.onDone();
   }
 
@@ -403,7 +404,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
   Future<void> _connectTo(PlaybackTarget target) async {
     setState(() => _connecting = target.id);
-    await _outputs.playOn(target);
+    await _outputs.choose(target);
     if (!mounted) return;
     final active = ref.read(playbackTargetProvider);
     if (active.id == target.id && active.state.status != PlaybackStatus.error) {
@@ -558,7 +559,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
               icon: castDeviceIcon(device),
               badge: _castBadge,
               title: device.friendlyName,
-              subtitle: ['Chromecast', ?device.modelName].join(' · '),
+              subtitle: _markDefault(
+                'cast:${device.deviceID}',
+                ['Chromecast', ?device.modelName].join(' · '),
+              ),
               selected:
                   elsewhere == null && active.id == 'cast:${device.deviceID}',
               busy: _connecting == 'cast:${device.deviceID}',
@@ -566,8 +570,11 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                   ? null
                   : () => _selectCastDevice(device),
             ),
-            if (elsewhere == null && active.id == 'cast:${device.deviceID}')
+            if (elsewhere == null &&
+                active.id == 'cast:${device.deviceID}') ...[
               _volume,
+              _defaultToggle,
+            ],
           ],
           ..._speakerSection(
             renderers,
@@ -584,7 +591,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
                 host: host,
                 sharedNames: _sharedNames(renderers),
               ),
-              if (elsewhere == null && active.id == renderer.id) _volume,
+              if (elsewhere == null && active.id == renderer.id) ...[
+                _volume,
+                _defaultToggle,
+              ],
             ],
           if (renderers.isEmpty &&
               cast.devices.isEmpty &&
@@ -665,6 +675,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   void _showSystemOutputs(BuildContext row) {
     final box = row.findRenderObject() as RenderBox?;
     final anchor = box?.localToGlobal(box.size.center(Offset.zero));
+    _outputs.overrideDefault();
     if (ref.read(playingElsewhereProvider)) unawaited(_outputs.playHere());
     widget.onDone();
     unawaited(NativeRoutePicker.showOutputSwitcher(anchor: anchor));
@@ -673,6 +684,29 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
   Widget get _volume => const DeviceVolumeSlider(
     padding: EdgeInsets.only(left: 12, right: 16, bottom: 4),
   );
+
+  String? _markDefault(String targetId, String? subtitle) =>
+      ref.watch(defaultOutputProvider)?.targetId == targetId
+      ? ['Default', ?subtitle].join(' · ')
+      : subtitle;
+
+  Widget get _defaultToggle {
+    final output = DefaultOutput.of(ref.watch(playbackTargetProvider));
+    if (output == null) return const SizedBox.shrink();
+    final current = ref.watch(defaultOutputProvider);
+    return SwitchListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.only(left: 16, right: 8),
+      title: Text(
+        'Use as default output',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      value: current?.targetId == output.targetId,
+      onChanged: (on) => ref
+          .read(appSettingsProvider.notifier)
+          .setMap(AppSetting.defaultOutput, on ? output.toJson() : const {}),
+    );
+  }
 
   static Set<String> _sharedNames(List<UpnpRenderer> renderers) {
     final seen = <String>{};
@@ -733,7 +767,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
             style: Theme.of(context).textTheme.labelSmall,
           ),
         ),
-      if (isActive && together) _volume,
+      if (isActive && together) ...[_volume, _defaultToggle],
       for (final renderer in cluster.members) ...[
         _speakerTile(
           renderer,
@@ -746,7 +780,10 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
           sharedNames: sharedNames,
         ),
         if (isActive && together) _SpeakerVolumeSlider(renderer.id),
-        if (isActive && !together && renderer.id == activeId) _volume,
+        if (isActive && !together && renderer.id == activeId) ...[
+          _volume,
+          _defaultToggle,
+        ],
       ],
     ];
     if (!together) return Column(children: children);
@@ -787,7 +824,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
       image: renderer.iconUrl,
       badge: _dlnaBadge,
       title: renderer.name,
-      subtitle: blocked ?? subtitle,
+      subtitle: blocked ?? _markDefault(renderer.id, subtitle),
       selected: selected,
       busy: busy,
       action: action,
@@ -814,7 +851,9 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
       icon: rendererIcon(renderer),
       badge: _dlnaBadge,
       title: renderer.name,
-      subtitle: blocked ?? _dlnaSubtitle(renderer, sharedNames),
+      subtitle:
+          blocked ??
+          _markDefault(renderer.id, _dlnaSubtitle(renderer, sharedNames)),
       selected: selected,
       busy: _connecting == renderer.id,
       onTap: blocked == null && _connecting == null

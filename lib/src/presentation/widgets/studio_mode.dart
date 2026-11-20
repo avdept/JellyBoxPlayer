@@ -702,7 +702,9 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
               child: PlayPauseButton(
                 onPressed: () => _isPlaying.value
                     ? ref.read(playbackProvider.notifier).pause()
-                    : ref.read(playbackProvider.notifier).resume(),
+                    : ref
+                          .read(playbackProvider.notifier)
+                          .resume(userAction: true),
                 background: Colors.white,
                 foreground: Colors.black,
                 stateNotifier: _isPlaying,

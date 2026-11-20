@@ -25,8 +25,8 @@ class PlaybackTargetNotifier extends StateNotifier<PlaybackTarget> {
 
   final PlaybackTarget local;
 
-  void select(PlaybackTarget target) {
-    if (target.id == state.id) return;
+  void select(PlaybackTarget target, {bool reconnected = false}) {
+    if (!reconnected && target.id == state.id) return;
     state = target;
   }
 

@@ -16,6 +16,7 @@ import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/domain/playback/cast_session_resume.dart';
+import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
@@ -120,6 +121,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _queueEditsInFlight = 0;
   Completer<void>? _queueEditsSettled;
   var _fallingBack = false;
+  var _fallbackPlays = false;
+  var _targetBroken = false;
+  var _startingRemote = false;
+  var _handingOff = 0;
   var _recoveringLostCache = false;
   int? _stallBufferedMs;
   int? _stallIndex;
@@ -190,12 +195,100 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       state = state.copyWith(status: PlaybackStatus.error);
       return;
     }
-    if (_fallingBack) return;
+    if (_fallingBack || _targetBroken) return;
+    final takenOver = _targetState.takenOver;
+    if (!_ref.read(settingProvider(AppSetting.fallbackToThisDevice))) {
+      _targetBroken = true;
+      _startingRemote = false;
+      _stopProgressReports();
+      _reportStopped();
+      state = state.copyWith(status: PlaybackStatus.paused);
+      _ref
+          .read(castFailureProvider.notifier)
+          .report(_target.name, takenOver: takenOver, switchedHere: false);
+      return;
+    }
     _fallingBack = true;
+    _fallbackPlays = _startingRemote;
+    _startingRemote = false;
     _ref
         .read(castFailureProvider.notifier)
-        .report(_target.name, takenOver: _targetState.takenOver);
+        .report(_target.name, takenOver: takenOver);
     _ref.read(playbackTargetProvider.notifier).useLocal();
+  }
+
+  Future<bool> _moveToDefault() async {
+    final outputs = _ref.read(outputControllerProvider);
+    final wanted = outputs.pendingDefault;
+    if (wanted == null) return true;
+    state = state.copyWith(status: PlaybackStatus.buffering);
+    if (await outputs.moveToDefault(wanted)) return true;
+    final fallback = _ref.read(
+      settingProvider(AppSetting.fallbackToThisDevice),
+    );
+    _ref
+        .read(castFailureProvider.notifier)
+        .report(wanted.name, notFound: true, switchedHere: fallback);
+    return fallback;
+  }
+
+  Future<void> _reconnectTarget() async {
+    _targetBroken = false;
+    final broken = _target;
+    if (broken is! Reconnectable || !identical(_destination, broken)) return;
+    final fresh = broken.reconnected();
+    debugPrint('[Playback] reconnecting to ${fresh.name}');
+    await _targetSubscription?.cancel();
+    _targetSubscription = null;
+    try {
+      await broken.dispose();
+    } on Object catch (error) {
+      debugPrint('[Playback] closing ${broken.name} failed: $error');
+    }
+    _target = _destination = fresh;
+    _targetState = TargetPlaybackState.idle;
+    _listenToTarget();
+    _ref.read(playbackTargetProvider.notifier).select(fresh, reconnected: true);
+    await _applySavedVolume(fresh);
+  }
+
+  bool _resumesElsewhere({required bool userAction}) {
+    if (state.album == null || state.songs.isEmpty) return false;
+    if (_targetBroken) return true;
+    return userAction &&
+        _localPlays == 0 &&
+        _ref.read(outputControllerProvider).pendingDefault != null;
+  }
+
+  Future<bool> _resumeOnAnotherOutput() async {
+    if (_targetBroken) {
+      await _reconnectTarget();
+      await _replayOnTarget();
+      return true;
+    }
+    final moved = await _moveToDefault();
+    if (_target.kind == PlaybackTargetKind.local) {
+      if (moved) return false;
+      state = state.copyWith(status: PlaybackStatus.paused);
+      return true;
+    }
+    await _replayOnTarget();
+    return true;
+  }
+
+  Future<void> _replayOnTarget() async {
+    final songs = state.songs;
+    final album = state.album;
+    if (songs.isEmpty || album == null) return;
+    final index = state.currentMediaIndex ?? 0;
+    await play(
+      songs.elementAtOrNull(index) ?? songs.first,
+      songs,
+      album,
+      sourceId: state.sourceId,
+      initialPosition: state.position,
+      reshuffle: false,
+    );
   }
 
   Future<void> _recoverFromLostCache(
@@ -334,6 +427,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   void _onTargetState(TargetPlaybackState targetState) {
     _targetState = targetState;
+    if (targetState.status.isPlaying) _startingRemote = false;
     // TODO: Come up with some better idea, this is shit and smells like shit
     // This is hack which I have no idea how to do right currently. Basically it fixes issue when currenply playing song would point to wrong object right after reorder.
     final index = _queueEditsInFlight > 0
@@ -499,7 +593,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (from.id == to.id) return;
     final songs = state.songs;
     final album = state.album;
-    final wasPlaying = state.status.isPlaying && !_fallingBack;
+    final wasPlaying =
+        (state.status.isPlaying && !_fallingBack) ||
+        (_fallingBack && _fallbackPlays);
+    _fallbackPlays = false;
     final index = state.currentMediaIndex ?? 0;
     final position = state.position;
 
@@ -518,6 +615,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _target = to;
     _targetState = TargetPlaybackState.idle;
     _fallingBack = false;
+    _targetBroken = false;
+    _startingRemote = false;
     _listenToTarget();
     unawaited(_recordCastSession(to));
     if (to.kind != PlaybackTargetKind.local) await _applySavedVolume(to);
@@ -529,14 +628,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (songs.isEmpty || album == null) return;
 
     final startSong = songs.elementAtOrNull(index) ?? songs.first;
-    await play(
-      startSong,
-      songs,
-      album,
-      initialPosition: position,
-      autoPlay: wasPlaying,
-      reshuffle: false,
-    );
+    _handingOff++;
+    try {
+      await play(
+        startSong,
+        songs,
+        album,
+        initialPosition: position,
+        autoPlay: wasPlaying,
+        reshuffle: false,
+      );
+    } finally {
+      _handingOff--;
+    }
   }
 
   Future<void> _recordCastSession(PlaybackTarget target) async {
@@ -761,6 +865,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     }
     _queueLibraryId = _currentLibraryId;
     final generation = ++_queueGeneration;
+    var start = autoPlay;
+    if (_targetBroken) await _reconnectTarget();
+    if (start &&
+        _localPlays == 0 &&
+        _handingOff == 0 &&
+        (initialPosition == null || resuming)) {
+      start = await _moveToDefault();
+      if (generation != _queueGeneration) return;
+    }
     try {
       final resolved = await _resolveQueue(
         songs,
@@ -832,18 +945,24 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         currentMediaIndex: effectiveIndex,
       );
 
+      _startingRemote = start && _target.kind != PlaybackTargetKind.local;
       await _target.load(
         tracks,
         initialIndex: effectiveIndex,
         initialPosition: startPosition,
-        autoPlay: autoPlay,
+        autoPlay: start,
       );
       if (generation != _queueGeneration) return;
+      if (_target.kind != PlaybackTargetKind.local &&
+          _target.state.status == PlaybackStatus.error) {
+        _onTargetState(_target.state);
+      }
+      final started = start && !_targetBroken;
 
       state = state.copyWith(
         songs: playableSongs,
         album: album,
-        status: autoPlay ? PlaybackStatus.playing : PlaybackStatus.paused,
+        status: started ? PlaybackStatus.playing : PlaybackStatus.paused,
         position: startPosition,
         totalDuration: _durationFor(effectiveIndex, songs: playableSongs),
         currentMediaIndex: effectiveIndex,
@@ -852,7 +971,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _preparingQueue = false;
       _reportedIndex = effectiveIndex;
       _reportedPositionMs = startPosition.inMilliseconds;
-      if (autoPlay) {
+      if (started) {
         _reportStarted(
           playableSongs[effectiveIndex],
           positionMs: startPosition.inMilliseconds,
@@ -867,7 +986,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
           positionMs: startPosition.inMilliseconds,
           songs: playableSongs,
           album: album,
-          resume: autoPlay,
+          resume: started,
         ),
       );
     } catch (e, st) {
@@ -1114,7 +1233,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> playPause() => switch (state.status.isPlaying) {
     true => pause(),
-    false => resume(),
+    false => resume(userAction: true),
   };
 
   Future<void> pause() async {
@@ -1127,7 +1246,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _reportProgress();
   }
 
-  Future<void> resume() async {
+  Future<void> resume({bool userAction = false}) async {
     final album = state.album;
     if (state.status.isStopped && state.songs.isNotEmpty && album != null) {
       // Case when queue has finished but user clicks on play(resume) button. In this case we want to restart playback from first song.
@@ -1137,6 +1256,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         album,
         sourceId: state.sourceId,
       );
+      return;
+    }
+    if (_resumesElsewhere(userAction: userAction) &&
+        await _resumeOnAnotherOutput()) {
       return;
     }
 

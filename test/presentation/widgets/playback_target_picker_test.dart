@@ -42,7 +42,7 @@ class _FakeOutputs implements OutputController {
   PlaybackTarget? target;
 
   @override
-  Future<void> playOn(PlaybackTarget target) {
+  Future<void> choose(PlaybackTarget target) {
     this.target = target;
     return connected.future;
   }

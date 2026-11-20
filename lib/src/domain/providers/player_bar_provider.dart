@@ -164,10 +164,10 @@ class BarControls {
     return _send(playing ? PlayerCommand.pause : PlayerCommand.play);
   }
 
-  Future<void> play() => _remote ? _send(PlayerCommand.play) : _local.resume();
+  Future<void> play() =>
+      _remote ? _send(PlayerCommand.play) : _local.resume(userAction: true);
 
-  Future<void> pause() =>
-      _remote ? _send(PlayerCommand.pause) : _local.pause();
+  Future<void> pause() => _remote ? _send(PlayerCommand.pause) : _local.pause();
 
   Future<void> stop() => _remote ? _send(PlayerCommand.pause) : _local.stop();
 
