@@ -58,6 +58,19 @@ final AutoDisposeFutureProvider<List<LibraryItem>> recentlyAddedAlbumsProvider =
       );
     });
 
+final AutoDisposeFutureProvider<List<LibraryItem>> recentReleasesProvider =
+    FutureProvider.autoDispose((ref) async {
+      if (ref.watch(isOfflineProvider)) throw const OfflineException();
+      final api = ref.watch(mediaServerClientProvider);
+      final userId = ref.watch(currentUserProvider)?.userId;
+      if (userId == null) return const [];
+
+      return api.getRecentReleases(
+        libraryId: ref.watch(currentLibraryProvider).valueOrNull?.id,
+        limit: homeSectionLimit,
+      );
+    });
+
 final AutoDisposeFutureProvider<List<LibraryItem>> homePlaylistsProvider =
     FutureProvider.autoDispose((ref) async {
       if (ref.watch(isOfflineProvider)) throw const OfflineException();

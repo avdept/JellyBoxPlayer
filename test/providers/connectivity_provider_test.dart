@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -164,6 +164,36 @@ void main() {
 
     expect(await probe(container), isFalse);
     expect(container.read(baseUrlProvider), home);
+  });
+
+  test('- logs the probe verdict only when it changes', () async {
+    final original = debugPrint;
+    final lines = <String>[];
+    debugPrint = (message, {wrapWidth}) {
+      if (message != null && message.startsWith('[Connectivity] probe:')) {
+        lines.add(message);
+      }
+    };
+    addTearDown(() => debugPrint = original);
+    hosts.status['192.168.1.10'] = 200;
+    hosts.status['abc.tunnel.jellybox.app'] = 200;
+    final container = start(knownRelay: relay);
+
+    await probe(container);
+    await probe(container);
+    await probe(container);
+    expect(lines, [
+      '[Connectivity] probe: 192.168.1.10 up, abc.tunnel.jellybox.app up',
+    ]);
+
+    hosts.status.remove('192.168.1.10');
+    await probe(container);
+    await probe(container);
+    expect(lines, hasLength(2));
+    expect(
+      lines.last,
+      '[Connectivity] probe: 192.168.1.10 down, abc.tunnel.jellybox.app up',
+    );
   });
 
   test('- goes back home as soon as home answers again', () async {

@@ -152,19 +152,22 @@ Color? averageOfBottomRows(
   return Color.fromARGB(255, r ~/ count, g ~/ count, b ~/ count);
 }
 
+final AutoDisposeFutureProviderFamily<ColorScheme?, LibraryItem>
+itemCoverSchemeProvider = FutureProvider.autoDispose
+    .family<ColorScheme?, LibraryItem>((ref, item) async {
+      try {
+        return await ColorScheme.fromImageProvider(
+          provider: ref.read(imageServiceProvider).itemImage(item),
+          brightness: Brightness.dark,
+          dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        );
+      } on Object {
+        return null;
+      }
+    });
+
 final AutoDisposeFutureProviderFamily<Color?, LibraryItem>
-itemGlowColorProvider = FutureProvider.autoDispose.family<Color?, LibraryItem>((
-  ref,
-  item,
-) async {
-  try {
-    final scheme = await ColorScheme.fromImageProvider(
-      provider: ref.read(imageServiceProvider).itemImage(item),
-      brightness: Brightness.dark,
-      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-    );
-    return scheme.primary;
-  } on Object {
-    return null;
-  }
-});
+itemGlowColorProvider = FutureProvider.autoDispose.family<Color?, LibraryItem>(
+  (ref, item) async =>
+      (await ref.watch(itemCoverSchemeProvider(item).future))?.primary,
+);

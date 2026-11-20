@@ -23,7 +23,9 @@ import 'package:jplayer/src/domain/providers/libraries_provider.dart';
 import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/presentation/pages/home_page.dart';
+import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
+import 'package:jplayer/src/providers/color_scheme_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/dev_tools_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -109,9 +111,11 @@ void main() {
     List<LibraryItem>? playlists,
     List<LibraryItem>? frequentlyPlayed,
     List<GeneratedPlaylist>? generated,
+    List<LibraryItem>? recentReleases,
     bool isOffline = false,
     bool devTools = false,
     bool generatedDisabled = false,
+    bool recentReleasesHidden = false,
     ContentUpdateInterval? updateInterval,
     VoidCallback? onRecentlyAddedFetch,
     bool playlistsFromServer = false,
@@ -130,6 +134,14 @@ void main() {
             settingProvider(
               AppSetting.generatedPlaylistsDisabled,
             ).overrideWithValue(true),
+          if (recentReleasesHidden)
+            settingProvider(
+              AppSetting.recentReleasesHidden,
+            ).overrideWithValue(true),
+          recentReleasesProvider.overrideWith(
+            (_) async => recentReleases ?? createItems(10, ItemKind.album),
+          ),
+          itemCoverSchemeProvider.overrideWith((_, _) async => null),
           favouriteSongsProvider.overrideWith((_) async => const LibraryPage()),
           favouriteAlbumsProvider.overrideWith(
             (_) async => favourites ?? createItems(3, ItemKind.album),
@@ -177,9 +189,11 @@ void main() {
     List<LibraryItem>? playlists,
     List<LibraryItem>? frequentlyPlayed,
     List<GeneratedPlaylist>? generated,
+    List<LibraryItem>? recentReleases,
     bool isOffline = false,
     bool devTools = false,
     bool generatedDisabled = false,
+    bool recentReleasesHidden = false,
     ContentUpdateInterval? updateInterval,
     VoidCallback? onRecentlyAddedFetch,
     bool playlistsFromServer = false,
@@ -197,9 +211,11 @@ void main() {
         playlists: playlists,
         frequentlyPlayed: frequentlyPlayed,
         generated: generated,
+        recentReleases: recentReleases,
         isOffline: isOffline,
         devTools: devTools,
         generatedDisabled: generatedDisabled,
+        recentReleasesHidden: recentReleasesHidden,
         updateInterval: updateInterval,
         onRecentlyAddedFetch: onRecentlyAddedFetch,
         playlistsFromServer: playlistsFromServer,
@@ -307,6 +323,59 @@ void main() {
       expect(find.text('Playlists'), findsOneWidget);
       expect(find.text('Frequently played'), findsOneWidget);
       expect(find.byType(ItemCarousel), findsNWidgets(6));
+      expect(find.text('Recent releases'), findsOneWidget);
+      expect(find.byType(ReleaseCard), findsAtLeastNWidgets(2));
+    });
+
+    testWidgets('- lets the next release card peek in on a phone', (
+      widgetTester,
+    ) async {
+      await pumpHome(widgetTester);
+
+      final cards = find.byType(ReleaseCard);
+      final first = widgetTester.getRect(cards.first);
+      final second = widgetTester.getRect(cards.at(1));
+      final third = widgetTester.getRect(cards.at(2));
+      expect(first.left, 16);
+      expect(first.right, lessThan(390 - 80));
+      expect(second.left, first.left);
+      expect(second.top, greaterThan(first.bottom));
+      expect(third.left, greaterThan(first.right));
+      expect(third.left, lessThan(390));
+      expect(third.top, first.top);
+    });
+
+    testWidgets('- hides recent releases when the setting is on', (
+      widgetTester,
+    ) async {
+      await pumpHome(widgetTester, recentReleasesHidden: true);
+
+      expect(find.text('Recent releases'), findsNothing);
+      expect(find.byType(ReleaseCard), findsNothing);
+    });
+
+    testWidgets('- scrolls two rows of release cards sideways when wide', (
+      widgetTester,
+    ) async {
+      await pumpHome(widgetTester, size: const Size(1400, 2400));
+
+      final cards = find.byType(ReleaseCard);
+      final first = widgetTester.getRect(cards.first);
+      final second = widgetTester.getRect(cards.at(1));
+      expect(first.left, 30);
+      expect(first.width, ReleaseCardStrip.columnWidth);
+      expect(second.left, first.left);
+      expect(second.top, greaterThan(first.bottom));
+      final count = cards.evaluate().length;
+      expect(count, greaterThanOrEqualTo(8));
+      final rects = [
+        for (var i = 0; i < count; i++) widgetTester.getRect(cards.at(i)),
+      ];
+      expect(
+        rects.any((rect) => rect.left < 1400 && rect.right > 1400),
+        isTrue,
+      );
+      expect(find.byType(HorizontalScrollRegion), findsWidgets);
     });
 
     testWidgets('- refetches recently added on the update interval', (

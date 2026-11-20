@@ -6,6 +6,9 @@ extension RefreshHomeSections on WidgetRef {
     invalidate(recentlyAddedAlbumsProvider);
     invalidate(homePlaylistsProvider);
     invalidate(frequentlyPlayedAlbumsProvider);
+    if (!read(settingProvider(AppSetting.recentReleasesHidden))) {
+      invalidate(recentReleasesProvider);
+    }
     if (!read(settingProvider(AppSetting.recentlyPlayedHidden))) {
       invalidate(recentlyPlayedAlbumsProvider);
     }

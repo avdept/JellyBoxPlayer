@@ -8,6 +8,8 @@ const subsonicByGenreListType = 'byGenre';
 const subsonicNewestListType = 'newest';
 const subsonicRecentListType = 'recent';
 const subsonicFrequentListType = 'frequent';
+const subsonicByYearListType = 'byYear';
+const subsonicEarliestReleaseYear = 1900;
 
 String subsonicAlbumListType(ItemSort sort) => switch (sort) {
   ItemSort.name => 'alphabeticalByName',

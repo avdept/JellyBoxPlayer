@@ -32,6 +32,19 @@ class HomeSettings extends ConsumerWidget {
         setting: AppSetting.recentlyPlayedHidden,
         label: 'Hide recently played',
       ),
+      const SettingsGroupHeader('Recent releases'),
+      const SettingCheckbox(
+        setting: AppSetting.recentReleasesHidden,
+        label: 'Hide recent releases',
+      ),
+      const SettingNote(
+        'Albums ordered by release year, so new music stays visible '
+        'when older albums are added to the library.',
+      ),
+      const SettingCheckbox(
+        setting: AppSetting.recentReleasesTinted,
+        label: 'Colour cards from cover art',
+      ),
       const SettingsGroupHeader('Pins'),
       const SettingCheckbox(
         setting: AppSetting.pinsEnabled,
