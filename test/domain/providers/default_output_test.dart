@@ -59,6 +59,15 @@ class _Target with Reconnectable implements PlaybackTarget {
     _controller.add(_state);
   }
 
+  bool get _remote => kind != PlaybackTargetKind.local;
+
+  Duration get _startTime => _remote
+      ? const Duration(milliseconds: 1500)
+      : const Duration(milliseconds: 300);
+
+  Duration get _stopTime =>
+      _remote ? const Duration(milliseconds: 400) : Duration.zero;
+
   @override
   PlaybackTarget reconnected() =>
       _Target(id: id, name: name, kind: kind, family: family);
@@ -85,6 +94,7 @@ class _Target with Reconnectable implements PlaybackTarget {
     required bool autoPlay,
   }) async {
     loads.add(autoPlay);
+    await Future<void>.delayed(_startTime);
     if (failsOnLoad) {
       fail();
       return;
@@ -104,7 +114,7 @@ class _Target with Reconnectable implements PlaybackTarget {
   Future<void> pause() async {}
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() => Future<void>.delayed(_stopTime);
 
   @override
   Future<void> setVolume(double level) async {}
@@ -128,6 +138,7 @@ class _Finder implements DefaultOutputFinder {
   @override
   Future<PlaybackTarget?> find(DefaultOutput output) async {
     searches.add(output.name);
+    await Future<void>.delayed(const Duration(seconds: 2));
     return found;
   }
 
@@ -246,8 +257,17 @@ void main() {
 
   PlaybackNotifier playback() => container.read(playbackProvider.notifier);
 
-  Future<void> settle() =>
-      Future<void>.delayed(const Duration(milliseconds: 20));
+  Future<void> until(bool Function() done) async {
+    final deadline = DateTime.now().add(const Duration(seconds: 15));
+    while (!done()) {
+      if (DateTime.now().isAfter(deadline)) {
+        fail('timed out waiting for playback to settle');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  PlaybackStatus status() => container.read(playbackProvider).status;
 
   group('starting music', () {
     test('plays on the default speaker', () async {
@@ -364,8 +384,8 @@ void main() {
       await start();
       await playback().play(songs.first, songs, album);
       speaker.fail();
-      await settle();
-      expect(playback().target.id, 'local');
+      await until(() => playback().target.id == 'local');
+      expect(local.state.status, isNot(PlaybackStatus.playing));
 
       final again = _Target(
         id: 'uuid:living',
@@ -409,10 +429,11 @@ void main() {
       await start();
 
       await playback().play(songs.first, songs, album);
-      await settle();
+      await until(() => local.state.status == PlaybackStatus.playing);
 
       expect(playback().target.id, 'local');
       expect(local.loads, [true]);
+      expect(status(), PlaybackStatus.playing);
     });
 
     test('with fallback off it stays on the speaker, paused', () async {
@@ -420,7 +441,7 @@ void main() {
       await playback().play(songs.first, songs, album);
 
       speaker.fail();
-      await settle();
+      await until(() => status() == PlaybackStatus.paused);
 
       expect(playback().target.id, 'uuid:living');
       expect(local.loads, isEmpty);
@@ -434,7 +455,7 @@ void main() {
       await start(fallback: false);
       await playback().play(songs.first, songs, album);
       speaker.fail(takenOver: true);
-      await settle();
+      await until(() => status() == PlaybackStatus.paused);
 
       await playback().resume(userAction: true);
 
@@ -450,10 +471,9 @@ void main() {
       await start(fallback: false);
 
       await playback().play(songs.first, songs, album);
-      await settle();
+      await until(() => status() == PlaybackStatus.paused);
 
       expect(playback().target.id, 'uuid:living');
-      expect(container.read(playbackProvider).status, PlaybackStatus.paused);
     });
   });
 }

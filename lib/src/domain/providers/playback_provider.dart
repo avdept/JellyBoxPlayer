@@ -124,7 +124,6 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   var _fallbackPlays = false;
   var _targetBroken = false;
   var _startingRemote = false;
-  var _handingOff = 0;
   var _recoveringLostCache = false;
   int? _stallBufferedMs;
   int? _stallIndex;
@@ -628,19 +627,14 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (songs.isEmpty || album == null) return;
 
     final startSong = songs.elementAtOrNull(index) ?? songs.first;
-    _handingOff++;
-    try {
-      await play(
-        startSong,
-        songs,
-        album,
-        initialPosition: position,
-        autoPlay: wasPlaying,
-        reshuffle: false,
-      );
-    } finally {
-      _handingOff--;
-    }
+    await play(
+      startSong,
+      songs,
+      album,
+      initialPosition: position,
+      autoPlay: wasPlaying,
+      reshuffle: false,
+    );
   }
 
   Future<void> _recordCastSession(PlaybackTarget target) async {
@@ -867,10 +861,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     final generation = ++_queueGeneration;
     var start = autoPlay;
     if (_targetBroken) await _reconnectTarget();
-    if (start &&
-        _localPlays == 0 &&
-        _handingOff == 0 &&
-        (initialPosition == null || resuming)) {
+    if (start && _localPlays == 0 && (initialPosition == null || resuming)) {
       start = await _moveToDefault();
       if (generation != _queueGeneration) return;
     }
