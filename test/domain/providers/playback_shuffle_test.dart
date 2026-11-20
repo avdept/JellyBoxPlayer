@@ -25,6 +25,7 @@ class _FakeTarget implements PlaybackTarget {
   final loaded = <List<TargetTrack>>[];
   final reordered = <({List<TargetTrack> tracks, List<int> order, int at})>[];
   final inserted = <(int, TargetTrack)>[];
+  Completer<void>? holdReorder;
 
   TargetPlaybackState _state = TargetPlaybackState.idle;
 
@@ -76,6 +77,7 @@ class _FakeTarget implements PlaybackTarget {
     required int currentIndex,
   }) async {
     reordered.add((tracks: tracks, order: order, at: currentIndex));
+    await holdReorder?.future;
   }
 
   @override
@@ -169,6 +171,12 @@ void main() {
 
     container = ProviderContainer(
       overrides: [
+        playbackProvider.overrideWith(
+          (ref) => PlaybackNotifier(
+            ref,
+            queueEditTimeout: const Duration(milliseconds: 50),
+          ),
+        ),
         localPlaybackTargetProvider.overrideWithValue(target),
         mediaServerClientProvider.overrideWith((_) => client),
         isOfflineProvider.overrideWithValue(false),
@@ -309,5 +317,19 @@ void main() {
 
     expect(container.read(playbackProvider).shuffleEnabled, isTrue);
     expect(target.reordered, isEmpty);
+  });
+
+  test('- a queue edit that never answers stops blocking the player', () async {
+    final playback = container.read(playbackProvider.notifier);
+    await playback.play(songs.first, songs, album);
+    target.holdReorder = Completer<void>();
+
+    await playback
+        .setShuffle(enabled: true)
+        .timeout(const Duration(seconds: 2));
+    target.moveTo(2);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(playbackProvider).currentMediaIndex, 2);
   });
 }

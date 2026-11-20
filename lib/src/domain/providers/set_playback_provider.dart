@@ -202,7 +202,7 @@ class SetPlaybackNotifier extends StateNotifier<String?> {
       if (songs.isEmpty) return SetPlaybackResult.empty;
       final playback = _ref.read(playbackProvider.notifier);
       if (shuffleModeOff && _ref.read(playbackProvider).shuffleEnabled) {
-        await playback.setShuffle(enabled: false);
+        playback.adoptShuffle(enabled: false);
       }
       final start = startAt == null
           ? null
