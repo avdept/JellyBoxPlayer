@@ -13,7 +13,8 @@ DateTime? subsonicItemDateFromJson(Object? value) {
   if (year is! int) return null;
   final month = value['month'];
   final day = value['day'];
-  return DateTime(year, month is int ? month : 1, day is int ? day : 1);
+  if (month is! int || day is! int) return null;
+  return DateTime(year, month, day);
 }
 
 @freezed

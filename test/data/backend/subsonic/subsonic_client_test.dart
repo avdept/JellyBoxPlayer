@@ -300,6 +300,24 @@ void main() {
       expect(uri.queryParameters['musicFolderId'], '1');
     });
 
+    test('- recent releases walk byYear down from the current year', () async {
+      server.ok('getAlbumList2', {
+        'albumList2': {
+          'album': [albumJson('a1', name: 'One'), albumJson('a2', name: 'Two')],
+        },
+      });
+
+      final albums = await client.getRecentReleases(libraryId: '1', limit: 6);
+
+      expect(albums.map((a) => a.id), ['a1', 'a2']);
+      final uri = server.calls('getAlbumList2').single;
+      expect(uri.queryParameters['type'], 'byYear');
+      expect(uri.queryParameters['fromYear'], '2026');
+      expect(uri.queryParameters['toYear'], '1900');
+      expect(uri.queryParameters['size'], '6');
+      expect(uri.queryParameters['musicFolderId'], '1');
+    });
+
     test('- favourites come from getStarred2 with a real total', () async {
       server.ok('getStarred2', {
         'starred2': {

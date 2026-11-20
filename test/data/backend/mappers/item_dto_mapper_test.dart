@@ -201,4 +201,30 @@ void main() {
       expect(song.userData.playCount, 0);
     });
   });
+
+  group('release date', () {
+    test('- keeps the premiere date as a calendar day in UTC', () {
+      final album = ItemDTO.fromJson({
+        'Id': 'album-1',
+        'Name': 'Dummy',
+        'Type': 'MusicAlbum',
+        'ProductionYear': 1994,
+        'PremiereDate': '1994-08-22T00:00:00.0000000Z',
+      }).toLibraryItem();
+
+      expect(album.originalReleaseDate, DateTime(1994, 8, 22));
+      expect(album.productionYear, 1994);
+    });
+
+    test('- leaves the date empty when the server sends only a year', () {
+      final album = ItemDTO.fromJson({
+        'Id': 'album-1',
+        'Name': 'Dummy',
+        'Type': 'MusicAlbum',
+        'ProductionYear': 1994,
+      }).toLibraryItem();
+
+      expect(album.originalReleaseDate, isNull);
+    });
+  });
 }

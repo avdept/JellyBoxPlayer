@@ -83,6 +83,7 @@ export 'queue_sidebar.dart';
 export 'quick_connect_dialog.dart';
 export 'rail_collapse_animation.dart';
 export 'rail_tooltip.dart';
+export 'release_card_strip.dart';
 export 'scrollable_page_scaffold.dart';
 export 'search_results_sliver.dart';
 export 'search_songs_sliver.dart';

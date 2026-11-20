@@ -134,4 +134,28 @@ void main() {
       expect(query.filters, {ItemFilterFlag.played});
     });
   });
+
+  group('mediaBrowserRecentReleases', () {
+    test('- asks the server for albums newest by release date', () async {
+      when(() => client.getAlbums(any())).thenAnswer(
+        (_) async => LibraryPage(items: [album('a2'), album('a1')]),
+      );
+
+      final albums = await mediaBrowserRecentReleases(
+        client,
+        libraryId: 'lib-1',
+        limit: 8,
+      );
+
+      expect(albums.map((a) => a.id), ['a2', 'a1']);
+      final query =
+          verify(() => client.getAlbums(captureAny())).captured.single
+              as LibraryQuery;
+      expect(query.sort, ItemSort.releaseDate);
+      expect(query.direction, SortDirection.descending);
+      expect(query.libraryId, 'lib-1');
+      expect(query.limit, 8);
+      expect(query.startIndex, 0);
+    });
+  });
 }

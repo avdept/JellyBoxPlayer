@@ -30,6 +30,8 @@ enum AppSetting {
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),
   recentlyPlayedHidden('hide_recently_played'),
+  recentReleasesHidden('hide_recent_releases'),
+  recentReleasesTinted('recent_releases_tinted', defaultValue: true),
   ratingsHidden('hide_ratings'),
   defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
   defaultStartPage('default_start_page', defaultValue: 'home'),

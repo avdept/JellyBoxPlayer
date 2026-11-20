@@ -313,6 +313,12 @@ class EmbyClient implements MediaServerClient {
   }
 
   @override
+  Future<List<LibraryItem>> getRecentReleases({
+    String? libraryId,
+    int limit = 20,
+  }) => mediaBrowserRecentReleases(this, libraryId: libraryId, limit: limit);
+
+  @override
   Future<List<LibraryItem>> getRecentlyPlayedAlbums({
     String? libraryId,
     int limit = 20,

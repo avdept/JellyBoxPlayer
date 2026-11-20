@@ -742,6 +742,21 @@ class SubsonicClient implements MediaServerClient {
   }) => _albumList(subsonicNewestListType, libraryId: libraryId, limit: limit);
 
   @override
+  Future<List<LibraryItem>> getRecentReleases({
+    String? libraryId,
+    int limit = 20,
+  }) async {
+    final albums = await _api.getAlbumList2(
+      type: subsonicByYearListType,
+      fromYear: _now().year,
+      toYear: subsonicEarliestReleaseYear,
+      size: limit,
+      musicFolderId: libraryId,
+    );
+    return [for (final album in albums) album.toLibraryItem()];
+  }
+
+  @override
   Future<List<LibraryItem>> getRecentlyPlayedAlbums({
     String? libraryId,
     int limit = 20,

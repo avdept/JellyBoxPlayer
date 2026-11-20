@@ -342,6 +342,19 @@ class _HomePageState extends ConsumerState<HomePage> {
               onRefresh: () => ref.refresh(recentlyAddedAlbumsProvider.future),
             ),
           ),
+          if (!ref.watch(settingProvider(AppSetting.recentReleasesHidden)))
+            SliverToBoxAdapter(
+              child: ReleaseCardStrip(
+                title: 'Recent releases',
+                items: ref.watch(recentReleasesProvider),
+                device: _device,
+                horizontalPadding: _horizontalPadding,
+                onItemTap: _onAlbumTap,
+                onPlayPressed: _onPlayAlbum,
+                optionsBuilder: _cardOptions(recentReleasesProvider),
+                onRetry: () => ref.invalidate(recentReleasesProvider),
+              ),
+            ),
           if (!ref.watch(
             settingProvider(AppSetting.generatedPlaylistsDisabled),
           ))

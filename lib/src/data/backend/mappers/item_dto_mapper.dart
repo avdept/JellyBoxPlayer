@@ -15,6 +15,7 @@ extension ItemDTOMapping on ItemDTO {
       playlistItemId: playlistItemId,
       overview: overview,
       productionYear: productionYear,
+      originalReleaseDate: mediaBrowserReleaseDate(premiereDate),
       albumId: albumId,
       albumName: albumName,
       albumArtist: albumArtist,
@@ -99,4 +100,11 @@ ItemKind _kindFromType(String type) {
     default:
       return ItemKind.unknown;
   }
+}
+
+DateTime? mediaBrowserReleaseDate(String? premiereDate) {
+  if (premiereDate == null) return null;
+  final parsed = DateTime.tryParse(premiereDate)?.toUtc();
+  if (parsed == null) return null;
+  return DateTime(parsed.year, parsed.month, parsed.day);
 }

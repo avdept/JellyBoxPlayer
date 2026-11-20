@@ -4,6 +4,22 @@ import 'package:jplayer/src/domain/models/models.dart';
 
 const mediaBrowserPlayedSongsScanLimit = 200;
 
+Future<List<LibraryItem>> mediaBrowserRecentReleases(
+  MediaServerClient client, {
+  required int limit,
+  String? libraryId,
+}) async {
+  final page = await client.getAlbums(
+    LibraryQuery(
+      libraryId: libraryId,
+      sort: ItemSort.releaseDate,
+      direction: SortDirection.descending,
+      limit: limit,
+    ),
+  );
+  return page.items;
+}
+
 Future<List<LibraryItem>> mediaBrowserRecentlyPlayedAlbums(
   MediaServerClient client, {
   required int limit,
