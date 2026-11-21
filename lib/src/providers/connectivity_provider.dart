@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/http/user_agent.dart';
 import 'package:jplayer/src/data/api/subsonic/subsonic_api.dart';
 import 'package:jplayer/src/data/backend/server_type.dart';
 import 'package:jplayer/src/data/providers/dio_provider.dart';
@@ -264,8 +265,12 @@ class ConnectivityNotifier extends StateNotifier<bool> {
       final response = await client.getUri<Object?>(
         subsonic
             ? SubsonicApi(client, baseUrl: url).uri('ping.view')
-            : Uri.parse(url),
-        options: Options(followRedirects: false, validateStatus: (_) => true),
+            : _publicInfoUri(url),
+        options: Options(
+          headers: {'User-Agent': jellyboxUserAgent()},
+          followRedirects: false,
+          validateStatus: (_) => true,
+        ),
       );
       if (subsonic) return SubsonicApi.envelopeOf(response.data) != null;
       final status = response.statusCode ?? 0;
@@ -275,6 +280,9 @@ class ConnectivityNotifier extends StateNotifier<bool> {
       return false;
     }
   }
+
+  static Uri _publicInfoUri(String url) =>
+      Uri.parse('${url.replaceAll(RegExp(r'/+$'), '')}/System/Info/Public');
 
   ServerAddresses? get _addresses {
     final addresses = _ref.read(serverAddressesProvider);

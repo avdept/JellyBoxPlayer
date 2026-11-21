@@ -26,6 +26,7 @@ class _MockSecureStorage extends Mock implements FlutterSecureStorage {}
 class _Hosts implements HttpClientAdapter {
   final status = <String, int>{};
   final subsonic = <String>{};
+  final portalAuth = <String>{};
   Duration delay = Duration.zero;
 
   @override
@@ -41,6 +42,10 @@ class _Hosts implements HttpClientAdapter {
         requestOptions: options,
         reason: 'unreachable',
       );
+    }
+    if (portalAuth.contains(options.uri.host) &&
+        options.uri.path.replaceAll('/', '').isEmpty) {
+      return ResponseBody.fromString('', 401);
     }
     if (subsonic.contains(options.uri.host) &&
         options.uri.path.endsWith('/rest/ping.view')) {
@@ -333,6 +338,15 @@ void main() {
 
     expect(await probe(container), isTrue);
     expect(container.read(baseUrlProvider), relay);
+  });
+
+  test('- asks for public server info, not the portal page', () async {
+    hosts.status['192.168.1.10'] = 200;
+    hosts.portalAuth.add('192.168.1.10');
+    final container = start();
+
+    expect(await probe(container), isTrue);
+    expect(container.read(baseUrlProvider), home);
   });
 
   test('- pings a Subsonic server instead of reading its root page', () async {
