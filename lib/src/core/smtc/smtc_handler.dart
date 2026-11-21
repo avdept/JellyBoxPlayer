@@ -1,8 +1,17 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io'
+    show
+        ContentType,
+        File,
+        HttpRequest,
+        HttpServer,
+        HttpStatus,
+        InternetAddress,
+        Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/data/services/artwork_cache.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -23,6 +32,11 @@ class SmtcHandler {
     rewindEnabled: false,
   );
 
+  static const _artworkTimeout = Duration(seconds: 5);
+
+  static var _generation = 0;
+  static HttpServer? _server;
+  static final _served = <String, String>{};
   static smtc.SMTCWindows? _controls;
   static smtc.MusicMetadata? _metadata;
   static smtc.PlaybackStatus? _status;
@@ -91,6 +105,7 @@ class SmtcHandler {
     final controls = _controls;
     if (controls == null) return;
 
+    final generation = ++_generation;
     if (song == null) {
       if (_metadata == null) return;
       _metadata = null;
@@ -98,24 +113,89 @@ class SmtcHandler {
       return;
     }
 
-    final art = song.artUri;
+    _run(_publish(controls, song, generation));
+  }
+
+  static Future<void> _publish(
+    smtc.SMTCWindows controls,
+    MediaItem song,
+    int generation,
+  ) async {
+    final thumbnail = await _thumbnailFor(song.artUri);
+    if (generation != _generation) return;
+
     final metadata = smtc.MusicMetadata(
       title: song.title,
       artist: song.artist ?? '',
       album: song.album ?? '',
-      thumbnail: (art != null && art.hasScheme) ? art.toString() : null,
+      thumbnail: thumbnail,
     );
     if (metadata == _metadata) return;
     final droppedArtwork =
         _metadata?.thumbnail != null && metadata.thumbnail == null;
     _metadata = metadata;
-    _run(
-      droppedArtwork
-          ? controls.clearMetadata().then(
-              (_) => controls.updateMetadata(metadata),
-            )
-          : controls.updateMetadata(metadata),
-    );
+    if (droppedArtwork) await controls.clearMetadata();
+    await controls.updateMetadata(metadata);
+  }
+
+  static Future<String?> _thumbnailFor(Uri? art) async {
+    if (art == null) return null;
+    String? path;
+    if (art.isScheme('file')) {
+      path = art.toFilePath();
+    } else if (art.isScheme('http') || art.isScheme('https')) {
+      path = await ArtworkCache.instance
+          .pathFor(art.toString())
+          .timeout(_artworkTimeout, onTimeout: () => null);
+    }
+    if (path == null || !File(path).existsSync()) return null;
+    return _serve(path);
+  }
+
+  static Future<String?> _serve(String path) async {
+    try {
+      var server = _server;
+      if (server == null) {
+        server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        _server = server;
+        server.listen(_handleArtwork, onError: (Object _) {});
+      }
+      final id = path.hashCode.toRadixString(16);
+      _served[id] = path;
+      return 'http://127.0.0.1:${server.port}/art/$id';
+    } on Object catch (error) {
+      debugPrint('[SMTC] artwork server failed: $error');
+      return null;
+    }
+  }
+
+  static Future<void> _handleArtwork(HttpRequest request) async {
+    final response = request.response;
+    try {
+      final id = request.uri.pathSegments.lastOrNull;
+      final path = id == null ? null : _served[id];
+      final file = path == null ? null : File(path);
+      if (file == null || !file.existsSync()) {
+        response.statusCode = HttpStatus.notFound;
+      } else {
+        final bytes = await file.readAsBytes();
+        response
+          ..headers.contentType = ContentType.parse(_mimeOf(bytes))
+          ..contentLength = bytes.length
+          ..add(bytes);
+      }
+    } on Object catch (error) {
+      debugPrint('[SMTC] artwork request failed: $error');
+    } finally {
+      await response.close();
+    }
+  }
+
+  static String _mimeOf(List<int> b) {
+    if (b.length > 3 && b[0] == 0x89 && b[1] == 0x50) return 'image/png';
+    if (b.length > 3 && b[0] == 0x47 && b[1] == 0x49) return 'image/gif';
+    if (b.length > 11 && b[8] == 0x57 && b[9] == 0x45) return 'image/webp';
+    return 'image/jpeg';
   }
 
   static void _onPlayback(PlaybackState state) {
