@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -123,6 +124,7 @@ class ReleaseCardStrip extends StatelessWidget {
                 controller: controller,
                 scrollDirection: Axis.horizontal,
                 clipBehavior: Clip.none,
+                scrollCacheExtent: const ScrollCacheExtent.pixels(columnWidth),
                 padding: EdgeInsets.only(
                   left: horizontalPadding,
                   right: max(0, horizontalPadding - _spacing),
@@ -186,6 +188,7 @@ class _MobilePagesState extends State<_MobilePages> {
     child: PageView.builder(
       controller: _controller,
       padEnds: false,
+      allowImplicitScrolling: true,
       itemCount: widget.count,
       itemBuilder: (context, index) => widget.builder(index),
     ),
