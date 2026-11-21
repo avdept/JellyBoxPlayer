@@ -10,6 +10,7 @@ import 'package:jplayer/src/data/cloud/cloud_host_adapter.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
@@ -45,6 +46,14 @@ class ConductorUrlNotifier extends StateNotifier<String> {
   }
 }
 
+final deviceNameProvider = Provider<String>((ref) {
+  final custom = ref.watch(
+    appSettingsProvider.select((settings) => settings[AppSetting.deviceName]),
+  );
+  final trimmed = custom is String ? custom.trim() : '';
+  return trimmed.isEmpty ? continuityDeviceName() : trimmed;
+});
+
 final cloudProvider = StateNotifierProvider<CloudNotifier, CloudState>((ref) {
   final notifier = CloudNotifier(ref);
   ref.onDispose(notifier.shutdown);
@@ -61,6 +70,7 @@ class CloudNotifier extends StateNotifier<CloudState> {
 
     _ref
       ..listen(conductorUrlProvider, (_, _) => unawaited(_refresh()))
+      ..listen(deviceNameProvider, (_, _) => unawaited(_refresh()))
       ..listen(currentUserProvider, (_, next) {
         if (next == null && _ref.read(accountsProvider).isEmpty) {
           _cloud.forgetAccount();

@@ -70,7 +70,7 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   String get deviceId => app.deviceId;
 
   @override
-  String get deviceName => continuityDeviceName();
+  String get deviceName => _ref.read(deviceNameProvider);
 
   @override
   String get platform => continuityPlatformName();

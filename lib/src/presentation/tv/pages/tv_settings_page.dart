@@ -22,6 +22,7 @@ class TvSettingsPage extends ConsumerWidget {
     final browseTab = ref.watch(defaultBrowseTabProvider);
     final cloudAvailable = ref.watch(cloudAvailableProvider);
     final account = ref.watch(cloudProvider.select((state) => state.account));
+    final deviceName = ref.watch(deviceNameProvider);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -86,6 +87,13 @@ class TvSettingsPage extends ConsumerWidget {
                   unawaited(ref.read(cloudProvider.notifier).signOut()),
             ),
           ],
+          const SizedBox(height: 8),
+          _TvActionRow(
+            label: 'Device name',
+            detail: deviceName,
+            icon: Icons.tv_outlined,
+            onSelect: () => unawaited(TvDeviceNameDialog.show(context)),
+          ),
         ],
       ],
     );

@@ -71,6 +71,7 @@ enum AppSetting {
   manualOffline('manual_offline', syncs: false),
   carTakesQueue('car_takes_queue', syncs: false),
   hideContinuityInCastPicker('hide_continuity_in_cast_picker', syncs: false),
+  deviceName('device_name', defaultValue: '', syncs: false),
   tvMiniPlayer('tv_mini_player', defaultValue: true, syncs: false),
   discordRichPresence('discord_rich_presence'),
   discordAlbumArt('discord_album_art', defaultValue: true),
