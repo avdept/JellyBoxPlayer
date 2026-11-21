@@ -11,6 +11,7 @@ class SubsonicApi {
 
   static const apiVersion = '1.16.1';
   static const clientId = 'JellyBox';
+  static const allMusicFolderId = 'all-music';
 
   final Dio _dio;
   final String _baseUrl;
@@ -45,6 +46,7 @@ class SubsonicApi {
     for (final entry in params.entries) {
       final value = entry.value;
       if (value == null) continue;
+      if (entry.key == 'musicFolderId' && value == allMusicFolderId) continue;
       if (value is Iterable) {
         final values = [for (final item in value) '$item'];
         if (values.isNotEmpty) query[entry.key] = values;
