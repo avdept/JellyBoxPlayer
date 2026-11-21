@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/upnp/av_transport.dart';
 import 'package:jplayer/src/core/upnp/upnp_renderer.dart';
 import 'package:jplayer/src/data/storages/cast_session_storage.dart';
+import 'package:jplayer/src/domain/playback/renderer_locator.dart';
 import 'package:jplayer/src/domain/providers/upnp_renderers_provider.dart';
 
 class ResumableCastSession {
@@ -23,14 +24,19 @@ class ResumableCastSession {
 
 class CastSessionResume {
   CastSessionResume(
-    this._controlPoint, {
+    UpnpControlPoint controlPoint, {
     CastSessionStorage? storage,
     this.probeTimeout = const Duration(seconds: 5),
     this.searchTimeout = const Duration(seconds: 3),
-  }) : _storage = storage ?? CastSessionStorage();
+  }) : _storage = storage ?? CastSessionStorage(),
+       _locator = RendererLocator(
+         controlPoint,
+         probeTimeout: probeTimeout,
+         searchTimeout: searchTimeout,
+       );
 
-  final UpnpControlPoint _controlPoint;
   final CastSessionStorage _storage;
+  final RendererLocator _locator;
   final Duration probeTimeout;
   final Duration searchTimeout;
 
@@ -38,13 +44,17 @@ class CastSessionResume {
     final session = await _storage.load(serverId);
     if (session == null) return null;
 
-    final found = await _findRenderer(session);
+    final found = await _locator.find(
+      udn: session.udn,
+      location: session.location,
+      name: session.name,
+    );
     if (found == null) {
       debugPrint('[Playback] ${session.name} is gone; dropping cast session');
       await _storage.clear(serverId);
       return null;
     }
-    final renderer = await _coordinatorOf(found);
+    final renderer = await _locator.coordinatorOf(found);
 
     try {
       final info = await renderer.avTransport.transportInfo().timeout(
@@ -75,50 +85,6 @@ class CastSessionResume {
     } on Object catch (error) {
       debugPrint('[Playback] probing ${session.name} failed: $error');
       await _storage.clear(serverId);
-      return null;
-    }
-  }
-
-  Future<UpnpRenderer> _coordinatorOf(UpnpRenderer renderer) async {
-    final groups = renderer.groups;
-    if (groups == null) return renderer;
-    try {
-      final topology = await groups.topology().timeout(probeTimeout);
-      final coordinatorId = topology.coordinatorOf(renderer.id);
-      final location = topology.member(coordinatorId ?? '')?.location;
-      if (coordinatorId == null ||
-          coordinatorId == renderer.id ||
-          location == null) {
-        return renderer;
-      }
-      debugPrint(
-        '[Playback] ${renderer.name} plays in a group; '
-        'following its coordinator',
-      );
-      final coordinator = await _controlPoint
-          .describe(location)
-          .timeout(probeTimeout);
-      return coordinator ?? renderer;
-    } on Object catch (error) {
-      debugPrint('[Playback] topology of ${renderer.name} failed: $error');
-      return renderer;
-    }
-  }
-
-  Future<UpnpRenderer?> _findRenderer(CastSession session) async {
-    try {
-      final described = await _controlPoint
-          .describe(session.location)
-          .timeout(probeTimeout);
-      if (described != null && described.id == session.udn) return described;
-    } on TimeoutException {
-      debugPrint('[Playback] describing ${session.name} timed out');
-    }
-    try {
-      return await _controlPoint
-          .discoverRenderers(timeout: searchTimeout)
-          .firstWhere((renderer) => renderer.id == session.udn);
-    } on Object {
       return null;
     }
   }

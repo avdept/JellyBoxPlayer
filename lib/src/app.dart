@@ -17,6 +17,7 @@ import 'package:jplayer/src/core/window/window_close_sequence.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
+import 'package:jplayer/src/domain/playback/default_output.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_day_provider.dart';
@@ -29,7 +30,9 @@ import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
 import 'package:jplayer/src/domain/providers/system_volume_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
+import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/landscape_player.dart';
+import 'package:jplayer/src/presentation/widgets/missing_default_dialog.dart';
 import 'package:jplayer/src/presentation/widgets/playback_keyboard_shortcuts.dart';
 import 'package:jplayer/src/presentation/widgets/volume_hud.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -78,6 +81,7 @@ class _AppState extends ConsumerState<App>
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   final _authState = ValueNotifier<bool?>(null);
   LibraryItem? _selectedLibrary;
+  late final MissingDefaultPrompt _missingDefault;
   Timer? _resizeTimer;
   Timer? _moveTimer;
   AppLifecycleListener? _lifecycleListener;
@@ -88,6 +92,8 @@ class _AppState extends ConsumerState<App>
   void initState() {
     super.initState();
     MediaKeyHandler.initialize(ref);
+    _missingDefault = ref.read(missingDefaultPromptProvider)
+      ..handler = _askAboutMissingDefault;
     final auth = ref.read(authProvider);
     _authState.value = auth.hasError ? false : auth.valueOrNull;
     _selectedLibrary = ref.read(currentLibraryProvider).valueOrNull;
@@ -509,8 +515,21 @@ class _AppState extends ConsumerState<App>
     );
   }
 
+  Future<bool?> _askAboutMissingDefault(DefaultOutput output) async {
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != AppLifecycleState.resumed) return null;
+    final context = _rootNavigatorKey.currentContext;
+    if (context == null) return null;
+    final playHere = await showAppDialog<bool>(
+      context,
+      builder: (_) => MissingDefaultDialog(name: output.name),
+    );
+    return playHere ?? false;
+  }
+
   @override
   void dispose() {
+    _missingDefault.handler = null;
     WidgetsBinding.instance.removeObserver(this);
     if (_tracksWindowPlacement) windowManager.removeListener(this);
     _router.routerDelegate.removeListener(_checkDayRollover);

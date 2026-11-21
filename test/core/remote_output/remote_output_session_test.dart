@@ -29,7 +29,7 @@ class _StubPlayback extends StateNotifier<PlaybackState>
   set current(PlaybackState next) => state = next;
 
   @override
-  Future<void> resume() async => calls.add('resume');
+  Future<void> resume({bool userAction = false}) async => calls.add('resume');
 
   @override
   Future<void> pause() async => calls.add('pause');

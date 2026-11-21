@@ -71,6 +71,16 @@ enum AppSetting {
   manualOffline('manual_offline', syncs: false),
   carTakesQueue('car_takes_queue', syncs: false),
   hideContinuityInCastPicker('hide_continuity_in_cast_picker', syncs: false),
+  defaultOutput(
+    'default_output',
+    defaultValue: <String, Object>{},
+    syncs: false,
+  ),
+  fallbackToThisDevice(
+    'fallback_to_this_device',
+    defaultValue: true,
+    syncs: false,
+  ),
   tvMiniPlayer('tv_mini_player', defaultValue: true, syncs: false),
   discordRichPresence('discord_rich_presence'),
   discordAlbumArt('discord_album_art', defaultValue: true),
@@ -409,6 +419,9 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
     }
     return const {};
   }
+
+  void setMap(AppSetting setting, Map<String, Object> value) =>
+      _store(setting, value);
 
   void setHomePlaylistSort(Filter filter) => _storeAll({
     AppSetting.homePlaylistSort: filter.orderBy.name,

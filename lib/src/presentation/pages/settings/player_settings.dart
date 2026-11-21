@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/domain/playback/default_output.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/settings/settings_controls.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -116,6 +117,18 @@ class PlayerSettings extends ConsumerWidget {
             const SettingNote('Applies while Studio Mode is open.'),
           ],
         ],
+        const SettingsGroupHeader('Speakers'),
+        const _DefaultOutputRow(),
+        const SettingNote(
+          'To set one, pick a Cast or DLNA speaker in the Play on menu and '
+          'turn on "Use as default output". Music started on this device '
+          'then plays there. Picking another output lasts until the app '
+          'restarts.',
+        ),
+        const SettingCheckbox(
+          setting: AppSetting.fallbackToThisDevice,
+          label: "Switch to this device's speakers if a speaker fails to play",
+        ),
         const SettingsGroupHeader('Lyrics'),
         SettingsEnumDropdown<LyricsAlignment>(
           label: 'Lyrics text alignment',
@@ -138,6 +151,50 @@ class PlayerSettings extends ConsumerWidget {
           'them up on lrclib.net, a free public lyrics library.',
         ),
       ],
+    );
+  }
+}
+
+class _DefaultOutputRow extends ConsumerWidget {
+  const _DefaultOutputRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final output = ref.watch(defaultOutputProvider);
+    final muted = theme.colorScheme.onPrimary.withValues(alpha: 0.7);
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 170,
+            child: Text(
+              'Default output',
+              style: TextStyle(fontSize: 14, height: 1.2, color: muted),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              output?.name ?? 'This device',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14, height: 1.2),
+            ),
+          ),
+          if (output != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              style: settingsButtonStyle(),
+              onPressed: () => ref
+                  .read(appSettingsProvider.notifier)
+                  .setMap(AppSetting.defaultOutput, const {}),
+              child: const Text('Clear'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

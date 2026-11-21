@@ -22,7 +22,7 @@ Future<void> resumeSet(
   final playback = ref.read(playbackProvider);
   if (playback.sourceId == point.item.id && !playback.status.isStopped) {
     if (!playback.status.isPlaying) {
-      await ref.read(playbackProvider.notifier).resume();
+      await ref.read(playbackProvider.notifier).resume(userAction: true);
     }
     return;
   }
