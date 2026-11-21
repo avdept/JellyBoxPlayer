@@ -39,6 +39,7 @@ export 'downloaded_album_view.dart';
 export 'downloaded_icon.dart';
 export 'flip_panel.dart';
 export 'form_modal.dart';
+export 'device_name_form.dart';
 export 'gradient_background.dart';
 export 'gradient_panel_decoration.dart';
 export 'horizontal_scroll_region.dart';

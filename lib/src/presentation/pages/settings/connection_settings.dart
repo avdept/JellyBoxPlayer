@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
@@ -57,6 +59,7 @@ class ConnectionSettings extends ConsumerWidget {
         if (ref.watch(cloudAvailableProvider)) ...[
           const SettingsGroupHeader('Jellybox Link'),
           const JellyboxCloudSettings(),
+          const _DeviceNameRow(),
           if (ref.watch(cloudProvider).account == null)
             const SettingCheckbox(
               setting: AppSetting.hideContinuityInCastPicker,
@@ -247,4 +250,58 @@ class ConnectionSettings extends ConsumerWidget {
         color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
         icon: const Icon(Icons.refresh),
       );
+}
+
+class _DeviceNameRow extends ConsumerWidget {
+  const _DeviceNameRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref.watch(deviceNameProvider);
+    final muted = Theme.of(
+      context,
+    ).colorScheme.onPrimary.withValues(alpha: 0.5);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            spacing: 8,
+            children: [
+              const Icon(Icons.devices_outlined, size: 18),
+              Flexible(
+                child: Text(
+                  'Device name: $name',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                onPressed: () => unawaited(editDeviceName(context)),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 30,
+                  height: 30,
+                ),
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Rename this device',
+                color: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Text(
+              'Name of this device in the continuity device picker.',
+              style: TextStyle(fontSize: 12, height: 1.3, color: muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
