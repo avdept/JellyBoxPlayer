@@ -38,14 +38,14 @@ abstract class EmbyApi {
     @Query('ParentId') required String albumId,
     @Query('IncludeItemTypes') String includeType = 'Audio',
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    String? fields = 'MediaSources,ArtistItems,ProviderIds',
   });
 
   @GET('/Users/{userId}/Items')
   Future<HttpResponse<ItemsWrapper>> getItemsByIds({
     @Path('userId') required String userId,
     @Query('Ids') required String ids,
-    @Query('Fields') List<String> fields = const ['MediaSources'],
+    @Query('Fields') String? fields = 'MediaSources',
   });
 
   @GET('/Users/{userId}/Items')
@@ -57,10 +57,10 @@ abstract class EmbyApi {
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Ascending',
-    @Query('Filters') List<String> filters = const [],
+    @Query('Filters') String? filters,
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    String? fields = 'MediaSources,ArtistItems,ProviderIds',
     @Query('NameLessThan') String? nameLessThan,
   });
 
@@ -68,9 +68,9 @@ abstract class EmbyApi {
   Future<HttpResponse<ItemsWrapper>> getSongsOfSet({
     @Path('userId') required String userId,
     @Query('ParentId') String? libraryId,
-    @Query('AlbumArtistIds') List<String> artistIds = const [],
-    @Query('GenreIds') List<String> genreIds = const [],
-    @Query('Filters') List<String> filters = const [],
+    @Query('AlbumArtistIds') String? artistIds,
+    @Query('GenreIds') String? genreIds,
+    @Query('Filters') String? filters,
     @Query('IncludeItemTypes') String type = 'Audio',
     @Query('SortBy')
     String sortBy = 'AlbumArtist,Album,ParentIndexNumber,IndexNumber',
@@ -79,7 +79,7 @@ abstract class EmbyApi {
     @Query('Limit') String limit = '300',
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    String? fields = 'MediaSources,ArtistItems,ProviderIds',
   });
 
   @GET('/Users/{userId}/Items')
@@ -92,12 +92,12 @@ abstract class EmbyApi {
     @Query('SortBy') String sortBy = 'DateCreated,SortName',
     @Query('ContributingArtistIds') String? contributingArtistIds,
     @Query('SortOrder') String sortOrder = 'Descending',
-    @Query('AlbumArtistIds') List<String> artistIds = const [],
-    @Query('GenreIds') List<String> genreIds = const [],
-    @Query('Filters') List<String> filters = const [],
-    @Query('Ids') List<String> ids = const [],
+    @Query('AlbumArtistIds') String? artistIds,
+    @Query('GenreIds') String? genreIds,
+    @Query('Filters') String? filters,
+    @Query('Ids') String? ids,
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['ProviderIds'],
+    @Query('Fields') String? fields = 'ProviderIds',
     @Query('NameLessThan') String? nameLessThan,
   });
 
@@ -108,7 +108,7 @@ abstract class EmbyApi {
     @Query('IncludeItemTypes') String type = 'Audio',
     @Query('GroupItems') bool groupItems = true,
     @Query('Limit') String limit = '20',
-    @Query('Fields') List<String> fields = const ['ProviderIds'],
+    @Query('Fields') String? fields = 'ProviderIds',
   });
 
   @GET('/Albums/{albumId}/Similar')
@@ -116,7 +116,7 @@ abstract class EmbyApi {
     @Path('albumId') required String albumId,
     @Query('UserId') required String userId,
     @Query('Limit') String limit = '12',
-    @Query('Fields') List<String> fields = const ['ProviderIds'],
+    @Query('Fields') String? fields = 'ProviderIds',
   });
 
   @GET('/Items/{itemId}/InstantMix')
@@ -125,7 +125,7 @@ abstract class EmbyApi {
     @Query('UserId') required String userId,
     @Query('Limit') String limit = '100',
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ProviderIds'],
+    String? fields = 'MediaSources,ProviderIds',
   });
 
   @GET('/MusicGenres')
@@ -151,7 +151,7 @@ abstract class EmbyApi {
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    String? fields = 'MediaSources,ArtistItems,ProviderIds',
   });
 
   @GET('/Users/{userId}/Items')
@@ -164,7 +164,7 @@ abstract class EmbyApi {
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
-    @Query('Fields') List<String> fields = const ['ProviderIds'],
+    @Query('Fields') String? fields = 'ProviderIds',
   });
 
   @GET('/Users/{userId}/Items')
@@ -176,9 +176,9 @@ abstract class EmbyApi {
     @Query('SortBy') String sortBy = 'DateCreated,SortName',
     @Query('ContributingArtistIds') String? contributingArtistIds,
     @Query('SortOrder') String sortOrder = 'Descending',
-    @Query('AlbumArtistIds') List<String> artistIds = const [],
+    @Query('AlbumArtistIds') String? artistIds,
     @Query('Recursive') bool recursive = true,
-    @Query('Filters') List<String> filters = const [],
+    @Query('Filters') String? filters,
     @Query('NameLessThan') String? nameLessThan,
   });
 
@@ -199,7 +199,7 @@ abstract class EmbyApi {
     @Path('playlistId') required String playlistId,
     @Query('UserId') required String userId,
     @Query('Fields')
-    List<String> fields = const ['MediaSources', 'ArtistItems', 'ProviderIds'],
+    String? fields = 'MediaSources,ArtistItems,ProviderIds',
   });
 
   @GET('/Users/{userId}/Items/{itemId}')
@@ -207,12 +207,7 @@ abstract class EmbyApi {
     @Path('userId') required String userId,
     @Path('itemId') required String itemId,
     @Query('Fields')
-    List<String> fields = const [
-      'MediaSources',
-      'ArtistItems',
-      'ProviderIds',
-      'Overview',
-    ],
+    String? fields = 'MediaSources,ArtistItems,ProviderIds,Overview',
   });
 
   @GET('/Items/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.js')
@@ -251,13 +246,13 @@ abstract class EmbyApi {
   Future<HttpResponse<ItemsWrapper>> getArtists({
     @Query('UserId') required String userId,
     @Query('ParentId') String? libraryId,
-    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
+    @Query('Fields') String? fields = 'Overview,ProviderIds',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
-    @Query('Filters') List<String> filters = const [],
+    @Query('Filters') String? filters,
     @Query('NameLessThan') String? nameLessThan,
   });
 
@@ -265,13 +260,13 @@ abstract class EmbyApi {
   Future<HttpResponse<ItemsWrapper>> getAlbumArtists({
     @Query('UserId') required String userId,
     @Query('ParentId') String? libraryId,
-    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
+    @Query('Fields') String? fields = 'Overview,ProviderIds',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortBy') String sortBy = 'SortName',
     @Query('SortOrder') String sortOrder = 'Descending',
     @Query('Recursive') bool recursive = true,
-    @Query('Filters') List<String> filters = const [],
+    @Query('Filters') String? filters,
     @Query('NameLessThan') String? nameLessThan,
   });
 
@@ -280,7 +275,7 @@ abstract class EmbyApi {
     @Query('UserId') required String userId,
     @Query('SearchTerm') required String searchTerm,
     @Query('ParentId') String? libraryId,
-    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
+    @Query('Fields') String? fields = 'Overview,ProviderIds',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
@@ -292,7 +287,7 @@ abstract class EmbyApi {
     @Query('UserId') required String userId,
     @Query('SearchTerm') required String searchTerm,
     @Query('ParentId') String? libraryId,
-    @Query('Fields') List<String> fields = const ['Overview', 'ProviderIds'],
+    @Query('Fields') String? fields = 'Overview,ProviderIds',
     @Query('StartIndex') String startIndex = '0',
     @Query('Limit') String limit = '100',
     @Query('SortOrder') String sortOrder = 'Descending',
