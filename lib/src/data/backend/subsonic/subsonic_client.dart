@@ -339,9 +339,25 @@ class SubsonicClient implements MediaServerClient {
         _now().difference(cached.fetchedAt) < artistIndexTtl) {
       return cached.artists;
     }
-    final artists = await _api.getArtists(musicFolderId: libraryId);
+    final artists = libraryId == SubsonicApi.allMusicFolderId
+        ? await _searchAllArtists()
+        : await _api.getArtists(musicFolderId: libraryId);
     _artistIndex[libraryId] = (fetchedAt: _now(), artists: artists);
     return artists;
+  }
+
+  Future<List<SubsonicArtistDTO>> _searchAllArtists() async {
+    const pageSize = 500;
+    final artists = <SubsonicArtistDTO>[];
+    while (true) {
+      final page = (await _api.search3(
+        query: '',
+        artistCount: pageSize,
+        artistOffset: artists.length,
+      )).artist;
+      artists.addAll(page);
+      if (page.length < pageSize) return artists;
+    }
   }
 
   @override
@@ -794,9 +810,24 @@ class SubsonicClient implements MediaServerClient {
   @override
   Future<LibraryPage> getLibraries() async {
     final folders = await _api.getMusicFolders();
-    final items = [for (final folder in folders) folder.toLibraryItem()];
+    final items = folders.isEmpty
+        ? [if (await _servesAlbumsWithoutFolder()) _allMusicLibrary]
+        : [for (final folder in folders) folder.toLibraryItem()];
     return LibraryPage(items: items, totalRecordCount: items.length);
   }
+
+  static const _allMusicLibrary = LibraryItem(
+    id: SubsonicApi.allMusicFolderId,
+    name: 'All music',
+    kind: ItemKind.library,
+    collectionType: 'music',
+  );
+
+  Future<bool> _servesAlbumsWithoutFolder() async =>
+      (await _api.getAlbumList2(
+        type: 'alphabeticalByName',
+        size: 1,
+      )).isNotEmpty;
 
   @override
   Future<List<LibraryItem>> getItemsByIds(List<String> ids) async {
@@ -835,7 +866,9 @@ class SubsonicClient implements MediaServerClient {
           kind: ItemKind.genre,
         ),
         ItemKind.library || ItemKind.unknown =>
-          (await _api.getMusicFolders())
+          itemId == SubsonicApi.allMusicFolderId
+              ? _allMusicLibrary
+              : (await _api.getMusicFolders())
               .firstWhere(
                 (folder) => folder.id == itemId,
                 orElse: () => throw const MediaServerException(

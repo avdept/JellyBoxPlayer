@@ -1256,6 +1256,79 @@ void main() {
     expect(page.items.single.collectionType, 'music');
   });
 
+  group('no music folders', () {
+    setUp(() {
+      server.ok('getMusicFolders', {
+        'musicFolders': <String, Object?>{},
+      });
+    });
+
+    test('- one whole-catalog library when albums are still served', () async {
+      server.ok('getAlbumList2', {
+        'albumList2': {
+          'album': [albumJson('a1')],
+        },
+      });
+
+      final page = await client.getLibraries();
+      final library = page.items.single;
+
+      expect(library.kind, ItemKind.library);
+      expect(library.collectionType, 'music');
+      expect(
+        server.calls('getAlbumList2').single.queryParameters,
+        isNot(contains('musicFolderId')),
+      );
+
+      await client.getAlbums(
+        LibraryQuery(libraryId: library.id, sort: ItemSort.dateCreated),
+      );
+      expect(
+        server.calls('getAlbumList2').last.queryParameters,
+        isNot(contains('musicFolderId')),
+      );
+
+      final fetched = await client.getItem(library.id, kind: ItemKind.library);
+      expect(fetched.id, library.id);
+    });
+
+    test('- artists come from search3 because getArtists fails', () async {
+      server
+        ..ok('getAlbumList2', {
+          'albumList2': {
+            'album': [albumJson('a1')],
+          },
+        })
+        ..on('getArtists', (_) => subsonicFailed(70, 'Library not found'))
+        ..ok('search3', {
+          'searchResult3': {
+            'artist': [
+              {'id': 'ar-1', 'name': 'Artist One'},
+            ],
+          },
+        });
+
+      final library = (await client.getLibraries()).items.single;
+      final page = await client.getArtists(
+        LibraryQuery(libraryId: library.id, sort: ItemSort.name),
+      );
+
+      expect(page.items.single.id, 'ar-1');
+      expect(server.calls('getArtists'), isEmpty);
+      final search = server.calls('search3').single.queryParameters;
+      expect(search['query'], '');
+      expect(search, isNot(contains('musicFolderId')));
+    });
+
+    test('- no library when the server serves nothing either', () async {
+      server.ok('getAlbumList2', {'albumList2': <String, Object?>{}});
+
+      final page = await client.getLibraries();
+
+      expect(page.items, isEmpty);
+    });
+  });
+
   test('ratings are advertised and sent as setRating', () async {
     server.ok('setRating', {});
 
