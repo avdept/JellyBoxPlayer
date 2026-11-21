@@ -166,3 +166,20 @@ final defaultOutputFinderProvider = Provider<DefaultOutputFinder>(
     RendererLocator(ref.watch(upnpControlPointProvider)),
   ),
 );
+
+typedef MissingDefaultHandler = Future<bool?> Function(DefaultOutput output);
+
+class MissingDefaultPrompt {
+  MissingDefaultHandler? handler;
+  Future<bool?>? _open;
+
+  Future<bool?> ask(DefaultOutput output) {
+    final handler = this.handler;
+    if (handler == null) return Future<bool?>.value();
+    return _open ??= handler(output).whenComplete(() => _open = null);
+  }
+}
+
+final missingDefaultPromptProvider = Provider<MissingDefaultPrompt>(
+  (_) => MissingDefaultPrompt(),
+);

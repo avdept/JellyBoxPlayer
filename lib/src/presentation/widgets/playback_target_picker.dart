@@ -353,6 +353,27 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
 
   String? _failedHandoff;
   String? _connecting;
+  String? _revealedTarget;
+  final GlobalKey _activeControls = GlobalKey();
+
+  void _revealActiveControls(String targetId) {
+    if (_revealedTarget == targetId) return;
+    _revealedTarget = targetId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controls = _activeControls.currentContext;
+      if (controls == null) {
+        _revealedTarget = null;
+        return;
+      }
+      Scrollable.ensureVisible(
+        controls,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+    });
+  }
 
   void _selectLocal() {
     unawaited(_outputs.chooseHere());
@@ -481,6 +502,7 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final onThisDevice =
         active.kind == PlaybackTargetKind.local && elsewhere == null;
     final route = onThisDevice ? ref.watch(externalOutputRouteProvider) : null;
+    _revealActiveControls(active.id);
 
     final list = SingleChildScrollView(
       child: Column(
@@ -694,17 +716,20 @@ class _PlaybackTargetMenuState extends ConsumerState<PlaybackTargetMenu> {
     final output = DefaultOutput.of(ref.watch(playbackTargetProvider));
     if (output == null) return const SizedBox.shrink();
     final current = ref.watch(defaultOutputProvider);
-    return SwitchListTile(
-      dense: true,
-      contentPadding: const EdgeInsets.only(left: 16, right: 8),
-      title: Text(
-        'Use as default output',
-        style: Theme.of(context).textTheme.bodySmall,
+    return KeyedSubtree(
+      key: _activeControls,
+      child: SwitchListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.only(left: 16, right: 8),
+        title: Text(
+          'Use as default output',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        value: current?.targetId == output.targetId,
+        onChanged: (on) => ref
+            .read(appSettingsProvider.notifier)
+            .setMap(AppSetting.defaultOutput, on ? output.toJson() : const {}),
       ),
-      value: current?.targetId == output.targetId,
-      onChanged: (on) => ref
-          .read(appSettingsProvider.notifier)
-          .setMap(AppSetting.defaultOutput, on ? output.toJson() : const {}),
     );
   }
 

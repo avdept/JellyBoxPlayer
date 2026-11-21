@@ -16,6 +16,7 @@ import 'package:jplayer/src/data/storages/playback_storage.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/core/android_auto/cover_art_uri.dart';
 import 'package:jplayer/src/domain/playback/cast_session_resume.dart';
+import 'package:jplayer/src/domain/playback/default_output.dart';
 import 'package:jplayer/src/domain/playback/output_controller.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
@@ -222,6 +223,16 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (wanted == null) return true;
     state = state.copyWith(status: PlaybackStatus.buffering);
     if (await outputs.moveToDefault(wanted)) return true;
+    state = state.copyWith(status: PlaybackStatus.paused);
+    final playHere = await _ref.read(missingDefaultPromptProvider).ask(wanted);
+    if (playHere != null) {
+      if (playHere) {
+        _ref
+            .read(appSettingsProvider.notifier)
+            .setMap(AppSetting.defaultOutput, const {});
+      }
+      return playHere;
+    }
     final fallback = _ref.read(
       settingProvider(AppSetting.fallbackToThisDevice),
     );

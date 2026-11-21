@@ -423,6 +423,97 @@ void main() {
     });
   });
 
+  group('when the default speaker is missing', () {
+    late List<String> asked;
+
+    void answer(bool? playHere) {
+      asked = [];
+      container.read(missingDefaultPromptProvider).handler = (output) async {
+        asked.add(output.name);
+        await Future<void>.delayed(const Duration(seconds: 1));
+        return playHere;
+      };
+    }
+
+    test('playing here removes the missing default', () async {
+      finder.found = null;
+      await start();
+      answer(true);
+
+      await playback().play(songs.first, songs, album);
+
+      expect(asked, ['Living room']);
+      expect(local.loads, [true]);
+      expect(container.read(castFailureProvider), isNull);
+      expect(container.read(defaultOutputProvider), isNull);
+
+      await playback().play(songs[1], songs, album);
+
+      expect(finder.searches, ['Living room']);
+      expect(asked, hasLength(1));
+      expect(local.loads, [true, true]);
+    });
+
+    test('pausing keeps the queue here and looks again next time', () async {
+      finder.found = null;
+      await start();
+      answer(false);
+
+      await playback().play(songs.first, songs, album);
+
+      expect(local.loads, [false]);
+      expect(status(), PlaybackStatus.paused);
+      expect(container.read(castFailureProvider), isNull);
+      expect(container.read(defaultOutputProvider), _livingRoom);
+
+      await playback().play(songs[1], songs, album);
+
+      expect(finder.searches, hasLength(2));
+      expect(asked, hasLength(2));
+    });
+
+    test('without a screen to ask on it follows the setting', () async {
+      finder.found = null;
+      await start();
+      answer(null);
+
+      await playback().play(songs.first, songs, album);
+
+      expect(local.loads, [true]);
+      expect(container.read(castFailureProvider)?.notFound, isTrue);
+    });
+
+    test('a speaker that fails after it was found does not ask', () async {
+      speaker.failsOnLoad = true;
+      await start();
+      answer(false);
+
+      await playback().play(songs.first, songs, album);
+      await until(() => local.state.status == PlaybackStatus.playing);
+
+      expect(asked, isEmpty);
+    });
+
+    test('a speaker picked by hand never asks', () async {
+      await start(withDefault: false);
+      answer(false);
+      final kitchen = _Target(
+        id: 'uuid:kitchen',
+        name: 'Kitchen',
+        kind: PlaybackTargetKind.upnp,
+      )..failsOnLoad = true;
+      await playback().play(songs.first, songs, album);
+
+      await container.read(outputControllerProvider).choose(kitchen);
+      await until(() => playback().target.id == 'local');
+      await playback().switchTarget(local);
+
+      expect(local.loads, [true, true]);
+
+      expect(asked, isEmpty);
+    });
+  });
+
   group('when the speaker fails', () {
     test('a speaker that never started hands over playing', () async {
       speaker.failsOnLoad = true;
