@@ -156,11 +156,14 @@ final AutoDisposeFutureProviderFamily<ColorScheme?, LibraryItem>
 itemCoverSchemeProvider = FutureProvider.autoDispose
     .family<ColorScheme?, LibraryItem>((ref, item) async {
       try {
-        return await ColorScheme.fromImageProvider(
+        final scheme = await ColorScheme.fromImageProvider(
           provider: ref.read(imageServiceProvider).itemImage(item),
           brightness: Brightness.dark,
           dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         );
+        final link = ref.keepAlive();
+        Timer(const Duration(minutes: 10), link.close);
+        return scheme;
       } on Object {
         return null;
       }
