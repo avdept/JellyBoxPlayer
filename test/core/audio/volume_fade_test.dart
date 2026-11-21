@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/audio/volume_fade.dart';
@@ -46,6 +48,22 @@ void main() {
       '0.64',
       '0.80',
     ]);
+  });
+
+  test('play ramps up while the player is still playing', () async {
+    final finished = Completer<void>();
+    when(player.play).thenAnswer((_) {
+      calls.add('play');
+      return finished.future;
+    });
+    await fade.setLevel(0.8);
+
+    final playing = fade.play();
+    await Future<void>.delayed(VolumeFade.duration * 2);
+
+    expect(calls.last, '0.80');
+    finished.complete();
+    await playing;
   });
 
   test('pause ramps down, pauses, then puts the level back', () async {

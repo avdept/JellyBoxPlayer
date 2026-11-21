@@ -34,9 +34,10 @@ class VolumeFade {
     _wantsPlay = true;
     final generation = ++_generation;
     final silenced = _level > 0 && _current > 0 ? _apply(0) : null;
-    await playWithSession(_player);
+    final playing = playWithSession(_player);
     await silenced;
     await _ramp(generation, to: _level);
+    await playing;
   }
 
   Future<void> pause() => _silenceThen(_player.pause);
