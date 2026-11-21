@@ -619,10 +619,7 @@ void main() {
       expect(uri.path, '/Items/album-1/InstantMix');
       expect(uri.queryParameters['UserId'], 'user-1');
       expect(uri.queryParameters['Limit'], '25');
-      expect(uri.queryParametersAll['Fields'], [
-        'MediaSources',
-        'ProviderIds',
-      ]);
+      expect(uri.queryParametersAll['Fields'], ['MediaSources,ProviderIds']);
       expect(songs.map((song) => song.id), ['song-1', 'song-2']);
       expect(songs.first.kind, ItemKind.song);
     });
@@ -687,6 +684,65 @@ void main() {
       final items = await idsClient.getItemsByIds(['b', 'missing', 'a']);
 
       expect(items.map((item) => item.id), ['b', 'a']);
+    });
+  });
+
+  group('list query parameters', () {
+    late MockHttpClientAdapter adapter;
+    late EmbyClient listClient;
+
+    setUp(() {
+      adapter = MockHttpClientAdapter();
+      listClient = EmbyClient(
+        dio: Dio()..httpClientAdapter = adapter,
+        baseUrl: 'http://emby.local:8096',
+        userId: 'user-1',
+        token: 'token-1',
+        deviceId: 'device-1',
+      );
+      when(() => adapter.fetch(any(), any(), any())).thenAnswer(
+        (_) async => ResponseBody.fromString(
+          jsonEncode({'Items': <Object>[], 'TotalRecordCount': 0}),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        ),
+      );
+    });
+
+    Uri requestedUri() {
+      final captured = verify(
+        () => adapter.fetch(captureAny(), any(), any()),
+      ).captured.single;
+      return (captured as RequestOptions).uri;
+    }
+
+    test('- are sent comma-joined, never as repeated keys', () async {
+      await listClient.getSongsOfSet(
+        const LibraryQuery(
+          artistIds: ['artist-1', 'artist-2'],
+          genreIds: ['genre-1'],
+          filters: {ItemFilterFlag.favorite, ItemFilterFlag.played},
+        ),
+      );
+
+      final uri = requestedUri();
+      expect(uri.queryParametersAll['Fields'], [
+        'MediaSources,ProviderIds',
+      ]);
+      expect(uri.queryParametersAll['AlbumArtistIds'], ['artist-1,artist-2']);
+      expect(uri.queryParametersAll['GenreIds'], ['genre-1']);
+      expect(uri.queryParametersAll['Filters'], ['IsFavorite,IsPlayed']);
+    });
+
+    test('- are omitted when empty', () async {
+      await listClient.getSongsOfSet(const LibraryQuery());
+
+      final uri = requestedUri();
+      expect(uri.queryParameters.containsKey('AlbumArtistIds'), isFalse);
+      expect(uri.queryParameters.containsKey('GenreIds'), isFalse);
+      expect(uri.queryParameters.containsKey('Filters'), isFalse);
     });
   });
 }

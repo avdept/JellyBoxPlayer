@@ -75,11 +75,11 @@ class EmbyClient implements MediaServerClient {
     sortBy: mediaBrowserSort(query.sort),
     contributingArtistIds: query.appearsOnArtistId,
     sortOrder: mediaBrowserSortOrder(query.direction),
-    artistIds: query.artistIds,
-    genreIds: query.genreIds,
-    filters: mediaBrowserFilters(query.filters),
-    ids: query.ids,
-    fields: mediaBrowserFields(albumListFields),
+    artistIds: _csv(query.artistIds),
+    genreIds: _csv(query.genreIds),
+    filters: _csv(mediaBrowserFilters(query.filters)),
+    ids: _csv(query.ids),
+    fields: _csv(mediaBrowserFields(albumListFields)),
     nameLessThan: nameLessThan,
   );
 
@@ -100,7 +100,7 @@ class EmbyClient implements MediaServerClient {
       limit: '${query.limit}',
       sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
       sortOrder: mediaBrowserSortOrder(query.direction),
-      filters: mediaBrowserFilters(query.filters),
+      filters: _csv(mediaBrowserFilters(query.filters)),
       nameLessThan: nameLessThan,
     ),
     ArtistScope.allArtists => _api.getArtists(
@@ -110,7 +110,7 @@ class EmbyClient implements MediaServerClient {
       limit: '${query.limit}',
       sortBy: mediaBrowserSort(query.sort, target: ItemKind.artist),
       sortOrder: mediaBrowserSortOrder(query.direction),
-      filters: mediaBrowserFilters(query.filters),
+      filters: _csv(mediaBrowserFilters(query.filters)),
       nameLessThan: nameLessThan,
     ),
   };
@@ -150,8 +150,8 @@ class EmbyClient implements MediaServerClient {
     sortBy: mediaBrowserSort(query.sort, target: ItemKind.playlist),
     contributingArtistIds: query.appearsOnArtistId,
     sortOrder: mediaBrowserSortOrder(query.direction),
-    artistIds: query.artistIds,
-    filters: mediaBrowserFilters(query.filters),
+    artistIds: _csv(query.artistIds),
+    filters: _csv(mediaBrowserFilters(query.filters)),
     nameLessThan: nameLessThan,
   );
 
@@ -171,8 +171,8 @@ class EmbyClient implements MediaServerClient {
     limit: '${query.limit}',
     sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
     sortOrder: mediaBrowserSortOrder(query.direction),
-    filters: mediaBrowserFilters(query.filters),
-    fields: mediaBrowserFields(query.fields),
+    filters: _csv(mediaBrowserFilters(query.filters)),
+    fields: _csv(mediaBrowserFields(query.fields)),
     nameLessThan: nameLessThan,
   );
 
@@ -231,14 +231,14 @@ class EmbyClient implements MediaServerClient {
     final response = await _api.getSongsOfSet(
       userId: userId,
       libraryId: query.libraryId,
-      artistIds: query.artistIds,
-      genreIds: query.genreIds,
-      filters: mediaBrowserFilters(query.filters),
+      artistIds: _csv(query.artistIds),
+      genreIds: _csv(query.genreIds),
+      filters: _csv(mediaBrowserFilters(query.filters)),
       sortBy: mediaBrowserSort(query.sort, target: ItemKind.song),
       sortOrder: mediaBrowserSortOrder(query.direction),
       startIndex: '${query.startIndex}',
       limit: '${query.limit}',
-      fields: mediaBrowserFields(query.fields),
+      fields: _csv(mediaBrowserFields(query.fields)),
     );
     return response.data.toEmbyLibraryPage();
   }
@@ -384,13 +384,7 @@ class EmbyClient implements MediaServerClient {
     final response = await _api.getItem(
       userId: userId,
       itemId: itemId,
-      fields: const [
-        'MediaSources',
-        'ArtistItems',
-        'ProviderIds',
-        'Overview',
-        'Genres',
-      ],
+      fields: 'MediaSources,ArtistItems,ProviderIds,Overview,Genres',
     );
     return response.data.toEmbyLibraryItem();
   }
@@ -699,3 +693,5 @@ class EmbyClient implements MediaServerClient {
     await _api.signOut();
   }
 }
+
+String? _csv(List<String> values) => values.isEmpty ? null : values.join(',');
