@@ -12,6 +12,10 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
+import 'package:jplayer/src/domain/providers/pins_provider.dart';
+import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
+import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/system_volume_provider.dart';
@@ -271,6 +275,53 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
   @override
   Future<void> deleteSecret(String key) =>
       _ref.read(secureStorageProvider).delete(key: key);
+
+  @override
+  Future<Object> get store => _ref.read(downloadDatabaseProvider).database;
+
+  @override
+  Map<String, Object?> get context {
+    final settings = _ref.read(appSettingsProvider.notifier);
+    return {
+      'server': _ref.read(currentServerIdProvider),
+      'user': _ref.read(currentUserProvider)?.userId,
+      'settings': settings.syncedValues,
+      'stamps': settings.syncStamps,
+      'sync': settings.isEnabled(AppSetting.linkSync),
+    };
+  }
+
+  @override
+  Future<void> apply(Map<String, Object?> change) async {
+    switch (change['k']) {
+      case 'settings':
+        _ref.read(appSettingsProvider.notifier).applyRemote(
+          _stringKeyed(change['values']),
+          {
+            for (final entry in _stringKeyed(change['stamps']).entries)
+              if (entry.value case final num stamp) entry.key: stamp.toInt(),
+          },
+        );
+      case 'resume_points':
+        _ref.read(resumePointsChangedProvider.notifier).state++;
+      case 'play_history':
+        _ref.read(playHistoryChangedProvider.notifier).state++;
+      case 'pins':
+        await _ref.read(pinsProvider.notifier).reload();
+      case 'generated_playlists':
+        _ref.invalidate(todaysPlaylistsProvider);
+        _ref.invalidate(todaysPlaylistSongsProvider);
+      case 'generated_playlist_items':
+        _ref.invalidate(todaysPlaylistSongsProvider);
+    }
+  }
+
+  static Map<String, Object?> _stringKeyed(Object? raw) => raw is Map
+      ? {
+          for (final entry in raw.entries)
+            if (entry.key case final String key) key: entry.value,
+        }
+      : const {};
 
   void dispose() {
     _volume?.close();

@@ -11,6 +11,7 @@ import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -78,6 +79,7 @@ void main() {
     required String day,
     String? libraryId,
     bool disabled = false,
+    Future<void> Function(Map<String, Object?> event)? cloud,
   }) {
     final CurrentLibraryNotifier libraryNotifier = MockCurrentLibraryNotifier();
     when(libraryNotifier.build).thenAnswer(
@@ -104,6 +106,7 @@ void main() {
           settingProvider(
             AppSetting.generatedPlaylistsDisabled,
           ).overrideWithValue(true),
+        if (cloud != null) cloudTrackProvider.overrideWithValue(cloud),
       ],
     );
   }
@@ -177,6 +180,49 @@ void main() {
       expect(reread.single.item.id, first.single.item.id);
     },
   );
+
+  test('a set shared through Link is shown instead of the local one', () async {
+    var generatedWhenAsked = -1;
+    final container = makeContainer(
+      day: '2026-08-20',
+      libraryId: 'lib-a',
+      cloud: (event) async {
+        expect(event, {'k': 'generated_playlists', 'now': true});
+        generatedWhenAsked = generationCount;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await database.savePlaylists(
+          generatedFor('shared'),
+          userId: userId,
+          libraryId: 'lib-a',
+          dayKey: '2026-08-20',
+        );
+      },
+    );
+    final playlists = await readPlaylists(container);
+    container.dispose();
+
+    expect(generatedWhenAsked, 1);
+    expect(playlists.single.item.id, 'jellybox:genre-mix:shared');
+    final stored = await database.getPlaylists(
+      userId: userId,
+      libraryId: 'lib-a',
+      dayKey: '2026-08-20',
+    );
+    expect(stored.single.item.id, 'jellybox:genre-mix:shared');
+  });
+
+  test('with nothing in Link the local set is already there', () async {
+    final container = makeContainer(
+      day: '2026-08-20',
+      libraryId: 'lib-a',
+      cloud: (_) => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    final playlists = await readPlaylists(container);
+    container.dispose();
+
+    expect(generationCount, 1);
+    expect(playlists.single.item.id, 'jellybox:genre-mix:lib-a-1');
+  });
 
   test('generates nothing while the setting disables the feature', () async {
     final off = makeContainer(

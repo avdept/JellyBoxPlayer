@@ -12,7 +12,11 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
+import 'package:jplayer/src/domain/providers/pins_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
+import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,7 +80,21 @@ class CloudNotifier extends StateNotifier<CloudState> {
           _cloud.forgetAccount();
         }
         unawaited(_refresh());
-      });
+      })
+      ..listen(appSettingsProvider, (_, _) => track(const {'k': 'settings'}))
+      ..listen(
+        playHistoryChangedProvider,
+        (_, _) => track(const {'k': 'play_history'}),
+      )
+      ..listen(
+        resumePointsChangedProvider,
+        (_, _) => track(const {'k': 'resume_points'}),
+      )
+      ..listen(pinsProvider, (_, _) => track(const {'k': 'pins'}))
+      ..listen(
+        generatedPlaylistsChangedProvider,
+        (_, _) => track(const {'k': 'generated_playlists'}),
+      );
 
     _watchNetwork();
     _remote = _RemotePlayback(_cloud);
@@ -122,6 +140,8 @@ class CloudNotifier extends StateNotifier<CloudState> {
       _cloud.sendCommand(command, value: value);
 
   Future<bool> claimHere() => _cloud.claimHere();
+
+  Future<void> track(Map<String, Object?> event) => _cloud.track(event);
 
   Future<void> shutdown() async {
     _lifecycle?.dispose();
@@ -204,6 +224,14 @@ class _RemotePlayback implements RemotePlayback {
 }
 
 final playbackArrivedProvider = StateProvider<int>((ref) => 0);
+
+final cloudTrackProvider =
+    Provider<Future<void> Function(Map<String, Object?> event)>(
+      (ref) =>
+          (event) => ref.exists(cloudProvider)
+          ? ref.read(cloudProvider.notifier).track(event)
+          : Future<void>.value(),
+    );
 
 final cloudAvailableProvider = Provider<bool>(
   (ref) => ref.watch(cloudProvider.notifier).available,

@@ -32,24 +32,38 @@ class PlayHistoryDatabase {
     final batch = db.batch();
     final updatedAt = DateTime.now().toUtc().millisecondsSinceEpoch;
     for (final play in plays) {
-      batch
-        ..insert(_plays, {
-          'ServerId': _serverId,
-          'UserId': userId,
-          'SongId': play.song.id,
-          'PlayedAt': play.playedAt.toUtc().millisecondsSinceEpoch,
-          'Source': source,
-        }, conflictAlgorithm: ConflictAlgorithm.ignore)
-        ..insert(_songs, {
-          'ServerId': _serverId,
-          'SongId': play.song.id,
-          'Item': jsonEncode(
-            play.song.copyWith(userData: const PlaybackUserData()).toJson(),
-          ),
-          'UpdatedAt': updatedAt,
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      batch.insert(_plays, {
+        'ServerId': _serverId,
+        'UserId': userId,
+        'SongId': play.song.id,
+        'PlayedAt': play.playedAt.toUtc().millisecondsSinceEpoch,
+        'Source': source,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      _snapshot(batch, play.song, updatedAt);
     }
     await batch.commit(noResult: true);
+  }
+
+  Future<void> saveSongs(Iterable<LibraryItem> songs) async {
+    if (songs.isEmpty) return;
+    final db = await _database;
+    final batch = db.batch();
+    final updatedAt = DateTime.now().toUtc().millisecondsSinceEpoch;
+    for (final song in songs) {
+      _snapshot(batch, song, updatedAt);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  void _snapshot(Batch batch, LibraryItem song, int updatedAt) {
+    batch.insert(_songs, {
+      'ServerId': _serverId,
+      'SongId': song.id,
+      'Item': jsonEncode(
+        song.copyWith(userData: const PlaybackUserData()).toJson(),
+      ),
+      'UpdatedAt': updatedAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<PlayCountRow>> topPlayed({
@@ -97,10 +111,9 @@ class PlayHistoryDatabase {
     final db = await _database;
     final rows = await db.rawQuery(
       'SELECT COUNT(*) AS TrackedCount FROM '
-      '(SELECT p.SongId FROM $_plays p '
-      'JOIN $_songs s ON s.ServerId = p.ServerId AND s.SongId = p.SongId '
-      'WHERE p.ServerId = ? AND p.UserId = ? AND p.PlayedAt >= ? '
-      'GROUP BY p.SongId HAVING COUNT(*) >= ?)',
+      '(SELECT SongId FROM $_plays '
+      'WHERE ServerId = ? AND UserId = ? AND PlayedAt >= ? '
+      'GROUP BY SongId HAVING COUNT(*) >= ?)',
       [
         _serverId,
         userId,

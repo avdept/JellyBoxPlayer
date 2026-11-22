@@ -28,6 +28,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(Duration.zero);
     registerFallbackValue(<String>[]);
+    registerFallbackValue(<LibraryItem>[]);
   });
 
   setUp(() {
@@ -62,6 +63,7 @@ void main() {
           id: _song(id, name: 'stored $id'),
       },
     );
+    when(() => history.saveSongs(any())).thenAnswer((_) async {});
   }
 
   test(
@@ -109,6 +111,10 @@ void main() {
         [for (final song in songs) song.name],
         ['fresh known', 'fresh legacy'],
       );
+      final saved =
+          verify(() => history.saveSongs(captureAny())).captured.single
+              as Iterable<LibraryItem>;
+      expect([for (final song in saved) song.id], ['known', 'legacy']);
     },
   );
 

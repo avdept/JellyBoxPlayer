@@ -109,4 +109,10 @@ abstract class CloudHost<S> {
   Future<void> writeSecret(String key, String value);
 
   Future<void> deleteSecret(String key);
+
+  Future<Object> get store;
+
+  Map<String, Object?> get context;
+
+  Future<void> apply(Map<String, Object?> change);
 }

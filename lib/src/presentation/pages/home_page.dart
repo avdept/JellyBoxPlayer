@@ -153,13 +153,27 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _regenerateButton() => IconButton(
-    onPressed: () =>
-        unawaited(ref.read(todaysPlaylistsProvider.notifier).regenerate()),
-    icon: const Icon(Icons.refresh),
-    iconSize: 20,
-    tooltip: 'Rebuild mixes (debug)',
-    color: Theme.of(context).colorScheme.onPrimary,
+  Widget _regenerateButton() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        onPressed: () => unawaited(
+          ref.read(todaysPlaylistsProvider.notifier).forgetToday(),
+        ),
+        icon: const Icon(Icons.delete_outline),
+        iconSize: 20,
+        tooltip: 'Forget mixes, restart to re-sync (debug)',
+        color: Theme.of(context).colorScheme.onPrimary,
+      ),
+      IconButton(
+        onPressed: () =>
+            unawaited(ref.read(todaysPlaylistsProvider.notifier).regenerate()),
+        icon: const Icon(Icons.refresh),
+        iconSize: 20,
+        tooltip: 'Rebuild mixes (debug)',
+        color: Theme.of(context).colorScheme.onPrimary,
+      ),
+    ],
   );
 
   Widget _playlistSortButton() {
