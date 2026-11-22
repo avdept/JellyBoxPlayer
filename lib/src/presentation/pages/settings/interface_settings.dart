@@ -75,7 +75,11 @@ class InterfaceSettings extends ConsumerWidget {
             value: animatedCoversProvider,
             options: _animatedCoversLabels,
           ),
-        ],
+        ] else
+          const SettingCheckbox(
+            setting: AppSetting.desktopAnimatedCovers,
+            label: 'Enable animated cover art',
+          ),
       ],
     );
   }
