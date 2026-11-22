@@ -21,6 +21,12 @@ class InterfaceSettings extends ConsumerWidget {
     StartPage.browse: 'Browse',
   };
 
+  static const Map<AnimatedCovers, String> _animatedCoversLabels = {
+    AnimatedCovers.always: 'Always',
+    AnimatedCovers.wifi: 'On Wi-Fi',
+    AnimatedCovers.never: 'Never',
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
@@ -63,12 +69,11 @@ class InterfaceSettings extends ConsumerWidget {
             setting: AppSetting.albumArtTint,
             label: 'Tint album pages with cover art colours',
           ),
-          const SettingCheckbox(
-            setting: AppSetting.animatedCovers,
+          SettingsEnumDropdown<AnimatedCovers>(
             label: 'Animated album covers',
-          ),
-          const SettingNote(
-            'Looks up for animated covers and plays them on Wi-Fi only.',
+            setting: AppSetting.animatedCovers,
+            value: animatedCoversProvider,
+            options: _animatedCoversLabels,
           ),
         ],
       ],

@@ -6,7 +6,6 @@ import 'package:jplayer/src/presentation/pages/album/album_page.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page_state.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
-import 'package:jplayer/src/providers/network_type_provider.dart';
 
 class MobileAlbumPage extends ConsumerStatefulWidget {
   const MobileAlbumPage({
@@ -48,10 +47,7 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
 
   bool get _tintEnabled => ref.watch(settingProvider(AppSetting.albumArtTint));
 
-  Uri? _animatedCover() {
-    if (ref.watch(networkTypeProvider) != NetworkType.wifi) return null;
-    return ref.watch(animatedCoverProvider(album)).valueOrNull;
-  }
+  Uri? _animatedCover() => ref.watch(animatedCoverProvider(album)).valueOrNull;
 
   Color? _coverTint() {
     if (!_tintEnabled) return null;

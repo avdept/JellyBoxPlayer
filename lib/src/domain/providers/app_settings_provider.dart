@@ -25,7 +25,7 @@ enum AppSetting {
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),
-  animatedCovers('animated_covers'),
+  animatedCovers('animated_covers', defaultValue: 'always'),
   animationSpeed('animation_speed', defaultValue: 'medium'),
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),
@@ -252,6 +252,16 @@ final pinLongevityProvider = Provider<PinLongevity>(
       )] ??
       PinLongevity.days14,
 );
+
+final animatedCoversProvider = Provider<AnimatedCovers>((ref) {
+  final raw = ref.watch(appSettingsProvider)[AppSetting.animatedCovers];
+  if (raw is bool) return raw ? AnimatedCovers.wifi : AnimatedCovers.never;
+  return AnimatedCovers.values.asNameMap()[_asString(
+        raw,
+        AppSetting.animatedCovers,
+      )] ??
+      AnimatedCovers.always;
+});
 
 final keepScreenOnProvider = Provider<KeepScreenOn>(
   (ref) =>

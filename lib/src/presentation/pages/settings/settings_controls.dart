@@ -2,6 +2,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 
 ButtonStyle settingsButtonStyle() => TextButton.styleFrom(
   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -96,22 +97,31 @@ class SettingDropdown<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mobile = DeviceType.fromScreenSize(
+      MediaQuery.sizeOf(context),
+    ).isMobile;
+    final text = Text(
+      label,
+      style: TextStyle(
+        fontSize: 14,
+        height: 1.2,
+        color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+      ),
+    );
     return Padding(
-      padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+      padding: EdgeInsets.only(
+        left: 12,
+        right: mobile ? 12 : 0,
+        top: 4,
+        bottom: 4,
+      ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: mobile ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 170,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.2,
-                color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
-              ),
-            ),
-          ),
+          if (mobile)
+            Expanded(child: text)
+          else
+            SizedBox(width: 170, child: text),
           const SizedBox(width: 8),
           SizedBox(
             width: 140,
