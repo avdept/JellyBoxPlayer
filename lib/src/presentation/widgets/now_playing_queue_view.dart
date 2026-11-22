@@ -11,6 +11,7 @@ import 'package:jplayer/src/presentation/widgets/rating_stars.dart';
 import 'package:jplayer/src/presentation/widgets/song_row_view.dart';
 
 const _dragBlur = 8.0;
+const _dividerHeight = 28.0;
 
 class NowPlayingQueueView extends ConsumerStatefulWidget {
   const NowPlayingQueueView({
@@ -69,9 +70,14 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
   void _revealCurrentSong() {
     if (!mounted || !_scrollController.hasClients) return;
     final position = ref.read(barQueueIndexProvider) ?? 0;
+    final divider = infinitePlayStart(
+      ref.read(barQueueProvider),
+      ref.read(infinitePlayProvider),
+    );
     final scroll = _scrollController.position;
     final centered =
-        (position < 0 ? 0 : position) * _itemExtent -
+        (position < 0 ? 0 : position) * _itemExtent +
+        (divider != null && position >= divider ? _dividerHeight : 0) -
         (scroll.viewportDimension - _itemExtent) / 2;
 
     _scrollController.jumpTo(centered.clamp(0.0, scroll.maxScrollExtent));
@@ -111,6 +117,7 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
   Widget build(BuildContext context) {
     final songs = ref.watch(barQueueProvider);
     final currentIndex = ref.watch(barQueueIndexProvider);
+    final divider = infinitePlayStart(songs, ref.watch(infinitePlayProvider));
 
     final keys = _itemKeys(songs);
     final isDesktop = DeviceType.fromScreenSize(
@@ -120,7 +127,8 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
     return ReorderableListView.builder(
       scrollController: _scrollController,
       padding: widget.padding,
-      itemExtent: _itemExtent,
+      itemExtentBuilder: (index, _) =>
+          index == divider ? _itemExtent + _dividerHeight : _itemExtent,
       buildDefaultDragHandles: false,
       proxyDecorator: (child, index, animation) => AnimatedBuilder(
         animation: animation,
@@ -151,8 +159,8 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
       itemCount: songs.length,
       itemBuilder: (context, index) {
         final song = songs[index];
-        return _QueueRow(
-          key: keys[index],
+        final row = _QueueRow(
+          key: index == divider ? null : keys[index],
           song: song,
           position: index,
           isPlaying: index == currentIndex,
@@ -163,7 +171,57 @@ class _NowPlayingQueueViewState extends ConsumerState<NowPlayingQueueView> {
           onRemove: () =>
               ref.read(playbackProvider.notifier).removeFromQueue(index),
         );
+        if (index != divider) return row;
+        return Column(
+          key: keys[index],
+          children: [
+            const _InfinitePlayDivider(),
+            SizedBox(height: _itemExtent, child: row),
+          ],
+        );
       },
+    );
+  }
+}
+
+class _InfinitePlayDivider extends StatelessWidget {
+  const _InfinitePlayDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(
+      context,
+    ).colorScheme.onPrimary.withValues(alpha: 0.5);
+    final line = Expanded(child: Divider(color: color.withValues(alpha: 0.25)));
+    return SizedBox(
+      height: _dividerHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            line,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.all_inclusive, size: 14, color: color),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Infinite playback',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: color,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            line,
+          ],
+        ),
+      ),
     );
   }
 }

@@ -42,6 +42,13 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
       Future<void>.value();
 
   @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  }) => Future<void>.value();
+
+  @override
   PlaybackTargetKind get kind => PlaybackTargetKind.local;
 
   @override

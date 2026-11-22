@@ -655,6 +655,47 @@ void main() {
     ).called(1);
   });
 
+  test('inserts a batch with one receiver message', () async {
+    when(
+      () => client.queueInsertItems(
+        any(),
+        beforeItemWithId: any(named: 'beforeItemWithId'),
+      ),
+    ).thenAnswer((_) async {});
+    await load(initialIndex: 1);
+    await reportQueue();
+
+    await target.insertAll(3, [_track('x'), _track('y')]);
+    final appended =
+        verify(
+              () =>
+                  client.queueInsertItems(captureAny(), beforeItemWithId: null),
+            ).captured.single
+            as List<GoogleCastQueueItem>;
+    expect(
+      [for (final item in appended) item.mediaInformation.contentId],
+      ['x', 'y'],
+    );
+    expect(target.state.currentIndex, 1);
+
+    feed.queueEvents.add([
+      _queueItem(10, 'a'),
+      _queueItem(11, 'b'),
+      _queueItem(12, 'c'),
+      _queueItem(13, 'x'),
+      _queueItem(14, 'y'),
+    ]);
+    await pumpEventQueue();
+
+    await target.insertAll(0, [_track('z')]);
+    verify(
+      () => client.queueInsertItems(any(), beforeItemWithId: 10),
+    ).called(1);
+    verify(
+      () => client.queueLoadItems(any(), options: any(named: 'options')),
+    ).called(1);
+  });
+
   test('removes and reorders by receiver item id', () async {
     await load();
     await reportQueue();

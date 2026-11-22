@@ -675,20 +675,28 @@ class CastPlaybackTarget implements PlaybackTarget {
     int index,
     TargetTrack track, {
     bool playNext = false,
+  }) => insertAll(index, [track], playNext: playNext);
+
+  @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
   }) async {
+    if (tracks.isEmpty) return;
     final at = index.clamp(0, _tracks.length);
     final inStep = _itemIds.length == _tracks.length;
     final beforeId = _itemIdAt(at);
 
-    _tracks.insert(at, track);
-    if (at <= _index) _index++;
+    _tracks.insertAll(at, tracks);
+    if (at <= _index) _index += tracks.length;
 
     if (!inStep) {
       await _reload();
       return;
     }
     await _client.queueInsertItems([
-      _queueItem(track),
+      for (final track in tracks) _queueItem(track),
     ], beforeItemWithId: beforeId);
   }
 

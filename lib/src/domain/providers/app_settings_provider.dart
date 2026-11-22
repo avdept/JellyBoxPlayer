@@ -59,6 +59,7 @@ enum AppSetting {
   catalogDiscovery('catalog_discovery', defaultValue: true, syncs: true),
   playerVolume('player_volume', defaultValue: 1.0),
   repeatMode('repeat_mode', defaultValue: 'off'),
+  infinitePlayback('infinite_playback', defaultValue: true),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
   sleepTimerLast('sleep_timer_last', defaultValue: '', syncs: true),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),

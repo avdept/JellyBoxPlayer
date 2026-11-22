@@ -120,6 +120,12 @@ abstract class PlaybackTarget {
 
   Future<void> insert(int index, TargetTrack track, {bool playNext = false});
 
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  });
+
   Future<void> replaceAroundCurrent(
     int currentIndex,
     List<TargetTrack> upcoming,

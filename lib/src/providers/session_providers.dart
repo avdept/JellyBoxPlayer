@@ -11,6 +11,7 @@ final sessionScopedProviders = <ProviderOrFamily>[
   instantMixesProvider,
   downloadManagerProvider,
   forwardCacheProvider,
+  infinitePlayProvider,
   downloadedAlbumsProvider,
   downloadedPlaylistsProvider,
   standaloneDownloadedSongsProvider,
