@@ -51,6 +51,15 @@ class PlayerSettings extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 4,
       children: [
+        const SettingsGroupHeader('Playback'),
+        const SettingCheckbox(
+          setting: AppSetting.infinitePlayback,
+          label: 'Infinite playback',
+        ),
+        const SettingNote(
+          'When the queue is about to end, adds songs similar to what '
+          'you have been playing. Paused while repeat is on.',
+        ),
         if (device.isMobile) ...[
           const SettingsGroupHeader('Landscape player'),
           SettingsEnumDropdown<KeepScreenOn>(

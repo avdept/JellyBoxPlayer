@@ -25,6 +25,7 @@ class _FakeTarget implements PlaybackTarget {
   final loaded = <List<TargetTrack>>[];
   final reordered = <({List<TargetTrack> tracks, List<int> order, int at})>[];
   final inserted = <(int, TargetTrack)>[];
+  final batches = <(int, List<TargetTrack>)>[];
   Completer<void>? holdReorder;
 
   TargetPlaybackState _state = TargetPlaybackState.idle;
@@ -87,6 +88,18 @@ class _FakeTarget implements PlaybackTarget {
     bool playNext = false,
   }) async {
     inserted.add((index, track));
+  }
+
+  @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  }) async {
+    batches.add((index, tracks));
+    for (var offset = 0; offset < tracks.length; offset++) {
+      inserted.add((index + offset, tracks[offset]));
+    }
   }
 
   @override
@@ -317,6 +330,39 @@ void main() {
 
     expect(container.read(playbackProvider).shuffleEnabled, isTrue);
     expect(target.reordered, isEmpty);
+  });
+
+  test('- adding songs sends the player one batch at the end', () async {
+    final playback = container.read(playbackProvider.notifier);
+    await playback.play(songs.first, songs.take(3).toList(), album);
+
+    await playback.addAllToQueue(songs.skip(3).take(3).toList());
+
+    final batch = target.batches.single;
+    expect(batch.$1, 3);
+    expect(trackIdsOf(batch.$2), ['d', 'e', 'f']);
+    expect(idsOf(container.read(playbackProvider).songs), [
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+    ]);
+  });
+
+  test('- play next sends one batch right after the playing song', () async {
+    final playback = container.read(playbackProvider.notifier);
+    await playback.play(songs[1], songs.take(3).toList(), album);
+
+    await playback.playNextAll(songs.skip(3).take(2).toList());
+
+    final batch = target.batches.single;
+    expect(batch.$1, 2);
+    expect(trackIdsOf(batch.$2), ['d', 'e']);
+    final state = container.read(playbackProvider);
+    expect(idsOf(state.songs), ['a', 'b', 'd', 'e', 'c']);
+    expect(state.currentMediaIndex, 1);
   });
 
   test('- a queue edit that never answers stops blocking the player', () async {

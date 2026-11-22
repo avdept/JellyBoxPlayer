@@ -71,6 +71,13 @@ class _FakeTarget implements PlaybackTarget {
   }) async {}
 
   @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  }) async {}
+
+  @override
   Future<void> remove(int index) async {}
 
   @override

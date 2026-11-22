@@ -1451,29 +1451,19 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       return state.songs.isNotEmpty;
     }
 
-    var queued = false;
-    for (final song in playNext ? songs.reversed : songs) {
-      if (await _enqueue(song, playNext: playNext)) queued = true;
-    }
-    return queued;
-  }
-
-  Future<bool> _enqueue(LibraryItem song, {required bool playNext}) async {
-    final album = state.album ?? song;
-    final stamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
-    final sessionId = '$deviceId-$stamp-${song.id}';
-    final cachedPaths = await _cachedPaths([song]);
-    final resolved = await _resolveTrack(
-      song,
-      album,
-      sessionId,
-      cachedPath: cachedPaths[song.id],
+    final resolved = await _resolveQueue(
+      songs,
+      state.album ?? set ?? songs.first,
+      on: _target,
     );
-    if (resolved == null) return false;
-    if (resolved.track.isLocalFile) {
-      _localSongIds.add(song.id);
-    } else {
-      _localSongIds.remove(song.id);
+    if (resolved.tracks.isEmpty) return false;
+    for (final song in resolved.songs) {
+      _playSessionIds[song.id] = resolved.sessionIds[song.id]!;
+      if (resolved.localIds.contains(song.id)) {
+        _localSongIds.add(song.id);
+      } else {
+        _localSongIds.remove(song.id);
+      }
     }
 
     final current = state.currentMediaIndex;
@@ -1481,18 +1471,17 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         ? ((current ?? -1) + 1).clamp(0, state.songs.length)
         : state.songs.length;
 
-    _playSessionIds[song.id] = sessionId;
-    _tracks.insert(index.clamp(0, _tracks.length), resolved.track);
+    _tracks.insertAll(index.clamp(0, _tracks.length), resolved.tracks);
     state = state.copyWith(
-      songs: [...state.songs]..insert(index, resolved.song),
+      songs: [...state.songs]..insertAll(index, resolved.songs),
       deliveredQualities: _deliveredQualities(),
       currentMediaIndex: current != null && index <= current
-          ? current + 1
+          ? current + resolved.tracks.length
           : current,
     );
 
     await _editQueue(
-      () => _target.insert(index, resolved.track, playNext: playNext),
+      () => _target.insertAll(index, resolved.tracks, playNext: playNext),
     );
     return true;
   }

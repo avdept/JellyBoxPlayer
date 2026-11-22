@@ -494,10 +494,18 @@ class UpnpPlaybackTarget implements PlaybackTarget {
     int index,
     TargetTrack track, {
     bool playNext = false,
+  }) => insertAll(index, [track], playNext: playNext);
+
+  @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
   }) async {
+    if (tracks.isEmpty) return;
     final at = index.clamp(0, _tracks.length);
-    _tracks.insert(at, track);
-    if (at <= _index) _index += 1;
+    _tracks.insertAll(at, tracks);
+    if (at <= _index) _index += tracks.length;
 
     final queue = _deviceQueue;
     if (queue != null) {

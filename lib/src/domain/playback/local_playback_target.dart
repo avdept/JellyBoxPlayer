@@ -621,6 +621,33 @@ class LocalPlaybackTarget
   }
 
   @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  }) async {
+    if (tracks.isEmpty) return;
+    if (_window == null) {
+      _placeShuffled(playNext: playNext);
+      await _player.insertAudioSources(index, [
+        for (final track in tracks) _audioSource(track),
+      ]);
+      return;
+    }
+    for (var offset = 0; offset < tracks.length; offset++) {
+      await insert(index + offset, tracks[offset], playNext: playNext);
+    }
+  }
+
+  void _placeShuffled({required bool playNext}) {
+    if (!_player.shuffleModeEnabled) return;
+    final current = _player.currentIndex;
+    _shuffleOrder.nextInsertPosition = playNext && current != null
+        ? _shuffleOrder.positionAfterIndex(current)
+        : _shuffleOrder.lastPosition;
+  }
+
+  @override
   Future<void> insert(
     int index,
     TargetTrack track, {
@@ -628,12 +655,7 @@ class LocalPlaybackTarget
   }) async {
     final window = _window;
     if (window == null) {
-      if (_player.shuffleModeEnabled) {
-        final current = _player.currentIndex;
-        _shuffleOrder.nextInsertPosition = playNext && current != null
-            ? _shuffleOrder.positionAfterIndex(current)
-            : _shuffleOrder.lastPosition;
-      }
+      _placeShuffled(playNext: playNext);
       await _player.insertAudioSource(index, _audioSource(track));
       return;
     }

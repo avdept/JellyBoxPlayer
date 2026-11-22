@@ -113,6 +113,20 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
   }
 
   @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  }) {
+    final gate = _insertGate;
+    if (gate == null) {
+      queue.insertAll(index, tracks);
+      return Future<void>.value();
+    }
+    return gate.future.then((_) => queue.insertAll(index, tracks));
+  }
+
+  @override
   Future<void> replace(int index, TargetTrack track) async {
     replaced.add((index, track));
     queue[index] = track;
