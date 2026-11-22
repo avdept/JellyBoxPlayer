@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/data/backend/server_type.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/presentation/pages/settings/settings_controls.dart';
 import 'package:jplayer/src/presentation/widgets/continuity_intro.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/jellybox_cloud_connect_form.dart';
@@ -59,6 +61,13 @@ class JellyboxCloudSettings extends ConsumerWidget {
             style: _buttonStyle,
             icon: const Icon(Icons.tv_outlined),
             label: const Text('Link a TV'),
+          ),
+        if (account != null)
+          const SettingCheckbox(
+            setting: AppSetting.linkSync,
+            label:
+                'Sync listening history, resume points, pins and '
+                'browsing settings with my other devices',
           ),
         const _ServerConnectionRow(),
         TextButton.icon(

@@ -24,6 +24,7 @@ import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
@@ -667,6 +668,13 @@ class AuthNotifier extends AsyncNotifier<bool?> {
     } on Object catch (e) {
       log('Deleting data of $serverId failed: $e', name: 'Auth');
     }
+    unawaited(
+      ref.read(cloudTrackProvider)({
+        'k': 'forget',
+        'server': serverId,
+        'user': _accountFor(serverId)?.userId,
+      }),
+    );
   }
 
   Future<void> _cancelDownloads() async {

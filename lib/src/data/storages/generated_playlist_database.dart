@@ -89,6 +89,27 @@ class GeneratedPlaylistDatabase {
     await _prune(db, dayKey);
   }
 
+  Future<void> deletePlaylists({
+    required String userId,
+    required String dayKey,
+    String? libraryId,
+  }) async {
+    final db = await _database;
+    final scope = _scope(libraryId);
+    final batch = db.batch()
+      ..delete(
+        _playlists,
+        where: 'UserId = ? AND LibraryId = ? AND DayKey = ?',
+        whereArgs: [userId, scope, dayKey],
+      )
+      ..delete(
+        _items,
+        where: 'UserId = ? AND LibraryId = ? AND DayKey = ?',
+        whereArgs: [userId, scope, dayKey],
+      );
+    await batch.commit(noResult: true);
+  }
+
   Future<List<LibraryItem>> getSongs({
     required String playlistId,
     required String userId,

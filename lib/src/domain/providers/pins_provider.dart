@@ -14,7 +14,7 @@ class PinsNotifier extends StateNotifier<List<PinnedItem>> {
   }) : _maxAge = maxAge,
        _now = now ?? DateTime.now,
        super(const []) {
-    restored = _restore();
+    restored = reload();
   }
 
   final Ref _ref;
@@ -24,7 +24,7 @@ class PinsNotifier extends StateNotifier<List<PinnedItem>> {
 
   late final Future<void> restored;
 
-  Future<void> _restore() async {
+  Future<void> reload() async {
     final List<PinnedItem> stored;
     try {
       stored = await _database.getPins(maxAge: _maxAge, now: _now);

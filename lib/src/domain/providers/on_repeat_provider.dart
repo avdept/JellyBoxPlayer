@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jplayer/src/data/backend/media_server_client.dart';
-import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
 import 'package:jplayer/src/data/providers/play_history_database_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/play_history/played_song_hydrator.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/played_song_hydrator_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 const onRepeatWindow = Duration(days: 30);
@@ -61,38 +60,8 @@ Future<OnRepeatSnapshot> onRepeatSnapshotOf(Ref ref) async {
 
 Future<List<LibraryItem>> onRepeatSongsOf(Ref ref) async {
   final snapshot = await onRepeatSnapshotOf(ref);
-  if (snapshot.ids.isEmpty || ref.read(isOfflineProvider)) {
-    return snapshot.songs;
-  }
-  try {
-    return await fetchSongsByRankedIds(
-      ref.read(mediaServerClientProvider),
-      snapshot.ids,
-    );
-  } on Object {
-    return snapshot.songs;
-  }
-}
-
-const _hydrationBatch = 100;
-
-Future<List<LibraryItem>> fetchSongsByRankedIds(
-  MediaServerClient client,
-  List<String> ids,
-) async {
-  final batches = await Future.wait([
-    for (var start = 0; start < ids.length; start += _hydrationBatch)
-      client.getItemsByIds(
-        ids.sublist(start, min(start + _hydrationBatch, ids.length)),
-      ),
-  ]);
-  final byId = <String, LibraryItem>{
-    for (final batch in batches)
-      for (final item in batch) item.id: item,
-  };
-  return [
-    for (final id in ids) ?byId[id],
-  ];
+  if (snapshot.ids.isEmpty) return snapshot.songs;
+  return ref.read(playedSongHydratorProvider).refresh(snapshot.ids);
 }
 
 class OnRepeatSongsNotifier
@@ -101,21 +70,20 @@ class OnRepeatSongsNotifier
   FutureOr<List<LibraryItem>> build() async {
     if (ref.watch(currentUserProvider) == null) return const [];
     final isOffline = ref.watch(isOfflineProvider);
-    final client = ref.watch(mediaServerClientProvider);
+    final hydrator = ref.watch(playedSongHydratorProvider);
     final snapshot = await onRepeatSnapshotOf(ref);
     if (!isOffline && snapshot.ids.isNotEmpty) {
-      unawaited(_enrich(client, snapshot));
+      unawaited(_enrich(hydrator, snapshot));
     }
     return snapshot.songs;
   }
 
   Future<void> _enrich(
-    MediaServerClient client,
+    PlayedSongHydrator hydrator,
     OnRepeatSnapshot snapshot,
   ) async {
     try {
-      final songs = await fetchSongsByRankedIds(client, snapshot.ids);
-      state = AsyncData(songs);
+      state = AsyncData(await hydrator.refresh(snapshot.ids));
     } on Object {
       return;
     }

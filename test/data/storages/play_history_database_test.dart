@@ -191,6 +191,50 @@ void main() {
     expect(repeated, 1);
   });
 
+  test('- a play that arrived without a snapshot still counts', () async {
+    final history = historyFor();
+    await history.addPlays([play('a', daysAgo: 2)]);
+    final db = await DownloadDatabase(serverId: 'server-1').database;
+    for (final at in [2, 3]) {
+      await db.insert('SongPlays', {
+        'ServerId': 'server-1',
+        'UserId': 'user-1',
+        'SongId': 'imported',
+        'PlayedAt': now.subtract(Duration(days: at)).millisecondsSinceEpoch,
+        'Source': 'mac',
+      });
+    }
+
+    final count = await history.trackedSongCount(
+      window: const Duration(days: 30),
+      now: () => now,
+    );
+    final top = await history.topPlayed(
+      window: const Duration(days: 30),
+      limit: 10,
+      now: () => now,
+    );
+
+    expect(count, 2);
+    expect([for (final row in top) row.songId], ['imported', 'a']);
+    expect(await history.playedSongsByIds(['imported']), isEmpty);
+  });
+
+  test('- saveSongs stores a snapshot without like or rating', () async {
+    final history = historyFor();
+    await history.saveSongs([
+      song('later').copyWith(
+        userData: const PlaybackUserData(isFavorite: true, rating: 8),
+      ),
+    ]);
+
+    final stored = await history.playedSongsByIds(['later']);
+
+    expect(stored['later']!.albumId, 'album-later');
+    expect(stored['later']!.userData.isFavorite, isFalse);
+    expect(stored['later']!.userData.rating, 0);
+  });
+
   test(
     '- keeps a snapshot of each played song, without like or rating',
     () async {

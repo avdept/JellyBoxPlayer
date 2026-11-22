@@ -93,6 +93,8 @@ class JellyboxCloud<S> {
 
   Future<void> networkChanged() async {}
 
+  Future<void> track(Map<String, Object?> event) async {}
+
   Future<bool> handoffTo(String deviceId) async => false;
 
   bool? sameBackend(ConductorDevice device) => null;

@@ -21,7 +21,7 @@ enum AppSetting {
   ),
   studioModeRememberLyrics('studio_mode_remember_lyrics'),
   studioModeBackground('studio_mode_background', defaultValue: 'aurora'),
-  studioModeLyrics('studio_mode_lyrics', syncs: false),
+  studioModeLyrics('studio_mode_lyrics'),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),
@@ -32,78 +32,90 @@ enum AppSetting {
   recentlyPlayedHidden('hide_recently_played'),
   recentReleasesHidden('hide_recent_releases'),
   recentReleasesTinted('recent_releases_tinted', defaultValue: true),
-  ratingsHidden('hide_ratings'),
-  defaultBrowseTab('default_browse_tab', defaultValue: 'albums'),
-  defaultStartPage('default_start_page', defaultValue: 'home'),
-  browseLayout('browse_layout', defaultValue: 'cards'),
+  ratingsHidden('hide_ratings', syncs: true),
+  defaultBrowseTab('default_browse_tab', defaultValue: 'albums', syncs: true),
+  defaultStartPage('default_start_page', defaultValue: 'home', syncs: true),
+  browseLayout('browse_layout', defaultValue: 'cards', syncs: true),
   browseSort('browse_sort', defaultValue: <String, Object>{}),
   homePlaylistSort('home_playlist_sort', defaultValue: 'dateLastContentAdded'),
   homePlaylistSortDescending(
     'home_playlist_sort_descending',
     defaultValue: true,
   ),
-  letterRuler('letter_ruler', defaultValue: true),
-  artistBrowseScope('artist_browse_scope', defaultValue: 'allArtists'),
+  letterRuler('letter_ruler', defaultValue: true, syncs: true),
+  artistBrowseScope(
+    'artist_browse_scope',
+    defaultValue: 'allArtists',
+    syncs: true,
+  ),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
   lyricsBlur('lyrics_blur', defaultValue: 'medium'),
-  lrclibLyrics('lrclib_lyrics', defaultValue: true),
-  fanartArtistBackgrounds('fanart_artist_backgrounds', defaultValue: true),
-  catalogDiscovery('catalog_discovery', defaultValue: true),
+  lrclibLyrics('lrclib_lyrics', defaultValue: true, syncs: true),
+  fanartArtistBackgrounds(
+    'fanart_artist_backgrounds',
+    defaultValue: true,
+    syncs: true,
+  ),
+  catalogDiscovery('catalog_discovery', defaultValue: true, syncs: true),
   playerVolume('player_volume', defaultValue: 1.0),
-  repeatMode('repeat_mode', defaultValue: 'off', syncs: false),
+  repeatMode('repeat_mode', defaultValue: 'off'),
   playerTimeDisplay('player_time_display', defaultValue: 'remaining'),
-  sleepTimerLast('sleep_timer_last', defaultValue: ''),
+  sleepTimerLast('sleep_timer_last', defaultValue: '', syncs: true),
   forwardCacheLimit('forward_cache_limit', defaultValue: 'off'),
   forwardCacheWindow('forward_cache_window', defaultValue: 'min30'),
   streamQualityWifi(
     'stream_quality_wifi',
     defaultValue: 'original',
-    syncs: false,
   ),
   streamQualityCellular(
     'stream_quality_cellular',
     defaultValue: 'original',
-    syncs: false,
   ),
-  downloadQuality('download_quality', defaultValue: 'original', syncs: false),
-  downloadSyncOnCellular('download_sync_on_cellular', syncs: false),
-  offlineModeToggle('offline_mode_toggle', syncs: false),
-  manualOffline('manual_offline', syncs: false),
-  carTakesQueue('car_takes_queue', syncs: false),
-  hideContinuityInCastPicker('hide_continuity_in_cast_picker', syncs: false),
-  deviceName('device_name', defaultValue: '', syncs: false),
-  tvMiniPlayer('tv_mini_player', defaultValue: true, syncs: false),
+  downloadQuality('download_quality', defaultValue: 'original'),
+  downloadSyncOnCellular('download_sync_on_cellular'),
+  offlineModeToggle('offline_mode_toggle'),
+  manualOffline('manual_offline'),
+  carTakesQueue('car_takes_queue'),
+  hideContinuityInCastPicker('hide_continuity_in_cast_picker'),
+  deviceName('device_name', defaultValue: ''),
+  tvMiniPlayer('tv_mini_player', defaultValue: true),
   discordRichPresence('discord_rich_presence'),
   discordAlbumArt('discord_album_art', defaultValue: true),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),
-  contentUpdateInterval('content_update_interval', defaultValue: 'min5'),
-  pinsEnabled('pins_enabled', defaultValue: true),
-  pinLongevity('pin_longevity', defaultValue: 'days14'),
-  rendererVolumes('renderer_volumes', defaultValue: <String, double>{}),
-  lidarrUrl('lidarr_url', defaultValue: '', syncs: false),
-  lidarrRootFolder('lidarr_root_folder', defaultValue: '', syncs: false),
+  contentUpdateInterval(
+    'content_update_interval',
+    defaultValue: 'min5',
+    syncs: true,
+  ),
+  pinsEnabled('pins_enabled', defaultValue: true, syncs: true),
+  pinLongevity('pin_longevity', defaultValue: 'days14', syncs: true),
+  rendererVolumes(
+    'renderer_volumes',
+    defaultValue: <String, double>{},
+    syncs: true,
+  ),
+  lidarrUrl('lidarr_url', defaultValue: ''),
+  lidarrRootFolder('lidarr_root_folder', defaultValue: ''),
   lidarrQualityProfile(
     'lidarr_quality_profile',
     defaultValue: '',
-    syncs: false,
   ),
   lidarrMetadataProfile(
     'lidarr_metadata_profile',
     defaultValue: '',
-    syncs: false,
   ),
-  lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true, syncs: false),
-  lidarrHideAddButton('lidarr_hide_add_button', syncs: false),
+  lidarrSearchOnAdd('lidarr_search_on_add', defaultValue: true),
+  lidarrHideAddButton('lidarr_hide_add_button'),
   lidarrMonitorArtistConfirmed(
     'lidarr_monitor_artist_confirmed',
-    syncs: false,
   ),
   listenBrainzUser('listenbrainz_user', defaultValue: ''),
   listenBrainzApiUrl('listenbrainz_api_url', defaultValue: ''),
   lastFmUser('lastfm_user', defaultValue: ''),
-  telemetryOptOut('telemetry_opt_out');
+  telemetryOptOut('telemetry_opt_out'),
+  linkSync('link_sync', defaultValue: true);
 
-  const AppSetting(this.key, {this.defaultValue = false, this.syncs = true});
+  const AppSetting(this.key, {this.defaultValue = false, this.syncs = false});
 
   final String key;
   final Object defaultValue;
@@ -353,11 +365,65 @@ double _asDouble(Object? value, AppSetting setting) {
 }
 
 class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
-  AppSettingsNotifier(this._prefs) : super(_read(_prefs));
+  AppSettingsNotifier(this._prefs, {DateTime Function()? now})
+    : _now = now ?? DateTime.now,
+      _stamps = _readStamps(_prefs),
+      super(_read(_prefs));
 
   static const _storageKey = 'app_settings';
+  static const _stampsKey = 'app_settings_updated';
 
   final SharedPreferences? _prefs;
+  final DateTime Function() _now;
+  final Map<String, int> _stamps;
+
+  static const _legacyStamp = 1;
+
+  static Map<String, int> _readStamps(SharedPreferences? prefs) {
+    final stored = prefs?.getString(_stampsKey);
+    if (stored == null) {
+      return {
+        for (final setting in _read(prefs).keys) setting.key: _legacyStamp,
+      };
+    }
+    return {
+      for (final entry in (jsonDecode(stored) as Map<String, dynamic>).entries)
+        if (entry.value case final num stamp) entry.key: stamp.toInt(),
+    };
+  }
+
+  static Object? _coerce(Object? raw) => switch (raw) {
+    final bool value => value,
+    final String value => value,
+    final num value => value.toDouble(),
+    final Map<String, dynamic> value => value,
+    _ => null,
+  };
+
+  Map<String, Object?> get syncedValues => {
+    for (final setting in AppSetting.values)
+      if (setting.syncs && state[setting] != null) setting.key: state[setting],
+  };
+
+  Map<String, int> get syncStamps => {
+    for (final setting in AppSetting.values)
+      if (setting.syncs && _stamps[setting.key] != null)
+        setting.key: _stamps[setting.key]!,
+  };
+
+  void applyRemote(Map<String, Object?> values, Map<String, int> stamps) {
+    final changed = <AppSetting, Object>{};
+    for (final setting in AppSetting.values) {
+      if (!setting.syncs || !values.containsKey(setting.key)) continue;
+      final value = _coerce(values[setting.key]);
+      final stamp = stamps[setting.key];
+      if (value == null || stamp == null) continue;
+      _stamps[setting.key] = stamp;
+      if (state[setting] != value) changed[setting] = value;
+    }
+    if (changed.isNotEmpty) state = {...state, ...changed};
+    _persist();
+  }
 
   static Map<AppSetting, Object> _read(SharedPreferences? prefs) {
     if (prefs == null) return const {};
@@ -450,6 +516,14 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
     };
     if (changed.isEmpty) return;
     state = {...state, ...changed};
+    final stamp = _now().toUtc().millisecondsSinceEpoch;
+    for (final setting in changed.keys) {
+      _stamps[setting.key] = stamp;
+    }
+    _persist();
+  }
+
+  void _persist() {
     final prefs = _prefs;
     if (prefs == null) return;
     unawaited(
@@ -460,5 +534,6 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
         }),
       ),
     );
+    unawaited(prefs.setString(_stampsKey, jsonEncode(_stamps)));
   }
 }
