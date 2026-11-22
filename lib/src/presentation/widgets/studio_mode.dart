@@ -28,7 +28,6 @@ import 'package:jplayer/src/presentation/widgets/fluid_background.dart';
 import 'package:jplayer/src/presentation/widgets/keep_screen_awake.dart';
 import 'package:jplayer/src/presentation/widgets/studio_tuning_panel.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
-import 'package:jplayer/src/providers/network_type_provider.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -239,10 +238,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     return true;
   }
 
-  Uri? _motionCover() {
-    if (ref.watch(networkTypeProvider) != NetworkType.wifi) return null;
-    return ref.watch(nowPlayingAnimatedCoverProvider).valueOrNull;
-  }
+  Uri? _motionCover() => ref.watch(nowPlayingAnimatedCoverProvider).valueOrNull;
 
   void _onVideoReady(Uri url) {
     if (!mounted || _readyVideoUrl == url) return;

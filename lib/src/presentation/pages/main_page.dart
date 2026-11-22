@@ -57,7 +57,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   Widget _supportButton(bool collapsed) {
     final button = RailItemButton(
-      onPressed: () => context.pushNamed(Routes.support.name),
+      onPressed: () => _pushOnce(Routes.support),
       icon: const Icon(Icons.help_outline),
       label: const Text('Support'),
       foregroundColor: _theme.colorScheme.onPrimary,
@@ -74,7 +74,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   Widget _devButton(bool collapsed) {
     final button = RailItemButton(
-      onPressed: () => context.pushNamed(Routes.devQueues.name),
+      onPressed: () => _pushOnce(Routes.devQueues),
       icon: const Icon(Icons.bug_report_outlined),
       label: const Text('Dev'),
       foregroundColor: _theme.colorScheme.onPrimary,
@@ -104,6 +104,12 @@ class _MainPageState extends ConsumerState<MainPage> {
       enabled: collapsed,
       child: button,
     );
+  }
+
+  void _pushOnce(Routes route) {
+    final location = GoRouter.of(context).state.matchedLocation;
+    if (location.endsWith('/${route.path}')) return;
+    unawaited(context.pushNamed(route.name));
   }
 
   void _navigateToItem(int index) {

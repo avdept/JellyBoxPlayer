@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/animated_cover_database_provider.dart';
 import 'package:jplayer/src/data/storages/animated_cover_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/now_playing_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
+import 'package:jplayer/src/providers/network_type_provider.dart';
 
 const animatedCoverRetryAfter = Duration(days: 30);
 
@@ -43,12 +45,20 @@ animatedCoverSearchProvider = FutureProvider.autoDispose
       }
     });
 
+final animatedCoversAllowedProvider = Provider<bool>(
+  (ref) => switch (ref.watch(animatedCoversProvider)) {
+    AnimatedCovers.always => true,
+    AnimatedCovers.wifi => ref.watch(networkTypeProvider) == NetworkType.wifi,
+    AnimatedCovers.never => false,
+  },
+);
+
 final AutoDisposeFutureProviderFamily<Uri?, LibraryItem> animatedCoverProvider =
     FutureProvider.autoDispose.family<Uri?, LibraryItem>((
       ref,
       album,
     ) async {
-      if (!ref.watch(settingProvider(AppSetting.animatedCovers))) return null;
+      if (!ref.watch(animatedCoversAllowedProvider)) return null;
       final artist = album.albumArtist ?? album.albumArtists.firstOrNull?.name;
       if (artist == null || artist.isEmpty || album.name.isEmpty) return null;
       return ref.watch(
