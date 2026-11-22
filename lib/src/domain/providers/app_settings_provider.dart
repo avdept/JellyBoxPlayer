@@ -26,6 +26,7 @@ enum AppSetting {
   albumArtTint('album_art_tint', defaultValue: true),
   artworkAccent('artwork_accent', defaultValue: true),
   animatedCovers('animated_covers', defaultValue: 'always'),
+  desktopAnimatedCovers('desktop_animated_covers', defaultValue: true),
   animationSpeed('animation_speed', defaultValue: 'medium'),
   generatedPlaylistsDisabled('disable_generated_playlists'),
   favouritesHidden('hide_favourites'),

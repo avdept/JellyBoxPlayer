@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/animated_cover_provider.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page_state.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -41,6 +42,9 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
   @override
   double get sectionTitleFontSize => 24;
 
+  Uri? _animatedCover() =>
+      ref.watch(desktopAnimatedCoverProvider(album)).valueOrNull;
+
   @override
   Widget build(BuildContext context) {
     return DesktopPageColumn(
@@ -63,7 +67,11 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Image(image: albumCover, height: 254),
+          _CoverWithVideo(
+            image: albumCover,
+            height: 254,
+            video: _animatedCover(),
+          ),
           const SizedBox(width: 38),
           Expanded(child: _panel()),
         ],
@@ -76,7 +84,10 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
       padding: const EdgeInsets.symmetric(horizontal: 30),
       sliver: SliverPersistentHeader(
         pinned: true,
-        delegate: _FadeOutImageDelegate(image: albumCover),
+        delegate: _FadeOutImageDelegate(
+          image: albumCover,
+          video: _animatedCover(),
+        ),
       ),
     ),
     SliverPadding(
@@ -180,10 +191,42 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
   );
 }
 
-class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
-  const _FadeOutImageDelegate({required this.image});
+class _CoverWithVideo extends StatelessWidget {
+  const _CoverWithVideo({
+    required this.image,
+    required this.height,
+    required this.video,
+    this.videoWidth,
+  });
 
   final ImageProvider image;
+  final double height;
+  final Uri? video;
+  final double? videoWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final video = this.video;
+    return Stack(
+      children: [
+        Image(image: image, height: height),
+        if (video != null)
+          Positioned.fill(
+            child: AnimatedCoverVideo(
+              url: video,
+              maxWidth: videoWidth ?? height,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
+  const _FadeOutImageDelegate({required this.image, this.video});
+
+  final ImageProvider image;
+  final Uri? video;
 
   @override
   double get maxExtent => 299;
@@ -197,16 +240,32 @@ class _FadeOutImageDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Image(
-      image: image,
-      height: max(maxExtent - shrinkOffset, 0),
-      opacity: AlwaysStoppedAnimation(
-        max((maxExtent - shrinkOffset * 1.5) / maxExtent, 0),
+    final height = max(maxExtent - shrinkOffset, 0).toDouble();
+    final opacity = max(
+      (maxExtent - shrinkOffset * 1.5) / maxExtent,
+      0,
+    ).toDouble();
+    if (video == null) {
+      return Image(
+        image: image,
+        height: height,
+        opacity: AlwaysStoppedAnimation(opacity),
+      );
+    }
+    return Opacity(
+      opacity: opacity,
+      child: Center(
+        child: _CoverWithVideo(
+          image: image,
+          height: height,
+          video: video,
+          videoWidth: maxExtent,
+        ),
       ),
     );
   }
 
   @override
   bool shouldRebuild(covariant _FadeOutImageDelegate oldDelegate) =>
-      image != oldDelegate.image;
+      image != oldDelegate.image || video != oldDelegate.video;
 }

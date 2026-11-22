@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
+import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/animated_cover_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/providers/network_type_provider.dart';
@@ -77,6 +78,34 @@ void main() {
     test('- never blocks everywhere', () {
       expect(allowedFor(AnimatedCovers.never, NetworkType.wifi), isFalse);
       expect(allowedFor(AnimatedCovers.never, NetworkType.cellular), isFalse);
+    });
+  });
+
+  group('desktopAnimatedCoverProvider', () {
+    final cover = Uri.parse('https://example.com/cover.m3u8');
+    const album = LibraryItem(
+      id: 'a1',
+      name: 'Album',
+      kind: ItemKind.album,
+      albumArtist: 'Artist',
+    );
+
+    Future<Uri?> lookup({required bool desktop}) => createProviderContainer(
+      overrides: [
+        settingProvider(
+          AppSetting.desktopAnimatedCovers,
+        ).overrideWithValue(desktop),
+        animatedCoversProvider.overrideWithValue(AnimatedCovers.never),
+        animatedCoverSearchProvider.overrideWith((_, _) async => cover),
+      ],
+    ).read(desktopAnimatedCoverProvider(album).future);
+
+    test('- ignores the mobile choice when enabled', () async {
+      expect(await lookup(desktop: true), cover);
+    });
+
+    test('- returns nothing when disabled', () async {
+      expect(await lookup(desktop: false), isNull);
     });
   });
 }

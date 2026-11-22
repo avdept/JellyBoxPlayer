@@ -53,17 +53,30 @@ final animatedCoversAllowedProvider = Provider<bool>(
   },
 );
 
+Future<Uri?> _albumAnimatedCover(Ref<Object?> ref, LibraryItem album) async {
+  final artist = album.albumArtist ?? album.albumArtists.firstOrNull?.name;
+  if (artist == null || artist.isEmpty || album.name.isEmpty) return null;
+  return ref.watch(
+    animatedCoverSearchProvider((artist: artist, album: album.name)).future,
+  );
+}
+
 final AutoDisposeFutureProviderFamily<Uri?, LibraryItem> animatedCoverProvider =
     FutureProvider.autoDispose.family<Uri?, LibraryItem>((
       ref,
       album,
     ) async {
       if (!ref.watch(animatedCoversAllowedProvider)) return null;
-      final artist = album.albumArtist ?? album.albumArtists.firstOrNull?.name;
-      if (artist == null || artist.isEmpty || album.name.isEmpty) return null;
-      return ref.watch(
-        animatedCoverSearchProvider((artist: artist, album: album.name)).future,
-      );
+      return _albumAnimatedCover(ref, album);
+    });
+
+final AutoDisposeFutureProviderFamily<Uri?, LibraryItem>
+desktopAnimatedCoverProvider = FutureProvider.autoDispose
+    .family<Uri?, LibraryItem>((ref, album) async {
+      if (!ref.watch(settingProvider(AppSetting.desktopAnimatedCovers))) {
+        return null;
+      }
+      return _albumAnimatedCover(ref, album);
     });
 
 final AutoDisposeFutureProvider<Uri?> nowPlayingAnimatedCoverProvider =
