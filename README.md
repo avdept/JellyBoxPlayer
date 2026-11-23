@@ -37,6 +37,7 @@ JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://
 |---|---|---|
 | **iOS / iPadOS / macOS**  | App Store | [![App Store](https://img.shields.io/badge/App_Store-0D96F6?logo=apple&logoColor=white)](https://apps.apple.com/us/app/jellybox-player/id6469732117) |
 | **macOS** | `.dmg` (signed & notarized) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
+| **macOS** | Homebrew | `brew install --cask jellybox` |
 | **Windows** | Installer `.exe` or portable `.zip` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Linux** | `.flatpak`, `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android** | Google Play | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
