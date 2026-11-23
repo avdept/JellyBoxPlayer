@@ -9,6 +9,7 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/dev_tools_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -163,6 +164,62 @@ class _MainPageState extends ConsumerState<MainPage> {
     }
   }
 
+  double _floatingPlayerHeight = 0;
+
+  void _onFloatingPlayerSize(Size size) {
+    if (!mounted || size.height == _floatingPlayerHeight) return;
+    setState(() => _floatingPlayerHeight = size.height);
+  }
+
+  Widget _floatingBody({
+    required Widget rail,
+    required Widget? banner,
+    required Widget Function(BuildContext) pageArea,
+  }) {
+    const margin = FloatingPanels.margin;
+    final hasPlayer = _floatingPlayerHeight > 0;
+    return Row(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(margin),
+          child: FloatingPanel(child: rail),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              ?banner,
+              Expanded(child: Builder(builder: pageArea)),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  hasPlayer ? margin : 0,
+                  margin,
+                  hasPlayer ? margin : 0,
+                ),
+                child: FloatingPanels(
+                  child: FloatingPanel(
+                    clip: false,
+                    visible: hasPlayer,
+                    child: SizeReporter(
+                      onSize: _onFloatingPlayerSize,
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          BottomPlayer(),
+                          PlayingElsewhereStrip(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<bool>(reviewPromptProvider, (_, due) {
@@ -179,104 +236,118 @@ class _MainPageState extends ConsumerState<MainPage> {
       settingProvider(AppSetting.sidebarCollapsed),
     );
 
-    final scaffold = Scaffold(
-      body: Stack(
+    final floating =
+        _device.isDesktop &&
+        ref.watch(panelStyleProvider) == PanelStyle.floating;
+
+    final rail = CustomNavigationRail(
+      backgroundColor: floating
+          ? AppColors.from(
+              context,
+            ).panel.withValues(alpha: FloatingPanels.panelAlpha)
+          : null,
+      padding: const EdgeInsets.symmetric(
+        vertical: 30,
+        horizontal: 20,
+      ),
+      collapsed: sidebarCollapsed,
+      selectedItemColor: _theme.colorScheme.primary,
+      unselectedItemColor: _theme.colorScheme.onPrimary,
+      selectedFontSize: 16,
+      unselectedFontSize: 16,
+      leading: Row(
         children: [
-          Row(
-            children: [
-              Visibility(
-                visible: _device.isDesktop,
-                child: CustomNavigationRail(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 30,
-                    horizontal: 20,
-                  ),
-                  collapsed: sidebarCollapsed,
-                  selectedItemColor: _theme.colorScheme.primary,
-                  unselectedItemColor: _theme.colorScheme.onPrimary,
-                  selectedFontSize: 16,
-                  unselectedFontSize: 16,
-                  leading: Row(
-                    children: [
-                      const CollapsibleLabel(
-                        alignment: Alignment.centerLeft,
-                        slide: 0,
-                        child: Text(
-                          'JellyBox',
-                          maxLines: 1,
-                          softWrap: false,
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      _collapseButton(sidebarCollapsed),
-                    ],
-                  ),
-                  secondary: ref.watch(settingProvider(AppSetting.pinsEnabled))
-                      ? const PinnedItemsRailBox()
-                      : null,
-                  trailing: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (ref.watch(devToolsEnabledProvider))
-                        _devButton(sidebarCollapsed),
-                      _supportButton(sidebarCollapsed),
-                      _logoutButton(sidebarCollapsed),
-                    ],
-                  ),
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: _navigateToItem,
-                  destinations: List.generate(
-                    _menuItems.length,
-                    (index) => NavigationRailDestination(
-                      icon: Icon(_menuItems.elementAt(index).$1),
-                      label: Text(_menuItems.elementAt(index).$2),
-                      indicatorColor: AppColors.from(context).indicator,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 10,
-                      ),
-                    ),
-                  ),
-                ),
+          const CollapsibleLabel(
+            alignment: Alignment.centerLeft,
+            slide: 0,
+            child: Text(
+              'JellyBox',
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.w500,
               ),
+            ),
+          ),
+          const Spacer(),
+          _collapseButton(sidebarCollapsed),
+        ],
+      ),
+      secondary: ref.watch(settingProvider(AppSetting.pinsEnabled))
+          ? const PinnedItemsRailBox()
+          : null,
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (ref.watch(devToolsEnabledProvider)) _devButton(sidebarCollapsed),
+          _supportButton(sidebarCollapsed),
+          _logoutButton(sidebarCollapsed),
+        ],
+      ),
+      selectedIndex: currentIndex,
+      onDestinationSelected: _navigateToItem,
+      destinations: List.generate(
+        _menuItems.length,
+        (index) => NavigationRailDestination(
+          icon: Icon(_menuItems.elementAt(index).$1),
+          label: Text(_menuItems.elementAt(index).$2),
+          indicatorColor: AppColors.from(context).indicator,
+          padding: const EdgeInsets.symmetric(
+            vertical: 20,
+            horizontal: 10,
+          ),
+        ),
+      ),
+    );
+
+    final banner = isOffline
+        ? const OfflineBanner()
+        : manualOffline
+        ? const ManualOfflineBanner()
+        : pluginNotice != null
+        ? PluginNoticeBanner(notice: pluginNotice)
+        : update != null
+        ? UpdateBanner(update: update)
+        : null;
+
+    Widget pageArea(BuildContext context) => MediaQuery.removePadding(
+      context: context,
+      removeTop: hasBanner,
+      child: Stack(
+        children: [
+          widget.shell,
+          if (_device.isDesktop)
+            const Positioned.fill(
+              child: LyricsOverlay(),
+            ),
+        ],
+      ),
+    );
+
+    final body = floating
+        ? _floatingBody(rail: rail, banner: banner, pageArea: pageArea)
+        : Row(
+            children: [
+              Visibility(visible: _device.isDesktop, child: rail),
               Expanded(
                 child: Column(
                   children: [
-                    if (isOffline)
-                      const OfflineBanner()
-                    else if (manualOffline)
-                      const ManualOfflineBanner()
-                    else if (pluginNotice != null)
-                      PluginNoticeBanner(notice: pluginNotice)
-                    else if (update != null)
-                      UpdateBanner(update: update),
-                    Expanded(
-                      child: Builder(
-                        builder: (context) => MediaQuery.removePadding(
-                          context: context,
-                          removeTop: hasBanner,
-                          child: Stack(
-                            children: [
-                              widget.shell,
-                              if (_device.isDesktop)
-                                const Positioned.fill(child: LyricsOverlay()),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    ?banner,
+                    Expanded(child: Builder(builder: pageArea)),
                     const BottomPlayer(),
                     const PlayingElsewhereStrip(),
                   ],
                 ),
               ),
             ],
-          ),
+          );
+
+    final scaffold = Scaffold(
+      body: Stack(
+        children: [
+          body,
           if (_device.isDesktop) const Positioned.fill(child: QueueSidebar()),
           if (showsDesktopTitleBar)
             const Positioned(

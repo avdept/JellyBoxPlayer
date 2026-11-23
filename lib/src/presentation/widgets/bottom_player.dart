@@ -423,6 +423,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _imageProvider.value = image,
         );
+        final floating = FloatingPanels.enabled(context);
+        final sliderInset = FloatingPanels.radius.topLeft.x - 25;
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -436,9 +438,19 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               child: isEmpty
                   ? const SizedBox(width: double.infinity)
                   : Container(
-                      height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-                      color: _theme.bottomSheetTheme.backgroundColor
-                          ?.withOpacity(0.75),
+                      height:
+                          (floating
+                              ? FloatingPanels.playerHeight
+                              : _isMobile
+                              ? 69
+                              : 92) +
+                          _viewPadding.bottom,
+                      decoration: BoxDecoration(
+                        color: _theme.bottomSheetTheme.backgroundColor
+                            ?.withOpacity(0.75),
+                        borderRadius: floating ? FloatingPanels.radius : null,
+                      ),
+                      clipBehavior: floating ? Clip.antiAlias : Clip.none,
                       padding: EdgeInsets.only(bottom: _viewPadding.bottom),
                       child: SimpleListTile(
                         onTap: !_isDesktop ? _onExpand : null,
@@ -592,11 +604,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                   data: Theme.of(context).copyWith(
                     colorScheme: colorScheme,
                   ),
-                  child: const Positioned(
-                    left: -25,
+                  child: Positioned(
+                    left: floating ? sliderInset : -25,
                     top: -22,
-                    right: -25,
-                    child: PositionSlider.bar(),
+                    right: floating ? sliderInset : -25,
+                    child: const PositionSlider.bar(),
                   ),
                 ),
               ),

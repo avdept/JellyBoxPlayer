@@ -1,0 +1,1 @@
+enum PanelStyle { hard, floating }

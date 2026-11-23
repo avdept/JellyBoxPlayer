@@ -35,6 +35,11 @@ class InterfaceSettings extends ConsumerWidget {
     AppFont.archivo: 'Archivo',
   };
 
+  static const Map<PanelStyle, String> _panelStyleLabels = {
+    PanelStyle.hard: 'Hard edges',
+    PanelStyle.floating: 'Floating',
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
@@ -67,6 +72,13 @@ class InterfaceSettings extends ConsumerWidget {
           value: appFontProvider,
           options: _fontLabels,
         ),
+        if (device.isDesktop)
+          SettingsEnumDropdown<PanelStyle>(
+            label: 'Sidebar and player',
+            setting: AppSetting.panelStyle,
+            value: panelStyleProvider,
+            options: _panelStyleLabels,
+          ),
         const SettingCheckbox(
           setting: AppSetting.artworkAccent,
           label: 'Match button colours to the current track',

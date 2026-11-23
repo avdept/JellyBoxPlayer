@@ -26,6 +26,7 @@ enum AppSetting {
   albumArtTint('album_art_tint', defaultValue: true),
   colorTheme('color_theme', defaultValue: 'oxblood'),
   appFont('app_font', defaultValue: 'gilroy'),
+  panelStyle('panel_style', defaultValue: 'hard'),
   artworkAccent('artwork_accent', defaultValue: true),
   animatedCovers('animated_covers', defaultValue: 'always'),
   desktopAnimatedCovers('desktop_animated_covers', defaultValue: true),
@@ -285,6 +286,15 @@ final appFontProvider = Provider<AppFont>(
         AppSetting.appFont,
       )] ??
       AppFont.gilroy,
+);
+
+final panelStyleProvider = Provider<PanelStyle>(
+  (ref) =>
+      PanelStyle.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.panelStyle],
+        AppSetting.panelStyle,
+      )] ??
+      PanelStyle.hard,
 );
 
 final keepScreenOnProvider = Provider<KeepScreenOn>(
