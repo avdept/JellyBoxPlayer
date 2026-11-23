@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/entypo_icons.dart';
@@ -12,6 +13,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/utils/studio_stage_layout.dart';
 import 'package:jplayer/src/presentation/widgets/animated_cover_video.dart';
 import 'package:jplayer/src/presentation/widgets/aurora_background.dart';
 import 'package:jplayer/src/presentation/widgets/desktop_window_chrome.dart';
@@ -82,6 +84,7 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
   bool _lyricsMounted = false;
   int _activePointers = 0;
   bool _didEnterWindowFullscreen = false;
+  double _controlsHeight = 190;
 
   @override
   void initState() {
@@ -458,40 +461,48 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
           ),
   );
 
+  void _onControlsHeight(double height) {
+    if (!mounted || height == _controlsHeight) return;
+    setState(() => _controlsHeight = height);
+  }
+
   Widget _nowPlayingFace() => LayoutBuilder(
     builder: (context, constraints) {
-      final coverSize = min(
-        min(
-          constraints.maxHeight * 0.5,
-          constraints.maxWidth * 0.7,
-        ),
-        480,
-      ).toDouble();
-      return Stack(
-        children: [
-          Center(child: _centeredCover(coverSize)),
-          Positioned(
-            top: (constraints.maxHeight + coverSize) / 2 + 20,
-            left: 0,
-            right: 0,
-            child: _fadeWithControls(
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 480,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                    ),
-                    child: _controls(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+      final layout = StudioStageLayout.of(
+        constraints.biggest,
+        controlsHeight: _controlsHeight,
       );
+      final controls = SizedBox(
+        width: layout.controlsWidth,
+        child: _fadeWithControls(
+          _HeightReporter(onHeight: _onControlsHeight, child: _controls()),
+        ),
+      );
+      return switch (layout.mode) {
+        StudioStageMode.stacked => Stack(
+          children: [
+            Center(child: _centeredCover(layout.coverSize)),
+            Positioned(
+              top:
+                  (constraints.maxHeight + layout.coverSize) / 2 +
+                  StudioStageLayout.gap,
+              left: 0,
+              right: 0,
+              child: Center(child: controls),
+            ),
+          ],
+        ),
+        StudioStageMode.sideBySide => Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _centeredCover(layout.coverSize),
+              const SizedBox(width: StudioStageLayout.sideGap),
+              controls,
+            ],
+          ),
+        ),
+      };
     },
   );
 
@@ -736,5 +747,37 @@ class _StudioModeViewState extends ConsumerState<_StudioModeView> {
     _blurredArt?.dispose();
     _isPlaying.dispose();
     super.dispose();
+  }
+}
+
+class _HeightReporter extends SingleChildRenderObjectWidget {
+  const _HeightReporter({required this.onHeight, required super.child});
+
+  final ValueChanged<double> onHeight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderHeightReporter(onHeight);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderHeightReporter renderObject,
+  ) => renderObject.onHeight = onHeight;
+}
+
+class _RenderHeightReporter extends RenderProxyBox {
+  _RenderHeightReporter(this.onHeight);
+
+  ValueChanged<double> onHeight;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final height = size.height;
+    if (height == _reported) return;
+    _reported = height;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onHeight(height));
   }
 }

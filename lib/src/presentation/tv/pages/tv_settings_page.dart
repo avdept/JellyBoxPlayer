@@ -19,6 +19,9 @@ class TvSettingsPage extends ConsumerWidget {
       settingProvider(AppSetting.recentlyPlayedHidden),
     );
     final miniPlayer = ref.watch(settingProvider(AppSetting.tvMiniPlayer));
+    final rememberLyrics = ref.watch(
+      settingProvider(AppSetting.tvRememberLyrics),
+    );
     final browseTab = ref.watch(defaultBrowseTabProvider);
     final cloudAvailable = ref.watch(cloudAvailableProvider);
     final account = ref.watch(cloudProvider.select((state) => state.account));
@@ -40,6 +43,19 @@ class TvSettingsPage extends ConsumerWidget {
           autofocus: true,
           onChanged: (show) =>
               settings.setEnabled(AppSetting.tvMiniPlayer, value: show),
+        ),
+        const SizedBox(height: 8),
+        _TvSwitchRow(
+          label: 'Save lyrics state',
+          value: rememberLyrics,
+          onChanged: (remember) {
+            settings
+              ..setEnabled(AppSetting.tvRememberLyrics, value: remember)
+              ..setEnabled(
+                AppSetting.tvLyricsShown,
+                value: remember && ref.read(lyricsVisibleProvider),
+              );
+          },
         ),
         const SizedBox(height: 24),
         const Text('Home', style: TvTokens.sectionTitle),

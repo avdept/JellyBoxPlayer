@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/lidarr_provider.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
@@ -39,8 +40,28 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
   @override
   void initState() {
     super.initState();
-    if (ref.read(lidarrClientProvider) != null) unawaited(_load());
+    final connected = ref.read(lidarrClientProvider) != null;
+    Telemetry.track(
+      'lidarr-add-opened',
+      props: {'kind': _kind, 'connected': '$connected'},
+    );
+    if (connected) unawaited(_load());
   }
+
+  String get _kind => switch (widget.target) {
+    LidarrAlbumTarget() => 'album',
+    LidarrArtistTarget() => 'artist',
+  };
+
+  void _trackSubmit(String result) => Telemetry.track(
+    'lidarr-add-confirmed',
+    props: {
+      'kind': _kind,
+      'result': result,
+      if (widget.target is LidarrAlbumTarget)
+        'monitor-artist': '$_monitorArtist',
+    },
+  );
 
   Future<void> _load() async {
     try {
@@ -97,6 +118,10 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
               defaults: placement.defaults,
               search: search,
             );
+      _trackSubmit(switch (outcome) {
+        LidarrAddOutcome.added => 'added',
+        LidarrAddOutcome.alreadyAdded => 'already-added',
+      });
       if (!mounted) return;
       final name = plan.albums.isNotEmpty
           ? plan.albums[_selected].title
@@ -111,6 +136,7 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
         ),
       );
     } on Object catch (error) {
+      _trackSubmit('failed');
       if (!mounted) return;
       setState(() {
         _submitting = false;

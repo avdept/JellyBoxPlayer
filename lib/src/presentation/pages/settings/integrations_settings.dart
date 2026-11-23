@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/discord/discord_presence_handler.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/pages/settings/settings_controls.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -19,9 +20,10 @@ class IntegrationsSettings extends ConsumerWidget {
       const LastFmSettings(),
       if (supportsDiscordPresence) ...[
         const SettingsGroupHeader('Discord'),
-        const SettingCheckbox(
+        SettingCheckbox(
           setting: AppSetting.discordRichPresence,
           label: 'Share what I am listening to on Discord',
+          onEnabled: () => Telemetry.integrationConnected('discord'),
         ),
         if (ref.watch(settingProvider(AppSetting.discordRichPresence))) ...[
           const SettingCheckbox(

@@ -42,6 +42,7 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
     FocusManager.instance.addListener(_trackContentFocus);
     TvHomeChannel.listen((albumId) => unawaited(_openAlbum(albumId)));
     unawaited(_openPendingAlbum());
+    unawaited(Future.microtask(_restoreLyrics));
     ref
       ..listenManual<int>(playbackArrivedProvider, (_, _) => _showNowPlaying())
       ..listenManual<bool>(isOfflineProvider, (_, offline) {
@@ -175,8 +176,19 @@ class _TvMainPageState extends ConsumerState<TvMainPage> {
     return KeyEventResult.ignored;
   }
 
+  void _restoreLyrics() {
+    if (!mounted) return;
+    ref.read(lyricsVisibleProvider.notifier).state = _savedLyricsShown();
+  }
+
+  bool _savedLyricsShown() {
+    final settings = ref.read(appSettingsProvider.notifier);
+    return settings.isEnabled(AppSetting.tvRememberLyrics) &&
+        settings.isEnabled(AppSetting.tvLyricsShown);
+  }
+
   void _goHome() {
-    ref.read(lyricsVisibleProvider.notifier).state = false;
+    ref.read(lyricsVisibleProvider.notifier).state = _savedLyricsShown();
     widget.shell.goBranch(0, initialLocation: widget.shell.currentIndex == 0);
   }
 

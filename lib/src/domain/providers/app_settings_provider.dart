@@ -81,6 +81,8 @@ enum AppSetting {
   hideContinuityInCastPicker('hide_continuity_in_cast_picker'),
   deviceName('device_name', defaultValue: ''),
   tvMiniPlayer('tv_mini_player', defaultValue: true),
+  tvRememberLyrics('tv_remember_lyrics'),
+  tvLyricsShown('tv_lyrics_shown'),
   discordRichPresence('discord_rich_presence'),
   discordAlbumArt('discord_album_art', defaultValue: true),
   keepScreenOn('keep_screen_on', defaultValue: 'never'),

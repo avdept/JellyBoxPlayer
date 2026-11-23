@@ -49,6 +49,10 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
   void _toggleLyrics() {
     final lyrics = ref.read(lyricsVisibleProvider.notifier);
     lyrics.state = !lyrics.state;
+    final settings = ref.read(appSettingsProvider.notifier);
+    if (settings.isEnabled(AppSetting.tvRememberLyrics)) {
+      settings.setEnabled(AppSetting.tvLyricsShown, value: lyrics.state);
+    }
   }
 
   void _closeQueue() {
@@ -86,9 +90,12 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
     final art = images.artworkImage(item.artUri, size: 512);
     final backdrop = images.artworkImage(item.artUri, size: 128);
     final lyricsOn = ref.watch(lyricsVisibleProvider);
+    final rememberLyrics = ref.watch(
+      settingProvider(AppSetting.tvRememberLyrics),
+    );
 
     return PopScope(
-      canPop: !_queueOpen && !lyricsOn,
+      canPop: !_queueOpen && (!lyricsOn || rememberLyrics),
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (_queueOpen) {

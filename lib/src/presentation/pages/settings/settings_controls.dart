@@ -51,11 +51,13 @@ class SettingCheckbox extends ConsumerWidget {
   const SettingCheckbox({
     required this.setting,
     required this.label,
+    this.onEnabled,
     super.key,
   });
 
   final AppSetting setting;
   final String label;
+  final VoidCallback? onEnabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,9 +69,13 @@ class SettingCheckbox extends ConsumerWidget {
         children: [
           Checkbox(
             value: enabled,
-            onChanged: (value) => ref
-                .read(appSettingsProvider.notifier)
-                .setEnabled(setting, value: value ?? false),
+            onChanged: (value) {
+              final enabled = value ?? false;
+              ref
+                  .read(appSettingsProvider.notifier)
+                  .setEnabled(setting, value: enabled);
+              if (enabled) onEnabled?.call();
+            },
           ),
           Flexible(child: Text(label)),
         ],

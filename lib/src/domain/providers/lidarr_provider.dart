@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/http/user_agent.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -124,6 +125,7 @@ class LidarrAccountNotifier extends StateNotifier<LidarrAccount> {
       apiKey: key,
       version: version,
     );
+    Telemetry.integrationConnected('lidarr');
     return true;
   }
 

@@ -77,6 +77,14 @@ class Telemetry {
       }, fireImmediately: true);
   }
 
+  static void track(String event, {Map<String, String> props = const {}}) {
+    if (_optedOut) return;
+    unawaited(_sendEvent(event, props: props));
+  }
+
+  static void integrationConnected(String integration) =>
+      track('integration-connected', props: {'integration': integration});
+
   static void _reportServerType() {
     final type = _serverType;
     if (_optedOut || type == null || type == _reportedServerType) return;

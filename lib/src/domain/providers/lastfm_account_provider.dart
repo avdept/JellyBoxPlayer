@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/lastfm/lastfm_client.dart';
 import 'package:jplayer/src/core/scrobbling/scrobbler.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -169,6 +170,7 @@ class LastFmAccountNotifier extends StateNotifier<LastFmAccount> {
         userName: session.userName,
         sessionKey: session.key,
       );
+      Telemetry.integrationConnected('lastfm');
       return true;
     } on LastFmException catch (error) {
       if (attempt != _attempt) return false;

@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/fanart/fanart_client.dart';
 import 'package:jplayer/src/core/http/user_agent.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/storages/keychain_access.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -113,6 +114,7 @@ class FanartAccountNotifier extends StateNotifier<FanartAccount> {
       status: FanartStatus.ownKeys,
       credentials: credentials,
     );
+    Telemetry.integrationConnected('fanart-own-keys');
     return true;
   }
 

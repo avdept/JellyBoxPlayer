@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optional_features/jellybox_cloud.dart';
 import 'package:jplayer/src/config/constants.dart';
+import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/data/cloud/cloud_host_adapter.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -119,14 +120,26 @@ class CloudNotifier extends StateNotifier<CloudState> {
     required String address,
     required String email,
     required String password,
-  }) => _cloud.signIn(address: address, email: email, password: password);
+  }) async {
+    final signedIn = await _cloud.signIn(
+      address: address,
+      email: email,
+      password: password,
+    );
+    if (signedIn) Telemetry.integrationConnected('link');
+    return signedIn;
+  }
 
   Future<void> signOut() => _cloud.signOut();
 
   Future<bool> linkDevice({
     required String address,
     required void Function(DeviceLinkStart start) onCode,
-  }) => _cloud.linkDevice(address: address, onCode: onCode);
+  }) async {
+    final linked = await _cloud.linkDevice(address: address, onCode: onCode);
+    if (linked) Telemetry.integrationConnected('link-code');
+    return linked;
+  }
 
   void cancelDeviceLink() => _cloud.cancelDeviceLink();
 
