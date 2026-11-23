@@ -24,6 +24,8 @@ enum AppSetting {
   studioModeLyrics('studio_mode_lyrics'),
   nowPlayingHalo('now_playing_halo'),
   albumArtTint('album_art_tint', defaultValue: true),
+  colorTheme('color_theme', defaultValue: 'oxblood'),
+  appFont('app_font', defaultValue: 'gilroy'),
   artworkAccent('artwork_accent', defaultValue: true),
   animatedCovers('animated_covers', defaultValue: 'always'),
   desktopAnimatedCovers('desktop_animated_covers', defaultValue: true),
@@ -266,6 +268,24 @@ final animatedCoversProvider = Provider<AnimatedCovers>((ref) {
       )] ??
       AnimatedCovers.always;
 });
+
+final colorThemeProvider = Provider<ColorTheme>(
+  (ref) =>
+      ColorTheme.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.colorTheme],
+        AppSetting.colorTheme,
+      )] ??
+      ColorTheme.oxblood,
+);
+
+final appFontProvider = Provider<AppFont>(
+  (ref) =>
+      AppFont.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.appFont],
+        AppSetting.appFont,
+      )] ??
+      AppFont.gilroy,
+);
 
 final keepScreenOnProvider = Provider<KeepScreenOn>(
   (ref) =>

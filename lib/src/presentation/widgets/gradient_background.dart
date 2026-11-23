@@ -10,28 +10,34 @@ class GradientBackground extends StatelessWidget {
 
   final Widget child;
 
-  Widget body(ThemeData theme) => Stack(
-    fit: StackFit.expand,
-    children: [
-      Positioned(
-        top: -325,
-        right: -450,
-        width: 1000,
-        height: 1000,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                theme.colorScheme.primary.withOpacity(0.25),
-                Colors.transparent,
-              ],
+  Widget body(ThemeData theme) => LayoutBuilder(
+    builder: (context, constraints) {
+      final size = (constraints.maxWidth * 1.4).clamp(900.0, 2400.0);
+      final glow = theme.colorScheme.primary;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: -size / 2,
+            right: -size / 2,
+            width: size,
+            height: size,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    glow.withValues(alpha: 0.25),
+                    glow.withValues(alpha: 0),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-      child,
-    ],
+          child,
+        ],
+      );
+    },
   );
 
   @override

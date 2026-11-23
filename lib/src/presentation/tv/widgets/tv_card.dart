@@ -57,7 +57,9 @@ class TvCard extends StatelessWidget {
                     cover ??
                         (image != null
                             ? Image(image: image!, fit: BoxFit.cover)
-                            : const ColoredBox(color: TvTokens.surfaceRaised)),
+                            : ColoredBox(
+                                color: TvTokens.surfaceRaised(context),
+                              )),
                     if (playsOnSelect)
                       const Positioned(
                         right: 6,

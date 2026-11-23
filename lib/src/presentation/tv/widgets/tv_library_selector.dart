@@ -149,7 +149,7 @@ class TvLibraryAvatar extends ConsumerWidget {
               .itemImageOrNull(library, size: (size * 3).round());
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: TvTokens.surfaceRaised,
+      backgroundColor: TvTokens.surfaceRaised(context),
       backgroundImage: image,
       onBackgroundImageError: image == null ? null : (_, _) {},
       child: image == null

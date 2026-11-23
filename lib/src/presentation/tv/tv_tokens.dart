@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 
 abstract final class TvTokens {
   static const double pagePaddingH = 40;
@@ -25,9 +26,11 @@ abstract final class TvTokens {
     context,
   ).colorScheme.primary.withValues(alpha: listFocusAlpha);
   static const Color pageBackground = Color(0xFF121212);
-  static const Color surface = Color(0xFF1C1518);
-  static const Color surfaceRaised = Color(0xFF2B1D23);
-  static const Color railSelected = Color(0xFF341010);
+  static Color surface(BuildContext context) => AppColors.from(context).surface;
+  static Color surfaceRaised(BuildContext context) =>
+      AppColors.from(context).surfaceRaised;
+  static Color railSelected(BuildContext context) =>
+      AppColors.from(context).indicator;
 
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(10));
   static const BorderRadius panelRadius = BorderRadius.all(

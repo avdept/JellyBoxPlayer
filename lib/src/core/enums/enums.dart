@@ -1,7 +1,9 @@
 export 'animated_covers.dart';
+export 'app_font.dart';
 export 'animation_speed.dart';
 export 'artist_scope.dart';
 export 'browse_layout.dart';
+export 'color_theme.dart';
 export 'content_update_interval.dart';
 export 'download_status.dart';
 export 'entities.dart';

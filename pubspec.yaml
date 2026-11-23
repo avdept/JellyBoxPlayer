@@ -175,6 +175,36 @@ flutter:
           weight: 800
         - asset: assets/fonts/Inter/Inter-Black.ttf
           weight: 900
+    - family: Onest
+      fonts:
+        - asset: assets/fonts/Onest/Onest-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Onest/Onest-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Onest/Onest-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Onest/Onest-Bold.ttf
+          weight: 700
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat/Montserrat-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Montserrat/Montserrat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Montserrat/Montserrat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Montserrat/Montserrat-Bold.ttf
+          weight: 700
+    - family: Archivo
+      fonts:
+        - asset: assets/fonts/Archivo/Archivo-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Archivo/Archivo-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Archivo/Archivo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Archivo/Archivo-Bold.ttf
+          weight: 700
     - family: JPlayer
       fonts:
         - asset: assets/fonts/JPlayer.ttf

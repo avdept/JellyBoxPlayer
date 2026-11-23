@@ -296,7 +296,7 @@ class _HoverTimeBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-    decoration: Themes.tooltipDecoration,
+    decoration: Themes.tooltipDecoration(context),
     child: Padding(
       padding: Themes.tooltipPadding,
       child: Text(

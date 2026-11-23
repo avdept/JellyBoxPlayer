@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
@@ -79,6 +80,7 @@ class PlaylistPickerSheet extends ConsumerWidget {
                 TextButton(
                   style: TextButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: AppColors.from(context).onPrimaryFill,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

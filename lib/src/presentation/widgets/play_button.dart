@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 
 class PlayButton extends StatelessWidget {
   const PlayButton({
@@ -8,8 +9,6 @@ class PlayButton extends StatelessWidget {
     super.key,
   });
 
-  static const defaultColor = Color(0xFF0066FF);
-
   final VoidCallback? onPressed;
   final Color? color;
 
@@ -17,10 +16,11 @@ class PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fill = color ?? AppColors.from(context).accent;
     return MaterialButton(
       onPressed: isLoading ? null : onPressed,
-      color: color ?? defaultColor,
-      disabledColor: color ?? defaultColor,
+      color: fill,
+      disabledColor: fill,
       shape: const CircleBorder(),
       padding: const EdgeInsets.all(8),
       child: LayoutBuilder(

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 class NowPlayingGlow extends ConsumerStatefulWidget {
@@ -28,7 +29,6 @@ class NowPlayingGlow extends ConsumerStatefulWidget {
 
 class _NowPlayingGlowState extends ConsumerState<NowPlayingGlow>
     with TickerProviderStateMixin {
-  static const _fallbackColor = Color(0xFF0066FF);
   static const _pausedLevel = 0.4;
   static const _breathPeriod = Duration(milliseconds: 2400);
   static const _breathStep = Duration(milliseconds: 100);
@@ -132,10 +132,11 @@ class _NowPlayingGlowState extends ConsumerState<NowPlayingGlow>
     final isPlaying = _isPlaying(status);
     final isActive = enabled && (isPlaying || status == PlaybackStatus.paused);
 
+    final fallback = AppColors.from(context).accent;
     if (isActive) {
       final resolved = ref.watch(itemGlowColorProvider(widget.item));
       if (resolved.hasValue || resolved.hasError) {
-        _color = resolved.valueOrNull ?? _fallbackColor;
+        _color = resolved.valueOrNull ?? fallback;
       }
     }
 
@@ -152,7 +153,7 @@ class _NowPlayingGlowState extends ConsumerState<NowPlayingGlow>
         if (showGlow)
           Positioned.fill(
             child: _GlowImage(
-              color: color ?? _fallbackColor,
+              color: color ?? fallback,
               borderRadius: widget.borderRadius,
               blurRadius: widget.blurRadius,
               opacity: _intensity,

@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
+
+export 'app_colors.dart';
 
 abstract class Themes {
-  /// Dark background for the changelog dialog/sheet, so it doesn't inherit the
-  /// maroon [BottomSheetThemeData] panel color used elsewhere in the app.
-  static const changelogSurface = Color(0xFF1C1518);
-
   static const tooltipDelay = Duration(milliseconds: 350);
 
   static const tooltipPadding = EdgeInsets.symmetric(
@@ -20,8 +20,11 @@ abstract class Themes {
     height: 1.2,
   );
 
-  static final tooltipDecoration = BoxDecoration(
-    color: changelogSurface,
+  static BoxDecoration tooltipDecoration(BuildContext context) =>
+      _tooltipBox(AppColors.from(context).surface);
+
+  static BoxDecoration _tooltipBox(Color color) => BoxDecoration(
+    color: color,
     borderRadius: BorderRadius.circular(6),
     boxShadow: const [
       BoxShadow(
@@ -32,20 +35,41 @@ abstract class Themes {
     ],
   );
 
-  static final red = ThemeData(
+  static final Map<(ColorTheme, AppFont, bool), ThemeData> _cache = {};
+
+  static ThemeData of(
+    ColorTheme theme, {
+    AppFont font = AppFont.gilroy,
+    bool tv = false,
+  }) => _cache.putIfAbsent((theme, font, tv), () {
+    final colors = AppColors.of(theme);
+    final base = _build(colors, fontFamily(font));
+    return tv ? _tv(base, colors) : base;
+  });
+
+  static String fontFamily(AppFont font) => switch (font) {
+    AppFont.gilroy => FontFamily.gilroy,
+    AppFont.inter => FontFamily.inter,
+    AppFont.onest => FontFamily.onest,
+    AppFont.montserrat => FontFamily.montserrat,
+    AppFont.archivo => FontFamily.archivo,
+  };
+
+  static ThemeData _build(AppColors colors, String font) => ThemeData(
     useMaterial3: true,
     visualDensity: VisualDensity.adaptivePlatformDensity,
     brightness: Brightness.dark,
-    fontFamily: FontFamily.gilroy,
-    colorScheme: const ColorScheme.dark(
-      primary: Color(0xFFFD2F2F),
+    fontFamily: font,
+    colorScheme: ColorScheme.dark(
+      primary: colors.primary,
       onPrimary: Colors.white,
     ),
+    extensions: [colors],
     scaffoldBackgroundColor: Colors.black,
-    cupertinoOverrideTheme: const NoDefaultCupertinoThemeData(
+    cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
       primaryColor: Colors.white,
-      primaryContrastingColor: Color(0xFFFD2F2F),
-      barBackgroundColor: Color(0xFF471F27),
+      primaryContrastingColor: colors.primary,
+      barBackgroundColor: colors.panel,
       scaffoldBackgroundColor: Colors.black,
     ),
     snackBarTheme: const SnackBarThemeData(
@@ -58,22 +82,22 @@ abstract class Themes {
       thumbColor: Colors.white,
       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 16),
     ),
-    bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Color(0xFF471F27),
-      shape: RoundedRectangleBorder(
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colors.panel,
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
       ),
     ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Color(0xFF471F27),
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: colors.panel,
     ),
-    navigationRailTheme: const NavigationRailThemeData(
-      backgroundColor: Color(0xFF471F27),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: colors.panel,
     ),
     chipTheme: ChipThemeData(
       labelPadding: const EdgeInsets.symmetric(horizontal: 11),
-      backgroundColor: const Color(0xFF362A30),
-      selectedColor: const Color(0xFF0066FF),
+      backgroundColor: colors.chip,
+      selectedColor: colors.accent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -90,30 +114,30 @@ abstract class Themes {
       ),
     ),
     tooltipTheme: TooltipThemeData(
-      decoration: tooltipDecoration,
+      decoration: _tooltipBox(colors.surface),
       textStyle: tooltipTextStyle,
       padding: tooltipPadding,
       waitDuration: tooltipDelay,
     ),
   );
 
-  static final ThemeData tv = red.copyWith(
+  static ThemeData _tv(ThemeData base, AppColors colors) => base.copyWith(
     scaffoldBackgroundColor: const Color(0xFF121212),
     visualDensity: VisualDensity.standard,
     focusColor: Colors.white24,
     splashFactory: NoSplash.splashFactory,
-    dialogTheme: const DialogThemeData(
-      backgroundColor: Color(0xFF1C1518),
+    dialogTheme: DialogThemeData(
+      backgroundColor: colors.surface,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
-      titleTextStyle: TextStyle(
+      titleTextStyle: const TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
-      contentTextStyle: TextStyle(fontSize: 16, color: Colors.white),
+      contentTextStyle: const TextStyle(fontSize: 16, color: Colors.white),
     ),
     textButtonTheme: TextButtonThemeData(
       style:

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:jplayer/src/presentation/themes/themes.dart';
 
 class HoverTextButton extends StatefulWidget {
   const HoverTextButton({
@@ -29,7 +28,7 @@ class _HoverTextButtonState extends State<HoverTextButton> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = Themes.red.colorScheme.primary;
+    final accent = theme.colorScheme.primary;
     return MouseRegion(
       cursor: widget.onPressed == null
           ? MouseCursor.defer

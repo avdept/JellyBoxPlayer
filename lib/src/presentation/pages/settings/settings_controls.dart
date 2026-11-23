@@ -1,7 +1,9 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 
 ButtonStyle settingsButtonStyle() => TextButton.styleFrom(
@@ -213,5 +215,115 @@ class SettingsEnumDropdown<T extends Enum> extends ConsumerWidget {
     trailing: trailing,
     onChanged: (selected) =>
         ref.read(appSettingsProvider.notifier).setValue(setting, selected.name),
+  );
+}
+
+class ColorThemePicker extends ConsumerWidget {
+  const ColorThemePicker({super.key});
+
+  static const Map<ColorTheme, String> labels = {
+    ColorTheme.oxblood: 'Oxblood',
+    ColorTheme.midnightBrass: 'Midnight Brass',
+    ColorTheme.champagne: 'Champagne',
+    ColorTheme.racingGreen: 'Racing Green',
+    ColorTheme.copperNoir: 'Copper Noir',
+    ColorTheme.plumVelvet: 'Plum Velvet',
+    ColorTheme.inkAndIce: 'Ink & Ice',
+    ColorTheme.original: 'Original',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selected = ref.watch(colorThemeProvider);
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
+        children: [
+          Text(
+            'Colour theme',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.2,
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+            ),
+          ),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              for (final option in ColorTheme.values)
+                _ColorThemeSwatch(
+                  colors: AppColors.of(option),
+                  label: labels[option]!,
+                  selected: option == selected,
+                  onTap: () => ref
+                      .read(appSettingsProvider.notifier)
+                      .setValue(AppSetting.colorTheme, option.name),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColorThemeSwatch extends StatelessWidget {
+  const _ColorThemeSwatch({
+    required this.colors,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AppColors colors;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    label: label,
+    child: Tooltip(
+      message: label,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 24,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 36,
+          height: 36,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? Colors.white : Colors.white24,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colors.primary,
+                  colors.primary,
+                  colors.panel,
+                  colors.panel,
+                ],
+                stops: const [0, 0.5, 0.5, 1],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }

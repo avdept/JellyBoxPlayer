@@ -66,7 +66,7 @@ class AboutSettings extends ConsumerWidget {
         showUpdatifyDialog(
           context,
           projectId: updatifyProjectId,
-          backgroundColor: Themes.changelogSurface,
+          backgroundColor: AppColors.from(context).surface,
           borderRadius: BorderRadius.circular(8),
           width: MediaQuery.sizeOf(context).width / 2,
           title: changelogTitle,
@@ -77,7 +77,7 @@ class AboutSettings extends ConsumerWidget {
         showUpdatifyBottomSheet(
           context,
           projectId: updatifyProjectId,
-          backgroundColor: Themes.changelogSurface,
+          backgroundColor: AppColors.from(context).surface,
           borderRadius: BorderRadius.circular(8),
           title: changelogTitle,
         ),

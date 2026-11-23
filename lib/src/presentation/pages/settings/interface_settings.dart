@@ -27,6 +27,14 @@ class InterfaceSettings extends ConsumerWidget {
     AnimatedCovers.never: 'Never',
   };
 
+  static const Map<AppFont, String> _fontLabels = {
+    AppFont.gilroy: 'Gilroy',
+    AppFont.inter: 'Inter',
+    AppFont.onest: 'Onest',
+    AppFont.montserrat: 'Montserrat',
+    AppFont.archivo: 'Archivo',
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
@@ -52,6 +60,13 @@ class InterfaceSettings extends ConsumerWidget {
           label: 'Show A–Z index on browse lists sorted by name',
         ),
         const SettingsGroupHeader('Look'),
+        const ColorThemePicker(),
+        SettingsEnumDropdown<AppFont>(
+          label: 'App font',
+          setting: AppSetting.appFont,
+          value: appFontProvider,
+          options: _fontLabels,
+        ),
         const SettingCheckbox(
           setting: AppSetting.artworkAccent,
           label: 'Match button colours to the current track',
