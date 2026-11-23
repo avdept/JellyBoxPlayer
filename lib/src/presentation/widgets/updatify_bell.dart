@@ -39,7 +39,7 @@ class UpdatifyBell extends ConsumerWidget {
             popupType: isDesktop
                 ? UpdatifyPopupType.modal
                 : UpdatifyPopupType.bottomSheet,
-            backgroundColor: Themes.changelogSurface,
+            backgroundColor: AppColors.from(context).surface,
             title: changelogTitle,
             borderRadius: BorderRadius.circular(8),
             width: isDesktop

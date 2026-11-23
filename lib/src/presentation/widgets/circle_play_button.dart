@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 
 class CirclePlayButton extends StatefulWidget {
   const CirclePlayButton({
@@ -36,8 +37,8 @@ class _CirclePlayButtonState extends State<CirclePlayButton> {
           dimension: size,
           child: MaterialButton(
             onPressed: widget.isLoading ? null : widget.onPressed,
-            color: const Color(0xFF0066FF),
-            disabledColor: const Color(0xFF0066FF),
+            color: AppColors.from(context).accent,
+            disabledColor: AppColors.from(context).accent,
             shape: const CircleBorder(),
             padding: EdgeInsets.zero,
             elevation: _isHovered ? 8 : 4,

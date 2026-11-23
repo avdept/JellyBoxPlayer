@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jplayer/main.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:jplayer/src/config/routes.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/domain/models/models.dart' hide LibraryPage;
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/libraries_provider.dart';
@@ -66,7 +67,7 @@ void main() {
     container: createProviderContainer(overrides: overrides()),
     child: MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      theme: Themes.red,
+      theme: Themes.of(ColorTheme.oxblood),
       routerConfig: GoRouter(
         routes: [
           GoRoute(

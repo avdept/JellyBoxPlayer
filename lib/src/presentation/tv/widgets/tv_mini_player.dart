@@ -41,7 +41,7 @@ class TvMiniPlayer extends ConsumerWidget {
       child: ClipRRect(
         borderRadius: TvTokens.panelRadius,
         child: ColoredBox(
-          color: TvTokens.surface,
+          color: TvTokens.surface(context),
           child: SizedBox(
             height: TvTokens.miniPlayerHeight,
             child: Column(

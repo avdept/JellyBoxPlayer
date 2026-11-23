@@ -85,7 +85,7 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
-          theme: Themes.red,
+          theme: Themes.of(ColorTheme.oxblood),
           debugShowCheckedModeBanner: false,
           builder: (context, child) => Stack(
             fit: StackFit.expand,
@@ -134,7 +134,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
-            theme: Themes.red,
+            theme: Themes.of(ColorTheme.oxblood),
             debugShowCheckedModeBanner: false,
             builder: (context, child) => LandscapePlayerScope(child: child!),
             home: const Scaffold(body: Text('library page')),

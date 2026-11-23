@@ -475,7 +475,11 @@ class _AppState extends ConsumerState<App>
 
     return MaterialApp.router(
       scaffoldMessengerKey: _scaffoldMessengerKey,
-      theme: TvMode.isTv ? Themes.tv : Themes.red,
+      theme: Themes.of(
+        ref.watch(colorThemeProvider),
+        font: ref.watch(appFontProvider),
+        tv: TvMode.isTv,
+      ),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         DefaultWidgetsLocalizations.delegate,

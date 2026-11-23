@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
-import 'package:jplayer/src/presentation/themes/themes.dart';
 
 class ManualOfflineBanner extends ConsumerWidget {
   const ManualOfflineBanner({super.key});
@@ -13,7 +12,7 @@ class ManualOfflineBanner extends ConsumerWidget {
     final style = TextStyle(fontSize: 13, height: 1.2, color: foreground);
 
     return Material(
-      color: Themes.red.colorScheme.primary.withValues(alpha: 0.32),
+      color: theme.colorScheme.primary.withValues(alpha: 0.32),
       child: SafeArea(
         bottom: false,
         child: InkWell(

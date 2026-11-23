@@ -133,7 +133,9 @@ class _RailButton extends StatelessWidget {
           height: 48,
           color: focused
               ? Colors.white
-              : (item.selected ? TvTokens.railSelected : Colors.transparent),
+              : (item.selected
+                    ? TvTokens.railSelected(context)
+                    : Colors.transparent),
           child: Center(
             child: Icon(
               item.icon,

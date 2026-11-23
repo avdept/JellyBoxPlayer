@@ -145,7 +145,7 @@ class _MainPageState extends ConsumerState<MainPage> {
       popupType: isDesktop
           ? UpdatifyPopupType.modal
           : UpdatifyPopupType.bottomSheet,
-      backgroundColor: Themes.changelogSurface,
+      backgroundColor: AppColors.from(context).surface,
       title: changelogTitle,
       borderRadius: BorderRadius.circular(8),
       width: isDesktop ? MediaQuery.sizeOf(context).width / 2 : null,
@@ -235,7 +235,7 @@ class _MainPageState extends ConsumerState<MainPage> {
                     (index) => NavigationRailDestination(
                       icon: Icon(_menuItems.elementAt(index).$1),
                       label: Text(_menuItems.elementAt(index).$2),
-                      indicatorColor: const Color(0xFF341010),
+                      indicatorColor: AppColors.from(context).indicator,
                       padding: const EdgeInsets.symmetric(
                         vertical: 20,
                         horizontal: 10,

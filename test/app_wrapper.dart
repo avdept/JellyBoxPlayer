@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/generated/l10n.dart';
+import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 
 Widget createTestApp({
@@ -19,7 +20,7 @@ Widget createTestApp({
         S.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,
-      theme: Themes.red,
+      theme: Themes.of(ColorTheme.oxblood),
       home: home,
     ),
   );

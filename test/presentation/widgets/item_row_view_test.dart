@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
@@ -134,7 +135,9 @@ void main() {
     expect(played, album);
   });
 
-  testWidgets('- uses the same blue play button as the cards', (tester) async {
+  testWidgets('- uses the theme accent play button like the cards', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       wrap(ItemRowView(item: album, onPlayPressed: (_) async {})),
     );
@@ -146,7 +149,7 @@ void main() {
       ),
     );
 
-    expect(button.color, const Color(0xFF0066FF));
+    expect(button.color, AppColors.oxblood.accent);
     expect(button.shape, const CircleBorder());
     expect(find.byIcon(Icons.play_arrow_outlined), findsOneWidget);
   });

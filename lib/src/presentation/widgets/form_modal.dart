@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 
@@ -148,6 +149,7 @@ class ModalFormActions extends StatelessWidget {
     bool primary = false,
   }) => TextButton.styleFrom(
     backgroundColor: primary ? Theme.of(context).colorScheme.primary : null,
+    foregroundColor: primary ? AppColors.from(context).onPrimaryFill : null,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
   );
