@@ -209,6 +209,70 @@ class GeneratedPlaylistDatabase {
     );
   }
 
+  Future<Set<String>> stubSongIds({required String userId}) async {
+    final db = await _database;
+    final ids = <String>{};
+    final songs = await db.query(
+      _items,
+      columns: ['SongId', 'Data'],
+      where: 'UserId = ?',
+      whereArgs: [userId],
+    );
+    for (final row in songs) {
+      if (_itemFromRow(row).name.isEmpty) ids.add(row['SongId']! as String);
+    }
+    final playlists = await db.query(
+      _playlists,
+      columns: ['CoverSongs'],
+      where: 'UserId = ?',
+      whereArgs: [userId],
+    );
+    for (final row in playlists) {
+      for (final song in _songsOf(row['CoverSongs'])) {
+        if (song.name.isEmpty) ids.add(song.id);
+      }
+    }
+    return ids;
+  }
+
+  Future<void> fillSongs(
+    Map<String, LibraryItem> songs, {
+    required String userId,
+  }) async {
+    if (songs.isEmpty) return;
+    final db = await _database;
+    final batch = db.batch();
+    for (final song in songs.values) {
+      batch.update(
+        _items,
+        {'Data': jsonEncode(song.toJson())},
+        where: 'SongId = ? AND UserId = ?',
+        whereArgs: [song.id, userId],
+      );
+    }
+    final playlists = await db.query(
+      _playlists,
+      columns: ['Id', 'LibraryId', 'DayKey', 'CoverSongs'],
+      where: 'UserId = ?',
+      whereArgs: [userId],
+    );
+    for (final row in playlists) {
+      final cover = _songsOf(row['CoverSongs']);
+      if (!cover.any((song) => song.name.isEmpty)) continue;
+      batch.update(
+        _playlists,
+        {
+          'CoverSongs': jsonEncode([
+            for (final song in cover) (songs[song.id] ?? song).toJson(),
+          ]),
+        },
+        where: 'Id = ? AND UserId = ? AND LibraryId = ? AND DayKey = ?',
+        whereArgs: [row['Id'], userId, row['LibraryId'], row['DayKey']],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<void> _prune(Database db, String dayKey) async {
     final cutoff = generatedPlaylistDayKey(
       DateTime.parse(
@@ -240,6 +304,11 @@ GeneratedPlaylist _playlistFromRow(Map<String, Object?> row) {
         : DateTime.fromMillisecondsSinceEpoch(syncedAt),
   );
 }
+
+List<LibraryItem> _songsOf(Object? raw) => [
+  for (final song in jsonDecode(raw! as String) as List)
+    LibraryItem.fromJson(song as Map<String, dynamic>),
+];
 
 LibraryItem _itemFromRow(Map<String, Object?> row) => LibraryItem.fromJson(
   jsonDecode(row['Data']! as String) as Map<String, dynamic>,

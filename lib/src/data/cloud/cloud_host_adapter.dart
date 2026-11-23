@@ -15,11 +15,14 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/pins_provider.dart';
 import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
+import 'package:jplayer/src/domain/providers/sync_hydrator_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/system_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
+import 'package:jplayer/src/domain/sync/sync_hydrator.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:jplayer/src/providers/player_provider.dart';
 import 'package:just_audio/just_audio.dart';
@@ -287,7 +290,9 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
       'user': _ref.read(currentUserProvider)?.userId,
       'settings': settings.syncedValues,
       'stamps': settings.syncStamps,
-      'sync': settings.isEnabled(AppSetting.linkSync),
+      'sync':
+          settings.isEnabled(AppSetting.linkSync) &&
+          !_ref.read(isOfflineProvider),
     };
   }
 
@@ -303,16 +308,28 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
           },
         );
       case 'resume_points':
+        await _hydrate((hydrator) => hydrator.hydrateResumePoints());
         _ref.read(resumePointsChangedProvider.notifier).state++;
       case 'play_history':
         _ref.read(playHistoryChangedProvider.notifier).state++;
       case 'pins':
+        await _hydrate((hydrator) => hydrator.hydratePins());
         await _ref.read(pinsProvider.notifier).reload();
       case 'generated_playlists':
+        await _hydrate((hydrator) => hydrator.hydrateGeneratedPlaylists());
         _ref.invalidate(todaysPlaylistsProvider);
         _ref.invalidate(todaysPlaylistSongsProvider);
       case 'generated_playlist_items':
+        await _hydrate((hydrator) => hydrator.hydrateGeneratedPlaylists());
         _ref.invalidate(todaysPlaylistSongsProvider);
+    }
+  }
+
+  Future<void> _hydrate(Future<bool> Function(SyncHydrator) run) async {
+    try {
+      await run(_ref.read(syncHydratorProvider));
+    } on Object catch (error, stackTrace) {
+      cloudError('sync.hydrate', error, stackTrace, const {});
     }
   }
 

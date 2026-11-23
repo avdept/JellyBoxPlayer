@@ -17,9 +17,12 @@ import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/pins_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
+import 'package:jplayer/src/domain/providers/sync_hydrator_provider.dart';
 import 'package:jplayer/src/domain/providers/todays_playlists_provider.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
+import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
+import 'package:jplayer/src/providers/diagnostics_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final conductorUrlProvider =
@@ -68,6 +71,17 @@ final cloudProvider = StateNotifierProvider<CloudNotifier, CloudState>((ref) {
 class CloudNotifier extends StateNotifier<CloudState> {
   CloudNotifier(this._ref) : super(const CloudState()) {
     cloudLog = debugPrint;
+    cloudError = (operation, error, stackTrace, data) => unawaited(
+      _ref
+          .read(diagnosticsProvider)
+          .capture(
+            error,
+            operation: operation,
+            stackTrace: stackTrace,
+            tags: const {'area': 'link-sync'},
+            extra: data,
+          ),
+    );
 
     _host = CloudHostAdapter(_ref);
     _cloud = JellyboxCloud<LibraryItem>(host: _host);
@@ -95,7 +109,13 @@ class CloudNotifier extends StateNotifier<CloudState> {
       ..listen(
         generatedPlaylistsChangedProvider,
         (_, _) => track(const {'k': 'generated_playlists'}),
-      );
+      )
+      ..listen(isOfflineProvider, (previous, next) {
+        if (previous == true && !next) {
+          unawaited(track(const {'k': 'settings'}));
+          unawaited(_hydrateStubs());
+        }
+      });
 
     _watchNetwork();
     _remote = _RemotePlayback(_cloud);
@@ -155,6 +175,25 @@ class CloudNotifier extends StateNotifier<CloudState> {
   Future<bool> claimHere() => _cloud.claimHere();
 
   Future<void> track(Map<String, Object?> event) => _cloud.track(event);
+
+  Future<void> _hydrateStubs() async {
+    final hydrator = _ref.read(syncHydratorProvider);
+    try {
+      if (await hydrator.hydrateResumePoints()) {
+        _ref.read(resumePointsChangedProvider.notifier).state++;
+      }
+      if (await hydrator.hydratePins()) {
+        await _ref.read(pinsProvider.notifier).reload();
+      }
+      if (await hydrator.hydrateGeneratedPlaylists()) {
+        _ref
+          ..invalidate(todaysPlaylistsProvider)
+          ..invalidate(todaysPlaylistSongsProvider);
+      }
+    } on Object catch (error, stackTrace) {
+      cloudError('sync.hydrate', error, stackTrace, const {});
+    }
+  }
 
   Future<void> shutdown() async {
     _lifecycle?.dispose();
