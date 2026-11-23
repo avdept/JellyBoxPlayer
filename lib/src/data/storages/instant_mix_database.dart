@@ -17,7 +17,34 @@ class InstantMixDatabase {
 
   String get _serverId => _owner.serverId;
 
-  Future<List<InstantMix>> getMixes() async {
+  Future<List<InstantMix>> getMixes() async => [
+    for (final mix in await _all())
+      if (!isStub(mix)) mix,
+  ];
+
+  Future<List<InstantMix>> stubs() async => [
+    for (final mix in await _all())
+      if (isStub(mix)) mix,
+  ];
+
+  static bool isStub(InstantMix mix) =>
+      mix.seed.name.isEmpty || mix.songs.any((song) => song.name.isEmpty);
+
+  Future<void> fill(InstantMix mix) async {
+    if (userId == null) return;
+    final db = await _database;
+    await db.update(
+      _table,
+      {
+        'Seed': jsonEncode(mix.seed.toJson()),
+        'Songs': _encodeSongs(mix.songs),
+      },
+      where: 'Id = ? AND ServerId = ? AND UserId = ?',
+      whereArgs: [mix.item.id, _serverId, userId],
+    );
+  }
+
+  Future<List<InstantMix>> _all() async {
     if (userId == null) return const [];
     final db = await _database;
     final rows = await db.query(

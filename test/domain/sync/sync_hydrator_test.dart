@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/generated_playlist_database.dart';
+import 'package:jplayer/src/data/storages/instant_mix_database.dart';
 import 'package:jplayer/src/data/storages/pins_database.dart';
 import 'package:jplayer/src/data/storages/resume_point_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -39,6 +40,7 @@ void main() {
   late ResumePointDatabase resume;
   late PinsDatabase pins;
   late GeneratedPlaylistDatabase generated;
+  late InstantMixDatabase mixes;
   late SyncHydrator hydrator;
 
   setUp(() async {
@@ -48,11 +50,13 @@ void main() {
     resume = ResumePointDatabase(owner, userId: 'u1');
     pins = PinsDatabase(owner, userId: 'u1');
     generated = GeneratedPlaylistDatabase(owner);
+    mixes = InstantMixDatabase(owner, userId: 'u1');
     hydrator = SyncHydrator(
       client: client,
       resumePoints: resume,
       pins: pins,
       generated: generated,
+      instantMixes: mixes,
       userId: 'u1',
     );
   });
@@ -212,5 +216,78 @@ void main() {
     )).single;
     expect(playlist.coverSongs.single.name, 'Song s1');
     expect(await generated.stubSongIds(userId: 'u1'), isEmpty);
+  });
+
+  group('instant mixes', () {
+    Future<void> insertMix(
+      String id,
+      Map<String, Object?> seed,
+      List<String> songs,
+    ) async {
+      final db = await owner.database;
+      await db.insert('InstantMixes', {
+        'Id': id,
+        'ServerId': 'srv',
+        'UserId': 'u1',
+        'LibraryId': '',
+        'Seed': jsonEncode(seed),
+        'Songs': jsonEncode([for (final id in songs) stub(id, 'song')]),
+        'LastUsedAt': 1000,
+      });
+    }
+
+    test('- a synced mix stays hidden until seed and songs load', () async {
+      await insertMix('instant-mix:album-1:1', stub('album-1', 'album'), [
+        's1',
+        's2',
+      ]);
+      when(() => client.getItem('album-1', kind: ItemKind.album)).thenAnswer(
+        (_) async => const LibraryItem(
+          id: 'album-1',
+          name: 'Netherworlds',
+          kind: ItemKind.album,
+        ),
+      );
+      when(() => client.getItemsByIds(any())).thenAnswer(
+        (_) async => [song('s1'), song('s2')],
+      );
+
+      expect(await mixes.getMixes(), isEmpty);
+      expect(await hydrator.hydrateInstantMixes(), isTrue);
+
+      final mix = (await mixes.getMixes()).single;
+      expect(mix.item.name, "Netherworlds's mix");
+      expect(mix.songs.map((s) => s.name), ['Song s1', 'Song s2']);
+    });
+
+    test('- songs gone from the server are dropped from the mix', () async {
+      await insertMix(
+        'instant-mix:sound:rain:1',
+        stub('sound:rain', 'playlist', 'Rain'),
+        ['s1', 'gone'],
+      );
+      when(
+        () => client.getItemsByIds(any()),
+      ).thenAnswer((_) async => [song('s1')]);
+
+      await hydrator.hydrateInstantMixes();
+
+      final mix = (await mixes.getMixes()).single;
+      expect(mix.item.name, 'Rain Mix');
+      expect(mix.songs.map((s) => s.id), ['s1']);
+      verifyNever(() => client.getItem(any(), kind: any(named: 'kind')));
+    });
+
+    test('- a failed song lookup keeps the mix for the next try', () async {
+      await insertMix(
+        'instant-mix:sound:rain:1',
+        stub('sound:rain', 'playlist', 'Rain'),
+        ['s1'],
+      );
+      when(() => client.getItemsByIds(any())).thenThrow(Exception('down'));
+
+      expect(await hydrator.hydrateInstantMixes(), isFalse);
+      expect(await mixes.stubs(), hasLength(1));
+    });
   });
 }

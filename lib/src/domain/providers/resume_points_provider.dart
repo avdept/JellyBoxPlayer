@@ -4,6 +4,7 @@ import 'package:jplayer/src/data/providers/resume_point_database_provider.dart';
 import 'package:jplayer/src/data/storages/resume_point_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 
 final resumePointsChangedProvider = StateProvider<int>((ref) => 0);
 
@@ -49,6 +50,17 @@ final resumePointsProvider =
       ref.listen(resumePointsChangedProvider, (_, _) => notifier.reload());
       return notifier;
     });
+
+final jumpBackInProvider = Provider<List<ResumePoint>>((ref) {
+  final mixes = {
+    for (final mix in ref.watch(instantMixesProvider)) mix.item.id,
+  };
+  return [
+    for (final point in ref.watch(resumePointsProvider))
+      if (!isInstantMixId(point.item.id) || mixes.contains(point.item.id))
+        point,
+  ];
+});
 
 final ProviderFamily<ResumePoint?, String> resumePointProvider =
     Provider.family(

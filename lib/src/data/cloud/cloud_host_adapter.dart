@@ -12,6 +12,7 @@ import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/pins_provider.dart';
 import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
@@ -315,6 +316,9 @@ class CloudHostAdapter implements CloudHost<LibraryItem> {
       case 'pins':
         await _hydrate((hydrator) => hydrator.hydratePins());
         await _ref.read(pinsProvider.notifier).reload();
+      case 'instant_mixes':
+        await _hydrate((hydrator) => hydrator.hydrateInstantMixes());
+        await _ref.read(instantMixesProvider.notifier).reload();
       case 'generated_playlists':
         await _hydrate((hydrator) => hydrator.hydrateGeneratedPlaylists());
         _ref.invalidate(todaysPlaylistsProvider);

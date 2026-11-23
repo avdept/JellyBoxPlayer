@@ -13,6 +13,7 @@ import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/on_repeat_provider.dart';
 import 'package:jplayer/src/domain/providers/pins_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
@@ -107,6 +108,10 @@ class CloudNotifier extends StateNotifier<CloudState> {
       )
       ..listen(pinsProvider, (_, _) => track(const {'k': 'pins'}))
       ..listen(
+        instantMixesProvider,
+        (_, _) => track(const {'k': 'instant_mixes'}),
+      )
+      ..listen(
         generatedPlaylistsChangedProvider,
         (_, _) => track(const {'k': 'generated_playlists'}),
       )
@@ -184,6 +189,9 @@ class CloudNotifier extends StateNotifier<CloudState> {
       }
       if (await hydrator.hydratePins()) {
         await _ref.read(pinsProvider.notifier).reload();
+      }
+      if (await hydrator.hydrateInstantMixes()) {
+        await _ref.read(instantMixesProvider.notifier).reload();
       }
       if (await hydrator.hydrateGeneratedPlaylists()) {
         _ref

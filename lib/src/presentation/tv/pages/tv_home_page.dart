@@ -174,7 +174,7 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
-    final resumePoints = ref.watch(resumePointsProvider);
+    final resumePoints = ref.watch(jumpBackInProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: TvTokens.pagePaddingV),

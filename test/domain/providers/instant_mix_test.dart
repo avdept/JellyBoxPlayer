@@ -18,6 +18,7 @@ import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 import 'package:mocktail/mocktail.dart';
@@ -666,6 +667,63 @@ void main() {
       expect(seedsOf(session), ['s2']);
       final restartedSession = await signedIn('user-1');
       expect(seedsOf(restartedSession), ['s2']);
+    });
+
+    Future<void> resumeAt(ProviderContainer session, LibraryItem set) =>
+        session.read(resumePointDatabaseProvider).save((
+          item: set,
+          songId: 'song-1',
+          songName: 'One',
+          songIndex: 2,
+          songCount: 9,
+          position: const Duration(minutes: 1),
+          updatedAt: DateTime.now().toUtc(),
+        ));
+
+    Future<List<String>> jumpBackIn(ProviderContainer session) async {
+      await pumpEventQueue();
+      await session.read(resumePointsProvider.notifier).reload();
+      return [
+        for (final point in session.read(jumpBackInProvider)) point.item.id,
+      ];
+    }
+
+    test('- removing a mix also drops its Jump back in card', () async {
+      final session = await signedIn('user-1');
+      await createMixes(session, ['s1', 's2']);
+      final mixes = session.read(instantMixesProvider);
+      for (final mix in mixes) {
+        await resumeAt(session, mix.item);
+      }
+      expect(await jumpBackIn(session), hasLength(2));
+      final removed = mixId('s1');
+      final kept = mixId('s2');
+
+      session.read(instantMixesProvider.notifier).remove(removed);
+
+      expect(await jumpBackIn(session), [kept]);
+      expect(
+        await session.read(resumePointDatabaseProvider).get(removed),
+        isNull,
+      );
+    });
+
+    test('- a card for a mix this device does not hold is hidden', () async {
+      final session = await signedIn('user-1');
+      await resumeAt(
+        session,
+        const LibraryItem(
+          id: 'instant-mix:album-9:1',
+          name: "Album's mix",
+          kind: ItemKind.playlist,
+        ),
+      );
+      await resumeAt(
+        session,
+        const LibraryItem(id: 'album-1', name: 'Album', kind: ItemKind.album),
+      );
+
+      expect(await jumpBackIn(session), ['album-1']);
     });
 
     test('- another user does not see them', () async {

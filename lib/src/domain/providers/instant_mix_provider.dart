@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/data/backend/library_query.dart';
 import 'package:jplayer/src/data/providers/instant_mix_database_provider.dart';
 import 'package:jplayer/src/data/providers/media_server_client_provider.dart';
+import 'package:jplayer/src/data/providers/resume_point_database_provider.dart';
 import 'package:jplayer/src/data/providers/server_capabilities_provider.dart';
 import 'package:jplayer/src/data/storages/instant_mix_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
 
 const recentInstantMixesLimit = 5;
 const genreMixLimit = 100;
@@ -38,6 +40,16 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
       for (final mix in stored)
         if (!known.contains(mix.item.id)) mix,
     ].take(recentInstantMixesLimit).toList();
+  }
+
+  Future<void> reload() async {
+    final List<InstantMix> stored;
+    try {
+      stored = await _database.getMixes();
+    } on Object {
+      return;
+    }
+    if (mounted) state = stored.take(recentInstantMixesLimit).toList();
   }
 
   InstantMix? byId(String id) {
@@ -131,6 +143,12 @@ class InstantMixesNotifier extends StateNotifier<List<InstantMix>> {
     ];
     _fresh.remove(id);
     _database.deleteMix(id).ignore();
+    _forgetResumePoint(id).ignore();
+  }
+
+  Future<void> _forgetResumePoint(String id) async {
+    await _ref.read(resumePointDatabaseProvider).delete(id);
+    _ref.read(resumePointsChangedProvider.notifier).state++;
   }
 
   void updateSong(String mixId, LibraryItem updated) {

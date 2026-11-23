@@ -284,7 +284,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isOffline = ref.watch(isOfflineProvider);
-    final resumePoints = ref.watch(resumePointsProvider);
+    final resumePoints = ref.watch(jumpBackInProvider);
     final serverPlaylists = ref.watch(homePlaylistsProvider);
     final playlists =
         (serverPlaylists.isLoading && serverPlaylists.hasValue

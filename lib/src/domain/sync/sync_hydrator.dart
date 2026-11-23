@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:jplayer/src/data/backend/media_server_client.dart';
 import 'package:jplayer/src/data/storages/generated_playlist_database.dart';
+import 'package:jplayer/src/data/storages/instant_mix_database.dart';
 import 'package:jplayer/src/data/storages/pins_database.dart';
 import 'package:jplayer/src/data/storages/resume_point_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -14,11 +15,13 @@ class SyncHydrator {
     required ResumePointDatabase resumePoints,
     required PinsDatabase pins,
     required GeneratedPlaylistDatabase generated,
+    required InstantMixDatabase instantMixes,
     required String? userId,
   }) : _client = client,
        _resumePoints = resumePoints,
        _pins = pins,
        _generated = generated,
+       _instantMixes = instantMixes,
        _userId = userId;
 
   static const batchSize = 100;
@@ -27,6 +30,7 @@ class SyncHydrator {
   final ResumePointDatabase _resumePoints;
   final PinsDatabase _pins;
   final GeneratedPlaylistDatabase _generated;
+  final InstantMixDatabase _instantMixes;
   final String? _userId;
 
   Future<bool> hydrateResumePoints() async {
@@ -74,6 +78,44 @@ class SyncHydrator {
     await _generated.fillSongs(songs, userId: userId);
     _log('generated playlist songs', songs.length, ids.length);
     return songs.isNotEmpty;
+  }
+
+  Future<bool> hydrateInstantMixes() async {
+    final stubs = await _instantMixes.stubs();
+    if (stubs.isEmpty) return false;
+    final wanted = {
+      for (final mix in stubs)
+        for (final song in mix.songs)
+          if (song.name.isEmpty) song.id,
+    };
+    final songs = await _songs(wanted);
+    if (wanted.isNotEmpty && songs.isEmpty) {
+      _log('instant mixes', 0, stubs.length);
+      return false;
+    }
+    var filled = 0;
+    for (final mix in stubs) {
+      final seed = mix.seed.name.isEmpty
+          ? await _set(mix.seed.id, mix.seed.kind)
+          : mix.seed;
+      if (seed == null) continue;
+      final resolved = [
+        for (final song in mix.songs)
+          if (song.name.isNotEmpty) song else ?songs[song.id],
+      ];
+      if (resolved.isEmpty) continue;
+      await _instantMixes.fill(
+        InstantMix(
+          item: mix.item,
+          seed: seed,
+          songs: resolved,
+          libraryId: mix.libraryId,
+        ),
+      );
+      filled++;
+    }
+    _log('instant mixes', filled, stubs.length);
+    return filled > 0;
   }
 
   Future<LibraryItem?> _set(String id, ItemKind kind) async {
