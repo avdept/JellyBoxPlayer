@@ -10,6 +10,7 @@ import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/config/constants.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/core/enums/enums.dart';
+import 'package:jplayer/src/core/window/mac_title_bar.dart';
 import 'package:jplayer/src/providers/dev_tools_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
@@ -239,6 +240,9 @@ class _MainPageState extends ConsumerState<MainPage> {
     final floating =
         _device.isDesktop &&
         ref.watch(panelStyleProvider) == PanelStyle.floating;
+    MacTitleBar.sync(
+      floating ? MacTitleBarLayout.floating : MacTitleBarLayout.standard,
+    );
 
     final rail = CustomNavigationRail(
       backgroundColor: floating

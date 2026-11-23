@@ -448,7 +448,13 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                       decoration: BoxDecoration(
                         color: _theme.bottomSheetTheme.backgroundColor
                             ?.withOpacity(0.75),
-                        borderRadius: floating ? FloatingPanels.radius : null,
+                        borderRadius: !floating
+                            ? null
+                            : playingElsewhere
+                            ? BorderRadius.vertical(
+                                top: FloatingPanels.radius.topLeft,
+                              )
+                            : FloatingPanels.radius,
                       ),
                       clipBehavior: floating ? Clip.antiAlias : Clip.none,
                       padding: EdgeInsets.only(bottom: _viewPadding.bottom),

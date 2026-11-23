@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/floating_panels.dart';
 import 'package:jplayer/src/presentation/widgets/playback_target_picker.dart';
 
 class PlayingElsewhereStrip extends ConsumerWidget {
@@ -17,6 +18,9 @@ class PlayingElsewhereStrip extends ConsumerWidget {
     final renderer = ref.watch(remoteRendererProvider);
     final shown = renderer != null;
     final theme = Theme.of(context);
+    final radius = FloatingPanels.enabled(context)
+        ? BorderRadius.vertical(bottom: FloatingPanels.radius.bottomLeft)
+        : BorderRadius.zero;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
@@ -26,6 +30,8 @@ class PlayingElsewhereStrip extends ConsumerWidget {
           : PlaybackTargetMenuAnchor(
               builder: (open) => Material(
                 color: theme.colorScheme.primary,
+                borderRadius: radius,
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: open,
                   child: SizedBox(

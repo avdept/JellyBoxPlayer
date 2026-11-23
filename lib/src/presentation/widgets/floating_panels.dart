@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:jplayer/src/core/window/mac_title_bar.dart';
 
 class FloatingPanels extends InheritedWidget {
   const FloatingPanels({required super.child, super.key});
@@ -10,7 +12,11 @@ class FloatingPanels extends InheritedWidget {
   static const playerHeight = 72.0;
   static const panelAlpha = 0.72;
   static const blurSigma = 24.0;
-  static const radius = BorderRadius.all(Radius.circular(18));
+  static final radius = BorderRadius.all(
+    Radius.circular(
+      math.max(0, (MacTitleBar.windowCornerRadius ?? 28) - margin),
+    ),
+  );
 
   static bool enabled(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<FloatingPanels>() != null;
