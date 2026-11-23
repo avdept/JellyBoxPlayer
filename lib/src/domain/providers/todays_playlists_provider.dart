@@ -9,6 +9,7 @@ import 'package:jplayer/src/domain/providers/current_day_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
+import 'package:jplayer/src/domain/providers/sync_hydrator_provider.dart';
 import 'package:jplayer/src/providers/connectivity_provider.dart';
 
 final generatedPlaylistsChangedProvider = StateProvider<int>((ref) => 0);
@@ -25,13 +26,20 @@ Future<List<LibraryItem>> loadGeneratedPlaylistSongs(
   final dayKey = ref.read(currentDayProvider);
   final database = ref.read(generatedPlaylistDatabaseProvider);
 
-  final stored = await database.getSongs(
+  Future<List<LibraryItem>> read() => database.getSongs(
     playlistId: playlistId,
     userId: userId,
     libraryId: libraryId,
     dayKey: dayKey,
   );
-  if (stored.isNotEmpty) return stored;
+  final stored = await read();
+  if (stored.isNotEmpty) {
+    if (isOffline || stored.every((song) => song.name.isNotEmpty)) {
+      return stored;
+    }
+    await ref.read(syncHydratorProvider).hydrateGeneratedPlaylists();
+    return read();
+  }
   if (isOffline) throw const OfflineException();
 
   final songs = await ref

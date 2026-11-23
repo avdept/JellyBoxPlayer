@@ -79,7 +79,38 @@ class ResumePointDatabase {
       orderBy: 'UpdatedAt DESC',
       limit: limit,
     );
-    return rows.map(_fromRow).toList();
+    return [
+      for (final point in rows.map(_fromRow))
+        if (point.item.name.isNotEmpty) point,
+    ];
+  }
+
+  Future<List<ResumePoint>> stubs() async => [
+    for (final point in await all())
+      if (point.item.name.isEmpty ||
+          (point.songName.isEmpty && point.songId.isNotEmpty))
+        point,
+  ];
+
+  Future<void> fill(
+    String sourceId, {
+    LibraryItem? item,
+    String? songName,
+  }) async {
+    if (userId == null || (item == null && songName == null)) return;
+    final db = await _database;
+    await db.update(
+      _table,
+      {
+        if (item != null)
+          'Item': jsonEncode(
+            item.copyWith(userData: const PlaybackUserData()).toJson(),
+          ),
+        'SongName': ?songName,
+      },
+      where: 'ServerId = ? AND UserId = ? AND SourceId = ?',
+      whereArgs: [_serverId, userId, sourceId],
+    );
   }
 
   Future<List<ResumePoint>> all() async {

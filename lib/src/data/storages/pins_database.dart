@@ -25,7 +25,7 @@ class PinsDatabase {
         : now().toUtc().subtract(maxAge).millisecondsSinceEpoch;
     final rows = await db.query(
       _table,
-      where: 'ServerId = ? AND UserId = ? AND PinnedAt >= ?',
+      where: "ServerId = ? AND UserId = ? AND PinnedAt >= ? AND Name != ''",
       whereArgs: [_serverId, userId, cutoff],
       orderBy: 'PinnedAt DESC',
     );
@@ -44,6 +44,32 @@ class PinsDatabase {
       'ImageUrl': pin.imageUrl?.toString(),
       'PinnedAt': pin.pinnedAt.toUtc().millisecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<PinnedItem>> stubs() async {
+    if (userId == null) return const [];
+    final db = await _database;
+    final rows = await db.query(
+      _table,
+      where: "ServerId = ? AND UserId = ? AND Name = ''",
+      whereArgs: [_serverId, userId],
+    );
+    return rows.map(_pinFromRow).toList();
+  }
+
+  Future<void> fill(
+    String itemId, {
+    required String name,
+    Uri? imageUrl,
+  }) async {
+    if (userId == null) return;
+    final db = await _database;
+    await db.update(
+      _table,
+      {'Name': name, 'ImageUrl': imageUrl?.toString()},
+      where: 'ServerId = ? AND UserId = ? AND ItemId = ?',
+      whereArgs: [_serverId, userId, itemId],
+    );
   }
 
   Future<void> unpin(String itemId) async {
