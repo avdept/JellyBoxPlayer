@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page.dart';
 import 'package:jplayer/src/presentation/pages/album/album_page_state.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
@@ -43,7 +44,7 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
 
   @override
   Color? get playingRowColor =>
-      _tintEnabled ? Colors.white.withValues(alpha: 0.1) : null;
+      _tintEnabled ? AppColors.from(context).subtle(0.1) : null;
 
   bool get _tintEnabled => ref.watch(settingProvider(AppSetting.albumArtTint));
 
@@ -53,7 +54,7 @@ class _MobileAlbumPageState extends ConsumerState<MobileAlbumPage>
     if (!_tintEnabled) return null;
     final color = ref.watch(coverEdgeColorProvider(album)).valueOrNull;
     if (color == null) return null;
-    return Color.lerp(Colors.black, color, 0.5);
+    return AppColors.from(context).coverTint(color);
   }
 
   @override

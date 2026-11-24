@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 
 class ShadowedButton extends StatelessWidget {
   const ShadowedButton({
@@ -21,7 +22,7 @@ class ShadowedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = this.borderRadius ?? BorderRadius.circular(36);
-    final color = this.color ?? const Color(0xFF404C6C);
+    final color = this.color ?? AppColors.from(context).accent;
     return InkWell(
       onTap: onPressed,
       borderRadius: borderRadius,
@@ -40,7 +41,10 @@ class ShadowedButton extends StatelessWidget {
             ),
           ],
         ),
-        child: child,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: AppColors.readableOn(color)),
+          child: child,
+        ),
       ),
     );
   }

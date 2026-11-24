@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -8,10 +9,8 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/providers/playlist_song_order_provider.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
-import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
 import 'package:jplayer/src/presentation/widgets/play_button.dart';
 import 'package:jplayer/src/presentation/widgets/sort_menu_button.dart';
-import 'package:jplayer/src/providers/color_scheme_provider.dart';
 
 Map<PlaylistSongSort, String> playlistSortOptions(
   String defaultLabel, {
@@ -139,17 +138,10 @@ class _PlaylistControlsState extends State<PlaylistControls>
       data: IconThemeData(size: device.isTablet ? 28 : 24),
       child: Row(
         children: [
-          HoverZoom(
-            builder: (context, hovered) => SizedBox.square(
-              dimension: 40,
-              child: Consumer(
-                builder: (context, ref, _) => PlayButton(
-                  isLoading: widget.isPlayLoading,
-                  onPressed: widget.onPlay,
-                  color: hovered ? ref.watch(accentColorProvider) : null,
-                ),
-              ),
-            ),
+          HoverPlayButton(
+            size: 40,
+            isLoading: widget.isPlayLoading,
+            onPressed: widget.onPlay,
           ),
           const SizedBox(width: 8),
           HoverIconButton(
@@ -254,7 +246,7 @@ class _PlaylistControlsState extends State<PlaylistControls>
     style: const TextStyle(fontSize: 14, height: 1.2),
     decoration: InputDecoration(
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.24),
+      fillColor: AppColors.from(context).subtle(0.24),
       isDense: true,
       contentPadding: const EdgeInsets.all(7),
       border: OutlineInputBorder(

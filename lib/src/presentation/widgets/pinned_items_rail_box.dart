@@ -8,6 +8,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/config/routes.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
@@ -331,7 +332,7 @@ class _PinnedIconState extends ConsumerState<_PinnedIcon>
   Widget build(BuildContext context) {
     if (_entries.isEmpty) return const Icon(Icons.push_pin_outlined);
     _refreshSlots();
-    final color = IconTheme.of(context).color;
+    final colors = AppColors.from(context);
 
     return SizedBox.square(
       dimension: _iconSize,
@@ -351,12 +352,12 @@ class _PinnedIconState extends ConsumerState<_PinnedIcon>
               right: -5,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.75),
+                  color: colors.scrim.withValues(alpha: 0.75),
                   shape: BoxShape.circle,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(2),
-                  child: Icon(Icons.push_pin, size: 13, color: color),
+                  child: Icon(Icons.push_pin, size: 13, color: colors.onScrim),
                 ),
               ),
             ),
@@ -366,7 +367,7 @@ class _PinnedIconState extends ConsumerState<_PinnedIcon>
               right: -5,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.75),
+                  color: colors.scrim.withValues(alpha: 0.75),
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: Padding(
@@ -380,7 +381,7 @@ class _PinnedIconState extends ConsumerState<_PinnedIcon>
                       fontSize: 10,
                       height: 1.2,
                       fontWeight: FontWeight.w600,
-                      color: color,
+                      color: colors.onScrim,
                     ),
                   ),
                 ),

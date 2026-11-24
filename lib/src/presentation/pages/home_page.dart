@@ -300,35 +300,40 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return ScrollablePageScaffold(
       useGradientBackground: true,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(_navigationBarHeight),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
-          child: Row(
-            children: [
-              LibrarySelectorButton(
-                size: _device.isMobile ? 32 : 40,
-                showName: true,
+      navigationBar: FloatingPanels.enabled(context)
+          ? null
+          : PageNavigationBar(
+              height: _navigationBarHeight,
+              horizontalPadding: _horizontalPadding,
+              child: Row(
+                children: [
+                  LibrarySelectorButton(
+                    size: _device.isMobile ? 32 : 40,
+                    showName: true,
+                  ),
+                  const Spacer(),
+                  if (ref.watch(
+                    settingProvider(AppSetting.offlineModeToggle),
+                  )) ...[
+                    OfflineModeButton(iconSize: _device.isDesktop ? 24 : 28),
+                    const SizedBox(width: 12),
+                  ],
+                  if (!_device.isDesktop &&
+                      ref.watch(settingProvider(AppSetting.pinsEnabled))) ...[
+                    const PinnedItemsButton(),
+                    const SizedBox(width: 12),
+                  ],
+                  UpdatifyBell(
+                    isDesktop: _device.isDesktop,
+                    iconSize: _device.isDesktop ? 24 : 28,
+                  ),
+                ],
               ),
-              const Spacer(),
-              if (ref.watch(settingProvider(AppSetting.offlineModeToggle))) ...[
-                OfflineModeButton(iconSize: _device.isDesktop ? 24 : 28),
-                const SizedBox(width: 12),
-              ],
-              if (!_device.isDesktop &&
-                  ref.watch(settingProvider(AppSetting.pinsEnabled))) ...[
-                const PinnedItemsButton(),
-                const SizedBox(width: 12),
-              ],
-              UpdatifyBell(
-                isDesktop: _device.isDesktop,
-                iconSize: _device.isDesktop ? 24 : 28,
-              ),
-            ],
-          ),
-        ),
+            ),
+      contentPadding: EdgeInsets.only(
+        top: FloatingPanels.enabled(context) ? FloatingPanels.margin + 30 : 0,
+        bottom: 30,
       ),
-      contentPadding: const EdgeInsets.only(bottom: 30),
       slivers: [
         if (isOffline)
           SliverToBoxAdapter(

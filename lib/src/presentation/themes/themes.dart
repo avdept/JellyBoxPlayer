@@ -14,11 +14,10 @@ abstract class Themes {
     vertical: 6,
   );
 
-  static const tooltipTextStyle = TextStyle(
-    color: Colors.white,
-    fontSize: 13,
-    height: 1.2,
-  );
+  static const _tooltipText = TextStyle(fontSize: 13, height: 1.2);
+
+  static TextStyle tooltipTextStyle(BuildContext context) =>
+      _tooltipText.copyWith(color: AppColors.from(context).text);
 
   static BoxDecoration tooltipDecoration(BuildContext context) =>
       _tooltipBox(AppColors.from(context).surface);
@@ -55,71 +54,96 @@ abstract class Themes {
     AppFont.archivo => FontFamily.archivo,
   };
 
-  static ThemeData _build(AppColors colors, String font) => ThemeData(
-    useMaterial3: true,
-    visualDensity: VisualDensity.adaptivePlatformDensity,
-    brightness: Brightness.dark,
-    fontFamily: font,
-    colorScheme: ColorScheme.dark(
-      primary: colors.primary,
-      onPrimary: Colors.white,
-    ),
-    extensions: [colors],
-    scaffoldBackgroundColor: Colors.black,
-    cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
-      primaryColor: Colors.white,
-      primaryContrastingColor: colors.primary,
-      barBackgroundColor: colors.panel,
-      scaffoldBackgroundColor: Colors.black,
-    ),
-    snackBarTheme: const SnackBarThemeData(
-      backgroundColor: Colors.black87,
-      contentTextStyle: TextStyle(color: Colors.white),
-    ),
-    sliderTheme: const SliderThemeData(
-      trackHeight: 4,
-      overlayColor: Colors.transparent,
-      thumbColor: Colors.white,
-      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 16),
-    ),
-    bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: colors.panel,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
+  static ThemeData _build(AppColors colors, String font) {
+    final light = colors.isLight;
+    final background = light ? colors.surface : Colors.black;
+    final base = ThemeData(
+      useMaterial3: true,
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+      brightness: colors.brightness,
+      fontFamily: font,
+      colorScheme: light
+          ? ColorScheme.light(
+              primary: colors.primary,
+              onPrimary: colors.text,
+              surface: colors.surfaceRaised,
+              onSurface: colors.text,
+            )
+          : ColorScheme.dark(
+              primary: colors.primary,
+              onPrimary: Colors.white,
+            ),
+      extensions: [colors],
+      scaffoldBackgroundColor: background,
+      iconTheme: light ? IconThemeData(color: colors.text) : null,
+      cupertinoOverrideTheme: NoDefaultCupertinoThemeData(
+        primaryColor: colors.text,
+        primaryContrastingColor: colors.primary,
+        barBackgroundColor: colors.panel,
+        scaffoldBackgroundColor: background,
+        textTheme: light
+            ? CupertinoTextThemeData(primaryColor: colors.text)
+            : null,
       ),
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: colors.panel,
-    ),
-    navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: colors.panel,
-    ),
-    chipTheme: ChipThemeData(
-      labelPadding: const EdgeInsets.symmetric(horizontal: 11),
-      backgroundColor: colors.chip,
-      selectedColor: colors.accent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: Colors.black87,
+        contentTextStyle: TextStyle(color: Colors.white),
       ),
-      side: BorderSide.none,
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        padding: EdgeInsets.zero,
-        foregroundColor: Colors.white,
-        textStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+      sliderTheme: SliderThemeData(
+        trackHeight: 4,
+        overlayColor: Colors.transparent,
+        thumbColor: light ? colors.text : Colors.white,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        checkColor: WidgetStatePropertyAll(colors.onPrimaryFill),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: colors.panel,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(38)),
         ),
       ),
-    ),
-    tooltipTheme: TooltipThemeData(
-      decoration: _tooltipBox(colors.surface),
-      textStyle: tooltipTextStyle,
-      padding: tooltipPadding,
-      waitDuration: tooltipDelay,
-    ),
-  );
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colors.panel,
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: colors.panel,
+      ),
+      chipTheme: ChipThemeData(
+        labelPadding: const EdgeInsets.symmetric(horizontal: 11),
+        backgroundColor: colors.chip,
+        selectedColor: colors.accent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        side: BorderSide.none,
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.zero,
+          foregroundColor: colors.text,
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: _tooltipBox(colors.surface),
+        textStyle: _tooltipText.copyWith(color: colors.text),
+        padding: tooltipPadding,
+        waitDuration: tooltipDelay,
+      ),
+    );
+    if (!light) return base;
+    return base.copyWith(
+      textTheme: base.textTheme.apply(
+        bodyColor: colors.text,
+        displayColor: colors.text,
+      ),
+    );
+  }
 
   static ThemeData _tv(ThemeData base, AppColors colors) => base.copyWith(
     scaffoldBackgroundColor: const Color(0xFF121212),

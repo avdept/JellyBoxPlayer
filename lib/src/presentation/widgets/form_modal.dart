@@ -84,7 +84,7 @@ Future<T?> showFormModal<T>(
       maxWidth: 640,
       maxHeight: MediaQuery.sizeOf(context).height * 0.9,
     ),
-    backgroundColor: Colors.grey[900],
+    backgroundColor: AppColors.from(context).sheet,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
     ),

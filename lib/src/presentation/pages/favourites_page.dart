@@ -11,6 +11,7 @@ import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/horizontal_scroll_region.dart';
 import 'package:jplayer/src/presentation/widgets/offline_notice.dart';
+import 'package:jplayer/src/presentation/widgets/page_navigation_bar.dart';
 import 'package:jplayer/src/presentation/widgets/scrollable_page_scaffold.dart';
 import 'package:jplayer/src/presentation/widgets/shimmer.dart';
 import 'package:jplayer/src/presentation/widgets/song_list_sliver.dart';
@@ -58,24 +59,22 @@ class _FavouritesPageState extends ConsumerState<FavouritesPage> {
 
     return ScrollablePageScaffold(
       useGradientBackground: true,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(_navigationBarHeight),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: _horizontalPadding),
-          child: Row(
-            children: [
-              const BackButton(),
-              const SizedBox(width: 4),
-              Text(
-                'Favourites',
-                style: TextStyle(
-                  fontSize: _device.isMobile ? 22 : 26,
-                  fontWeight: FontWeight.w600,
-                  color: _theme.colorScheme.onPrimary,
-                ),
+      navigationBar: PageNavigationBar(
+        height: _navigationBarHeight,
+        horizontalPadding: _horizontalPadding,
+        child: Row(
+          children: [
+            const BackButton(),
+            const SizedBox(width: 4),
+            Text(
+              'Favourites',
+              style: TextStyle(
+                fontSize: _device.isMobile ? 22 : 26,
+                fontWeight: FontWeight.w600,
+                color: _theme.colorScheme.onPrimary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       contentPadding: EdgeInsets.only(

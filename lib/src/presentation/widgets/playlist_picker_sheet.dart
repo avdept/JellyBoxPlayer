@@ -20,6 +20,7 @@ class PlaylistPickerSheet extends ConsumerWidget {
 
     if (data.isLoading) {
       return _shell(
+        context,
         child: const Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
           child: TextLinesShimmer(
@@ -32,6 +33,7 @@ class PlaylistPickerSheet extends ConsumerWidget {
     }
 
     return _shell(
+      context,
       child: Flex(
         mainAxisSize: MainAxisSize.min,
         direction: Axis.vertical,
@@ -101,9 +103,9 @@ class PlaylistPickerSheet extends ConsumerWidget {
     );
   }
 
-  Widget _shell({required Widget child}) => Container(
+  Widget _shell(BuildContext context, {required Widget child}) => Container(
     decoration: BoxDecoration(
-      color: Colors.grey[900],
+      color: AppColors.from(context).sheet,
       borderRadius: BorderRadius.circular(isDesktop ? 6 : 0),
     ),
     child: Padding(
@@ -132,7 +134,7 @@ Future<LibraryItem?> showPlaylistPicker(
     );
   }
   return showModalBottomSheet<LibraryItem>(
-    backgroundColor: Colors.grey[800],
+    backgroundColor: AppColors.from(context).sheetAlt,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
     ),

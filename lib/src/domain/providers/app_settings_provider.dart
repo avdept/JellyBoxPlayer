@@ -6,6 +6,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/core/platform/tv_mode.dart';
 import 'package:jplayer/src/data/providers/shared_preferences_provider.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/providers/current_server_id_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,6 +28,9 @@ enum AppSetting {
   colorTheme('color_theme', defaultValue: 'oxblood'),
   appFont('app_font', defaultValue: 'gilroy'),
   panelStyle('panel_style', defaultValue: 'hard'),
+  panelTranslucent('panel_translucent', defaultValue: true),
+  panelRadius('panel_radius', defaultValue: 18.0),
+  panelShadow('panel_shadow', defaultValue: 'normal'),
   artworkAccent('artwork_accent', defaultValue: true),
   animatedCovers('animated_covers', defaultValue: 'always'),
   desktopAnimatedCovers('desktop_animated_covers', defaultValue: true),
@@ -297,6 +301,22 @@ final panelStyleProvider = Provider<PanelStyle>(
       PanelStyle.hard,
 );
 
+final panelShadowProvider = Provider<PanelShadow>(
+  (ref) =>
+      PanelShadow.values.asNameMap()[_asString(
+        ref.watch(appSettingsProvider)[AppSetting.panelShadow],
+        AppSetting.panelShadow,
+      )] ??
+      PanelShadow.normal,
+);
+
+final panelRadiusProvider = Provider<double>(
+  (ref) => _asDouble(
+    ref.watch(appSettingsProvider)[AppSetting.panelRadius],
+    AppSetting.panelRadius,
+  ).clamp(0, 18),
+);
+
 final keepScreenOnProvider = Provider<KeepScreenOn>(
   (ref) =>
       KeepScreenOn.values.asNameMap()[_asString(
@@ -489,6 +509,20 @@ class AppSettingsNotifier extends StateNotifier<Map<AppSetting, Object>> {
         else if (prefs.getBool(setting.key) case final bool legacy)
           setting: legacy,
     };
+  }
+
+  static Future<void> pinColorTheme(SharedPreferences prefs) async {
+    final stored = prefs.getString(_storageKey);
+    final decoded = stored == null
+        ? <String, dynamic>{}
+        : jsonDecode(stored) as Map<String, dynamic>;
+    if (decoded.containsKey(AppSetting.colorTheme.key)) return;
+    final upgrading =
+        stored != null ||
+        prefs.containsKey(CurrentLibraryNotifier.libraryIdStorageKey);
+    decoded[AppSetting.colorTheme.key] =
+        (upgrading ? ColorTheme.original : ColorTheme.oxblood).name;
+    await prefs.setString(_storageKey, jsonEncode(decoded));
   }
 
   static bool isEnabledIn(SharedPreferences? prefs, AppSetting setting) =>

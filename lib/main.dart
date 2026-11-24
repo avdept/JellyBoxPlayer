@@ -32,6 +32,7 @@ import 'package:jplayer/src/core/telemetry/telemetry.dart';
 import 'package:jplayer/src/core/window/mac_title_bar.dart';
 import 'package:jplayer/src/data/storages/download_database.dart';
 import 'package:jplayer/src/data/storages/window_placement_storage.dart';
+import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/studio_mode_provider.dart';
@@ -126,6 +127,7 @@ Future<void> main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
+  await AppSettingsNotifier.pinColorTheme(prefs);
   await CertificateTrust.instance.load(prefs);
   HttpOverrides.global = TrustedCertificateHttpOverrides(
     CertificateTrust.instance,

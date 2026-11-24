@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:jplayer/resources/resources.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/widgets/album_view.dart';
 import 'package:jplayer/src/presentation/widgets/catalog_actions.dart';
 import 'package:jplayer/src/presentation/widgets/catalog_source_badge.dart';
@@ -84,10 +85,10 @@ class _CatalogAlbumCardState extends State<CatalogAlbumCard> {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.2,
-                      color: Color.fromARGB(130, 255, 255, 255),
+                      color: AppColors.from(context).secondaryText,
                     ),
                   ),
                 ],

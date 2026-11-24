@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -57,12 +58,18 @@ class _MainPageState extends ConsumerState<MainPage> {
     );
   }
 
+  static const _supportBranch = 4;
+
   Widget _supportButton(bool collapsed) {
+    final selected = widget.shell.currentIndex == _supportBranch;
     final button = RailItemButton(
-      onPressed: () => _pushOnce(Routes.support),
+      onPressed: () => _navigateToItem(_supportBranch),
       icon: const Icon(Icons.help_outline),
       label: const Text('Support'),
-      foregroundColor: _theme.colorScheme.onPrimary,
+      foregroundColor: selected
+          ? _theme.colorScheme.primary
+          : _theme.colorScheme.onPrimary,
+      backgroundColor: selected ? AppColors.from(context).indicator : null,
       fontSize: 16,
       horizontalPadding: 30,
     );
@@ -175,46 +182,70 @@ class _MainPageState extends ConsumerState<MainPage> {
   Widget _floatingBody({
     required Widget rail,
     required Widget? banner,
+    required bool fullWidth,
+    required bool translucent,
+    required bool collapsed,
     required Widget Function(BuildContext) pageArea,
   }) {
     const margin = FloatingPanels.margin;
     final hasPlayer = _floatingPlayerHeight > 0;
-    return Row(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(margin),
-          child: FloatingPanel(child: rail),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              ?banner,
-              Expanded(child: Builder(builder: pageArea)),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  0,
-                  hasPlayer ? margin : 0,
-                  margin,
-                  hasPlayer ? margin : 0,
-                ),
-                child: FloatingPanels(
-                  child: FloatingPanel(
-                    clip: false,
-                    visible: hasPlayer,
-                    child: SizeReporter(
-                      onSize: _onFloatingPlayerSize,
-                      child: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          BottomPlayer(),
-                          PlayingElsewhereStrip(),
-                        ],
-                      ),
-                    ),
-                  ),
+    final panels = FloatingPanels(
+      radius: ref.watch(panelRadiusProvider),
+      shadow: AppColors.from(context).isLight
+          ? ref.watch(panelShadowProvider)
+          : PanelShadow.none,
+      contentInsets: fullWidth
+          ? EdgeInsets.only(
+              left:
+                  (collapsed
+                      ? CustomNavigationRail.defaultCollapsedWidth
+                      : CustomNavigationRail.defaultWidth) +
+                  margin * 2,
+              bottom: hasPlayer ? _floatingPlayerHeight + margin * 2 : 0,
+            )
+          : EdgeInsets.zero,
+      translucent: translucent,
+      overlay: fullWidth,
+      child: CustomMultiChildLayout(
+        delegate: _FloatingLayout(fullWidth: fullWidth),
+        children: [
+          LayoutId(
+            id: _FloatingSlot.page,
+            child: Builder(builder: pageArea),
+          ),
+          LayoutId(
+            id: _FloatingSlot.player,
+            child: FloatingPanel(
+              clip: false,
+              visible: hasPlayer,
+              child: SizeReporter(
+                onSize: _onFloatingPlayerSize,
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BottomPlayer(),
+                    PlayingElsewhereStrip(),
+                  ],
                 ),
               ),
-            ],
+            ),
+          ),
+          LayoutId(
+            id: _FloatingSlot.rail,
+            child: FloatingPanel(child: rail),
+          ),
+        ],
+      ),
+    );
+    if (banner == null) return panels;
+    return Column(
+      children: [
+        banner,
+        Expanded(
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: panels,
           ),
         ),
       ],
@@ -237,24 +268,33 @@ class _MainPageState extends ConsumerState<MainPage> {
       settingProvider(AppSetting.sidebarCollapsed),
     );
 
-    final floating =
-        _device.isDesktop &&
-        ref.watch(panelStyleProvider) == PanelStyle.floating;
+    final panelStyle = ref.watch(panelStyleProvider);
+    final floating = _device.isDesktop && panelStyle.isFloating;
+    final panelsTranslucent =
+        panelStyle != PanelStyle.infiniteFloating ||
+        ref.watch(settingProvider(AppSetting.panelTranslucent));
     MacTitleBar.sync(
       floating ? MacTitleBarLayout.floating : MacTitleBarLayout.standard,
     );
 
     final rail = CustomNavigationRail(
       backgroundColor: floating
-          ? AppColors.from(
-              context,
-            ).panel.withValues(alpha: FloatingPanels.panelAlpha)
+          ? FloatingPanels.fill(context, translucent: panelsTranslucent)
           : null,
       padding: const EdgeInsets.symmetric(
         vertical: 30,
         horizontal: 20,
       ),
       collapsed: sidebarCollapsed,
+      header: floating
+          ? const RailSlot(
+              child: LibrarySelectorButton(
+                size: 28,
+                showName: true,
+                collapsible: true,
+              ),
+            )
+          : null,
       selectedItemColor: _theme.colorScheme.primary,
       unselectedItemColor: _theme.colorScheme.onPrimary,
       selectedFontSize: 16,
@@ -286,11 +326,21 @@ class _MainPageState extends ConsumerState<MainPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (ref.watch(devToolsEnabledProvider)) _devButton(sidebarCollapsed),
+          if (floating) ...[
+            if (ref.watch(settingProvider(AppSetting.offlineModeToggle)))
+              const RailSlot(
+                childInset: 8,
+                child: OfflineModeButton(iconSize: 24),
+              ),
+            const RailSlot(
+              child: UpdatifyBell(isDesktop: true, iconSize: 24, tapSize: 24),
+            ),
+          ],
           _supportButton(sidebarCollapsed),
           _logoutButton(sidebarCollapsed),
         ],
       ),
-      selectedIndex: currentIndex,
+      selectedIndex: currentIndex < _menuItems.length ? currentIndex : null,
       onDestinationSelected: _navigateToItem,
       destinations: List.generate(
         _menuItems.length,
@@ -324,14 +374,21 @@ class _MainPageState extends ConsumerState<MainPage> {
           widget.shell,
           if (_device.isDesktop)
             const Positioned.fill(
-              child: LyricsOverlay(),
+              child: FloatingInset(bottom: true, child: LyricsOverlay()),
             ),
         ],
       ),
     );
 
     final body = floating
-        ? _floatingBody(rail: rail, banner: banner, pageArea: pageArea)
+        ? _floatingBody(
+            rail: rail,
+            banner: banner,
+            fullWidth: panelStyle == PanelStyle.infiniteFloating,
+            translucent: panelsTranslucent,
+            collapsed: sidebarCollapsed,
+            pageArea: pageArea,
+          )
         : Row(
             children: [
               Visibility(visible: _device.isDesktop, child: rail),
@@ -369,7 +426,7 @@ class _MainPageState extends ConsumerState<MainPage> {
           inactiveColor: _theme.colorScheme.onPrimary,
           iconSize: _device.isMobile ? 28 : 24,
           height: _device.isMobile ? 56 : 50,
-          currentIndex: currentIndex,
+          currentIndex: min(currentIndex, _menuItems.length - 1),
           onTap: _navigateToItem,
           items: List.generate(
             _menuItems.length,
@@ -393,4 +450,55 @@ class _MainPageState extends ConsumerState<MainPage> {
 
     return WindowResizeFrame(child: content);
   }
+}
+
+enum _FloatingSlot { page, player, rail }
+
+class _FloatingLayout extends MultiChildLayoutDelegate {
+  _FloatingLayout({required this.fullWidth});
+
+  final bool fullWidth;
+
+  @override
+  void performLayout(Size size) {
+    const margin = FloatingPanels.margin;
+    final railHeight = max(0.0, size.height - margin * 2);
+    final rail = layoutChild(
+      _FloatingSlot.rail,
+      BoxConstraints(
+        maxWidth: size.width,
+        minHeight: railHeight,
+        maxHeight: railHeight,
+      ),
+    );
+    positionChild(_FloatingSlot.rail, const Offset(margin, margin));
+
+    final left = rail.width + margin * 2;
+    final player = layoutChild(
+      _FloatingSlot.player,
+      BoxConstraints.tightFor(width: max(0, size.width - left - margin)),
+    );
+    final bottom = player.height > 0 ? player.height + margin * 2 : 0.0;
+    positionChild(
+      _FloatingSlot.player,
+      Offset(left, size.height - bottom + (player.height > 0 ? margin : 0)),
+    );
+
+    if (fullWidth) {
+      layoutChild(_FloatingSlot.page, BoxConstraints.tight(size));
+      positionChild(_FloatingSlot.page, Offset.zero);
+    } else {
+      layoutChild(
+        _FloatingSlot.page,
+        BoxConstraints.tight(
+          Size(max(0, size.width - left), max(0, size.height - bottom)),
+        ),
+      );
+      positionChild(_FloatingSlot.page, Offset(left, 0));
+    }
+  }
+
+  @override
+  bool shouldRelayout(_FloatingLayout oldDelegate) =>
+      fullWidth != oldDelegate.fullWidth;
 }

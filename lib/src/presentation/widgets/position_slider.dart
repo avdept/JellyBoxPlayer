@@ -162,8 +162,8 @@ class SeekBarState extends State<SeekBar> {
             SliderTheme(
               data: _sliderThemeData.copyWith(
                 thumbShape: SliderComponentShape.noThumb,
-                activeTrackColor: Colors.white,
-                inactiveTrackColor: Colors.grey.shade300,
+                activeTrackColor: AppColors.from(context).trackBuffered,
+                inactiveTrackColor: AppColors.from(context).track,
               ),
               child: ExcludeSemantics(
                 child: Slider(
@@ -301,7 +301,7 @@ class _HoverTimeBubble extends StatelessWidget {
       padding: Themes.tooltipPadding,
       child: Text(
         label,
-        style: Themes.tooltipTextStyle.copyWith(
+        style: Themes.tooltipTextStyle(context).copyWith(
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),

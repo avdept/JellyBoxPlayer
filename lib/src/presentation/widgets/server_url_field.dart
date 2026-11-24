@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
@@ -26,7 +27,6 @@ class ServerUrlField extends StatefulWidget {
   static const ValueKey<String> surfaceKey = ValueKey(
     'serverUrlFieldSurface',
   );
-  static const fillColor = Color(0xFFEEEEEE);
   static const radius = 10.0;
 
   final ServerUrlFieldMode mode;
@@ -87,7 +87,7 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
     return Builder(
       builder: (fieldContext) => Material(
         key: ServerUrlField.surfaceKey,
-        color: ServerUrlField.fillColor,
+        color: AppColors.from(context).field,
         borderRadius: _surfaceRadius,
         child: Row(
           children: [
@@ -104,7 +104,7 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
                       if (expandable)
                         const Icon(
                           Icons.keyboard_arrow_down,
-                          color: Colors.black54,
+                          color: AppColors.onFieldHint,
                           size: 22,
                         ),
                     ],
@@ -116,7 +116,11 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
               onPressed: widget.onEdit,
               visualDensity: VisualDensity.compact,
               tooltip: 'Enter a server address',
-              icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
+              icon: const Icon(
+                Icons.edit,
+                color: AppColors.onFieldHint,
+                size: 20,
+              ),
             ),
           ],
         ),
@@ -142,7 +146,7 @@ class _ServerUrlFieldState extends State<ServerUrlField> {
     setState(() => _menuOpen = true);
     final picked = await showMenu<DiscoveredServer>(
       context: context,
-      color: ServerUrlField.fillColor,
+      color: AppColors.from(context).field,
       position: RelativeRect.fromRect(
         Rect.fromPoints(topLeft, bottomRight),
         Offset.zero & overlay.size,
@@ -186,7 +190,7 @@ Widget serverSummary(DiscoveredServer server) => Row(
             style: const TextStyle(
               fontFamily: FontFamily.inter,
               fontSize: 15,
-              color: Colors.black87,
+              color: AppColors.onFieldFill,
             ),
           ),
           Text(
@@ -196,7 +200,7 @@ Widget serverSummary(DiscoveredServer server) => Row(
             style: const TextStyle(
               fontFamily: FontFamily.inter,
               fontSize: 12,
-              color: Colors.black54,
+              color: AppColors.onFieldHint,
             ),
           ),
         ],
@@ -239,7 +243,10 @@ class DiscoveringSpinner extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 8),
       child: SizedBox.square(
         dimension: 18,
-        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black54),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.onFieldHint,
+        ),
       ),
     ),
   );

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
@@ -173,164 +172,137 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
       ordered,
       ref.watch(playlistSearchQueryProvider(widget.playlist.id)),
     );
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CupertinoNavigationBar(
-                previousPageTitle: 'Playlists',
-                backgroundColor: Colors.transparent,
-                padding: EdgeInsetsDirectional.symmetric(
-                  horizontal: _device.isMobile ? 16 : 30,
-                ),
-                middle: ValueListenableBuilder(
-                  valueListenable: _titleOpacity,
-                  builder: (context, opacity, child) => Transform.translate(
-                    offset: Offset(0, 8 - 8 * opacity),
-                    child: Opacity(
-                      opacity: opacity,
-                      child: child,
-                    ),
-                  ),
-                  child: Text(
-                    widget.playlist.name,
-                    overflow: TextOverflow.clip,
-                    style: TextStyle(
-                      fontSize: _device.isMobile ? 14 : 20,
-                      color: _theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: CustomScrollbar(
-                  controller: _scrollController,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      if (_device.isDesktop)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Image(
-                                  image: albumCover,
-                                  height: 254,
-                                ),
-                                const SizedBox(width: 38),
-                                Expanded(child: _albumPanel()),
-                              ],
-                            ),
-                          ),
-                        )
-                      else ...[
-                        SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: _device.isMobile ? 16 : 30,
-                          ),
-                          sliver: SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _FadeOutImageDelegate(
-                              image: albumCover,
-                              isMobile: _device.isMobile,
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: EdgeInsets.only(
-                            left: _device.isMobile ? 16 : 30,
-                            top: _device.isMobile ? 15 : 35,
-                            right: _device.isMobile ? 16 : 30,
-                            bottom: _device.isMobile ? 0 : 18,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: _albumPanelMobile(),
-                          ),
-                        ),
-                      ],
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          _device.isMobile ? 16 : 30,
-                          _device.isMobile ? 12 : 4,
-                          _device.isMobile ? 16 : 30,
-                          8,
-                        ),
-                        sliver: SliverToBoxAdapter(child: _controls()),
-                      ),
-                      if (_songsLoading && songs.isEmpty)
-                        SliverToBoxAdapter(
-                          child: SongRowsShimmer(
-                            device: _device,
-                            count: 8,
-                            edgePadding: _device.isMobile ? 16 : 30,
-                          ),
-                        ),
-                      if (_songsLoaded && songs.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(child: Text("There's no songs yet.")),
-                        ),
-                      if (songs.isNotEmpty && shown.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(child: Text('No songs match.')),
-                        ),
-                      SliverFixedExtentList.builder(
-                        itemExtent: SongRowView.numberedHeight,
-                        itemBuilder: (context, index) => ValueListenableBuilder(
-                          valueListenable: _playingSongId,
-                          builder: (context, songId, other) {
-                            final song = shown[index];
-                            return SongRowView(
-                              song: song,
-                              isPlaying: song.id == songId,
-                              onTap: (song) => ref
-                                  .read(playbackProvider.notifier)
-                                  .play(
-                                    song,
-                                    ordered,
-                                    widget.playlist,
-                                    sourceId: widget.playlist.id,
-                                  ),
-                              position: index + 1,
-                              showCover: true,
-                              showAlbum: true,
-                              edgePadding: _device.isMobile ? 16 : 30,
-                              onLikePressed: _onSongLikePressed,
-                              onRatingChanged: _onSongRated,
-                              optionsBuilder: (context) => [
-                                ContextMenuAction(
-                                  entry: ContextMenuEntry.removeFromPlaylist,
-                                  icon: const Icon(Icons.playlist_remove),
-                                  label: const Text('Remove from playlist'),
-                                  run: () => _onRemoveFromPlaylist(song),
-                                ),
-                                ...contextMenuActions(
-                                  context,
-                                  ref,
-                                  song,
-                                  scope: ContextMenuScope.playlistPage,
-                                  onLike: _onSongLikePressed,
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        itemCount: shown.length,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return FloatingPageLayout(
+      controller: _scrollController,
+      titleFade: _titleOpacity,
+      trailing: HoverPlayButton(
+        isLoading: ref.watch(setPlaybackProvider) == widget.playlist.id,
+        onPressed: _onPlayPlaylistPressed,
+      ),
+      previousPageTitle: 'Playlists',
+      edgePadding: _device.isMobile ? 16 : 30,
+      title: Text(
+        widget.playlist.name,
+        overflow: TextOverflow.clip,
+        style: TextStyle(
+          fontSize: _device.isMobile ? 14 : 20,
+          color: _theme.colorScheme.onPrimary,
         ),
       ),
+      slivers: [
+        if (_device.isDesktop)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(30, 0, 30, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Image(
+                    image: albumCover,
+                    height: 254,
+                  ),
+                  const SizedBox(width: 38),
+                  Expanded(child: _albumPanel()),
+                ],
+              ),
+            ),
+          )
+        else ...[
+          SliverPadding(
+            padding: EdgeInsets.symmetric(
+              horizontal: _device.isMobile ? 16 : 30,
+            ),
+            sliver: SliverPersistentHeader(
+              pinned: true,
+              delegate: _FadeOutImageDelegate(
+                image: albumCover,
+                isMobile: _device.isMobile,
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              left: _device.isMobile ? 16 : 30,
+              top: _device.isMobile ? 15 : 35,
+              right: _device.isMobile ? 16 : 30,
+              bottom: _device.isMobile ? 0 : 18,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _albumPanelMobile(),
+            ),
+          ),
+        ],
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            _device.isMobile ? 16 : 30,
+            _device.isMobile ? 12 : 4,
+            _device.isMobile ? 16 : 30,
+            8,
+          ),
+          sliver: SliverToBoxAdapter(child: _controls()),
+        ),
+        if (_songsLoading && songs.isEmpty)
+          SliverToBoxAdapter(
+            child: SongRowsShimmer(
+              device: _device,
+              count: 8,
+              edgePadding: _device.isMobile ? 16 : 30,
+            ),
+          ),
+        if (_songsLoaded && songs.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text("There's no songs yet.")),
+          ),
+        if (songs.isNotEmpty && shown.isEmpty)
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text('No songs match.')),
+          ),
+        SliverFixedExtentList.builder(
+          itemExtent: SongRowView.numberedHeight,
+          itemBuilder: (context, index) => ValueListenableBuilder(
+            valueListenable: _playingSongId,
+            builder: (context, songId, other) {
+              final song = shown[index];
+              return SongRowView(
+                song: song,
+                isPlaying: song.id == songId,
+                onTap: (song) => ref
+                    .read(playbackProvider.notifier)
+                    .play(
+                      song,
+                      ordered,
+                      widget.playlist,
+                      sourceId: widget.playlist.id,
+                    ),
+                position: index + 1,
+                showCover: true,
+                showAlbum: true,
+                edgePadding: _device.isMobile ? 16 : 30,
+                onLikePressed: _onSongLikePressed,
+                onRatingChanged: _onSongRated,
+                optionsBuilder: (context) => [
+                  ContextMenuAction(
+                    entry: ContextMenuEntry.removeFromPlaylist,
+                    icon: const Icon(Icons.playlist_remove),
+                    label: const Text('Remove from playlist'),
+                    run: () => _onRemoveFromPlaylist(song),
+                  ),
+                  ...contextMenuActions(
+                    context,
+                    ref,
+                    song,
+                    scope: ContextMenuScope.playlistPage,
+                    onLike: _onSongLikePressed,
+                  ),
+                ],
+              );
+            },
+          ),
+          itemCount: shown.length,
+        ),
+      ],
     );
   }
 
@@ -543,7 +515,7 @@ class _PlaylistPageState extends ConsumerState<PlaylistPage> {
         Duration.secondsPerMinute;
     final seconds = durationInSeconds % Duration.secondsPerMinute;
 
-    return DefaultTextStyle(
+    return DefaultTextStyle.merge(
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,

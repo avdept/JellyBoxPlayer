@@ -26,7 +26,7 @@ class AlbumDetailsRow extends StatelessWidget {
         color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.6),
       ),
     );
-    return DefaultTextStyle(
+    return DefaultTextStyle.merge(
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,

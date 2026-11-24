@@ -79,30 +79,26 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           },
           focusNode: _focusNode,
           child: ScrollablePageScaffold(
-            navigationBar: PreferredSize(
-              preferredSize: Size.fromHeight(_device.isMobile ? 48 : 100),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _device.isMobile ? 16 : 30,
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(radius: _device.isDesktop ? 22.5 : 13),
-                    const SizedBox(width: 10),
-                    _titleText(),
-                    const Spacer(),
-                    _searchButton(),
-                    if (ref.watch(accountsProvider).length > 1)
-                      TextButton(
-                        onPressed: () => unawaited(showServerSwitcher(context)),
-                        child: const Text('Switch server'),
-                      ),
+            navigationBar: PageNavigationBar(
+              height: _device.isMobile ? 48 : 100,
+              horizontalPadding: _device.isMobile ? 16 : 30,
+              child: Row(
+                children: [
+                  CircleAvatar(radius: _device.isDesktop ? 22.5 : 13),
+                  const SizedBox(width: 10),
+                  _titleText(),
+                  const Spacer(),
+                  _searchButton(),
+                  if (ref.watch(accountsProvider).length > 1)
                     TextButton(
-                      onPressed: ref.read(authProvider.notifier).logout,
-                      child: const Text('Logout'),
+                      onPressed: () => unawaited(showServerSwitcher(context)),
+                      child: const Text('Switch server'),
                     ),
-                  ],
-                ),
+                  TextButton(
+                    onPressed: ref.read(authProvider.notifier).logout,
+                    child: const Text('Logout'),
+                  ),
+                ],
               ),
             ),
             contentPadding: EdgeInsets.only(
@@ -132,12 +128,15 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         );
       },
       error: (_, _) => Scaffold(
-        body: Center(
-          child: OfflineNotice(
-            message: ref.watch(isOfflineProvider)
-                ? "You're offline, so your libraries can't be loaded."
-                : 'Could not load your libraries.',
-            showDownloadsLink: true,
+        body: FloatingInset(
+          bottom: true,
+          child: Center(
+            child: OfflineNotice(
+              message: ref.watch(isOfflineProvider)
+                  ? "You're offline, so your libraries can't be loaded."
+                  : 'Could not load your libraries.',
+              showDownloadsLink: true,
+            ),
           ),
         ),
       ),
@@ -182,16 +181,19 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   Widget _loadingScaffold() => Scaffold(
     body: SafeArea(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: _device.isMobile ? 16 : 30,
-          vertical: 24,
-        ),
-        child: GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: _gridDelegate,
-          itemCount: 4,
-          itemBuilder: (context, index) => const ShimmerBox(radius: 12),
+      child: FloatingInset(
+        bottom: true,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: _device.isMobile ? 16 : 30,
+            vertical: 24,
+          ),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: _gridDelegate,
+            itemCount: 4,
+            itemBuilder: (context, index) => const ShimmerBox(radius: 12),
+          ),
         ),
       ),
     ),

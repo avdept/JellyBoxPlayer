@@ -45,15 +45,15 @@ class _CirclePlayButtonState extends State<CirclePlayButton> {
             child: widget.isLoading
                 ? SizedBox.square(
                     dimension: size * 0.4,
-                    child: const CircularProgressIndicator(
+                    child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppColors.from(context).onAccent,
                     ),
                   )
                 : Icon(
                     widget.isPlaying ? Icons.pause : Icons.play_arrow_outlined,
                     size: size * 0.65,
-                    color: Colors.white,
+                    color: AppColors.from(context).onAccent,
                   ),
           ),
         ),

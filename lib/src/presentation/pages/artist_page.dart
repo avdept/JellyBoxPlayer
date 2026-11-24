@@ -12,6 +12,7 @@ import 'package:jplayer/src/domain/providers/catalog_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/fanart_provider.dart';
 import 'package:jplayer/src/domain/providers/set_playback_provider.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
@@ -22,6 +23,7 @@ const double heroAspectRatio = 16 / 9;
 const double mobileShadeStartFraction = 0.45;
 const double maxShadeStartFraction = 0.6;
 const int _shadeSteps = 12;
+const double _solidTail = 2;
 const _seeMoreHeight = 40.0;
 
 class ArtistPage extends ConsumerStatefulWidget {
@@ -35,6 +37,10 @@ class ArtistPage extends ConsumerStatefulWidget {
 class _ArtistPageState extends ConsumerState<ArtistPage> {
   final _scrollController = ScrollController();
   final GlobalKey _titleKey = GlobalKey(debugLabel: 'title');
+  late final _titleFade = ScrollTitleFade(
+    controller: _scrollController,
+    titleKey: _titleKey,
+  );
   List<LibraryItem> _albums = [];
   List<LibraryItem> _appearsOn = [];
   List<LibraryItem> _topSongs = const [];
@@ -180,7 +186,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   double _shadeStart(double heroHeight) => _device.isMobile
       ? heroHeight * mobileShadeStartFraction
       : min(
-          kToolbarHeight +
+          ArtistHeaderAppBar.heightOf(context) +
               ArtistHeaderBody.avatarTop +
               ArtistHeaderBody.avatarSize,
           heroHeight * maxShadeStartFraction,
@@ -198,25 +204,31 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
   }
 
   Widget _page(Color base) {
+    final header = artistHeaderBars(
+      context,
+      controller: _scrollController,
+      fade: _titleFade,
+      name: widget.artist.name,
+      image: ref.read(imageServiceProvider).itemImage(widget.artist),
+      barColor: base,
+      trailing: _barPlayButton(),
+    );
     return ScrollablePageScaffold(
       controller: _scrollController,
       backgroundColor: base,
+      barOpacity: _titleFade,
+      navigationBar: header.navigationBar,
       background: _backdropUri == null
           ? null
           : LayoutBuilder(
               builder: (context, constraints) {
-                final height = constraints.maxWidth / heroAspectRatio;
+                final height = (constraints.maxWidth / heroAspectRatio)
+                    .floorToDouble();
                 return SizedBox(height: height, child: _hero(base, height));
               },
             ),
       slivers: [
-        ArtistHeaderAppBar(
-          barColor: base,
-          controller: _scrollController,
-          titleKey: _titleKey,
-          name: widget.artist.name,
-          titleImage: ref.read(imageServiceProvider).itemImage(widget.artist),
-        ),
+        ?header.sliver,
         ArtistHeaderBody(
           image: _mainImage(),
           headerHeight: _headerHeight,
@@ -261,6 +273,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
 
   @override
   void dispose() {
+    _titleFade.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -277,7 +290,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
     if (backdrop == null) return null;
     final color = ref.watch(artworkEdgeColorProvider(backdrop)).valueOrNull;
     if (color == null) return null;
-    return Color.lerp(Colors.black, color, 0.5);
+    return AppColors.from(context).coverTint(color);
   }
 
   Uri? get _fanartBackground {
@@ -330,13 +343,15 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
 
   LinearGradient _shade(Color base, double height) {
     final start = _shadeStart(height) / height;
+    final end = max(start, 1 - _solidTail / height);
     return LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       stops: [
         0,
         for (var i = 0; i <= _shadeSteps; i++)
-          start + (1 - start) * i / _shadeSteps,
+          start + (end - start) * i / _shadeSteps,
+        1,
       ],
       colors: [
         base.withValues(alpha: 0),
@@ -344,6 +359,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
           base.withValues(
             alpha: Curves.easeOutCubic.transform(i / _shadeSteps),
           ),
+        base,
       ],
     );
   }
@@ -419,6 +435,11 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
         ),
       ),
     ),
+  );
+
+  Widget _barPlayButton() => HoverPlayButton(
+    isLoading: ref.watch(setPlaybackProvider) == widget.artist.id,
+    onPressed: _onArtistPlayPressed,
   );
 
   Widget _playButton() => SizedBox(

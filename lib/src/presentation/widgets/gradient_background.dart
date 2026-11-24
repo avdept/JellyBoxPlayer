@@ -14,6 +14,7 @@ class GradientBackground extends StatelessWidget {
     builder: (context, constraints) {
       final size = (constraints.maxWidth * 1.4).clamp(900.0, 2400.0);
       final glow = theme.colorScheme.primary;
+      final strength = theme.brightness == Brightness.light ? 0.12 : 0.25;
       return Stack(
         fit: StackFit.expand,
         children: [
@@ -27,7 +28,7 @@ class GradientBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    glow.withValues(alpha: 0.25),
+                    glow.withValues(alpha: strength),
                     glow.withValues(alpha: 0),
                   ],
                 ),

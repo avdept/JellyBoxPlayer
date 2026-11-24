@@ -74,6 +74,7 @@ class _CatalogAlbumPageState extends ConsumerState<CatalogAlbumPage> {
       titleKey: _titleKey,
       title: album.title,
       previousPageTitle: album.artistName ?? 'Back',
+      titleImage: _cover,
       edgePadding: edgePadding,
       slivers: [
         SliverToBoxAdapter(

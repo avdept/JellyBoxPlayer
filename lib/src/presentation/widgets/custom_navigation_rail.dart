@@ -10,8 +10,8 @@ class CustomNavigationRail extends StatefulWidget {
     required this.destinations,
     required this.selectedIndex,
     this.onDestinationSelected,
-    this.width = 240,
-    this.collapsedWidth = 76,
+    this.width = defaultWidth,
+    this.collapsedWidth = defaultCollapsedWidth,
     this.collapsed = false,
     this.elevation,
     this.backgroundColor,
@@ -24,10 +24,14 @@ class CustomNavigationRail extends StatefulWidget {
     this.itemHeight = 48,
     this.padding = EdgeInsets.zero,
     this.leading,
+    this.header,
     this.secondary,
     this.trailing,
     super.key,
   });
+
+  static const defaultWidth = 240.0;
+  static const defaultCollapsedWidth = 76.0;
 
   final List<NavigationRailDestination> destinations;
   final int? selectedIndex;
@@ -46,6 +50,7 @@ class CustomNavigationRail extends StatefulWidget {
   final double itemHeight;
   final EdgeInsets padding;
   final Widget? leading;
+  final Widget? header;
   final Widget? secondary;
   final Widget? trailing;
 
@@ -110,38 +115,61 @@ class _CustomNavigationRailState extends State<CustomNavigationRail>
             left: false,
             right: false,
             minimum: widget.padding.copyWith(left: 0, right: 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (leading != null) ...[
-                  SizedBox(
-                    height: widget.leadingHeight,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: sideInset,
-                        right: lerpDouble(
-                          (widget.collapsedWidth - widget.leadingHeight) / 2,
-                          widget.padding.right,
-                          t,
-                        )!,
+            child: _fitOrScroll(
+              context,
+              top: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (leading != null) ...[
+                    SizedBox(
+                      height: widget.leadingHeight,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: sideInset,
+                          right: lerpDouble(
+                            (widget.collapsedWidth - widget.leadingHeight) / 2,
+                            widget.padding.right,
+                            t,
+                          )!,
+                        ),
+                        child: leading,
                       ),
-                      child: leading,
                     ),
-                  ),
-                  SizedBox(height: widget.leadingGap),
+                    SizedBox(height: widget.leadingGap),
+                  ],
+                  ?widget.header,
+                  for (var index = 0; index < destinations.length; index++)
+                    _itemView(index),
+                  ?widget.secondary,
                 ],
-                for (var index = 0; index < destinations.length; index++)
-                  _itemView(index),
-                ?widget.secondary,
-                const Spacer(),
-                ?trailing,
-              ],
+              ),
+              bottom: trailing,
             ),
           ),
         ),
       ),
     );
   }
+
+  Widget _fitOrScroll(
+    BuildContext context, {
+    required Widget top,
+    required Widget? bottom,
+  }) => LayoutBuilder(
+    builder: (context, constraints) => ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [top, ?bottom],
+          ),
+        ),
+      ),
+    ),
+  );
 
   double _horizontalPadding(NavigationRailDestination destination) {
     final padding = destination.padding?.resolve(Directionality.of(context));
@@ -174,6 +202,37 @@ class _CustomNavigationRailState extends State<CustomNavigationRail>
             child: button,
           )
         : button;
+  }
+}
+
+class RailSlot extends StatelessWidget {
+  const RailSlot({required this.child, this.childInset = 0, super.key});
+
+  static const _horizontalPadding = 30.0;
+  static const _height = 48.0;
+
+  final Widget child;
+  final double childInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final alignT = RailCollapseAnimation.progressOf(context, railAlignCurve);
+    return SizedBox(
+      height: _height,
+      child: Align(
+        alignment: Alignment.lerp(
+          Alignment.center,
+          Alignment.centerLeft,
+          alignT,
+        )!,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: lerpDouble(0, _horizontalPadding - childInset, alignT)!,
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 }
 

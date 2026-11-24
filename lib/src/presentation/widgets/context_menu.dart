@@ -17,6 +17,7 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/metadata_link_service.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/form_modal.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
@@ -577,7 +578,7 @@ Future<void> showContextMenuSheet(
       maxWidth: 640,
       maxHeight: MediaQuery.sizeOf(context).height * 0.9,
     ),
-    backgroundColor: Colors.grey[900],
+    backgroundColor: AppColors.from(context).sheet,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
     ),

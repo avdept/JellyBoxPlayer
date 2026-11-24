@@ -39,7 +39,7 @@ class _ClickableWidgetState extends State<ClickableWidget> {
   Widget build(BuildContext context) {
     final child = ValueListenableBuilder(
       valueListenable: _isActive,
-      builder: (context, isActive, child) => DefaultTextStyle(
+      builder: (context, isActive, child) => DefaultTextStyle.merge(
         style: TextStyle(
           decoration: isActive ? TextDecoration.underline : TextDecoration.none,
           decorationColor: widget.textStyle?.color,

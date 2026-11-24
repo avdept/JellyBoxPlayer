@@ -7,4 +7,7 @@ enum ColorTheme {
   plumVelvet,
   inkAndIce,
   original,
+  leica,
+  classicBlue,
+  hermes,
 }

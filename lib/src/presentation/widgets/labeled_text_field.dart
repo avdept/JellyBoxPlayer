@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/resources/resources.dart';
 
 class LabeledTextField extends StatelessWidget {
@@ -35,7 +36,7 @@ class LabeledTextField extends StatelessWidget {
           _labelText(label!),
           const SizedBox(height: 4),
         ],
-        _textField(),
+        _textField(context),
       ],
     );
   }
@@ -48,16 +49,16 @@ class LabeledTextField extends StatelessWidget {
     ),
   );
 
-  Widget _textField() => TextField(
+  Widget _textField(BuildContext context) => TextField(
     controller: controller,
     focusNode: focusNode,
     keyboardType: keyboardType,
     textInputAction: textInputAction,
     obscureText: obscureText,
-    style: const TextStyle(color: Colors.black87),
+    style: const TextStyle(color: AppColors.onFieldFill),
     decoration: InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFEEEEEE),
+      fillColor: AppColors.from(context).field,
       border: OutlineInputBorder(
         borderSide: BorderSide.none,
         borderRadius: BorderRadius.circular(10),
@@ -70,7 +71,7 @@ class LabeledTextField extends StatelessWidget {
       hintText: placeholder,
       hintStyle: const TextStyle(
         fontSize: 16,
-        color: Colors.black54,
+        color: AppColors.onFieldHint,
       ),
     ),
     autofocus: autofocus,

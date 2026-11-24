@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/floating_panels.dart';
 import 'package:jplayer/src/presentation/widgets/playback_target_picker.dart';
@@ -18,9 +19,7 @@ class PlayingElsewhereStrip extends ConsumerWidget {
     final renderer = ref.watch(remoteRendererProvider);
     final shown = renderer != null;
     final theme = Theme.of(context);
-    final radius = FloatingPanels.enabled(context)
-        ? BorderRadius.vertical(bottom: FloatingPanels.radius.bottomLeft)
-        : BorderRadius.zero;
+    final colors = AppColors.from(context);
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
@@ -29,8 +28,13 @@ class PlayingElsewhereStrip extends ConsumerWidget {
           ? const SizedBox(width: double.infinity)
           : PlaybackTargetMenuAnchor(
               builder: (open) => Material(
-                color: theme.colorScheme.primary,
-                borderRadius: radius,
+                color: colors.tint,
+                borderRadius: FloatingPanels.enabled(context)
+                    ? FloatingPanels.radiusOf(context).copyWith(
+                        topLeft: Radius.zero,
+                        topRight: Radius.zero,
+                      )
+                    : null,
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: open,
@@ -43,7 +47,7 @@ class PlayingElsewhereStrip extends ConsumerWidget {
                         Icon(
                           Icons.speaker_group_outlined,
                           size: 16,
-                          color: theme.colorScheme.onPrimary,
+                          color: colors.primary,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -51,7 +55,7 @@ class PlayingElsewhereStrip extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onPrimary,
+                            color: colors.text,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

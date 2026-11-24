@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
@@ -24,12 +25,12 @@ class ServerApiSelector extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         label,
         style: TextStyle(
           fontFamily: FontFamily.inter,
           fontSize: 12,
-          color: Colors.white70,
+          color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
         ),
       ),
       const SizedBox(height: 6),
@@ -50,7 +51,7 @@ class ServerApiSelector extends StatelessWidget {
   }) {
     final selected = choice.serverUrl == selectedUrl;
     return Material(
-      color: selected ? ServerApiSelector._fill : Colors.transparent,
+      color: selected ? AppColors.from(context).field : Colors.transparent,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: selected ? null : () => onSelect(choice),
@@ -60,7 +61,11 @@ class ServerApiSelector extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? Colors.transparent : Colors.white38,
+              color: selected
+                  ? Colors.transparent
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onPrimary.withValues(alpha: 0.38),
             ),
           ),
           child: FittedBox(
@@ -82,7 +87,9 @@ class ServerApiSelector extends StatelessWidget {
                     fontFamily: FontFamily.inter,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: selected ? Colors.black87 : Colors.white,
+                    color: selected
+                        ? AppColors.onFieldFill
+                        : Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
                 if (experimental) ...[
@@ -92,7 +99,11 @@ class ServerApiSelector extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: FontFamily.inter,
                       fontSize: 11,
-                      color: selected ? Colors.black54 : Colors.white60,
+                      color: selected
+                          ? AppColors.onFieldHint
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onPrimary.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -103,6 +114,4 @@ class ServerApiSelector extends StatelessWidget {
       ),
     );
   }
-
-  static const _fill = Color(0xFFEEEEEE);
 }

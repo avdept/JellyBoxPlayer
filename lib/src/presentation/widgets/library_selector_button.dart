@@ -11,6 +11,7 @@ import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/app_dropdown.dart';
+import 'package:jplayer/src/presentation/widgets/rail_collapse_animation.dart';
 import 'package:jplayer/src/presentation/widgets/server_accounts.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -66,12 +67,14 @@ class LibrarySelectorButton extends ConsumerWidget {
     required this.size,
     this.showName = false,
     this.maxNameWidth = 180,
+    this.collapsible = false,
     super.key,
   });
 
   final double size;
   final bool showName;
   final double maxNameWidth;
+  final bool collapsible;
 
   Widget _avatar(
     WidgetRef ref,
@@ -95,25 +98,39 @@ class LibrarySelectorButton extends ConsumerWidget {
     final name = library?.name;
     if (!showName || name == null || name.isEmpty) return avatar;
 
+    final label = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxNameWidth),
+      child: Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: size >= 40 ? 18 : 16,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+          color: theme.colorScheme.onPrimary,
+        ),
+      ),
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         avatar,
-        const SizedBox(width: 10),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxNameWidth),
-          child: Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: size >= 40 ? 18 : 16,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-              color: theme.colorScheme.onPrimary,
+        if (collapsible)
+          Flexible(
+            child: CollapsibleLabel(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: label,
+              ),
             ),
-          ),
-        ),
+          )
+        else ...[
+          const SizedBox(width: 10),
+          label,
+        ],
       ],
     );
   }

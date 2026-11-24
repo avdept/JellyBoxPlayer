@@ -1,7 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:jplayer/src/presentation/widgets/custom_scrollbar.dart';
-import 'package:jplayer/src/presentation/widgets/gradient_background.dart';
+import 'package:jplayer/src/presentation/widgets/floating_page_layout.dart';
 import 'package:jplayer/src/presentation/widgets/scroll_title_fade.dart';
 
 class DesktopPageColumn extends StatefulWidget {
@@ -11,6 +9,7 @@ class DesktopPageColumn extends StatefulWidget {
     required this.title,
     required this.slivers,
     this.previousPageTitle,
+    this.titleImage,
     this.edgePadding = 30,
     this.titleFontSize = 20,
     super.key,
@@ -21,6 +20,7 @@ class DesktopPageColumn extends StatefulWidget {
   final String title;
   final List<Widget> slivers;
   final String? previousPageTitle;
+  final ImageProvider? titleImage;
   final double edgePadding;
   final double titleFontSize;
 
@@ -29,6 +29,8 @@ class DesktopPageColumn extends StatefulWidget {
 }
 
 class _DesktopPageColumnState extends State<DesktopPageColumn> {
+  static const _titleImageSize = 28.0;
+
   late final ScrollTitleFade _fade = ScrollTitleFade(
     controller: widget.controller,
     titleKey: widget.titleKey,
@@ -41,47 +43,35 @@ class _DesktopPageColumnState extends State<DesktopPageColumn> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CupertinoNavigationBar(
-                previousPageTitle: widget.previousPageTitle,
-                backgroundColor: Colors.transparent,
-                enableBackgroundFilterBlur: false,
-                padding: EdgeInsetsDirectional.symmetric(
-                  horizontal: widget.edgePadding,
-                ),
-                middle: FadingNavTitle(
-                  opacity: _fade,
-                  child: Text(
-                    widget.title,
-                    overflow: TextOverflow.clip,
-                    style: TextStyle(
-                      fontSize: widget.titleFontSize,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: CustomScrollbar(
-                  controller: widget.controller,
-                  child: CustomScrollView(
-                    controller: widget.controller,
-                    slivers: widget.slivers,
-                  ),
-                ),
-              ),
-            ],
+  Widget build(BuildContext context) => FloatingPageLayout(
+    controller: widget.controller,
+    titleFade: _fade,
+    previousPageTitle: widget.previousPageTitle,
+    edgePadding: widget.edgePadding,
+    slivers: widget.slivers,
+    title: Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 10,
+      children: [
+        if (widget.titleImage case final image?)
+          Image(
+            image: image,
+            width: _titleImageSize,
+            height: _titleImageSize,
+            fit: BoxFit.cover,
+          ),
+        Flexible(
+          child: Text(
+            widget.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: widget.titleFontSize,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }

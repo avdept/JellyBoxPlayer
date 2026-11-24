@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
@@ -37,11 +38,15 @@ class DownloadBadgeIcon extends ConsumerWidget {
               child: CircularProgressIndicator(
                 value: ref.watch(downloadProgressProvider(item.id)),
                 strokeWidth: 2,
-                color: Colors.grey,
+                color: AppColors.from(context).muted,
                 backgroundColor: Colors.white24,
               ),
             ),
-            Icon(JPlayer.download, color: Colors.grey, size: size * 0.5),
+            Icon(
+              JPlayer.download,
+              color: AppColors.from(context).muted,
+              size: size * 0.5,
+            ),
           ],
         ),
       ),

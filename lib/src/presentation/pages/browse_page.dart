@@ -10,6 +10,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
@@ -204,12 +205,17 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     }
   }
 
+  bool get _floatingBar => FloatingPanels.enabled(context);
+
   double get _navigationBarHeight => _device.isMobile
       ? _iconRowHeight + _barRowsSpacing + _chipsRowHeight
-      : 100;
+      : FloatingPanels.barHeightOf(context, 100);
 
-  double get _searchTrailingWidth =>
-      _device.isMobile ? _searchButtonWidth + 40 : 40 + 12 + 40;
+  double get _searchTrailingWidth => _device.isMobile
+      ? _searchButtonWidth + 40
+      : _floatingBar
+      ? 40 + 40
+      : 40 + 12 + 40;
 
   double get _rowExtent => (_device.isMobile ? 46.0 : 56.0) + 16;
 
@@ -256,7 +262,9 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       return;
     }
     final target =
-        constraints.precedingScrollExtent + offset - _navigationBarHeight;
+        constraints.precedingScrollExtent +
+        offset -
+        FloatingBarFrame.scrollInsetOf(context, _navigationBarHeight);
     _scrollController.jumpTo(
       target.clamp(0.0, _scrollController.position.maxScrollExtent),
     );
@@ -418,10 +426,13 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
                     Positioned(
                       right: _device.isMobile ? 0 : 4,
                       top:
-                          MediaQuery.paddingOf(context).top +
-                          _navigationBarHeight +
+                          FloatingBarFrame.contentTopOf(
+                            context,
+                            _navigationBarHeight,
+                          ) +
                           8,
-                      bottom: 8,
+                      bottom:
+                          8 + FloatingPanels.contentInsetsOf(context).bottom,
                       child: LetterRuler(
                         reversed: reversed,
                         haptics: _device.isMobile,
@@ -448,14 +459,10 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       controller: _scrollController,
       useGradientBackground: true,
       showScrollbar: !rulerVisible,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(_navigationBarHeight),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: _device.isMobile ? 16 : 30,
-          ),
-          child: _navigationBarContent(),
-        ),
+      navigationBar: PageNavigationBar(
+        height: _navigationBarHeight,
+        horizontalPadding: _device.isMobile ? 16 : 30,
+        child: _navigationBarContent(),
       ),
       loadMoreData: () => _searchQuery.value.isNotEmpty
           ? Future<void>.value()
@@ -633,32 +640,23 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     super.dispose();
   }
 
-  Widget _pageViewToggle() => ChipTheme(
-    data: ChipTheme.of(context).copyWith(
-      labelStyle: TextStyle(
-        fontSize: _device.isMobile ? 14 : 16,
-        fontFamily: _theme.textTheme.bodyMedium?.fontFamily,
-      ),
-    ),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        spacing: 12,
-        children: [
-          for (final value in ItemList.values)
-            ValueListenableBuilder(
-              valueListenable: _currentView,
-              builder: (context, currentView, child) =>
-                  value == ItemList.artists
-                  ? _artistsChip(isSelected: value == currentView)
-                  : _viewChip(
-                      label: _viewLabels[value] ?? '???',
-                      isSelected: value == currentView,
-                      onPressed: () => _currentView.value = value,
-                    ),
-            ),
-        ],
-      ),
+  Widget _pageViewToggle() => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      spacing: 12,
+      children: [
+        for (final value in ItemList.values)
+          ValueListenableBuilder(
+            valueListenable: _currentView,
+            builder: (context, currentView, child) => value == ItemList.artists
+                ? _artistsChip(isSelected: value == currentView)
+                : _viewChip(
+                    label: _viewLabels[value] ?? '???',
+                    isSelected: value == currentView,
+                    onPressed: () => _currentView.value = value,
+                  ),
+          ),
+      ],
     ),
   );
 
@@ -669,12 +667,23 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       ? _theme.chipTheme.selectedColor
       : _theme.chipTheme.backgroundColor;
 
+  Color _chipLabelColor({required bool isSelected}) => isSelected
+      ? AppColors.from(context).onAccent
+      : _theme.colorScheme.onPrimary;
+
+  TextStyle _chipLabelStyle({required bool isSelected}) => TextStyle(
+    fontSize: _device.isMobile ? 14 : 16,
+    fontFamily: _theme.textTheme.bodyMedium?.fontFamily,
+    color: _chipLabelColor(isSelected: isSelected),
+  );
+
   Widget _viewChip({
     required String label,
     required bool isSelected,
     required VoidCallback onPressed,
   }) => ActionChip(
     label: Text(label),
+    labelStyle: _chipLabelStyle(isSelected: isSelected),
     shape: _chipShape,
     backgroundColor: _chipColor(isSelected: isSelected),
     onPressed: onPressed,
@@ -697,6 +706,8 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
         menuBuilder: (context) => _artistScopeMenu(supported, scope),
         child: InputChip(
           label: Text(_artistScopeLabel(scope)),
+          labelStyle: _chipLabelStyle(isSelected: isSelected),
+          deleteIconColor: _chipLabelColor(isSelected: isSelected),
           labelPadding: const EdgeInsets.only(left: 11, right: 3),
           shape: _chipShape,
           backgroundColor: _chipColor(isSelected: isSelected),
@@ -930,13 +941,15 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
       _searchButton(),
       _layoutButton(),
       _filterButton(),
-      const SizedBox(width: 12),
-      LibrarySelectorButton(size: _device.isMobile ? 32 : 40),
-      const SizedBox(width: 12),
-      UpdatifyBell(
-        isDesktop: _device.isDesktop,
-        iconSize: _device.isDesktop ? 24 : 28,
-      ),
+      if (!_floatingBar) ...[
+        const SizedBox(width: 12),
+        LibrarySelectorButton(size: _device.isMobile ? 32 : 40),
+        const SizedBox(width: 12),
+        UpdatifyBell(
+          isDesktop: _device.isDesktop,
+          iconSize: _device.isDesktop ? 24 : 28,
+        ),
+      ],
     ],
   );
 
@@ -985,7 +998,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     height: 42,
     alignment: Alignment.centerLeft,
     padding: const EdgeInsets.symmetric(horizontal: 12),
-    color: Colors.white.withOpacity(0.24),
+    color: AppColors.from(context).subtle(0.24),
     child: const Icon(JPlayer.search),
   );
 
@@ -998,7 +1011,7 @@ class _BrowsePageState extends ConsumerState<BrowsePage>
     style: const TextStyle(fontSize: 16, height: 1.2),
     decoration: InputDecoration(
       filled: true,
-      fillColor: Colors.white.withOpacity(0.24),
+      fillColor: AppColors.from(context).subtle(0.24),
       isDense: true,
       contentPadding: const EdgeInsets.all(9),
       border: OutlineInputBorder(
