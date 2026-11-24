@@ -35,6 +35,19 @@ class JellyboxCloudSettings extends ConsumerWidget {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
   );
 
+  void _resync(BuildContext context, WidgetRef ref) {
+    unawaited(
+      ref.read(cloudProvider.notifier).track(const {'k': 'resync'}),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Syncing everything again. This can take a minute.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(cloudProvider).account;
@@ -68,6 +81,13 @@ class JellyboxCloudSettings extends ConsumerWidget {
             label:
                 'Sync listening history, resume points, pins and '
                 'browsing settings with my other devices',
+          ),
+        if (account != null && ref.watch(settingProvider(AppSetting.linkSync)))
+          TextButton.icon(
+            onPressed: () => _resync(context, ref),
+            style: _buttonStyle,
+            icon: const Icon(Icons.sync),
+            label: const Text('Sync everything again'),
           ),
         const _ServerConnectionRow(),
         TextButton.icon(
