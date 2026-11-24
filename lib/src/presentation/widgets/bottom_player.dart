@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -383,7 +385,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final previousBrightness = _dynamicColors.value?.brightness;
     _theme = Theme.of(context);
+    if (previousBrightness != null && previousBrightness != _theme.brightness) {
+      unawaited(_onImageProviderChanged());
+    }
     _localizations = MaterialLocalizations.of(context);
     _viewPadding = MediaQuery.viewPaddingOf(context);
     _screenSize = MediaQuery.sizeOf(context);
