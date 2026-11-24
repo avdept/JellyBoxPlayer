@@ -215,14 +215,6 @@ jobs:
           tar xzf dist/jellybox-linux-${{ matrix.arch }}.tar.gz -C bundle
           ./linux/packaging/flatpak/stage.sh bundle "${{ needs.version.outputs.version }}"
 
-      # The image ships the SDK inside an overlay layer; updating it there fails
-      # with "Invalid cross-device link" on x64 runners. Serve it from the
-      # runner's disk instead.
-      - name: Move Flatpak installation off the image layer
-        run: |
-          cp -a /var/lib/flatpak "$RUNNER_TEMP/flatpak"
-          mount --bind "$RUNNER_TEMP/flatpak" /var/lib/flatpak
-
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
