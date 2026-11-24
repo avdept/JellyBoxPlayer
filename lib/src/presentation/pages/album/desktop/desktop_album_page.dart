@@ -52,6 +52,7 @@ class _DesktopAlbumPageState extends ConsumerState<DesktopAlbumPage>
       titleKey: titleKey,
       title: album.name,
       previousPageTitle: 'Albums',
+      titleImage: albumCover,
       edgePadding: edgePadding,
       titleFontSize: navTitleFontSize,
       slivers: [

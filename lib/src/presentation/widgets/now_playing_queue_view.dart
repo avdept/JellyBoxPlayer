@@ -258,7 +258,7 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
     final row = SongRowView(
       song: widget.song,
       isPlaying: widget.isPlaying,
-      secondaryTextColor: Colors.white,
+      secondaryTextColor: Theme.of(context).colorScheme.onPrimary,
       edgePadding: 16,
       onTap: (_) => widget.onTap(),
       onLikePressed: (_) => widget.onLikePressed(),

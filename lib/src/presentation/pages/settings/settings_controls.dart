@@ -93,6 +93,7 @@ class SettingDropdown<T> extends StatelessWidget {
     required this.options,
     required this.onChanged,
     this.trailing,
+    this.width = 140,
     super.key,
   });
 
@@ -101,6 +102,7 @@ class SettingDropdown<T> extends StatelessWidget {
   final Map<T, String> options;
   final ValueChanged<T> onChanged;
   final Widget? trailing;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +134,7 @@ class SettingDropdown<T> extends StatelessWidget {
             SizedBox(width: 170, child: text),
           const SizedBox(width: 8),
           SizedBox(
-            width: 140,
+            width: width,
             child: DropdownButtonHideUnderline(
               child: DropdownButton2<T>(
                 isExpanded: true,
@@ -198,6 +200,7 @@ class SettingsEnumDropdown<T extends Enum> extends ConsumerWidget {
     required this.value,
     required this.options,
     this.trailing,
+    this.width = 140,
     super.key,
   });
 
@@ -206,6 +209,7 @@ class SettingsEnumDropdown<T extends Enum> extends ConsumerWidget {
   final ProviderListenable<T> value;
   final Map<T, String> options;
   final Widget? trailing;
+  final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => SettingDropdown<T>(
@@ -213,13 +217,23 @@ class SettingsEnumDropdown<T extends Enum> extends ConsumerWidget {
     value: ref.watch(value),
     options: options,
     trailing: trailing,
+    width: width,
     onChanged: (selected) =>
         ref.read(appSettingsProvider.notifier).setValue(setting, selected.name),
   );
 }
 
 class ColorThemePicker extends ConsumerWidget {
-  const ColorThemePicker({super.key});
+  const ColorThemePicker({
+    this.label = 'Colour theme',
+    this.centered = false,
+    this.scrollable = false,
+    super.key,
+  });
+
+  final String label;
+  final bool centered;
+  final bool scrollable;
 
   static const Map<ColorTheme, String> labels = {
     ColorTheme.oxblood: 'Oxblood',
@@ -230,41 +244,57 @@ class ColorThemePicker extends ConsumerWidget {
     ColorTheme.plumVelvet: 'Plum Velvet',
     ColorTheme.inkAndIce: 'Ink & Ice',
     ColorTheme.original: 'Original',
+    ColorTheme.leica: 'Leica',
+    ColorTheme.classicBlue: 'Classic Blue',
+    ColorTheme.hermes: 'Hermès',
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final selected = ref.watch(colorThemeProvider);
+    final swatches = [
+      for (final option in ColorTheme.values)
+        _ColorThemeSwatch(
+          colors: AppColors.of(option),
+          label: labels[option]!,
+          selected: option == selected,
+          onTap: () => ref
+              .read(appSettingsProvider.notifier)
+              .setValue(AppSetting.colorTheme, option.name),
+        ),
+    ];
     return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: scrollable ? 0 : 12,
+        vertical: 4,
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: centered
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         spacing: 8,
         children: [
           Text(
-            'Colour theme',
+            label,
             style: TextStyle(
               fontSize: 14,
               height: 1.2,
               color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
             ),
           ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              for (final option in ColorTheme.values)
-                _ColorThemeSwatch(
-                  colors: AppColors.of(option),
-                  label: labels[option]!,
-                  selected: option == selected,
-                  onTap: () => ref
-                      .read(appSettingsProvider.notifier)
-                      .setValue(AppSetting.colorTheme, option.name),
-                ),
-            ],
-          ),
+          if (scrollable)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(spacing: 12, children: swatches),
+            )
+          else
+            Wrap(
+              alignment: centered ? WrapAlignment.center : WrapAlignment.start,
+              spacing: 12,
+              runSpacing: 8,
+              children: swatches,
+            ),
         ],
       ),
     );
@@ -302,7 +332,11 @@ class _ColorThemeSwatch extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: selected ? Colors.white : Colors.white24,
+              color: selected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context).colorScheme.onPrimary.withValues(
+                      alpha: 0.24,
+                    ),
               width: selected ? 2 : 1,
             ),
           ),
@@ -326,4 +360,79 @@ class _ColorThemeSwatch extends StatelessWidget {
       ),
     ),
   );
+}
+
+class SettingSlider extends ConsumerWidget {
+  const SettingSlider({
+    required this.label,
+    required this.setting,
+    required this.value,
+    required this.min,
+    required this.max,
+    super.key,
+  });
+
+  final String label;
+  final AppSetting setting;
+  final ProviderListenable<double> value;
+  final double min;
+  final double max;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final current = ref.watch(value);
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 170,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.2,
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 140,
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 3,
+                overlayShape: SliderComponentShape.noOverlay,
+                thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: 7,
+                ),
+              ),
+              child: Slider(
+                value: current.clamp(min, max),
+                min: min,
+                max: max,
+                divisions: (max - min).round(),
+                onChanged: (selected) => ref
+                    .read(appSettingsProvider.notifier)
+                    .setNumber(setting, selected),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 32,
+            child: Text(
+              '${current.round()}',
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

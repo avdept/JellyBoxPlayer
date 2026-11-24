@@ -99,48 +99,44 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
     return Scaffold(
       body: ScrollablePageScaffold(
         useGradientBackground: true,
-        navigationBar: PreferredSize(
-          preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: _device.isMobile ? 16 : 30,
-            ),
-            child: Row(
-              children: [
-                CupertinoNavigationBarBackButton(
-                  color: _theme.colorScheme.onPrimary,
-                  previousPageTitle: 'Browse',
-                  onPressed: () => context.pop(),
-                ),
-                SizedBox(width: _device.isMobile ? 12 : 20),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      text: searchCategoryLabel(widget.category),
-                      children: [
-                        if (query.isNotEmpty)
-                          TextSpan(
-                            text: '  “$query”',
-                            style: TextStyle(
-                              fontSize: _device.isMobile ? 14 : 18,
-                              fontWeight: FontWeight.w400,
-                              color: _theme.colorScheme.onPrimary.withOpacity(
-                                0.6,
-                              ),
+        navigationBar: PageNavigationBar(
+          height: _device.isMobile ? 60 : 100,
+          horizontalPadding: _device.isMobile ? 16 : 30,
+          child: Row(
+            children: [
+              CupertinoNavigationBarBackButton(
+                color: _theme.colorScheme.onPrimary,
+                previousPageTitle: 'Browse',
+                onPressed: () => context.pop(),
+              ),
+              SizedBox(width: _device.isMobile ? 12 : 20),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    text: searchCategoryLabel(widget.category),
+                    children: [
+                      if (query.isNotEmpty)
+                        TextSpan(
+                          text: '  “$query”',
+                          style: TextStyle(
+                            fontSize: _device.isMobile ? 14 : 18,
+                            fontWeight: FontWeight.w400,
+                            color: _theme.colorScheme.onPrimary.withOpacity(
+                              0.6,
                             ),
                           ),
-                      ],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: _device.isMobile ? 18 : 24,
-                      fontWeight: FontWeight.w600,
-                      color: _theme.colorScheme.onPrimary,
-                    ),
+                        ),
+                    ],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: _device.isMobile ? 18 : 24,
+                    fontWeight: FontWeight.w600,
+                    color: _theme.colorScheme.onPrimary,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         contentPadding: EdgeInsets.only(

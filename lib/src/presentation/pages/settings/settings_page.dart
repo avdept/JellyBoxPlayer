@@ -41,11 +41,12 @@ class _SettingsPageState extends State<SettingsPage> {
     final padding = MediaQuery.paddingOf(context);
     final device = DeviceType.fromScreenSize(MediaQuery.sizeOf(context));
     final inset = device.isMobile ? 16.0 : 30.0;
+    final panels = FloatingPanels.contentInsetsOf(context);
     final contentPadding = EdgeInsets.only(
-      left: padding.left + inset,
+      left: padding.left + inset + panels.left,
       top: padding.top + inset,
       right: padding.right + inset,
-      bottom: device.isMobile ? 22 : 26,
+      bottom: (device.isMobile ? 22 : 26) + panels.bottom,
     );
 
     return Scaffold(
@@ -74,7 +75,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Expanded(
               child: device.isMobile
                   ? _sectionLinks(context, device, contentPadding)
-                  : _masterDetail(contentPadding),
+                  : _masterDetail(contentPadding, 260 + panels.left),
             ),
           ],
         ),
@@ -105,11 +106,11 @@ class _SettingsPageState extends State<SettingsPage> {
     ],
   );
 
-  Widget _masterDetail(EdgeInsets contentPadding) => Row(
+  Widget _masterDetail(EdgeInsets contentPadding, double listWidth) => Row(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       SizedBox(
-        width: 260,
+        width: listWidth,
         child: ListView(
           padding: EdgeInsets.only(
             left: contentPadding.left,

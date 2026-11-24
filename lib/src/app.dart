@@ -396,11 +396,6 @@ class _AppState extends ConsumerState<App>
                       name: Routes.devQueues.name,
                       pageBuilder: widget.screenFactory.devQueuesPage,
                     ),
-                    GoRoute(
-                      path: Routes.support.path,
-                      name: Routes.support.name,
-                      pageBuilder: widget.screenFactory.supportPage,
-                    ),
                   ],
                 ),
               ],
@@ -411,6 +406,15 @@ class _AppState extends ConsumerState<App>
                   path: Routes.downloads.path,
                   name: Routes.downloads.name,
                   pageBuilder: widget.screenFactory.downloadsPage,
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: Routes.support.path,
+                  name: Routes.support.name,
+                  pageBuilder: widget.screenFactory.supportPage,
                 ),
               ],
             ),

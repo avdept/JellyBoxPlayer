@@ -18,6 +18,7 @@ import 'package:jplayer/src/domain/providers/providers.dart';
 import 'package:jplayer/src/presentation/widgets/marquee_text.dart';
 import 'package:jplayer/src/presentation/widgets/position_slider.dart';
 import 'package:jplayer/src/presentation/widgets/player_time.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -269,7 +270,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                     textStyle: TextStyle(
                       fontSize: _isMobile ? 16 : 20,
                       height: 1.2,
-                      color: _theme.colorScheme.primary,
+                      color: AppColors.from(context).artist,
                     ),
                     child: Text(
                       currentSong?.artist ?? '',
@@ -423,6 +424,10 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _imageProvider.value = image,
         );
+        final floating = FloatingPanels.enabled(context);
+        final hasStrip = floating && ref.watch(remoteRendererProvider) != null;
+        final radius = FloatingPanels.radiusOf(context);
+        final sliderInset = radius.topLeft.x - 25;
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -436,9 +441,32 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               child: isEmpty
                   ? const SizedBox(width: double.infinity)
                   : Container(
-                      height: (_isMobile ? 69 : 92) + _viewPadding.bottom,
-                      color: _theme.bottomSheetTheme.backgroundColor
-                          ?.withOpacity(0.75),
+                      height:
+                          (floating
+                              ? FloatingPanels.playerHeight
+                              : _isMobile
+                              ? 69
+                              : 92) +
+                          _viewPadding.bottom,
+                      decoration: BoxDecoration(
+                        color: _theme.bottomSheetTheme.backgroundColor
+                            ?.withValues(
+                              alpha:
+                                  !floating ||
+                                      FloatingPanels.translucentOf(context)
+                                  ? 0.75
+                                  : 1,
+                            ),
+                        borderRadius: !floating
+                            ? null
+                            : hasStrip
+                            ? radius.copyWith(
+                                bottomLeft: Radius.zero,
+                                bottomRight: Radius.zero,
+                              )
+                            : radius,
+                      ),
+                      clipBehavior: floating ? Clip.antiAlias : Clip.none,
                       padding: EdgeInsets.only(bottom: _viewPadding.bottom),
                       child: SimpleListTile(
                         onTap: !_isDesktop ? _onExpand : null,
@@ -489,8 +517,8 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                           )
                                         : Text(
                                             currentSong?.title ?? '',
-                                            style: const TextStyle(
-                                              fontSize: 24,
+                                            style: TextStyle(
+                                              fontSize: floating ? 14 : 24,
                                               fontWeight: FontWeight.w500,
                                               height: 1.2,
                                               overflow: TextOverflow.ellipsis,
@@ -502,10 +530,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                   if (_isDesktop)
                                     AudioQualityBadge.heard(
                                       currentSong?.extras,
+                                      fontSize: floating ? 9 : 10,
                                     ),
                                   if (_isDesktop)
                                     _ratingStars(
-                                      size: 16,
+                                      size: floating ? 14 : 16,
                                       spacing: 2,
                                       padding: const EdgeInsets.only(left: 8),
                                     ),
@@ -538,7 +567,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                                         }
                                       : null,
                                   textStyle: TextStyle(
-                                    fontSize: _isMobile ? 12 : 18,
+                                    fontSize: _isMobile || floating ? 12 : 18,
                                     height: 1.2,
                                   ),
                                   child: Text(
@@ -592,11 +621,11 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
                   data: Theme.of(context).copyWith(
                     colorScheme: colorScheme,
                   ),
-                  child: const Positioned(
-                    left: -25,
+                  child: Positioned(
+                    left: floating ? sliderInset : -25,
                     top: -22,
-                    right: -25,
-                    child: PositionSlider.bar(),
+                    right: floating ? sliderInset : -25,
+                    child: const PositionSlider.bar(),
                   ),
                 ),
               ),

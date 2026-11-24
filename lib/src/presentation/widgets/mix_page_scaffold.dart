@@ -1,13 +1,12 @@
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:jplayer/resources/j_player_icons.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/cover_mosaic.dart';
-import 'package:jplayer/src/presentation/widgets/custom_scrollbar.dart';
-import 'package:jplayer/src/presentation/widgets/gradient_background.dart';
+import 'package:jplayer/src/presentation/widgets/floating_page_layout.dart';
+import 'package:jplayer/src/presentation/widgets/play_button.dart';
 import 'package:jplayer/src/presentation/widgets/playlist_controls.dart';
 
 class MixPageScaffold extends StatefulWidget {
@@ -109,54 +108,28 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CupertinoNavigationBar(
-                previousPageTitle: widget.previousPageTitle,
-                backgroundColor: Colors.transparent,
-                enableBackgroundFilterBlur: false,
-                padding: EdgeInsetsDirectional.symmetric(horizontal: _edge),
-                middle: ValueListenableBuilder(
-                  valueListenable: _titleOpacity,
-                  builder: (context, opacity, child) => Transform.translate(
-                    offset: Offset(0, 8 - 8 * opacity),
-                    child: Opacity(opacity: opacity, child: child),
-                  ),
-                  child: Text(
-                    widget.name,
-                    overflow: TextOverflow.clip,
-                    style: TextStyle(
-                      fontSize: _device.isMobile ? 14 : 20,
-                      color: _theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: CustomScrollbar(
-                  controller: _scrollController,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      if (_device.isDesktop)
-                        _desktopHeader()
-                      else
-                        ..._stackedHeader(),
-                      _controls(),
-                      ...widget.slivers,
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return FloatingPageLayout(
+      controller: _scrollController,
+      titleFade: _titleOpacity,
+      trailing: HoverPlayButton(
+        isLoading: widget.isPlayLoading,
+        onPressed: widget.onPlay,
+      ),
+      previousPageTitle: widget.previousPageTitle,
+      edgePadding: _edge,
+      title: Text(
+        widget.name,
+        overflow: TextOverflow.clip,
+        style: TextStyle(
+          fontSize: _device.isMobile ? 14 : 20,
+          color: _theme.colorScheme.onPrimary,
         ),
       ),
+      slivers: [
+        if (_device.isDesktop) _desktopHeader() else ..._stackedHeader(),
+        _controls(),
+        ...widget.slivers,
+      ],
     );
   }
 
@@ -276,7 +249,7 @@ class _MixPageScaffoldState extends State<MixPageScaffold> {
     final seconds = total.inSeconds % Duration.secondsPerMinute;
     final showDuration = widget.songs.length >= count;
 
-    return DefaultTextStyle(
+    return DefaultTextStyle.merge(
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,

@@ -9,6 +9,7 @@ import 'package:jplayer/src/core/enums/enums.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -563,7 +564,11 @@ class _Tab extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: focused ? Colors.black : Colors.white,
+            color: focused
+                ? Colors.black
+                : selected
+                ? AppColors.from(context).onPrimaryFill
+                : Colors.white,
           ),
         ),
       ),

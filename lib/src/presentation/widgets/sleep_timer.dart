@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -76,8 +77,7 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
 
   int? get _trackCount => int.tryParse(_tracksController.text);
 
-  bool get _canSave =>
-      _mode != SleepTimerMode.tracks || (_trackCount ?? 0) > 0;
+  bool get _canSave => _mode != SleepTimerMode.tracks || (_trackCount ?? 0) > 0;
 
   void _save() {
     final notifier = ref.read(sleepTimerProvider.notifier);
@@ -180,9 +180,7 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
               onPressed: _cancel,
               style: ModalFormActions.buttonStyle(context),
               child: Text(
-                ref.watch(sleepTimerProvider) != null
-                    ? 'Stop timer'
-                    : 'Cancel',
+                ref.watch(sleepTimerProvider) != null ? 'Stop timer' : 'Cancel',
               ),
             ),
             TextButton(
@@ -199,13 +197,13 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
   Widget _timeButton() => TextButton(
     onPressed: () => unawaited(_pickTime()),
     style: TextButton.styleFrom(
-      backgroundColor: const Color(0xFFEEEEEE),
+      backgroundColor: AppColors.from(context).field,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     ),
     child: Text(
       _time.format(context),
-      style: const TextStyle(color: Colors.black87),
+      style: TextStyle(color: AppColors.from(context).onField),
     ),
   );
 
@@ -219,10 +217,10 @@ class _SleepTimerFormState extends ConsumerState<SleepTimerForm> {
     ],
     onTap: () => setState(() => _mode = SleepTimerMode.tracks),
     onChanged: (_) => setState(() => _mode = SleepTimerMode.tracks),
-    style: const TextStyle(color: Colors.black87),
+    style: TextStyle(color: AppColors.from(context).onField),
     decoration: InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFEEEEEE),
+      fillColor: AppColors.from(context).field,
       isDense: true,
       border: OutlineInputBorder(
         borderSide: BorderSide.none,

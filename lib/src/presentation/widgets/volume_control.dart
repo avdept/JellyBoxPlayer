@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/domain/providers/device_volume_provider.dart';
 import 'package:jplayer/src/domain/providers/volume_provider.dart';
@@ -92,7 +93,7 @@ class _VolumeControlState extends ConsumerState<VolumeControl>
           onExit: (_) => _scheduleHide(),
           child: Opacity(
             opacity: _expanded ? 0 : 1,
-            child: _muteButton(theme, volume),
+            child: _muteButton(_tint(theme), volume),
           ),
         ),
       ),
@@ -112,16 +113,16 @@ class _VolumeControlState extends ConsumerState<VolumeControl>
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
             child: ColoredBox(
-              color: Colors.black.withOpacity(0.35),
+              color: AppColors.from(context).scrim,
               child: Column(
                 children: [
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(top: _sliderPadding),
-                      child: _slider(theme, volume),
+                      child: _slider(AppColors.from(context).onScrim, volume),
                     ),
                   ),
-                  _muteButton(theme, volume),
+                  _muteButton(AppColors.from(context).onScrim, volume),
                 ],
               ),
             ),
@@ -131,14 +132,14 @@ class _VolumeControlState extends ConsumerState<VolumeControl>
     ),
   );
 
-  Widget _slider(ThemeData theme, VolumeState volume) => RotatedBox(
+  Widget _slider(Color tint, VolumeState volume) => RotatedBox(
     quarterTurns: 3,
     child: SliderTheme(
       data: SliderTheme.of(context).copyWith(
         trackHeight: 4,
-        activeTrackColor: _tint(theme),
-        inactiveTrackColor: _tint(theme).withOpacity(0.25),
-        thumbColor: _tint(theme),
+        activeTrackColor: tint,
+        inactiveTrackColor: tint.withOpacity(0.25),
+        thumbColor: tint,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
       ),
@@ -150,14 +151,14 @@ class _VolumeControlState extends ConsumerState<VolumeControl>
     ),
   );
 
-  Widget _muteButton(ThemeData theme, VolumeState volume) => HoverIconButton(
+  Widget _muteButton(Color tint, VolumeState volume) => HoverIconButton(
     onPressed: _toggleMute,
     style: ButtonStyle(
       padding: const WidgetStatePropertyAll(EdgeInsets.zero),
       minimumSize: WidgetStatePropertyAll(Size.square(widget.size)),
       maximumSize: WidgetStatePropertyAll(Size.square(widget.size)),
     ),
-    color: _tint(theme),
+    color: tint,
     iconSize: widget.size * 0.55,
     icon: Icon(_iconFor(volume)),
   );

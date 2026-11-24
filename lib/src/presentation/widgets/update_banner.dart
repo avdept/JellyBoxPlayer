@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/core/updates/release_checker.dart';
 import 'package:jplayer/src/domain/providers/update_banner_provider.dart';
@@ -18,7 +19,7 @@ class UpdateBanner extends ConsumerWidget {
     final style = TextStyle(fontSize: 13, color: foreground);
 
     return Material(
-      color: const Color(0xFF383A3F),
+      color: AppColors.from(context).banner,
       child: SafeArea(
         bottom: false,
         child: Padding(

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/core/enums/download_status.dart';
@@ -347,7 +348,7 @@ class _CachedBadgeState extends State<_CachedBadge> {
         child: Icon(
           Icons.cloud_done_outlined,
           size: widget.size,
-          color: Colors.grey,
+          color: AppColors.from(context).muted,
         ),
       ),
     ),

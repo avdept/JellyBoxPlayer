@@ -42,6 +42,26 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
     );
   }
 
+  Future<void> _onPlayPressed() async {
+    final name = widget.genre.name;
+    try {
+      final result = await ref
+          .read(setPlaybackProvider.notifier)
+          .playGenre(widget.genre);
+      if (result == SetPlaybackResult.empty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nothing to play in "$name"')),
+        );
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start playing "$name"')),
+        );
+      }
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -51,36 +71,37 @@ class _GenreAlbumsPageState extends ConsumerState<GenreAlbumsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final floating = FloatingPanels.enabled(context);
     return Scaffold(
       body: ScrollablePageScaffold(
         useGradientBackground: true,
-        navigationBar: PreferredSize(
-          preferredSize: Size.fromHeight(_device.isMobile ? 60 : 100),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: _device.isMobile ? 16 : 30,
-            ),
-            child: Row(
-              children: [
-                CupertinoNavigationBarBackButton(
-                  color: _theme.colorScheme.onPrimary,
-                  previousPageTitle: 'Genres',
-                  onPressed: () => context.pop(),
-                ),
-                SizedBox(width: _device.isMobile ? 12 : 20),
-                Expanded(
-                  child: Text(
-                    widget.genre.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: _device.isMobile ? 18 : 24,
-                      fontWeight: FontWeight.w600,
-                      color: _theme.colorScheme.onPrimary,
-                    ),
+        navigationBar: PageNavigationBar(
+          height: _device.isMobile ? 60 : 100,
+          horizontalPadding: _device.isMobile ? 16 : 30,
+          child: Row(
+            children: [
+              CupertinoNavigationBarBackButton(
+                color: _theme.colorScheme.onPrimary,
+                previousPageTitle: 'Genres',
+                onPressed: () => context.pop(),
+              ),
+              SizedBox(width: _device.isMobile || floating ? 12 : 20),
+              Expanded(
+                child: Text(
+                  widget.genre.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: _device.isMobile || floating ? 18 : 24,
+                    fontWeight: FontWeight.w600,
+                    color: _theme.colorScheme.onPrimary,
                   ),
                 ),
-              ],
-            ),
+              ),
+              HoverPlayButton(
+                isLoading: ref.watch(setPlaybackProvider) == widget.genre.id,
+                onPressed: _onPlayPressed,
+              ),
+            ],
           ),
         ),
         loadMoreData: () =>

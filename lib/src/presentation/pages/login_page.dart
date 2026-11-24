@@ -12,7 +12,9 @@ import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/data/services/server_probe_service.dart';
 import 'package:jplayer/src/data/storages/account_store.dart';
 import 'package:jplayer/src/domain/providers/discovered_servers_provider.dart';
+import 'package:jplayer/src/presentation/pages/settings/settings_controls.dart';
 import 'package:jplayer/src/presentation/tv/pages/tv_login_view.dart';
+import 'package:jplayer/src/presentation/utils/utils.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 import 'package:jplayer/src/providers/accounts_provider.dart';
 import 'package:jplayer/src/providers/auth_provider.dart';
@@ -389,8 +391,17 @@ class LoginPageState extends ConsumerState<LoginPage> {
                           onPressed: context.pop,
                           child: const Text('Cancel'),
                         ),
-                      ] else
+                      ] else ...[
                         ?_savedServers(),
+                        const SizedBox(height: 40),
+                        ColorThemePicker(
+                          label: 'Pick your colors',
+                          centered: true,
+                          scrollable: DeviceType.fromScreenSize(
+                            MediaQuery.sizeOf(context),
+                          ).isMobile,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -520,17 +531,17 @@ class LoginPageState extends ConsumerState<LoginPage> {
       minimumSize: Size.zero,
       visualDensity: VisualDensity.compact,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      foregroundColor: Colors.white,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
     ),
-    child: const Text(
+    child: Text(
       'Quick Connect',
       style: TextStyle(
         fontFamily: FontFamily.inter,
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.onPrimary,
         decoration: TextDecoration.underline,
-        decorationColor: Colors.white,
+        decorationColor: Theme.of(context).colorScheme.onPrimary,
       ),
     ),
   );

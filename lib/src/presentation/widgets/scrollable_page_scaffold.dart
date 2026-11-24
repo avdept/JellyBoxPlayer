@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jplayer/src/presentation/widgets/widgets.dart';
 
@@ -15,12 +16,14 @@ class ScrollablePageScaffold extends StatefulWidget {
     this.backgroundColor,
     this.slivers = const [],
     this.showScrollbar = true,
+    this.barOpacity,
     super.key,
   });
 
   final ScrollController? controller;
   final bool useGradientBackground;
   final bool showScrollbar;
+  final ValueListenable<double>? barOpacity;
   final Future<void> Function()? loadMoreData;
   final PreferredSizeWidget? navigationBar;
   final EdgeInsets contentPadding;
@@ -42,7 +45,11 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
 
   bool get _hasExternalController => widget.controller != null;
 
-  double get _appBarHeight => widget.navigationBar?.preferredSize.height ?? 0;
+  double get _appBarHeight => switch (widget.navigationBar) {
+    final PageNavigationBar bar => bar.heightIn(context),
+    final bar? => bar.preferredSize.height,
+    null => 0,
+  };
 
   double get _backgroundScroll => _effectiveScrollController.hasClients
       ? max(0, _effectiveScrollController.offset).roundToDouble()
@@ -80,13 +87,14 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
     _theme = Theme.of(context);
   }
 
+  Widget _withBackground(Widget child) =>
+      widget.useGradientBackground ? GradientBackground(child: child) : child;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: widget.backgroundColor,
-      body: widget.useGradientBackground
-          ? GradientBackground(child: _body())
-          : _body(),
+      body: _withBackground(_body()),
     );
   }
 
@@ -117,75 +125,94 @@ class _ScrollablePageScaffoldState extends State<ScrollablePageScaffold> {
     ),
   );
 
-  Widget _body() => Stack(
-    children: [
-      if (widget.background case final background?)
-        Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          child: ListenableBuilder(
-            listenable: _effectiveScrollController,
-            builder: (context, child) => Transform.translate(
-              offset: Offset(0, -_backgroundScroll),
-              child: child,
-            ),
-            child: background,
-          ),
+  Widget? _backgroundLayer() => switch (widget.background) {
+    final background? => Positioned(
+      left: 0,
+      top: 0,
+      right: 0,
+      child: ListenableBuilder(
+        listenable: _effectiveScrollController,
+        builder: (context, child) => Transform.translate(
+          offset: Offset(0, -_backgroundScroll),
+          child: child,
         ),
-      SafeArea(
-        child: MediaQuery(
-          data: _mediaQuery.copyWith(
-            padding: EdgeInsets.only(top: _appBarHeight),
-          ),
-          child: CustomScrollbar(
-            controller: _effectiveScrollController,
-            enabled: widget.showScrollbar,
-            child: CustomScrollView(
-              controller: _effectiveScrollController,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: _appBarHeight + widget.contentPadding.top,
-                  ),
-                ),
-                for (final sliver in widget.slivers!)
-                  SliverPadding(
-                    padding: EdgeInsets.only(
-                      left: widget.contentPadding.left,
-                      right: widget.contentPadding.right,
-                    ),
-                    sliver: sliver,
-                  ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: widget.contentPadding.bottom,
-                  ),
-                ),
-              ],
+        child: background,
+      ),
+    ),
+    null => null,
+  };
+
+  Widget _scrollLayer(double top) => SafeArea(
+    child: MediaQuery(
+      data: _mediaQuery.copyWith(padding: EdgeInsets.only(top: top)),
+      child: CustomScrollbar(
+        key: GlobalObjectKey(_effectiveScrollController),
+        controller: _effectiveScrollController,
+        enabled: widget.showScrollbar,
+        child: CustomScrollView(
+          controller: _effectiveScrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: SizedBox(height: top + widget.contentPadding.top),
             ),
-          ),
+            ...FloatingPanels.slivers(context, [
+              for (final sliver in widget.slivers!)
+                SliverPadding(
+                  padding: EdgeInsets.only(
+                    left: widget.contentPadding.left,
+                    right: widget.contentPadding.right,
+                  ),
+                  sliver: sliver,
+                ),
+              SliverToBoxAdapter(
+                child: SizedBox(height: widget.contentPadding.bottom),
+              ),
+            ]),
+          ],
         ),
       ),
-      if (widget.navigationBar != null) ...[
-        Positioned(
-          left: 0,
-          top: 0,
-          right: 0,
-          height: _mediaQuery.padding.top,
-          child: ColoredBox(color: _theme.scaffoldBackgroundColor),
-        ),
-        Positioned(
-          left: 0,
-          top: _mediaQuery.padding.top,
-          right: 0,
-          height: _appBarHeight,
-          child: MediaQuery(
-            data: _mediaQuery.copyWith(textScaler: TextScaler.noScaling),
-            child: _appBar(),
-          ),
-        ),
-      ],
-    ],
+    ),
   );
+
+  Widget _body() {
+    final navigationBar = widget.navigationBar;
+    if (navigationBar != null && FloatingPanels.enabled(context)) {
+      return FloatingBarFrame(
+        bar: MediaQuery(
+          data: _mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+          child: navigationBar,
+        ),
+        barHeight: _appBarHeight,
+        controller: _effectiveScrollController,
+        fade: widget.barOpacity,
+        background: _backgroundLayer(),
+        scrollView: _scrollLayer,
+      );
+    }
+    return Stack(
+      children: [
+        ?_backgroundLayer(),
+        _scrollLayer(_appBarHeight),
+        if (navigationBar != null) ...[
+          Positioned(
+            left: 0,
+            top: 0,
+            right: 0,
+            height: _mediaQuery.padding.top,
+            child: ColoredBox(color: _theme.scaffoldBackgroundColor),
+          ),
+          Positioned(
+            left: 0,
+            top: _mediaQuery.padding.top,
+            right: 0,
+            height: _appBarHeight,
+            child: MediaQuery(
+              data: _mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+              child: _appBar(),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }

@@ -19,7 +19,7 @@ enum Routes {
   palette('palette'),
   queueCache('queue-cache'),
   devQueues('dev-queues'),
-  support('support'),
+  support('/support'),
   searchResults('search-results'),
   playlist('playlist'),
   favourites('favourites'),

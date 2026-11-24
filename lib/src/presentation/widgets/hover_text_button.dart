@@ -42,10 +42,12 @@ class _HoverTextButtonState extends State<HoverTextButton> {
           padding: widget.padding,
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 150),
-            style: TextStyle(
-              fontSize: widget.fontSize,
-              fontWeight: FontWeight.w600,
-              color: _hovered ? accent : theme.colorScheme.onPrimary,
+            style: DefaultTextStyle.of(context).style.merge(
+              TextStyle(
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.w600,
+                color: _hovered ? accent : theme.colorScheme.onPrimary,
+              ),
             ),
             child: Text(widget.label),
           ),

@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jplayer/src/data/backend/letter_index.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 
 class LetterRuler extends StatefulWidget {
   const LetterRuler({
@@ -173,7 +174,7 @@ class _LetterBubble extends StatelessWidget {
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
-              color: colors.onPrimary,
+              color: AppColors.from(context).onPrimaryFill,
             ),
           ),
         ),

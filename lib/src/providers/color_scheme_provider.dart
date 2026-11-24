@@ -36,7 +36,7 @@ final AutoDisposeFutureProvider<ColorScheme?> artworkSchemeProvider =
       try {
         return await ColorScheme.fromImageProvider(
           provider: ref.read(imageServiceProvider).artworkImage(artUri),
-          brightness: Brightness.dark,
+          brightness: AppColors.of(ref.watch(colorThemeProvider)).brightness,
         );
       } on Object {
         return null;

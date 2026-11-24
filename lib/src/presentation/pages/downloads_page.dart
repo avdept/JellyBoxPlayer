@@ -123,55 +123,50 @@ class DownloadsPage extends StatelessWidget {
 
     return ScrollablePageScaffold(
       useGradientBackground: true,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(device.isMobile ? 60 : 100),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: device.isMobile ? 16 : 30),
-          child: Row(
-            children: [
-              Text(
-                'Downloads',
-                style: TextStyle(
-                  fontSize: device.isMobile ? 24 : 36,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                ),
+      navigationBar: PageNavigationBar(
+        height: device.isMobile ? 60 : 100,
+        horizontalPadding: device.isMobile ? 16 : 30,
+        child: Row(
+          children: [
+            Text(
+              'Downloads',
+              style: TextStyle(
+                fontSize: device.isMobile ? 24 : 36,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
               ),
-              SizedBox(width: device.isMobile ? 12 : 24),
-              Flexible(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final albumCount =
-                        ref
-                            .watch(downloadedAlbumsProvider)
-                            .valueOrNull
-                            ?.length ??
-                        0;
-                    final playlistCount =
-                        ref
-                            .watch(downloadedPlaylistsProvider)
-                            .valueOrNull
-                            ?.length ??
-                        0;
-                    final songCount =
-                        ref
-                            .watch(standaloneDownloadedSongsProvider)
-                            .valueOrNull
-                            ?.length ??
-                        0;
-                    return Text(
-                      _counterLabel(albumCount, playlistCount, songCount),
-                      key: testKeys?.counterText,
-                      style: TextStyle(
-                        fontSize: device.isMobile ? 12 : 16,
-                        height: 1.2,
-                      ),
-                    );
-                  },
-                ),
+            ),
+            SizedBox(width: device.isMobile ? 12 : 24),
+            Flexible(
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final albumCount =
+                      ref.watch(downloadedAlbumsProvider).valueOrNull?.length ??
+                      0;
+                  final playlistCount =
+                      ref
+                          .watch(downloadedPlaylistsProvider)
+                          .valueOrNull
+                          ?.length ??
+                      0;
+                  final songCount =
+                      ref
+                          .watch(standaloneDownloadedSongsProvider)
+                          .valueOrNull
+                          ?.length ??
+                      0;
+                  return Text(
+                    _counterLabel(albumCount, playlistCount, songCount),
+                    key: testKeys?.counterText,
+                    style: TextStyle(
+                      fontSize: device.isMobile ? 12 : 16,
+                      height: 1.2,
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       contentPadding: EdgeInsets.only(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/core/audio/quality_extras.dart';
 
 class AudioQualityBadge extends StatelessWidget {
@@ -66,7 +67,7 @@ class AudioQualityBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white.withValues(alpha: 0.15),
+        color: backgroundColor ?? AppColors.from(context).subtle(0.15),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

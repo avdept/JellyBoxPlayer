@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/src/presentation/widgets/hover_zoom.dart';
 import 'package:jplayer/src/providers/color_scheme_provider.dart';
@@ -69,7 +70,9 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
           child: AnimatedIcon(
             icon: AnimatedIcons.play_pause,
             progress: _animationController,
-            color: hovered ? Colors.white : widget.foreground,
+            color: hovered
+                ? AppColors.readableOn(ref.watch(accentColorProvider))
+                : widget.foreground,
           ),
         ),
       ),

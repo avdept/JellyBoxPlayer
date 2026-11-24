@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/tv_focusable.dart';
 
@@ -37,7 +38,11 @@ class TvButton extends StatelessWidget {
         final background = focused
             ? Colors.white
             : (primary ? accent : Colors.white12);
-        final foreground = focused ? Colors.black : Colors.white;
+        final foreground = focused
+            ? Colors.black
+            : primary
+            ? AppColors.from(context).onPrimaryFill
+            : Colors.white;
         return AnimatedContainer(
           duration: TvTokens.focusDuration,
           curve: TvTokens.focusCurve,
@@ -118,6 +123,8 @@ class TvIconButton extends StatelessWidget {
             : (primary ? accent : Colors.white12);
         final foreground = focused
             ? Colors.black
+            : primary
+            ? AppColors.from(context).onPrimaryFill
             : (selected ? accent : Colors.white);
         return AnimatedContainer(
           duration: TvTokens.focusDuration,

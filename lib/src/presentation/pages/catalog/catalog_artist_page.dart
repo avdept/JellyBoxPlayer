@@ -28,6 +28,10 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
 
   final _scrollController = ScrollController();
   final GlobalKey _titleKey = GlobalKey(debugLabel: 'catalog-artist-title');
+  late final _titleFade = ScrollTitleFade(
+    controller: _scrollController,
+    titleKey: _titleKey,
+  );
 
   late Size _screenSize;
   late ThemeData _theme;
@@ -57,6 +61,7 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
 
   @override
   void dispose() {
+    _titleFade.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -64,8 +69,17 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
   @override
   Widget build(BuildContext context) {
     final albums = ref.watch(catalogAlbumsProvider(_artist.key));
+    final header = artistHeaderBars(
+      context,
+      controller: _scrollController,
+      fade: _titleFade,
+      name: _artist.name,
+      image: _picture,
+    );
     return ScrollablePageScaffold(
       controller: _scrollController,
+      barOpacity: _titleFade,
+      navigationBar: header.navigationBar,
       background: _artist.pictureUrl == null
           ? null
           : Opacity(
@@ -78,12 +92,7 @@ class _CatalogArtistPageState extends ConsumerState<CatalogArtistPage> {
               ),
             ),
       slivers: [
-        ArtistHeaderAppBar(
-          controller: _scrollController,
-          titleKey: _titleKey,
-          name: _artist.name,
-          titleImage: _picture,
-        ),
+        ?header.sliver,
         ArtistHeaderBody(
           image: ClipOval(
             child: Image(image: _picture, fit: BoxFit.cover),

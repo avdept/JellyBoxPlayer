@@ -51,3 +51,20 @@ class FadingNavTitle extends StatelessWidget {
     child: child,
   );
 }
+
+class FadingNavAction extends StatelessWidget {
+  const FadingNavAction({required this.fade, required this.child, super.key});
+
+  final ValueListenable<double> fade;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: fade,
+    builder: (context, opacity, child) => IgnorePointer(
+      ignoring: opacity < 0.5,
+      child: Opacity(opacity: opacity, child: child),
+    ),
+    child: child,
+  );
+}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:jplayer/src/presentation/widgets/circle_play_button.dart';
 import 'package:jplayer/src/presentation/widgets/context_menu.dart';
 import 'package:jplayer/src/presentation/widgets/download_badge_icon.dart';
@@ -194,11 +195,11 @@ class _AlbumViewState extends ConsumerState<AlbumView> {
 
   Widget _subtitleWidget() => Text(
     _subtitleText,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: AlbumView.subtitleFontSize,
       fontWeight: FontWeight.w400,
       height: 1.2,
-      color: Color.fromARGB(130, 255, 255, 255),
+      color: AppColors.from(context).secondaryText,
       overflow: TextOverflow.ellipsis,
     ).merge(widget.subTextStyle),
     maxLines: 1,

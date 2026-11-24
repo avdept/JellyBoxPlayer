@@ -79,7 +79,7 @@ class _RailTooltipState extends State<RailTooltip> {
                     padding: Themes.tooltipPadding,
                     child: Text(
                       widget.message,
-                      style: Themes.tooltipTextStyle,
+                      style: Themes.tooltipTextStyle(context),
                     ),
                   ),
                 ),

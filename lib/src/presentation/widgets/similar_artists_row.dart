@@ -95,6 +95,7 @@ class SimilarArtistsRow extends StatelessWidget {
               builder: (context, controller) => ListView.separated(
                 controller: controller,
                 scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 itemCount: list.length,
                 separatorBuilder: (context, index) => SizedBox(width: spacing),

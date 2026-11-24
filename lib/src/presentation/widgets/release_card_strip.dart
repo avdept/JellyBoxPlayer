@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:jplayer/src/presentation/themes/app_colors.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jplayer/resources/resources.dart';
@@ -223,7 +224,6 @@ class ReleaseCard extends ConsumerStatefulWidget {
 class _ReleaseCardState extends ConsumerState<ReleaseCard> {
   static const _radius = 12.0;
   static const _baseTint = Color(0x12FFFFFF);
-  static const _plainTint = Color(0xFF2A2A2E);
 
   var _isHovered = false;
   var _isPlayLoading = false;
@@ -307,7 +307,7 @@ class _ReleaseCardState extends ConsumerState<ReleaseCard> {
           height: ReleaseCard.heightFor(device),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(_radius),
-            color: tinted ? null : _plainTint,
+            color: tinted ? null : AppColors.from(context).card,
             gradient: scheme == null
                 ? null
                 : LinearGradient(

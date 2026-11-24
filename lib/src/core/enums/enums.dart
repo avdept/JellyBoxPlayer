@@ -15,6 +15,8 @@ export 'layout.dart';
 export 'lyrics_alignment.dart';
 export 'lyrics_blur.dart';
 export 'network_exceptions.dart';
+export 'panel_shadow.dart';
+export 'panel_style.dart';
 export 'pin_longevity.dart';
 export 'playback_status.dart';
 export 'player_time_display.dart';

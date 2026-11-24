@@ -15,24 +15,20 @@ class SupportPage extends StatelessWidget {
 
     return ScrollablePageScaffold(
       useGradientBackground: true,
-      navigationBar: PreferredSize(
-        preferredSize: Size.fromHeight(navigationBarHeight),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: Row(
-            children: [
-              const BackButton(),
-              const SizedBox(width: 4),
-              Text(
-                'Support',
-                style: TextStyle(
-                  fontSize: device.isMobile ? 22 : 26,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onPrimary,
-                ),
+      navigationBar: PageNavigationBar(
+        height: navigationBarHeight,
+        horizontalPadding: horizontalPadding,
+        child: Row(
+          children: [
+            Text(
+              'Support',
+              style: TextStyle(
+                fontSize: device.isMobile ? 22 : 26,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onPrimary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       contentPadding: EdgeInsets.only(
