@@ -222,37 +222,15 @@ class ReleaseCard extends ConsumerStatefulWidget {
 }
 
 class _ReleaseCardState extends ConsumerState<ReleaseCard> {
-  static const _radius = 12.0;
-  static const _baseTint = Color(0x12FFFFFF);
-
   var _isHovered = false;
   var _isPlayLoading = false;
 
   LibraryItem get _item => widget.item;
 
-  String _subtitle(BuildContext context) =>
-      [?_item.albumArtist, ?_releaseLabel(context)].join(' · ');
-
-  String? _releaseLabel(BuildContext context) {
-    final date = _item.originalReleaseDate;
-    if (date == null) return _item.productionYear?.toString();
-    final localizations = MaterialLocalizations.of(context);
-    final monthDay = localizations.formatShortMonthDay(date);
-    return '$monthDay, ${localizations.formatYear(date)}';
-  }
-
   bool get _isSourcePlaying => switch (ref.watch(queueSourceStatus(_item.id))) {
     PlaybackStatus.playing || PlaybackStatus.buffering => true,
     _ => false,
   };
-
-  static Color _dull(Color color) {
-    final hsl = HSLColor.fromColor(color);
-    return hsl
-        .withSaturation(hsl.saturation * 0.45)
-        .withLightness(hsl.lightness * 0.85)
-        .toColor();
-  }
 
   List<ContextMenuAction>? _actions(BuildContext context) =>
       widget.optionsBuilder?.call(context, _item);
@@ -272,14 +250,9 @@ class _ReleaseCardState extends ConsumerState<ReleaseCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final device = widget.device;
-    final tinted = ref.watch(settingProvider(AppSetting.recentReleasesTinted));
-    final scheme = tinted
-        ? ref.watch(itemCoverSchemeProvider(_item)).valueOrNull
-        : null;
     final hasMenu = widget.optionsBuilder != null;
-    final subtitle = _subtitle(context);
+    final height = ReleaseCard.heightFor(device);
 
     final card = GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -297,70 +270,13 @@ class _ReleaseCardState extends ConsumerState<ReleaseCard> {
               actions: _actions(context)!,
             )
           : null,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_radius),
-          color: _baseTint,
-        ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          height: ReleaseCard.heightFor(device),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_radius),
-            color: tinted ? null : AppColors.from(context).card,
-            gradient: scheme == null
-                ? null
-                : LinearGradient(
-                    colors: [
-                      _dull(scheme.primary).withValues(alpha: 0.5),
-                      _dull(scheme.secondary).withValues(alpha: 0.28),
-                    ],
-                  ),
-          ),
-          child: Row(
-            children: [
-              _cover(device),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: ReleaseCard.paddingFor(device) + 2,
-                    vertical: ReleaseCard.paddingFor(device),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: device.isMobile ? 14 : 15,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
-                          color: theme.colorScheme.onPrimary,
-                        ),
-                      ),
-                      if (subtitle.isNotEmpty)
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: device.isMobile ? 12 : 13,
-                            height: 1.3,
-                            color: theme.colorScheme.onPrimary.withValues(
-                              alpha: 0.72,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      child: ReleaseCardFace(
+        item: _item,
+        height: height,
+        padding: ReleaseCard.paddingFor(device),
+        titleSize: device.isMobile ? 14 : 15,
+        subtitleSize: device.isMobile ? 12 : 13,
+        coverOverlay: _playButton(height),
       ),
     );
 
@@ -376,46 +292,159 @@ class _ReleaseCardState extends ConsumerState<ReleaseCard> {
     );
   }
 
-  Widget _cover(DeviceType device) {
-    final size = ReleaseCard.heightFor(device);
-    final isPlayVisible =
-        widget.onPlayPressed != null &&
-        (_isHovered || _isPlayLoading || _isSourcePlaying);
-
-    return SizedBox.square(
-      dimension: size,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.horizontal(
-              left: Radius.circular(_radius),
-            ),
-            child: Image(
-              image: ref.read(imageServiceProvider).itemImage(_item),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Image.asset(Images.album, fit: BoxFit.cover),
-            ),
-          ),
-          if (widget.onPlayPressed != null)
-            Center(
-              child: IgnorePointer(
-                ignoring: !isPlayVisible,
-                child: AnimatedOpacity(
-                  opacity: isPlayVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 150),
-                  child: CirclePlayButton(
-                    size: size * 0.55,
-                    isLoading: _isPlayLoading,
-                    isPlaying: _isSourcePlaying,
-                    onPressed: _onPlayPressed,
-                  ),
-                ),
-              ),
-            ),
-        ],
+  Widget? _playButton(double size) {
+    if (widget.onPlayPressed == null) return null;
+    final isPlayVisible = _isHovered || _isPlayLoading || _isSourcePlaying;
+    return IgnorePointer(
+      ignoring: !isPlayVisible,
+      child: AnimatedOpacity(
+        opacity: isPlayVisible ? 1 : 0,
+        duration: const Duration(milliseconds: 150),
+        child: CirclePlayButton(
+          size: size * 0.55,
+          isLoading: _isPlayLoading,
+          isPlaying: _isSourcePlaying,
+          onPressed: _onPlayPressed,
+        ),
       ),
     );
   }
+}
+
+class ReleaseCardFace extends ConsumerWidget {
+  const ReleaseCardFace({
+    required this.item,
+    required this.height,
+    this.padding = 8,
+    this.titleSize = 15,
+    this.subtitleSize = 13,
+    this.coverOverlay,
+    super.key,
+  });
+
+  static const radius = 12.0;
+  static const _baseTint = Color(0x12FFFFFF);
+
+  final LibraryItem item;
+  final double height;
+  final double padding;
+  final double titleSize;
+  final double subtitleSize;
+  final Widget? coverOverlay;
+
+  String _subtitle(BuildContext context) =>
+      [?item.albumArtist, ?_releaseLabel(context)].join(' · ');
+
+  String? _releaseLabel(BuildContext context) {
+    final date = item.originalReleaseDate;
+    if (date == null) return item.productionYear?.toString();
+    final localizations = MaterialLocalizations.of(context);
+    final monthDay = localizations.formatShortMonthDay(date);
+    return '$monthDay, ${localizations.formatYear(date)}';
+  }
+
+  static Color _dull(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withSaturation(hsl.saturation * 0.45)
+        .withLightness(hsl.lightness * 0.85)
+        .toColor();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final tinted = ref.watch(settingProvider(AppSetting.recentReleasesTinted));
+    final scheme = tinted
+        ? ref.watch(itemCoverSchemeProvider(item)).valueOrNull
+        : null;
+    final subtitle = _subtitle(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        color: _baseTint,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius),
+          color: tinted ? null : AppColors.from(context).card,
+          gradient: scheme == null
+              ? null
+              : LinearGradient(
+                  colors: [
+                    _dull(scheme.primary).withValues(alpha: 0.5),
+                    _dull(scheme.secondary).withValues(alpha: 0.28),
+                  ],
+                ),
+        ),
+        child: Row(
+          children: [
+            _cover(ref),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: padding + 2,
+                  vertical: padding,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: subtitleSize,
+                          height: 1.3,
+                          color: theme.colorScheme.onPrimary.withValues(
+                            alpha: 0.72,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cover(WidgetRef ref) => SizedBox.square(
+    dimension: height,
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.horizontal(
+            left: Radius.circular(radius),
+          ),
+          child: Image(
+            image: ref.read(imageServiceProvider).itemImage(item),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                Image.asset(Images.album, fit: BoxFit.cover),
+          ),
+        ),
+        if (coverOverlay != null) Center(child: coverOverlay),
+      ],
+    ),
+  );
 }

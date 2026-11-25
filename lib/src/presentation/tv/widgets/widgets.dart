@@ -11,6 +11,7 @@ export 'tv_mini_player.dart';
 export 'tv_navigation_rail.dart';
 export 'tv_options_dialog.dart';
 export 'tv_play_on_dialog.dart';
+export 'tv_release_shelf.dart';
 export 'tv_shelf.dart';
 export 'tv_song_row.dart';
 export 'tv_text_field.dart';
