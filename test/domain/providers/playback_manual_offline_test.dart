@@ -12,6 +12,7 @@ import 'package:jplayer/src/data/backend/playback_report.dart';
 import 'package:jplayer/src/data/backend/stream_source.dart';
 import 'package:jplayer/src/data/providers/providers.dart';
 import 'package:jplayer/src/domain/models/models.dart';
+import 'package:jplayer/src/domain/playback/play_request.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
@@ -94,6 +95,47 @@ class _FakeTarget implements PlaybackTarget {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Remote implements RemotePlayback {
+  final edits = <String>[];
+
+  @override
+  Future<bool> play(PlayRequest request) async {
+    edits.add('play');
+    return true;
+  }
+
+  @override
+  Future<bool> enqueue(
+    List<LibraryItem> songs, {
+    required bool playNext,
+  }) async {
+    edits.add('enqueue');
+    return true;
+  }
+
+  @override
+  Future<bool> replaceUpcoming(
+    List<LibraryItem> songs,
+    LibraryItem album, {
+    String? sourceId,
+  }) async {
+    edits.add('replace');
+    return true;
+  }
+
+  @override
+  Future<bool> move(int from, int to) async {
+    edits.add('move $from $to');
+    return true;
+  }
+
+  @override
+  Future<bool> remove(int index) async {
+    edits.add('remove $index');
+    return true;
+  }
 }
 
 class _MockMediaServerClient extends Mock implements MediaServerClient {}
@@ -235,5 +277,19 @@ void main() {
     expect(playback.state.songs.map((song) => song.id), ['a']);
     expect(target.stops, 0);
     expect(playback.state.status, PlaybackStatus.playing);
+  });
+
+  test('going offline leaves a session playing elsewhere alone', () async {
+    final playback = await playbackWith(manualOffline: false);
+    await playback.play(songs[1], songs, album);
+    final remote = _Remote();
+    playback.remote = remote;
+
+    goOffline();
+    await settle();
+
+    expect(remote.edits, isEmpty);
+    expect(playback.state.songs.map((song) => song.id), ['a']);
+    expect(target.stops, 1);
   });
 }
