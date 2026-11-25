@@ -139,14 +139,20 @@ final AutoDisposeFutureProvider<List<LibraryItem>> favouritePlaylistsProvider =
       return page.items;
     });
 
-final AutoDisposeFutureProvider<List<LibraryItem>> homeFavouritesProvider =
-    FutureProvider.autoDispose((ref) async {
-      final [playlists, albums] = await Future.wait([
-        ref.watch(favouritePlaylistsProvider.future),
-        ref.watch(favouriteAlbumsProvider.future),
-      ]);
-      return [...playlists, ...albums];
-    });
+final AutoDisposeProvider<AsyncValue<List<LibraryItem>>>
+homeFavouritesProvider = Provider.autoDispose((ref) {
+  final playlists = ref.watch(favouritePlaylistsProvider);
+  final albums = ref.watch(favouriteAlbumsProvider);
+  for (final part in [playlists, albums]) {
+    if (part.hasError && !part.isLoading) {
+      return AsyncError(part.error!, part.stackTrace ?? StackTrace.empty);
+    }
+  }
+  if (playlists.hasValue && albums.hasValue) {
+    return AsyncData([...playlists.requireValue, ...albums.requireValue]);
+  }
+  return const AsyncLoading();
+});
 
 final AutoDisposeFutureProvider<LibraryPage> favouriteSongsProvider =
     FutureProvider.autoDispose((ref) async {

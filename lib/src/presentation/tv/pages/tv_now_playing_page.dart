@@ -8,6 +8,7 @@ import 'package:jplayer/resources/resources.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/providers.dart';
+import 'package:jplayer/src/presentation/widgets/smooth_position.dart';
 import 'package:jplayer/src/presentation/tv/tv_tokens.dart';
 import 'package:jplayer/src/presentation/tv/widgets/widgets.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
@@ -332,6 +333,7 @@ class _Player extends ConsumerWidget {
           const SizedBox(height: 20),
           _SeekBar(
             progress: progress,
+            playing: playing,
             accent: accent,
             onSeek: (position) => unawaited(controls.seek(position)),
           ),
@@ -440,11 +442,13 @@ class _Player extends ConsumerWidget {
 class _SeekBar extends StatefulWidget {
   const _SeekBar({
     required this.progress,
+    required this.playing,
     required this.accent,
     required this.onSeek,
   });
 
   final BarProgress progress;
+  final bool playing;
   final Color accent;
   final ValueChanged<Duration> onSeek;
 
@@ -479,9 +483,6 @@ class _SeekBarState extends State<_SeekBar> {
   Widget build(BuildContext context) {
     final progress = widget.progress;
     final total = progress.duration.inMilliseconds;
-    final fraction = total == 0
-        ? 0.0
-        : (progress.position.inMilliseconds / total).clamp(0.0, 1.0);
     final buffered = total == 0
         ? 0.0
         : (progress.buffered.inMilliseconds / total).clamp(0.0, 1.0);
@@ -511,11 +512,21 @@ class _SeekBarState extends State<_SeekBar> {
                   widthFactor: buffered,
                   child: const ColoredBox(color: Colors.white24),
                 ),
-                FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: fraction,
-                  child: ColoredBox(
-                    color: _focused ? Colors.white : widget.accent,
+                SmoothPosition(
+                  position: progress.position,
+                  duration: progress.duration,
+                  playing: widget.playing,
+                  builder: (context, position) => FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: total == 0
+                        ? 0.0
+                        : (position.inMicroseconds / 1000 / total).clamp(
+                            0.0,
+                            1.0,
+                          ),
+                    child: ColoredBox(
+                      color: _focused ? Colors.white : widget.accent,
+                    ),
                   ),
                 ),
               ],

@@ -132,6 +132,15 @@ class PlayerSettings extends ConsumerWidget {
           value: lyricsAlignmentProvider,
           options: _lyricsAlignmentLabels,
         ),
+        SettingSlider(
+          label: 'Lyrics text size',
+          setting: AppSetting.lyricsTextSize,
+          value: lyricsTextSizeProvider,
+          min: lyricsTextSizeMin,
+          max: lyricsTextSizeMax,
+          step: 10,
+          suffix: '%',
+        ),
         SettingsEnumDropdown<LyricsBlur>(
           label: 'Blur of other lines',
           setting: AppSetting.lyricsBlur,

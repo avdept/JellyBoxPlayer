@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:jplayer/src/presentation/themes/app_colors.dart';
+import 'package:jplayer/src/presentation/utils/device_type.dart';
 import 'package:jplayer/src/presentation/widgets/floating_panels.dart';
 import 'package:jplayer/src/presentation/widgets/hover_icon_button.dart';
 import 'package:jplayer/src/presentation/widgets/scroll_title_fade.dart';
@@ -59,36 +60,51 @@ class ArtistHeaderAppBar extends StatelessWidget {
       kToolbarHeight +
       (FloatingPanels.enabled(context) ? FloatingPanels.margin : 0);
 
-  double get _barOpacity => controller.hasClients
+  double _barOpacity({required bool withTitle}) => withTitle
+      ? fade.value
+      : controller.hasClients
       ? (controller.offset / ScrollFadingPanel.fadeDistance).clamp(0.0, 1.0)
       : 0;
 
-  Widget _hardBar(ThemeData theme) => ListenableBuilder(
-    listenable: controller,
-    builder: (context, _) => ClipRect(
-      child: BackdropFilter(
-        enabled: _barOpacity > 0,
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: ColoredBox(
-          color: (barColor ?? theme.scaffoldBackgroundColor).withValues(
-            alpha: 0.9 * _barOpacity,
-          ),
-          child: const SizedBox.expand(),
-        ),
-      ),
-    ),
-  );
+  Widget _hardBar(ThemeData theme, {required bool withTitle}) =>
+      ListenableBuilder(
+        listenable: withTitle ? fade : controller,
+        builder: (context, _) {
+          final opacity = _barOpacity(withTitle: withTitle);
+          return ClipRect(
+            child: BackdropFilter(
+              enabled: opacity > 0,
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: ColoredBox(
+                color: (barColor ?? theme.scaffoldBackgroundColor).withValues(
+                  alpha: 0.9 * opacity,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          );
+        },
+      );
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mobile = DeviceType.fromScreenSize(
+      MediaQuery.sizeOf(context),
+    ).isMobile;
     return SliverAppBar(
       centerTitle: true,
       title: FadingNavTitle(
         opacity: fade,
         child: _ArtistTitle(name: name, image: titleImage),
       ),
-      leading: _canPop(context) ? const Center(child: _BackCircle()) : null,
+      leading: _canPop(context)
+          ? Center(
+              child: mobile
+                  ? FadingNavAction(fade: fade, child: const _BackCircle())
+                  : const _BackCircle(),
+            )
+          : null,
       actions: [
         if (trailing case final trailing?)
           Padding(
@@ -103,7 +119,7 @@ class ArtistHeaderAppBar extends StatelessWidget {
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
-      flexibleSpace: _hardBar(theme),
+      flexibleSpace: _hardBar(theme, withTitle: mobile),
     );
   }
 }

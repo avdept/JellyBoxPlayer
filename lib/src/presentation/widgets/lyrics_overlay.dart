@@ -340,6 +340,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
         final isSynced = lyrics!.isSynced;
         final textAlign = _textAlign;
         final blur = ref.watch(lyricsBlurProvider);
+        final scale = ref.watch(lyricsTextSizeProvider) / 100;
 
         return ScrollConfiguration(
           behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
@@ -361,6 +362,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
                         offset: lyrics.offset,
                         textAlign: textAlign,
                         blur: blur,
+                        scale: scale,
                       ),
                   ],
                 ),
@@ -379,6 +381,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
     required Duration offset,
     required TextAlign textAlign,
     required LyricsBlur blur,
+    required double scale,
   }) {
     final isActive = isSynced && index == _activeLine;
     final start = line.start;
@@ -394,7 +397,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
 
     return Padding(
       key: _lineKeys[index],
-      padding: EdgeInsets.symmetric(vertical: isSynced ? 7 : 10),
+      padding: EdgeInsets.symmetric(vertical: (isSynced ? 7 : 10) * scale),
       child: GestureDetector(
         onTap: (isSynced && start != null)
             ? () => ref.read(barControlsProvider).seek(start)
@@ -418,7 +421,7 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
               color: (!isSynced || isActive)
                   ? Colors.white
                   : Colors.white.withOpacity(fade),
-              fontSize: widget.device.isMobile ? 19 : 24,
+              fontSize: (widget.device.isMobile ? 19 : 24) * scale,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               height: 1.4,
             ),

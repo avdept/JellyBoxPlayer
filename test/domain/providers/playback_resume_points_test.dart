@@ -15,8 +15,10 @@ import 'package:jplayer/src/data/storages/resume_point_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/playback/playback_target.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
+import 'package:jplayer/src/domain/providers/cloud_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/current_user_provider.dart';
+import 'package:jplayer/src/domain/providers/infinite_play_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
@@ -111,6 +113,13 @@ class _FakeTarget implements PlaybackTarget {
   Future<void> skipTo(int index) async {}
 
   @override
+  Future<void> insertAll(
+    int index,
+    List<TargetTrack> tracks, {
+    bool playNext = false,
+  }) async {}
+
+  @override
   Future<void> stop() async {}
 
   @override
@@ -181,6 +190,7 @@ void main() {
   ProviderContainer newContainer({String? libraryId}) {
     final container = ProviderContainer(
       overrides: [
+        remoteRendererProvider.overrideWithValue(null),
         if (libraryId != null)
           currentLibraryProvider.overrideWith(() => _Library(libraryId)),
         localPlaybackTargetProvider.overrideWithValue(target),
@@ -358,6 +368,107 @@ void main() {
         position: Duration(minutes: 5),
         currentIndex: 2,
         completed: true,
+      ),
+    );
+
+    expect(await settled(container), isNull);
+  });
+
+  test(
+    '- moving past the set into infinite playback clears the point',
+    () async {
+      when(
+        () => client.getInstantMix(any(), limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          for (final id in ['x', 'y'])
+            LibraryItem(
+              id: id,
+              name: 'mix $id',
+              kind: ItemKind.song,
+              duration: const Duration(minutes: 4),
+            ),
+        ],
+      );
+      final container = newContainer();
+      container.listen(infinitePlayProvider, (_, _) {});
+      final playback = container.read(playbackProvider.notifier);
+
+      await playback.play(songs.first, songs, album, sourceId: album.id);
+      target.emit(
+        const TargetPlaybackState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 40),
+          currentIndex: 2,
+        ),
+      );
+      expect(await settled(container), isNotNull);
+      await pumpEventQueue();
+      expect(container.read(playbackProvider).songs, hasLength(5));
+      expect(
+        (await PlaybackStorage().load('srv'))?.setSongIds,
+        unorderedEquals(['a', 'b', 'c']),
+      );
+
+      target.emit(
+        const TargetPlaybackState(
+          status: PlaybackStatus.playing,
+          position: Duration(seconds: 30),
+          currentIndex: 3,
+        ),
+      );
+
+      expect(await settled(container), isNull);
+
+      target.emit(
+        const TargetPlaybackState(
+          status: PlaybackStatus.playing,
+          position: Duration(minutes: 1),
+          currentIndex: 3,
+        ),
+      );
+      expect(await settled(container), isNull);
+    },
+  );
+
+  test('- a restored queue still knows where its set ends', () async {
+    final mix = LibraryItem(
+      id: 'x',
+      name: 'mix x',
+      kind: ItemKind.song,
+      duration: const Duration(minutes: 4),
+    );
+    await stored().save((
+      item: album,
+      songId: 'c',
+      songName: 'song c',
+      songIndex: 2,
+      songCount: 3,
+      position: const Duration(seconds: 90),
+      updatedAt: DateTime.utc(2026, 11, 20),
+    ));
+    await PlaybackStorage().save(
+      serverId: 'srv',
+      songs: [...songs, mix],
+      album: album,
+      songId: 'c',
+      positionMs: 90000,
+      sourceId: album.id,
+      setSongIds: [for (final song in songs) song.id],
+    );
+    final container = newContainer();
+
+    expect(
+      await container.read(playbackProvider.notifier).tryRestore(),
+      isTrue,
+    );
+    expect(await settled(container), isNotNull);
+
+    target.emit(
+      const TargetPlaybackState(
+        status: PlaybackStatus.playing,
+        position: Duration(seconds: 10),
+        currentIndex: 3,
       ),
     );
 

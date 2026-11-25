@@ -58,6 +58,7 @@ enum AppSetting {
   ),
   lyricsAlignment('lyrics_alignment', defaultValue: 'center'),
   lyricsBlur('lyrics_blur', defaultValue: 'medium'),
+  lyricsTextSize('lyrics_text_size', defaultValue: 100.0),
   lrclibLyrics('lrclib_lyrics', defaultValue: true, syncs: true),
   fanartArtistBackgrounds(
     'fanart_artist_backgrounds',
@@ -371,6 +372,16 @@ final lyricsBlurProvider = Provider<LyricsBlur>(
             )] ??
             LyricsBlur.medium,
 );
+
+final lyricsTextSizeProvider = Provider<double>(
+  (ref) => _asDouble(
+    ref.watch(appSettingsProvider)[AppSetting.lyricsTextSize],
+    AppSetting.lyricsTextSize,
+  ).clamp(lyricsTextSizeMin, lyricsTextSizeMax),
+);
+
+const lyricsTextSizeMin = 70.0;
+const lyricsTextSizeMax = 160.0;
 
 final playerTimeDisplayProvider = Provider<PlayerTimeDisplay>(
   (ref) =>

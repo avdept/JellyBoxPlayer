@@ -292,9 +292,33 @@ void main() {
       expect(queue.take(5), ['a', 'b', 'c', 'd', 'e']);
       expect(queue.skip(5), isNotEmpty);
       expect(queue.toSet(), hasLength(queue.length));
-      expect(queue.skip(5).first, 'album-1');
+      expect(
+        queue.skip(5),
+        everyElement(anyOf(endsWith('-1'), endsWith('-2'))),
+      );
       expect(container.read(infinitePlayProvider), queue.skip(5).toSet());
       expect(target.inserted, hasLength(queue.length - 5));
+    });
+
+    test('- picks from the whole of each mix, not just its top', () async {
+      await build();
+      when(
+        () => client.getInstantMix(any(), limit: any(named: 'limit')),
+      ).thenAnswer(
+        (invocation) async => [
+          for (var rank = 1; rank <= infinitePlaySeedLimit; rank++)
+            _song('${invocation.positionalArguments.first}-$rank'),
+        ],
+      );
+      final playback = container.read(playbackProvider.notifier);
+      await playback.play(songs.first, songs, album);
+      target.moveTo(3);
+      await settle();
+
+      final added = _ids(container.read(playbackProvider).songs).skip(5);
+      final ranks = [for (final id in added) int.parse(id.split('-').last)];
+      expect(added, hasLength(infinitePlayTopUp));
+      expect(ranks.where((rank) => rank > 5), isNotEmpty);
     });
 
     test('- stays quiet while far from the end', () async {

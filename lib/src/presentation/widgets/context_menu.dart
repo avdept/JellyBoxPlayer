@@ -349,7 +349,7 @@ List<ContextMenuAction> contextMenuActions(
       switch (entry) {
         ContextMenuEntry.play => actions.play(),
         ContextMenuEntry.resume => switch (ref.read(
-          resumePointProvider(item.id),
+          resumeOfferProvider(item.id),
         )) {
           final point? => actions.resume(point),
           null => null,

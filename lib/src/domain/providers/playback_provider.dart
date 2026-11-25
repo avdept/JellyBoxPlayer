@@ -110,6 +110,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   String? _resumePointKey;
   String? _resumePointSong;
   String? _queueLibraryId;
+  Set<String>? _setSongIds;
+  var _leftSet = false;
   DateTime? _lastResumePointSave;
   static const _resumePointInterval = Duration(seconds: 15);
   int? _reportedIndex;
@@ -744,6 +746,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     bool reshuffle = true,
     bool keepStreamsOffline = false,
     bool resuming = false,
+    List<String>? setSongIds,
   }) async {
     final elsewhere = remote;
     if (elsewhere != null &&
@@ -760,6 +763,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       if (await elsewhere.play(request)) return;
     }
     _queueLibraryId = _currentLibraryId;
+    _setSongIds = (setSongIds ?? [for (final song in songs) song.id]).toSet();
     final generation = ++_queueGeneration;
     try {
       final resolved = await _resolveQueue(
@@ -1333,6 +1337,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         : null;
     if (playing == null) return false;
     _queueLibraryId = _currentLibraryId;
+    _setSongIds = {playing.id, for (final song in songs) song.id};
 
     final upcoming = [
       for (final song in songs)
@@ -1756,6 +1761,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       sourceId: state.sourceId,
       shuffle: state.shuffleEnabled,
       unshuffledOrder: _unshuffledOrder,
+      setSongIds: _setSongIds?.toList(),
     );
   }
 
@@ -1768,6 +1774,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   }) async {
     final sourceId = state.sourceId;
     if (sourceId == null || sourceId != set.id || !canResume(set)) return;
+    final setSongIds = _setSongIds;
+    if (setSongIds != null && !setSongIds.contains(songId)) {
+      if (!_leftSet) {
+        _leftSet = true;
+        await _clearResumePoint(sourceId);
+      }
+      return;
+    }
+    _leftSet = false;
     final index = songs.indexWhere((song) => song.id == songId);
     if (index < 0) return;
     final now = DateTime.now();
@@ -1870,6 +1885,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       autoPlay: false,
       reshuffle: false,
       keepStreamsOffline: true,
+      setSongIds: snapshot.setSongIds,
     );
     final pendingPress = _ref.read(pendingMediaPlayProvider)();
     if (_queueGeneration != generation + 1) return false;
@@ -1932,6 +1948,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       );
 
       _queueGeneration++;
+      _setSongIds =
+          (snapshot.setSongIds ?? [for (final song in snapshot.songs) song.id])
+              .toSet();
       await _targetSubscription?.cancel();
       _target = _destination = target;
       _targetState = TargetPlaybackState.idle;

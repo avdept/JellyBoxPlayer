@@ -5,6 +5,7 @@ import 'package:jplayer/src/data/storages/resume_point_database.dart';
 import 'package:jplayer/src/domain/models/models.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
 import 'package:jplayer/src/domain/providers/instant_mix_provider.dart';
+import 'package:jplayer/src/domain/providers/playback_provider.dart';
 
 final resumePointsChangedProvider = StateProvider<int>((ref) => 0);
 
@@ -70,3 +71,17 @@ final ProviderFamily<ResumePoint?, String> resumePointProvider =
         ),
       ),
     );
+
+final ProviderFamily<ResumePoint?, String> resumeOfferProvider =
+    Provider.family((ref, sourceId) {
+      final playingThisSet = ref.watch(
+        playbackProvider.select(
+          (state) =>
+              state.sourceId == sourceId &&
+              (state.status.isPlaying ||
+                  state.status == PlaybackStatus.buffering),
+        ),
+      );
+      if (playingThisSet) return null;
+      return ref.watch(resumePointProvider(sourceId));
+    });
