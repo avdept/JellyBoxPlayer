@@ -47,7 +47,7 @@ class ResumeSetButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final point = ref.watch(resumePointProvider(item.id));
+    final point = ref.watch(resumeOfferProvider(item.id));
     if (point == null) return const SizedBox.shrink();
     final color = Theme.of(context).colorScheme.onPrimary;
     final busy = ref.watch(setPlaybackProvider) == item.id;

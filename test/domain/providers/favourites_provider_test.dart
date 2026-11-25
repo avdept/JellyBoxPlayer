@@ -91,9 +91,55 @@ void main() {
         ],
       );
 
-      final items = await container.read(homeFavouritesProvider.future);
+      final sub = container.listen(homeFavouritesProvider, (_, _) {});
+      await container.read(favouriteAlbumsProvider.future);
+      await container.read(favouritePlaylistsProvider.future);
 
-      expect(items, [_playlist, album]);
+      expect(sub.read().value, [_playlist, album]);
+    });
+
+    test('- keeps showing the list while a refresh is loading', () async {
+      const album = LibraryItem(id: 'a1', name: 'Album', kind: ItemKind.album);
+      when(() => client.getAlbums(any())).thenAnswer(
+        (_) async => const LibraryPage(items: [album], totalRecordCount: 1),
+      );
+      final container = containerWith(const MediaServerCapabilities());
+      final states = <AsyncValue<List<LibraryItem>>>[];
+      container.listen(
+        homeFavouritesProvider,
+        (_, next) => states.add(next),
+        fireImmediately: true,
+      );
+      await pumpEventQueue();
+      states.clear();
+
+      container
+        ..invalidate(favouriteAlbumsProvider)
+        ..invalidate(favouritePlaylistsProvider);
+      await pumpEventQueue();
+
+      final shown = [
+        for (final state in states)
+          state.when(
+            data: (_) => 'list',
+            error: (_, _) => 'error',
+            loading: () => 'placeholder',
+          ),
+      ];
+      expect(shown, everyElement('list'));
+      expect(container.read(homeFavouritesProvider).value, [_playlist, album]);
+    });
+
+    test('- reports a failed load', () async {
+      when(() => client.getAlbums(any())).thenThrow(Exception('down'));
+      final container = containerWith(const MediaServerCapabilities());
+      final sub = container.listen(homeFavouritesProvider, (_, _) {});
+      await expectLater(
+        container.read(favouriteAlbumsProvider.future),
+        throwsException,
+      );
+
+      expect(sub.read().hasError, isTrue);
     });
   });
 

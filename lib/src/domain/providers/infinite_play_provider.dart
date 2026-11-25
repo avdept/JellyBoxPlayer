@@ -97,7 +97,9 @@ class InfinitePlayNotifier extends StateNotifier<Set<String>> {
       final now = _ref.read(playbackProvider);
       if (now.songs.isEmpty || now.songs.last.id != anchor) return;
       final fresh = mergeInfinitePlayMixes(
-        mixes,
+        [
+          for (final mix in mixes) [...mix]..shuffle(_random),
+        ],
         exclude: {for (final song in now.songs) song.id, ...state},
         limit: infinitePlayTopUp,
       );

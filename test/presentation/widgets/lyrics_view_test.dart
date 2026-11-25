@@ -57,6 +57,7 @@ void main() {
   setUpAll(() => registerFallbackValue(Duration.zero));
 
   late FakePlaybackNotifier playback;
+  late ProviderContainer container;
 
   Future<void> pumpLyricsView(
     WidgetTester tester, {
@@ -64,7 +65,7 @@ void main() {
     Lyrics? lyrics,
   }) async {
     playback = FakePlaybackNotifier(state);
-    final container = createProviderContainer(
+    container = createProviderContainer(
       overrides: [
         playbackProvider.overrideWith((_) => playback),
         lyricsProvider(_songId).overrideWith((_) async => lyrics),
@@ -183,6 +184,57 @@ void main() {
       );
 
       expect(find.text('No lyrics for this track'), findsOneWidget);
+    });
+
+    testWidgets('- resizes the open lyrics when the text size changes', (
+      tester,
+    ) async {
+      await pumpLyricsView(
+        tester,
+        state: _stateAt(const Duration(seconds: 12)),
+        lyrics: _synced,
+      );
+      final normal = styleOf(tester, 'third line').fontSize!;
+      final normalHeight = tester.getSize(find.text('third line')).height;
+
+      container
+          .read(appSettingsProvider.notifier)
+          .setNumber(AppSetting.lyricsTextSize, 150);
+      await tester.pumpAndSettle();
+
+      expect(
+        styleOf(tester, 'third line').fontSize,
+        moreOrLessEquals(normal * 1.5),
+      );
+      expect(
+        styleOf(tester, 'second line').fontSize,
+        moreOrLessEquals(normal * 1.5),
+      );
+      expect(
+        tester.getSize(find.text('third line')).height,
+        greaterThan(normalHeight * 1.4),
+      );
+    });
+
+    testWidgets('- keeps a stored text size inside the allowed range', (
+      tester,
+    ) async {
+      await pumpLyricsView(
+        tester,
+        state: _stateAt(Duration.zero),
+        lyrics: _unsynced,
+      );
+      final normal = styleOf(tester, 'plain one').fontSize!;
+
+      container
+          .read(appSettingsProvider.notifier)
+          .setNumber(AppSetting.lyricsTextSize, 500);
+      await tester.pumpAndSettle();
+
+      expect(
+        styleOf(tester, 'plain one').fontSize,
+        moreOrLessEquals(normal * lyricsTextSizeMax / 100),
+      );
     });
   });
 }

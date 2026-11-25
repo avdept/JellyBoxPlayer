@@ -369,6 +369,8 @@ class SettingSlider extends ConsumerWidget {
     required this.value,
     required this.min,
     required this.max,
+    this.step = 1,
+    this.suffix = '',
     super.key,
   });
 
@@ -377,6 +379,8 @@ class SettingSlider extends ConsumerWidget {
   final ProviderListenable<double> value;
   final double min;
   final double max;
+  final double step;
+  final String suffix;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -413,7 +417,7 @@ class SettingSlider extends ConsumerWidget {
                 value: current.clamp(min, max),
                 min: min,
                 max: max,
-                divisions: (max - min).round(),
+                divisions: ((max - min) / step).round(),
                 onChanged: (selected) => ref
                     .read(appSettingsProvider.notifier)
                     .setNumber(setting, selected),
@@ -422,9 +426,9 @@ class SettingSlider extends ConsumerWidget {
           ),
           const SizedBox(width: 10),
           SizedBox(
-            width: 32,
+            width: suffix.isEmpty ? 32 : 44,
             child: Text(
-              '${current.round()}',
+              '${current.round()}$suffix',
               style: TextStyle(
                 fontSize: 13,
                 color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),

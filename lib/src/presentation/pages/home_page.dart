@@ -268,9 +268,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     ..invalidate(favouriteAlbumsProvider)
     ..invalidate(favouritePlaylistsProvider);
 
-  Future<void> _reloadFavourites() {
+  Future<void> _reloadFavourites() async {
     _refreshFavourites();
-    return ref.read(homeFavouritesProvider.future);
+    await Future.wait([
+      ref.read(favouritePlaylistsProvider.future),
+      ref.read(favouriteAlbumsProvider.future),
+    ]);
   }
 
   void _onFavouritesTap() =>

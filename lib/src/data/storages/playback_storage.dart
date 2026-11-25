@@ -12,6 +12,7 @@ class PlaybackSnapshot {
     this.sourceId,
     this.shuffle = false,
     this.unshuffledOrder,
+    this.setSongIds,
   });
 
   final List<LibraryItem> songs;
@@ -21,6 +22,7 @@ class PlaybackSnapshot {
   final String? sourceId;
   final bool shuffle;
   final List<String>? unshuffledOrder;
+  final List<String>? setSongIds;
 }
 
 class PlaybackStorage {
@@ -31,6 +33,7 @@ class PlaybackStorage {
   static const _sourceIdKey = 'pb_source_id';
   static const _shuffleKey = 'pb_shuffle';
   static const _unshuffledOrderKey = 'pb_unshuffled_order';
+  static const _setSongIdsKey = 'pb_set_song_ids';
 
   static const List<String> _keys = [
     _songsKey,
@@ -40,6 +43,7 @@ class PlaybackStorage {
     _sourceIdKey,
     _shuffleKey,
     _unshuffledOrderKey,
+    _setSongIdsKey,
   ];
 
   // TODO: Remove in 2.12, with _adoptLegacy and _removeLegacy. This is a
@@ -64,6 +68,7 @@ class PlaybackStorage {
     String? sourceId,
     bool shuffle = false,
     List<String>? unshuffledOrder,
+    List<String>? setSongIds,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -86,6 +91,10 @@ class PlaybackStorage {
           )
         else
           prefs.remove(_scoped(_unshuffledOrderKey, serverId)),
+        if (setSongIds != null)
+          prefs.setStringList(_scoped(_setSongIdsKey, serverId), setSongIds)
+        else
+          prefs.remove(_scoped(_setSongIdsKey, serverId)),
         ..._removeLegacy(prefs),
       ]);
     } on Object {
@@ -136,6 +145,7 @@ class PlaybackStorage {
         unshuffledOrder: prefs.getStringList(
           _scoped(_unshuffledOrderKey, serverId),
         ),
+        setSongIds: prefs.getStringList(_scoped(_setSongIdsKey, serverId)),
       );
     } on Object {
       return null;

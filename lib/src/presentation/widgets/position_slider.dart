@@ -8,6 +8,7 @@ import 'package:jplayer/src/domain/providers/playback_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/presentation/utils/utils.dart';
+import 'package:jplayer/src/presentation/widgets/smooth_position.dart';
 
 class PositionSlider extends ConsumerStatefulWidget {
   const PositionSlider({super.key}) : _followsBar = false;
@@ -35,6 +36,7 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
           duration: progress.duration,
           position: progress.position,
           bufferedPosition: progress.buffered,
+          playing: ref.watch(barPlayingProvider),
           onChangeEnd: ref.read(barControlsProvider).seek,
         ),
       );
@@ -52,6 +54,7 @@ class _PositionSliderState extends ConsumerState<PositionSlider> {
             ? playbackState.position
             : Duration.zero,
         bufferedPosition: playbackState.cacheProgress,
+        playing: playbackState.status == PlaybackStatus.playing,
         onChangeEnd: (value) => ref.read(playbackProvider.notifier).seek(value),
       ),
     );
@@ -101,12 +104,14 @@ class SeekBar extends StatefulWidget {
     required this.position,
     required this.bufferedPosition,
     super.key,
+    this.playing = false,
     this.onChanged,
     this.onChangeEnd,
   });
   final Duration duration;
   final Duration position;
   final Duration bufferedPosition;
+  final bool playing;
   final ValueChanged<Duration>? onChanged;
   final ValueChanged<Duration>? onChangeEnd;
 
@@ -198,26 +203,33 @@ class SeekBarState extends State<SeekBar> {
                   enabledThumbRadius: _hoverThumbRadius,
                 ),
               ),
-              child: Slider(
-                max: widget.duration.inMilliseconds.toDouble(),
-                value: min(
-                  _dragValue ?? widget.position.inMilliseconds.toDouble(),
-                  widget.duration.inMilliseconds.toDouble(),
+              child: SmoothPosition(
+                position: widget.position,
+                duration: widget.duration,
+                playing: widget.playing && _dragValue == null,
+                builder: (context, position) => Slider(
+                  max: widget.duration.inMilliseconds.toDouble(),
+                  value: min(
+                    _dragValue ?? position.inMicroseconds / 1000,
+                    widget.duration.inMilliseconds.toDouble(),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _dragValue = value;
+                    });
+                    if (widget.onChanged != null) {
+                      widget.onChanged!(Duration(milliseconds: value.round()));
+                    }
+                  },
+                  onChangeEnd: (value) {
+                    if (widget.onChangeEnd != null) {
+                      widget.onChangeEnd!(
+                        Duration(milliseconds: value.round()),
+                      );
+                    }
+                    setState(() => _dragValue = null);
+                  },
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _dragValue = value;
-                  });
-                  if (widget.onChanged != null) {
-                    widget.onChanged!(Duration(milliseconds: value.round()));
-                  }
-                },
-                onChangeEnd: (value) {
-                  if (widget.onChangeEnd != null) {
-                    widget.onChangeEnd!(Duration(milliseconds: value.round()));
-                  }
-                  setState(() => _dragValue = null);
-                },
               ),
             ),
             _hoverPreview(constraints.maxWidth),

@@ -22,6 +22,7 @@ class TvSettingsPage extends ConsumerWidget {
     final rememberLyrics = ref.watch(
       settingProvider(AppSetting.tvRememberLyrics),
     );
+    final lyricsTextSize = ref.watch(lyricsTextSizeProvider);
     final browseTab = ref.watch(defaultBrowseTabProvider);
     final cloudAvailable = ref.watch(cloudAvailableProvider);
     final account = ref.watch(cloudProvider.select((state) => state.account));
@@ -56,6 +57,22 @@ class TvSettingsPage extends ConsumerWidget {
                 value: remember && ref.read(lyricsVisibleProvider),
               );
           },
+        ),
+        const SizedBox(height: 8),
+        _TvChoiceRow<double>(
+          label: 'Lyrics text size',
+          value: (lyricsTextSize / 10).round() * 10.0,
+          options: [
+            for (
+              var size = lyricsTextSizeMin;
+              size <= lyricsTextSizeMax;
+              size += 10
+            )
+              size,
+          ],
+          labelFor: (size) => '${size.round()}%',
+          onChanged: (size) =>
+              settings.setNumber(AppSetting.lyricsTextSize, size),
         ),
         const SizedBox(height: 24),
         const Text('Home', style: TvTokens.sectionTitle),
@@ -270,17 +287,26 @@ class _TvChoiceRow<T> extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                for (final option in options)
-                  TvOptionRow(
-                    icon: Icon(
-                      option == value
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final option in options)
+                          TvOptionRow(
+                            icon: Icon(
+                              option == value
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_off,
+                            ),
+                            label: Text(labelFor(option)),
+                            autofocus: option == value,
+                            onSelect: () => Navigator.of(context).pop(option),
+                          ),
+                      ],
                     ),
-                    label: Text(labelFor(option)),
-                    autofocus: option == value,
-                    onSelect: () => Navigator.of(context).pop(option),
                   ),
+                ),
               ],
             ),
           ),
