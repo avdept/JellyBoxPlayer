@@ -67,7 +67,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     if (playing != null && !playing.isLocalFile) await stop();
     for (var index = _tracks.length - 1; index >= 0; index--) {
       if (_tracks[index].isLocalFile) continue;
-      await removeFromQueue(index);
+      await _removeHere(index);
     }
   }
 
@@ -1488,6 +1488,10 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
   Future<void> removeFromQueue(int index) async {
     if (await remote?.remove(index) ?? false) return;
+    await _removeHere(index);
+  }
+
+  Future<void> _removeHere(int index) async {
     final songs = [...state.songs];
     if (index < 0 || index >= songs.length) return;
     if (songs.length == 1) return clearQueue();
