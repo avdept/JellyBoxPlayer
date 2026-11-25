@@ -215,6 +215,14 @@ class _TvHomePageState extends ConsumerState<TvHomePage> {
               onLongSelect: _options(recentlyAddedAlbumsProvider),
               onRetry: () => ref.invalidate(recentlyAddedAlbumsProvider),
             ),
+            if (!ref.watch(settingProvider(AppSetting.recentReleasesHidden)))
+              TvReleaseShelf(
+                title: 'Recent releases',
+                items: ref.watch(recentReleasesProvider),
+                onSelect: _openAlbum,
+                onLongSelect: _options(recentReleasesProvider),
+                onRetry: () => ref.invalidate(recentReleasesProvider),
+              ),
             if (!ref.watch(
               settingProvider(AppSetting.generatedPlaylistsDisabled),
             ))

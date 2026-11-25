@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/player_bar_provider.dart';
 import 'package:jplayer/src/presentation/themes/themes.dart';
 import 'package:jplayer/src/providers/image_service_provider.dart';
+import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 // Example image provider - this could be any provider that supplies an image
@@ -155,19 +158,87 @@ Color? averageOfBottomRows(
 final AutoDisposeFutureProviderFamily<ColorScheme?, LibraryItem>
 itemCoverSchemeProvider = FutureProvider.autoDispose
     .family<ColorScheme?, LibraryItem>((ref, item) async {
+      final cached = _coverSchemes[item.id];
+      if (cached != null) return cached;
       try {
-        final scheme = await ColorScheme.fromImageProvider(
-          provider: ref.read(imageServiceProvider).itemImage(item),
+        final provider = ref.read(imageServiceProvider).itemImage(item);
+        final seed = await _serialSeed(() => _coverSeed(provider));
+        if (seed == null) return null;
+        final scheme = ColorScheme.fromSeed(
+          seedColor: Color(seed),
           brightness: Brightness.dark,
           dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         );
-        final link = ref.keepAlive();
-        Timer(const Duration(minutes: 10), link.close);
+        _coverSchemes[item.id] = scheme;
+        if (_coverSchemes.length > _coverSchemeLimit) {
+          _coverSchemes.remove(_coverSchemes.keys.first);
+        }
         return scheme;
       } on Object {
         return null;
       }
     });
+
+const _coverSchemeLimit = 300;
+const _seedSampleSize = 64;
+final _coverSchemes = <String, ColorScheme>{};
+Future<void> _seedQueue = Future.value();
+
+Future<T> _serialSeed<T>(Future<T> Function() task) {
+  final result = _seedQueue.then((_) => task());
+  _seedQueue = result.then<void>((_) {}, onError: (Object _) {});
+  return result;
+}
+
+Future<int?> _coverSeed(ImageProvider provider) async {
+  final image = await _decodeImage(
+    ResizeImage(
+      provider,
+      width: _seedSampleSize,
+      height: _seedSampleSize,
+      policy: ResizeImagePolicy.fit,
+    ),
+  );
+  final ByteData? bytes;
+  try {
+    bytes = await image.toByteData();
+  } finally {
+    image.dispose();
+  }
+  if (bytes == null) return null;
+  final pixels = bytes.buffer.asUint32List();
+  return Isolate.run(() => _seedFromPixels(pixels));
+}
+
+Future<ui.Image> _decodeImage(ImageProvider provider) {
+  final completer = Completer<ui.Image>();
+  final stream = provider.resolve(ImageConfiguration.empty);
+  late final ImageStreamListener listener;
+  listener = ImageStreamListener(
+    (info, _) {
+      stream.removeListener(listener);
+      completer.complete(info.image);
+    },
+    onError: (error, stackTrace) {
+      stream.removeListener(listener);
+      completer.completeError(error, stackTrace);
+    },
+  );
+  stream.addListener(listener);
+  return completer.future;
+}
+
+Future<int?> _seedFromPixels(Uint32List abgrPixels) async {
+  final result = await QuantizerCelebi().quantize(abgrPixels, 128);
+  final colorToCount = result.colorToCount.map(
+    (abgr, count) => MapEntry(
+      (abgr & 0xFF00FF00) | ((abgr & 0xFF) << 16) | ((abgr >> 16) & 0xFF),
+      count,
+    ),
+  );
+  final scored = Score.score(colorToCount, desired: 1);
+  return scored.isEmpty ? null : scored.first;
+}
 
 final AutoDisposeFutureProviderFamily<Color?, LibraryItem>
 itemGlowColorProvider = FutureProvider.autoDispose.family<Color?, LibraryItem>(

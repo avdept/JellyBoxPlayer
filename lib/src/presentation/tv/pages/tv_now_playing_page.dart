@@ -33,12 +33,14 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
   static const double _contentPadding = TvTokens.pagePaddingH + 16;
 
   final _queueButton = FocusNode(debugLabel: 'now-playing:queue');
+  final _lyricsButton = FocusNode(debugLabel: 'now-playing:lyrics');
   bool _queueOpen = false;
   bool _queueBuilt = false;
 
   @override
   void dispose() {
     _queueButton.dispose();
+    _lyricsButton.dispose();
     super.dispose();
   }
 
@@ -48,6 +50,11 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
   });
 
   void _toggleLyrics() {
+    if (_lyricsButton.hasFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _lyricsButton.requestFocus();
+      });
+    }
     final lyrics = ref.read(lyricsVisibleProvider.notifier);
     lyrics.state = !lyrics.state;
     final settings = ref.read(appSettingsProvider.notifier);
@@ -112,67 +119,38 @@ class _TvNowPlayingPageState extends ConsumerState<TvNowPlayingPage> {
             TvBackdrop(image: backdrop),
             ExcludeFocus(
               excluding: _queueOpen,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      _contentPadding,
-                      TvTokens.pagePaddingV,
-                      _contentPadding,
-                      0,
+              child: Padding(
+                padding: const EdgeInsets.only(top: TvTokens.pagePaddingV),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _Player(
+                        item: item,
+                        art: art,
+                        controls: controls,
+                        split: lyricsOn,
+                        lyricsOn: lyricsOn,
+                        onToggleLyrics: _toggleLyrics,
+                        queueButton: _queueButton,
+                        lyricsButton: _lyricsButton,
+                        onOpenQueue: _openQueue,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TvIconButton(
-                          icon: lyricsOn
-                              ? Icons.lyrics_rounded
-                              : Icons.lyrics_outlined,
-                          size: _Player.buttonSize,
-                          iconSize: _Player.iconSize,
-                          selected: lyricsOn,
-                          onSelect: _toggleLyrics,
-                        ),
-                        const SizedBox(width: 12),
-                        TvIconButton(
-                          icon: Icons.format_list_bulleted_rounded,
-                          size: _Player.buttonSize,
-                          iconSize: _Player.iconSize,
-                          focusNode: _queueButton,
-                          onSelect: _openQueue,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _Player(
-                            item: item,
-                            art: art,
-                            controls: controls,
-                            split: lyricsOn,
+                    if (lyricsOn)
+                      const Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            0,
+                            0,
+                            _contentPadding,
+                            TvTokens.pagePaddingV,
                           ),
+                          child: LyricsView(),
                         ),
-                        if (lyricsOn)
-                          const Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                0,
-                                0,
-                                _contentPadding,
-                                TvTokens.pagePaddingV,
-                              ),
-                              child: LyricsView(),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                  ],
+                ),
               ),
             ),
             TweenAnimationBuilder<double>(
@@ -223,17 +201,25 @@ class _Player extends ConsumerWidget {
     required this.art,
     required this.controls,
     required this.split,
+    required this.lyricsOn,
+    required this.onToggleLyrics,
+    required this.queueButton,
+    required this.lyricsButton,
+    required this.onOpenQueue,
   });
 
   final MediaItem item;
   final ImageProvider art;
   final BarControls controls;
   final bool split;
+  final bool lyricsOn;
+  final VoidCallback onToggleLyrics;
+  final FocusNode queueButton;
+  final FocusNode lyricsButton;
+  final VoidCallback onOpenQueue;
 
-  static const buttonSize = 36.0;
-  static const iconSize = 18.0;
-  static const double _button = buttonSize;
-  static const double _icon = iconSize;
+  static const double _button = 36;
+  static const double _icon = 18;
   static final TextStyle _timeStyle = TvTokens.caption.copyWith(
     fontFeatures: const [FontFeature.tabularFigures()],
   );
@@ -248,7 +234,158 @@ class _Player extends ConsumerWidget {
     final elsewhere = ref.watch(remoteRendererProvider);
     final accent = Theme.of(context).colorScheme.primary;
 
-    final coverSize = split ? 170.0 : 220.0;
+    final textAlign = split ? TextAlign.center : TextAlign.start;
+    final details = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: split
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: split ? MainAxisSize.min : MainAxisSize.max,
+          children: [
+            Flexible(
+              child: Text(
+                item.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: textAlign,
+                style: TextStyle(
+                  fontSize: split ? 22 : 28,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                ),
+              ),
+            ),
+            if (song != null) ...[
+              const SizedBox(width: 12),
+              TvIconButton(
+                icon: song.userData.isFavorite
+                    ? CupertinoIcons.heart_fill
+                    : CupertinoIcons.heart,
+                size: _button,
+                iconSize: _icon,
+                selected: song.userData.isFavorite,
+                onSelect: () => unawaited(controls.toggleFavourite(song)),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          [?item.artist, ?item.album].join('  ·  '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: textAlign,
+          style: const TextStyle(fontSize: 15, color: Colors.white70),
+        ),
+        if (elsewhere != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: split ? MainAxisSize.min : MainAxisSize.max,
+            children: [
+              Icon(Icons.cast_connected_rounded, size: 16, color: accent),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Playing on ${elsewhere.name}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+
+    final transport = <Widget>[
+      TvIconButton(
+        icon: Icons.shuffle_rounded,
+        size: _button,
+        iconSize: _icon,
+        selected: shuffle,
+        onSelect: () => unawaited(controls.setShuffle(enabled: !shuffle)),
+      ),
+      const SizedBox(width: 16),
+      TvIconButton(
+        icon: Icons.skip_previous_rounded,
+        size: _button,
+        iconSize: 22,
+        onSelect: () => unawaited(controls.previous()),
+      ),
+      const SizedBox(width: 16),
+      TvIconButton(
+        icon: playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+        size: 48,
+        iconSize: 26,
+        primary: true,
+        autofocus: true,
+        onSelect: () => unawaited(controls.togglePlay()),
+      ),
+      const SizedBox(width: 16),
+      TvIconButton(
+        icon: Icons.skip_next_rounded,
+        size: _button,
+        iconSize: 22,
+        onSelect: () => unawaited(controls.next()),
+      ),
+      const SizedBox(width: 16),
+      TvIconButton(
+        icon: repeat == LoopMode.one
+            ? Icons.repeat_one_rounded
+            : Icons.repeat_rounded,
+        size: _button,
+        iconSize: _icon,
+        selected: repeat != LoopMode.off,
+        onSelect: () => unawaited(controls.setRepeat(_nextRepeat(repeat))),
+      ),
+    ];
+
+    final extras = <Widget>[
+      TvIconButton(
+        icon: lyricsOn ? Icons.lyrics_rounded : Icons.lyrics_outlined,
+        size: _button,
+        iconSize: _icon,
+        selected: lyricsOn,
+        focusNode: lyricsButton,
+        onSelect: onToggleLyrics,
+      ),
+      const SizedBox(width: 12),
+      TvIconButton(
+        icon: Icons.format_list_bulleted_rounded,
+        size: _button,
+        iconSize: _icon,
+        focusNode: queueButton,
+        onSelect: onOpenQueue,
+      ),
+      const SizedBox(width: 12),
+      TvIconButton(
+        icon: elsewhere == null
+            ? Icons.cast_rounded
+            : Icons.cast_connected_rounded,
+        size: _button,
+        iconSize: _icon,
+        selected: elsewhere != null,
+        onSelect: () => unawaited(TvPlayOnDialog.show(context)),
+      ),
+    ];
+
+    Widget cover({double? size}) => ClipRRect(
+      borderRadius: TvTokens.panelRadius,
+      child: Image(
+        image: art,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -261,74 +398,26 @@ class _Player extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: TvTokens.panelRadius,
-                  child: Image(
-                    image: art,
-                    width: coverSize,
-                    height: coverSize,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                  ),
-                ),
-                const SizedBox(width: 32),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: split
+                ? Column(
                     children: [
-                      Text(
-                        item.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: split ? 22 : 28,
-                          fontWeight: FontWeight.w700,
-                          height: 1.15,
+                      Flexible(
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: AspectRatio(aspectRatio: 1, child: cover()),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        [?item.artist, ?item.album].join('  ·  '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      if (elsewhere != null) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.cast_connected_rounded,
-                              size: 16,
-                              color: accent,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                'Playing on ${elsewhere.name}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: accent,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      const SizedBox(height: 20),
+                      details,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      cover(size: 220),
+                      const SizedBox(width: 32),
+                      Expanded(child: details),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 20),
           _SeekBar(
@@ -358,75 +447,29 @@ class _Player extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              if (song != null)
-                TvIconButton(
-                  icon: song.userData.isFavorite
-                      ? CupertinoIcons.heart_fill
-                      : CupertinoIcons.heart,
-                  size: _button,
-                  iconSize: _icon,
-                  selected: song.userData.isFavorite,
-                  onSelect: () => unawaited(controls.toggleFavourite(song)),
-                )
-              else
-                const SizedBox.square(dimension: _button),
-              const Spacer(),
-              TvIconButton(
-                icon: Icons.shuffle_rounded,
-                size: _button,
-                iconSize: _icon,
-                selected: shuffle,
-                onSelect: () =>
-                    unawaited(controls.setShuffle(enabled: !shuffle)),
-              ),
-              const SizedBox(width: 16),
-              TvIconButton(
-                icon: Icons.skip_previous_rounded,
-                size: _button,
-                iconSize: 22,
-                onSelect: () => unawaited(controls.previous()),
-              ),
-              const SizedBox(width: 16),
-              TvIconButton(
-                icon: playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                size: 48,
-                iconSize: 26,
-                primary: true,
-                autofocus: true,
-                onSelect: () => unawaited(controls.togglePlay()),
-              ),
-              const SizedBox(width: 16),
-              TvIconButton(
-                icon: Icons.skip_next_rounded,
-                size: _button,
-                iconSize: 22,
-                onSelect: () => unawaited(controls.next()),
-              ),
-              const SizedBox(width: 16),
-              TvIconButton(
-                icon: repeat == LoopMode.one
-                    ? Icons.repeat_one_rounded
-                    : Icons.repeat_rounded,
-                size: _button,
-                iconSize: _icon,
-                selected: repeat != LoopMode.off,
-                onSelect: () =>
-                    unawaited(controls.setRepeat(_nextRepeat(repeat))),
-              ),
-              const Spacer(),
-              TvIconButton(
-                icon: elsewhere == null
-                    ? Icons.cast_rounded
-                    : Icons.cast_connected_rounded,
-                size: _button,
-                iconSize: _icon,
-                selected: elsewhere != null,
-                onSelect: () => unawaited(TvPlayOnDialog.show(context)),
-              ),
-            ],
-          ),
+          if (split) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: transport,
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: extras,
+            ),
+          ] else
+            Row(
+              children: [
+                const Spacer(),
+                ...transport,
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: extras,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
