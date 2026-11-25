@@ -37,10 +37,12 @@ class LyricsLookupIndicator extends StatelessWidget {
 class LyricsView extends ConsumerWidget {
   const LyricsView({
     this.padding = const EdgeInsets.symmetric(vertical: 24),
+    this.color = Colors.white,
     super.key,
   });
 
   final EdgeInsets padding;
+  final Color color;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,7 +50,7 @@ class LyricsView extends ConsumerWidget {
     final song = ref.watch(barSongProvider);
 
     if (song == null) {
-      return const _Message('No lyrics for this track');
+      return _Message('No lyrics for this track', color: color);
     }
 
     return _LyricsBody(
@@ -56,6 +58,7 @@ class LyricsView extends ConsumerWidget {
       songId: song.id,
       device: device,
       padding: padding,
+      color: color,
     );
   }
 }
@@ -176,12 +179,14 @@ class _LyricsBody extends ConsumerStatefulWidget {
     required this.songId,
     required this.device,
     required this.padding,
+    required this.color,
     super.key,
   });
 
   final String songId;
   final DeviceType device;
   final EdgeInsets padding;
+  final Color color;
 
   @override
   ConsumerState<_LyricsBody> createState() => _LyricsBodyState();
@@ -319,10 +324,12 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Center(child: TextLinesShimmer(count: 7)),
       ),
-      error: (_, _) => const _Message("Couldn't load lyrics"),
+      error: (_, _) => _Message("Couldn't load lyrics", color: widget.color),
       data: (lyrics) {
         final lines = lyrics?.lines ?? const <LyricLine>[];
-        if (lines.isEmpty) return const _Message('No lyrics for this track');
+        if (lines.isEmpty) {
+          return _Message('No lyrics for this track', color: widget.color);
+        }
 
         if (_lineKeys.length != lines.length) {
           _lineKeys = List.generate(lines.length, (_) => GlobalKey());
@@ -419,8 +426,8 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
             textAlign: textAlign,
             style: TextStyle(
               color: (!isSynced || isActive)
-                  ? Colors.white
-                  : Colors.white.withOpacity(fade),
+                  ? widget.color
+                  : widget.color.withOpacity(fade),
               fontSize: (widget.device.isMobile ? 19 : 24) * scale,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               height: 1.4,
@@ -443,9 +450,10 @@ class _LyricsBodyState extends ConsumerState<_LyricsBody>
 }
 
 class _Message extends StatelessWidget {
-  const _Message(this.text);
+  const _Message(this.text, {required this.color});
 
   final String text;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -453,7 +461,7 @@ class _Message extends StatelessWidget {
       text,
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: Colors.white.withOpacity(0.7),
+        color: color.withOpacity(0.7),
         fontSize: 18,
       ),
     ),

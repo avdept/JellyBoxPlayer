@@ -314,7 +314,10 @@ class _LandscapePlayerViewState extends ConsumerState<_LandscapePlayerView> {
             _Panel.queue => FlipSide.right,
           },
           front: _nowPlayingFace(song, colorScheme),
-          left: const LyricsView(padding: EdgeInsets.symmetric(vertical: 8)),
+          left: LyricsView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            color: _foreground,
+          ),
           right: const NowPlayingQueueView(
             padding: EdgeInsets.symmetric(vertical: 8),
           ),

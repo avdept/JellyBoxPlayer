@@ -169,7 +169,7 @@ class _BottomPlayerState extends ConsumerState<BottomPlayer>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  const LyricsView(),
+                  LyricsView(color: AppColors.from(context).text),
                   if (_isMobile && supportsLandscapePlayer)
                     const KeepScreenAwake(force: true),
                 ],
