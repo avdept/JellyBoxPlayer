@@ -1069,8 +1069,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
 
     final extras = <String, dynamic>{
       ...QualityExtras.of(original: audioSource, streamed: quality),
-      if (song.albumArtists.isNotEmpty)
-        'artistId': song.albumArtists.first.id
+      if (song.effectiveArtists.isNotEmpty)
+        'artistId': song.effectiveArtists.first.id
       else if (album.albumArtists.isNotEmpty)
         'artistId': album.albumArtists.first.id,
     };
@@ -1085,7 +1085,9 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         isHls: isHls,
         title: song.name,
         duration: song.duration,
-        artist: song.albumArtist ?? album.albumArtist,
+        artist: song.artistLabel.isNotEmpty
+            ? song.artistLabel
+            : album.albumArtist,
         album: song.albumName,
         artUri: artUri,
         transcoded: transcoded,
