@@ -13,12 +13,14 @@ MediaItem mediaItemFor(
   AudioSourceInfo? streamed,
 }) {
   final artistId =
-      song.albumArtists.firstOrNull?.id ?? album?.albumArtists.firstOrNull?.id;
+      song.effectiveArtists.firstOrNull?.id ??
+      album?.albumArtists.firstOrNull?.id;
+  final artist = song.artistLabel;
 
   return MediaItem(
     id: song.id,
     album: song.albumName ?? album?.name,
-    artist: song.albumArtist ?? album?.albumArtist,
+    artist: artist.isNotEmpty ? artist : album?.albumArtist,
     duration: song.duration,
     title: song.name,
     artUri: images?.songArtUri(song, album: album),

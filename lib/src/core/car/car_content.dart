@@ -537,7 +537,9 @@ class CarContent {
     return CarEntry(
       item: item,
       title: item.name,
-      subtitle: item.albumArtist ?? '',
+      subtitle: item.kind == ItemKind.song
+          ? item.artistLabel
+          : item.albumArtist ?? '',
       artUri: artUri(item),
     );
   }

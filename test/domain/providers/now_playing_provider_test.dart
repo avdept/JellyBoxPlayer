@@ -175,4 +175,43 @@ void main() {
     final item = container.read(nowPlayingProvider)!;
     expect(item.artist, 'Portishead');
   });
+
+  group('mediaItemFor artist', () {
+    const compilation = LibraryItem(
+      id: 'album-va',
+      name: 'Hits',
+      kind: ItemKind.album,
+      albumArtist: 'Various Artists',
+      albumArtists: [ArtistRef(id: 'va', name: 'Various Artists')],
+    );
+
+    test('- shows the track artist on a compilation', () {
+      const song = LibraryItem(
+        id: 'song-1',
+        name: 'Track',
+        kind: ItemKind.song,
+        albumArtist: 'Various Artists',
+        albumArtists: [ArtistRef(id: 'va', name: 'Various Artists')],
+        artists: [ArtistRef(id: 'a1', name: 'Real Artist')],
+      );
+
+      final item = mediaItemFor(song, album: compilation);
+
+      expect(item.artist, 'Real Artist');
+      expect(item.extras?['artistId'], 'a1');
+    });
+
+    test('- falls back to the album artist when the song has none', () {
+      const song = LibraryItem(
+        id: 'song-2',
+        name: 'Track',
+        kind: ItemKind.song,
+      );
+
+      final item = mediaItemFor(song, album: compilation);
+
+      expect(item.artist, 'Various Artists');
+      expect(item.extras?['artistId'], 'va');
+    });
+  });
 }
