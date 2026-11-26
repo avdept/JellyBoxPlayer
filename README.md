@@ -4,7 +4,7 @@
 
 # JellyBox - Navidrome, Jellyfin and Emby music player
 
-**Native music player for Navidrome, Jellyfin and Emby on iOS, Android, macOS, Windows and Linux. CarPlay, Android Auto, offline downloads, casting.**
+**Navidrome, Jellyfin and Emby music player for Android, iOS, macOS, Windows, Linux and Android TV. CarPlay, Android Auto, offline downloads, casting.**
 
 [![Works with Jellyfin](https://img.shields.io/badge/Jellyfin-00A4DC?logo=jellyfin&logoColor=white)](https://jellyfin.org)
 [![Works with Emby](https://img.shields.io/badge/Emby-52B54B?logo=emby&logoColor=white)](https://emby.media)
@@ -20,13 +20,13 @@
 
 [Website](https://jellybox.app) · [Download](#download) · [Screenshots](#screenshots) · [Features](#features) · [Development](#development)
 
-<img src="./docs/screenshots/desktop-and-mobile.png" width="100%" alt="JellyBox on macOS and Android, showing the home page with recently added albums, mixes made for you and recently played">
+<img src="./docs/screenshots/desktop-and-mobile.webp" width="100%" alt="JellyBox on macOS, the home screen split between the light and dark themes, with an Android phone in front showing its home screen">
 
 </div>
 
 ---
 
-JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://emby.media) and [Navidrome](https://www.navidrome.org) (any OpenSubsonic-compatible server can be tried, but only Navidrome is tested). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads and progressive caching, lyrics, spotify-like everyday playlists along with a UI built for each platform rather than a single stretched layout.
+JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://emby.media) and [Navidrome](https://www.navidrome.org) (also tested with gonic and LMS; other OpenSubsonic-compatible servers may work). It focuses on doing one thing well: making your own music library feel like a modern streaming app - fast browsing, offline downloads and progressive caching, lyrics, spotify-like everyday playlists along with a UI built for each platform rather than a single stretched layout.
 
 > [!IMPORTANT]
 > JellyBox is a client, not a server. You need access to a running Jellyfin, Emby or Navidrome server with a music library on it.
@@ -42,6 +42,7 @@ JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://
 | **Linux** | `.flatpak`, `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android** | Google Play | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
 | **Android** | `.apk` (sideload) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
+| **Android TV / Google TV** | Google Play or `.apk` (same app as Android) | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
 
 ## Screenshots
 
@@ -161,7 +162,7 @@ JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://
 - [x] Lock screen and notification controls on iOS and Android
 - [x] In-app changelog, so you can see what landed in each release
 - [x] Apple CarPlay - currently in beta stage.
-- [x] Android Auto - currently in beta stage.
+- [x] Android Auto
 
 ## Platform notes
 
@@ -176,6 +177,10 @@ The installer is unsigned, so SmartScreen will warn on first run - choose **More
 ### Android
 
 Install from [Google Play](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox), or sideload the APK from the [releases page](https://github.com/avdept/JellyBoxPlayer/releases). For the APK you'll need to allow installs from your browser or file manager.
+
+### Android TV
+
+The same app as Android, with a TV interface built for the remote. On Jellyfin, sign in with Quick Connect from your phone instead of typing a password. JellyBox also adds a Recently added row to the TV home screen (Android 8.0 and newer).
 
 ### Linux
 
