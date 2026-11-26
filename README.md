@@ -39,7 +39,8 @@ JellyBox is a music client for [Jellyfin](https://jellyfin.org), [Emby](https://
 | **macOS** | `.dmg` (signed & notarized) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **macOS** | Homebrew | `brew install --cask jellybox` |
 | **Windows** | Installer `.exe` or portable `.zip` | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
-| **Linux** | `.flatpak`, `.AppImage`, `.deb`, `.rpm` or `.tar.gz` bundle (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
+| **Linux** | Flatpak (updates with `flatpak update`) | [jellybox.flatpakref](https://flatpak.jellybox.app/jellybox.flatpakref) |
+| **Linux** | `.AppImage`, `.deb`, `.rpm`, `.tar.gz` or single-file `.flatpak` (x64 & arm64) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android** | Google Play | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
 | **Android** | `.apk` (sideload) | [Latest release](https://github.com/avdept/JellyBoxPlayer/releases/latest) |
 | **Android TV / Google TV** | Google Play or `.apk` (same app as Android) | [![Google Play](https://img.shields.io/badge/Google_Play-414141?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.prodigytech.jellybox) |
@@ -184,11 +185,15 @@ The same app as Android, with a TV interface built for the remote. On Jellyfin, 
 
 ### Linux
 
-**Flatpak** - the `.flatpak` bundle brings its own libraries and only needs the freedesktop runtime, which it pulls from Flathub on install:
+**Flatpak** - install from the JellyBox Flatpak repo. It works on x64 and arm64, pulls the freedesktop runtime from Flathub, and updates with `flatpak update` or your software centre:
 
 ```bash
-flatpak install ./jellybox-linux-x86_64.flatpak
+flatpak install https://flatpak.jellybox.app/jellybox.flatpakref
 ```
+
+The single-file `.flatpak` on [Releases](https://github.com/avdept/JellyBoxPlayer/releases/latest) also works, but it does not update on its own.
+
+If the Flatpak becomes slow or choppy, run `flatpak update` and restart JellyBox. This happens most often after an NVIDIA driver update: Flatpak needs a driver package that matches your driver version exactly, and until it has one, it draws the app on the CPU instead of the graphics card.
 
 **Other packages** - the release bundle expects a few shared libraries. On Debian/Ubuntu:
 
