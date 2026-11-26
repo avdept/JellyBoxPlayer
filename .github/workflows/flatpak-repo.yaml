@@ -1,0 +1,72 @@
+name: Flatpak Repo
+
+# Adds a published release's .flatpak bundles to the signed Flatpak repo on R2
+# (served at flatpak.jellybox.app), which is what `flatpak update` and the
+# jellybox.flatpakref install from.
+#
+# Release calls this after it publishes, because a release published with
+# GITHUB_TOKEN raises no `release` event. The `release` trigger covers drafts
+# that are published by hand later.
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        required: true
+        type: string
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release to publish to the repo: a tag, or "latest"'
+        required: false
+        type: string
+        default: latest
+
+permissions:
+  contents: read
+
+# Every run rewrites the same repo; two at once would drop one release's commit.
+concurrency:
+  group: flatpak-repo
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.event_name != 'release' || !github.event.release.prerelease }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flatpak and ostree
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y flatpak ostree
+
+      - name: Download bundles
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          TAG="$RELEASE_TAG"
+          if [ "$TAG" = "latest" ]; then
+            TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+          mkdir dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir dist --pattern 'jellybox-linux-*.flatpak'
+          ls -lh dist
+          echo "::notice::Publishing $TAG to the Flatpak repo"
+
+      - name: Publish to R2
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_FLATPAK_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+          FLATPAK_PUBLIC_URL: ${{ vars.FLATPAK_PUBLIC_URL }}
+        run: ./linux/packaging/flatpak/publish-repo.sh dist/*.flatpak

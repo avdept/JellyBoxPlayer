@@ -172,8 +172,11 @@ jobs:
     # the release stayed a draft.
     if: ${{ always() && needs.prepare.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.publish) }}
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
     steps:
       - name: Publish release, or leave it as a draft
+        id: publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.prepare.outputs.tag }}
@@ -188,4 +191,15 @@ jobs:
               ;;
           esac
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo "published=true" >> "$GITHUB_OUTPUT"
           echo "::notice::Published release $TAG"
+
+  # Publishing with GITHUB_TOKEN raises no `release` event, so the Flatpak repo
+  # update is called here instead of reacting to it.
+  flatpak-repo:
+    needs: [prepare, publish]
+    if: ${{ always() && needs.publish.outputs.published == 'true' }}
+    uses: ./.github/workflows/flatpak-repo.yaml
+    with:
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
