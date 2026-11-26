@@ -2,7 +2,7 @@
 
 <img src="./docs/logo.png" width="120" alt="JellyBox logo">
 
-# JellyBox - Navidrome and Jellyfin player
+# JellyBox - Navidrome, Jellyfin and Emby music player
 
 **Native music player for Navidrome, Jellyfin and Emby on iOS, Android, macOS, Windows and Linux. CarPlay, Android Auto, offline downloads, casting.**
 
