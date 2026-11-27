@@ -45,6 +45,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
   final Ref _ref;
   final _inFlight = <String>{};
   final _failedIds = <String>{};
+  final _waiters = <String, List<Completer<String?>>>{};
 
   late final Future<void> _ready = _bootstrap();
 
@@ -72,6 +73,50 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     return service;
   }
 
+  Future<String?> pathWhenCached(String id) async {
+    final waiter = Completer<String?>();
+    (_waiters[id] ??= []).add(waiter);
+    try {
+      final paths = await _ref.read(queueCacheDatabaseProvider).pathsFor([id]);
+      final path = paths[id];
+      if (path != null) {
+        _settle(id, path);
+      } else if (!_inFlight.contains(id) && !_wouldFetch(id)) {
+        _settle(id, null);
+      } else {
+        _schedule();
+      }
+    } on Object catch (error) {
+      debugPrint('[ForwardCache] looking up $id failed: $error');
+      _settle(id, null);
+    }
+    return waiter.future;
+  }
+
+  bool _wouldFetch(String id) {
+    if (!mounted || _stopped || _purging) return false;
+    if (!_ref.read(forwardCacheLimitProvider).isEnabled) return false;
+    if (_ref.read(isOfflineProvider)) return false;
+    if (_ref.read(manualOfflineProvider)) return false;
+    if (!_ref.read(playbackProvider.notifier).supportsLocalFiles) return false;
+    if (_failedIds.contains(id)) return false;
+    return _candidates().any((song) => song.id == id);
+  }
+
+  void _settle(String id, String? path) {
+    final waiters = _waiters.remove(id);
+    if (waiters == null) return;
+    for (final waiter in waiters) {
+      if (!waiter.isCompleted) waiter.complete(path);
+    }
+  }
+
+  void _settleAll() {
+    for (final id in [..._waiters.keys]) {
+      _settle(id, null);
+    }
+  }
+
   void _schedule() {
     if (_pumping) {
       _dirty = true;
@@ -97,6 +142,9 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
       debugPrint('[ForwardCache] fill loop failed: $error');
     } finally {
       _pumping = false;
+      for (final id in [..._waiters.keys]) {
+        if (!_inFlight.contains(id)) _settle(id, null);
+      }
     }
   }
 
@@ -187,7 +235,11 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
       ordered.add(songs[i]);
       ahead += _lengthOf(songs[i]);
     }
-    ordered.add(songs[current]);
+    if (_ref.read(playbackProvider.notifier).currentStreamsImprecisely) {
+      ordered.insert(0, songs[current]);
+    } else {
+      ordered.add(songs[current]);
+    }
 
     final seen = <String>{};
     return [
@@ -209,6 +261,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
       preference: _ref.read(activeStreamPreferenceProvider),
     );
     _inFlight.remove(song.id);
+    _settle(song.id, path);
     if (!mounted) return;
 
     if (path == null) {
@@ -271,6 +324,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
     final stale = _inFlight.where((id) => !queueIds.contains(id)).toList();
     for (final id in stale) {
       _inFlight.remove(id);
+      _settle(id, null);
       await _service?.cancel(id);
     }
   }
@@ -278,6 +332,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
   Future<void> _cancelInFlight() async {
     final pending = _inFlight.toList();
     _inFlight.clear();
+    _settleAll();
     for (final id in pending) {
       await _service?.cancel(id);
     }
@@ -345,6 +400,7 @@ class ForwardCacheNotifier extends StateNotifier<Set<String>> {
   @override
   void dispose() {
     _stopped = true;
+    _settleAll();
     final service = _service;
     final pending = _inFlight.toList();
     _inFlight.clear();

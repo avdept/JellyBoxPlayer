@@ -22,6 +22,7 @@ import 'package:jplayer/src/domain/playback/upnp_playback_target.dart';
 import 'package:jplayer/src/domain/providers/app_settings_provider.dart';
 import 'package:jplayer/src/domain/providers/cast_failure_provider.dart';
 import 'package:jplayer/src/domain/providers/current_library_provider.dart';
+import 'package:jplayer/src/domain/providers/forward_cache_provider.dart';
 import 'package:jplayer/src/domain/playback/playback_target_provider.dart';
 import 'package:jplayer/src/domain/providers/pending_media_play_provider.dart';
 import 'package:jplayer/src/domain/providers/resume_points_provider.dart';
@@ -89,6 +90,7 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   static Duration pausedIdleTimeout = const Duration(minutes: 5);
   static const _stallSlack = Duration(seconds: 1);
   static const _stallGrace = Duration(seconds: 6);
+  static const _exactCopyWait = Duration(seconds: 15);
 
   final Ref _ref;
   final Duration queueEditTimeout;
@@ -160,6 +162,15 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   PlaybackTarget get target => _target;
 
   bool get supportsLocalFiles => _target.supportsLocalFiles;
+
+  bool get currentStreamsImprecisely {
+    final target = _target;
+    final index = state.currentMediaIndex;
+    final track = index == null ? null : _tracks.elementAtOrNull(index);
+    return target is ImpreciseStreams &&
+        track != null &&
+        target.streamsImprecisely(track);
+  }
 
   StreamTargetProfile _streamProfileFor(PlaybackTarget target) =>
       target.kind == PlaybackTargetKind.local
@@ -1100,7 +1111,21 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
       _ref.read(imageServiceProvider).songArtUri(song, album: album);
 
   Future<void> seek(Duration position) async {
-    await _target.seek(position);
+    final target = _target;
+    final index = state.currentMediaIndex;
+    final song = index == null ? null : state.songs.elementAtOrNull(index);
+    if (position > Duration.zero &&
+        target is ImpreciseStreams &&
+        target.playingImpreciseStream &&
+        index != null &&
+        song != null) {
+      final copy = _cachedCopyOf(song);
+      if (await target.seekWithin(position, copy)) {
+        _adoptCurrent(index, song, await copy);
+      }
+    } else {
+      await target.seek(position);
+    }
     state = state.copyWith(position: position);
     _reportedPositionMs = position.inMilliseconds;
     _reportProgress();
@@ -1116,6 +1141,38 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
         ),
       );
     }
+  }
+
+  Future<TargetTrack?> _cachedCopyOf(LibraryItem song) async {
+    final album = state.album;
+    final sessionId = _playSessionIds[song.id];
+    if (album == null || sessionId == null) return null;
+    final path = await _ref
+        .read(forwardCacheProvider.notifier)
+        .pathWhenCached(song.id)
+        .timeout(_exactCopyWait, onTimeout: () => null);
+    if (path == null) return null;
+    final resolved = await _resolveTrack(
+      song,
+      album,
+      sessionId,
+      cachedPath: path,
+    );
+    final track = resolved?.track;
+    return track != null && track.isLocalFile ? track : null;
+  }
+
+  void _adoptCurrent(
+    int index,
+    LibraryItem song,
+    TargetTrack? track,
+  ) {
+    if (track == null || _tracks.elementAtOrNull(index)?.itemId != song.id) {
+      return;
+    }
+    _tracks[index] = track;
+    _localSongIds.add(song.id);
+    state = state.copyWith(deliveredQualities: _deliveredQualities());
   }
 
   Future<void> playPause() => switch (state.status.isPlaying) {
