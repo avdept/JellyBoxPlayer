@@ -337,4 +337,20 @@ void main() {
       expect(parseUpnpDuration('garbage'), isNull);
     });
   });
+
+  test('a speaker that cannot be reached fails within seconds', () async {
+    final clock = Stopwatch()..start();
+    await expectLater(
+      UpnpSoapClient().invoke(
+        controlUrl: Uri.parse(
+          'http://192.0.2.1:9197/upnp/control/AVTransport1',
+        ),
+        serviceType: 'urn:schemas-upnp-org:service:AVTransport:1',
+        action: 'Stop',
+        arguments: const {'InstanceID': '0'},
+      ),
+      throwsA(isA<UpnpTransportFault>()),
+    );
+    expect(clock.elapsed, lessThan(const Duration(seconds: 8)));
+  });
 }

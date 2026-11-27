@@ -57,7 +57,9 @@ class UpnpControlPoint {
     SsdpDiscovery? discovery,
     UpnpSoapClient? soap,
     Diagnostics diagnostics = const Diagnostics(),
-  }) : _dio = dio ?? Dio(),
+  }) : _dio =
+           dio ??
+           Dio(BaseOptions(connectTimeout: UpnpSoapClient.connectTimeout)),
        _discovery = discovery ?? SsdpDiscovery(),
        _soap = soap ?? UpnpSoapClient(dio: dio),
        _diagnostics = diagnostics;

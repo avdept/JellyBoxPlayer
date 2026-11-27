@@ -83,6 +83,8 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
   @visibleForTesting
   static Duration requalifyDelay = const Duration(seconds: 2);
 
+  static const releaseTimeout = Duration(seconds: 3);
+
   @visibleForTesting
   static Duration progressInterval = const Duration(seconds: 10);
 
@@ -522,11 +524,22 @@ class PlaybackNotifier extends StateNotifier<PlaybackState> {
     _reportStopped();
     _stopProgressReports();
     try {
-      await from.stop();
+      await from.stop().timeout(releaseTimeout);
+    } on TimeoutException {
+      debugPrint(
+        '[Playback] ${from.name} gave no answer to stop in '
+        '${releaseTimeout.inSeconds}s; switching anyway',
+      );
     } on Object catch (error) {
       debugPrint('[Playback] stopping ${from.name} failed: $error');
     }
-    if (from.kind != PlaybackTargetKind.local) await from.dispose();
+    if (from.kind != PlaybackTargetKind.local) {
+      try {
+        await from.dispose().timeout(releaseTimeout);
+      } on Object catch (error) {
+        debugPrint('[Playback] releasing ${from.name} failed: $error');
+      }
+    }
 
     _target = to;
     _targetState = TargetPlaybackState.idle;
