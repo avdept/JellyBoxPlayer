@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -171,7 +172,8 @@ class ConnectivityNotifier extends StateNotifier<bool> {
 
   Future<bool> _probe() async {
     final addresses = _addresses;
-    if (addresses == null) return state;
+    final type = _ref.read(currentServerTypeProvider);
+    if (addresses == null || type == null) return state;
     final started = DateTime.now();
     final candidates = addresses.candidates;
     final relay = addresses.relay;
@@ -179,8 +181,7 @@ class ConnectivityNotifier extends StateNotifier<bool> {
 
     final client = _prober ??= _buildProber();
     final answers = await Future.wait([
-      for (final url in candidates)
-        _answers(client, url, relayed: url == relay),
+      for (final url in candidates) _answers(client, url, type),
     ]);
     if (!mounted) return false;
     _down = {
@@ -258,9 +259,8 @@ class ConnectivityNotifier extends StateNotifier<bool> {
     }
   }
 
-  Future<bool> _answers(Dio client, String url, {bool relayed = false}) async {
-    final subsonic =
-        _ref.read(currentServerTypeProvider) == ServerType.subsonic;
+  Future<bool> _answers(Dio client, String url, ServerType type) async {
+    final subsonic = type == ServerType.subsonic;
     try {
       final response = await client.getUri<Object?>(
         subsonic
@@ -268,14 +268,12 @@ class ConnectivityNotifier extends StateNotifier<bool> {
             : _publicInfoUri(url),
         options: Options(
           headers: {'User-Agent': jellyboxUserAgent()},
-          followRedirects: false,
           validateStatus: (_) => true,
         ),
       );
       if (subsonic) return SubsonicApi.envelopeOf(response.data) != null;
       final status = response.statusCode ?? 0;
-      if (status == 401 || status == 403) return false;
-      return !relayed || status < 500;
+      return status >= 200 && status < 300 && _isPublicInfo(response.data);
     } on Object {
       return false;
     }
@@ -283,6 +281,20 @@ class ConnectivityNotifier extends StateNotifier<bool> {
 
   static Uri _publicInfoUri(String url) =>
       Uri.parse('${url.replaceAll(RegExp(r'/+$'), '')}/System/Info/Public');
+
+  static bool _isPublicInfo(Object? data) {
+    var body = data;
+    if (body is String) {
+      try {
+        body = jsonDecode(body);
+      } on FormatException {
+        return false;
+      }
+    }
+    if (body is! Map) return false;
+    final id = body['Id'];
+    return id is String && id.isNotEmpty;
+  }
 
   ServerAddresses? get _addresses {
     final addresses = _ref.read(serverAddressesProvider);

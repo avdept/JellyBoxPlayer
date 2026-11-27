@@ -1,10 +1,30 @@
-name: macOS DMG renderer test (notarized)
+name: macOS DMG legacy renderer (notarized)
 
-# Manual-only build for diagnosing GPU rendering issues on user machines.
 # Same signing and notarization as macos-dmg.yaml, but the FLTEnableImpeller
-# Info.plist key is set from the input, so a user can try the Skia backend.
+# Info.plist key is set from the input. The Release workflow calls it with
+# Impeller off to publish JellyBox-legacy.dmg, the Skia build for older Intel
+# Macs whose integrated GPUs flicker or crash under Impeller (issue #327).
+# Dispatch it by hand with Impeller on to build a test DMG of the default
+# renderer.
 
 on:
+  workflow_call:
+    inputs:
+      impeller:
+        required: false
+        type: boolean
+        default: false
+      version:
+        required: true
+        type: string
+      build_number:
+        required: true
+        type: string
+      release_tag:
+        description: Existing release (draft or published) to attach the DMG to
+        required: false
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       impeller:
@@ -149,7 +169,13 @@ jobs:
           set -euo pipefail
           APP="$(ls -d build/macos/Build/Products/Release/*.app | head -1)"
           APP_NAME="$(basename "$APP")"
-          DMG="JellyBox-${{ steps.version.outputs.version }}-${{ steps.version.outputs.renderer }}-test.dmg"
+          # The Skia build keeps a fixed name so the website can link to
+          # releases/latest/download/JellyBox-legacy.dmg.
+          if [ "${{ steps.version.outputs.renderer }}" = "skia" ]; then
+            DMG="JellyBox-legacy.dmg"
+          else
+            DMG="JellyBox-${{ steps.version.outputs.version }}-impeller-test.dmg"
+          fi
 
           STAGING="$(mktemp -d)"
           cp -R "$APP" "$STAGING/"
@@ -189,7 +215,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: jellybox-macos-dmg-${{ steps.version.outputs.renderer }}-test
+          name: jellybox-macos-dmg-${{ steps.version.outputs.renderer }}
           path: ${{ env.DMG }}
 
       - name: Attach to release

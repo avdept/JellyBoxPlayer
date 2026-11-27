@@ -139,6 +139,16 @@ jobs:
       release_tag: ${{ needs.prepare.outputs.tag }}
     secrets: inherit
 
+  macos-dmg-legacy:
+    needs: prepare
+    uses: ./.github/workflows/macos-dmg-renderer-test.yaml
+    with:
+      impeller: false
+      version: ${{ needs.prepare.outputs.version }}
+      build_number: ${{ needs.prepare.outputs.build_number }}
+      release_tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
   android:
     needs: prepare
     uses: ./.github/workflows/android-beta.yaml
@@ -167,7 +177,7 @@ jobs:
     secrets: inherit
 
   publish:
-    needs: [prepare, linux, windows, macos-dmg, android, ios, macos-testflight]
+    needs: [prepare, linux, windows, macos-dmg, macos-dmg-legacy, android, ios, macos-testflight]
     # `always()` so a single failing leg still reaches this job and reports why
     # the release stayed a draft.
     if: ${{ always() && needs.prepare.result == 'success' && (github.event_name != 'workflow_dispatch' || inputs.publish) }}
