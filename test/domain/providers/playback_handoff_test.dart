@@ -87,6 +87,9 @@ class _StaleTarget implements PlaybackTarget {
 }
 
 class _SpeakerTarget implements PlaybackTarget {
+  _SpeakerTarget({this.reachable = true});
+
+  final bool reachable;
   final _controller = StreamController<TargetPlaybackState>.broadcast();
   TargetPlaybackState _state = TargetPlaybackState.idle;
 
@@ -139,7 +142,13 @@ class _SpeakerTarget implements PlaybackTarget {
   Future<void> setVolume(double level) async {}
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    if (reachable) {
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      return;
+    }
+    await Completer<void>().future;
+  }
 
   @override
   Future<void> dispose() async => _controller.close();
@@ -250,11 +259,38 @@ void main() {
 
     target.loads.clear();
     speaker.drop();
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while ((target.loads.isEmpty ||
+            container.read(playbackProvider).status != PlaybackStatus.paused) &&
+        DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
 
     expect(notifier.target.kind, PlaybackTargetKind.local);
     expect(target.loads, [false]);
     expect(container.read(playbackProvider).status, PlaybackStatus.paused);
+    expect(container.read(playbackProvider).currentMediaIndex, 1);
+  });
+
+  test('- an unreachable speaker does not hold up moving here', () async {
+    final notifier = container.read(playbackProvider.notifier);
+    await notifier.play(songs[1], songs, album);
+    await Future<void>.delayed(Duration.zero);
+
+    final speaker = _SpeakerTarget(reachable: false);
+    await notifier.switchTarget(speaker);
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(playbackProvider).status, PlaybackStatus.playing);
+
+    target.loads.clear();
+    final clock = Stopwatch()..start();
+    await notifier
+        .switchTarget(container.read(localPlaybackTargetProvider))
+        .timeout(const Duration(seconds: 10));
+
+    expect(clock.elapsed, lessThan(const Duration(seconds: 5)));
+    expect(notifier.target.kind, PlaybackTargetKind.local);
+    expect(target.loads, [true]);
     expect(container.read(playbackProvider).currentMediaIndex, 1);
   });
 }

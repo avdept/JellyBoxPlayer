@@ -39,7 +39,9 @@ class UpnpTransportFault implements Exception {
 
 class UpnpSoapClient {
   UpnpSoapClient({Dio? dio, this.timeout = const Duration(seconds: 5)})
-    : _dio = dio ?? Dio();
+    : _dio = dio ?? Dio(BaseOptions(connectTimeout: connectTimeout));
+
+  static const connectTimeout = Duration(seconds: 3);
 
   final Dio _dio;
   final Duration timeout;
