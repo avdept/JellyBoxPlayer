@@ -27,6 +27,8 @@ class _Hosts implements HttpClientAdapter {
   final status = <String, int>{};
   final subsonic = <String>{};
   final portalAuth = <String>{};
+  final httpsOnly = <String>{};
+  final requests = <Uri>[];
   Duration delay = Duration.zero;
 
   @override
@@ -35,6 +37,24 @@ class _Hosts implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    requests.add(options.uri);
+    if (httpsOnly.contains(options.uri.host) && options.uri.scheme == 'http') {
+      final secure = options.uri.replace(scheme: 'https', port: 443);
+      if (!options.followRedirects) {
+        return ResponseBody.fromString(
+          '',
+          308,
+          headers: {
+            'location': [secure.toString()],
+          },
+        );
+      }
+      return fetch(
+        options.copyWith(path: secure.toString(), baseUrl: ''),
+        requestStream,
+        cancelFuture,
+      );
+    }
     final code = status[options.uri.host];
     if (delay != Duration.zero) await Future<void>.delayed(delay);
     if (code == null) {
@@ -52,6 +72,15 @@ class _Hosts implements HttpClientAdapter {
       return ResponseBody.fromString(
         '{"subsonic-response":{"status":"failed","version":"1.16.1",'
         '"error":{"code":10,"message":"User authentication required"}}}',
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    }
+    if (code == 200 && options.uri.path.endsWith('/System/Info/Public')) {
+      return ResponseBody.fromString(
+        '{"ServerName":"Home","Version":"10.11.0","Id":"f00d"}',
         200,
         headers: {
           Headers.contentTypeHeader: [Headers.jsonContentType],
@@ -103,7 +132,7 @@ void main() {
     String? knownRelay,
     String? knownRemote,
     bool signedIn = true,
-    ServerType? serverType,
+    ServerType? serverType = ServerType.jellyfin,
     Duration heartbeat = const Duration(hours: 1),
     Duration offlineGrace = Duration.zero,
   }) {
@@ -368,16 +397,28 @@ void main() {
     expect(container.read(baseUrlProvider), relay);
   });
 
-  test('- re-probes once the server type is known', () async {
-    hosts.status['192.168.1.10'] = 401;
+  test('- follows a Subsonic address that redirects to https', () async {
+    hosts.status['192.168.1.10'] = 200;
     hosts.subsonic.add('192.168.1.10');
-    final container = start();
-    expect(await probe(container), isFalse);
+    hosts.httpsOnly.add('192.168.1.10');
+    final container = start(serverType: ServerType.subsonic);
+
+    expect(await probe(container), isTrue);
+    expect(container.read(baseUrlProvider), home);
+  });
+
+  test('- waits for the server type before probing', () async {
+    hosts.status['192.168.1.10'] = 200;
+    hosts.subsonic.add('192.168.1.10');
+    final container = start(serverType: null);
+    await probe(container);
+    expect(hosts.requests, isEmpty);
 
     container.read(currentServerTypeProvider.notifier).state =
         ServerType.subsonic;
     await pumpEventQueue();
 
+    expect(hosts.requests.first.path, endsWith('/rest/ping.view'));
     expect(container.read(connectivityProvider), isTrue);
   });
 
@@ -430,13 +471,23 @@ void main() {
     },
   );
 
-  test('- counts a redirect from the tunnel as an answer', () async {
+  test('- treats a page that is not the server as down', () async {
+    hosts.status['192.168.1.10'] = 200;
     hosts.status['abc.tunnel.jellybox.app'] = 302;
     final container = start(knownRelay: relay);
 
     expect(await probe(container), isTrue);
-    expect(container.read(relayReachableProvider), isTrue);
-    expect(container.read(baseUrlProvider), relay);
+    expect(container.read(relayReachableProvider), isFalse);
+    expect(container.read(baseUrlProvider), home);
+  });
+
+  test('- follows a Jellyfin address that redirects to https', () async {
+    hosts.status['192.168.1.10'] = 200;
+    hosts.httpsOnly.add('192.168.1.10');
+    final container = start();
+
+    expect(await probe(container), isTrue);
+    expect(container.read(baseUrlProvider), home);
   });
 
   test(
