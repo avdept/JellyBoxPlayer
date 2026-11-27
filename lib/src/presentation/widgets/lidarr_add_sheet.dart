@@ -145,6 +145,33 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
     }
   }
 
+  Future<void> _monitor(int albumId) async {
+    if (_submitting) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    final search = ref.read(settingProvider(AppSetting.lidarrSearchOnAdd));
+    try {
+      await ref.read(lidarrAdderProvider).monitorAlbum(albumId, search: search);
+      _trackSubmit('monitored');
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lidarr now monitors "${widget.target.title}"'),
+        ),
+      );
+    } on Object catch (error) {
+      _trackSubmit('failed');
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = _describe(error);
+      });
+    }
+  }
+
   static String _describe(Object error) => error is LidarrException
       ? error.message
       : 'Lidarr request failed: $error';
@@ -174,6 +201,9 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
         _alreadyAdded(plan) &&
         status != null &&
         status.state != LidarrEntityState.notAdded;
+    final unmonitoredId = inLidarr && status.state == LidarrEntityState.added
+        ? status.albumId
+        : null;
 
     return SafeArea(
       top: false,
@@ -287,7 +317,15 @@ class _LidarrAddSheetState extends ConsumerState<LidarrAddSheet> {
                 ),
               ),
             const SizedBox(height: 16),
-            if (plan != null && plan.candidateCount > 0 && !_alreadyAdded(plan))
+            if (unmonitoredId != null)
+              ModalFormActions(
+                submitLabel: 'Monitor',
+                onSubmit: () => unawaited(_monitor(unmonitoredId)),
+                busy: _submitting,
+              )
+            else if (plan != null &&
+                plan.candidateCount > 0 &&
+                !_alreadyAdded(plan))
               ModalFormActions(
                 submitLabel: 'Add',
                 onSubmit: placement.valueOrNull == null ? () {} : _onAdd,

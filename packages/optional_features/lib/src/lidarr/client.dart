@@ -13,6 +13,7 @@ class LidarrClient {
 
   static const monitorAll = 'all';
   static const monitorNone = 'none';
+  static const monitorFuture = 'future';
 
   bool get available => false;
 
@@ -56,6 +57,8 @@ class LidarrClient {
     bool search = true,
     bool monitorArtist = true,
   }) => _unavailable();
+
+  Future<void> monitorAlbum(int albumId) => _unavailable();
 
   Future<void> searchAlbum(int albumId) => _unavailable();
 
