@@ -472,6 +472,12 @@ class LidarrAdder {
     return LidarrAddOutcome.added;
   }
 
+  Future<void> monitorAlbum(int albumId, {required bool search}) async {
+    await _client.monitorAlbum(albumId);
+    if (search) await _client.searchAlbum(albumId);
+    _refreshStatuses();
+  }
+
   Future<void> searchAlbum(int albumId) async {
     await _client.searchAlbum(albumId);
     _refreshStatuses();
