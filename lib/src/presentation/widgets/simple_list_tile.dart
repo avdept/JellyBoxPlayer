@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 const _defaultGap = 8.0;
+const _repeatTapWindow = Duration(milliseconds: 500);
 
 class SimpleListTile extends StatefulWidget {
   const SimpleListTile({
@@ -32,13 +33,22 @@ class SimpleListTile extends StatefulWidget {
 
 class _SimpleListTileState extends State<SimpleListTile> {
   var _isHovered = false;
+  final _sinceTap = Stopwatch();
 
   bool get _tracksHover => widget.hoverColor != null && widget.onTap != null;
+
+  void _onTap() {
+    if (_sinceTap.isRunning && _sinceTap.elapsed < _repeatTapWindow) return;
+    _sinceTap
+      ..reset()
+      ..start();
+    widget.onTap?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
     final tile = GestureDetector(
-      onTap: widget.onTap,
+      onTap: widget.onTap == null ? null : _onTap,
       behavior: HitTestBehavior.opaque,
       child: ColoredBox(
         color: widget.backgroundColor ?? Colors.transparent,

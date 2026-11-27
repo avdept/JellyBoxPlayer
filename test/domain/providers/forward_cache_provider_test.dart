@@ -142,6 +142,31 @@ class _FakeTarget implements PlaybackTarget, SwappableQueue {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _AppleTarget extends _FakeTarget implements ImpreciseStreams {
+  final seeks = <(Duration, TargetTrack?)>[];
+  final plainSeeks = <Duration>[];
+
+  @override
+  Future<void> seek(Duration position) async => plainSeeks.add(position);
+
+  @override
+  bool streamsImprecisely(TargetTrack track) =>
+      !track.isLocalFile && track.mimeType == 'audio/flac';
+
+  @override
+  bool playingImpreciseStream = true;
+
+  @override
+  Future<bool> seekWithin(
+    Duration position,
+    Future<TargetTrack?> replacement,
+  ) async {
+    final track = await replacement;
+    seeks.add((position, track));
+    return track != null;
+  }
+}
+
 class _FakeDownloader implements CacheDownloader {
   _FakeDownloader(this._directory);
 
@@ -178,6 +203,8 @@ class _FakeDownloader implements CacheDownloader {
       ..closeSync();
     return file.path;
   }
+
+  void finish(String id) => _hanging.remove(id)?.complete(_write('$id.flac'));
 
   @override
   Future<void> cancel(String id) async {
@@ -641,6 +668,76 @@ void main() {
 
       final tracks = target.loaded.last;
       expect(tracks.every((track) => track.isLocalFile), isTrue);
+    });
+  });
+
+  group('a streamed FLAC on Apple', () {
+    late _AppleTarget apple;
+
+    setUp(() => target = apple = _AppleTarget());
+
+    test('- fetches the playing track first', () async {
+      containerWith(ForwardCacheLimit.gb1);
+      container.read(forwardCacheProvider.notifier);
+
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs[1], songs, album);
+      await pumpUntil(() => container.read(forwardCacheProvider).length == 2);
+
+      expect(downloader.requested, ['b', 'c']);
+    });
+
+    test('- waits for the fetch already under way', () async {
+      containerWith(ForwardCacheLimit.gb1);
+      downloader.hang = true;
+      final notifier = container.read(forwardCacheProvider.notifier);
+
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs[1], songs, album);
+      await pumpUntil(() => downloader.requested.isNotEmpty);
+
+      final path = notifier.pathWhenCached('b');
+      downloader.finish('b');
+
+      expect(await path, endsWith('b.flac'));
+    });
+
+    test('- answers at once for a track it will not fetch', () async {
+      containerWith(ForwardCacheLimit.off);
+      final notifier = container.read(forwardCacheProvider.notifier);
+
+      await container
+          .read(playbackProvider.notifier)
+          .play(songs[1], songs, album);
+
+      expect(await notifier.pathWhenCached('b'), isNull);
+    });
+
+    test('- seeks into the cached copy of the playing track', () async {
+      containerWith(ForwardCacheLimit.gb1);
+      container.read(forwardCacheProvider.notifier);
+      final playback = container.read(playbackProvider.notifier);
+
+      await playback.play(songs[1], songs, album);
+      await playback.seek(const Duration(minutes: 2));
+
+      final (position, track) = apple.seeks.single;
+      expect(position, const Duration(minutes: 2));
+      expect(track?.isLocalFile, isTrue);
+      expect(track?.itemId, 'b');
+    });
+
+    test('- leaves a seek to the start to the player', () async {
+      containerWith(ForwardCacheLimit.gb1);
+      final playback = container.read(playbackProvider.notifier);
+      await playback.play(songs[1], songs, album);
+
+      await playback.seek(Duration.zero);
+
+      expect(apple.plainSeeks, [Duration.zero]);
+      expect(apple.seeks, isEmpty);
     });
   });
 

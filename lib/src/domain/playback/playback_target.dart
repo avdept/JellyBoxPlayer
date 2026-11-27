@@ -154,6 +154,17 @@ mixin SwappableQueue implements PlaybackTarget {
   bool get holdsCurrentTrack => true;
 }
 
+mixin ImpreciseStreams implements PlaybackTarget {
+  bool streamsImprecisely(TargetTrack track);
+
+  bool get playingImpreciseStream;
+
+  Future<bool> seekWithin(
+    Duration position,
+    Future<TargetTrack?> replacement,
+  );
+}
+
 typedef TrackLoadFailure = ({String? itemId, int index, int attempt});
 
 mixin LoadFailureReporting implements PlaybackTarget {

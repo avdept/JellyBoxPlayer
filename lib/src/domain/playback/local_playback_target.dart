@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:jplayer/src/core/audio/audio_container_mime.dart';
 import 'package:jplayer/src/core/audio/queue_shuffle_order.dart';
 import 'package:jplayer/src/core/audio/smart_previous.dart';
 import 'package:jplayer/src/core/audio/stream_target_profile.dart';
@@ -17,7 +19,11 @@ typedef _PendingLoad = ({
 });
 
 class LocalPlaybackTarget
-    implements PlaybackTarget, SwappableQueue, LoadFailureReporting {
+    implements
+        PlaybackTarget,
+        SwappableQueue,
+        LoadFailureReporting,
+        ImpreciseStreams {
   LocalPlaybackTarget(
     this._player, {
     Duration? idleStopAfter,
@@ -29,7 +35,9 @@ class LocalPlaybackTarget
     int skipAfter = 3,
     Duration loadTimeout = defaultLoadTimeout,
     Duration stopTimeout = defaultStopTimeout,
-  }) : _idleStopAfter = idleStopAfter,
+    bool? darwin,
+  }) : _darwin = darwin ?? (Platform.isMacOS || Platform.isIOS),
+       _idleStopAfter = idleStopAfter,
        _isOnline = isOnline,
        _onlineChanges = onlineChanges,
        _recheckConnection = recheckConnection,
@@ -74,6 +82,7 @@ class LocalPlaybackTarget
 
   final AudioPlayer _player;
   final VolumeFade _fade;
+  final bool _darwin;
   final Duration? _idleStopAfter;
   final bool Function()? _isOnline;
   final Stream<bool> Function()? _onlineChanges;
@@ -106,6 +115,9 @@ class LocalPlaybackTarget
   Future<void> _windowOps = Future<void>.value();
   var _holdIndex = false;
   int? _lastSlot;
+  Object? _seekToken;
+  Duration? _seekingTo;
+  var _resumeAfterSeek = false;
 
   bool get retryPending => _pending != null;
 
@@ -148,6 +160,7 @@ class LocalPlaybackTarget
     required bool autoPlay,
   }) async {
     _cancelRetry();
+    _cancelSeek();
     _pending = null;
     _attempt = 0;
     _exhausted = false;
@@ -183,6 +196,7 @@ class LocalPlaybackTarget
     required int index,
     required Duration position,
   }) async {
+    final exact = _preciseAt(sources, index, position);
     final generation = ++_generation;
     _inFlight = generation;
     bool current() => generation == _generation;
@@ -191,7 +205,7 @@ class LocalPlaybackTarget
     try {
       await _player
           .setAudioSources(
-            sources,
+            exact,
             initialIndex: index,
             initialPosition: position,
             preload: true,
@@ -438,7 +452,150 @@ class LocalPlaybackTarget
 
     return track.isHls
         ? HlsAudioSource(track.uri, tag: tag)
-        : playerAudioSource(track.uri, tag: tag);
+        : playerAudioSource(
+            track.uri,
+            tag: tag,
+            precise: !streamsImprecisely(track),
+          );
+  }
+
+  @override
+  bool streamsImprecisely(TargetTrack track) =>
+      _darwin &&
+      !track.isLocalFile &&
+      !track.isHls &&
+      normalizeAudioMimeType(track.mimeType) == 'audio/flac';
+
+  @override
+  bool get playingImpreciseStream =>
+      _pending == null && _isImprecise(_currentSource());
+
+  IndexedAudioSource? _currentSource() {
+    final slot = _player.currentIndex;
+    return slot == null ? null : _player.sequence.elementAtOrNull(slot);
+  }
+
+  bool _isImprecise(AudioSource? source) =>
+      source is ProgressiveAudioSource &&
+      source.options?.darwinAssetOptions?.preferPreciseDurationAndTiming ==
+          false;
+
+  AudioSource _preciseCopy(ProgressiveAudioSource source) =>
+      playerAudioSource(source.uri, tag: source.tag);
+
+  List<AudioSource> _preciseAt(
+    List<AudioSource> sources,
+    int index,
+    Duration position,
+  ) {
+    if (position <= Duration.zero) return sources;
+    final source = sources.elementAtOrNull(index);
+    if (source is! ProgressiveAudioSource || !_isImprecise(source)) {
+      return sources;
+    }
+    debugPrint(
+      '[LocalTarget] starting a streamed FLAC at ${position.inSeconds}s; '
+      'loading it with precise timing',
+    );
+    return [...sources]..[index] = _preciseCopy(source);
+  }
+
+  @override
+  Future<bool> seekWithin(
+    Duration position,
+    Future<TargetTrack?> replacement,
+  ) async {
+    final source = _currentSource();
+    if (_pending != null ||
+        position <= Duration.zero ||
+        source is! ProgressiveAudioSource ||
+        !_isImprecise(source)) {
+      await seek(position);
+      return false;
+    }
+    return _seekByReplacing(source, position, replacement);
+  }
+
+  Future<bool> _seekByReplacing(
+    ProgressiveAudioSource source,
+    Duration position,
+    Future<TargetTrack?> replacement,
+  ) async {
+    final token = _seekToken = Object();
+    if (_seekingTo == null) _resumeAfterSeek = _player.playing;
+    _seekingTo = position;
+    debugPrint(
+      '[LocalTarget] seek to ${position.inSeconds}s on a streamed FLAC; '
+      'waiting for an exact copy',
+    );
+    _emit();
+    if (_player.playing) await _player.pause();
+
+    TargetTrack? track;
+    try {
+      track = await replacement;
+    } on Object catch (error) {
+      debugPrint('[LocalTarget] no exact copy for the seek: $error');
+    }
+    if (!identical(_seekToken, token)) return false;
+
+    var replaced = false;
+    await _serial(() async {
+      if (!identical(_seekToken, token)) return;
+      final slot = _player.sequence.indexOf(source);
+      if (slot < 0) {
+        debugPrint('[LocalTarget] the seek lost its track; leaving it');
+        return;
+      }
+      debugPrint(
+        track != null
+            ? '[LocalTarget] seeking in the cached file'
+            : '[LocalTarget] reloading the stream with precise timing',
+      );
+      await _replaceCurrent(
+        slot,
+        track != null ? _audioSource(track) : _preciseCopy(source),
+        position,
+      );
+      final index = _appIndex(slot);
+      if (track != null && _window != null && index != null) {
+        _tracks[index] = track;
+      }
+      replaced = track != null;
+    });
+    if (!identical(_seekToken, token)) return replaced;
+    final resume = _cancelSeek();
+    _emit();
+    if (resume) await _fade.play();
+    return replaced;
+  }
+
+  Future<void> _replaceCurrent(
+    int slot,
+    AudioSource next,
+    Duration position,
+  ) async {
+    _holdIndex = true;
+    try {
+      _shuffleOrder.nextInsertPosition =
+          (_shuffleOrder.positionOfIndex(slot) ??
+              _shuffleOrder.lastPosition - 1) +
+          1;
+      await _player.insertAudioSource(slot + 1, next);
+      await _player.seek(position, index: slot + 1);
+      await _player.removeAudioSourceAt(slot);
+    } finally {
+      _holdIndex = false;
+    }
+    _lastSlot = _player.currentIndex;
+  }
+
+  bool _cancelSeek() {
+    final resume = _seekingTo != null && _resumeAfterSeek;
+    _seekToken = null;
+    _seekingTo = null;
+    _resumeAfterSeek = false;
+    return resume;
   }
 
   @override
@@ -452,6 +609,11 @@ class LocalPlaybackTarget
     if (_pending != null) {
       _syncHold();
       await _attemptLoad();
+      return;
+    }
+    if (_seekingTo != null) {
+      _resumeAfterSeek = true;
+      _emit();
       return;
     }
     final playerState = _player.playerState;
@@ -472,6 +634,10 @@ class LocalPlaybackTarget
     _wantsPlay = false;
     _cancelRetry();
     _syncHold();
+    if (_seekingTo != null) {
+      _resumeAfterSeek = false;
+      _emit();
+    }
     if (_pending != null) _emit();
     await _fade.pause();
   }
@@ -481,6 +647,7 @@ class LocalPlaybackTarget
     debugPrint('[LocalTarget] stop (pending=${_pending != null})');
     _wantsPlay = false;
     _cancelRetry();
+    _cancelSeek();
     _syncHold();
     _pending = null;
     await _fade.stop();
@@ -493,7 +660,16 @@ class LocalPlaybackTarget
       _repoint(_indexOf(pending), position, 'seek');
       return;
     }
+    final source = _currentSource();
+    if (position > Duration.zero &&
+        source is ProgressiveAudioSource &&
+        _isImprecise(source)) {
+      await _seekByReplacing(source, position, Future.value());
+      return;
+    }
+    final resume = _cancelSeek();
     await _player.seek(position);
+    if (resume) await _fade.play();
   }
 
   @override
@@ -502,6 +678,7 @@ class LocalPlaybackTarget
       _repoint(index, Duration.zero, 'skipTo');
       return;
     }
+    if (_cancelSeek()) unawaited(_fade.play());
     if (_window == null) {
       await _player.seek(Duration.zero, index: index);
       return;
@@ -524,6 +701,7 @@ class LocalPlaybackTarget
       if (next != null) _repoint(next, Duration.zero, 'next');
       return;
     }
+    if (_cancelSeek()) unawaited(_fade.play());
     if (_window == null) {
       await _player.seekToNext();
       return;
@@ -548,6 +726,7 @@ class LocalPlaybackTarget
       );
       return;
     }
+    if (_cancelSeek()) unawaited(_fade.play());
     if (_window == null) {
       await _player.smartSeekToPrevious();
       return;
@@ -872,6 +1051,15 @@ class LocalPlaybackTarget
             position: pending.position,
             currentIndex: _pendingAppIndex(pending),
           )
+        : _seekingTo != null
+        ? TargetPlaybackState(
+            status: _resumeAfterSeek
+                ? PlaybackStatus.buffering
+                : PlaybackStatus.paused,
+            position: _seekingTo!,
+            currentIndex: _state.currentIndex,
+            duration: _player.duration,
+          )
         : TargetPlaybackState(
             status: _statusOf(playerState),
             position: _player.position,
@@ -1100,13 +1288,16 @@ class LocalPlaybackTarget
   }
 }
 
-AudioSource playerAudioSource(Uri uri, {required MediaItem tag}) =>
-    ProgressiveAudioSource(
-      uri,
-      tag: tag,
-      options: const ProgressiveAudioSourceOptions(
-        darwinAssetOptions: DarwinAssetOptions(
-          preferPreciseDurationAndTiming: true,
-        ),
-      ),
-    );
+AudioSource playerAudioSource(
+  Uri uri, {
+  required Object? tag,
+  bool precise = true,
+}) => ProgressiveAudioSource(
+  uri,
+  tag: tag,
+  options: ProgressiveAudioSourceOptions(
+    darwinAssetOptions: DarwinAssetOptions(
+      preferPreciseDurationAndTiming: precise,
+    ),
+  ),
+);

@@ -1470,6 +1470,220 @@ void main() {
     });
   });
 
+  group('streamed FLAC on Apple', () {
+    late LocalPlaybackTarget apple;
+    late ProgressiveAudioSource streaming;
+
+    bool precise(AudioSource source) => (source as ProgressiveAudioSource)
+        .options!
+        .darwinAssetOptions!
+        .preferPreciseDurationAndTiming;
+
+    TargetTrack cachedFile() => TargetTrack(
+      itemId: 'song-1',
+      uri: Uri.file('/cache/song-1.flac'),
+      mimeType: 'audio/flac',
+      isHls: false,
+      title: 'Roads',
+      duration: const Duration(minutes: 5),
+    );
+
+    TargetTrack mp3Stream() => TargetTrack(
+      itemId: 'song-2',
+      uri: Uri.parse('http://navi.local/rest/stream?id=song-2'),
+      mimeType: 'audio/mpeg',
+      isHls: false,
+      title: 'Glory Box',
+      duration: const Duration(minutes: 5),
+    );
+
+    Future<List<AudioSource>> loaded(
+      LocalPlaybackTarget target,
+      List<TargetTrack> tracks, {
+      Duration position = Duration.zero,
+    }) async {
+      await target.load(
+        tracks,
+        initialIndex: 0,
+        initialPosition: position,
+        autoPlay: false,
+      );
+      return verify(
+            () => player.setAudioSources(
+              captureAny(),
+              initialIndex: any(named: 'initialIndex'),
+              initialPosition: any(named: 'initialPosition'),
+              preload: any(named: 'preload'),
+              shuffleOrder: any(named: 'shuffleOrder'),
+            ),
+          ).captured.single
+          as List<AudioSource>;
+    }
+
+    setUp(() {
+      apple = LocalPlaybackTarget(player, darwin: true);
+      streaming =
+          playerAudioSource(
+                Uri.parse('http://navi.local/rest/stream?id=song-1'),
+                tag: 'song-1',
+                precise: false,
+              )
+              as ProgressiveAudioSource;
+      when(() => player.sequence).thenReturn([
+        streaming,
+        AudioSource.uri(Uri.parse('http://navi.local/b')),
+      ]);
+      when(() => player.removeAudioSourceAt(any())).thenAnswer((_) async {});
+      when(
+        () => player.insertAudioSource(any(), any()),
+      ).thenAnswer((_) async {});
+      reportPlayer(playing: true, processingState: ProcessingState.ready);
+    });
+
+    tearDown(() => apple.dispose());
+
+    test('- starts a FLAC stream from zero without precise timing', () async {
+      final sources = await loaded(apple, [trackWith(), mp3Stream()]);
+
+      expect(precise(sources[0]), isFalse);
+      expect(precise(sources[1]), isTrue);
+    });
+
+    test('- keeps precise timing for cached files', () async {
+      final sources = await loaded(apple, [cachedFile()]);
+
+      expect(precise(sources.single), isTrue);
+    });
+
+    test('- keeps precise timing off Apple platforms', () async {
+      final other = LocalPlaybackTarget(player, darwin: false);
+      addTearDown(other.dispose);
+
+      final sources = await loaded(other, [trackWith()]);
+
+      expect(precise(sources.single), isTrue);
+    });
+
+    test('- starts a FLAC stream mid-song with precise timing', () async {
+      final sources = await loaded(apple, [
+        trackWith(),
+        trackWith(),
+      ], position: const Duration(seconds: 90));
+
+      expect(precise(sources[0]), isTrue);
+      expect(precise(sources[1]), isFalse);
+    });
+
+    test('- seeks into the cached file in place of the stream', () async {
+      const position = Duration(seconds: 120);
+
+      final replaced = await apple.seekWithin(
+        position,
+        Future.value(cachedFile()),
+      );
+
+      expect(replaced, isTrue);
+      final inserted =
+          verifyInOrder([
+                player.pause,
+                () => player.insertAudioSource(1, captureAny()),
+                () => player.seek(position, index: 1),
+                () => player.removeAudioSourceAt(0),
+                player.play,
+              ])[1].captured.single
+              as ProgressiveAudioSource;
+      expect(inserted.uri, Uri.file('/cache/song-1.flac'));
+      expect(precise(inserted), isTrue);
+    });
+
+    test('- reloads the stream precisely without a cached file', () async {
+      final replaced = await apple.seekWithin(
+        const Duration(seconds: 120),
+        Future.value(),
+      );
+
+      expect(replaced, isFalse);
+      final inserted =
+          verify(
+                () => player.insertAudioSource(1, captureAny()),
+              ).captured.single
+              as ProgressiveAudioSource;
+      expect(inserted.uri, streaming.uri);
+      expect(precise(inserted), isTrue);
+      verify(
+        () => player.seek(const Duration(seconds: 120), index: 1),
+      ).called(1);
+    });
+
+    test('- reports the seek target while it waits', () async {
+      final copy = Completer<TargetTrack?>();
+
+      final seeking = apple.seekWithin(
+        const Duration(seconds: 120),
+        copy.future,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(apple.state.position, const Duration(seconds: 120));
+      expect(apple.state.status, PlaybackStatus.buffering);
+      copy.complete(cachedFile());
+      await seeking;
+    });
+
+    test('- acts on the last of several seeks only', () async {
+      final first = Completer<TargetTrack?>();
+      final second = Completer<TargetTrack?>();
+
+      final firstSeek = apple.seekWithin(
+        const Duration(seconds: 60),
+        first.future,
+      );
+      final secondSeek = apple.seekWithin(
+        const Duration(seconds: 200),
+        second.future,
+      );
+      first.complete(cachedFile());
+      second.complete(cachedFile());
+
+      expect(await firstSeek, isFalse);
+      expect(await secondSeek, isTrue);
+      verify(() => player.insertAudioSource(1, any())).called(1);
+      verify(
+        () => player.seek(const Duration(seconds: 200), index: 1),
+      ).called(1);
+      verifyNever(() => player.seek(const Duration(seconds: 60), index: 1));
+    });
+
+    test('- stays paused after a seek made while paused', () async {
+      reportPlayer(playing: false, processingState: ProcessingState.ready);
+
+      await apple.seekWithin(
+        const Duration(seconds: 120),
+        Future.value(cachedFile()),
+      );
+
+      verifyNever(player.play);
+    });
+
+    test('- restarts the stream at zero with a plain seek', () async {
+      await apple.seek(Duration.zero);
+
+      verify(() => player.seek(Duration.zero)).called(1);
+      verifyNever(() => player.insertAudioSource(any(), any()));
+    });
+
+    test('- reloads precisely when seeking without the provider', () async {
+      await apple.seek(const Duration(seconds: 30));
+
+      final inserted =
+          verify(
+                () => player.insertAudioSource(1, captureAny()),
+              ).captured.single
+              as AudioSource;
+      expect(precise(inserted), isTrue);
+    });
+  });
+
   group('a player between sessions', () {
     test(
       '- absorbs the dead channel a stopped service leaves behind',
